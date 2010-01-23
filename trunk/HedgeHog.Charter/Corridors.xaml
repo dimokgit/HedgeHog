@@ -1,0 +1,20 @@
+﻿<Window x:Class="HedgeHog.Corridors"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Corridors"
+  xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+    Left="{state:UserSettings Default=100}"
+    Top="{state:UserSettings Default=100}"
+    Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
+        
+    xmlns:d3="http://research.microsoft.com/DynamicDataDisplay/1.0"
+        >
+    <Grid>
+    <d3:ChartPlotter Name="plotter">
+      <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="True" IsDefaultAxis="True" ShowMinorTicks="True" Visibility="Visible" />
+      <d3:InjectedPlotter Name="innerPlotter" Background="Aqua">
+        <d3:VerticalAxis Placement="Right"/>
+      </d3:InjectedPlotter>
+    </d3:ChartPlotter>
+  </Grid>
+</Window>

@@ -1,0 +1,197 @@
+﻿<Window
+  x:Class="HedgeHog.HedgeHogMainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:my="clr-namespace:Microsoft.Windows.Controls;assembly=WPFToolkit" 
+  xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+  Left="{state:UserSettings Default=100}" Top="{state:UserSettings Default=100}"
+  Height="{state:UserSettings Default=180}" Width="{state:UserSettings Default=800}"
+  WindowStyle="ThreeDBorderWindow" Closing="Window_Closing" 
+  Initialized="Window_Initialized" FontSize="13"
+	xmlns:tt="clr-namespace:HedgeHog"
+  DataContext="{Binding RelativeSource={RelativeSource Self}}"
+>
+  <Window.Title>
+    <Binding Path="title"/>
+  </Window.Title>
+	<Window.Resources>
+		<tt:ToolTips x:Key="ToolTips"/>
+	</Window.Resources>
+  <Grid Height="Auto">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition  Height="*"/>
+    </Grid.RowDefinitions>
+    <StackPanel Width="Auto">
+      <StackPanel.Resources>
+        <Style TargetType="{x:Type Label}">
+          <Setter Property="Padding" Value="1"></Setter>
+          <Setter Property="BorderThickness" Value="1"></Setter>
+          <Setter Property="BorderBrush" Value="LightSlateGray"></Setter>
+          <Setter Property="VerticalAlignment" Value="center"></Setter>
+        </Style>
+        <Style TargetType="{x:Type Button}">
+          <Setter Property="Padding" Value="0"></Setter>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="{x:Type ComboBox}">
+          <Setter Property="Padding" Value="0"></Setter>
+          <Setter Property="VerticalAlignment" Value="center"></Setter>
+        </Style>
+      </StackPanel.Resources>
+      <WrapPanel Width="Auto">
+        <WrapPanel.Resources>
+          <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Margin" Value="0,3,0,3"></Setter>
+          </Style>
+        </WrapPanel.Resources>
+				<TextBox Name="txtAccNum" Width="20" Text="{state:UserSettings}" ToolTip="Account" TextChanged="TextChanged">
+					<ToolTipService.ToolTip>
+						<TextBlock DataContext="{StaticResource ToolTips}">
+							<TextBlock.Text>
+								<Binding Path="CurrentDirectory" Mode="OneTime"/>
+							</TextBlock.Text>
+						</TextBlock>
+					</ToolTipService.ToolTip>
+				</TextBox>
+        <TextBox Name="txtPassword" Text="{state:UserSettings}" Width="18" ToolTip="Password" TextChanged="TextChanged"  />
+        <Button  Name="btnLogin" ClipToBounds="False" Click="Login" Margin="0" Height="Auto" VerticalAlignment="Center" Content="Login"></Button>
+        <ComboBox Name="cmbPair" Margin="2" Text="{state:UserSettings EUR/JPY}" SelectionChanged="OnPairChanged">
+          <ComboBoxItem>EUR/USD</ComboBoxItem>
+          <ComboBoxItem>EUR/JPY</ComboBoxItem>
+          <ComboBoxItem>EUR/GBP</ComboBoxItem>
+          <ComboBoxItem>USD/JPY</ComboBoxItem>
+          <ComboBoxItem>GBP/JPY</ComboBoxItem>
+          <ComboBoxItem>GBP/USD</ComboBoxItem>
+          <ComboBoxItem>USD/CHF</ComboBoxItem>
+          <ComboBoxItem>EUR/CHF</ComboBoxItem>
+          <ComboBoxItem>NZD/JPY</ComboBoxItem>
+          <ComboBoxItem>NZD/USD</ComboBoxItem>
+          <ComboBoxItem>CHF/JPY</ComboBoxItem>
+          <ComboBoxItem>AUD/CAD</ComboBoxItem>
+        </ComboBox>
+        <Border BorderBrush="Beige" BorderThickness="1">
+          <TextBlock VerticalAlignment="Center">
+        <CheckBox x:Name="chkDemo" Content="D" IsChecked="{state:UserSettings True}"  ToolTip="Demo"/>
+          </TextBlock>
+        </Border>
+        <Label>Lots:</Label>
+        <ComboBox Name="cmbLotsToTradeBuy" Margin="2"  Text="{state:UserSettings 10}" ToolTip="Buy">
+          <ComboBoxItem Tag="0">0</ComboBoxItem>
+          <ComboBoxItem Tag="1">1</ComboBoxItem>
+          <ComboBoxItem Tag="2">2</ComboBoxItem>
+          <ComboBoxItem Tag="3">3</ComboBoxItem>
+          <ComboBoxItem Tag="5">5</ComboBoxItem>
+          <ComboBoxItem Tag="10">10</ComboBoxItem>
+          <ComboBoxItem Tag="15">15</ComboBoxItem>
+          <ComboBoxItem Tag="20">20</ComboBoxItem>
+          <ComboBoxItem Tag="25">25</ComboBoxItem>
+          <ComboBoxItem Tag="30">30</ComboBoxItem>
+          <ComboBoxItem Tag="50">50</ComboBoxItem>
+          <ComboBoxItem Tag="75">75</ComboBoxItem>
+          <ComboBoxItem Tag="100">100</ComboBoxItem>
+          <ComboBoxItem Tag="150">150</ComboBoxItem>
+          <ComboBoxItem Tag="200">200</ComboBoxItem>
+        </ComboBox>
+        <ComboBox Name="cmbLotsToTradeSell" Margin="2"  Text="{state:UserSettings 10}" ToolTip="Sell">
+          <ComboBoxItem Tag="0">0</ComboBoxItem>
+          <ComboBoxItem Tag="1">1</ComboBoxItem>
+          <ComboBoxItem Tag="2">2</ComboBoxItem>
+          <ComboBoxItem Tag="3">3</ComboBoxItem>
+          <ComboBoxItem Tag="5">5</ComboBoxItem>
+          <ComboBoxItem Tag="10">10</ComboBoxItem>
+          <ComboBoxItem Tag="15">15</ComboBoxItem>
+          <ComboBoxItem Tag="20">20</ComboBoxItem>
+          <ComboBoxItem Tag="25">25</ComboBoxItem>
+          <ComboBoxItem Tag="30">30</ComboBoxItem>
+          <ComboBoxItem Tag="50">50</ComboBoxItem>
+          <ComboBoxItem Tag="75">75</ComboBoxItem>
+          <ComboBoxItem Tag="100">100</ComboBoxItem>
+          <ComboBoxItem Tag="150">150</ComboBoxItem>
+          <ComboBoxItem Tag="200">200</ComboBoxItem>
+        </ComboBox>
+        <Button Name="btnOpenChart" Click="btnOpenChart_Click" ToolTip="Show chart and trading signals" Content="Chart"></Button>
+        <Button Name="btnOpenMain" Click="btnOpenMain_Click" Content="Main" ToolTip="Open another main window"></Button>
+        <Button Name="btnOpenDB" Click="btnOpenDB_Click" Content="Save" ToolTip="Save settings to Settings.xml file"></Button>
+      </WrapPanel>
+      <WrapPanel Background="DarkSeaGreen" Width="Auto">
+        <Label Name="lblUsableMargin" ToolTip="Usable Margin Dollars">UM:</Label>
+        <Label Name="lblAccountBalance" ToolTip="Balance">B:</Label>
+        <Label Name="lblAccountEquity" ToolTip="Equity" Foreground="#FF002216" Background="Honeydew">E:</Label>
+        <Label Name="lblStartingBalance" ToolTip="Starting Balance">SB:</Label>
+        <TextBox Name="txtStartingBalance" Text="-0" TextChanged="TextChanged"></TextBox>
+        <TextBox Name="txtPriceToExit" Text="-0" TextChanged="TextChanged"></TextBox>
+        <TextBox Name="txtPriceToAdd" Text="{state:UserSettings 1}" ToolTip="Percent to increase exit price by" TextChanged="TextChanged"/>
+        <Label Content="MEH" ToolTip="Minimum Equity History"></Label>
+        <TextBox Name="txtMinEquityHistory"  Text="{state:UserSettings 1000000}" TextChanged="TextChanged" />
+      </WrapPanel>
+      <WrapPanel Background="AntiqueWhite" Width="Auto">
+        <Border BorderBrush="LightSlateGray">
+        <CheckBox Name="chkAutoPilot" ToolTip="Auto Pilot" Margin="2 0 2 0" IsChecked="{state:UserSettings True}" VerticalAlignment="Center">AP</CheckBox>
+        </Border>
+        <Border BorderBrush="LightSlateGray">
+          <CheckBox x:Name="chkAutoAdjust" Margin="2 0 2 0" IsChecked="{state:UserSettings True}" Content="AJ" VerticalAlignment="Center"/>
+        </Border>
+        <Label>Buy:</Label>
+        <CheckBox Name="chkCanBuy" IsChecked="True" VerticalAlignment="Center" />
+        <Label>Sell:</Label>
+        <CheckBox Name="chkCanSell" IsChecked="True" VerticalAlignment="Center" />
+        <Label Name="lblSpread">&lt;>:</Label>
+        <Label BorderThickness="0" ToolTip="Leverage">Lvg:</Label>
+        <TextBox Name="txtLeverage" Text="{state:UserSettings 400}" TextChanged="TextChanged" ></TextBox>
+        <Label ToolTip="Trade Delta">T^:</Label>
+        <TextBox Name="txtTradeDelta" ToolTip="Trade distance in pips." Text="{state:UserSettings 1}" TextChanged="TextChanged" ></TextBox>
+        <CheckBox Name="chkTradeDistanceUnisex" ToolTip="Trade Distance Unisex" IsChecked="{state:UserSettings False}" Content="T^U" VerticalAlignment="Center"/>
+        <Button Name="btnCloseAll" Click="ClosePositions" ToolTip="Close All Positions" Content="CA" />
+        <Button Name="btnTruncate" Click="TrancatePositions"  VerticalAlignment="Center" ToolTip="Truncate Hedged Position except 2 from each side" >TH</Button>
+      </WrapPanel>
+      <WrapPanel Name="wpSummary" Width="Auto">
+        <Grid Width="Auto">
+          <Grid.RowDefinitions>
+            <RowDefinition >
+              <RowDefinition.Resources>
+                <Style TargetType="{x:Type Label}">
+                  <Setter Property="Background" Value="AliceBlue" />
+                </Style>
+              </RowDefinition.Resources>
+            </RowDefinition>
+            <RowDefinition />
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="48" />
+            <ColumnDefinition Width="Auto" MinWidth="39" />
+            <ColumnDefinition Width="0" MaxWidth="0" />
+            <ColumnDefinition Width="Auto" MinWidth="29" />
+            <ColumnDefinition Width="Auto" MinWidth="29" />
+            <ColumnDefinition Width="Auto" MinWidth="32" />
+            <ColumnDefinition Width="Auto" MinWidth="47" />
+          </Grid.ColumnDefinitions>
+          <Label Name="lblBuyPL" Grid.Row="0" Grid.Column="0" Background="AliceBlue" >Buy PL:</Label>
+          <Label Name="lblBuyLots" Grid.Row="0" Grid.Column="1" Background="AliceBlue">Lots:</Label>
+          <Label Name="lblBuyLPP" Grid.Row="0" Grid.Column="2" Background="AliceBlue">LPP:</Label>
+          <Label Name="lblBuyPositions" Grid.Row="0" Grid.Column="3" Background="AliceBlue">Pos:</Label>
+          <Label Name="lblBuyPips" Grid.Row="0" Grid.Column="4" Background="AliceBlue">Pips:</Label>
+          <Label Name="lblBuyPipsToNet" Grid.Row="0" Grid.Column="5" Background="AliceBlue">PTN:</Label>
+          <Label Name="lblLotsLeft" Grid.Row="0" Grid.Column="6" ToolTip="Lots Left" Background="AliceBlue">LL:</Label>
+
+
+          <Label Name="lblSellPL" Grid.Row="1" Grid.Column="0" Background="Moccasin">Sell PL:</Label>
+          <Label Name="lblSellLots" Grid.Row="1" Grid.Column="1" Background="Moccasin">Lots:</Label>
+          <Label Name="lblSellLPP" Grid.Row="1" Grid.Column="2" Background="Moccasin">LPP:</Label>
+          <Label Name="lblSellPositions" Grid.Row="1" Grid.Column="3" Background="Moccasin">Pos:</Label>
+          <Label Name="lblSellPips" Grid.Row="1" Grid.Column="4" Background="Moccasin">Pips:</Label>
+          <Label Name="lblSellPipsToNet" Grid.Row="1" Grid.Column="5" Background="Moccasin">PTN:</Label>
+          <TextBlock Grid.Row="1" Grid.Column="6" Margin="0" Background="Moccasin">
+          <Label Name="lblPipsToMC" ToolTip="Pips To MC" Margin="0" >PMC:</Label>
+          <TextBox Name="txtPipsToMCHistory" Text="{state:UserSettings 100000}" ToolTip="PMC History"  TextChanged="TextChanged" Margin="0 -1 0 -1"/>
+          </TextBlock>
+        </Grid>
+      </WrapPanel>
+    </StackPanel>
+    <WrapPanel Grid.Row="1" Width="Auto" Height="Auto">
+      <my:DataGrid AutoGenerateColumns="True" Name="dataGrid1" Visibility="Collapsed" />
+      <TextBox Name="txtLog" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="Auto" Width="Auto"></TextBox>
+    </WrapPanel>
+
+  </Grid>
+</Window>
