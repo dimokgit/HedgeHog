@@ -21,6 +21,51 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WcfToHedgeHog", "..\WcfToHe
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "filterrow", "http://filterrow", "{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}"
 	ProjectSection(WebsiteProperties) = preProject
+		SccProjectName = ""
+		SccAuxPath = ""
+		SccLocalPath = ""
+		SccProvider = ""
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		SccProjectName = ""
+		SccAuxPath = ""
+		SccLocalPath = ""
+		SccProvider = ""
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		SccProjectName = ""
+		SccAuxPath = ""
+		SccLocalPath = ""
+		SccProvider = ""
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
+		SccAuxPath = ""
+		SccLocalPath = "."
+		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
+		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
+		SccAuxPath = ""
+		SccLocalPath = "."
+		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
+		TargetFramework = "3.5"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.Debug = "False"
+	EndProjectSection
+	ProjectSection(WebsiteProperties) = preProject
 		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
 		SccAuxPath = ""
 		SccLocalPath = "."
@@ -246,7 +291,7 @@ Global
 		SccWebProject0 = true
 		SccProjectUniqueName0 = http://filterrow
 		SccProjectName0 = \u0022$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService\u0022,\u0020RBDBAAAA
-		SccLocalPath0 = _10
+		SccLocalPath0 = _3
 		SccProvider0 = MSSCCI:Microsoft\u0020Visual\u0020SourceSafe
 		SccProjectEnlistmentChoice0 = 2
 	EndGlobalSection
