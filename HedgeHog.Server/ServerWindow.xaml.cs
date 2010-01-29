@@ -188,6 +188,7 @@ namespace HedgeHog {
     public double Angle {
       get { return Math.Atan(A) * (180 / Math.PI); }
     }
+    public double AngleRounded { get { return Math.Round(Angle / fw.PointSize, 2); } }
     public O2G.Price Price { get; set; }
     public DateTime ServerTime {
       get { return fw == null ? DateTime.Now : fw.ServerTime; }
@@ -393,7 +394,7 @@ namespace HedgeHog {
       set {
         _regressionCoeffs = value;
         A = value[1];
-        RaisePropertyChanged(() => Angle);
+        RaisePropertyChanged(() => AngleRounded);
       }
     }
     Signaler.DataPoint[] waves = new Signaler.DataPoint[] { };
@@ -678,7 +679,6 @@ namespace HedgeHog {
       var writeTo = (Action<FXW.Rate, double>)paramArray[3];
       var tickLast = (FXW.Rate)paramArray[4];
       var wi = (List<WaveInfo>)paramArray[5];
-      CorridorSpreadMinimum = SpreadByBarPeriod(ui.corridorHeightMinutes, false);
       try {
         while (true) {
           var coeffs = SetTicksPrice(ticksCopy, 1, readFrom, writeTo);
@@ -1138,6 +1138,7 @@ namespace HedgeHog {
       tradeStats.peakVolts = PeakVolt.Volts;
       tradeStats.valleyVolts = ValleyVolt.Volts;
       tradeStats.timeFrame = TimeframeInMinutes;
+      tradeStats.Angle = Angle;
       return tradeStats;
     }
 
@@ -1389,7 +1390,7 @@ namespace HedgeHog {
         var leaveOpenAfterTruncate = 0;
         while (tr.tradeAdded.Buy && tr.SellPositions > 0) {
           var plMin = profitMin(tr.tradesSell,3);
-          if (tr.SellNetPLPip >= plMin) {
+          if (tr.SellNetPLPip >= Math.Abs(plMin)) {
             closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
             break;
           }
@@ -1408,7 +1409,7 @@ namespace HedgeHog {
         }
         while (!tr.tradeAdded.Buy && tr.BuyPositions > 0) {
           var plMin = profitMin(tr.tradesBuy,3);
-          if (tr.BuyNetPLPip >= plMin) {
+          if (tr.BuyNetPLPip >= Math.Abs(plMin)) {
             closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
             break;
           }
@@ -1452,8 +1453,8 @@ namespace HedgeHog {
             t => t.PL >= (CorridorSpreadInPips / 2) && (-priceCurrent.Average + ticksLamda(t).Max(tick => tick.PriceAvg)) >= CorridorSpread(true)
             ).Select(t => t.Id));
         } else {
-          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= CorridorSpreadInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
-          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= CorridorSpreadInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
+          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL > CorridorSpreadInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
+          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL > CorridorSpreadInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
         }
       }
       #endregion

@@ -216,5 +216,6 @@ namespace HedgeHog {
     public double valleyPriceLow;
     public double valleyPriceLowAvg;
     public double CorridorSpreadAvg { get { return peakPriceHighAvg - valleyPriceLowAvg; } }
+    public double Angle;
 }
 }

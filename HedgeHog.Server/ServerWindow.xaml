@@ -93,7 +93,7 @@
         <TextBlock>:</TextBlock>
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
         <TextBlock Text="‡"></TextBlock>
-        <TextBlock Text="{Binding Angle,StringFormat=n5}"></TextBlock>
+        <TextBlock Text="{Binding AngleRounded}"></TextBlock>
         <CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>
 

@@ -45,17 +45,29 @@ namespace Order2GoAddIn {
       get { return _tradeWaveHeight; }
       set { _tradeWaveHeight = value; }
     }
-    public TradeRemark(int tradeWaveInMinutes, double tradeWaveHeight) {
+    double _angle = 0;
+    public double Angle {
+      get { return _angle; }
+      set { _angle = value; }
+    }
+    public TradeRemark(int tradeWaveInMinutes, double tradeWaveHeight,double angle) {
       TradeWaveInMinutes = tradeWaveInMinutes;
       TradeWaveHeight = Math.Round(tradeWaveHeight, 1);
+      Angle = Math.Round(angle, 2);
     }
     public TradeRemark(string remark) {
       var info = remark.Split(new[] { PIPE }, StringSplitOptions.RemoveEmptyEntries);
       if (info.Length > 0) int.TryParse(info[0], out _tradeWaveInMinutes);
       if (info.Length > 1) double.TryParse(info[1], out _tradeWaveHeight);
+      if (info.Length > 2) double.TryParse(info[2], out _angle);
     }
     public override string ToString() {
-      return string.Join(PIPE+"", new object[] { TradeWaveInMinutes.ToString("000"), TradeWaveHeight }.Select(o => o + "").ToArray());
+      return string.Join(PIPE+"", 
+        new object[] {
+          TradeWaveInMinutes.ToString("000"),
+          TradeWaveHeight ,
+          Angle
+        }.Select(o => o + "").ToArray());
     }
   }
   public static class RateExtensions {
