@@ -224,6 +224,7 @@
               <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
               <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
               <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
             </ComboBox>
             <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
               <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
@@ -233,6 +234,7 @@
               <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
               <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
               <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
             </ComboBox>
       </TextBlock>
             <Border BorderBrush="Peru" BorderThickness="1" Margin="1" VerticalAlignment="Center" MouseDown="Voltage_MouseDown" >
