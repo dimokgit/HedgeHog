@@ -1259,7 +1259,8 @@ namespace HedgeHog {
           var h = Math.Max(tickHigh.PriceAvg2 - tickHigh.PriceAvg, tickLow.PriceAvg2 - tickLow.PriceAvg);
           return position.Between(h / 2, h);
         });
-        var goTradeFoos = new[] { goTrade_0, goTrade_1, goTrade_2, goTrade_3, goTrade_4, goTrade_5, goTrade_6 };
+        var goTrade_7 = new Func<double, bool, bool>((position, buy) => position.Between(-SpreadAverageShortInPips, SpreadAverageShortInPips));
+        var goTradeFoos = new[] { goTrade_0, goTrade_1, goTrade_2, goTrade_3, goTrade_4, goTrade_5, goTrade_6, goTrade_7 };
         #endregion
 
         bool goBuy = false, goSell = false;

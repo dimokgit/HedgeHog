@@ -37,7 +37,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorMinimumPercent]Text" value="1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCorridorByUpDownRatio]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCorridorByMinimumVolatility]IsChecked" value="" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFramePercInterval]Text" value=".4" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFramePercInterval]Text" value=".9" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFramesFibRatioMaximum]Text" value="9.1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFramePercSmooth]Text" value="1.5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkGroupTicks]IsChecked" value="True" />
