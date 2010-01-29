@@ -140,11 +140,11 @@
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtRSITradeSignalBar]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtRSIProfit]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkRSIUseOffset]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnCorridorBorder]IsChecked" value="" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnCorridorBorder]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeByRsi]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeOnProfitAfter]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngle]Text" value="0.0" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value="0.0001" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value="0.00010" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMin]Text" value="0.00001" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeByFractalCoeff]Text" value="1" />
 </dictionary>

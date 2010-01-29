@@ -549,7 +549,7 @@ namespace HedgeHog {
           #region Statts
           var ts = ti.TradeStats;
           if (ts == null) return;
-          TradeInfo = new Order2GoAddIn.TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1));
+          TradeInfo = new Order2GoAddIn.TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1), ti.TradeStats.Angle / fw.PointSize);
           positionBuy = ts.positionBuy;
           positionSell = ts.positionSell;
           spreadAverage = ts.spreadAverage;
