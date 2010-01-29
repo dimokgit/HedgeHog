@@ -14,11 +14,11 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtTradeDelta]Text" value="1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTrade]Text" value="1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtStartingBalance]Text" value="5000" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPipsToMCHistory]Text" value="4988" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="4990" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPipsToMCHistory]Text" value="41" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="3960" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Left" value="494" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Top" value="-1" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[.]Height" value="203" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[.]Height" value="211" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Width" value="233" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeHighLow]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtMaximasCount]Text" value="3" />
@@ -144,7 +144,8 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeByRsi]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeOnProfitAfter]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngle]Text" value="0.0001" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value="0.00012" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMin]Text" value="-0.00010" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value=" 0.00007" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMin]Text" value="-0.00003" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeByFractalCoeff]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnNet]IsChecked" value="False" />
 </dictionary>
