@@ -2,13 +2,13 @@
 <dictionary>
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="3" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="153" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="200" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="499" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519040180" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Tziplyonak713" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="1000" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="0" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="156" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="5000" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="-4" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="218" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="458" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
@@ -43,9 +43,10 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkGroupTicks]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCachePriceHeight]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPair]Text" value="EUR/USD" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalMinutes]Text" value="0.2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalMinutes]Text" value="0.5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTradeByAngle]Text" value="0.00011" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountBig]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountSmall]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkDoRsi]IsChecked" value="True" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutesSchedule]Text" value="15:00:00-20:00:00=25&#xD;&#xA;20:00:00-23:00:00=10&#xD;&#xA;23:00:00-01:00:00=20" />
 </dictionary>
