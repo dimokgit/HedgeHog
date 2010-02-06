@@ -204,6 +204,7 @@
               <ComboBoxItem>∑p+1</ComboBoxItem>
               <ComboBoxItem>∑(p+1)</ComboBoxItem>
               <ComboBoxItem>1</ComboBoxItem>
+              <ComboBoxItem>(p+1)*N</ComboBoxItem>
             </ComboBox>
             <ComboBox SelectedIndex="{state:UserSettings Default=2}" Name="cbDensityFoo" ToolTip="Next Trade Density">
               <ComboBoxItem ToolTip="Max(Corridor,5min,MaxDistBtwTrade)">Max</ComboBoxItem>
