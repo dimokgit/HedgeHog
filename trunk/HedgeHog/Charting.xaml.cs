@@ -185,13 +185,14 @@ namespace HedgeHog {
     private bool tradeByRsi { get { return _chkTradeByRsi; } }
 
     public bool? _chkCloseOnCorridorBorder;
-    private bool? closeOnCorridorBorder {
+    public bool? CloseOnCorridorBorder {
       get { return _chkCloseOnCorridorBorder.HasValue ? _chkCloseOnCorridorBorder : null; }
       set { _chkCloseOnCorridorBorder = value.HasValue ? value : null; }
     }
     private void chkCloseOnCorridorBorder_Loaded(object sender, RoutedEventArgs e) {
+      CloseOnCorridorBorder = chkCloseOnCorridorBorder.IsChecked;
       DependencyPropertyDescriptor.FromProperty(CheckBox.IsCheckedProperty, this.GetType()).AddValueChanged(chkCloseOnCorridorBorder, (s, re) => {
-        closeOnCorridorBorder = chkCloseOnCorridorBorder.IsChecked;
+        CloseOnCorridorBorder = chkCloseOnCorridorBorder.IsChecked;
       });
     }
 
@@ -516,7 +517,7 @@ namespace HedgeHog {
             rsiTresholdSell = RsiTradeSignalTresholdSell,
             rsiProfit = this.RsiProfit,
             tradeByRsi = this.tradeByRsi,
-            closeOnCorridorBorder = this.closeOnCorridorBorder,
+            closeOnCorridorBorder = this.CloseOnCorridorBorder,
             closeOnNet = this.closeOnNet,
             tradeOnProfitAfter = this.TradeOnProfitAfter,
             tradeAngleMax = this.TradeAngleMax,
@@ -758,7 +759,7 @@ namespace HedgeHog {
     private void Checked(object sender, RoutedEventArgs e) {
       var chb = (sender as CheckBox);
       var name = chb.Name;
-      this.SetProperty("_" + name, chb.IsChecked);
+      this.SetProperty(name.Substring(3), chb.IsChecked);
     }
     private void txtBSPeriod_TextChanged(object sender, TextChangedEventArgs e) {
       var tb = (sender as TextBox);

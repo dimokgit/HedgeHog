@@ -251,6 +251,9 @@ namespace HedgeHog {
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
       return d1 <= value && value <= d2;
     }
+    public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {
+      return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
+    }
     public static void SetProperty(this object o, string p, object v) {
       var convert = new Func<object, Type, object>((valie, type) => {
         if (valie != null) {
