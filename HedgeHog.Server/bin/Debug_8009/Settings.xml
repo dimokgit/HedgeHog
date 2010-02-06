@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="2" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="552" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="153" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="1" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="221" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="499" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="MICR445814001" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="1113" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="5000" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="509" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="579" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="2" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="197" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="458" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="468" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtHighMinutes]Text" value="5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtHighMinutesHoursBack]Text" value="8" />
@@ -33,7 +33,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWaveRatioMinimum]Text" value="1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFrameMinutesMaximum]Text" value="10" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtVolatilityWieght1]Text" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutes]Text" value="10" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutes]Text" value="15" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorMinimumPercent]Text" value="1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCorridorByUpDownRatio]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCorridorByMinimumVolatility]IsChecked" value="" />
@@ -43,9 +43,10 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkGroupTicks]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCachePriceHeight]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPair]Text" value="EUR/USD" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalMinutes]Text" value="0.2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalMinutes]Text" value="0.1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTradeByAngle]Text" value="0.00011" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountBig]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountSmall]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkDoRsi]IsChecked" value="True" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutesSchedule]Text" value="15:00:00-20:00:00=25&#xD;&#xA;22:01:01-01:59:59=20" />
 </dictionary>

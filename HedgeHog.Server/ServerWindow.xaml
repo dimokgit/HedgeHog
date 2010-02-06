@@ -76,6 +76,7 @@
           <TextBlock Text="CHM:" ToolTip="Corridor Height Minutes"/>
           <TextBlock Text="{Binding CorridorSpreadMinimumInPips,StringFormat=n1}" ToolTip="Corridor Spread Minimum"/>
           <TextBox Text="{state:UserSettings Default=10}" TextChanged="TextChanged" Name="txtCorridorHeightMinutes"/>
+          <TextBlock Text="{Binding CorridorHeightMinutesBySchedule}" ToolTip="Corridor Height Minutes By Schedule"/>
 
           <TextBlock Text="CMP:" ToolTip="Corridor Minimum Percent"/>
           <TextBlock Text="{Binding CorridorSpreadInPips,StringFormat=n1}" ToolTip="Corridor Spread"/>
@@ -94,15 +95,9 @@
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
         <TextBlock Text="‡"></TextBlock>
         <TextBlock Text="{Binding AngleRounded}"></TextBlock>
+        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtAngleCMA" ToolTip="Angle CMA Period"/>
         <CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>
-
-        <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" ToolTip="Big Waves Count Minimum"/>
-        <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtWavesCountSmall" ToolTip="Small Waves Count Minimum"/>
-        
-        <TextBox Text="{state:UserSettings Default=//}" TextChanged="TextChanged_ResetTicks" Name="txtTimeFrameTimeStart" ToolTip="Time Start"/>
-        <Button Content="\/" Click="TimeFrameDown_Click"/>
-        <Button Content="/\" Click="TimeFrameUp_Click"/>
       </StackPanel>
       <StackPanel Orientation="Horizontal">
         <Border BorderBrush="LightGray" BorderThickness="1">
@@ -118,15 +113,21 @@
             <Label Content="{Binding RsiBuy}" ContentStringFormat="n0"/>
             <TextBlock Text="S:" ToolTip="RSI Buy Sell" />
             <Label Content="{Binding RsiSell}" ContentStringFormat="n0"/>
-            <CheckBox Name="chkDoRsi" BorderBrush="LightGray" BorderThickness="1" Content="DR" ToolTip="Do RSI" IsChecked="{state:UserSettings}" Checked="Checked" Unchecked="Checked"/>
 
             <TextBlock Text="VW:" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght1" ToolTip="Volatility Wieght 1"/>
+            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" ToolTip="Big Waves Count Minimum"/>
+            <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtWavesCountSmall" ToolTip="Small Waves Count Minimum"/>
+
+            <TextBox Text="{state:UserSettings Default=//}" TextChanged="TextChanged_ResetTicks" Name="txtTimeFrameTimeStart" ToolTip="Time Start"/>
+            <Button Content="\/" Click="TimeFrameDown_Click"/>
+            <Button Content="/\" Click="TimeFrameUp_Click"/>
           </WrapPanel>
         </Border>
       </StackPanel>
       <StackPanel Orientation="Horizontal">
+        <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True"></TextBox>
       </StackPanel>
         <StackPanel Orientation="Horizontal">
         <Border BorderBrush="LightGray" BorderThickness="1" ToolTip="15/10/5/1 Bar Average Spreads">
