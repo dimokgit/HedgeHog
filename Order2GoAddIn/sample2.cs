@@ -85,17 +85,81 @@ namespace Order2GoAddIn {
         output.Cast<double>().ToList().ForEach(d => { if (d != 0) setValue(rates[i], d); i++; });
       }
     }
-    public static IEnumerable<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates, bool showDouble) {
-      return rates.Where(r => r.Fractal.HasValue && (r.FractalBuy != 0 || r.FractalSell != 0));
+
+    private static bool CleanFractals(List<FXCoreWrapper.Rate> fractals) {
+      Func<FXW.Rate, FXW.Rate, FXW.Rate> compareLambda = (f1, f2) => {
+        var ff = new[] { f1, f2 };
+        return f1.FractalBuy != 0 ? ff.OrderBy(f => f.BidLow).Last() : ff.OrderBy(f => f.AskHigh).First();
+      };
+      var delete = fractals.Skip(1).Select((f, i) => new { f1 = f, f2 = fractals[i] }).Where(f => f.f1.Fractal == f.f2.Fractal)
+        .Select(f => compareLambda(f.f1, f.f2)).ToArray();
+      if (delete.Length > 0) {
+        var fractalsList = fractals.ToList();
+        delete.ToList().ForEach(d => fractals.Remove(d));
+        return true;
+      }
+      return false;
     }
-    public static IEnumerable<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates) {
-      return rates.Where(r => r.Fractal.HasValue && r.Fractal != 0);
+    public static List<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates) {
+      var fractals = rates.Where(r => r.HasFractal).ToList();
+      if (fractals.Count > 1) CleanFractals(fractals);
+      return fractals;
     }
     public static IEnumerable<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates, Func<FXW.Rate, bool> filter) {
       return rates.Where(filter).HasFractal();
-      //foreach (var rate in rates.Where(filter))
-      //  if (rate.Fractal.HasValue && rate.Fractal != 0) yield return rate;
     }
+    public static List<TBars> FindFractals<TBars>(this IEnumerable<TBars> rates, double waveHeight, TimeSpan period, double padRight, int count) where TBars : FXW.Rate {
+      var halfPeriod = TimeSpan.FromSeconds(period.TotalSeconds / 2.0);
+      var rightPeriod = TimeSpan.FromSeconds(period.TotalSeconds * padRight);
+      DateTime nextDate = DateTime.MaxValue;
+      var fractals = new List<TBars>();
+      var dateFirst = rates.Min(r => r.StartDate) + rightPeriod;
+      var dateLast = rates.Max(r => r.StartDate) - rightPeriod;
+      foreach (var rate in rates.Where(r => r.StartDate.Between(dateFirst, dateLast))) {
+        UpdateFractal(rates, rate, period);
+        if (rate.HasFractal) {
+          if (fractals.Count == 0) fractals.Add(rate);
+          else {
+            if (rate.Fractal == fractals.Last().Fractal) {
+              if (HedgeHog.Bars.BarBase.BiggerFractal(rate, fractals.Last()) == rate)
+                fractals[fractals.Count - 1] = rate;
+            } else {
+              var range = rates.Where(r => r.StartDate.Between(rate.StartDate, fractals.Last().StartDate)).ToArray();
+              if (range.RangeHeight() >= waveHeight) fractals.Add(rate);
+            }
+          }
+        }
+        if (fractals.Count == count) break;
+      }
+      return fractals;
+    }
+    //public static IEnumerable<TBars> FillFractals<TBars>(this IEnumerable<TBars> rates, TimeSpan period) where TBars : FXW.Rate {
+    //  return rates.FillFractals(period, 1);
+    //}
+    //public static IEnumerable<TBars> FillFractals<TBars>(this IEnumerable<TBars> rates, TimeSpan period, double padRight) where TBars : FXW.Rate {
+    //  var halfPeriod = TimeSpan.FromSeconds(period.TotalSeconds / 2.0);
+    //  var rightPeriod = TimeSpan.FromSeconds(period.TotalSeconds * padRight);
+    //  DateTime nextDate = DateTime.MaxValue;
+    //  foreach (var rate in rates.Where(r => r.StartDate.Between(rates.First().StartDate + rightPeriod, rates.Last().StartDate - rightPeriod)).OrderBarsDescending().ToArray()) {
+    //    UpdateFractal(rates, rate, period);
+    //    continue;
+    //    if (rate.StartDate <= nextDate) {
+    //      UpdateFractal(rates, rate, period);
+    //      if (rate.Fractal != 0)
+    //        nextDate = rate.StartDate.Subtract(halfPeriod);
+    //    } else rate.FractalBuy = rate.FractalSell = 0;
+    //  }
+    //  return rates;
+    //}
+    static double RangeHeight<TBar>(this IEnumerable<TBar> rates) where TBar : FXW.Rate {
+      return rates.Count() == 0 ? 0 : rates.Max(r => r.AskHigh) - rates.Min(r => r.BidLow);
+    }
+    static void UpdateFractal<TBars>(IEnumerable<TBars> rates, TBars rate, TimeSpan period) where TBars : FXW.Rate {
+      var ratesInRange = rates.Where(r => r.StartDate.Between(rate.StartDate - period, rate.StartDate + period)).ToArray();
+      rate.FractalSell = rate.AskHigh >= ratesInRange.Max(r => r.AskHigh) ? HedgeHog.Bars.FractalType.Sell : HedgeHog.Bars.FractalType.None;
+      rate.FractalBuy = rate.BidLow <= ratesInRange.Min(r => r.BidLow) ? HedgeHog.Bars.FractalType.Buy : HedgeHog.Bars.FractalType.None;
+    }
+
     public static FXW.Rate[] FillFractals(this FXW.Rate[] rates) {
       for (int i = 4; i < rates.Length; i++) {
         UpdateFractal(rates, i);
@@ -107,15 +171,15 @@ namespace Order2GoAddIn {
         var curr = rates[period - 2].BidHigh;
         if (curr > rates[period - 4].BidHigh && curr > rates[period - 3].BidHigh &&
             curr > rates[period - 1].BidHigh && curr > rates[period].BidHigh) {
-          rates[period - 2].FractalSell = 1;
+          rates[period - 2].FractalSell = HedgeHog.Bars.FractalType.Sell;
         } else
-          rates[period - 2].FractalSell = 0;
+          rates[period - 2].FractalSell = HedgeHog.Bars.FractalType.None;
         curr = rates[period - 2].AskLow;
         if (curr < rates[period - 4].AskLow && curr < rates[period - 3].AskLow &&
             curr < rates[period - 1].AskLow && curr < rates[period].AskLow)
-          rates[period - 2].FractalBuy = -1;
+          rates[period - 2].FractalBuy = HedgeHog.Bars.FractalType.Buy;
         else
-          rates[period - 2].FractalBuy = 0;
+          rates[period - 2].FractalBuy = HedgeHog.Bars.FractalType.None;
       }
     }
     public static FXW.Rate[] FillRsi(this FXW.Rate[] rates, int period, Func<FXW.Rate, double> getPrice) {
@@ -158,19 +222,6 @@ namespace Order2GoAddIn {
         else
           rates[period].PriceRsi = 100 - (100 / (1 + positive / negative));
       }
-    }
-
-    public static IEnumerable<TBars> FillFractals<TBars>(this IEnumerable<TBars> rates, TimeSpan period) where TBars : FXW.Rate {
-      DateTime nextDate = rates.First().StartDate;
-      foreach (var rate in rates.Where(r => r.StartDate.Between(rates.First().StartDate + period, rates.Last().StartDate - period) && !r.Fractal.HasValue).ToArray()) {
-          UpdateFractal(rates, rate, period);
-      }
-      return rates;
-    }
-    static void UpdateFractal<TBars>(IEnumerable<TBars> rates, TBars rate, TimeSpan period) where TBars : FXW.Rate {
-      var ratesInRange = rates.Where(r => r.StartDate.Between(rate.StartDate - period, rate.StartDate + period)).ToArray();
-      rate.FractalSell = ratesInRange.Max(r => r.BidHigh) == rate.BidHigh ? 1 : 0;
-      rate.FractalBuy = ratesInRange.Min(r => r.AskLow) == rate.AskLow ? -1 : 0;
     }
 
 

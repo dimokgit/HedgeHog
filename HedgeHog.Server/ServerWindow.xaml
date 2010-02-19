@@ -117,7 +117,7 @@
             <TextBlock Text="VW:" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght1" ToolTip="Volatility Wieght 1"/>
-            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" ToolTip="Big Waves Count Minimum"/>
+            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" Background="{Binding FractalWaveColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|Transparent}" ToolTip="Big Waves Count Minimum"/>
             <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtWavesCountSmall" ToolTip="Small Waves Count Minimum"/>
 
             <TextBox Text="{state:UserSettings Default=//}" TextChanged="TextChanged_ResetTicks" Name="txtTimeFrameTimeStart" ToolTip="Time Start"/>
@@ -127,7 +127,10 @@
         </Border>
       </StackPanel>
       <StackPanel Orientation="Horizontal">
-        <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True"></TextBox>
+        <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True" Background="Transparent"></TextBox>
+        <Border BorderBrush="{Binding FractalWaveBuySellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" BorderThickness="1">
+          <TextBlock Name="txtFractalWaves" Text="{Binding FractalWavesText}" />
+        </Border>
       </StackPanel>
         <StackPanel Orientation="Horizontal">
         <Border BorderBrush="LightGray" BorderThickness="1" ToolTip="15/10/5/1 Bar Average Spreads">
