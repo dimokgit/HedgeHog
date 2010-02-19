@@ -137,43 +137,43 @@ namespace Order2GoAddIn {
       );
     }
 
-    static void FractalSell<T>(T[] rates,T rate)where T:FXCoreWrapper.Rate {
-      if (rates[1].AskHigh > Math.Max(rates[0].AskHigh, rates[2].AskHigh))
-        rate.FractalSell = rates[2].PriceClose;
-      else rate.FractalSell = 0;
-    }
-    static void FractalBuy<T>(T[] rates,T rate) where T : FXCoreWrapper.Rate {
-      if (rates[1].BidLow < Math.Min(rates[0].BidLow, rates[2].BidLow))
-        rate.FractalBuy = rates[2].PriceClose;
-      else rate.FractalBuy = 0;
-    }
-    public static void FillFractal_<T>(this IEnumerable<T> ticks) where T : FXCoreWrapper.Rate {
-      var lastFractal = ticks.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
-      var startDate = lastFractal == null ? ticks.First().StartDate.AddMinutes(-3): lastFractal.StartDate;
-      ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
-          var ticksLocal = ticks
-            .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-3), t.StartDate))
-            .ToArray().GetMinuteTicks(1).ToArray();
-          if (ticksLocal.Length > 3) {
-            FractalSell(ticksLocal.Skip(1).ToArray(), t);
-            FractalBuy(ticksLocal.Skip(1).ToArray(), t);
-          }
-      }
-      );
-      var fb = ticks.Where(t => t.FractalBuy > 0).ToArray();
-      var fs = ticks.Where(t => t.FractalSell > 0).ToArray();
-    }
-    public static void FillFractal(this FXCoreWrapper.Rate[] rates) {
-      var lastFractal = rates.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
-      var startDate = lastFractal == null ? rates.First().StartDate.AddMinutes(-3) : lastFractal.StartDate;
-      for (int i = 1; i < rates.Length - 1; i++) {
-        var ratesLocal = new[] { rates[i - 1], rates[i], rates[i + 1] };
-        FractalSell(ratesLocal, rates[i]);
-        FractalBuy(ratesLocal, rates[i]);
-      }
-      var fb = rates.Where(t => t.FractalBuy > 0).ToArray();
-      var fs = rates.Where(t => t.FractalSell > 0).ToArray();
-    }
+    //static void FractalSell<T>(T[] rates,T rate)where T:FXCoreWrapper.Rate {
+    //  if (rates[1].AskHigh > Math.Max(rates[0].AskHigh, rates[2].AskHigh))
+    //    rate.FractalSell = rates[2].PriceClose;
+    //  else rate.FractalSell = 0;
+    //}
+    //static void FractalBuy<T>(T[] rates,T rate) where T : FXCoreWrapper.Rate {
+    //  if (rates[1].BidLow < Math.Min(rates[0].BidLow, rates[2].BidLow))
+    //    rate.FractalBuy = rates[2].PriceClose;
+    //  else rate.FractalBuy = 0;
+    //}
+    //public static void FillFractal_<T>(this IEnumerable<T> ticks) where T : FXCoreWrapper.Rate {
+    //  var lastFractal = ticks.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
+    //  var startDate = lastFractal == null ? ticks.First().StartDate.AddMinutes(-3): lastFractal.StartDate;
+    //  ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
+    //      var ticksLocal = ticks
+    //        .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-3), t.StartDate))
+    //        .ToArray().GetMinuteTicks(1).ToArray();
+    //      if (ticksLocal.Length > 3) {
+    //        FractalSell(ticksLocal.Skip(1).ToArray(), t);
+    //        FractalBuy(ticksLocal.Skip(1).ToArray(), t);
+    //      }
+    //  }
+    //  );
+    //  var fb = ticks.Where(t => t.FractalBuy > 0).ToArray();
+    //  var fs = ticks.Where(t => t.FractalSell > 0).ToArray();
+    //}
+    //public static void FillFractal(this FXCoreWrapper.Rate[] rates) {
+    //  var lastFractal = rates.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
+    //  var startDate = lastFractal == null ? rates.First().StartDate.AddMinutes(-3) : lastFractal.StartDate;
+    //  for (int i = 1; i < rates.Length - 1; i++) {
+    //    var ratesLocal = new[] { rates[i - 1], rates[i], rates[i + 1] };
+    //    FractalSell(ratesLocal, rates[i]);
+    //    FractalBuy(ratesLocal, rates[i]);
+    //  }
+    //  var fb = rates.Where(t => t.FractalBuy > 0).ToArray();
+    //  var fs = rates.Where(t => t.FractalSell > 0).ToArray();
+    //}
 
     public static FXCoreWrapper.Rate[] GetMinuteTicks(this IEnumerable<FXCoreWrapper.Rate> fxTicks, int period, bool round) {
       if (!round) return GetMinuteTicks(fxTicks, period);
@@ -441,9 +441,6 @@ namespace Order2GoAddIn {
         : base(price, isHistory) {
         Row = row;
       }
-      public override string ToString() {
-        return string.Format("{0:dd HH:mm:ss}:{1}/{2}",StartDate,AskClose,BidClose);
-      }
       #region IEquatable<Tick> Members
 
       public override bool Equals(BarBase other) {
@@ -461,12 +458,12 @@ namespace Order2GoAddIn {
     }
     private static object lockHistory = new object();
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public IEnumerable<Tick> GetTicks(DateTime startDate, DateTime endDate, int barsMax) {
+    public List<Tick> GetTicks(DateTime startDate, DateTime endDate, int barsMax) {
       lock (lockHistory) {
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistory(Pair, "t1", startDate, endDate, barsMax, true, true)).Cast<FXCore.MarketRateAut>().ToArray();
         //);
-        return mr.Select((r, i) => new Tick(r.StartDate, r.AskOpen, r.BidOpen, i, true));
+        return mr.Select((r, i) => new Tick(r.StartDate, r.AskOpen, r.BidOpen, i, true)).ToList();
       }
     }
 
@@ -479,16 +476,16 @@ namespace Order2GoAddIn {
       int timeoutCount = 2;
       if (ticks.Count() > 0) {
         endDate = ticks.Min(b => b.StartDate);
-        while (ticks.Count()<tickCount) {
+        while (ticks.Count()<tickCount && endDate <= ServerTime.AddMinutes(1)) {
           try {
             var t = GetTicks(endDate.Round().AddMinutes(-2), endDate.Round().AddMinutes(1), Math.Min(maxTicks, tickCount - ticks.Count()));
-            if (t.Count() == 0) break;
+            //if (t.Count() == 0) break;
             ticks = ticks.Union(t).ToList();
             if (endDate > ticks.Min(b => b.StartDate)) {
               endDate = ticks.Min(b => b.StartDate);
               System.Diagnostics.Debug.WriteLine("Ticks:" + ticks.Count()+" @ "+endDate.ToLongTimeString());
             } else
-              endDate = endDate.AddSeconds(-30);
+              endDate = endDate.AddSeconds(-3);
           } catch (Exception exc) {
             if (exc.Message.ToLower().Contains("timeout")) {
               coreFX.LogOn();

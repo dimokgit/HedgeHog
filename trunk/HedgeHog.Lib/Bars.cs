@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 [assembly:CLSCompliant(true)]
 namespace HedgeHog.Bars {
+  public enum FractalType {None = 0, Buy = -1, Sell = 1 };
   public abstract class BarBase : IEquatable<BarBase> {
     public DateTime StartDate { get; set; }
     public readonly bool IsHistory;
@@ -40,9 +41,23 @@ namespace HedgeHog.Bars {
     public double? PriceTsiCR { get; set; }
     public double[] PriceCMA { get; set; }
     public double PriceStdDev { get; set; }
-    public double? Fractal { get { return FractalSell + FractalBuy; } }
-    public double? FractalBuy { get; set; }
-    public double? FractalSell { get; set; }
+    public FractalType Fractal {
+      get { return (int)FractalSell + FractalBuy; }
+      set {
+        if (value == FractalType.None) FractalBuy = FractalSell = FractalType.None;
+        else if (value == FractalType.Buy) FractalBuy = value;
+        else FractalSell = value;
+      }
+    }
+    public FractalType FractalBuy { get; set; }
+    public FractalType FractalSell { get; set; }
+    public double? FractalPrice {
+      get { 
+        return Fractal == FractalType.None ? (double?)null: Fractal == FractalType.Buy? BidLow :  AskHigh; }
+    }
+    public bool HasFractal { get { return Fractal != FractalType.None; } }
+    public bool HasFractalSell { get { return FractalSell == FractalType.Sell; } }
+    public bool HasFractalBuy { get { return FractalBuy == FractalType.Buy; } }
 
     public int Count { get; set; }
 
@@ -76,7 +91,17 @@ namespace HedgeHog.Bars {
 
     public static bool operator ==(BarBase b1, BarBase b2) { return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2); }
     public static bool operator !=(BarBase b1, BarBase b2) { return (object)b1 == null ? (object)b2 == null ? false : !b2.Equals(b1) : !b1.Equals(b2); }
+    public static TBar BiggerFractal<TBar>(TBar b1, TBar b2) where TBar : BarBase{
+      if (b1.Fractal == b2.Fractal) {
+        if (b1.Fractal == FractalType.Buy) return b1.FractalPrice < b2.FractalPrice ? b1 : b2;
+        if (b1.Fractal == FractalType.Sell) return b1.FractalPrice > b2.FractalPrice ? b1 : b2;
+        return null;
+      } else return null;
+    }
 
+    public override string ToString() {
+      return string.Format("{0:dd HH:mm:ss}:{1}/{2}", StartDate, AskHigh, BidLow);
+    }
     public override bool Equals(object obj) {
       return obj is BarBase ? Equals(obj as BarBase) : false;
     }

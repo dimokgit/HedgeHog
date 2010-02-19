@@ -271,6 +271,8 @@ namespace HedgeHog {
       LineMax = voltageHigh;
       LineMaxAvg = priceMaxAvg;
       LineMin = voltageCurr;
+      LineTimeMax = timeHigh;
+      LineTimeMin = timeCurr;
       return Ticks.ToArray();
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle,
         (DispatcherOperationCallback)delegate(object o)
@@ -278,8 +280,6 @@ namespace HedgeHog {
         LineMinAvg = priceMinAvg;
         LineNetSell = netSell;
         LineNetBuy = netBuy;
-        LineTimeMax = timeHigh;
-        LineTimeMin = timeCurr;
         LineAvgAsk = priceAverageAskBid.OrderBy(p => p).Last();
         LineAvgBid = priceAverageAskBid.OrderBy(p => p).First();
 
