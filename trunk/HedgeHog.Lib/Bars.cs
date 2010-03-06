@@ -5,6 +5,7 @@ using System.Text;
 [assembly:CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
+  public enum OverlapType { None = 0, Up = 1, Down = -1 };
   public abstract class BarBase : IEquatable<BarBase> {
     public DateTime StartDate { get; set; }
     public readonly bool IsHistory;
@@ -53,12 +54,30 @@ namespace HedgeHog.Bars {
     public FractalType FractalSell { get; set; }
     public double? FractalPrice {
       get { 
-        return Fractal == FractalType.None ? (double?)null: Fractal == FractalType.Buy? BidLow :  AskHigh; }
+        return Fractal == FractalType.None ? (double?)null: Fractal == FractalType.Buy? PriceLow :  PriceHigh; }
     }
+    public double FractalWave(BarBase rate) { return Math.Abs((this.FractalPrice - rate.FractalPrice).Value); }
     public bool HasFractal { get { return Fractal != FractalType.None; } }
     public bool HasFractalSell { get { return FractalSell == FractalType.Sell; } }
     public bool HasFractalBuy { get { return FractalBuy == FractalType.Buy; } }
 
+    public OverlapType GetOverlap(BarBase bar) {
+      OverlapType ret = OverlapType.None;
+      if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Up;
+      else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Down;
+      //else if (bar.PriceLow.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Down;
+      //else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Down;
+      //else if (bar.PriceHigh.Between(this.PriceLow, this.PriceHigh)) ret = OverlapType.Up;
+      if (ret != OverlapType.None) Overlap = this.StartDate - bar.StartDate;
+      return ret;
+    }
+    public TimeSpan Overlap { get; set; }
+
+    public void FillOverlap<TBar>(IEnumerable<TBar> bars) where TBar : BarBase {
+      foreach (var bar in bars) {
+        if (GetOverlap(bar) == OverlapType.None) return;
+      }
+    }
     public int Count { get; set; }
 
     public BarBase() { }
@@ -121,6 +140,10 @@ namespace HedgeHog.Bars {
     public int Slope { get { return Math.Sign(Next.Value - Value); } }
   }
   public static class Extensions {
+    public static void FillOverlaps<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+      foreach (var bar in bars)
+        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate).Take(10));
+    }
     public static void SetCMA<TBars>(this IEnumerable<TBars> ticks, int cmaPeriod) where TBars : BarBase {
       double? cma1 = null;
       double? cma2 = null;

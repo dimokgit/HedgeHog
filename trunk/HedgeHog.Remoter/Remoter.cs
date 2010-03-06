@@ -76,11 +76,13 @@ namespace HedgeHog {
     public int goTradeFooBuy = 3;
     public int goTradeFooSell = 3;
     public int densityFoo = 2;
-    public int lotsToTradeFoo = 3;
+    public int lotsToTradeFooBuy = 3;
+    public int lotsToTradeFooSell = 3;
     public int DecisionFoo = 10;
     public double profitMin = -.5;
     public bool doTrend;
     public bool tradeByDirection = true;
+    public bool closeAllOnTrade = false;
     public bool setLimitOrder = true;
     public double closeTradeFibRatio = .5;
     public bool closeOnProfitOnly;
@@ -125,11 +127,13 @@ namespace HedgeHog {
       this.goTradeFooBuy == other.goTradeFooBuy &&
       this.goTradeFooSell == other.goTradeFooSell &&
       this.densityFoo == other.densityFoo &&
-      this.lotsToTradeFoo == other.lotsToTradeFoo &&
+      this.lotsToTradeFooBuy == other.lotsToTradeFooBuy &&
+      this.lotsToTradeFooSell == other.lotsToTradeFooSell &&
       this.DecisionFoo == other.DecisionFoo &&
       this.profitMin == other.profitMin &&
       this.doTrend == other.doTrend &&
       this.tradeByDirection == other.tradeByDirection &&
+      this.closeAllOnTrade == other.closeAllOnTrade &&
       this.setLimitOrder == other.setLimitOrder &&
       this.closeTradeFibRatio == other.closeTradeFibRatio &&
       this.closeOnProfitOnly == other.closeOnProfitOnly &&
@@ -164,11 +168,13 @@ namespace HedgeHog {
           goTradeFooBuy ^
           goTradeFooSell ^
           densityFoo ^
-          lotsToTradeFoo ^
+          lotsToTradeFooBuy ^
+          lotsToTradeFooSell ^
           DecisionFoo ^
           profitMin.GetHashCode() ^
           doTrend.GetHashCode() ^
           tradeByDirection.GetHashCode() ^
+          closeAllOnTrade.GetHashCode() ^
           setLimitOrder.GetHashCode() ^
           closeTradeFibRatio.GetHashCode() ^
           closeOnProfitOnly.GetHashCode() ^

@@ -158,6 +158,9 @@ namespace HedgeHog {
     public bool _chkCloseOnNet;
     private bool closeOnNet { get { return _chkCloseOnNet; } }
 
+    public bool _chkCloseAllOnTrade;
+    private bool closeAllOnTrade { get { return _chkCloseAllOnTrade; } }
+    
     private bool sellOnProfitLast { get { return Lib.GetChecked(chkSellOnProfitLast).Value; } }
     private bool closeOnProfitOnly { get { return Lib.GetChecked(chkCloseOnProfitOnly).Value; } }
     private bool doTrend { get { return Lib.GetChecked(chkDoTrend).Value; } }
@@ -201,7 +204,9 @@ namespace HedgeHog {
     public int _txtFoo;
     private int fooNumber { get { return _txtFoo; } }
 
-    private int fooPosition { get { return Lib.GetComboBoxIndex(cbPositionFoo); } }
+    private int fooPositionBuy { get { return Lib.GetComboBoxIndex(cbPositionFooBuy); } }
+    private int fooPositionSell { get { return Lib.GetComboBoxIndex(cbPositionFooSell); } }
+
     private int fooDensity { get { return Lib.GetComboBoxIndex(cbDensityFoo); } }
     private int fooGoTradeBuy { get { return Lib.GetComboBoxIndex(cbGoTradeBuy); } }
     private int fooGoTradeSell { get { return Lib.GetComboBoxIndex(cbGoTradeSell); } }
@@ -495,10 +500,12 @@ namespace HedgeHog {
             goTradeFooBuy = this.fooGoTradeBuy,
             goTradeFooSell = this.fooGoTradeSell,
             highBarMinutes = this.highMinutes,
-            lotsToTradeFoo = this.fooPosition,
+            lotsToTradeFooBuy = this.fooPositionBuy,
+            lotsToTradeFooSell = this.fooPositionSell,
             profitMin = this.profitMin,
             sellOnProfitLast = this.sellOnProfitLast,
             closeOnProfitOnly = this.closeOnProfitOnly,
+            closeAllOnTrade = this.closeAllOnTrade,
             shortStack = this.shortStack,
             shortStackTruncateOffset = this.shortStackTruncateOffset,
             corridorSmoothSeconds = this.corridorSmoothSeconds,
@@ -759,7 +766,7 @@ namespace HedgeHog {
     private void Checked(object sender, RoutedEventArgs e) {
       var chb = (sender as CheckBox);
       var name = chb.Name;
-      this.SetProperty(name.Substring(3), chb.IsChecked);
+      this.SetProperty("_"+name, chb.IsChecked);
     }
     private void txtBSPeriod_TextChanged(object sender, TextChangedEventArgs e) {
       var tb = (sender as TextBox);
@@ -922,8 +929,6 @@ namespace HedgeHog {
 
     public int RsiBuy { get { return (int)GetValue(RsiBuyProperty); } set { SetValue(RsiBuyProperty, value); } }    public static readonly DependencyProperty RsiBuyProperty = DependencyProperty.Register("RsiBuy", typeof(int), typeof(ViewModel));
     public int RsiSell { get { return (int)GetValue(RsiSellProperty); } set { SetValue(RsiSellProperty, value); } }    public static readonly DependencyProperty RsiSellProperty = DependencyProperty.Register("RsiSell", typeof(int), typeof(ViewModel));
-
-
 
   }
   #endregion
