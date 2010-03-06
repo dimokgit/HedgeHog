@@ -57,8 +57,8 @@ namespace TestHH {
     public void MyTestInitialize() {
       var core = new Order2GoAddIn.CoreFX(true);
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
-      if (!core.LogOn("MICR424717001", "5890", true)) UT.Assert.Fail("Login");
-      o2g = new FXCoreWrapper(core, "EUR/JPY");
+      if (!core.LogOn("MICR455733001", "2805", true)) UT.Assert.Fail("Login");
+      o2g = new FXCoreWrapper(core, "EUR/USD");
     }
 
     void core_LoginError(Exception exc) {
@@ -80,6 +80,32 @@ namespace TestHH {
     public void IndicatorList() {
       Indicators.List();
     }
+    [TestMethod]
+    public void Overlaps() {
+      Stopwatch timer = Stopwatch.StartNew(); timer.Start();
+      var rates = o2g.GetBarsBase(1, DateTime.Now.AddHours(-1), DateTime.FromOADate(0)).ToArray();
+      Debug.WriteLine("Get Ticks:" + timer.Elapsed.TotalSeconds+" sec.");
+      timer.Reset(); timer.Start();
+      rates.OrderBarsDescending().FillOverlaps();
+      Debug.WriteLine("Get Overlap:" + timer.Elapsed.TotalSeconds + " sec.");
+      var stDevSeconds = rates.StdDev(r => r.Overlap.TotalSeconds);
+      var avgSeconds = rates.Average(r => r.Overlap.TotalSeconds);
+      Debug.WriteLine("stDev:" + TimeSpan.FromSeconds(stDevSeconds).TotalMinutes);
+      Debug.WriteLine("average:" + TimeSpan.FromSeconds(avgSeconds).TotalMinutes);
+      Debug.WriteLine("Wave Overlap:" + TimeSpan.FromSeconds(stDevSeconds * 2 + avgSeconds).TotalMinutes);
+
+      var overlaps = rates.Select(r => new { Date = r.StartDate, Over = r.Overlap }).ToArray();
+      //SaveToFile(rates, getRsi, "C:\\RSI_M1.csv");
+      //Debug.WriteLine("StdDev:" + rates.StdDev(getRsi));
+      //Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
+    }
+    public void CmaBars() {
+      var rates = o2g.GetBars(1, DateTime.Now.AddMinutes(-320));
+      var sw = Stopwatch.StartNew();
+      rates.SetCMA(1);
+      Debug.WriteLine("Get CMABars:" + sw.Elapsed.TotalSeconds);
+      SaveToFile(rates, r => r.PriceCMA[2], "C:\\CMA.csv");
+    }
     public void CMA() {
       var ticks = o2g.GetTicks(5000).ToArray();
       var sw = Stopwatch.StartNew();
@@ -93,10 +119,10 @@ namespace TestHH {
       var sw = Stopwatch.StartNew();
       var rates = ticks.ToArray().GroupTicksToRates().ToArray();
       var startDate = rates.Last().StartDate.AddMinutes(-5);
-      rates.Where(r => r.StartDate < startDate).ToArray().FillFractals(TimeSpan.FromMinutes(1));
+      rates.Where(r => r.StartDate < startDate).ToArray().FindFractals(0,TimeSpan.FromMinutes(1),1,100);
       Debug.WriteLine("Get Fractal:" + sw.Elapsed.TotalSeconds);
       sw.Reset();
-      rates.FillFractals(TimeSpan.FromMinutes(1));
+      rates.FindFractals(0,TimeSpan.FromMinutes(1),1,100);
       Debug.WriteLine("Get Fractal:" + sw.Elapsed.TotalSeconds);
       SaveToFile(rates, r=>r.Fractal, "C:\\Wave.csv");
     }
@@ -116,7 +142,6 @@ namespace TestHH {
       Debug.WriteLine("Get Fractal:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
-      var f = rates.Select(r => new { r.StartDate, Fractal = r.FractalBuy + r.FractalSell }).ToArray();
       Debug.WriteLine("Get Fractal:" + (DateTime.Now - timer).TotalSeconds);
 
       SaveToFile(rates, getTsi, "C:\\FRACTAL.csv");
@@ -161,25 +186,13 @@ namespace TestHH {
       Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
       SaveToFile(rates, getTsi, "C:\\TSI_M1.csv");
     }
-    public void RSI() {
-      DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getRsi = r => r.PriceRsi;
-      Action<FXW.Rate, double?> setRsi = (r, d) => r.PriceRsi = d;
-      FXW.Rate[] rates = o2g.GetBarsBase(1,DateTime.Parse("12/3/09 00:00"),DateTime.FromOADate(0)).OrderBars().ToArray();
-      Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
-
-      rates.FillRSI(14, r => r.PriceClose, setRsi);
-      SaveToFile(rates, getRsi, "C:\\RSI_M1.csv");
-      Debug.WriteLine("StdDev:" + rates.StdDev(getRsi));
-      Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
-    }
     public void Fractals() {
       DateTime timer = DateTime.Now;
       FXW.Rate[] rates = o2g.GetBars(1,DateTime.Now.AddHours(-8)).ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
       Func<FXCoreWrapper.Rate , double> getFractal = t => t.FractalBuy > 0 ? -1 : t.FractalSell > 0 ? 1 : 0;
       timer = DateTime.Now;
-      rates.FillFractal();
+      rates.FillFractal((r,d)=>r.Fractal = (FractalType)d);
       Debug.WriteLine("Get Fractal:" + (DateTime.Now - timer).TotalSeconds);
       SaveToFile(rates, getFractal, "C:\\Fractal.csv");
     }
@@ -191,12 +204,11 @@ namespace TestHH {
       Debug.WriteLine("Get Ticks:" + (DateTime.Now-timer).TotalSeconds);
 
       timer = DateTime.Now;
-      rates.FillRSI(14, r => r.PriceClose, getRsi, setRsi);
+      rates.FillRsi(14, r => r.PriceClose);
       SaveToFile(rates, getRsi, "C:\\RSI.csv");
       Debug.WriteLine("StdDev:" + rates.StdDev(getRsi));
       Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
     }
-    [TestMethod]
     public void GetRSI() {
       var rates = o2g.GetTicks(10000).ToArray();
       var t = DateTime.Now;

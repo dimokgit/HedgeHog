@@ -89,13 +89,13 @@ namespace Order2GoAddIn {
        select new { tick, dp.Point }
                   ).ToList().ForEach(tdp => tdp.tick.PriceRlw = tdp.Point);
     }
-    public static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period, Func<FXCoreWrapper.Rate, double> priceSource, Action<FXCoreWrapper.Rate, double?> priceRsi) {
+    private static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period, Func<FXCoreWrapper.Rate, double> priceSource, Action<FXCoreWrapper.Rate, double?> priceRsi) {
       (from dp in Indicators.RSI(ticks, priceSource, period)
                   join tick in ticks on dp.Time equals tick.StartDate
                   select new { tick, dp.Point }
                   ).ToList().ForEach(tdp => priceRsi(tdp.tick, tdp.Point));
     }
-    public static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period,
+    private static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period,
       Func<FXCoreWrapper.Rate, double> priceSource, Func<FXCoreWrapper.Rate, double?> priceDestination, 
       Action<FXCoreWrapper.Rate, double?> priceRsi) 
     {
@@ -903,6 +903,8 @@ namespace Order2GoAddIn {
 
     #region FIX
     public void FixOrderOpen(bool buy, int lots, double takeProfit, double stopLoss,string remark) {
+      fixOrderOpen(buy, lots, takeProfit, stopLoss, remark);
+      return;
       new Thread(() => {
         while (isTradePending)
           Thread.Sleep(100);
@@ -1242,7 +1244,7 @@ namespace Order2GoAddIn {
     public double GrossPL { get; set; }
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
-    public long Lots { get; set; }
+    public int Lots { get; set; }
     public override string ToString() {
       var x = new XElement(GetType().Name,
       GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));

@@ -85,8 +85,8 @@
           <TextBlock Text="FmM:" ToolTip="Time Frame Minutes Minimum"/>
           <TextBox Text="{state:UserSettings Default=15}" TextChanged="TextChanged" Name="txtTimeFrameMinutesMinimum"/>
           <TextBox Text="{state:UserSettings Default=120}" TextChanged="TextChanged_TimeFrameStart" Name="txtTimeFrameMinutesMaximum"/>
-          <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtTimeFramePercInterval"/>
-          <TextBox Text="{state:UserSettings Default=.95}" TextChanged="TextChanged" Name="txtFractalMinutes"/>
+          <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtFractalPadding"/>
+          <TextBox Text="{state:UserSettings Default=.95}" TextChanged="TextChanged" Name="txtFractalShortPercent"/>
         </StackPanel>
       </Border>
       <StackPanel Orientation="Horizontal">
@@ -129,7 +129,10 @@
       <StackPanel Orientation="Horizontal">
         <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True" Background="Transparent"></TextBox>
         <Border BorderBrush="{Binding FractalWaveBuySellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" BorderThickness="1">
-          <TextBlock Name="txtFractalWaves" Text="{Binding FractalWavesText}" />
+          <TextBlock Text="{Binding FractalWavesText}" />
+        </Border>
+        <Border BorderBrush="LightGray">
+          <TextBlock Text="{Binding FractalStats}" FontFamily="Courier New " />
         </Border>
       </StackPanel>
         <StackPanel Orientation="Horizontal">

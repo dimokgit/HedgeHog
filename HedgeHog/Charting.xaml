@@ -74,6 +74,7 @@
               <TextBlock Text="Close Trade Fib Ratio:"/>
               <TextBlock Text="Trade By Direction:"/>
               <TextBlock Text="Do Bi Direction:"/>
+              <TextBlock Text="Close All On Trade:"/>
               <TextBlock Text="Close If Profit Trades More Then:"/>
               <TextBlock Text="Close Profit Trades Maximum:"/>
               <TextBlock Text="High Minutes:"/>
@@ -107,6 +108,7 @@
               <TextBox Name="txtCloseTradeFibRatio" ToolTip="Close Trade Fib Ratio" Text="{state:UserSettings Default=.5}" TextChanged="txtBSPeriod_TextChanged"/>
               <CheckBox Name="chkTradeByDirection" ToolTip="Trade By Direction" IsChecked="{state:UserSettings Default=True}"></CheckBox>
               <CheckBox Name="chkDoBiDirection" ToolTip="Do Bi Direction" IsChecked="{state:UserSettings Default=False}"></CheckBox>
+              <CheckBox Name="chkCloseAllOnTrade" ToolTip="Close All On Trade" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
 
               <TextBox Name="txtCloseIfProfitTradesMoreThen" Text="{state:UserSettings Default=3}" TextChanged="txtBSPeriod_TextChanged"/>
               <TextBox Name="txtCloseProfitTradesMaximum" Text="{state:UserSettings Default=-1}" TextChanged="txtBSPeriod_TextChanged"/>
@@ -142,6 +144,26 @@
       <Label Name="lblVolatility" ToolTip="Avg15/Avg10/Avg5/Avg1 > VM"></Label>
                 <Label ToolTip="Decision Function Number" Margin="2 0 0 0">D#</Label>
                 <TextBox Name="txtFoo" Text="{state:UserSettings Default=11}" TextChanged="txtBSPeriod_TextChanged" />
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeBuy" ToolTip="Can Trade Buy">
+              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
+              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
+              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
+              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
+              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
+              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
+              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
+              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
+            </ComboBox>
           </TextBlock>
                 </StackPanel>
             </Border>
@@ -199,7 +221,14 @@
           </StackPanel>
             </Border>
             <TextBlock ToolTipService.ShowDuration="300000">
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFoo" ToolTip="Number Of Positions">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooBuy" ToolTip="Number Of Positions Buy">
+              <ComboBoxItem>p*N</ComboBoxItem>
+              <ComboBoxItem>∑p+1</ComboBoxItem>
+              <ComboBoxItem>∑(p+1)</ComboBoxItem>
+              <ComboBoxItem>1</ComboBoxItem>
+              <ComboBoxItem>(p+1)*N</ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooSell" ToolTip="Number Of Positions Sell">
               <ComboBoxItem>p*N</ComboBoxItem>
               <ComboBoxItem>∑p+1</ComboBoxItem>
               <ComboBoxItem>∑(p+1)</ComboBoxItem>
@@ -216,26 +245,6 @@
               <ComboBoxItem ToolTip="Price Height Minimum">PHm</ComboBoxItem>
               <ComboBoxItem ToolTip="Price Height Sum">PH∑</ComboBoxItem>
               <ComboBoxItem ToolTip="Price Height Buy/Sell">PHBS</ComboBoxItem>
-            </ComboBox>
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeBuy" ToolTip="Can Trade Buy">
-              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
-              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
-              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
-              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
-              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
-            </ComboBox>
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
-              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
-              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
-              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
-              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
-              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
-              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
             </ComboBox>
       </TextBlock>
             <Border BorderBrush="Peru" BorderThickness="1" Margin="1" VerticalAlignment="Center" MouseDown="Voltage_MouseDown" >
