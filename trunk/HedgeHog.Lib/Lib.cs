@@ -100,8 +100,12 @@ namespace HedgeHog {
 
     }
     public static double CMA(double? MA, double Periods, double NewValue) {
-      if( !MA.HasValue)return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
+    }
+    public static double CMA(double MA,double zeroValue, double Periods, double NewValue) {
+      if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      return CMA((double?)MA, Periods, NewValue);
     }
     public static double Max3(double n1, double n2, double n3) {
       return Math.Max(Math.Max(n1, n2), n3);

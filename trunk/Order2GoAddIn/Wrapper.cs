@@ -479,7 +479,7 @@ namespace Order2GoAddIn {
         while (ticks.Count()<tickCount && endDate <= ServerTime.AddMinutes(1)) {
           try {
             var t = GetTicks(endDate.Round().AddMinutes(-2), endDate.Round().AddMinutes(1), Math.Min(maxTicks, tickCount - ticks.Count()));
-            //if (t.Count() == 0) break;
+            if (t.Count() == 0) break;
             ticks = ticks.Union(t).ToList();
             if (endDate > ticks.Min(b => b.StartDate)) {
               endDate = ticks.Min(b => b.StartDate);

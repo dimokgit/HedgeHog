@@ -113,7 +113,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPriceToAdd]Text" value="1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[.chkTradeDistanceUnisex]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerName]Text" value="DHOME" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerPort]Text" value="8006" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerPort]Text" value="8008" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtShortStack]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtShortStackTruncateOffset]Text" value="2" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtCorridorSmoothSeconds]Text" value="5" />
@@ -140,13 +140,15 @@
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtRSITradeSignalBar]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtRSIProfit]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkRSIUseOffset]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnCorridorBorder]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnCorridorBorder]IsChecked" value="" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeByRsi]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeOnProfitAfter]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngle]Text" value="0.0001" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value=" 1.00" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMin]Text" value="-1.00" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeByFractalCoeff]Text" value="1" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnNet]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnNet]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseAllOnTrade]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooBuy]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooSell]SelectedIndex" value="3" />
 </dictionary>

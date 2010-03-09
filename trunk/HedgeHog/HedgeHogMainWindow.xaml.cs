@@ -436,7 +436,7 @@ namespace HedgeHog {
             : -chartingWindow.TakeProfitNet(chartingWindow.TakeProfitBuy, summary, true);
           if ((isAutoPilot || summary.BuyPositions > 0) && canBuy /*&& lots > 0 && fw.CanTrade(true, buyTradeDelta)*/)
             try {
-              var lots = chartingWindow.LotsToTradeBuy * lotsToTradeBuy * 1000;
+              var lots = chartingWindow.LotsToTradeBuy > 1000 ? chartingWindow.LotsToTradeBuy : chartingWindow.LotsToTradeBuy * lotsToTradeBuy * 1000;
               var l = fw.CanTrade2(true, buyTradeDelta, lots,tradeDistanceUnisex);
               lots = chartingWindow.LotsToTradeBuy > 1 && l < lots ? 0 : l;
               if (lots > 0)
@@ -449,7 +449,7 @@ namespace HedgeHog {
             : -chartingWindow.TakeProfitNet(chartingWindow.TakeProfitSell, summary, false);
           if ((isAutoPilot || summary.SellPositions > 0) && canSell/* && lots > 0 && fw.CanTrade(false, sellTradeDelta)*/)
             try {
-              var lots = chartingWindow.LotsToTradeSell * lotsToTradeSell * 1000;
+              var lots = chartingWindow.LotsToTradeSell > 1000 ? chartingWindow.LotsToTradeSell : chartingWindow.LotsToTradeSell * lotsToTradeSell * 1000;
               var l = fw.CanTrade2(false, sellTradeDelta, lots,tradeDistanceUnisex);
               lots = chartingWindow.LotsToTradeSell > 1 && l < lots ? 0 : l;
               if (lots > 0)

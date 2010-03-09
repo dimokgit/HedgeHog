@@ -761,7 +761,17 @@ namespace HedgeHog {
           .ToArray());
       }
     }
-    public string FractalStats {      get;      set;    }
+    public TimeSpan OverlapAverage { get; set; }
+    public TimeSpan OverlapStDev { get; set; }
+    private double? waveHeight;
+    public double WaveHeightInPips { get { return fw.InPips(waveHeight.Value, 1); } }
+    public TimeSpan OverlapAverageShort { get; set; }
+    public TimeSpan OverlapLast { get; set; }
+    public bool TradeByShortOverlapOk { get { return OverlapLast.TotalSeconds > OverlapAverageShort.TotalSeconds.ToInt(); } }
+    private bool tradeByOverlap { get { return false && OverlapLast.TotalMinutes > Math.Ceiling(OverlapAverageShort.TotalMinutes); } }
+    public bool TradeByOverlapBuy { get { return !isInSell && tradeByOverlap; } }
+    public bool TradeByOverlapSell { get { return isInSell && tradeByOverlap; } }
+    public string FractalStats { get; set; }
     bool isInSell { get { return Fractals[0].HasFractalBuy; } }
     double posBS;
     TimeSpan wavePeriodShort;
@@ -771,26 +781,31 @@ namespace HedgeHog {
     }
     private double GetPositionByFractals() {
       try {
+        var ret = new List<string>();
         var sw = Stopwatch.StartNew();
         var ticksByMinute = Ticks.GetMinuteTicks(1).ToArray().OrderBarsDescending();
         var dateLast = ServerTime.AddSeconds(-30);
         var ticksByMinute1 = Ticks.Where(t=>t.StartDate < dateLast).GetMinuteTicks(1).ToArray().OrderBarsDescending();
         ticksByMinute.FillOverlaps();
         ticksByMinute1.FillOverlaps();
-        var overlapAverage = TimeSpan.FromSeconds(
-          Math.Min( ticksByMinute.Average(r => r.Overlap.TotalSeconds),ticksByMinute1.Average(r => r.Overlap.TotalSeconds)));
-        var overlapStDev = TimeSpan.FromSeconds(
-          Math.Min(ticksByMinute.StdDev(r => r.Overlap.TotalSeconds),ticksByMinute1.StdDev(r => r.Overlap.TotalSeconds)));
-        _CorridorHeightMinutesBySchedule = Lib.CMA(_CorridorHeightMinutesBySchedule, 10, (overlapAverage + overlapStDev).TotalMinutes);
-        var waveHeight = SpreadByBarPeriod(CorridorHeightMinutesBySchedule, false);
-        Fractals = ticksByMinute.FindFractals(waveHeight, TimeSpan.FromMinutes(CorridorHeightMinutesBySchedule), ui.fractalPadding, 10).ToArray();
+        OverlapAverage = TimeSpan.FromSeconds(Lib.CMA(OverlapAverage.TotalSeconds, 0, 25,
+          Math.Min(ticksByMinute.Average(r => r.Overlap.TotalSeconds), ticksByMinute1.Average(r => r.Overlap.TotalSeconds)))
+          );
+        OverlapStDev = TimeSpan.FromSeconds(Lib.CMA(OverlapStDev.TotalSeconds,0, 25,
+          Math.Min(ticksByMinute.StdDev(r => r.Overlap.TotalSeconds), ticksByMinute1.StdDev(r => r.Overlap.TotalSeconds)))
+          );
+        _CorridorHeightMinutesBySchedule = Lib.CMA(_CorridorHeightMinutesBySchedule, 25, (TimeSpan.FromSeconds(Math.Ceiling(OverlapAverage.TotalSeconds * 2))).TotalMinutes);
+        waveHeight = Lib.CMA(waveHeight, 25,
+          SpreadByBarPeriod(1, true)*OverlapAverage.TotalMinutes
+          //SpreadByBarPeriod(CorridorHeightMinutesBySchedule, false)
+          );
+        Fractals = ticksByMinute.FindFractals(waveHeight.Value, TimeSpan.FromMinutes(CorridorHeightMinutesBySchedule), 1, 10).ToArray();
 
-        if (Fractals.Length < 3) {
-          FractalStats = "<3";
+        if (Fractals.Length < 2) {
+          FractalStats = " < 2";
           return 0;
         }
-        var corridorMinimunByFractals = Fractals.Skip(1).Select((f, i) => Math.Abs(f.PriceAvg - Fractals[i].PriceAvg)).Average();
-        CorridorSpreadMinimum = Math.Max(corridorMinimunByFractals, SpreadByBarPeriod(CorridorHeightMinutesBySchedule, false));
+        CorridorSpreadMinimum = Fractals.Skip(1).Select((f, i) => Math.Abs(f.PriceAvg - Fractals[i].PriceAvg)).Average();
 
         var fractals = Fractals.OrderBarsDescending().Take(4).Select((f, i) => new { f = f, i = i, 
             h = i < Fractals.Length - 1 ? Math.Abs(f.FractalPrice.Value - Fractals[i + 1].FractalPrice.Value) : 0 }).ToArray();
@@ -798,58 +813,70 @@ namespace HedgeHog {
 
         var legUps = fractals.Where(f => f.f.HasFractalSell && f.i < Fractals.Length - 1).ToArray();
         var legUpAverage = fw.InPips(legUps.Length == 0 ? 0 : legUps.Average(f => f.f.FractalPrice - Fractals[f.i + 1].FractalPrice).Value, 0);
-        var waveUpsPeriod = TimeSpan.FromSeconds(legUps.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
+        var waveUpsPeriod = legUps.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legUps.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
 
         var legDowns = fractals.Where(f => f.f.HasFractalBuy && f.i < Fractals.Length - 1).ToArray();
         var legDownAverage = fw.InPips(legDowns.Length == 0 ? 0 : legDowns.Average(f => Fractals[f.i + 1].FractalPrice - f.f.FractalPrice).Value, 0);
-        var waveDownsPeriod = TimeSpan.FromSeconds(legDowns.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
+        var waveDownsPeriod = legDowns.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legDowns.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
+
         var wavePeriod = TimeSpan.FromSeconds(fractals.Take(fractals.Length - 1).Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
 
-        var overlapAverageShort = TimeSpan.FromSeconds(ticksByMinute.Where(t=>t.StartDate >= Fractals[0].StartDate).Average(r => r.Overlap.TotalSeconds));
-        var wavePeriodShortTrade = overlapAverageShort;// isInSell ? waveUpsPeriod : waveDownsPeriod;
+        OverlapAverageShort = TimeSpan.FromSeconds(Lib.CMA(OverlapAverageShort.TotalSeconds, 0, 25,
+          ticksByMinute.Where(t => t.StartDate >= Fractals[0].StartDate).Average(r => r.Overlap.TotalSeconds))
+          );
+        var wavePeriodShortTrade = OverlapAverageShort;// isInSell ? waveUpsPeriod : waveDownsPeriod;
         wavePeriodShort = wavePeriodShortTrade;// TimeSpan.FromSeconds(wavePeriodShortTrade.TotalSeconds * ui.fractalMinutes / 100.0);
         var fractalsShort = _ticks.Where(t => t.StartDate >= ServerTime.AddMinutes(-wavePeriodShort.TotalMinutes * 10))
-          .GroupTicksToRates().OrderBarsDescending().ToArray().FindFractals(0, wavePeriodShort, 1, 2);
+          .GroupTicksToRates().OrderBarsDescending().ToArray().FindFractals(0, wavePeriodShort, ui.fractalPadding, 2);
         FractalSell = fractalsShort.SingleOrDefault(r => r.HasFractalSell);        //?? new FXW.Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) };
         FractalBuy = fractalsShort.SingleOrDefault(r => r.HasFractalBuy);        //?? new FXW.Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) };
         priceHeightMax = Ticks.Where(t => t.StartDate >= FractalSell.StartDate).Max(readFrom); //tickHT.Max(readFrom);
         priceHeightMin = Ticks.Where(t => t.StartDate >= FractalBuy.StartDate).Min(readFrom);//tickHT.Min(readFrom);
 
-        var legAllAverage = fw.InPips(fractals.Where(f => f.h > 0).OrderByDescending(f => f.h).Skip(1).Average(f => f.h), 1);
+        var fractalsWithHeight = fractals.Where(f => f.h > 0).OrderByDescending(f => f.h).ToArray();
+        var legAllAverage = fw.InPips(fractalsWithHeight.Skip(fractalsWithHeight.Length > 1 ? 1 : 0).Average(f => f.h), 1);
         var legTradeAverage = isInSell ? legUpAverage : legDownAverage;
         var fractalTradeLong = Fractals[0];
-        var fractalTradeShort = isInSell ? FractalSell : FractalBuy;
-        var tradeLeg = fw.InPips(
+        var fractalTradeShort = fractalTradeLong.Fractal != fractalsShort[0].Fractal ? fractalsShort[0] : null;
+        var tradeLeg = fractalTradeShort == null ? 0 : fw.InPips(
           isInSell ? fractalTradeShort.FractalPrice.Value - fractalTradeLong.FractalPrice.Value 
           : fractalTradeLong.FractalPrice.Value - fractalTradeShort.FractalPrice.Value
           , 1);
         var tradePrice = priceCurrent.Average;
-        var posBS = tradeLeg / legAllAverage;
-        var posByPrice = fw.InPips(Math.Abs(tradePrice - fractalTradeLong.FractalPrice.Value), 1) / legAllAverage;
-        var posByPriceLastLeg = Math.Abs(tradePrice - fractalTradeLong.FractalPrice.Value) / fractals[0].h;
-        var ret = new List<string>(new[]{
-        "WaveH : " + fw.InPips(waveHeight,1),
-        "LegUA : " + legUpAverage,
-        "LegDA : " + legDownAverage,
-        "LegAA : " + legAllAverage,
-        "LegTrd: " + tradeLeg.ToString("n1"),
-        "CorSM : " + CorridorSpreadMinimumInPips.ToString("n1"),
-        "PosBS : " + posBS.ToString("p1"),
-        "PosPr : " + posByPrice.ToString("p1"),
-        "PosPrL: " + posByPriceLastLeg.ToString("p1"),
-        "Period: " + wavePeriod.TotalMinutes.ToString("n1"),
-        "Per.Up: " + waveUpsPeriod.TotalMinutes.ToString("n1"),
-        "Per.Dn: " + waveDownsPeriod.TotalMinutes.ToString("n1"),
-        "Ovl.Sh: " + wavePeriodShortTrade.TotalMinutes.ToString("n1"),
-        "Ovl.Av: " + overlapAverage.TotalMinutes.ToString("n1"),
-        "Ovl.SD: " + overlapStDev.TotalMinutes.ToString("n1")
-      });
+        var posBSByLeg = tradeLeg / legAllAverage;
+        var legPriceTicks = ticksByMinute.Where(t=>t.StartDate>fractalTradeLong.StartDate);
+        var legPrice = isInSell? 
+          legPriceTicks.Max(t=>t.PriceHigh) - fractalTradeLong.FractalPrice.Value
+          : fractalTradeLong.FractalPrice.Value - legPriceTicks.Min(t => t.PriceLow);
+        var posByPrice = fw.InPips(legPrice, 1) / legAllAverage;
+        var posByPriceLastLeg = Math.Abs(tradePrice - fractals[0].f.FractalPrice.Value) / fractals[0].h;
+        var posBS = Math.Max(posBSByLeg, posByPrice);
+        OverlapLast = TimeSpan.FromSeconds(Lib.CMA(OverlapLast.TotalSeconds, 0, 25, ticksByMinute.First().Overlap.TotalSeconds));
+
+        var tradeOk = posByPriceLastLeg >= .30  && (tradeLeg >= CorridorSpreadMinimumInPips || posBS >= 1.15);
+        posBS = tradeOk ? posBS : 0;
+
+        ret.Add("LegUA : "+ legUpAverage);
+        ret.Add("LegDA : " + legDownAverage);
+        ret.Add("LegAA : " + legAllAverage);
+        ret.Add("LegPrc: " + fw.InPips(legPrice,1).ToString("n1"));
+        ret.Add("LegTrd: " + tradeLeg.ToString("n1"));
+        ret.Add("CorSM : " + CorridorSpreadMinimumInPips.ToString("n1"));
+        ret.Add("PosBS : " + posBS.ToString("p1"));
+        ret.Add("PosLeg : " + posBSByLeg.ToString("p1"));
+        ret.Add("PosPr : " + posByPrice.ToString("p1"));
+        ret.Add("PosPrL: " + posByPriceLastLeg.ToString("p1"));
+        ret.Add("Period: " + wavePeriod.TotalMinutes.ToString("n1"));
+        ret.Add("Per.Up: " + waveUpsPeriod.TotalMinutes.ToString("n1"));
+        ret.Add("Per.Dn: " + waveDownsPeriod.TotalMinutes.ToString("n1"));
+        ret.Add("OvlLst: " + OverlapLast.TotalMinutes.ToString("n1"));
         FractalStats = string.Join(Environment.NewLine, ret.ToArray());
 
-        return tradeLeg >= CorridorSpreadMinimumInPips || posBS >= 1.15 ? posBS : 0;
+        return posBS;
       } finally {
         RaisePropertyChanged(() => CorridorSpreadInPips);
-        RaisePropertyChanged(() => FractalWavesText, () => FractalWaveColor, () => FractalStats);
+        RaisePropertyChanged(() => FractalWavesText, () => FractalWaveColor, () => FractalStats,()=>OverlapLast
+          , () => WaveHeightInPips, () => OverlapStDev, () => OverlapAverage,()=>OverlapAverageShort);
       }
     }
 
@@ -1307,6 +1334,9 @@ namespace HedgeHog {
           response.GoSell = false;
       if (tr.tradesBuy.Any(t => t.PL > 0)) response.GoBuy = false;
       if (tr.tradesSell.Any(t => t.PL > 0)) response.GoSell = false;
+      if (tr.closeAllOnTrade && tr.tradesBuy.Length > 0) response.GoBuy = false;
+      if (tr.closeAllOnTrade && tr.tradesSell.Length > 0) response.GoSell = false;
+
       response.IsReady = isReady;
       return response;
     }
@@ -1329,10 +1359,10 @@ namespace HedgeHog {
         var angleCanBuy = Angle.Between(-tr.tradeAngleMax, -tr.tradeAngleMin);
         var angleCanSell = Angle.Between(tr.tradeAngleMin, tr.tradeAngleMax);
 
-        var fractalWaveCanBuy = Fractals.Length > 2 && !isInSell && angleCanBuy;
+        var fractalWaveCanBuy = Fractals.Length > 1 && !isInSell && angleCanBuy;
           //(price.Bid <= Fractals[2].AskHigh 
           //|| (angleCanBuy && Fractals.Length > 3 && Fractals[0].AskHigh >= Fractals[3].BidLow));
-        var fractalWaveCanSell = Fractals.Length > 2 && isInSell && angleCanSell;
+        var fractalWaveCanSell = Fractals.Length > 1 && isInSell && angleCanSell;
           //(price.Ask >= Fractals[2].BidLow 
           //|| (angleCanSell && Fractals.Length > 3 && Fractals[0].BidLow <= Fractals[3].AskHigh));
 
@@ -1452,18 +1482,24 @@ namespace HedgeHog {
           var fractalSell = FractalSell.StartDate > FractalBuy.StartDate;
           IsBuyMode = !fractalBuy && !fractalSell ? (bool?)null : fractalBuy;
 
-          fractalBuy = FractalBuyColor = fractalBuy && isFractalTradeTimeFrame
-            && price.Average.Between(FractalBuy.PriceAvg, FractalBuy.PriceAvg + fractalRange);
-          fractalSell = FractalSellColor = fractalSell && isFractalTradeTimeFrame 
-            && price.Average.Between(FractalSell.PriceAvg - fractalRange, FractalSell.PriceAvg);
+          fractalBuy = FractalBuyColor = TradeByOverlapBuy ||
+            (!isInSell && fractalBuy && FractalBuy.StartDate > Fractals[0].StartDate
+            //&& isFractalTradeTimeFrame && price.Average.Between(FractalBuy.PriceAvg, FractalBuy.PriceAvg + fractalRange)
+            );
+          fractalSell = FractalSellColor = TradeByOverlapSell ||
+            (isInSell && fractalSell && FractalSell.StartDate > Fractals[0].StartDate
+            //&& isFractalTradeTimeFrame && price.Average.Between(FractalSell.PriceAvg - fractalRange, FractalSell.PriceAvg)
+            );
 
           var posBSMin = .85;
 
           canBuy = posBS >= posBSMin;// goTradeFoos[tr.goTradeFooBuy](positionBuy, true);// closeToExtreamLambda(priceHeightMin);
-          goBuy = canBuy && rsiCanBuy && fractalBuy && fractalWaveCanBuy && (tr.doTrend || ti.TradeStats.valleyVolts >= ti.TradeStats.voltsAverage);
+          goBuy = //Fractals[0].HasFractalSell && tradeByOverlap            ||
+            (canBuy && fractalBuy && fractalWaveCanBuy && (tr.doTrend || ti.TradeStats.valleyVolts >= ti.TradeStats.voltsAverage));
 
           canSell = posBS >= posBSMin;// goTradeFoos[tr.goTradeFooSell](positionSell, false);// closeToExtreamLambda(priceHeightMax);
-          goSell = canSell && rsiCanSell && fractalSell && fractalWaveCanSell && (tr.doTrend || ti.TradeStats.peakVolts >= ti.TradeStats.voltsAverage);
+          goSell = //Fractals[0].HasFractalBuy && tradeByOverlap            ||
+            (canSell && fractalSell && fractalWaveCanSell && (tr.doTrend || ti.TradeStats.peakVolts >= ti.TradeStats.voltsAverage));
 
           ti.DencityRatio = densityFoos[tr.densityFoo](goBuy);
           ti.DencityRatioBuy = densityFoos[tr.densityFoo](true);
@@ -1526,14 +1562,14 @@ namespace HedgeHog {
       ti.LotsToTradeSell = lotsToTradeFoos[tr.lotsToTradeFooSell](false);
       if (tr.closeAllOnTrade) {
         if (tr.tradesSell.Length > 0) {
-          var hasProfit = tr.closeOnNet ? tr.SellNetPLPip > 0 : tr.tradesSell.Count(t => t.PL > 0) > 0;
+          var hasProfit = true || tr.closeOnNet ? tr.SellNetPLPip > 0 : tr.tradesSell.Count(t => t.PL > 0) > 0;
           if( !hasProfit )
-            ti.LotsToTradeBuy = maxLots(tr.tradesSell) * 2;
+            ti.LotsToTradeBuy = tr.tradesSell.Max(t=>t.Lots) * 2;
         }
         if (tr.tradesBuy.Length > 0) {
-          var hasProfit = tr.closeOnNet ? tr.BuyNetPLPip > 0 : tr.tradesBuy.Count(t => t.PL > 0) > 0;
+          var hasProfit = true || tr.closeOnNet ? tr.BuyNetPLPip > 0 : tr.tradesBuy.Count(t => t.PL > 0) > 0;
           if (!hasProfit)
-            ti.LotsToTradeSell = maxLots(tr.tradesBuy) * 2;
+            ti.LotsToTradeSell = tr.tradesBuy.Max(t => t.Lots) * 2;
         }
       }
 

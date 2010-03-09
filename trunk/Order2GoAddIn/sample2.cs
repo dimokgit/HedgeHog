@@ -150,17 +150,21 @@ namespace Order2GoAddIn {
       var dateFrom = rate.StartDate - period;
       var dateTo = rate.StartDate + period;
       var ratesLeft = rates.Where(r => r.StartDate.Between(dateFrom.AddSeconds(-period.TotalSeconds), rate.StartDate)).ToArray();
-      var ratesRight = rates.Where(r => r.StartDate.Between(rate.StartDate, dateTo.AddSeconds(period.TotalSeconds))).ToArray();
+      var ratesRight = rates.Where(r => r.StartDate.Between(rate.StartDate, dateTo.AddSeconds(period.TotalSeconds*3))).ToArray();
       var ratesInRange = rates.Where(r => r.StartDate.Between(dateFrom, dateTo)).ToArray();
       rate.FractalSell = 
         rate.PriceHigh >= ratesInRange.Max(r => r.PriceHigh)
-        //&& (rate.PriceHigh - ratesLeft.Min(r => r.PriceLow)) >= waveHeight
-        && (rate.PriceHigh - ratesRight.Min(r => r.PriceLow)) >= waveHeight
+        && 
+        (//(rate.PriceHigh - ratesLeft.Min(r => r.PriceLow)) >= waveHeight        || 
+        (rate.PriceHigh - ratesRight.Min(r => r.PriceLow)) >= waveHeight
+        )
         ? HedgeHog.Bars.FractalType.Sell : HedgeHog.Bars.FractalType.None;
       rate.FractalBuy = 
         rate.PriceLow <= ratesInRange.Min(r => r.PriceLow)
-        //&& (ratesLeft.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight
-        && (ratesRight.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight
+        && 
+        (//(ratesLeft.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight ||
+        (ratesRight.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight
+        )
         ? HedgeHog.Bars.FractalType.Buy : HedgeHog.Bars.FractalType.None;
 
       //dateFrom = rate.StartDate.AddSeconds(-period.TotalSeconds * 2);
