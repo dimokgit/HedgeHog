@@ -73,7 +73,7 @@
       </StackPanel>
       <Border BorderBrush="{Binding IsBuyMode,Converter={StaticResource BoolToColorConverter},ConverterParameter=LightGray|LightSalmon|LightGreen}" BorderThickness="1">
         <StackPanel Orientation="Horizontal">
-          <TextBlock Text="CHM:" ToolTip="Corridor Height Minutes"/>
+          <TextBlock Text="CHM:" ToolTip="Corridor Spread Minimum"/>
           <TextBlock Text="{Binding CorridorSpreadMinimumInPips,StringFormat=n1}" ToolTip="Corridor Spread Minimum"/>
           <TextBox Text="{state:UserSettings Default=10}" TextChanged="TextChanged" Name="txtCorridorHeightMinutes"/>
           <TextBlock Text="{Binding CorridorHeightMinutesBySchedule}" ToolTip="Corridor Height Minutes By Schedule"/>
@@ -90,6 +90,18 @@
         </StackPanel>
       </Border>
       <StackPanel Orientation="Horizontal">
+        <TextBlock ToolTip="Wave Height Minimum by Overlap">WOL:</TextBlock>
+        <Label Content="{Binding WaveHeightInPips}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap Average Short">AS:</TextBlock>
+        <Label Content="{Binding OverlapAverageShort.TotalMinutes}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap Last">&lt;L:</TextBlock>
+        <Label Content="{Binding OverlapLast.TotalMinutes}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap Average">A:</TextBlock>
+        <Label Content="{Binding OverlapAverage.TotalMinutes}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap StDev">SD:</TextBlock>
+        <Label Content="{Binding OverlapStDev.TotalMinutes}" ContentStringFormat="n1" />
+      </StackPanel>
+        <StackPanel Orientation="Horizontal">
         <Label Content="{Binding FractalBuy.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalBuyColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}" ToolTip="Buy Fractal Time"/>
         <TextBlock>:</TextBlock>
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
