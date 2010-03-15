@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+using HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 
@@ -32,8 +33,11 @@ namespace HedgeHog {
         Date = date;
         Index = index;
       }
+      public override string ToString() {
+        return string.Format("{0:dd HH:mm:ss}:{1}/{2}", Date, Value, Index);
+      }
     }
-    public static DataPoint[] GetCurve(IEnumerable<Bars.BarBase> ticks,int cmaPeriod){
+    public static DataPoint[] GetCurve<TBar>(this IEnumerable<TBar> ticks, int cmaPeriod) where TBar : Bars.BarBase {
       double? cma1 = null;
       double? cma2 = null;
       double? cma3 = null;
@@ -47,7 +51,7 @@ namespace HedgeHog {
                    }
                   ).ToArray();
     }
-    public static DataPoint[] GetWaves(DataPoint[] curve) {
+    public static DataPoint[] GetWaves(this DataPoint[] curve) {
       int skip = 1;
       var d1 = curve.Skip(skip).Take(curve.Length - 2).Select((dp, i) => { dp.Next = curve[i + skip + 1]; return dp; }).ToArray();
       var n = d1.Where(dp => dp.Next == null);
@@ -57,9 +61,9 @@ namespace HedgeHog {
                select dp1;
       return d2.ToArray();
     }
-    public static double[] GetWaves(IEnumerable<Bars.BarBase> rates, int cmaPeriod) {
+    public static double[] GetWaves<TBar>(this IEnumerable<TBar> rates, int cmaPeriod) where TBar : Bars.BarBase {
       double? cma1 = null;
-      var cmas3 = GetCurve(rates, cmaPeriod);
+      var cmas3 = rates.GetCurve(cmaPeriod);
       cma1 = null;
       int i=0;
       var cmas = (from cma in cmas3
@@ -87,7 +91,7 @@ namespace HedgeHog {
       return w2.ToArray();
     }
     public static List<Volt> FindMaximasPeakAndValley(
-      IEnumerable<FXW.Rate> ticks, int voltageCMA, bool saveVoltsToFile, ref VoltForGrid PeakVolt, ref VoltForGrid ValleyVolt)
+      IEnumerable<Rate> ticks, int voltageCMA, bool saveVoltsToFile, ref VoltForGrid PeakVolt, ref VoltForGrid ValleyVolt)
     {
       var time = DateTime.Now;
       var tickTimeFirst = ticks.Min(t => t.StartDate);
@@ -194,7 +198,13 @@ namespace HedgeHog {
     }
     #endregion
 
-    public static List<Volt> GetVoltageByTick(IEnumerable<FXW.Rate> ticks, int cmaPeriod) {
+    #region Distance
+    public static void GetDistances<TBar>(this IEnumerable<TBar> bars) where TBar : Bars.BarBase {
+
+    }
+    #endregion
+
+    public static List<Volt> GetVoltageByTick(IEnumerable<Rate> ticks, int cmaPeriod) {
       var ticksByDate = ticks.OrderBarsDescending().Select((t, i) => new { t.StartDate,Ask = t.AskOpen,Bid = t.BidOpen, Row = i }).ToArray();
       DateTime d = DateTime.Now;
       var ticks_1 = (from tick1 in ticksByDate

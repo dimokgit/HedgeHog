@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Win32;
+using HedgeHog.Bars;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 
 namespace Order2GoAddIn {
@@ -58,22 +59,22 @@ namespace Order2GoAddIn {
     static T ReturnAnonymous<T>(T type) {
       return (T)(object)new { City = "Prague", Name = "Tomas" };
     }
-    public static IEnumerable<IndicatorPoint> RLW(FXW.Rate[] rates) { return RLW(rates, 14); }
-    public static IEnumerable<IndicatorPoint> RLW(FXW.Rate[] rates, int period) {
+    public static IEnumerable<IndicatorPoint> RLW(Rate[] rates) { return RLW(rates, 14); }
+    public static IEnumerable<IndicatorPoint> RLW(Rate[] rates, int period) {
       Indicore.BarSourceAut source = CreateBarsData(rates);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RLW", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
       instance.Update(true);
       return output.Cast<double>().Select((d, i) => new IndicatorPoint(rates[i].StartDate, d));
     }
-    public static IEnumerable<IndicatorPoint> TSI(FXW.Rate[] rates) {
+    public static IEnumerable<IndicatorPoint> TSI(Rate[] rates) {
       Indicore.BarSourceAut source = CreateBarsData(rates);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("TSI", source, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
       instance.Update(true);
       return output.Cast<double>().Select((d, i) => new IndicatorPoint(rates[i].StartDate, d));
     }
-    public static void FillFractal(this FXW.Rate[] rates,Action<FXW.Rate,double?> setValue) {
+    public static void FillFractal(this Rate[] rates,Action<Rate,double?> setValue) {
       Indicore.BarSourceAut source = CreateBarsData(rates);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("FRACTAL", source, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputCollectionAut outputs = (Indicore.IndicatorOutputCollectionAut)instance.Output;
@@ -86,8 +87,8 @@ namespace Order2GoAddIn {
       }
     }
 
-    private static bool CleanFractals(List<FXCoreWrapper.Rate> fractals) {
-      Func<FXW.Rate, FXW.Rate, FXW.Rate> compareLambda = (f1, f2) => {
+    private static bool CleanFractals(List<Rate> fractals) {
+      Func<Rate, Rate, Rate> compareLambda = (f1, f2) => {
         var ff = new[] { f1, f2 };
         return f1.FractalBuy != 0 ? ff.OrderBy(f => f.BidLow).Last() : ff.OrderBy(f => f.AskHigh).First();
       };
@@ -100,90 +101,21 @@ namespace Order2GoAddIn {
       }
       return false;
     }
-    public static List<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates) {
+    public static List<Rate> HasFractal(this IEnumerable<Rate> rates) {
       var fractals = rates.Where(r => r.HasFractal).ToList();
       if (fractals.Count > 1) CleanFractals(fractals);
       return fractals;
     }
-    public static IEnumerable<FXW.Rate> HasFractal(this IEnumerable<FXW.Rate> rates, Func<FXW.Rate, bool> filter) {
+    public static IEnumerable<Rate> HasFractal(this IEnumerable<Rate> rates, Func<Rate, bool> filter) {
       return rates.Where(filter).HasFractal();
     }
-    public static List<TBars> FindFractals<TBars>(this IEnumerable<TBars> rates, double waveHeight, TimeSpan period, double padRight, int count) where TBars : FXW.Rate {
-      var halfPeriod = TimeSpan.FromSeconds(period.TotalSeconds / 2.0);
-      var rightPeriod = TimeSpan.FromSeconds(period.TotalSeconds * padRight);
-      DateTime nextDate = DateTime.MaxValue;
-      var fractals = new List<TBars>();
-      var dateFirst = rates.Min(r => r.StartDate) + rightPeriod;
-      var dateLast = rates.Max(r => r.StartDate) - rightPeriod;
-      var waveFractal = 0D;
-      foreach (var rate in rates.Where(r => r.StartDate.Between(dateFirst, dateLast))) {
-        UpdateFractal(rates, rate, period,waveHeight);
-        if (rate.HasFractal) {
-          if (fractals.Count == 0) {
-            fractals.Add(rate);
-            waveFractal = waveHeight;
-            waveHeight = 0;
-          } else {
-            if (rate.Fractal == fractals.Last().Fractal) {
-              if (HedgeHog.Bars.BarBase.BiggerFractal(rate, fractals.Last()) == rate)
-                fractals[fractals.Count - 1] = rate;
-            } else {
-              //var range = rates.Where(r => r.StartDate.Between(rate.StartDate, fractals.Last().StartDate)).ToArray();
-              if (rate.FractalWave(fractals[fractals.Count - 1]) >= waveFractal)
-                fractals.Add(rate);
-            }
-          }
-        }
-        if (fractals.Count == count) break;
-      }
-      return fractals;
-    }
-    static double RangeHeight<TBar>(this IEnumerable<TBar> rates) where TBar : FXW.Rate {
-      return rates.Count() == 0 ? 0 : rates.Max(r => r.PriceHigh) - rates.Min(r => r.PriceLow);
-    }
-    static void UpdateFractal<TBars>(IEnumerable<TBars> rates, TBars rate, TimeSpan period,double waveHeight) where TBars : FXW.Rate {
-      //var wavePeriod = TimeSpan.FromSeconds(period.TotalSeconds * 1.5);
-      //var dateFrom = rate.StartDate - wavePeriod;
-      //var dateTo = rate.StartDate + wavePeriod;
-      //var ratesInRange = rates.Where(r => r.StartDate.Between(dateFrom, dateTo)).ToArray();
-      //if ( waveHeight > 0 && ratesInRange.RangeHeight() < waveHeight) return;
-      var dateFrom = rate.StartDate - period;
-      var dateTo = rate.StartDate + period;
-      var ratesLeft = rates.Where(r => r.StartDate.Between(dateFrom.AddSeconds(-period.TotalSeconds), rate.StartDate)).ToArray();
-      var ratesRight = rates.Where(r => r.StartDate.Between(rate.StartDate, dateTo.AddSeconds(period.TotalSeconds*3))).ToArray();
-      var ratesInRange = rates.Where(r => r.StartDate.Between(dateFrom, dateTo)).ToArray();
-      rate.FractalSell = 
-        rate.PriceHigh >= ratesInRange.Max(r => r.PriceHigh)
-        && 
-        (//(rate.PriceHigh - ratesLeft.Min(r => r.PriceLow)) >= waveHeight        || 
-        (rate.PriceHigh - ratesRight.Min(r => r.PriceLow)) >= waveHeight
-        )
-        ? HedgeHog.Bars.FractalType.Sell : HedgeHog.Bars.FractalType.None;
-      rate.FractalBuy = 
-        rate.PriceLow <= ratesInRange.Min(r => r.PriceLow)
-        && 
-        (//(ratesLeft.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight ||
-        (ratesRight.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight
-        )
-        ? HedgeHog.Bars.FractalType.Buy : HedgeHog.Bars.FractalType.None;
-
-      //dateFrom = rate.StartDate.AddSeconds(-period.TotalSeconds * 2);
-      //dateTo = rate.StartDate.AddSeconds(+period.TotalSeconds * 2);
-      //ratesInRange = rates.Where(r => r.StartDate.Between(dateFrom, dateTo)).ToArray();
-      //if (waveHeight > 0 &&
-      //  (ratesInRange.Where(r => r.StartDate.Between(dateFrom, rate.StartDate)).RangeHeight() < waveHeight
-      //    ||
-      //   ratesInRange.Where(r => r.StartDate.Between(rate.StartDate, dateTo)).RangeHeight() < waveHeight)
-      //) return;
-    }
-
-    public static FXW.Rate[] FillFractals(this FXW.Rate[] rates) {
+    public static Rate[] FillFractals(this Rate[] rates) {
       for (int i = 4; i < rates.Length; i++) {
         UpdateFractal(rates, i);
       }
       return rates;
     }
-    static void UpdateFractal(FXW.Rate[] rates, int period) {
+    static void UpdateFractal(Rate[] rates, int period) {
       if (period > 3) {
         var curr = rates[period - 2].BidHigh;
         if (curr > rates[period - 4].BidHigh && curr > rates[period - 3].BidHigh &&
@@ -199,13 +131,13 @@ namespace Order2GoAddIn {
           rates[period - 2].FractalBuy = HedgeHog.Bars.FractalType.None;
       }
     }
-    public static FXW.Rate[] FillRsi(this FXW.Rate[] rates, int period, Func<FXW.Rate, double> getPrice) {
+    public static Rate[] FillRsi(this Rate[] rates, int period, Func<Rate, double> getPrice) {
       for (int i = period; i < rates.Length; i++) {
         UpdateRsi(period, rates, i, getPrice);
       }
       return rates;
     }
-    static void UpdateRsi(int numberOfPeriods, FXW.Rate[] rates, int period,Func<FXW.Rate,double> getPrice){
+    static void UpdateRsi(int numberOfPeriods, Rate[] rates, int period,Func<Rate,double> getPrice){
       if (period >= numberOfPeriods) {
         var i = 0;
         var sump = 0.0;
@@ -242,7 +174,7 @@ namespace Order2GoAddIn {
     }
 
 
-    public static IEnumerable<IndicatorPoint2> TSI_CR(FXW.Rate[] rates) {
+    public static IEnumerable<IndicatorPoint2> TSI_CR(Rate[] rates) {
       Indicore.BarSourceAut source = CreateBarsData(rates);
       Indicore.IndicatorInstanceAut instance1 = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("TSI", source, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output1 = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance1.Output)[0];
@@ -252,14 +184,14 @@ namespace Order2GoAddIn {
       instance2.Update(true);
       return output2.Cast<double>().Select((d, i) => new IndicatorPoint2(rates[i].StartDate, output1[i], d));
     }
-    public static IEnumerable<IndicatorPoint> RSI(FXW.Rate[] rates, Func<FXW.Rate, double> price, int period) {
+    public static IEnumerable<IndicatorPoint> RSI(Rate[] rates, Func<Rate, double> price, int period) {
       Indicore.TickSourceAut source = CreateTicksData(rates, price);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RSI", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
       instance.Update(true);
       return output.Cast<double>().Select((d, i) => new IndicatorPoint(rates[i].StartDate, d));
     }
-    public static void CR<T>(this FXW.Rate[] rates, Func<FXW.Rate, double> sourceLambda,Action<FXW.Rate,T>destinationLambda) {
+    public static void CR<T>(this Rate[] rates, Func<Rate, double> sourceLambda,Action<Rate,T>destinationLambda) {
       Indicore.TickSourceAut source = CreateTicksData(rates, sourceLambda);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("CR", source, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
@@ -267,7 +199,7 @@ namespace Order2GoAddIn {
       var i = 0;
       output.Cast<T>().ToList().ForEach(d => destinationLambda(rates[i++], d));
     }
-    public static IEnumerable<IndicatorPoint2> RSI_CR(FXW.Rate[] rates, Func<FXW.Rate, double> price, int period) {
+    public static IEnumerable<IndicatorPoint2> RSI_CR(Rate[] rates, Func<Rate, double> price, int period) {
       Indicore.TickSourceAut source = CreateTicksData(rates, price);
       Indicore.IndicatorInstanceAut instance1 = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RSI", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output1 = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance1.Output)[0];
@@ -277,7 +209,7 @@ namespace Order2GoAddIn {
       instance2.Update(true);
       return output2.Cast<double>().Select((d, i) => new IndicatorPoint2(rates[i].StartDate, output1[i], d));
     }
-    public static IEnumerable<IndicatorMACD> RsiMACD(FXW.Rate[] rates, Func<FXW.Rate, double> price, int period) {
+    public static IEnumerable<IndicatorMACD> RsiMACD(Rate[] rates, Func<Rate, double> price, int period) {
       Indicore.TickSourceAut source = CreateTicksData(rates,price);
       Indicore.IndicatorInstanceAut instance1 = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RSI", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output1 = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance1.Output)[0];
@@ -351,7 +283,7 @@ namespace Order2GoAddIn {
       }
     }
 
-    static void GetRSI(FXW.Rate[] rates) {
+    static void GetRSI(Rate[] rates) {
 
       //create the sample data
       Indicore.BarSourceAut source = CreateBarsData(rates);
@@ -397,13 +329,13 @@ namespace Order2GoAddIn {
       }
     }
 
-    private static Indicore.BarSourceAut CreateBarsData(FXW.Rate[] rates ) {
+    private static Indicore.BarSourceAut CreateBarsData(Rate[] rates ) {
       Indicore.BarSourceAut ticks = (Indicore.BarSourceAut)core.CreateBarSource("AAPL", "M1", false, 0.01);
       foreach (var rate in rates)
         ticks.AddLast(rate.StartDate, rate.PriceOpen, rate.PriceHigh, rate.PriceLow, rate.PriceClose, 1);
       return ticks;
     }
-    private static Indicore.TickSourceAut CreateTicksData(FXW.Rate[] rates, Func<FXW.Rate, double> price) {
+    private static Indicore.TickSourceAut CreateTicksData(Rate[] rates, Func<Rate, double> price) {
       Indicore.TickSourceAut ticks = (Indicore.TickSourceAut)core.CreateTickSource("XXX",.01);
       foreach (var r in rates) 
         ticks.AddLast(r.StartDate, price(r));

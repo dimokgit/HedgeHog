@@ -71,39 +71,39 @@ namespace Order2GoAddIn {
     }
   }
   public static class RateExtensions {
-    public static void FillTSI_CR(this FXCoreWrapper.Rate[] ticks) {
+    public static void FillTSI_CR(this Rate[] ticks) {
       (from dp in Indicators.TSI_CR(ticks)
        join tick in ticks on dp.Time equals tick.StartDate
        select new { tick, dp }).ToList()
        .ForEach(tdp => { tdp.tick.PriceTsi = tdp.dp.Point; tdp.tick.PriceTsiCR = tdp.dp.Point1; });
     }
-    public static void FillTSI(this FXCoreWrapper.Rate[] ticks, Action<FXCoreWrapper.Rate, double?> priceRsi) {
+    public static void FillTSI(this Rate[] ticks, Action<Rate, double?> priceRsi) {
       (from dp in Indicators.TSI(ticks)
        join tick in ticks on dp.Time equals tick.StartDate
        select new { tick, dp.Point }
                   ).ToList().ForEach(tdp => priceRsi(tdp.tick, tdp.Point));
     }
-    public static void FillRLW(this FXCoreWrapper.Rate[] ticks) {
+    public static void FillRLW(this Rate[] ticks) {
       (from dp in Indicators.RLW(ticks,14)
        join tick in ticks on dp.Time equals tick.StartDate
        select new { tick, dp.Point }
                   ).ToList().ForEach(tdp => tdp.tick.PriceRlw = tdp.Point);
     }
-    private static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period, Func<FXCoreWrapper.Rate, double> priceSource, Action<FXCoreWrapper.Rate, double?> priceRsi) {
+    private static void FillRSI(this Rate[] ticks, int period, Func<Rate, double> priceSource, Action<Rate, double?> priceRsi) {
       (from dp in Indicators.RSI(ticks, priceSource, period)
                   join tick in ticks on dp.Time equals tick.StartDate
                   select new { tick, dp.Point }
                   ).ToList().ForEach(tdp => priceRsi(tdp.tick, tdp.Point));
     }
-    private static void FillRSI(this FXCoreWrapper.Rate[] ticks, int period,
-      Func<FXCoreWrapper.Rate, double> priceSource, Func<FXCoreWrapper.Rate, double?> priceDestination, 
-      Action<FXCoreWrapper.Rate, double?> priceRsi) 
+    private static void FillRSI(this Rate[] ticks, int period,
+      Func<Rate, double> priceSource, Func<Rate, double?> priceDestination, 
+      Action<Rate, double?> priceRsi) 
     {
       var startDate = (ticks.FirstOrDefault(t => priceDestination(t).HasValue) ?? ticks.First()).StartDate;
       IndicatorPoint dpPrevious = new IndicatorPoint();
       ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
         if (!priceDestination(t).HasValue) {
-          FXCoreWrapper.Rate[] ticksLocal = ticks
+          Rate[] ticksLocal = ticks
             .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
             .ToArray().GetMinuteTicks(1);
           if (ticksLocal.Count() >= period) {
@@ -116,14 +116,14 @@ namespace Order2GoAddIn {
       }
       );
     }
-    public static void FillTSI(this FXCoreWrapper.Rate[] rates, 
-      Func<FXCoreWrapper.Rate, double?> priceDestination, Action<FXCoreWrapper.Rate, double?> priceRsi) {
+    public static void FillTSI(this Rate[] rates, 
+      Func<Rate, double?> priceDestination, Action<Rate, double?> priceRsi) {
       int period = 14;
       var startDate = (rates.FirstOrDefault(t => priceDestination(t).HasValue) ?? rates.First()).StartDate;
       IndicatorPoint dpPrevious = new IndicatorPoint();
       rates.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
         if (!priceDestination(t).HasValue) {
-          FXCoreWrapper.Rate[] ticksLocal = rates
+          Rate[] ticksLocal = rates
             .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
             .ToArray().GetMinuteTicks(1);
           if (ticksLocal.Count() >= period) {
@@ -137,17 +137,17 @@ namespace Order2GoAddIn {
       );
     }
 
-    //static void FractalSell<T>(T[] rates,T rate)where T:FXCoreWrapper.Rate {
+    //static void FractalSell<T>(T[] rates,T rate)where T:Rate {
     //  if (rates[1].AskHigh > Math.Max(rates[0].AskHigh, rates[2].AskHigh))
     //    rate.FractalSell = rates[2].PriceClose;
     //  else rate.FractalSell = 0;
     //}
-    //static void FractalBuy<T>(T[] rates,T rate) where T : FXCoreWrapper.Rate {
+    //static void FractalBuy<T>(T[] rates,T rate) where T : Rate {
     //  if (rates[1].BidLow < Math.Min(rates[0].BidLow, rates[2].BidLow))
     //    rate.FractalBuy = rates[2].PriceClose;
     //  else rate.FractalBuy = 0;
     //}
-    //public static void FillFractal_<T>(this IEnumerable<T> ticks) where T : FXCoreWrapper.Rate {
+    //public static void FillFractal_<T>(this IEnumerable<T> ticks) where T : Rate {
     //  var lastFractal = ticks.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
     //  var startDate = lastFractal == null ? ticks.First().StartDate.AddMinutes(-3): lastFractal.StartDate;
     //  ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
@@ -163,7 +163,7 @@ namespace Order2GoAddIn {
     //  var fb = ticks.Where(t => t.FractalBuy > 0).ToArray();
     //  var fs = ticks.Where(t => t.FractalSell > 0).ToArray();
     //}
-    //public static void FillFractal(this FXCoreWrapper.Rate[] rates) {
+    //public static void FillFractal(this Rate[] rates) {
     //  var lastFractal = rates.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
     //  var startDate = lastFractal == null ? rates.First().StartDate.AddMinutes(-3) : lastFractal.StartDate;
     //  for (int i = 1; i < rates.Length - 1; i++) {
@@ -175,55 +175,6 @@ namespace Order2GoAddIn {
     //  var fs = rates.Where(t => t.FractalSell > 0).ToArray();
     //}
 
-    public static FXCoreWrapper.Rate[] GetMinuteTicks(this IEnumerable<FXCoreWrapper.Rate> fxTicks, int period, bool round) {
-      if (!round) return GetMinuteTicks(fxTicks, period);
-      var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
-      return GetMinuteTicks(fxTicks.Where(t => t.StartDate >= timeRounded), period);
-    }
-    public static FXCoreWrapper.Rate[] GetMinuteTicks(this IEnumerable<FXCoreWrapper.Rate> fxTicks, int period) {
-      var startDate = fxTicks.Min(t => t.StartDate);
-      int row = 0;
-      return (from t in fxTicks
-              where period > 0
-              group t by (((int)Math.Floor((t.StartDate - startDate).TotalMinutes) / period)) * period into tg
-              orderby tg.Key
-              select new FXCoreWrapper.Rate() {
-                AskHigh = tg.Max(t => t.AskHigh),
-                AskLow = tg.Min(t => t.AskLow),
-                AskOpen = tg.Min(t => t.AskOpen),
-                AskClose = tg.Min(t => t.AskClose),
-                BidHigh = tg.Max(t => t.BidHigh),
-                BidLow = tg.Min(t => t.BidLow),
-                BidOpen = tg.Min(t => t.BidOpen),
-                BidClose = tg.Min(t => t.BidClose),
-                StartDate = startDate.AddMinutes(tg.Key)
-              }
-                ).ToArray();
-    }
-    public static IEnumerable<FXCoreWrapper.Rate> GroupTicksToRates(this IEnumerable<FXCoreWrapper.Rate> ticks) {
-      var i = 1;
-      return from tick in ticks
-             group tick by tick.StartDate into gt
-             select new FXCoreWrapper.Rate() {
-               StartDate = gt.Key,
-               AskOpen = gt.First().AskOpen,
-               AskClose = gt.Last().AskClose,
-               AskHigh = gt.Average(t => t.AskHigh),
-               AskLow = gt.Average(t => t.AskLow),
-               BidOpen = gt.First().BidOpen,
-               BidClose = gt.Last().BidClose,
-               BidHigh = gt.Average(t => t.BidHigh),
-               BidLow = gt.Average(t => t.BidLow)
-             };
-    }
-    public static IEnumerable<T> OrderBars<T>(this IEnumerable<T> rates) where T : FXCoreWrapper.Rate {
-      return typeof(T) == typeof(FXCoreWrapper.Tick) ?
-        rates.Cast<FXCoreWrapper.Tick>().OrderBy(r => r.StartDate).ThenBy(r => r.Row).Cast<T>() : rates.OrderBy(r => r.StartDate);
-    }
-    public static IEnumerable<T> OrderBarsDescending<T>(this IEnumerable<T> rates) where T : FXCoreWrapper.Rate {
-      return typeof(T) == typeof(FXCoreWrapper.Tick) ?
-        rates.OfType<FXCoreWrapper.Tick>().OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Row).OfType<T>() : rates.OrderByDescending(r => r.StartDate);
-    }
   }
   public delegate void ErrorEventHandler(Exception exception);
   public delegate void OrderErrorEventHandler(Exception exception);
@@ -420,38 +371,6 @@ namespace Order2GoAddIn {
       Unsubscribe();
     }
     #endregion
-
-    enum BarsPeriodType { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60,D1 = 24,W1 = 7, M1 = 12 }
-    public class Rate : BarBase{
-      public Rate() { }
-      public Rate(bool isHistory) : base(isHistory) { }
-      public Rate(DateTime Time,double Ask, double Bid,bool isHistory):base(Time, Ask, Bid, isHistory){}
-      public Rate(Price price, bool isHistory) : this(price.Time, price.Ask, price.Bid, isHistory) { }
-      public Rate Clone() { return MemberwiseClone() as Rate; }
-    }
-    public class Tick : Rate {
-      public int Row { get; set; }
-      public Tick() {}
-      public Tick(bool isHistory) : base(isHistory) { }
-      public Tick(DateTime Time, double Ask, double Bid, int Row, bool isHistory)
-        : base(Time, Ask, Bid, isHistory) {
-        this.Row = Row;
-      }
-      public Tick(Price price, int row, bool isHistory)
-        : base(price, isHistory) {
-        Row = row;
-      }
-      #region IEquatable<Tick> Members
-
-      public override bool Equals(BarBase other) {
-        return (object)other != null && StartDate == other.StartDate && (other as Tick).Row == Row;
-      }
-      public override int GetHashCode() {
-        return StartDate.GetHashCode() ^ Row.GetHashCode();
-      }
-
-      #endregion
-    }
 
     public IEnumerable<Tick> GetTicks(DateTime startDate, DateTime endDate) {
       return GetTicks(startDate, endDate, maxTicks);
@@ -1024,6 +943,11 @@ namespace Order2GoAddIn {
     }
     #endregion
 
+    public double InPips(int level, double price, int roundTo) { return Math.Round(InPips(level, price), roundTo); }
+    public double InPips(int level,double price) {
+      if (level == 0) return price;
+      return InPips(--level, price / PointSize); 
+    }
     public double InPips(double price, int roundTo) { return Math.Round(InPips(price), roundTo); }
     public double InPips(double price) { return price / PointSize; }
 
@@ -1216,16 +1140,7 @@ namespace Order2GoAddIn {
   [Guid("5183ADD7-0BA2-4937-B9CE-BC8E5CAC4C80")]
   [ComVisible(true)]
   [Serializable]
-  public class Price {
-    public double Bid { get; set; }
-    public double Ask { get; set; }
-    public double Average { get { return (Ask + Bid) / 2; } }
-    public double Spread { get { return Ask - Bid; } }
-    public DateTime Time { get; set; }
-    public string Pair { get; set; }
-    public int BidChangeDirection { get; set; }
-    public int AskChangeDirection { get; set; }
-  }
+  public class Price : HedgeHog.Bars.Price {  }
   [Serializable]
   public class Trade {
     [DisplayName("")]

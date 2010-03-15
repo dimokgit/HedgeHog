@@ -125,6 +125,7 @@ namespace HedgeHog {
     public static DateTime Min(DateTime d1, DateTime d2) {
       return d1 < d2 ? d1 : d2;
     }
+    public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
     public static void SetBackGround(Label Label, SolidColorBrush Brush) {
       Brush.Freeze();
       Label.Dispatcher.BeginInvoke(
@@ -215,6 +216,9 @@ namespace HedgeHog {
     public static T FirstOrLast<T>(this IEnumerable<T> e, bool last) {
       return last ? e.Last() : e.First();
     }
+    public static double AverageHeight(this IEnumerable<double> values) {
+      return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();
+    }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public enum RoundTo { Second, Minute, Hour, Day }
     public static DateTime Round(this DateTime d, RoundTo rt) {
@@ -247,13 +251,13 @@ namespace HedgeHog {
       return dt.AddMinutes(-dt.Minute).AddMinutes(evenMinutes);
     }
     public static bool Between(this int value, double d1, double d2) {
-      return d1 <= value && value <= d2;
+      return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
     public static bool Between(this double value, double d1, double d2) {
-      return d1 <= value && value <= d2;
+      return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
-      return d1 <= value && value <= d2;
+      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {
       return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
