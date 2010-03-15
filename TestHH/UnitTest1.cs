@@ -18,7 +18,7 @@ namespace TestHH {
   [TestClass]
   public class UnitTest1 {
     new Order2GoAddIn.FXCoreWrapper o2g = new Order2GoAddIn.FXCoreWrapper();
-    IEnumerable<Order2GoAddIn.FXCoreWrapper.Rate> bars;
+    IEnumerable<Rate> bars;
     public UnitTest1() {
       //
       // TODO: Add constructor logic here
@@ -81,6 +81,73 @@ namespace TestHH {
       Indicators.List();
     }
     [TestMethod]
+    public void Mass() {
+      var dateStart = DateTime.Parse("03/14/2010 16:00");
+      var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
+      //var ticks = o2g.GetTicks(12000).OrderBarsDescending().ToArray();
+      ticks.FillMass();
+      var waveHeight = 0.00053;
+      var wavePeriod = TimeSpan.FromMinutes(6);
+      Stopwatch timer = Stopwatch.StartNew();
+      var fractals = ticks.FindFractals(waveHeight, wavePeriod, 1, 100)
+        .Concat(new[] { ticks.First().Clone() as Tick }).OrderBarsDescending().ToArray();
+      ticks.FillPower(1.0.FromMinutes());
+      Debug.WriteLine("Ticks.FindFractals:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
+
+      ticks.SetCMA(t => t.Ph.Work.Value, 100);
+      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
+        , r => o2g.InPips(2, r.Ph.Work.Value)
+        , r => o2g.InPips(2, r.PriceCMA[0])
+        , r => o2g.InPips(2, r.PriceCMA[2])
+        , "C:\\WorkCMA.csv");
+
+      ticks.SetCMA(t => t.Ph.Power.Value, 100);
+      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
+        , r => o2g.InPips(2, r.Ph.Power.Value)
+        , r => o2g.InPips(2, r.PriceCMA[0])
+        , r => o2g.InPips(2, r.PriceCMA[2])
+        , "C:\\PowerCMA.csv");
+
+      ticks.OrderBars().ToArray().RunTotal(t => t.Ph.Power);
+      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
+        , r => o2g.InPips(2, r.Ph.Power.Value)
+        , r => o2g.InPips(2, r.RunningTotal.Value)
+        , "C:\\PowerTotal.csv");
+
+      ticks.ToList().ForEach(t => t.RunningTotal = null);
+      ticks.OrderBars().ToArray().RunTotal(t => t.Ph.Work);
+      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
+        , r => o2g.InPips(2, r.RunningTotal.Value)
+        , "C:\\WorkTotal.csv");
+
+      ticks.FillPower(fractals);
+      if (fractals.Count() == 0) {
+        ticks.FillPower(TimeSpan.FromMinutes(1));
+        Debug.WriteLine("Ticks.FillPower:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
+        //SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars(), r => r.Ph.Density.Value, "C:\\Power.csv");
+      }
+      var s = new List<string>(new[] { "fractal,height,mass,time,Work,Power,Speed,KE" });
+
+      foreach (var fractal in fractals.Take(fractals.Count() - 1)) {
+        var line = new List<object>();
+        line.Add(fractal);
+        line.Add(o2g.InPips(fractal.Ph.Height.Value, 1));
+        line.Add(o2g.InPips(fractal.Ph.Mass.Value, 1));
+        line.Add(fractal.Ph.Time);
+        line.Add(o2g.InPips(o2g.InPips(fractal.Ph.Work.Value), 1));
+        line.Add(o2g.InPips(o2g.InPips(fractal.Ph.Power.Value), 1));
+        line.Add(o2g.InPips(fractal.Ph.Speed.Value));
+        line.Add(o2g.InPips(o2g.InPips(o2g.InPips(fractal.Ph.K.Value))));
+        s.Add(string.Join(",", line.Select(l => l + "")));
+      }
+      s.Add(fractals.Last() + "");
+      System.IO.File.WriteAllText("C:\\Phycisc.csv", string.Join(Environment.NewLine, s.ToArray()));
+      var waves = ticks.GetWaves(60 * 5);
+      if (waves != null && waves.Count() > 1) {
+        Debug.WriteLine("Wave Average:" + o2g.InPips(waves.Average(), 1));
+        Debug.WriteLine("ticks.GetWaves:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
+      }
+    }
     public void Overlaps() {
       Stopwatch timer = Stopwatch.StartNew(); timer.Start();
       var rates = o2g.GetBarsBase(1, DateTime.Now.AddHours(-1), DateTime.FromOADate(0)).ToArray();
@@ -128,9 +195,9 @@ namespace TestHH {
     }
     public void FRACTAL() {
       DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getTsi = r => r.PriceTsi;
-      Action<FXW.Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      FXW.Rate[] rates = o2g.GetBarsBase(1,DateTime.Now.AddMinutes(-41)).ToArray();
+      Func<Rate, double?> getTsi = r => r.PriceTsi;
+      Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
+      Rate[] rates = o2g.GetBarsBase(1,DateTime.Now.AddMinutes(-41)).ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -148,9 +215,9 @@ namespace TestHH {
     }
     public void TSI() {
       DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getTsi = r => r.PriceTsi;
-      Action<FXW.Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      FXW.Rate[] rates = o2g.GetTicks(10000).OrderBars().ToArray();
+      Func<Rate, double?> getTsi = r => r.PriceTsi;
+      Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
+      Rate[] rates = o2g.GetTicks(10000).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -160,10 +227,10 @@ namespace TestHH {
     }
     public void TSI_CR_M1() {
       DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getTsi = r => r.PriceTsi;
-      Action<FXW.Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
+      Func<Rate, double?> getTsi = r => r.PriceTsi;
+      Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
       var dateStart = DateTime.Now.AddHours(-12);//.Parse("12/10/09 3:30");
-      FXW.Rate[] rates = o2g.GetBarsBase(1,dateStart ).OrderBars().ToArray();
+      Rate[] rates = o2g.GetBarsBase(1,dateStart ).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -176,9 +243,9 @@ namespace TestHH {
     }
     public void TSI_M1() {
       DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getTsi = r => r.PriceTsi;
-      Action<FXW.Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      FXW.Rate[] rates = o2g.GetBars(1, DateTime.Now.AddHours(-8)).OrderBars().ToArray();
+      Func<Rate, double?> getTsi = r => r.PriceTsi;
+      Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
+      Rate[] rates = o2g.GetBars(1, DateTime.Now.AddHours(-8)).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -188,9 +255,9 @@ namespace TestHH {
     }
     public void Fractals() {
       DateTime timer = DateTime.Now;
-      FXW.Rate[] rates = o2g.GetBars(1,DateTime.Now.AddHours(-8)).ToArray();
+      Rate[] rates = o2g.GetBars(1,DateTime.Now.AddHours(-8)).ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
-      Func<FXCoreWrapper.Rate , double> getFractal = t => t.FractalBuy > 0 ? -1 : t.FractalSell > 0 ? 1 : 0;
+      Func<Rate , double> getFractal = t => t.FractalBuy > 0 ? -1 : t.FractalSell > 0 ? 1 : 0;
       timer = DateTime.Now;
       rates.FillFractal((r,d)=>r.Fractal = (FractalType)d);
       Debug.WriteLine("Get Fractal:" + (DateTime.Now - timer).TotalSeconds);
@@ -198,9 +265,9 @@ namespace TestHH {
     }
     public void StdDev() {
       DateTime timer = DateTime.Now;
-      Func<FXW.Rate, double?> getRsi = r => r.PriceRsi;
-      Action<FXW.Rate, double?> setRsi = (r, d) => r.PriceRsi = d;
-      FXW.Rate[] rates = o2g.GetTicks(10000).ToArray().GroupTicksToRates().OrderBars().ToArray();
+      Func<Rate, double?> getRsi = r => r.PriceRsi;
+      Action<Rate, double?> setRsi = (r, d) => r.PriceRsi = d;
+      Rate[] rates = o2g.GetTicks(10000).ToArray().GroupTicksToRates().OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now-timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -216,7 +283,7 @@ namespace TestHH {
       System.Diagnostics.Debug.WriteLine((DateTime.Now - t).TotalSeconds + " ms");
       SaveToFile(rates, r=>r.PriceRsi, "C:\\RSI.csv");
     }
-    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, Func<T, D> price2, string fileName) where T : FXW.Rate {
+    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, Func<T, D> price2, string fileName) where T : Rate {
       StringBuilder sb = new StringBuilder();
       sb.Append("Time,Price,Indicator,Indicator1,Indicator2" + Environment.NewLine);
       rates.ToList().ForEach(r => sb.Append(r.StartDate + "," + r.PriceClose + "," + price(r) + "," + price1(r) + "," + price2(r) + Environment.NewLine));
@@ -224,7 +291,7 @@ namespace TestHH {
         f.Write(sb.ToString());
       }
     }
-    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, string fileName) where T : FXW.Rate {
+    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, string fileName) where T : Rate {
       StringBuilder sb = new StringBuilder();
       sb.Append("Time,Price,Indicator,Indicator1" + Environment.NewLine);
       rates.ToList().ForEach(r => sb.Append(r.StartDate + "," + r.PriceClose + "," + price(r) + "," + price1(r) + Environment.NewLine));
@@ -232,7 +299,7 @@ namespace TestHH {
         f.Write(sb.ToString());
       }
     }
-    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, string fileName) where T : FXW.Rate {
+    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, string fileName) where T : Rate {
       StringBuilder sb = new StringBuilder();
       sb.Append("Time,Price,Indicator" + Environment.NewLine);
       rates.ToList().ForEach(r => sb.Append(r.StartDate.ToShortDateString() + " " + r.StartDate.ToLongTimeString() + "," + r.PriceClose + "," + price(r) + Environment.NewLine));
@@ -308,8 +375,8 @@ namespace TestHH {
     //  var startDate = ticks.Where(t => priceDestination(t) > 0).Max(r => r.StartDate).AddMinutes(-period-2);
     //  FillRSI(ticks.Where(r => r.StartDate >= startDate), period, priceSource, priceRsi);
     //}
-    void FillRLW_RSI(FXW.Tick[] ticks, int period, DateTime dateStart, DateTime dateEnd
-      , Action<FXW.Rate, double> priceRsi, Action<FXW.Rate, double> priceRsiCR, Action<FXW.Rate, double> priceRlw) {
+    void FillRLW_RSI(Tick[] ticks, int period, DateTime dateStart, DateTime dateEnd
+      , Action<Rate, double> priceRsi, Action<Rate, double> priceRsiCR, Action<Rate, double> priceRlw) {
       ticks.Where(t => t.StartDate > dateStart).ToList().ForEach(t =>{
         var ticksLocal = ticks
         .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))

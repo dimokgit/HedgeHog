@@ -146,6 +146,9 @@
         <Border BorderBrush="LightGray">
           <TextBlock Text="{Binding FractalStats}" FontFamily="Courier New " />
         </Border>
+        <Border BorderBrush="LightGray">
+          <TextBlock Text="{Binding FractalStats1}" FontFamily="Courier New " />
+        </Border>
       </StackPanel>
         <StackPanel Orientation="Horizontal">
         <Border BorderBrush="LightGray" BorderThickness="1" ToolTip="15/10/5/1 Bar Average Spreads">

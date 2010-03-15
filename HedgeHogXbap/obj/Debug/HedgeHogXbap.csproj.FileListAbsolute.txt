@@ -6,7 +6,6 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\App.g.cs
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap_MarkupCompile.cache
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.g.resources
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.Properties.Resources.resources
-C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.csproj.GenerateResource.Cache
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.exe
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.pdb
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\Account.baml
@@ -16,3 +15,5 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\bin\Debug\HedgeHogXbap.xbap
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.TrustInfo.xml
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.exe.manifest
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.xbap
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource-ResGen.read.1.tlog
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource-ResGen.write.1.tlog

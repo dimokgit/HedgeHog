@@ -1,6 +1,10 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18C2BF14-0A50-4042-9F0D-0B4458180DFF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HedgeHogs", "HedgeHogs", "{C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog", "HedgeHog\HedgeHog.csproj", "{847035FC-6C11-4AD2-A86B-09DA12961288}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Temp", "Temp\Temp.csproj", "{E4EC0065-B964-47E1-9B26-E866F3CBF6A0}"
@@ -13,388 +17,26 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order2GoAddIn", "Order2GoAd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHH", "TestHH\TestHH.csproj", "{D32794A2-4CB6-48E8-805D-4942D78A07D7}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18C2BF14-0A50-4042-9F0D-0B4458180DFF}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunWithTimeout", "RunWithTimeout\RunWithTimeout.csproj", "{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WcfToHedgeHog", "..\WcfToHedgeHog\WcfToHedgeHog.csproj", "{8801FF8A-067C-4994-BD16-DB0AE136AC58}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "filterrow", "http://filterrow", "{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}"
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""
-		SccAuxPath = ""
-		SccLocalPath = ""
-		SccProvider = ""
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "_4", "http://filterrow/_4", "{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}"
 	ProjectSection(WebsiteProperties) = preProject
 		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
 		SccAuxPath = ""
 		SccLocalPath = "."
 		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		SccProjectName = ""$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService", RBDBAAAA"
-		SccAuxPath = ""
-		SccLocalPath = "."
-		SccProvider = "MSSCCI:Microsoft Visual SourceSafe"
-		TargetFramework = "3.5"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv3.5"
 		Debug.AspNetCompiler.VirtualPath = "/filterrow"
-		Debug.AspNetCompiler.PhysicalPath = "..\..\..\FilterRow.Web\"
+		Debug.AspNetCompiler.PhysicalPath = "_4\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\filterrow\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.VirtualPath = "/filterrow"
-		Release.AspNetCompiler.PhysicalPath = "..\..\..\FilterRow.Web\"
+		Release.AspNetCompiler.PhysicalPath = "_4\"
 		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\filterrow\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
@@ -412,8 +54,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Persistance", "Persistancy\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Signaler", "HedgeHog.Signaler\HedgeHog.Signaler.csproj", "{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HedgeHogs", "HedgeHogs", "{C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Lib", "HedgeHog.Lib\HedgeHog.Lib.csproj", "{C8436D96-349C-4EA7-A58B-3D21BA93BE22}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Server", "HedgeHog.Server\HedgeHog.Server.csproj", "{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}"
@@ -424,8 +64,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Remoter", "HedgeHo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataDisplay", "DynamicDataDisplay\DynamicDataDisplay.csproj", "{ECD37682-DF7E-409F-912D-0965634556B5}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{FB5B5E24-D6EB-4ECA-968A-CF9B38F172EE}"
-EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = HedgeHog.vsmdi
@@ -433,9 +71,9 @@ Global
 	GlobalSection(SourceCodeControl) = preSolution
 		SccNumberOfProjects = 1
 		SccWebProject0 = true
-		SccProjectUniqueName0 = http://filterrow
+		SccProjectUniqueName0 = http://filterrow/_4
 		SccProjectName0 = \u0022$/AllInOne.root/AllInOne/Data/VS.2005/SilverLight/FilterRowService\u0022,\u0020RBDBAAAA
-		SccLocalPath0 = _3
+		SccLocalPath0 = C:\\Data\\Dev\\Forex_Old\\Projects\\HedgeHog\\_2
 		SccProvider0 = MSSCCI:Microsoft\u0020Visual\u0020SourceSafe
 		SccProjectEnlistmentChoice0 = 2
 	EndGlobalSection
@@ -471,11 +109,9 @@ Global
 		{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8801FF8A-067C-4994-BD16-DB0AE136AC58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8801FF8A-067C-4994-BD16-DB0AE136AC58}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8801FF8A-067C-4994-BD16-DB0AE136AC58}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8801FF8A-067C-4994-BD16-DB0AE136AC58}.Release|Any CPU.Build.0 = Release|Any CPU
 		{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{55CAC8CB-35CE-45D4-BAC8-6F7DC342ACBD}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{BD7A142C-9EE2-4833-A101-4833968C7541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -510,16 +146,14 @@ Global
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FB5B5E24-D6EB-4ECA-968A-CF9B38F172EE}.Debug|Any CPU.ActiveCfg = Debug
-		{FB5B5E24-D6EB-4ECA-968A-CF9B38F172EE}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{847035FC-6C11-4AD2-A86B-09DA12961288} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{4A4FDF3C-8827-4E71-A705-7AD964408BB2} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
-		{847035FC-6C11-4AD2-A86B-09DA12961288} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{C8436D96-349C-4EA7-A58B-3D21BA93BE22} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{29F0B895-BF08-4747-A454-D44C7E43C7B1} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
