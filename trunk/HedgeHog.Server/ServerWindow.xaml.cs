@@ -772,7 +772,13 @@ namespace HedgeHog {
         #endregion
 
         Fractals1 = Fractals.Concat(new[] { _ticks.Last().Clone() as Tick }).OrderBarsDescending().ToArray();
+        Fractals1[0].Fractal = Fractals1[2].Fractal;
         _ticks.ToArray().FillPower(Fractals1);
+
+        var fractals1 = Fractals1.OrderBarsDescending().Take(5).Select((f, i) => new {
+          f = f, i = i,
+          h = i < Fractals1.Length - 1 ? Math.Abs(f.FractalPrice.Value - Fractals1[i + 1].FractalPrice.Value) : 0
+        }).ToArray();
 
         RaisePropertyChanged(() => FractalStats);
 
@@ -786,13 +792,13 @@ namespace HedgeHog {
         }
 
         #region Legs Up/Down
-        var legUps = fractals.Where(f => f.f.HasFractalSell && f.i < Fractals.Length - 1).ToArray();
-        legUpAverage = fw.InPips(legUps.Length == 0 ? 0 : legUps.Average(f => f.f.FractalPrice - Fractals[f.i + 1].FractalPrice).Value, 0);
-        var waveUpsPeriod = legUps.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legUps.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
+        var legUps = fractals1.Where(f => f.f.HasFractalSell && f.h > 0).ToArray();
+        legUpAverage = fw.InPips(legUps.Length == 0 ? 0 : legUps.Average(f => f.h), 0);
+        //var waveUpsPeriod = legUps.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legUps.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
 
-        var legDowns = fractals.Where(f => f.f.HasFractalBuy && f.i < Fractals.Length - 1).ToArray();
-        legDownAverage = fw.InPips(legDowns.Length == 0 ? 0 : legDowns.Average(f => Fractals[f.i + 1].FractalPrice - f.f.FractalPrice).Value, 0);
-        var waveDownsPeriod = legDowns.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legDowns.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
+        var legDowns = fractals1.Where(f => f.f.HasFractalBuy && f.h > 0).ToArray();
+        legDownAverage = fw.InPips(legDowns.Length == 0 ? 0 : legDowns.Average(f => f.h), 0);
+        //var waveDownsPeriod = legDowns.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legDowns.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
         #endregion
 
         var wavePeriod = TimeSpan.FromSeconds(fractals.Take(fractals.Length - 1).Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));

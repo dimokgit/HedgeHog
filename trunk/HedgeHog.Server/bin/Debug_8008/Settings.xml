@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="1" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="173" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="-2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="339" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="342" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="425" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="469" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519040180" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Tziplyonak713" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
@@ -42,7 +42,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTimeFramePercSmooth]Text" value="1.5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkGroupTicks]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkCachePriceHeight]IsChecked" value="False" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPair]Text" value="EUR/JPY" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPair]Text" value="EUR/USD" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalMinutes]Text" value="1.0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTradeByAngle]Text" value="0.00011" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountBig]Text" value="-2" />
@@ -52,5 +52,6 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAngleCMA]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalShortPercent]Text" value="15" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalPadding]Text" value="100" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMassTradeRatio]Text" value="0" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMassTradeRatio]Text" value="0.85" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMass1Mass0TradeRatio]Text" value="50" />
 </dictionary>
