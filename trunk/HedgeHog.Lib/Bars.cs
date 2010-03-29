@@ -258,6 +258,9 @@ namespace HedgeHog.Bars {
     public int Slope { get { return Math.Sign(Next.Value - Value); } }
   }
   public static class Extensions {
+    public static IEnumerable<TBar> Where<TBar>(this IEnumerable<TBar> bars, TBar bar1, TBar bar2) where TBar : BarBase {
+      return bars.Where(b => b.StartDate.Between(bar1.StartDate, bar2.StartDate));
+    }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars,TBar barFrom,TBar barTo) where TBar : BarBase {
       return bars.Where(b => b.StartDate.Between(barFrom.StartDate, barTo.StartDate)).TradesPerMinute();
     }

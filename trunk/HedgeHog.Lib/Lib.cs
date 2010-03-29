@@ -125,6 +125,13 @@ namespace HedgeHog {
     public static DateTime Min(DateTime d1, DateTime d2) {
       return d1 < d2 ? d1 : d2;
     }
+    public static double Abs(this double v) {
+      return Math.Abs(v);
+    }
+    public static int Abs(this int v) {
+      return Math.Abs(v);
+    }
+ 
     public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
     public static void SetBackGround(Label Label, SolidColorBrush Brush) {
       Brush.Freeze();
@@ -219,6 +226,7 @@ namespace HedgeHog {
     public static double AverageHeight(this IEnumerable<double> values) {
       return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();
     }
+    public static int Floor(this double d) { return (int)Math.Floor(d); }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public enum RoundTo { Second, Minute, Hour, Day }
     public static DateTime Round(this DateTime d, RoundTo rt) {

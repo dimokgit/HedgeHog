@@ -118,8 +118,15 @@
         <TextBlock ToolTip="Mass1/Mass0 Trade Ratio">MTR:</TextBlock>
         <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
       </StackPanel>
-      <StackPanel Orientation="Horizontal">
-        <Border BorderBrush="LightGray" BorderThickness="1">
+
+      <Border BorderBrush="LightGray" BorderThickness="1">
+        <WrapPanel>
+          <Label Content="PD"  ToolTip="Power Down" BorderBrush="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
+          <Label Content="BR"  ToolTip="Buy In Range" BorderBrush="{Binding Converter={StaticResource BoolToColorConverter}, ConverterParameter=Transparent|Transparent|LightGreen, Path=FractalBuyInRange, IsAsync=True}" />
+          <Label Content="SR"  ToolTip="Sell In Range" BorderBrush="{Binding Converter={StaticResource BoolToColorConverter}, ConverterParameter=Transparent|Transparent|LightSalmon, Path=FractalSellInRange, IsAsync=True}" />
+        </WrapPanel>
+      </Border>
+      <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">
           <WrapPanel>
             <TextBlock Text="SD:" ToolTip="RSI Standard Deviation" />
             <Label Content="{Binding RsiStdDev}" ContentStringFormat="n0"/>
@@ -144,7 +151,6 @@
             <Button Content="/\" Click="TimeFrameUp_Click"/>
           </WrapPanel>
         </Border>
-      </StackPanel>
       <StackPanel Orientation="Horizontal">
         <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True" Background="Transparent"></TextBox>
         <Border BorderBrush="{Binding FractalWaveBuySellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" BorderThickness="1">
