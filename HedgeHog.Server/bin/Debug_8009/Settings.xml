@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="407" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="1" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="342" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="499" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519048070" />
@@ -53,5 +53,5 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalShortPercent]Text" value="15" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalPadding]Text" value="100" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMassTradeRatio]Text" value="0.85" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMass1Mass0TradeRatio]Text" value="5" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMass1Mass0TradeRatio]Text" value="50" />
 </dictionary>
