@@ -101,9 +101,12 @@ namespace HedgeHog {
       }
     }
 
-    public int _txtAngleCMA;
-    public int angleCMA { get { return _txtAngleCMA; } }
+    public double _txtMassTradeRatio;
+    public double massTradeRatio { get { return _txtMassTradeRatio; } }
 
+    public int _txtMass1Mass0TradeRatio;
+    public int mass1Mass0TradeRatio { get { return _txtMass1Mass0TradeRatio; } }
+        
     public bool _chkSaveVoltageToFile;
     public bool SaveVoltageToFile { get { return _chkSaveVoltageToFile; } }
 

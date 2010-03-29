@@ -10,6 +10,7 @@ namespace HedgeHog.Bars {
     public DateTime StartDate { get; set; }
     public readonly bool IsHistory;
 
+    #region Bid/Ask
     public double AskHigh { get; set; }
     public double AskLow { get; set; }
     public double BidHigh { get; set; }
@@ -18,10 +19,15 @@ namespace HedgeHog.Bars {
     public double AskOpen { get; set; }
     public double BidClose { get; set; }
     public double BidOpen { get; set; }
+    #endregion
 
+    #region Spread
     public double Spread { get { return (AskHigh - AskLow + BidHigh - BidLow) / 2; } }
     public double SpreadMax { get { return Math.Max(AskHigh - AskLow, BidHigh - BidLow); } }
     public double SpreadMin { get { return Math.Min(AskHigh - AskLow, BidHigh - BidLow); } }
+    #endregion
+
+    #region Price
     public double PriceHigh { get { return (AskHigh + BidHigh) / 2; } }
     public double PriceLow { get { return (AskLow + BidLow) / 2; } }
     public double PriceClose { get { return (AskClose + BidClose) / 2; } }
@@ -44,8 +50,11 @@ namespace HedgeHog.Bars {
     public double? PriceTsiCR { get; set; }
     public double[] PriceCMA { get; set; }
     public double PriceStdDev { get; set; }
+    #endregion
+
     public double? RunningTotal { get; set; }
 
+    #region Fractals
     public FractalType Fractal {
       get { return (int)FractalSell + FractalBuy; }
       set {
@@ -65,7 +74,9 @@ namespace HedgeHog.Bars {
     public bool HasFractal { get { return Fractal != FractalType.None; } }
     public bool HasFractalSell { get { return FractalSell == FractalType.Sell; } }
     public bool HasFractalBuy { get { return FractalBuy == FractalType.Buy; } }
+    #endregion
 
+    #region Phycics
     public double? Mass { get; set; }
 
     public class PhClass:ICloneable {
@@ -100,6 +111,7 @@ namespace HedgeHog.Bars {
         _Ph = value;
       }
     }
+    #endregion
 
     #region Overlap
     public OverlapType GetOverlap(BarBase bar) {
@@ -153,8 +165,11 @@ namespace HedgeHog.Bars {
     }
 
 
+    #region Operators
     public static bool operator ==(BarBase b1, BarBase b2) { return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2); }
     public static bool operator !=(BarBase b1, BarBase b2) { return (object)b1 == null ? (object)b2 == null ? false : !b2.Equals(b1) : !b1.Equals(b2); }
+    #endregion
+
     public static TBar BiggerFractal<TBar>(TBar b1, TBar b2) where TBar : BarBase{
       if (b1.Fractal == b2.Fractal) {
         if (b1.Fractal == FractalType.Buy) return b1.FractalPrice < b2.FractalPrice ? b1 : b2;
@@ -163,6 +178,7 @@ namespace HedgeHog.Bars {
       } else return null;
     }
 
+    #region Overrides
     public override string ToString() {
       return string.Format("{0:dd HH:mm:ss}:{1}/{2}", StartDate, AskHigh, BidLow);
     }
@@ -174,8 +190,7 @@ namespace HedgeHog.Bars {
       return true;
     }
     public override int GetHashCode() { return StartDate.GetHashCode(); }
-
-    static double MA(double dOld, double dNew, int count) { return (dOld * count + dNew) / (count + 1); }
+    #endregion
 
     #region ICloneable Members
 
@@ -221,7 +236,11 @@ namespace HedgeHog.Bars {
     #region IEquatable<Tick> Members
 
     public override bool Equals(BarBase other) {
-      return (object)other != null && StartDate == other.StartDate && (other as Tick).Row == Row;
+      try {
+        return (object)other != null && StartDate == other.StartDate && ((Tick)other).Row == Row;
+      } catch (Exception) {
+        throw;
+      }
     }
     public override int GetHashCode() {
       return StartDate.GetHashCode() ^ Row.GetHashCode();
@@ -239,6 +258,13 @@ namespace HedgeHog.Bars {
     public int Slope { get { return Math.Sign(Next.Value - Value); } }
   }
   public static class Extensions {
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars,TBar barFrom,TBar barTo) where TBar : BarBase {
+      return bars.Where(b => b.StartDate.Between(barFrom.StartDate, barTo.StartDate)).TradesPerMinute();
+    }
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+      return (bars.Count() / TimeSpan.FromTicks(bars.Max(b => b.StartDate.Ticks) - bars.Min(b => b.StartDate.Ticks)).TotalMinutes);
+    }
+
     public static Rate[] GetMinuteTicks<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
       if (!round) return GetMinuteTicks(fxTicks, period);
       var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
@@ -253,12 +279,12 @@ namespace HedgeHog.Bars {
               select new Rate() {
                 AskHigh = tg.Max(t => t.AskHigh),
                 AskLow = tg.Min(t => t.AskLow),
-                AskOpen = tg.Min(t => t.AskOpen),
-                AskClose = tg.Min(t => t.AskClose),
+                AskOpen = tg.First().AskOpen,
+                AskClose = tg.Last().AskClose,
                 BidHigh = tg.Max(t => t.BidHigh),
                 BidLow = tg.Min(t => t.BidLow),
-                BidOpen = tg.Min(t => t.BidOpen),
-                BidClose = tg.Min(t => t.BidClose),
+                BidOpen = tg.First().BidOpen,
+                BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
                 StartDate = startDate.AddMinutes(tg.Key)
               }
@@ -271,12 +297,12 @@ namespace HedgeHog.Bars {
                StartDate = gt.Key,
                AskOpen = gt.First().AskOpen,
                AskClose = gt.Last().AskClose,
-               AskHigh = gt.Average(t => t.AskHigh),
-               AskLow = gt.Average(t => t.AskLow),
+               AskHigh = gt.Max(t => t.AskHigh),
+               AskLow = gt.Min(t => t.AskLow),
                BidOpen = gt.First().BidOpen,
                BidClose = gt.Last().BidClose,
-               BidHigh = gt.Average(t => t.BidHigh),
-               BidLow = gt.Average(t => t.BidLow),
+               BidHigh = gt.Max(t => t.BidHigh),
+               BidLow = gt.Min(t => t.BidLow),
                Mass = gt.Sum(t => t.Mass)
              };
     }
@@ -356,11 +382,11 @@ namespace HedgeHog.Bars {
           barPrev = bar;
         }
     }
-    public static List<Tick> FindFractals(this IEnumerable<Tick> ticks, double waveHeight, TimeSpan period, double padRight, int count) {
+    public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count)where TBar:BarBase {
       var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count);
       return fractals.Select(f => {
         var tt = ticks.Where(t => t.StartDate.Between(f.StartDate.AddSeconds(-60), f.StartDate.AddSeconds(60))).OrderBy(t => t.PriceAvg);
-        var fractal = (f.Fractal == FractalType.Buy ? tt.First() : tt.Last()).Clone() as Tick;
+        var fractal = (f.Fractal == FractalType.Buy ? tt.First() : tt.Last()).Clone() as TBar;
         fractal.Fractal = f.Fractal;
         return fractal;
       }).ToList();

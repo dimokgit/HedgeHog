@@ -48,8 +48,9 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountBig]Text" value="-2" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtWavesCountSmall]Text" value="3" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkDoRsi]IsChecked" value="True" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutesSchedule]Text" value="20:00:00-23:59:59=05&#xD;&#xA;00:00:00-14:00:00=07" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtCorridorHeightMinutesSchedule]Text" value="" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAngleCMA]Text" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalShortPercent]Text" value="15" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtFractalPadding]Text" value="100" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMassTradeRatio]Text" value="0" />
 </dictionary>

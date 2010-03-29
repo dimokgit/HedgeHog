@@ -92,6 +92,10 @@
       <StackPanel Orientation="Horizontal">
         <TextBlock ToolTip="Wave Height Minimum by Overlap">WOL:</TextBlock>
         <Label Content="{Binding WaveHeightInPips}" ContentStringFormat="n1" />
+
+        <TextBlock ToolTip="Power Bar">PB:</TextBlock>
+        <Label Content="{Binding OverlapAverageShortPower}" ContentStringFormat="n0" />
+
         <TextBlock ToolTip="Overlap Average Short">AS:</TextBlock>
         <Label Content="{Binding OverlapAverageShort.TotalMinutes}" ContentStringFormat="n1" />
         <TextBlock ToolTip="Overlap Last">&lt;L:</TextBlock>
@@ -107,9 +111,12 @@
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
         <TextBlock Text="‡"></TextBlock>
         <TextBlock Text="{Binding AngleRounded}"></TextBlock>
-        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtAngleCMA" ToolTip="Angle CMA Period"/>
         <CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>
+        <TextBlock ToolTip="Mass Trade Ratio">MTR:</TextBlock>
+        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtMassTradeRatio" ToolTip="Mass Trade Ratio"/>
+        <TextBlock ToolTip="Mass1/Mass0 Trade Ratio">MTR:</TextBlock>
+        <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
       </StackPanel>
       <StackPanel Orientation="Horizontal">
         <Border BorderBrush="LightGray" BorderThickness="1">
@@ -141,13 +148,10 @@
       <StackPanel Orientation="Horizontal">
         <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True" Background="Transparent"></TextBox>
         <Border BorderBrush="{Binding FractalWaveBuySellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" BorderThickness="1">
-          <TextBlock Text="{Binding FractalWavesText}" />
+          <TextBlock Text="{Binding FractalWavesText}" FontFamily="Courier New " />
         </Border>
         <Border BorderBrush="LightGray">
           <TextBlock Text="{Binding FractalStats}" FontFamily="Courier New " />
-        </Border>
-        <Border BorderBrush="LightGray">
-          <TextBlock Text="{Binding FractalStats1}" FontFamily="Courier New " />
         </Border>
       </StackPanel>
         <StackPanel Orientation="Horizontal">
