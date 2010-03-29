@@ -7,8 +7,8 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519048070" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Toby2523" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="1" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="-1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="500" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="204" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="410" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
