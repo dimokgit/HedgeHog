@@ -18,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 namespace HedgeHog {
@@ -67,7 +68,7 @@ namespace HedgeHog {
 
     #region Properties
     System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer();
-    List<Order2GoAddIn.FXCoreWrapper.Tick> Ticks = null;
+    List<Tick> Ticks = null;
     private ViewModel DC { get { return DataContext as ViewModel; } }
     VoltForGrid PeakVolt = null;
     VoltForGrid ValleyVolt = null;
@@ -254,7 +255,7 @@ namespace HedgeHog {
     public event PriceGridErrorHandler PriceGridError;
     protected void RaisePriceGridError(Exception exc){      if( PriceGridError!= null)PriceGridError(exc);}
     public class TickChangedEventArgs : EventArgs {
-      public List<Order2GoAddIn.FXCoreWrapper.Rate> Ticks;
+      public List<Rate> Ticks;
       public double VoltageHigh { get; set; }
       public double VoltageCurr { get; set; }
       public double NetBuy { get; set; }
@@ -265,11 +266,11 @@ namespace HedgeHog {
       public DateTime TimeHigh { get; set; }
       public DateTime TimeCurr { get; set; }
       public List<Volt> VoltsByTick { get; set; }
-      public TickChangedEventArgs(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks,
+      public TickChangedEventArgs(List<Rate> ticks,
         double voltageHigh, double voltageCurr, double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr) :
         this(ticks, voltageHigh, voltageCurr, 0, 0, netBuy, netSell, timeHigh, timeCurr, new[] { 0.0, 0.0 }, null) {
       }
-      public TickChangedEventArgs(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks,
+      public TickChangedEventArgs(List<Rate> ticks,
         double voltageHigh, double voltageCurr, double priceMaxAverage, double priceMinAverage,
         double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverage, List<Volt>  voltsByTick) {
         Ticks = ticks;
@@ -287,20 +288,20 @@ namespace HedgeHog {
     }
     public event EventHandler<TickChangedEventArgs> TicksChanged;
 
-    void OnTicksChanged(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks, VoltForGrid voltageHight, VoltForGrid voltageCurr, double netBuy, double netSell) {
+    void OnTicksChanged(List<Rate> ticks, VoltForGrid voltageHight, VoltForGrid voltageCurr, double netBuy, double netSell) {
       OnTicksChanged(ticks,
         voltageHight != null ? voltageHight.Average : 0, voltageCurr != null ? voltageCurr.Average : 0, netBuy, netSell,
         voltageHight != null ? voltageHight.StartDate : DateTime.MinValue, voltageCurr != null ? voltageCurr.StartDate : DateTime.MinValue);
     }
-    void OnTicksChanged(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks, double voltageHight, double voltageCurr, 
+    void OnTicksChanged(List<Rate> ticks, double voltageHight, double voltageCurr, 
       double netBuy,double netSell, DateTime timeHigh, DateTime timeCurr) {
       OnTicksChanged(ticks, voltageHight,0,0, voltageCurr, netBuy,netSell, timeHigh, timeCurr, new[]{0.0,0.0},null);
     }
-    void OnTicksChanged(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks, double voltageHight, double voltageCurr,
+    void OnTicksChanged(List<Rate> ticks, double voltageHight, double voltageCurr,
       double priceMaxAverage, List<Volt> voltsByTick) {
       OnTicksChanged(ticks, voltageHight, voltageCurr, priceMaxAverage, 0, 0, 0, DateTime.Now, DateTime.Now, new double[] { }, voltsByTick);
     }
-    void OnTicksChanged(List<Order2GoAddIn.FXCoreWrapper.Rate> ticks, double voltageHight, double voltageCurr,
+    void OnTicksChanged(List<Rate> ticks, double voltageHight, double voltageCurr,
       double priceMaxAverage,double priceMinAverage,      double netBuy,double netSell,
       DateTime timeHigh, DateTime timeCurr, double[] priceAverage, List<Volt> voltsByTick) {
       if (TicksChanged != null) TicksChanged(this, 
@@ -337,7 +338,7 @@ namespace HedgeHog {
           TimeSpan.FromSeconds(1), ThreadScheduler.infinity, ProcessPrice, (s, e) => RaisePriceGridError(e.Exception));
       }
     }
-    List<FXW.Rate> rsiBars = new List<Order2GoAddIn.FXCoreWrapper.Rate>();
+    List<Rate> rsiBars = new List<Rate>();
     void ProcessRsi() {
       fw.GetBars(5, fw.ServerTime.Round(5).AddHours(-12), DateTime.FromOADate(0), ref rsiBars);
     }
@@ -384,7 +385,7 @@ namespace HedgeHog {
     }
     #endregion
 
-    List<FXW.Rate> rsiRates = new List<Order2GoAddIn.FXCoreWrapper.Rate>();
+    List<Rate> rsiRates = new List<Rate>();
     void GetRsiRates() {
       //if (RsiScheduler.IsRunning) { RaisePriceGridError(new Exception("RsiScheduler is overwelmed.")); return; }
       var startTime = fw.ServerTime.AddHours(-12).Round(1);

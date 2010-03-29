@@ -81,8 +81,36 @@ namespace TestHH {
       Indicators.List();
     }
     [TestMethod]
+    public void Waves() {
+      var dateStart = DateTime.Parse("03/14/2010 16:00");
+      dateStart = DateTime.Now.AddHours(-2);
+      //var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
+      var ticks = o2g.GetTicks(12000).OrderBarsDescending().ToArray();
+      ticks.FillMass();
+      Stopwatch timer = Stopwatch.StartNew();
+      var period = ticks.Count() / (ticks.Max(t => t.StartDate) - ticks.Min(t => t.StartDate)).Duration().TotalMinutes;
+      var waves0 = ticks.GetWaves(period.ToInt());
+      var waves = waves0.OrderBy(w=>w).Take(waves0.Count() - 1).ToArray();
+      var wa = waves.Average();
+      var wst = waves.StdDev();
+      waves = waves.Where(w => w > wa).ToArray();
+      if (waves != null && waves.Count() > 1) {
+        Debug.WriteLine("Wave Avg:" + o2g.InPips(wa, 1));
+        Debug.WriteLine("Wave StDev:" + o2g.InPips(wst, 1));
+        Debug.WriteLine("Wave Average:" + o2g.InPips(waves.Average(), 1));
+        waves0.ToList().ForEach(w => Debug.WriteLine("w:" + o2g.InPips(w, 1)));
+        Debug.WriteLine("ticks.GetWaves:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
+        var ws = waves0.GetWaveStats();
+        Debug.WriteLine("Wave Avg:" + o2g.InPips(ws.Average, 1));
+        Debug.WriteLine("Wave StDev:" + o2g.InPips(ws.StDev, 1));
+        Debug.WriteLine("Wave AverageN:" + o2g.InPips(ws.AverageN, 1));
+      }
+    }
+
+
     public void Mass() {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
+      dateStart = DateTime.Now.AddHours(-4);
       var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
       //var ticks = o2g.GetTicks(12000).OrderBarsDescending().ToArray();
       ticks.FillMass();
@@ -119,6 +147,10 @@ namespace TestHH {
       SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
         , r => o2g.InPips(2, r.RunningTotal.Value)
         , "C:\\WorkTotal.csv");
+
+      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
+  , r => Math.Abs(r.Ph.Density.Value)
+  , "C:\\Density.csv");
 
       ticks.FillPower(fractals);
       if (fractals.Count() == 0) {

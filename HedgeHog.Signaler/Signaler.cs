@@ -90,6 +90,29 @@ namespace HedgeHog {
                select Math.Abs(ma1.ma.Value - ma2.ma.Value);
       return w2.ToArray();
     }
+
+    public class WaveStats {
+      public double Average;
+      public double StDev;
+      public double AverageN;
+      public DateTime Time = DateTime.MinValue;
+      public WaveStats() { }
+      public WaveStats(double Avg,double StDev,double AverageN) {
+        this.Average = Avg;
+        this.StDev = StDev;
+        this.AverageN = AverageN;
+        Time = DateTime.Now;
+      }
+    }
+
+    public static WaveStats GetWaveStats(this double[] waves) {
+      //waves = waves.OrderBy(w => w).Take(waves.Count() - 1).ToArray();
+      var wa = waves.Average();
+      var wst = waves.StdDev();
+      waves = waves.Where(w => w > wa).ToArray();
+      return new WaveStats(wa, wst, waves.Average());
+    }
+
     public static List<Volt> FindMaximasPeakAndValley(
       IEnumerable<Rate> ticks, int voltageCMA, bool saveVoltsToFile, ref VoltForGrid PeakVolt, ref VoltForGrid ValleyVolt)
     {
