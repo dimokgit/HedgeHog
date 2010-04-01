@@ -113,10 +113,11 @@
         <TextBlock Text="{Binding AngleRounded}"></TextBlock>
         <CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>
-        <TextBlock ToolTip="Mass Trade Ratio">MTR:</TextBlock>
-        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtMassTradeRatio" ToolTip="Mass Trade Ratio"/>
+        <TextBlock ToolTip="PTM">MTR:</TextBlock>
+        <TextBox Text="{state:UserSettings Default=0.2}" TextChanged="TextChanged" Name="txtPeakTradeMargin" ToolTip="Peak Trade Margin"/>
         <TextBlock ToolTip="Mass1/Mass0 Trade Ratio">MTR:</TextBlock>
         <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
+        <CheckBox IsChecked="{state:UserSettings}" Content="NF" Name="chkNormalizeFractals" IsThreeState="False"  ToolTip="Normalize Fractals" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
       </StackPanel>
 
       <Border BorderBrush="LightGray" BorderThickness="1">

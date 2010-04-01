@@ -23,16 +23,24 @@ namespace HedgeHog {
     public int TradeSignalDelay = 2;
     public DateTime ServerTime { get; set; }
     DateTime _goBuyTime = DateTime.MinValue;
-    public DateTime GoBuyTime { get { return _goBuyTime; } set { _goBuyTime = value; } }
+    DateTime GoBuyTime { get { return _goBuyTime; } set { _goBuyTime = value; } }
     DateTime _goSellTime = DateTime.MinValue;
-    public DateTime GoSellTime { get { return _goSellTime; } set { _goSellTime = value; } }
+    DateTime GoSellTime { get { return _goSellTime; } set { _goSellTime = value; } }
     public int TradeWaveInMinutes { get; set; }
 
-    public bool GoBuy { 
-      get { return (this.ServerTime - GoBuyTime).TotalSeconds.Between(0, TradeSignalDelay); }
+    public bool GoBuy {
+      get;
+      set;
+    }
+    bool goBuy { 
+      get { return (this.ServerTime - GoBuyTime).Duration().TotalSeconds.Between(0, TradeSignalDelay); }
       set { this.GoBuyTime = value ? this.ServerTime : DateTime.MinValue; }
     }
-    public bool GoSell { 
+    public bool GoSell {
+      get;
+      set;
+    }
+    bool goSell { 
       get { return (this.ServerTime - GoSellTime).TotalSeconds.Between(0, TradeSignalDelay); }
       set { this.GoSellTime = value ? this.ServerTime : DateTime.MinValue; }
     }

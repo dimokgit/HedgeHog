@@ -11,6 +11,9 @@ namespace HedgeHog {
     public bool _chkIsDemo;
     public bool isDemo { get { return _chkIsDemo; } }
 
+    public bool _chkNormalizeFractals;
+    public bool normalizeFractals { get { return _chkNormalizeFractals; } }
+
     public bool _chkVerboseLogging;
     public bool verboseLogging { get { return _chkVerboseLogging; } }
 
@@ -101,8 +104,8 @@ namespace HedgeHog {
       }
     }
 
-    public double _txtMassTradeRatio;
-    public double massTradeRatio { get { return _txtMassTradeRatio; } }
+    public double _txtPeakTradeMargin;
+    public double peakTradeMargin { get { return _txtPeakTradeMargin; } }
 
     public int _txtMass1Mass0TradeRatio;
     public int mass1Mass0TradeRatio { get { return _txtMass1Mass0TradeRatio; } }

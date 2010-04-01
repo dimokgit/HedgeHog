@@ -227,6 +227,7 @@ namespace HedgeHog {
       return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();
     }
     public static int Floor(this double d) { return (int)Math.Floor(d); }
+    public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public enum RoundTo { Second, Minute, Hour, Day }
     public static DateTime Round(this DateTime d, RoundTo rt) {
