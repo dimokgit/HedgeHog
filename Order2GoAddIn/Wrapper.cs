@@ -182,6 +182,7 @@ namespace Order2GoAddIn {
   [Guid("2EC43CB6-ED3D-465c-9AF3-C0BBC622663E")]
   [ComVisible(true)]
   public sealed class FXCoreWrapper:IDisposable {
+    public readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public const string TABLE_ACCOUNTS = "accounts";
     public const string TABLE_OFFERS = "offers";
     public const string TABLE_ORDERS = "orders";
@@ -277,6 +278,7 @@ namespace Order2GoAddIn {
     public double PointSize {
       get {
         if (_pointSize > 0) return _pointSize;
+        if (Pair == "") return 1;
         if (Pair.Length == 0) throw new PairNotFoundException("[Empty]");
         var row = FindOfferByPair(Pair);
         if( row == null ) throw new PairNotFoundException(Pair, TABLE_OFFERS);
@@ -316,9 +318,10 @@ namespace Order2GoAddIn {
     public FXCoreWrapper() {
       TradesCountChanged += (t) => { isTradePending = false; };
     }
+    public FXCoreWrapper(CoreFX coreFX):this(coreFX,null) { }
     public FXCoreWrapper(CoreFX coreFX,string pair) {
       this.coreFX = coreFX;
-      this.Pair = pair;
+      if (pair != null) this.Pair = pair;
       isWiredUp = true;
       coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
       coreFX.LoggedOffEvent += new EventHandler<EventArgs>(coreFX_LoggedOffEvent);
@@ -397,7 +400,7 @@ namespace Order2GoAddIn {
         endDate = ticks.Min(b => b.StartDate);
         while (ticks.Count()<tickCount && endDate <= ServerTime.AddMinutes(1)) {
           try {
-            var t = GetTicks(endDate.Round().AddMinutes(-2), endDate.Round().AddMinutes(1), Math.Min(maxTicks, tickCount - ticks.Count()));
+            var t = GetTicks(endDate.Round().AddMinutes(-100), endDate.Round().AddMinutes(1), Math.Min(maxTicks, tickCount - ticks.Count()));
             if (t.Count() == 0) break;
             ticks = ticks.Union(t).ToList();
             if (endDate > ticks.Min(b => b.StartDate)) {
@@ -420,6 +423,7 @@ namespace Order2GoAddIn {
       return GetBarsBase(period, startDate, DateTime.FromOADate(0));
     }
     public IEnumerable<Rate> GetBarsBase(int period, DateTime startDate, DateTime endDate){
+      var ed = endDate == FX_DATE_NOW ? DateTime.MaxValue : endDate;
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != DateTime.FromOADate(0)) endDate = endDate.Round(period).AddMinutes(period);
@@ -430,7 +434,7 @@ namespace Order2GoAddIn {
         endDate = ticks.Min(b => b.StartDate);
         while (startDate < endDate) {
           try {
-            var t = GetBarsBase_(period, startDate, endDate);
+            var t = GetBarsBase_(period, startDate.AddSeconds(-2), endDate.AddSeconds(2));
             if (t.Count() == 0) break;
             ticks = ticks.Union(t).ToList();
             if (endDate > ticks.Min(b => b.StartDate)) {
@@ -445,14 +449,14 @@ namespace Order2GoAddIn {
           }
         }
       }
-      return ticks.OrderBars();
+      return ticks.Where(startDate, ed).OrderBars();
     }
     readonly int maxTicks = 300;
     [MethodImpl(MethodImplOptions.Synchronized)]
     IEnumerable<Rate> GetBarsBase_(int period, DateTime startDate, DateTime endDate) {
       try {
         return period == 0 ?
-          GetTicks(startDate, endDate).Cast<Rate>() :
+          GetTicks(300,startDate, endDate).Cast<Rate>() :
           GetBars(period, startDate, endDate);
       } catch (Exception exc) {
         var empty = period == 0 ? new Tick[] { }.Cast<Rate>() : new Rate[] { };
@@ -501,8 +505,10 @@ namespace Order2GoAddIn {
         if (StartDate < minimumDate)
           Bars = Bars.Union(GetBarsBase(Period, StartDate, minimumDate)).OrderBars().ToList();
         var maximumDate = Bars.Max(b => b.StartDate);
-        if (EndDate == DateTime.FromOADate(0) || EndDate > maximumDate)
-          Bars = Bars.Union(GetBarsBase(Period, maximumDate, EndDate)).OrderBars().ToList();
+        if (EndDate == DateTime.FromOADate(0) || EndDate > maximumDate) {
+          var b = GetBarsBase(Period, maximumDate, EndDate);
+          Bars = Bars.Union(b).OrderBars().ToList();
+        }
       }
       if (EndDate != DateTime.FromOADate(0))
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())

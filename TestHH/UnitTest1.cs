@@ -57,7 +57,10 @@ namespace TestHH {
     public void MyTestInitialize() {
       var core = new Order2GoAddIn.CoreFX(true);
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
-      if (!core.LogOn("MICR455733001", "2805", true)) UT.Assert.Fail("Login");
+
+      if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("MICR466964001", "225", true)) UT.Assert.Fail("Login");
       o2g = new FXCoreWrapper(core, "EUR/USD");
     }
 
@@ -81,6 +84,16 @@ namespace TestHH {
       Indicators.List();
     }
     [TestMethod]
+    public void TicksPerMinute() {
+      var dateFrom = DateTime.Parse("3/31/2010 12:40:12");
+      var dateTo = DateTime.Parse("3/31/2010 12:49:25");
+      //var ticks = o2g.GetTicks(13000).Where(dateFrom, dateTo).ToArray();
+      var ticks = new List<Rate>();
+      o2g.GetBars(0,dateFrom,dateTo,ref ticks);
+      ticks.FillMass();
+      Debug.WriteLine("TicksPerMinute:{0: HH:mm:ss} -{1: HH:mm:ss}={2:n0}/{3}", ticks.First().StartDate, ticks.Last().StartDate,
+        ticks.TradesPerMinute(), ticks.SumMass());
+    }
     public void Waves() {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
       dateStart = DateTime.Now.AddHours(-2);
@@ -123,22 +136,22 @@ namespace TestHH {
       Debug.WriteLine("Ticks.FindFractals:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
 
       ticks.SetCMA(t => t.Ph.Work.Value, 100);
-      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
-        , r => o2g.InPips(2, r.Ph.Work.Value)
+      ticks.Where(t => t.Ph.Power.HasValue).OrderBars().SaveToFile(
+         r => o2g.InPips(2, r.Ph.Work.Value)
         , r => o2g.InPips(2, r.PriceCMA[0])
         , r => o2g.InPips(2, r.PriceCMA[2])
         , "C:\\WorkCMA.csv");
 
       ticks.SetCMA(t => t.Ph.Power.Value, 100);
-      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
-        , r => o2g.InPips(2, r.Ph.Power.Value)
+      ticks.Where(t => t.Ph.Power.HasValue).OrderBars().SaveToFile(
+          r => o2g.InPips(2, r.Ph.Power.Value)
         , r => o2g.InPips(2, r.PriceCMA[0])
         , r => o2g.InPips(2, r.PriceCMA[2])
         , "C:\\PowerCMA.csv");
 
       ticks.OrderBars().ToArray().RunTotal(t => t.Ph.Power);
-      SaveToFile(ticks.Where(t => t.Ph.Power.HasValue).OrderBars()
-        , r => o2g.InPips(2, r.Ph.Power.Value)
+      ticks.Where(t => t.Ph.Power.HasValue).OrderBars().SaveToFile(
+         r => o2g.InPips(2, r.Ph.Power.Value)
         , r => o2g.InPips(2, r.RunningTotal.Value)
         , "C:\\PowerTotal.csv");
 
@@ -271,7 +284,7 @@ namespace TestHH {
       rates.ToList().ForEach(r => r.PriceAvg1 = (double)(r.PriceTsi - r.PriceTsiCR));
       rates.FillRLW();
       Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
-      SaveToFile(rates, r => r.PriceTsi, r => r.PriceTsiCR,r=>r.PriceAvg1, "C:\\TSI_CR_M1.csv");
+      rates.SaveToFile(r => r.PriceTsi, r => r.PriceTsiCR, r => r.PriceAvg1, "C:\\TSI_CR_M1.csv");
     }
     public void TSI_M1() {
       DateTime timer = DateTime.Now;
@@ -314,22 +327,6 @@ namespace TestHH {
       var dd = rates.FillRsi(14, r => r.PriceClose);// Indicators.RSI(rates, r => r.AskClose, 14);
       System.Diagnostics.Debug.WriteLine((DateTime.Now - t).TotalSeconds + " ms");
       SaveToFile(rates, r=>r.PriceRsi, "C:\\RSI.csv");
-    }
-    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, Func<T, D> price2, string fileName) where T : Rate {
-      StringBuilder sb = new StringBuilder();
-      sb.Append("Time,Price,Indicator,Indicator1,Indicator2" + Environment.NewLine);
-      rates.ToList().ForEach(r => sb.Append(r.StartDate + "," + r.PriceClose + "," + price(r) + "," + price1(r) + "," + price2(r) + Environment.NewLine));
-      using (var f = System.IO.File.CreateText(fileName)) {
-        f.Write(sb.ToString());
-      }
-    }
-    void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, string fileName) where T : Rate {
-      StringBuilder sb = new StringBuilder();
-      sb.Append("Time,Price,Indicator,Indicator1" + Environment.NewLine);
-      rates.ToList().ForEach(r => sb.Append(r.StartDate + "," + r.PriceClose + "," + price(r) + "," + price1(r) + Environment.NewLine));
-      using (var f = System.IO.File.CreateText(fileName)) {
-        f.Write(sb.ToString());
-      }
     }
     void SaveToFile<T, D>(IEnumerable<T> rates, Func<T, D> price, string fileName) where T : Rate {
       StringBuilder sb = new StringBuilder();
