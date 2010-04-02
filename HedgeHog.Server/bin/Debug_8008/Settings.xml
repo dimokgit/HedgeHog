@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="-1" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="342" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="564" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519040180" />

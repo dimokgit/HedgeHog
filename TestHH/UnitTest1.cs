@@ -85,11 +85,11 @@ namespace TestHH {
     }
     [TestMethod]
     public void TicksPerMinute() {
-      var dateFrom = DateTime.Parse("3/31/2010 12:40:12");
-      var dateTo = DateTime.Parse("3/31/2010 12:49:25");
-      //var ticks = o2g.GetTicks(13000).Where(dateFrom, dateTo).ToArray();
-      var ticks = new List<Rate>();
-      o2g.GetBars(0,dateFrom,dateTo,ref ticks);
+      var dateFrom = DateTime.Parse("4/2/2010 10:13:16");
+      var dateTo = DateTime.Parse("4/2/2010 10:33:27");
+      var ticks = o2g.GetTicks(13000).Where(dateFrom, dateTo).ToArray();
+      //var ticks = new List<Rate>();
+      //o2g.GetBars(0,dateFrom,dateTo,ref ticks);
       ticks.FillMass();
       Debug.WriteLine("TicksPerMinute:{0: HH:mm:ss} -{1: HH:mm:ss}={2:n0}/{3}", ticks.First().StartDate, ticks.Last().StartDate,
         ticks.TradesPerMinute(), ticks.SumMass());
@@ -439,7 +439,7 @@ namespace TestHH {
     }
     public void GetTicksTest() {
       DateTime d = DateTime.Now;
-      var ticks = o2g.GetTicks(5000, DateTime.Now.AddDays(-1), DateTime.FromOADate(0));
+      var ticks = o2g.GetTicks(5000);
       Debug.WriteLine("Ticks:" + ticks.Count() + ",From:" + ticks.Min(t => t.StartDate) + " To:" + ticks.Max(t => t.StartDate));
       Debug.WriteLine("Ticks Time:"+(DateTime.Now-d).TotalMilliseconds);
       d = DateTime.Now;
