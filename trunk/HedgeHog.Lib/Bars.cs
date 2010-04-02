@@ -127,7 +127,7 @@ namespace HedgeHog.Bars {
       else if (bar.PriceHigh.Between(this.PriceLow, this.PriceHigh)) return OverlapType.Up;
       return OverlapType.None;
     }
-    public OverlapType GetOverlap(BarBase bar) {
+    public OverlapType FillOverlap(BarBase bar) {
       OverlapType ret = OverlapType.None;
       if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Up;
       else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) ret = OverlapType.Down;
@@ -143,7 +143,7 @@ namespace HedgeHog.Bars {
 
     public void FillOverlap<TBar>(IEnumerable<TBar> bars) where TBar : BarBase {
       foreach (var bar in bars) {
-        if (GetOverlap(bar) == OverlapType.None) return;
+        if (FillOverlap(bar) == OverlapType.None) return;
       }
     } 
     #endregion
@@ -250,13 +250,16 @@ namespace HedgeHog.Bars {
 
     public override bool Equals(BarBase other) {
       try {
-        return (object)other != null && StartDate == other.StartDate && ((Tick)other).Row == Row;
+        return (object)other != null 
+          && StartDate == other.StartDate 
+          && ((Tick)other).AskHigh == AskHigh
+          && ((Tick)other).BidLow == BidLow;
       } catch (Exception) {
         throw;
       }
     }
     public override int GetHashCode() {
-      return StartDate.GetHashCode() ^ Row.GetHashCode();
+      return StartDate.GetHashCode() ^ AskHigh.GetHashCode() ^ BidLow.GetHashCode();
     }
 
     #endregion
@@ -271,6 +274,20 @@ namespace HedgeHog.Bars {
     public int Slope { get { return Math.Sign(Next.Value - Value); } }
   }
   public static class Extensions {
+    public static void AddUp<TBar>(this List<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {
+      var lastDate = ticksToAdd.Min(t => t.StartDate);
+      ticks.RemoveAll(t => t.StartDate > lastDate);
+      ticks.AddRange(ticksToAdd);
+    }
+    public static IEnumerable<TBar> AddUp<TBar>(this IEnumerable<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {
+      var lastDate = ticksToAdd.Min(t => t.StartDate);
+      return ticks.Where(t => t.StartDate < lastDate).Concat(ticksToAdd);
+    }
+    public static IEnumerable<TBar> AddDown<TBar>(this IEnumerable<TBar> ticks, IEnumerable<TBar> ticksToAdd)where TBar:BarBase {
+      var lastDate = ticksToAdd.Max(t => t.StartDate);
+      ticks = ticks.SkipWhile(t => t.StartDate <= lastDate).ToArray();
+      return ticksToAdd.Concat(ticks);
+    }
     public static IEnumerable<TBar> Where<TBar>(this IEnumerable<TBar> bars, DateTime bar1, DateTime bar2) where TBar : BarBase {
       return bars.Where(b => b.StartDate.Between(bar1, bar2));
     }
@@ -457,7 +474,7 @@ namespace HedgeHog.Bars {
                 fractals[fractals.Count - 1] = rate;
             } else {
               //var range = rates.Where(r => r.StartDate.Between(rate.StartDate, fractals.Last().StartDate)).ToArray();
-              if (rate.FractalWave(fractals[fractals.Count - 1]) >= waveFractal && (fractals.Last().StartDate - rate.StartDate).Duration().TotalSeconds >= period.TotalSeconds/2)
+              if (rate.FractalWave(fractals[fractals.Count - 1]) >= waveFractal && (fractals.Last().StartDate - rate.StartDate).Duration().TotalSeconds >= period.TotalSeconds/30)
                 fractals.Add(rate);
             }
           }

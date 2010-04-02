@@ -389,22 +389,22 @@ namespace Order2GoAddIn {
       }
     }
 
-    public IEnumerable<Tick> GetTicks(int tickCount) {
-      return GetTicks(tickCount, DateTime.Now.AddMonths(-1), DateTime.FromOADate(0));
-    }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public IEnumerable<Tick> GetTicks(int tickCount, DateTime startDate, DateTime endDate) {
-      var ticks = GetTicks(startDate, endDate,tickCount);
+    public Tick[] GetTicks(int tickCount) {
+      DateTime startDate = DateTime.MinValue;
+      var ticks = GetTicks(startDate, FX_DATE_NOW,tickCount);
       int timeoutCount = 2;
       if (ticks.Count() > 0) {
-        endDate = ticks.Min(b => b.StartDate);
-        while (ticks.Count()<tickCount && endDate <= ServerTime.AddMinutes(1)) {
+        var dateMin = ticks.Min(b => b.StartDate);
+        var endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
+        while (ticks.Count() < tickCount) {
           try {
-            var t = GetTicks(endDate.Round().AddMinutes(-100), endDate.Round().AddMinutes(1), Math.Min(maxTicks, tickCount - ticks.Count()));
+            var t = GetTicks(startDate, endDate);
             if (t.Count() == 0) break;
-            ticks = ticks.Union(t).ToList();
-            if (endDate > ticks.Min(b => b.StartDate)) {
-              endDate = ticks.Min(b => b.StartDate);
+            ticks = ticks.Union(t).OrderBars().ToList();
+            dateMin = ticks.Min(b => b.StartDate);
+            if (endDate > dateMin) {
+              endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
               System.Diagnostics.Debug.WriteLine("Ticks:" + ticks.Count()+" @ "+endDate.ToLongTimeString());
             } else
               endDate = endDate.AddSeconds(-3);
@@ -416,14 +416,14 @@ namespace Order2GoAddIn {
           }
         }
       }
-      return ticks.OrderBars().Take(tickCount);
+      return ticks.OrderBars().Take(tickCount).ToArray();
     }
 
     public IEnumerable<Rate> GetBarsBase(int period, DateTime startDate) {
       return GetBarsBase(period, startDate, DateTime.FromOADate(0));
     }
-    public IEnumerable<Rate> GetBarsBase(int period, DateTime startDate, DateTime endDate){
-      var ed = endDate == FX_DATE_NOW ? DateTime.MaxValue : endDate;
+
+    public IEnumerable<Rate> GetBarsBase(int period, DateTime startDate, DateTime endDate) {
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != DateTime.FromOADate(0)) endDate = endDate.Round(period).AddMinutes(period);
@@ -434,7 +434,7 @@ namespace Order2GoAddIn {
         endDate = ticks.Min(b => b.StartDate);
         while (startDate < endDate) {
           try {
-            var t = GetBarsBase_(period, startDate.AddSeconds(-2), endDate.AddSeconds(2));
+            var t = GetBarsBase_(period, startDate, endDate);
             if (t.Count() == 0) break;
             ticks = ticks.Union(t).ToList();
             if (endDate > ticks.Min(b => b.StartDate)) {
@@ -449,6 +449,35 @@ namespace Order2GoAddIn {
           }
         }
       }
+      return ticks.OrderBars();
+    }
+    public IEnumerable<Rate> New_GetBarsBase(int period, DateTime startDate, DateTime endDate) {
+      var ed = endDate == FX_DATE_NOW ? DateTime.MaxValue : endDate;
+      if (period >= 1) {
+        startDate = startDate.Round().Round(period);
+        if (endDate != DateTime.FromOADate(0)) endDate = endDate.Round(period).AddMinutes(period);
+      }
+      var ticks = GetBarsBase_(period, startDate, endDate);
+      int timeoutCount = 1;
+      if (ticks.Count() > 0) {
+        endDate = ticks.Min(b => b.StartDate);
+        while (startDate < endDate) {
+          try {
+            var t = GetBarsBase_(period, startDate, endDate);
+            if (t.Count() == 0) break;
+            ticks = ticks.Union(t).ToList();
+            if (endDate > ticks.Min(b => b.StartDate)) {
+              endDate = ticks.Min(b => b.StartDate);
+              System.Diagnostics.Debug.WriteLine("Bars<" + period + ">:" + ticks.Count() + " @ " + endDate.ToLongTimeString());
+            } else
+              endDate = endDate.AddSeconds(-60);
+          } catch (Exception exc) {
+            if (exc.Message.ToLower().Contains("timeout")) {
+              if (timeoutCount-- == 0) break;
+            }
+          }
+        }
+      }
       return ticks.Where(startDate, ed).OrderBars();
     }
     readonly int maxTicks = 300;
@@ -456,7 +485,7 @@ namespace Order2GoAddIn {
     IEnumerable<Rate> GetBarsBase_(int period, DateTime startDate, DateTime endDate) {
       try {
         return period == 0 ?
-          GetTicks(300,startDate, endDate).Cast<Rate>() :
+          GetTicks(startDate, endDate).Cast<Rate>() :
           GetBars(period, startDate, endDate);
       } catch (Exception exc) {
         var empty = period == 0 ? new Tick[] { }.Cast<Rate>() : new Rate[] { };

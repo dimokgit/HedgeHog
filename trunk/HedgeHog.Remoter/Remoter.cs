@@ -125,7 +125,7 @@ namespace HedgeHog {
     }
     #region IEquatable<TradeRequest> Members
     public bool Equals(TradeRequest other) {
-      return this.highBarMinutes == other.highBarMinutes &&
+      return other == null ? false : this.highBarMinutes == other.highBarMinutes &&
       this.closeOppositeOffset == other.closeOppositeOffset &&
       this.sellOnProfitLast == other.sellOnProfitLast &&
       this.shortStack == other.shortStack &&
@@ -202,8 +202,11 @@ namespace HedgeHog {
       closeOnCorridorBorder.GetHashCode() ^
       tradeOnProfitAfter;
     }
-    public static bool operator ==(TradeRequest tr1, TradeRequest tr2) { return tr1.Equals(tr2); }
-    public static bool operator !=(TradeRequest tr1, TradeRequest tr2) { return (!tr1.Equals(tr2)); }
+    public static bool operator ==(TradeRequest tr1, TradeRequest tr2) { 
+      return (object)tr1 == null && (object)tr2 == null 
+        ? true : (object)tr2 == null ? false : tr1.Equals(tr2); 
+    }
+    public static bool operator !=(TradeRequest tr1, TradeRequest tr2) { return !(tr1==tr2); }
     #endregion
   }
   [Serializable]

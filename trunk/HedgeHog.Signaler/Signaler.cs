@@ -110,7 +110,7 @@ namespace HedgeHog {
       var wa = waves.Average();
       var wst = waves.StdDev();
       waves = waves.Where(w => w > wa).ToArray();
-      return new WaveStats(wa, wst, waves.Average());
+      return new WaveStats(wa, wst, waves.DefaultIfEmpty(wa).Average());
     }
 
     public static List<Volt> FindMaximasPeakAndValley(

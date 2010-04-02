@@ -26,7 +26,7 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkSellOnProfitLast]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtHighMinutes]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnReverseOnly]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnProfitOnly]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnProfitOnly]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkPriceAvgToPeakValley]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkSaveVoltsToFile]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkShowOtherCorridors]IsChecked" value="True" />
@@ -114,7 +114,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[.chkTradeDistanceUnisex]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerName]Text" value="DHOME" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerPort]Text" value="8008" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtShortStack]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtShortStack]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtShortStackTruncateOffset]Text" value="50" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtCorridorSmoothSeconds]Text" value="5" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkDoTrend]IsChecked" value="True" />
@@ -149,6 +149,6 @@
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeByFractalCoeff]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnNet]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseAllOnTrade]IsChecked" value="True" />
-  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooBuy]SelectedIndex" value="2" />
-  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooSell]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooBuy]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooSell]SelectedIndex" value="3" />
 </dictionary>
