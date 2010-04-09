@@ -668,8 +668,10 @@ namespace HedgeHog {
         #region Show Color
         var lastFractalDateBuy = ti.FractalDatesBuy.DefaultIfEmpty(DateTime.MaxValue).Max();
         var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
-        var canBuyByFractal = tradesBuy.Select(t=>t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
+        var canBuyByFractal = tradesBuy.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
         var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
+        if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
+        if (!canSellByFractal && this.GoSell) this.GoSell = false;
         Dispatcher.BeginInvoke(new Action(() => {
           var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
           var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;

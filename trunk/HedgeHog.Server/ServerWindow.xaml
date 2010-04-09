@@ -71,7 +71,7 @@
         <CheckBox Name="chkGroupTicks" BorderBrush="LightGray" BorderThickness="1" Content="GT" ToolTip="Group Ticks by Second" IsChecked="{state:UserSettings}" Checked="Checked" Unchecked="Checked"/>
         <CheckBox Name="chkCachePriceHeight" BorderBrush="LightGray" BorderThickness="1" Content="PH" ToolTip="Cache Price Height" IsChecked="{state:UserSettings Default=True}" Checked="Checked" Unchecked="Checked"/>
       </StackPanel>
-      <Border BorderBrush="{Binding IsBuyMode,Converter={StaticResource BoolToColorConverter},ConverterParameter=LightGray|LightSalmon|LightGreen}" BorderThickness="1">
+      <Border BorderThickness="1">
         <StackPanel Orientation="Horizontal">
           <TextBlock Text="CHM:" ToolTip="Corridor Spread Minimum"/>
           <TextBlock Text="{Binding CorridorSpreadMinimumInPips,StringFormat=n1}" ToolTip="Corridor Spread Minimum"/>
@@ -105,20 +105,24 @@
         <TextBlock ToolTip="Overlap StDev">SD:</TextBlock>
         <Label Content="{Binding OverlapStDev.TotalMinutes}" ContentStringFormat="n1" />
         <CheckBox IsChecked="{state:UserSettings}" Content="NF" Name="chkNormalizeFractals" IsThreeState="False"  ToolTip="Normalize Fractals" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
-        <CheckBox IsChecked="{state:UserSettings}" Content="MH" Name="chkMassOrHeight" IsThreeState="true"  ToolTip="Trade By Mass,Height or Both" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" Loaded="chkMassOrHeight_Loaded" />
+        <ComboBox Name="cmbPosMode" SelectedIndex="{state:UserSettings}" SelectedItem="{Binding PositionModeItem}">
+          <ComboBoxItem>M</ComboBoxItem>
+          <ComboBoxItem>H</ComboBoxItem>
+          <ComboBoxItem>M|H</ComboBoxItem>
+          <ComboBoxItem>M*H</ComboBoxItem>
+        </ComboBox>
       </StackPanel>
         <StackPanel Orientation="Horizontal">
         <Label Content="{Binding FractalBuy.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalBuyColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}" ToolTip="Buy Fractal Time"/>
         <TextBlock>:</TextBlock>
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
-        <TextBlock Text="‡"></TextBlock>
+        <TextBlock Text="A‡"></TextBlock>
         <TextBlock Text="{Binding AngleRounded}"></TextBlock>
-        <CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
-        <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>
-        <TextBlock ToolTip="PTM">MTR:</TextBlock>
-        <TextBox Text="{state:UserSettings Default=0.2}" TextChanged="TextChanged" Name="txtPeakTradeMargin" ToolTip="Peak Trade Margin"/>
-        <TextBlock ToolTip="Mass1/Mass0 Trade Ratio">MTR:</TextBlock>
-        <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
+        <!--<CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>-->
+        <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtPeakTradeMarginLow" ToolTip="Peak Trade Margin Low"/>
+        <TextBox Text="{state:UserSettings Default=25}" TextChanged="TextChanged" Name="txtPeakTradeMarginHigh" ToolTip="Peak Trade Margin High"/>
+        <TextBox Text="{state:UserSettings Default=80}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
       </StackPanel>
 
       <Border BorderBrush="LightGray" BorderThickness="1">

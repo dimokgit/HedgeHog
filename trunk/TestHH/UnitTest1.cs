@@ -130,7 +130,7 @@ namespace TestHH {
       var waveHeight = 0.00053;
       var wavePeriod = TimeSpan.FromMinutes(6);
       Stopwatch timer = Stopwatch.StartNew();
-      var fractals = ticks.FindFractals(waveHeight, wavePeriod, 1, 100, b => b.PriceHigh, b => b.PriceLow)
+      var fractals = ticks.FindFractals(waveHeight, wavePeriod, 1, 100)
         .Concat(new[] { ticks.First().Clone() as Tick }).OrderBarsDescending().ToArray();
       ticks.FillPower(1.0.FromMinutes());
       Debug.WriteLine("Ticks.FindFractals:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();
@@ -231,10 +231,10 @@ namespace TestHH {
       var sw = Stopwatch.StartNew();
       var rates = ticks.ToArray().GroupTicksToRates().ToArray();
       var startDate = rates.Last().StartDate.AddMinutes(-5);
-      rates.Where(r => r.StartDate < startDate).ToArray().FindFractals(0, TimeSpan.FromMinutes(1), 1, 100, b => b.PriceHigh, b => b.PriceLow);
+      rates.Where(r => r.StartDate < startDate).ToArray().FindFractals(0, TimeSpan.FromMinutes(1), 1, 100);
       Debug.WriteLine("Get Fractal:" + sw.Elapsed.TotalSeconds);
       sw.Reset();
-      rates.FindFractals(0, TimeSpan.FromMinutes(1), 1, 100, b => b.PriceHigh, b => b.PriceLow);
+      rates.FindFractals(0, TimeSpan.FromMinutes(1), 1, 100);
       Debug.WriteLine("Get Fractal:" + sw.Elapsed.TotalSeconds);
       SaveToFile(rates, r=>r.Fractal, "C:\\Wave.csv");
     }
