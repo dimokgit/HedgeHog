@@ -23,6 +23,12 @@ namespace HedgeHog {
       set { _chkCorridorByMinimumVolatility = value.HasValue ? value : null; }
     }
 
+    public bool? _chkMassOrHeight;
+    public bool? massOrHeight {
+      get { return _chkMassOrHeight.HasValue ? _chkMassOrHeight : null; }
+      set { _chkMassOrHeight = value.HasValue ? value : null; }
+    }
+
     public int _txtVolatilityWieght;
     public int volatilityWieght { get { return _txtVolatilityWieght; } }
 
@@ -108,7 +114,7 @@ namespace HedgeHog {
     public double peakTradeMargin { get { return _txtPeakTradeMargin; } }
 
     public int _txtMass1Mass0TradeRatio;
-    public int mass1Mass0TradeRatio { get { return _txtMass1Mass0TradeRatio; } }
+    public double mass1Mass0TradeRatio { get { return _txtMass1Mass0TradeRatio/100.0; } }
         
     public bool _chkSaveVoltageToFile;
     public bool SaveVoltageToFile { get { return _chkSaveVoltageToFile; } }
