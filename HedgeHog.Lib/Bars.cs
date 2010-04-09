@@ -465,8 +465,12 @@ namespace HedgeHog.Bars {
         }
     }
     public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count
-      , Func<Rate, double> priceHigh, Func<Rate, double> priceLow) where TBar : BarBase {
-        var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count, priceHigh, priceLow);
+  , TBar[] fractalsToSkip) where TBar : Rate {
+      return ticks.FindFractalTicks(waveHeight, period, padRight, count, fractalsToSkip, r => r.PriceHigh, r => r.PriceLow);
+    }
+    public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count
+      , TBar[] fractalsToSkip, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) where TBar : Rate {
+        var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count,fractalsToSkip, priceHigh, priceLow);
       return fractals.Select(f => {
         var tt = ticks.Where(t => t.StartDate.Between(f.StartDate.AddSeconds(-70), f.StartDate.AddSeconds(70))).OrderBy(t => t.PriceByFractal(f.Fractal));
         var fractal = (f.Fractal == FractalType.Buy ? tt.First() : tt.Last()).Clone() as TBar;
@@ -474,18 +478,25 @@ namespace HedgeHog.Bars {
         return fractal;
       }).ToList();
     }
-    public static List<TBars> FindFractals<TBars>(this IEnumerable<TBars> rates, double waveHeight, TimeSpan period, double padRight, int count
-      , Func<TBars, double> priceHigh, Func<TBars, double> priceLow) where TBars : BarBase {
+    public static List<TBar> FindFractals<TBar>(this IEnumerable<TBar> bars, double waveHeight, TimeSpan period, double padRight, int count) where TBar : BarBase {
+      return bars.FindFractals(waveHeight, period, padRight, count, new TBar[] { });
+    }
+    public static List<TBar> FindFractals<TBar>(this IEnumerable<TBar> bars, double waveHeight, TimeSpan period, double padRight, int count
+      , TBar[] fractalsToSkip) where TBar : BarBase {
+      return bars.FindFractals(waveHeight, period, padRight, count, fractalsToSkip, r => r.PriceHigh, r => r.PriceLow);
+    }
+    public static List<TBar> FindFractals<TBar>(this IEnumerable<TBar> rates, double waveHeight, TimeSpan period, double padRight, int count
+      , TBar[] fractalsToSkip, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
       var halfPeriod = TimeSpan.FromSeconds(period.TotalSeconds / 2.0);
       var rightPeriod = TimeSpan.FromSeconds(period.TotalSeconds * padRight);
       DateTime nextDate = DateTime.MaxValue;
-      var fractals = new List<TBars>();
+      var fractals = new List<TBar>();
       var dateFirst = rates.Min(r => r.StartDate) + rightPeriod;
       var dateLast = rates.Max(r => r.StartDate) - rightPeriod;
       var waveFractal = 0D;
       foreach (var rate in rates.Where(r => r.StartDate.Between(dateFirst, dateLast))) {
         UpdateFractal(rates, rate, period, waveHeight, priceHigh, priceLow);
-        if (rate.HasFractal) {
+        if (rate.HasFractal && !fractalsToSkip.Contains(rate)) {
           if (fractals.Count == 0) {
             fractals.Add(rate);
             waveFractal = waveHeight;

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="304" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="501" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519040180" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Tziplyonak713" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="758" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="557" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="773" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="1240" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="410" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
@@ -56,4 +56,6 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMass1Mass0TradeRatio]Text" value="80" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMargin]Text" value=".25" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkNormalizeFractals]IsChecked" value="True" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkMassOrHeight]IsChecked" value="False" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]SelectedIndex" value="3" />
 </dictionary>
