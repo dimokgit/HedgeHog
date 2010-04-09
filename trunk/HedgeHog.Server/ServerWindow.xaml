@@ -104,6 +104,8 @@
         <Label Content="{Binding OverlapAverage.TotalMinutes}" ContentStringFormat="n1" />
         <TextBlock ToolTip="Overlap StDev">SD:</TextBlock>
         <Label Content="{Binding OverlapStDev.TotalMinutes}" ContentStringFormat="n1" />
+        <CheckBox IsChecked="{state:UserSettings}" Content="NF" Name="chkNormalizeFractals" IsThreeState="False"  ToolTip="Normalize Fractals" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <CheckBox IsChecked="{state:UserSettings}" Content="MH" Name="chkMassOrHeight" IsThreeState="true"  ToolTip="Trade By Mass,Height or Both" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" Loaded="chkMassOrHeight_Loaded" />
       </StackPanel>
         <StackPanel Orientation="Horizontal">
         <Label Content="{Binding FractalBuy.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalBuyColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}" ToolTip="Buy Fractal Time"/>
@@ -117,14 +119,12 @@
         <TextBox Text="{state:UserSettings Default=0.2}" TextChanged="TextChanged" Name="txtPeakTradeMargin" ToolTip="Peak Trade Margin"/>
         <TextBlock ToolTip="Mass1/Mass0 Trade Ratio">MTR:</TextBlock>
         <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
-        <CheckBox IsChecked="{state:UserSettings}" Content="NF" Name="chkNormalizeFractals" IsThreeState="False"  ToolTip="Normalize Fractals" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
       </StackPanel>
 
       <Border BorderBrush="LightGray" BorderThickness="1">
         <WrapPanel>
-          <Label Content="PD"  ToolTip="Power Down" BorderBrush="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
-          <Label Content="BR"  ToolTip="Buy In Range" BorderBrush="{Binding Converter={StaticResource BoolToColorConverter}, ConverterParameter=Transparent|Transparent|LightGreen, Path=FractalBuyInRange, IsAsync=True}" />
-          <Label Content="SR"  ToolTip="Sell In Range" BorderBrush="{Binding Converter={StaticResource BoolToColorConverter}, ConverterParameter=Transparent|Transparent|LightSalmon, Path=FractalSellInRange, IsAsync=True}" />
+          <Label Content="PD"  ToolTip="Power Down" Background="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
+          <Label Content="{Binding Path=PricePosition,IsAsync=True}" ContentStringFormat="p0" Background="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" ToolTip="Price Position" />
         </WrapPanel>
       </Border>
       <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">

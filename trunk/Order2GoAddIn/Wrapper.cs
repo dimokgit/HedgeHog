@@ -756,8 +756,8 @@ namespace Order2GoAddIn {
     public Trade GetTrade(bool buy, bool last) { return last ? GetTradeLast(buy) : GetTradeFirst(buy); }
     public Trade GetTradeFirst(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).FirstOrDefault(); }
     public Trade GetTradeLast(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).LastOrDefault(); }
-    public IEnumerable<Trade> GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy); }
-    public IEnumerable<Trade> GetTrades() {
+    public Trade[] GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
+    public Trade[] GetTrades() {
       lock (this) {
         var ret = from t in GetRows(TABLE_TRADES)
                   orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
@@ -773,47 +773,24 @@ namespace Order2GoAddIn {
                     Time = ConvertDateToLocal((DateTime)t.CellValue("Time")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
                     Remark = new TradeRemark(t.CellValue("QTXT")+"")
                   };
-        return ret;
+        return ret.ToArray();
       }
-    }
-    public bool CanTrade(bool buy, double minDelta) {
-      if (isTradePending) return false;
-      double price = GetOffer(buy);
-      return (from t in GetRows(TABLE_TRADES)
-              where (t.CellValue(FIELD_INSTRUMENT) + "") == Pair &&
-                IsBuy(t.CellValue("BS")) == buy &&
-                (double)t.CellValue(FIELD_OPEN) <= price + PointSize * minDelta &&
-                (double)t.CellValue(FIELD_OPEN) > price - PointSize * minDelta
-              //((Buy && (double)t.CellValue(FIELD_OPEN) - Price < PointSize * MinDelta) ||
-              //(!Buy && Price - (double)t.CellValue(FIELD_OPEN) < PointSize * MinDelta))
-              select t).Count() == 0;
     }
     //DIMOK: Add waveInMinutes condition
     public int CanTrade2(bool buy, double minDelta,int totalLots,bool unisex) {
       if (isTradePending) return 0;
       double price = GetOffer(buy);
-      var trades = (from t in GetRows(TABLE_TRADES)
-                  where (t.CellValue(FIELD_INSTRUMENT) + "") == Pair &&
-                    (unisex || IsBuy(t.CellValue("BS")) == buy) &&
-                    (double)t.CellValue(FIELD_OPEN) <= price + PointSize * minDelta &&
-                    (double)t.CellValue(FIELD_OPEN) > price - PointSize * minDelta
-                  //((Buy && (double)t.CellValue(FIELD_OPEN) - Price < PointSize * MinDelta) ||
-                  //(!Buy && Price - (double)t.CellValue(FIELD_OPEN) < PointSize * MinDelta))
-                  select t).ToArray();
-      var lots = trades.Sum(t => (int)t.CellValue("Lot"));
-      if (lots > 0) return 0;
-      return totalLots - lots;
+      return CanTrade(GetTrades(), buy, minDelta, totalLots, unisex);
     }
-    public int CanTrade(double price, Trade[] otherTrades, bool buy, double minDelta, int totalLots, bool unisex) {
-      var trades = (from t in otherTrades
-                    where (unisex || t.Buy == buy) &&
-                      t.Open.Between(price - PointSize * minDelta, price + PointSize * minDelta)
-                    //((Buy && (double)t.CellValue(FIELD_OPEN) - Price < PointSize * MinDelta) ||
-                    //(!Buy && Price - (double)t.CellValue(FIELD_OPEN) < PointSize * MinDelta))
-                    select t).ToArray();
-      var lots = trades.Sum(t => (int)t.Lots);
-      if (lots > 0) return 0;
-      return totalLots - lots;
+    public int CanTrade(Trade[] otherTrades, bool buy, double minDelta, int totalLots, bool unisex) {
+      if (isTradePending) return 0;
+      var minLoss = (from t in otherTrades
+                     where (unisex || t.Buy == buy)
+                     select t.PL
+                    ).DefaultIfEmpty(1000).Max();
+      var hasProfitTrades = otherTrades.Where(t => t.Buy == buy && t.PL > 0).Count() > 0 ;
+      var tradeInterval = (otherTrades.Select(t => t.Time).DefaultIfEmpty().Max() - ServerTime).Duration();
+      return minLoss.Between(-minDelta, 1) || hasProfitTrades || tradeInterval.TotalSeconds < 10 ? 0 : totalLots;
     }
 
     public double GetOffer(bool buy) {
@@ -871,6 +848,7 @@ namespace Order2GoAddIn {
       return fixOrderOpen(buy, lots, takeProfit, 0, remark);
     }
     private bool fixOrderOpen(bool buy, int lots, double takeProfit, double stopLoss, string remark) {
+      if (isTradePending) return false;
         object psOrderID, psDI;
         try {
           var price = GetOffer(buy);
@@ -978,13 +956,13 @@ namespace Order2GoAddIn {
     }
     #endregion
 
-    public double InPips(int level, double price, int roundTo) { return Math.Round(InPips(level, price), roundTo); }
-    public double InPips(int level,double price) {
-      if (level == 0) return price;
+    public double InPips(int level, double? price, int roundTo) { return Math.Round(InPips(level, price), roundTo); }
+    public double InPips(int level,double? price) {
+      if (level == 0) return price.GetValueOrDefault();
       return InPips(--level, price / PointSize); 
     }
-    public double InPips(double price, int roundTo) { return Math.Round(InPips(price), roundTo); }
-    public double InPips(double price) { return price / PointSize; }
+    public double InPips(double? price, int roundTo) { return Math.Round(InPips(price), roundTo); }
+    public double InPips(double? price) { return (price / PointSize).GetValueOrDefault(); }
 
     public interface FXNewOfferListener {
       /// <summary>

@@ -125,6 +125,9 @@ namespace HedgeHog {
     public static DateTime Min(DateTime d1, DateTime d2) {
       return d1 < d2 ? d1 : d2;
     }
+    public static double? Abs(this double? v) {
+      return v.HasValue ? v.Value.Abs() : (double?)null;
+    }
     public static double Abs(this double v) {
       return Math.Abs(v);
     }

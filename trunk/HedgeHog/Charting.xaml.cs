@@ -436,7 +436,7 @@ namespace HedgeHog {
       get { return _rsiAverage; }
       set { _rsiAverage = value; }
     }
-
+    Guid guid = Guid.NewGuid();
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
       try {
@@ -470,7 +470,9 @@ namespace HedgeHog {
         var corridorMinimum = 100.0;
         int ticksPerMinuteAverageShort = 0;
         int ticksPerMinuteAverageLong = 0;
-
+        var tradesBuy = fw.GetTrades(true);
+        var tradesSell = fw.GetTrades(false);
+        TradeResponse ti = null;
         #region Deciders 11
 
         Action decideByVoltage_11 = () => {
@@ -489,6 +491,7 @@ namespace HedgeHog {
 
           #region TradeRequest
           var tr = new TradeRequest() {
+            guid = this.guid,
             tradeAdded = tradeAdded,
             BuyNetPLPip = summary.BuyNetPLPip,
             BuyPositions = (int)summary.BuyPositions,
@@ -514,8 +517,8 @@ namespace HedgeHog {
             tradeByDirection = this.tradeByDirection,
             setLimitOrder = this.setLimitOrder,
             closeTradeFibRatio = this.closeTradeFibRatio,
-            tradesBuy = fw.GetTrades(true).ToArray(),
-            tradesSell = fw.GetTrades(false).ToArray(),
+            tradesBuy = tradesBuy,
+            tradesSell = tradesSell,
             closeIfProfitTradesMoreThen = this.closeIfProfitTradesMoreThen,
             closeProfitTradesMaximum = this.closeProfitTradesMaximum,
             tradeByVolatilityMaximum = this.tradeByVolatilityMax,
@@ -540,7 +543,6 @@ namespace HedgeHog {
           tr.tradesBuy.ToList().ForEach(t => DC.Trades.Add(t));
           tr.tradesSell.ToList().ForEach(t => DC.Trades.Add(t));
 
-          TradeResponse ti = null;
           for (int sp = int.Parse(serverPort) - 5, spMax = sp + 10; sp < spMax; sp++) 
             try {
               var rc = RemoteClient.Activate(tcpPath);
@@ -597,6 +599,7 @@ namespace HedgeHog {
             this.GoBuy = ti.GoBuy;
             this.GoSell = ti.GoSell;
           }
+
           corridorOK = ti.CorridorOK;
           this.DencityRatio = ti.DencityRatio;
           this.LotsToTradeBuy = ti.LotsToTradeBuy.ToInt();
@@ -632,23 +635,6 @@ namespace HedgeHog {
             GoBuy = true;
             this.TakeProfitBuy = this.TradeInfo.TradeWaveHeight / 2;
           }
-
-          if (doBiDirection && doSecondTrade) {
-            doSecondTrade = false;
-            if (fw.GetTrades().OrderBy(t => t.Time).Last().Buy) {
-              this.GoSell = true;
-              if (!fw.CanTrade(false, this.DencityRatio)) {
-                this.DencityRatio = this.DencityRatio * .9;
-                this.GoBuy = false;
-              }
-            } else {
-              this.GoBuy = true;
-              if (!fw.CanTrade(true, this.DencityRatio)) {
-                this.DencityRatio = this.DencityRatio * .9;
-                this.GoSell = false;
-              }
-            }
-          }
         };
 
         #endregion
@@ -680,10 +666,15 @@ namespace HedgeHog {
         #region Corridor
         if (!corridorOK) GoBuy = GoSell = false;
         #region Show Color
+        var lastFractalDateBuy = ti.FractalDatesBuy.DefaultIfEmpty(DateTime.MaxValue).Max();
+        var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
+        var canBuyByFractal = tradesBuy.Select(t=>t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
+        var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
         Dispatcher.BeginInvoke(new Action(() => {
-          var color = corridorOK ? Colors.Transparent : Colors.Crimson;
-          DC.CanBuyByCorridor = color + "";
-          DC.CanSellByCorridor = color + "";
+          var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
+          var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;
+          DC.CanBuyByCorridor = colorBuy + "";
+          DC.CanSellByCorridor = colorSell + "";
         }));
         #endregion
         #endregion

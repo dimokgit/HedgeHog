@@ -13,8 +13,18 @@ namespace HedgeHog.Bars {
     #region Bid/Ask
     public double AskHigh { get; set; }
     public double AskLow { get; set; }
+    private double? _askAvg = null;
+    public double AskAvg {
+      get { return _askAvg.HasValue ? _askAvg.Value : (AskHigh + AskLow) / 2; }
+      set { _askAvg = value; }
+    }
     public double BidHigh { get; set; }
     public double BidLow { get; set; }
+    private double? _bidAvg = null;
+    public double BidAvg { 
+      get { return _bidAvg.HasValue ? _bidAvg.Value : (BidHigh + BidLow) / 2; }
+      set { _bidAvg = value; }
+    }
     public double AskClose { get; set; }
     public double AskOpen { get; set; }
     public double BidClose { get; set; }
@@ -32,7 +42,7 @@ namespace HedgeHog.Bars {
     public double PriceLow { get { return (AskLow + BidLow) / 2; } }
     public double PriceClose { get { return (AskClose + BidClose) / 2; } }
     public double PriceOpen { get { return (AskOpen + BidOpen) / 2; } }
-    public double PriceAvg { get { return (PriceHigh + PriceLow + PriceOpen + PriceClose) / 4; } }
+    public double PriceAvg { get { return (AskAvg + BidAvg) / 2; } }
 
     public double PriceHeight(BarBase bar) { return Math.Abs(PriceAvg - bar.PriceAvg); }
 
@@ -281,7 +291,7 @@ namespace HedgeHog.Bars {
     }
     public static IEnumerable<TBar> AddUp<TBar>(this IEnumerable<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {
       var lastDate = ticksToAdd.Min(t => t.StartDate);
-      return ticks.Where(t => t.StartDate < lastDate).Concat(ticksToAdd);
+      return ticks.Where(t => t.StartDate <= lastDate).Concat(ticksToAdd.SkipWhile(t => t.StartDate == lastDate));
     }
     public static IEnumerable<TBar> AddDown<TBar>(this IEnumerable<TBar> ticks, IEnumerable<TBar> ticksToAdd)where TBar:BarBase {
       var lastDate = ticksToAdd.Max(t => t.StartDate);
@@ -317,10 +327,12 @@ namespace HedgeHog.Bars {
               select new Rate() {
                 AskHigh = tg.Max(t => t.AskHigh),
                 AskLow = tg.Min(t => t.AskLow),
+                AskAvg = tg.Average(t => (t.AskHigh + t.AskLow) / 2),
                 AskOpen = tg.First().AskOpen,
                 AskClose = tg.Last().AskClose,
                 BidHigh = tg.Max(t => t.BidHigh),
                 BidLow = tg.Min(t => t.BidLow),
+                BidAvg = tg.Average(t => (t.BidHigh + t.BidLow) / 2),
                 BidOpen = tg.First().BidOpen,
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
@@ -399,6 +411,14 @@ namespace HedgeHog.Bars {
       if( barSource != null) return;
     }
 
+    public static IEnumerable<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals) where TBar : BarBase {
+      var fractalsNew = new List<TBar>();
+      foreach (var f in fractals)
+        if (fractalsNew.Count > 0 && fractalsNew.Last().Fractal == f.Fractal)
+          fractalsNew[fractalsNew.Count - 1] = BarBase.BiggerFractal(fractalsNew.Last(), f);
+        else fractalsNew.Add(f);
+      return fractalsNew;
+    }
     public static void SaveToFile<T, D>(this IEnumerable<T> rates, Func<T, D> price, Func<T, D> price1, Func<T, D> price2, string fileName) where T : BarBase {
       StringBuilder sb = new StringBuilder();
       sb.Append("Time,Price,Indicator,Indicator1,Indicator2" + Environment.NewLine);
@@ -444,16 +464,18 @@ namespace HedgeHog.Bars {
           barPrev = bar;
         }
     }
-    public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count)where TBar:BarBase {
-      var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count);
+    public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count
+      , Func<Rate, double> priceHigh, Func<Rate, double> priceLow) where TBar : BarBase {
+        var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count, priceHigh, priceLow);
       return fractals.Select(f => {
-        var tt = ticks.Where(t => t.StartDate.Between(f.StartDate.AddSeconds(-60), f.StartDate.AddSeconds(60))).OrderBy(t => t.PriceByFractal(f.Fractal));
+        var tt = ticks.Where(t => t.StartDate.Between(f.StartDate.AddSeconds(-70), f.StartDate.AddSeconds(70))).OrderBy(t => t.PriceByFractal(f.Fractal));
         var fractal = (f.Fractal == FractalType.Buy ? tt.First() : tt.Last()).Clone() as TBar;
         fractal.Fractal = f.Fractal;
         return fractal;
       }).ToList();
     }
-    public static List<TBars> FindFractals<TBars>(this IEnumerable<TBars> rates, double waveHeight, TimeSpan period, double padRight, int count) where TBars : BarBase {
+    public static List<TBars> FindFractals<TBars>(this IEnumerable<TBars> rates, double waveHeight, TimeSpan period, double padRight, int count
+      , Func<TBars, double> priceHigh, Func<TBars, double> priceLow) where TBars : BarBase {
       var halfPeriod = TimeSpan.FromSeconds(period.TotalSeconds / 2.0);
       var rightPeriod = TimeSpan.FromSeconds(period.TotalSeconds * padRight);
       DateTime nextDate = DateTime.MaxValue;
@@ -462,7 +484,7 @@ namespace HedgeHog.Bars {
       var dateLast = rates.Max(r => r.StartDate) - rightPeriod;
       var waveFractal = 0D;
       foreach (var rate in rates.Where(r => r.StartDate.Between(dateFirst, dateLast))) {
-        UpdateFractal(rates, rate, period, waveHeight);
+        UpdateFractal(rates, rate, period, waveHeight, priceHigh, priceLow);
         if (rate.HasFractal) {
           if (fractals.Count == 0) {
             fractals.Add(rate);
@@ -486,7 +508,8 @@ namespace HedgeHog.Bars {
     static double RangeHeight<TBar>(this IEnumerable<TBar> rates) where TBar : BarBase {
       return rates.Count() == 0 ? 0 : rates.Max(r => r.PriceHigh) - rates.Min(r => r.PriceLow);
     }
-    static void UpdateFractal<TBars>(IEnumerable<TBars> rates, TBars rate, TimeSpan period, double waveHeight) where TBars : BarBase {
+    static void UpdateFractal<TBars>(IEnumerable<TBars> rates, TBars rate, TimeSpan period, double waveHeight
+      , Func<TBars, double> priceHigh, Func<TBars, double> priceLow) where TBars : BarBase {
       //var wavePeriod = TimeSpan.FromSeconds(period.TotalSeconds * 1.5);
       //var dateFrom = rate.StartDate - wavePeriod;
       //var dateTo = rate.StartDate + wavePeriod;
@@ -498,17 +521,17 @@ namespace HedgeHog.Bars {
       var ratesRight = rates.Where(r => r.StartDate.Between(rate.StartDate, dateTo.AddSeconds(period.TotalSeconds * 30))).ToArray();
       var ratesInRange = rates.Where(r => r.StartDate.Between(dateFrom, dateTo)).ToArray();
       rate.FractalSell =
-        rate.PriceHigh >= ratesInRange.Max(r => r.PriceHigh)
+        priceHigh(rate) >= ratesInRange.Max(priceHigh)
         &&
         (//(rate.PriceHigh - ratesLeft.Min(r => r.PriceLow)) >= waveHeight        || 
-        (rate.PriceHigh - ratesRight.Min(r => r.PriceLow)) >= waveHeight
+        (priceHigh(rate) - ratesRight.Min(priceLow)) >= waveHeight
         )
         ? HedgeHog.Bars.FractalType.Sell : HedgeHog.Bars.FractalType.None;
       rate.FractalBuy =
-        rate.PriceLow <= ratesInRange.Min(r => r.PriceLow)
+        priceLow(rate) <= ratesInRange.Min(priceLow)
         &&
         (//(ratesLeft.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight ||
-        (ratesRight.Max(r => r.PriceHigh) - rate.PriceLow) >= waveHeight
+        (ratesRight.Max(priceHigh) - priceLow(rate)) >= waveHeight
         )
         ? HedgeHog.Bars.FractalType.Buy : HedgeHog.Bars.FractalType.None;
 

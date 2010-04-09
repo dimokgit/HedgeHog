@@ -28,17 +28,20 @@ namespace HedgeHog {
     DateTime GoSellTime { get { return _goSellTime; } set { _goSellTime = value; } }
     public int TradeWaveInMinutes { get; set; }
 
+    bool _goBuy = false;
     public bool GoBuy {
-      get;
-      set;
+      get { return _goBuy; }
+      set { _goBuy = value; }
     }
     bool goBuy { 
       get { return (this.ServerTime - GoBuyTime).Duration().TotalSeconds.Between(0, TradeSignalDelay); }
       set { this.GoBuyTime = value ? this.ServerTime : DateTime.MinValue; }
     }
+
+    bool _goSell = false;
     public bool GoSell {
-      get;
-      set;
+      get { return _goSell; }
+      set { _goSell = value; }
     }
     bool goSell { 
       get { return (this.ServerTime - GoSellTime).TotalSeconds.Between(0, TradeSignalDelay); }
@@ -68,12 +71,20 @@ namespace HedgeHog {
     public bool CorridorOK { get; set; }
     TradeStatistics _tradeStats = new TradeStatistics();
     public bool IsReady { get; set; }
+    public DateTime[] FractalDates { get { return FractalDatesBuy.Concat(FractalDatesSell).ToArray(); } }
+
+    DateTime[] _fractalDatesBuy = new DateTime[] { };
+    public DateTime[] FractalDatesBuy { get { return _fractalDatesBuy ?? new DateTime[] { }; } set { _fractalDatesBuy = value; } }
+
+    DateTime[] _fractalDatesSell = new DateTime[] { };
+    public DateTime[] FractalDatesSell { get { return _fractalDatesSell ?? new DateTime[] { }; } set { _fractalDatesSell = value; } }
+
     public TradeStatistics TradeStats { get { return _tradeStats; } set { _tradeStats = value; } }
 
   }
   [Serializable]
   public class TradeRequest :IEquatable<TradeRequest> {
-    Guid guid = Guid.NewGuid();
+    public Guid guid { get; set; }
     public int highBarMinutes = 5;
     public int closeOppositeOffset = 0;
     public bool sellOnProfitLast = true;
@@ -125,6 +136,7 @@ namespace HedgeHog {
     }
     #region IEquatable<TradeRequest> Members
     public bool Equals(TradeRequest other) {
+      return guid == other.guid;
       return other == null ? false : this.highBarMinutes == other.highBarMinutes &&
       this.closeOppositeOffset == other.closeOppositeOffset &&
       this.sellOnProfitLast == other.sellOnProfitLast &&
@@ -166,6 +178,7 @@ namespace HedgeHog {
       return false;
     }
     public override int GetHashCode() {
+      return guid.GetHashCode();
       return highBarMinutes ^
           closeOppositeOffset.GetHashCode() ^
           sellOnProfitLast.GetHashCode() ^

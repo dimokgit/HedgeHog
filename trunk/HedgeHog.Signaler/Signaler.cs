@@ -94,13 +94,15 @@ namespace HedgeHog {
     public class WaveStats {
       public double Average;
       public double StDev;
-      public double AverageN;
+      public double AverageUp;
+      public double AverageDown;
       public DateTime Time = DateTime.MinValue;
       public WaveStats() { }
-      public WaveStats(double Avg,double StDev,double AverageN) {
+      public WaveStats(double Avg,double StDev,double AverageUp,double AverageDown) {
         this.Average = Avg;
         this.StDev = StDev;
-        this.AverageN = AverageN;
+        this.AverageUp = AverageUp;
+        this.AverageDown = AverageDown;
         Time = DateTime.Now;
       }
     }
@@ -109,8 +111,9 @@ namespace HedgeHog {
       //waves = waves.OrderBy(w => w).Take(waves.Count() - 1).ToArray();
       var wa = waves.Average();
       var wst = waves.StdDev();
-      waves = waves.Where(w => w > wa).ToArray();
-      return new WaveStats(wa, wst, waves.DefaultIfEmpty(wa).Average());
+      return new WaveStats(wa, wst
+        , waves.Where(w => w >= wa).DefaultIfEmpty(wa).Average()
+        , waves.Where(w => w <= wa).DefaultIfEmpty(wa).Average());
     }
 
     public static List<Volt> FindMaximasPeakAndValley(
