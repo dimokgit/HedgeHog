@@ -58,4 +58,6 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkNormalizeFractals]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkMassOrHeight]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]SelectedIndex" value="3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="5" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginHigh]Text" value="25" />
 </dictionary>
