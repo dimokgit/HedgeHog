@@ -712,7 +712,7 @@ namespace HedgeHog {
       }
     }
 
-    enum PositionModeType { Mass = 0, Height = 1, MassOrHeight = 2, MassByHeight = 3 }
+    enum PositionModeType { Mass = 0, Height = 1, MassOrHeight = 2, MassByHeight = 3, MassByHeightOrMassOrHigh = 4 }
 
     PositionModeType _positionMode;
 
@@ -948,6 +948,9 @@ namespace HedgeHog {
                 posBS = Math.Max(heightRatio.Value, massRatio); break;
               case PositionModeType.MassByHeight:
                 posBS = heightRatio * massRatio; break;
+              case PositionModeType.MassByHeightOrMassOrHigh:
+                posBS = new []{massRatio,heightRatio, heightRatio * massRatio}.Max(); break;
+
               default: throw new NotSupportedException(PositionMode + "");
             }
             #endregion
@@ -1808,10 +1811,9 @@ namespace HedgeHog {
             t => t.PL >= legDownAverageInPips / 5 && !isInSell
             //t => t.PL >= (CorridorSpreadInPips / 2) && (-priceCurrent.Average + ticksLamda(t).Max(tick => tick.PriceAvg)) >= CorridorSpread(true)
             ).Select(t => t.Id));
-        } else {
-          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL > legUpAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
-          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL > legDownAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
         }
+        closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL > legUpAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
+        closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL > legDownAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
       }
       #endregion
 

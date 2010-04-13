@@ -164,7 +164,8 @@
             <ColumnDefinition Width="Auto" MinWidth="29" />
             <ColumnDefinition Width="Auto" MinWidth="29" />
             <ColumnDefinition Width="Auto" MinWidth="32" />
-            <ColumnDefinition Width="Auto" MinWidth="47" />
+            <ColumnDefinition Width="Auto" MinWidth="4" />
+            <ColumnDefinition Width="Auto" MinWidth="30"/>
           </Grid.ColumnDefinitions>
           <Label Name="lblBuyPL" Grid.Row="0" Grid.Column="0" Background="AliceBlue" >Buy PL:</Label>
           <Label Name="lblBuyLots" Grid.Row="0" Grid.Column="1" Background="AliceBlue">Lots:</Label>
@@ -172,7 +173,11 @@
           <Label Name="lblBuyPositions" Grid.Row="0" Grid.Column="3" Background="AliceBlue">Pos:</Label>
           <Label Name="lblBuyPips" Grid.Row="0" Grid.Column="4" Background="AliceBlue">Pips:</Label>
           <Label Name="lblBuyPipsToNet" Grid.Row="0" Grid.Column="5" Background="AliceBlue">PTN:</Label>
-          <Label Name="lblLotsLeft" Grid.Row="0" Grid.Column="6" ToolTip="Lots Left" Background="AliceBlue">LL:</Label>
+          <StackPanel  Grid.Row="0" Grid.Column="6" Orientation="Horizontal">
+            <Label ToolTip="Average Density" Content="{Binding DensityAverage}" ContentStringFormat="AD:{0:n0}" Background="AliceBlue"></Label>
+            <Label ToolTip="Commission" Content="{Binding Commission}" ContentStringFormat="C$:{0:n0}" Background="AliceBlue"></Label>
+          </StackPanel>
+          <Label Name="lblLotsLeft" Grid.Row="0" Grid.Column="7" ToolTip="Lots Left" Background="AliceBlue">LL:</Label>
 
 
           <Label Name="lblSellPL" Grid.Row="1" Grid.Column="0" Background="Moccasin">Sell PL:</Label>

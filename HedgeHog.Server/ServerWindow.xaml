@@ -110,6 +110,7 @@
           <ComboBoxItem>H</ComboBoxItem>
           <ComboBoxItem>M|H</ComboBoxItem>
           <ComboBoxItem>M*H</ComboBoxItem>
+          <ComboBoxItem>M*|H</ComboBoxItem>
         </ComboBox>
       </StackPanel>
         <StackPanel Orientation="Horizontal">

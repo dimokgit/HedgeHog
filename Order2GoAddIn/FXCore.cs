@@ -6,8 +6,8 @@ using System.Text;
 
 namespace Order2GoAddIn {
   public class CoreFX :IDisposable{
-    FXCore.CoreAut mCore = null;
-    FXCore.TradeDeskAut mDesk = null;
+    static FXCore.CoreAut mCore = null;
+    public static FXCore.TradeDeskAut mDesk = null;
     public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
     private void RaiseLoginError(Exception exc) {
@@ -22,7 +22,7 @@ namespace Order2GoAddIn {
       if (LoggedOffEvent != null) LoggedOffEvent(this, new EventArgs());
     }
     System.Threading.Timer timer;
-    public FXCore.TradeDeskAut Desk { get { return mDesk; } }
+    public static FXCore.TradeDeskAut Desk { get { return mDesk; } }
     public bool LoggedIn { get { return mDesk != null; } }
     string user = "";
     string password = "";

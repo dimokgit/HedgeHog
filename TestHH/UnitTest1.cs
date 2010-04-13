@@ -53,9 +53,9 @@ namespace TestHH {
     // public static void MyClassCleanup() { }
     //
     // Use TestInitialize to run code before running each test 
+    CoreFX core = new Order2GoAddIn.CoreFX(true);
     [TestInitialize()]
     public void MyTestInitialize() {
-      var core = new Order2GoAddIn.CoreFX(true);
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
 
       if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
@@ -77,13 +77,43 @@ namespace TestHH {
     #endregion
 
     public void GetAccount() {
-      var a = o2g.GetAccount();
+      var a = FXW.GetAccount();
       MessageBox.Show("PMC:" + a.PipsToMC);
     }
     public void IndicatorList() {
       Indicators.List();
     }
     [TestMethod]
+    public void Speed() {
+      var dateStart = DateTime.Parse("04/08/2010 08:00");
+      var dateEnd = dateStart.AddHours(4);
+      var ticks = o2g.GetBarsBase(0, dateStart, dateEnd).Cast<Tick>().GroupTicksToRates().ToArray();
+      var rates = ticks.GetMinuteTicks(1);
+      rates.OrderBarsDescending().FillOverlaps();
+      int np = 4;
+      var period = TimeSpan.FromMinutes(6);
+      var tickToFill = ticks.SkipWhile(t => t.StartDate.Between(ticks.First().StartDate, ticks.First().StartDate + period.Multiply(np))).ToArray();
+      foreach (var tick in tickToFill) {
+        var to = rates.Where(period.Multiply(np), tick).ToArray();
+        var ols = to.Select(t => t.Overlap).ToArray();
+        period = ols.Average().Multiply(2);
+        ticks.Where(period, tick).ToArray().FillSpeed(tick, t => t.PriceAvg);
+      }
+      tickToFill.SetCMA(t => t.PriceSpeed.Value, 20);
+      period = TimeSpan.FromMinutes(6);
+      tickToFill = ticks.SkipWhile(t => t.PriceCMA==null).SkipWhile(t => t.StartDate.Between(ticks.First().StartDate, ticks.First().StartDate + period.Multiply(np))).ToArray();
+      foreach (var tick in tickToFill) {
+        var to = rates.Where(period.Multiply(np), tick).ToArray();
+        var ols = to.Select(t => t.Overlap).ToArray();
+        period = ols.Average().Multiply(2);
+        ticks.SkipWhile(t => t.PriceCMA == null).Where(period, tick).ToArray().FillSpeed(tick, t => t.PriceCMA[0]);
+      }
+      ticks.Where(t => t.PriceSpeed.HasValue).SaveToFile(
+         r => o2g.InPips(1, r.PriceSpeed),
+         r => o2g.InPips(1, r.PriceCMA[0]),
+         r => o2g.InPips(1, r.PriceCMA[2]),
+         "C:\\Speed.csv");
+    }
     public void TicksPerMinute() {
       var dateFrom = DateTime.Parse("4/2/2010 10:13:16");
       var dateTo = DateTime.Parse("4/2/2010 10:33:27");
@@ -425,16 +455,16 @@ namespace TestHH {
           Debug.WriteLine(c.Title+":"+r.CellValue(c.Title));
         }
       };
-      var table = o2g.GetTable(FXW.TABLE_ACCOUNTS);
+      var table = FXW.GetTable(FXW.TABLE_ACCOUNTS);
       showTable(table, 1);
       Debug.WriteLine("");
-      table = o2g.GetTable(FXW.TABLE_TRADES);
+      table = FXW.GetTable(FXW.TABLE_TRADES);
       showTable(table, 1);
       Debug.WriteLine("");
-      table = o2g.GetTable(FXW.TABLE_ORDERS);
+      table = FXW.GetTable(FXW.TABLE_ORDERS);
       showTable(table, 3);
       Debug.WriteLine("");
-      showTable(o2g.GetTable(FXW.TABLE_SUMMARY), 3);
+      showTable(FXW.GetTable(FXW.TABLE_SUMMARY), 3);
       //var account = o2g.GetAccount();
     }
     public void GetTicksTest() {

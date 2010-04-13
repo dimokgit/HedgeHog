@@ -223,6 +223,15 @@ namespace HedgeHog {
 
   #region Extentions
   public static class Extentions {
+    #region TimeSpan
+    public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
+      return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
+    }
+    public static TimeSpan Multiply(this TimeSpan span, double d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d);
+    }
+    #endregion
+
     public static T FirstOrLast<T>(this IEnumerable<T> e, bool last) {
       return last ? e.Last() : e.First();
     }

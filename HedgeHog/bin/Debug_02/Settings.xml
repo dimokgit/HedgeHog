@@ -2,7 +2,7 @@
 <dictionary>
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[.1]Left" value="746" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[.1]Top" value="0" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[.1]Height" value="198" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[.1]Height" value="172" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[.1]Width" value="455" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtAccNum]Text" value="00244559" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPassword]Text" value="turbo" />
@@ -18,7 +18,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="39101" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Left" value="505" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Top" value="2" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[.]Height" value="210" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[.]Height" value="196" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Width" value="240" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeHighLow]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtMaximasCount]Text" value="3" />
@@ -26,7 +26,7 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkSellOnProfitLast]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtHighMinutes]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnReverseOnly]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnProfitOnly]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnProfitOnly]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkPriceAvgToPeakValley]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkSaveVoltsToFile]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkShowOtherCorridors]IsChecked" value="True" />
@@ -54,9 +54,9 @@
   <item key="/HedgeHog;component/corridors.xaml.Corridors[.]Top" value="226" />
   <item key="/HedgeHog;component/corridors.xaml.Corridors[.]Height" value="200" />
   <item key="/HedgeHog;component/corridors.xaml.Corridors[.]Width" value="500" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Left" value="764" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Top" value="189" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Height" value="180" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Left" value="745" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Top" value="148" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Height" value="164" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow0.MainWindow0]Width" value="455" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtAccNum]Text" value="00244559" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPassword]Text" value="" />
@@ -70,17 +70,17 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtStartingBalance]Text" value="5000" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPipsToMCHistory]Text" value="1176" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtMinEquityHistory]Text" value="39549" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Left" value="521" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Top" value="219" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Height" value="200" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Width" value="235" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Left" value="500" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Top" value="160" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Height" value="179" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Width" value="243" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkTradeHighLow]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtMaximasCount]Text" value="3" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtSellOnProfit]Text" value="4" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkSellOnProfitLast]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtHighMinutes]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseOnReverseOnly]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseOnProfitOnly]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseOnProfitOnly]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkPriceAvgToPeakValley]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkSaveVoltsToFile]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkShowOtherCorridors]IsChecked" value="True" />
@@ -110,7 +110,7 @@
   <item key="/HedgeHog;component/corridors.xaml.Corridors[MainWindow0.MainWindow0]Width" value="500" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTradeSell]Text" value="10" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPriceToAdd]Text" value="1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPriceToAdd]Text" value=".1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[.chkTradeDistanceUnisex]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerName]Text" value="DHOME" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtServerPort]Text" value="8008" />
@@ -129,7 +129,7 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="33" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="112" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkDoBiDirection]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtCloseIfProfitTradesMoreThen]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtCloseIfProfitTradesMoreThen]Text" value="2" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtCloseProfitTradesMaximum]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeByVolatilityMax]IsChecked" value="" />
   <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbGoTradeBuy]SelectedIndex" value="3" />
@@ -142,7 +142,7 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkRSIUseOffset]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkCloseOnCorridorBorder]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[.chkTradeByRsi]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeOnProfitAfter]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeOnProfitAfter]Text" value="3" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngle]Text" value="0.0" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMax]Text" value=" 1.00009" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[.txtTradeAngleMin]Text" value="-1.00009" />
@@ -153,7 +153,7 @@
   <item key="/HedgeHog;component/charting.xaml.ComboBox[.cbPositionFooSell]SelectedIndex" value="2" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow0.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow0.cmbLotsToTradeSell]Text" value="10" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPriceToAdd]Text" value="1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPriceToAdd]Text" value=".1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow0.chkTradeDistanceUnisex]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtServerName]Text" value="DHOME" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtServerPort]Text" value="8009" />
@@ -166,14 +166,14 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkTradeByDirection]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkDoBiDirection]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseAllOnTrade]IsChecked" value="True" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtCloseIfProfitTradesMoreThen]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtCloseIfProfitTradesMoreThen]Text" value="2" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtCloseProfitTradesMaximum]Text" value="0" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtCorridorMinMinuteBar]Text" value="5" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseOnNet]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkTradeByVolatilityMax]IsChecked" value="" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkCloseOnCorridorBorder]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkTradeByRsi]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtTradeOnProfitAfter]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtTradeOnProfitAfter]Text" value="3" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtTradeAngleMax]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtTradeAngleMin]Text" value="-1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtTradeByFractalCoeff]Text" value="1" />
@@ -185,15 +185,15 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow0.chkRSIUseOffset]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbGoTradeBuy]SelectedIndex" value="3" />
   <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbGoTradeSell]SelectedIndex" value="3" />
-  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbPositionFooBuy]SelectedIndex" value="2" />
-  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbPositionFooSell]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbPositionFooBuy]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow0.cbPositionFooSell]SelectedIndex" value="3" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow0.MainWindow0]Left" value="1082" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow0.MainWindow0]Top" value="329" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow0.MainWindow0]Height" value="27" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow0.MainWindow0]Width" value="112" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Left" value="764" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Top" value="368" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Height" value="183" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Left" value="756" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Top" value="289" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Height" value="168" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow1.MainWindow1]Width" value="457" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtAccNum]Text" value="00244559" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtPassword]Text" value="" />
@@ -201,7 +201,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkDemo]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow1.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow1.cmbLotsToTradeSell]Text" value="10" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtPriceToAdd]Text" value="1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtPriceToAdd]Text" value=".1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtMinEquityHistory]Text" value="39549" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkAutoPilot]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkAutoAdjust]IsChecked" value="True" />
@@ -210,7 +210,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkTradeDistanceUnisex]IsChecked" value="False" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtPipsToMCHistory]Text" value="1176" />
   <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow1.MainWindow1]Left" value="511" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow1.MainWindow1]Top" value="421" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow1.MainWindow1]Top" value="300" />
   <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow1.MainWindow1]Height" value="200" />
   <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow1.MainWindow1]Width" value="238" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtServerName]Text" value="DHOME" />
@@ -224,7 +224,7 @@
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkTradeByDirection]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkDoBiDirection]IsChecked" value="False" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkCloseAllOnTrade]IsChecked" value="True" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtCloseIfProfitTradesMoreThen]Text" value="13" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtCloseIfProfitTradesMoreThen]Text" value="2" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtCloseProfitTradesMaximum]Text" value="-1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtHighMinutes]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtCorridorMinMinuteBar]Text" value="10" />
@@ -232,12 +232,12 @@
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtVoltageCMA]Text" value="10" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtProfitMin]Text" value="-1" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkSellOnProfitLast]IsChecked" value="True" />
-  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkCloseOnProfitOnly]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkCloseOnProfitOnly]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkCloseOnNet]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkTradeByVolatilityMax]IsChecked" value="" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkCloseOnCorridorBorder]IsChecked" value="True" />
   <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow1.chkTradeByRsi]IsChecked" value="False" />
-  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtTradeOnProfitAfter]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtTradeOnProfitAfter]Text" value="3" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtTradeAngleMax]Text" value="1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtTradeAngleMin]Text" value="-1" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow1.txtTradeByFractalCoeff]Text" value="1" />
@@ -257,4 +257,136 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow1.MainWindow1]Top" value="519" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow1.MainWindow1]Height" value="27" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow1.MainWindow1]Width" value="112" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow2.MainWindow2]Left" value="753" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow2.MainWindow2]Top" value="609" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow2.MainWindow2]Height" value="180" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow2.MainWindow2]Width" value="454" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtAccNum]Text" value="00244559" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtPassword]Text" value="" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow2.cmbPair]Text" value="GBP/JPY" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow2.chkDemo]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow2.cmbLotsToTradeBuy]Text" value="10" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow2.cmbLotsToTradeSell]Text" value="10" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtPriceToAdd]Text" value=".1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtMinEquityHistory]Text" value="39755" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow2.chkAutoPilot]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow2.chkAutoAdjust]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtLeverage]Text" value="400" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtTradeDelta]Text" value=".1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow2.chkTradeDistanceUnisex]IsChecked" value="False" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow2.txtPipsToMCHistory]Text" value="2020" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow2.MainWindow2]Left" value="498" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow2.MainWindow2]Top" value="610" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow2.MainWindow2]Height" value="200" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow2.MainWindow2]Width" value="260" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtServerName]Text" value="DHOME" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtServerPort]Text" value="8007" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtShortStack]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtShortStackTruncateOffset]Text" value="7" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCorridorSmoothSeconds]Text" value="60" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkDoTrend]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkSetLimitOrder]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCloseTradeFibRatio]Text" value=".95" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkTradeByDirection]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkDoBiDirection]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkCloseAllOnTrade]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCloseIfProfitTradesMoreThen]Text" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCloseProfitTradesMaximum]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtHighMinutes]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCorridorMinMinuteBar]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtCloseOppositeOffset]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtVoltageCMA]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtProfitMin]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkSellOnProfitLast]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkCloseOnProfitOnly]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkCloseOnNet]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkTradeByVolatilityMax]IsChecked" value="" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkCloseOnCorridorBorder]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkTradeByRsi]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtTradeOnProfitAfter]Text" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtTradeAngleMax]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtTradeAngleMin]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtTradeByFractalCoeff]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtRSITradeSignalPeriod]Text" value="14" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtRSITradeSignalBar]Text" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtRSITradeSignalTresholdSell]Text" value="70" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtRSITradeSignalTresholdBuy]Text" value="30" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtRSIProfit]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow2.chkRSIUseOffset]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow2.txtFoo]Text" value="11" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow2.cbGoTradeBuy]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow2.cbGoTradeSell]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow2.cbPositionFooBuy]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow2.cbPositionFooSell]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow2.cbDensityFoo]SelectedIndex" value="7" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow2.MainWindow2]Left" value="1062" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow2.MainWindow2]Top" value="692" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow2.MainWindow2]Height" value="27" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow2.MainWindow2]Width" value="112" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow3.MainWindow3]Left" value="754" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow3.MainWindow3]Top" value="449" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow3.MainWindow3]Height" value="180" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.HedgeHogMainWindow[MainWindow3.MainWindow3]Width" value="446" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtAccNum]Text" value="00244559" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtPassword]Text" value="" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow3.cmbPair]Text" value="CHF/JPY" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow3.chkDemo]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow3.cmbLotsToTradeBuy]Text" value="10" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow3.cmbLotsToTradeSell]Text" value="10" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtPriceToAdd]Text" value=".1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtMinEquityHistory]Text" value="39755" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow3.chkAutoPilot]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow3.chkAutoAdjust]IsChecked" value="True" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtLeverage]Text" value="400" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtTradeDelta]Text" value="1" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow3.chkTradeDistanceUnisex]IsChecked" value="False" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow3.txtPipsToMCHistory]Text" value="2020" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow3.MainWindow3]Left" value="504" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow3.MainWindow3]Top" value="451" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow3.MainWindow3]Height" value="185" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow3.MainWindow3]Width" value="256" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtServerName]Text" value="DHOME" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtServerPort]Text" value="8006" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtShortStack]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtShortStackTruncateOffset]Text" value="7" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCorridorSmoothSeconds]Text" value="60" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkDoTrend]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkSetLimitOrder]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCloseTradeFibRatio]Text" value=".95" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkTradeByDirection]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkDoBiDirection]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkCloseAllOnTrade]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCloseIfProfitTradesMoreThen]Text" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCloseProfitTradesMaximum]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtHighMinutes]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCorridorMinMinuteBar]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtCloseOppositeOffset]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtVoltageCMA]Text" value="10" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtProfitMin]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkSellOnProfitLast]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkCloseOnProfitOnly]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkCloseOnNet]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkTradeByVolatilityMax]IsChecked" value="" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkCloseOnCorridorBorder]IsChecked" value="True" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkTradeByRsi]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtTradeOnProfitAfter]Text" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtTradeAngleMax]Text" value=" 1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtTradeAngleMin]Text" value="-1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtTradeByFractalCoeff]Text" value="1" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtRSITradeSignalPeriod]Text" value="14" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtRSITradeSignalBar]Text" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtRSITradeSignalTresholdSell]Text" value="70" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtRSITradeSignalTresholdBuy]Text" value="30" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtRSIProfit]Text" value="0" />
+  <item key="/HedgeHog;component/charting.xaml.CheckBox[MainWindow3.chkRSIUseOffset]IsChecked" value="False" />
+  <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow3.txtFoo]Text" value="11" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow3.cbGoTradeBuy]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow3.cbGoTradeSell]SelectedIndex" value="3" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow3.cbPositionFooBuy]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow3.cbPositionFooSell]SelectedIndex" value="2" />
+  <item key="/HedgeHog;component/charting.xaml.ComboBox[MainWindow3.cbDensityFoo]SelectedIndex" value="7" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow3.MainWindow3]Left" value="1023" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow3.MainWindow3]Top" value="721" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow3.MainWindow3]Height" value="27" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[MainWindow3.MainWindow3]Width" value="112" />
 </dictionary>

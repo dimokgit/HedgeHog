@@ -39,6 +39,9 @@
       <RowDefinition Height="Auto" />
       <RowDefinition />
     </Grid.RowDefinitions>
+    <Popup Name="popVolts">
+      <my:DataGrid xmlns:my="http://schemas.microsoft.com/wpf/2008/toolkit" ItemsSource="{Binding Voltage}" CanUserAddRows="False" CanUserDeleteRows="False" VerticalScrollBarVisibility="Auto" AutoGeneratingColumn="dgBuySellBars_AutoGeneratingColumn" />
+    </Popup>
     <StackPanel VerticalAlignment="Top" Margin="0,-1,0,0" Name="wpMain" Grid.Row="0">
       <Popup Name="popUpSettings">
         <Popup.Resources>
@@ -138,12 +141,11 @@
           </Grid>
         </Border>
       </Popup>
-      <Border MouseDown="ShowSettings">
+      <Border MouseDown="ShowSettings" Background="{Binding TicksColor}">
                 <StackPanel>
                     <TextBlock>
       <Label Name="lblVolatility" ToolTip="Avg15/Avg10/Avg5/Avg1 > VM"></Label>
-                <Label ToolTip="Decision Function Number" Margin="2 0 0 0">D#</Label>
-                <TextBox Name="txtFoo" Text="{state:UserSettings Default=11}" TextChanged="txtBSPeriod_TextChanged" />
+                <TextBox Name="txtFoo" Text="{state:UserSettings Default=11}" TextChanged="txtBSPeriod_TextChanged" ToolTip="Decision Function Number" />
             <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeBuy" ToolTip="Can Trade Buy">
               <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
               <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
@@ -164,6 +166,7 @@
               <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
               <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
             </ComboBox>
+                      <Label Content="{Binding TicksRatio}" ContentStringFormat="n1"></Label>
           </TextBlock>
                 </StackPanel>
             </Border>
@@ -202,6 +205,7 @@
             </Grid>
           </ToolTipService.ToolTip>
           <TextBlock Padding="0" Margin="0,1" ToolTipService.ShowDuration="300000">
+              <CheckBox Name="chkOpenTradeBuy2" ToolTip="Open Buy 2 Positions"/>
               <CheckBox Name="chkOpenTradeBuy" ToolTip="Open Buy Position"/>
         <Label Name="lblOpenBuy" ToolTip="Buy" BorderThickness="1" Content="B" BorderBrush="{Binding CanBuyByCorridor}" />
         <Label Content="{Binding RsiLow}" ToolTip="RSI Buy" />
@@ -213,6 +217,7 @@
         <Label Content="{Binding RsiHigh}" ToolTip="RSI Sell" />
         <Label Name="lblOpenSell" ToolTip="Sell" Content="S" BorderThickness="1" BorderBrush="{Binding CanSellByCorridor}" />
         <CheckBox Name="chkOpenTradeSell" ToolTip="Open Sell Position"/>
+        <CheckBox Name="chkOpenTradeSell2" ToolTip="Open Sell 2 Positions"/>
         <Label Name="lblMainWave" Content="HL:" ToolTip="High Low Spread"/>
         <Label Content="{Binding CorridorSpread}" ToolTip="Corridor Spread" BorderBrush="LightGray" BorderThickness="1"/>
         <Label Content="{Binding Rsi}" ToolTip="Corridor Spread" BorderBrush="LightGray" BorderThickness="1" Margin="2 0 0 0"/>
@@ -255,9 +260,6 @@
             <Label Content="{Binding TimeFrame}" ToolTip="Time Frame"/>
         <Label Content=":" VerticalAlignment="Center" Margin="0"></Label>
             <Label Content=" min" VerticalAlignment="Center" Margin="0"/>
-        <Popup Name="popVolts">
-        <my:DataGrid xmlns:my="http://schemas.microsoft.com/wpf/2008/toolkit" ItemsSource="{Binding Voltage}" CanUserAddRows="False" CanUserDeleteRows="False" VerticalScrollBarVisibility="Auto" AutoGeneratingColumn="dgBuySellBars_AutoGeneratingColumn" />
-        </Popup>
                 </TextBlock>
             </Border>
         </StackPanel>

@@ -222,7 +222,9 @@ namespace HedgeHog {
     private int closeProfitTradesMaximum { get { return _txtCloseProfitTradesMaximum; } }
 
     private bool forceOpenTradeBuy { get { return Lib.GetChecked(chkOpenTradeBuy).Value; } set { Lib.SetChecked(chkOpenTradeBuy, value, true); } }
+    private bool forceOpenTradeBuy2 { get { return Lib.GetChecked(chkOpenTradeBuy2).Value; } set { Lib.SetChecked(chkOpenTradeBuy2, value, true); } }
     private bool forceOpenTradeSell { get { return Lib.GetChecked(chkOpenTradeSell).Value; } set { Lib.SetChecked(chkOpenTradeSell, value, true); } }
+    private bool forceOpenTradeSell2 { get { return Lib.GetChecked(chkOpenTradeSell2).Value; } set { Lib.SetChecked(chkOpenTradeSell2, value, true); } }
 
     private double spreadAverage = 0;
     private double spreadAverageInPips { get { return fw.InPips(spreadAverage, 1); } }
@@ -411,7 +413,7 @@ namespace HedgeHog {
           var ct = from t in fw.GetTrades()
                    join c in closeTradeIDs on t.Id equals c
                    select c;
-          ct.ToList().ForEach(t => fw.FixOrderClose(t));
+          ct.ToList().ForEach(t => FXW.FixOrderClose(t));
         };
     }
     bool doSecondTrade = false;
@@ -437,6 +439,32 @@ namespace HedgeHog {
       set { _rsiAverage = value; }
     }
     Guid guid = Guid.NewGuid();
+    static int ToByte(double b) {
+      try {
+        return (double.IsNaN(b) ? 0 : Math.Max(-255, Math.Min(255, b))).ToInt();
+      } catch {
+        return 0;
+      }
+    }
+    public static Dictionary<string, double> DensityList = new Dictionary<string, double>();
+    public static double DensityAverage { get { return DensityList.Values.DefaultIfEmpty().Average(); } }
+    static int ColorTemperatute(byte value, byte from, byte to) { return ToByte( ((to - from) / 255.0) * value + from); }
+    static int RedTemperature(int value) { return ToByte(value > 0 ? 255 : 0); }
+    static int GreenTemperature(int value) { return ToByte(255 - value); }
+    static int BlueTemperature(int value) { return ToByte(value > 0 ? 0 : 255); }
+    static int AlfaTemperature(int value) { return ToByte(Math.Abs(value)); }
+    static string ColorTemperature(int temperature) {
+      var t = string.Format("#{0:X2}{1:X2}{2:X2}{3:X2}"
+        ,AlfaTemperature(temperature),RedTemperature(temperature), GreenTemperature(temperature),BlueTemperature(temperature));
+      return t;
+    }
+    double ticksRatio = 0;
+    int ticksTemperature { get { return ToByte(Math.Log(ticksRatio, 1.005)); } }
+
+    public string TicksColor {
+      get { return  ColorTemperature(ticksTemperature); }
+    }
+
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
       try {
@@ -444,7 +472,7 @@ namespace HedgeHog {
         #region Local Globals
         int periodMin = bsPeriodMin;
         Order2GoAddIn.Summary summary = fw.GetSummary();
-        Order2GoAddIn.Account account = fw.GetAccount();
+        Order2GoAddIn.Account account = FXW.GetAccount();
         var price = eventPrice ?? summary.PriceCurrent;
         #endregion
 
@@ -482,7 +510,7 @@ namespace HedgeHog {
             fw.TradesCountChanged += (trade) => {
               if (IsSecondTrade(trade)) return;
               tradeAdded = trade;
-              forceOpenTradeBuy = forceOpenTradeSell = false;
+              forceOpenTradeBuy = forceOpenTradeSell = forceOpenTradeBuy2 = forceOpenTradeSell2 = false;
               doSecondTrade = !IsSecondTrade(tradeAdded);
               //System.IO.File.AppendAllText("Trades.xml", trade.ToString() + Environment.NewLine);
             };
@@ -572,9 +600,14 @@ namespace HedgeHog {
           voltPriceMin = ts.voltPriceMin;
           ticksPerMinuteAverageShort = (int)ts.ticksPerMinuteAverageShort;
           ticksPerMinuteAverageLong = (int)ts.ticksPerMinuteAverageLong;
+          ticksRatio = ticksPerMinuteAverageShort / (double)ticksPerMinuteAverageLong;
           corridorMinimum = ts.corridorMinimum;
           closeTradeIDs.AddRange(ti.CloseTradeIDs);
           CloseTrades();
+          if (tradesBuy.Concat(tradesSell).Count() > 0)
+            DensityList[pair] = new[] { ti.DencityRatioBuy, ti.DencityRatioSell }.Average();
+          else if (DensityList.ContainsKey(pair))
+            DensityList.Remove(pair);
           Dispatcher.BeginInvoke(new Action(() => {
             DC.TimeFrame = ts.timeFrame;
             DC.CorridorMinimum = fw.InPips(corridorMinimum, 1);
@@ -586,6 +619,8 @@ namespace HedgeHog {
             DC.RsiLow = ti.RsiLow;
             DC.RsiBuy = ti.RsiRegressionOffsetBuy;
             DC.RsiSell = ti.RsiRegressionOffsetSell;
+            DC.TicksColor = TicksColor;
+            DC.TicksRatio = ticksRatio;
           }));
           #endregion
           RsiBuy = ti.RsiRegressionOffsetBuy;
@@ -623,9 +658,9 @@ namespace HedgeHog {
           #endregion
 
           if (ti.CloseLastBuy && !ti.TrancateBuy) fw.FixOrderClose(true, sellOnProfitLast);
-          if (ti.TrancateBuy) fw.ClosePositions(0, 1);
+          if (ti.TrancateBuy) MessageBox.Show("Trancate is not omplemented.");// fw.ClosePositions(0, 1);
           if (ti.CloseLastSell && !ti.TrancateSell) fw.FixOrderClose(false, sellOnProfitLast);
-          if (ti.TrancateSell) fw.ClosePositions(1, 0);
+          if (ti.TrancateSell) MessageBox.Show("Trancate is not omplemented.");//  fw.ClosePositions(1, 0);
 
           if (false && GoBuy) {
             GoSell = true;
@@ -683,7 +718,9 @@ namespace HedgeHog {
 
         #region Force Trade Function
         if (forceOpenTradeBuy) this.CanTrade = this.GoBuy = true;
+        if (forceOpenTradeBuy2) this.LotsToTradeBuy *= 2;
         if (forceOpenTradeSell) this.CanTrade = this.GoSell = true;
+        if (forceOpenTradeSell2) this.LotsToTradeSell *= 2; 
         if (forceOpenTradeBuy || forceOpenTradeSell) {
           this.DencityRatio = 5;
           this.TakeProfitSell = this.TakeProfitBuy = this.TradeInfo.TradeWaveHeight / 2;
@@ -845,6 +882,21 @@ namespace HedgeHog {
     public static readonly DependencyProperty PositionSellProperty =
         DependencyProperty.Register("PositionSell", typeof(int), typeof(ViewModel), new UIPropertyMetadata(0));
     #endregion
+
+
+
+    public string TicksColor { get { return (string)GetValue(TicksColorProperty); } set { SetValue(TicksColorProperty, value); } }    public static readonly DependencyProperty TicksColorProperty = DependencyProperty.Register("TicksColor", typeof(string), typeof(ViewModel), new UIPropertyMetadata(Colors.Transparent + ""));
+
+
+    public double TicksRatio {
+      get { return (double)GetValue(TicksRatioProperty); }
+      set { SetValue(TicksRatioProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for TicksRatio.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty TicksRatioProperty =
+        DependencyProperty.Register("TicksRatio", typeof(double), typeof(ViewModel));
+
 
 
    public ObservableCollection<VoltForGrid> Voltage {
