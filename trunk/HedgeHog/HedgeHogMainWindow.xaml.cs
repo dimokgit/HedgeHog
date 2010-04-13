@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Threading;
 using ControlExtentions;
+using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 namespace HedgeHog {
   public partial class HedgeHogMainWindow : Window,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
@@ -353,6 +354,7 @@ namespace HedgeHog {
       return spread;
     }
 
+    public double ProfitPercent;
     void ShowAccount(Order2GoAddIn.Account Account, Order2GoAddIn.Summary Summary) {
       accountBalance = Account.Balance;
       usableMargin = Account.UsableMargin;
@@ -361,14 +363,18 @@ namespace HedgeHog {
       lotsLeft = (int)(Account.UsableMargin * leverage);
       Lib.SetLabelText(lblUsableMargin, string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity));
       Lib.SetLabelText(lblAccountEquity, string.Format("{0:c0}", Account.Equity));
+      var doCloseLotsOfTrades = FXW.GetTrades("").Length > app.MainWindows.Count + 1 && Account.Equity > Account.Balance;
+      Commission = FXW.GetTrades("").Sum(t => t.Lots) / 10000;
+      var haveGoodProfit = (Account.Equity - Account.Balance) > (DensityAverage + Commission);
       if (startingBalance > 0 && Account.Equity >= startingBalance ||
+        haveGoodProfit ||
         (priceToExit > 0 &&
         ((conditionToExit == Condition.LessThen && Summary.PriceCurrent.Average < priceToExit) ||
           (conditionToExit == Condition.MoreThen && Summary.PriceCurrent.Average > priceToExit)
         ))
         ) {
-        ClosePositions(this, new RoutedEventArgs());
-        startingBalance = Math.Round(fw.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
+         ClosePositions(this, new RoutedEventArgs());
+        startingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
         ruleToExit = "0";
       }
 
@@ -393,6 +399,12 @@ namespace HedgeHog {
       buyLossPerLotK = summary.BuyLots > 0 ? summary.BuyNetPL / (summary.BuyLots / 1000) : 0;
       sellLossPerLotK = summary.SellLots > 0 ? summary.SellNetPL / (summary.SellLots / 1000) : 0;
     }
+    public double DensityAverage { get { return Charting.DensityAverage; } }
+    double _commission;
+    public double Commission {
+      get { return _commission; }
+      set { _commission = value; PropertyChanged(this, new PropertyChangedEventArgs("Commission")); }
+    }
     void fw_PriceChanged(Order2GoAddIn.Price Price) {
       if (threadProc != null && threadProc.ThreadState == ThreadState.Running) {
         if (threadWait != null && threadWait.ThreadState == ThreadState.Running) threadWait.Abort();
@@ -413,12 +425,13 @@ namespace HedgeHog {
     }
     private void ProcessPrice() {
       try {
+        PropertyChanged(this, new PropertyChangedEventArgs("DensityAverage"));
         if (Visibility == Visibility.Hidden) return;
         Order2GoAddIn.Price Price = fw.GetPrice();
         var digits = fw.Digits;
         var spread = ShowSpread(Price);
 
-        var account = fw.GetAccount();
+        var account = FXW.GetAccount();
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
         ShowAccount(account, summary);
         ShowSummary(summary, account);
@@ -499,7 +512,7 @@ namespace HedgeHog {
           while (tradesIDs.Length > 0) {
             foreach (var tradeID in tradesIDs)
               try {
-                fw.FixOrderClose(tradeID);
+                Order2GoAddIn.FXCoreWrapper.FixOrderClose(tradeID);
               } catch { }
             tradesIDs = fw.GetTradesToClose(Buy, MinProfit).Select(r => r.Id).ToArray();
           }
@@ -559,13 +572,18 @@ namespace HedgeHog {
       this.SetProperty("_" + name, tb.Text);
     }
 
+    static bool isClosingPositions = false;
     private void ClosePositions(object sender, RoutedEventArgs e) {
-        try {
-          fw.ClosePositions();
-        } catch (Exception exc) {
-          Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(exc.Message)));
-          return;
-        }
+      if (isClosingPositions) return;
+      try {
+        isClosingPositions = true;
+        Order2GoAddIn.FXCoreWrapper.ClosePositions();
+      } catch (Exception exc) {
+        Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(exc.Message)));
+        return;
+      } finally {
+        isClosingPositions = false;
+      }
     }
     private void TrancatePositions(object sender, RoutedEventArgs e) {
       var summury = fw.GetSummary();
