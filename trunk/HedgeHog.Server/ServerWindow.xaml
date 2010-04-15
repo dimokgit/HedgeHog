@@ -96,9 +96,9 @@
         <TextBlock ToolTip="Power Bar">PB:</TextBlock>
         <Label Content="{Binding OverlapAverageShortPower}" ContentStringFormat="n0" />
 
-        <TextBlock ToolTip="Overlap Average Short">AS:</TextBlock>
+        <CheckBox IsChecked="{state:UserSettings}" Content="S" Name="chkUseOverlapShort"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <Label Content="{Binding OverlapAverageShort.TotalMinutes}" ContentStringFormat="n1" />
-        <TextBlock ToolTip="Overlap Last">&lt;L:</TextBlock>
+        <CheckBox IsChecked="{state:UserSettings}" Content="L" Name="chkUseOverlapLast"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <Label Content="{Binding OverlapLast.TotalMinutes}" ContentStringFormat="n1" />
         <TextBlock ToolTip="Overlap Average">A:</TextBlock>
         <Label Content="{Binding OverlapAverage.TotalMinutes}" ContentStringFormat="n1" />
@@ -130,6 +130,8 @@
         <WrapPanel>
           <Label Content="PD"  ToolTip="Power Down" Background="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
           <Label Content="{Binding Path=PricePosition,IsAsync=True}" ContentStringFormat="p0" Background="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" ToolTip="Price Position" />
+          <Label ContentStringFormat="FI:{0:mm}" ToolTip="Fractal Interval" Content="{Binding FractalsInterval}" />
+          <CheckBox IsChecked="{state:UserSettings}" Content="DF" Name="chkTradeByFractal"  ToolTip="Trade By Fractal" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         </WrapPanel>
       </Border>
       <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">

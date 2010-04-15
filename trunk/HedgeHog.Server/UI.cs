@@ -14,6 +14,16 @@ namespace HedgeHog {
     public bool _chkNormalizeFractals;
     public bool normalizeFractals { get { return _chkNormalizeFractals; } }
 
+    public bool _chkUseOverlapShort;
+    public bool useOverlapShort { get { return _chkUseOverlapShort; } }
+
+    public bool _chkUseOverlapLast;
+    public bool useOverlapLast { get { return _chkUseOverlapLast; } }
+
+    public bool _chkTradeByFractal;
+    public bool tradeByFractal { get { return _chkTradeByFractal; } }
+
+
     public bool _chkVerboseLogging;
     public bool verboseLogging { get { return _chkVerboseLogging; } }
 

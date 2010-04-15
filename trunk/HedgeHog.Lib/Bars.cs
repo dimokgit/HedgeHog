@@ -103,7 +103,7 @@ namespace HedgeHog.Bars {
       public double? Mass { get; set; }
       public double? Trades { get; set; }
       public double? TradesPerMinute { get { return Time.HasValue ? Trades / Time.Value.TotalMinutes : null; } }
-      public double? MassPerTradesPerMinute { get { return Mass / TradesPerMinute; } }
+      public double? MassByTradesPerMinute { get { return Mass * TradesPerMinute; } }
       public double? Speed { get { return Height / Time.Value.TotalSeconds; } }
       public double? Density { get { return Mass / Height; } }
       double? _work = null;

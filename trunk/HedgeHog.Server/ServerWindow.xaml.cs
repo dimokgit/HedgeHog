@@ -281,10 +281,15 @@ namespace HedgeHog {
     }
     public double SpreadAverage15MinInPips { get { return fw.InPips(SpreadAverage15Min, 1); } }
 
-    int _ticksPerMinuteAverage;
-    public int TicksPerMinuteAverage {
-      get { return _ticksPerMinuteAverage; }
-      set { _ticksPerMinuteAverage = value; RaisePropertyChanged(); }
+    int _ticksPerMinuteCurr;
+    public int TicksPerMinuteCurr {
+      get { return _ticksPerMinuteCurr; }
+      set { _ticksPerMinuteCurr = value; RaisePropertyChanged(); }
+    }
+    int _ticksPerMinutePrev;
+    public int TicksPerMinutePrev {
+      get { return _ticksPerMinutePrev; }
+      set { _ticksPerMinutePrev = value; RaisePropertyChanged(); }
     }
     int _ticksPerMinuteAverageLong;
     public int TicksPerMinuteAverageLong {
@@ -310,7 +315,16 @@ namespace HedgeHog {
       get { return Math.Atan(A) * (180 / Math.PI); }
     }
     public double AngleRounded { get { return Math.Round(Angle / fw.PointSize, 2); } }
-    double A;
+    double? _a;
+    double A { get { return _a.GetValueOrDefault(); }
+      set {
+        if (!double.IsNaN(_a.GetValueOrDefault()))
+          _a = _a.Cma(1, value);
+        else {
+          _a = 0;
+        }
+      }
+    }
 
     double[] _regressionCoeffs = new double[] { };
 
@@ -489,14 +503,12 @@ namespace HedgeHog {
           fractalChanged = false;
           Ticks = fw.GetTicks(ui.ticksBack).OfType<Rate>().OrderBars().ToList();
           Ticks.AddUp(fw.GetTicks(300));
-          TicksPerMinuteAverageLong = _ticks.TradesPerMinute().ToInt();
         }
         var ticks = _ticks.TakeWhile(b => b.IsHistory).ToArray();
         if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
           //fw.GetBars(ratePeriod, StartDate, EndDate, ref ticks);
           Ticks = ticks.AddUp(fw.GetTicks(300)).ToList();
           Ticks.FillMass();
-          TicksPerMinuteAverageLong = _ticks.TradesPerMinute().ToInt();
         }
         //TicksPerMinute(Ticks);
         RaisePropertyChanged(() => TimeframeByTicksMin);
@@ -667,7 +679,7 @@ namespace HedgeHog {
               ? "|" + fw.InPips(f.Ph.Height.Abs(), 0).ToInt().ToString("00")
               + "|" + (tpm = _ticks.TradesPerMinute(f, Fractals1[i + 1])).ToString("00")
               + "|" + fw.InPips(1, f.Ph.Mass.Value, 0).ToString("000")
-              + "|" + fw.InPips(1, f.Ph.MassPerTradesPerMinute.Value).ToString("n2")
+              + "|" + string.Format("{0:0}K", fw.InPips(1, f.Ph.MassByTradesPerMinute.GetValueOrDefault() / 1000))
               //+ "|" + Format1(fw.InPips(2, f.Ph.Power.Value, 1), 10, " 0.0;-0.0", " 00;-00")
               : ""
               )).ToArray());
@@ -730,7 +742,10 @@ namespace HedgeHog {
     }
     public delegate double FuncBase(Func<BarBase, double?> value);
     public delegate double FuncBase1(IEnumerable<BarBase> bars, Func<BarBase, double?> value);
-    FuncBase1 Average4 = (fractals,f) => {
+    FuncBase1 Average3 = (fractals, f) => {
+      return fractals.Take(2).TakeWhile(t => f(t).HasValue).Select(f).Average().Value;
+    };
+    FuncBase1 Average4 = (fractals, f) => {
       var fs = fractals.Take(3).TakeWhile(t => f(t).HasValue).Select(f).ToArray();
       return fs.Length == 0 ? 0 : new[] { fs.First(), fs.Last() }.Average().Value;
     };
@@ -742,11 +757,24 @@ namespace HedgeHog {
       }
     }
     Dictionary<DateTime, int> BannedFractals = new Dictionary<DateTime, int>();
+
+    bool canTrade;
+
+    public bool CanTrade {
+      get { return canTrade; }
+      set { canTrade = value; RaisePropertyChangedCore(); }
+    }
+
+    TimeSpan _fractalsInterval;
+    public TimeSpan FractalsInterval {
+      get { return _fractalsInterval; }
+      set { _fractalsInterval = value; RaisePropertyChangedCore(); }
+    }
     private void GetPositionByFractals() {
       FuncBase bsBaseFoo1 = (f) => Fractals.Take(4).OrderBy(f).Skip(1).OrderByDescending(f).Skip(1).Select(f).Average().Value;
       FuncBase bsBaseFoo2 = (f) => Fractals.Take(3).Average(f).Value;
       FuncBase bsBaseFoo3 = (f) => Fractals.Take(3).Select(f).OrderByDescending(m => m).Take(2).Average().Value;
-      FuncBase bsBaseFoo4 = (f) => Average4(Fractals.Skip(1), f);
+      FuncBase bsBaseFoo4 = (f) => Average3(Fractals, f);
         var bsBaseFoo = bsBaseFoo4;
         try {
           var ret = new List<string>();
@@ -755,8 +783,10 @@ namespace HedgeHog {
           var ticksByMinute = Ticks.GetMinuteTicks(1).OrderBarsDescending().ToArray();
           var dateLast = ServerTime.AddSeconds(-30);
           var ticksByMinute1 = Ticks.Where(t => t.StartDate < dateLast).GetMinuteTicks(1).OrderBarsDescending().ToArray();
-          TicksPerMinuteAverage = (Fractals1.Length < 2 ? TicksPerMinuteAverageLong : _ticks.TradesPerMinute(Fractals1[0], Fractals1[1])).ToInt();
-          var cmaPeriod = TicksPerMinuteAverage / 2.0;
+          TicksPerMinuteAverageLong = (Fractals.Length > 1 ? _ticks.TradesPerMinute(Fractals.Take(4).Last(), Fractals[0]) : _ticks.TradesPerMinute()).ToInt();
+          TicksPerMinuteCurr = (Fractals1.Length < 2 ? TicksPerMinuteAverageLong : _ticks.TradesPerMinute(Fractals1[0], Fractals1[1])).ToInt();
+          TicksPerMinutePrev = (Fractals1.Length < 4 ? TicksPerMinuteCurr : _ticks.TradesPerMinute(Fractals1[2], Fractals1[3])).ToInt();
+          var cmaPeriod = TicksPerMinuteCurr / 2.0;
           #endregion
 
           #region Overlaps
@@ -782,7 +812,12 @@ namespace HedgeHog {
               ol.Length == 0 ? 0 : (ol.Last().StartDate - ol.First().StartDate).TotalSeconds/*)*/);
           }
           {
-            var regress = SetTicksPrice(_ticks.Where(t => t.StartDate >= _serverTimeCached.Subtract(TimeSpan.FromSeconds(OverlapAverageShort.TotalSeconds * 2))).ToArray(), 1, t => t.PriceAvg, (t, v) => t.PriceAvg1 = v);
+            var l = new List<TimeSpan>();
+            if( ui.useOverlapLast)l.Add(OverlapLast);
+            if( ui.useOverlapShort)l.Add(OverlapAverageShort);
+            var tp = new[] { TimeSpan.FromMinutes(1), l.Average() }.Max();
+            var regress = SetTicksPrice(_ticks.Where(t => t.StartDate >= _serverTimeCached-tp).ToArray()
+              , 1, t => t.PriceAvg, (t, v) => t.PriceAvg1 = v);
             A = regress[1];
             RaisePropertyChanged(() => AngleRounded);
           }
@@ -794,7 +829,9 @@ namespace HedgeHog {
 
           #region Fractals/fractals
           if ((DateTime.Now - WaveStats.Time).TotalSeconds > 10)
-            WaveStats = _ticks.GetWaves(TicksPerMinuteAverageLong).GetWaveStats();
+            lock (_ticks) {
+              WaveStats = _ticks.GetWaves(TicksPerMinuteAverageLong).GetWaveStats();
+            }
           waveHeight = Lib.CMA(waveHeight, cmaPeriod, 0// WaveStats.Average + WaveStats.StDev//Math.Max(WaveStats.Average + WaveStats.StDev, WaveStats.AverageN)
             //Math.Max(SpreadByBarPeriod(5, false), priceCurrent.Spread * 3)
             //SpreadByBarPeriod(1, true) * OverlapAverage.TotalMinutes
@@ -812,43 +849,25 @@ namespace HedgeHog {
 
           #region Normalize Fractal
           var legAllAverageStats = Fractals.Where(f => f.Ph.Height.HasValue).Select(f => f.Ph.Height.Abs().Value).ToArray().GetWaveStats();
-          legAverageBottom = Lib.CMA(legAverageBottom, cmaPeriod, legAllAverageStats.AverageDown);
+          legAverageBottom = Lib.CMA(legAverageBottom, cmaPeriod, legAllAverageStats.Average - legAllAverageStats.StDev);
           if (ui.normalizeFractals) {
-            Fractals = findFractals(legAverageBottom.Value);
-            _ticks.ToArray().FillPower(Fractals);
-            #region Old
-            if (false) {
-              if (Fractals[0].HasFractalBuy && priceCurrent.Bid < Fractals[0].BidLow
-                  || Fractals[0].HasFractalSell && priceCurrent.Ask > Fractals[0].AskLow) {
-                Fractals = Fractals.Skip(1).ToArray();
-                _ticks.ToArray().FillPower(Fractals);
-              }
-              var fractalsToLeave = new List<Rate>();
-              Rate fractalPrev = null;
-              foreach (var f in Fractals) {
-                if (fractalPrev != null && fractalPrev.Ph.Height.Abs() < legAverageBottom) {
-                  fractalsToLeave.AddRange(new[] { f });
-                }
-                fractalPrev = f;
-              }
-              Fractals = Fractals.Except(fractalsToLeave).ToArray();
-              Fractals = Fractals.FixFractals().ToArray();
+            var f = findFractals(legAverageBottom.Value);
+            if (f.Length > 2) {
+              Fractals = f;
+              _ticks.ToArray().FillPower(Fractals);
             }
-            #endregion
           }
           #endregion
-          //Dimok: Make IsPowerOff
-          //Dimok: Combine Mass0/Mass1 with Height0/Height1
-          //OverlapAverageShort = TimeSpan.FromSeconds(ticksByMinute.Where(t => t.StartDate > Fractals[0].StartDate).Average(t => t.Overlap.TotalSeconds));
           #endregion
 
           Fractals1 = Fractals.Concat(new[] { _ticks.Last().Clone() as Tick }).OrderBarsDescending().ToArray();
           if (Fractals1.Length > 1)
             Fractals1[0].Fractal = Fractals1[1].HasFractalSell ? FractalType.Buy : FractalType.Sell;
           _ticks.ToArray().FillPower(Fractals1);
-          var ticksAfterFractal = _ticks.Where(t => t.StartDate >= Fractals1[1].StartDate).ToArray();
-          Fractals1[0].Ph.Height = ticksAfterFractal.Max(t => t.PriceAvg) - ticksAfterFractal.Min(t => t.PriceAvg);
-
+          if (Fractals.Length > 1) {
+            var ticksAfterFractal = _ticks.Where(t => t.StartDate >= Fractals1[1].StartDate).ToArray();
+            Fractals1[0].Ph.Height = ticksAfterFractal.Max(t => t.PriceAvg) - ticksAfterFractal.Min(t => t.PriceAvg);
+          }
 
           if (Fractals.Length < 2) {
             ret.Add(Fractals.Length + " < 2");
@@ -859,6 +878,13 @@ namespace HedgeHog {
             RaisePropertyChanged(() => FractalStats);
             return;
           }
+
+          {
+            var ff = Fractals1.Where(f => f.Ph.Time.HasValue).Select(f => f.Ph.Time.Value).Take(4).ToArray();
+            FractalsInterval = ff.Average();
+          }
+
+          CanTrade = !ui.tradeByFractal || FractalsInterval < TimeSpan.FromMinutes(45);// && OverlapAverageShort.TotalMinutes < 3;
 
           #region Legs Up/Down
           //var legUps = Fractals1.Where(f => f.HasFractalSell && f.Ph.Height.HasValue).ToArray();
@@ -877,12 +903,15 @@ namespace HedgeHog {
           #region Fractals Short
           var wavePeriodShortTrade = OverlapAverageShort;// isInSell ? waveUpsPeriod : waveDownsPeriod;
           wavePeriodShort = wavePeriodShortTrade;// TimeSpan.FromSeconds(wavePeriodShortTrade.TotalSeconds * ui.fractalMinutes / 100.0);
-          var fractalsShort = fractalTicks.FindFractals(0, wavePeriodShort, ui.fractalPadding, 2);
-          FractalSell = fractalsShort.SingleOrDefault(r => r.HasFractalSell);        //?? new Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) };
-          FractalBuy = fractalsShort.SingleOrDefault(r => r.HasFractalBuy);        //?? new Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) }; 
+          var fractalsShort = new List<Rate>();
+          if (ui.tradeByFractal) {
+            fractalsShort = fractalTicks.FindFractals(0, wavePeriodShort, ui.fractalPadding, 2);
+            FractalSell = fractalsShort.SingleOrDefault(r => r.HasFractalSell);        //?? new Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) };
+            FractalBuy = fractalsShort.SingleOrDefault(r => r.HasFractalBuy);        //?? new Rate() { StartDate = ServerTime.Subtract(wavePeriodShort) }; 
 
-          priceHeightMax = FractalSell == null ? 0 : Ticks.Where(t => t.StartDate >= FractalSell.StartDate).Max(readFrom); //tickHT.Max(readFrom);
-          priceHeightMin = FractalBuy == null ? 0 : Ticks.Where(t => t.StartDate >= FractalBuy.StartDate).Min(readFrom);//tickHT.Min(readFrom);
+            priceHeightMax = FractalSell == null ? 0 : Ticks.Where(t => t.StartDate >= FractalSell.StartDate).Max(readFrom); //tickHT.Max(readFrom);
+            priceHeightMin = FractalBuy == null ? 0 : Ticks.Where(t => t.StartDate >= FractalBuy.StartDate).Min(readFrom);//tickHT.Min(readFrom);
+          }
           #endregion
 
           #region Legs
@@ -891,13 +920,15 @@ namespace HedgeHog {
           var legAllAverage = legAllAverageStats.Average;
           var legTradeAverage = isInSell ? legUpAverageInPips : legDownAverageInPips;
           var fractalTradeLong = Fractals[0];
-          var fractalTradeShort = fractalsShort.Count > 0 && fractalTradeLong.Fractal != fractalsShort[0].Fractal ? fractalsShort[0] : null;
-          var tradeLeg = fractalTradeShort == null ? 0 : fw.InPips(
-            isInSell ? fractalTradeShort.FractalPrice.Value - fractalTradeLong.FractalPrice.Value
-            : fractalTradeLong.FractalPrice.Value - fractalTradeShort.FractalPrice.Value
-            , 1);
-          var tradePrice = priceCurrent.Average;
-          var posBSByLeg = tradeLeg / legTradeAverage;
+          if (ui.tradeByFractal) {
+            var fractalTradeShort = fractalsShort.Count > 0 && fractalTradeLong.Fractal != fractalsShort[0].Fractal ? fractalsShort[0] : null;
+            var tradeLeg = fractalTradeShort == null ? 0 : fw.InPips(
+              isInSell ? fractalTradeShort.FractalPrice.Value - fractalTradeLong.FractalPrice.Value
+              : fractalTradeLong.FractalPrice.Value - fractalTradeShort.FractalPrice.Value
+              , 1);
+            var tradePrice = priceCurrent.Average;
+            var posBSByLeg = tradeLeg / legTradeAverage;
+          }
           var legPriceTicks = ticksByMinute.Where(t => t.StartDate > fractalTradeLong.StartDate);
           var legPrice = isInSell ?
             legPriceTicks.Max(t => t.PriceHigh) - fractalTradeLong.FractalPrice.Value
@@ -906,7 +937,6 @@ namespace HedgeHog {
 
           #region Positions %
           var posByPrice = fw.InPips(legPrice / legAllAverage, 1);
-          var posByPriceLastLeg = Math.Abs(tradePrice - Fractals[0].FractalPrice.Value) / Fractals[0].Ph.Height.Abs();
           var masssRaio = (Fractals1[0].Ph.Mass / Fractals1[2].Ph.Mass).Value; //Math.Max(posBSByLeg, posByPrice);
           #endregion
 
@@ -930,10 +960,10 @@ namespace HedgeHog {
           //IsPowerDown = true;// Math.Abs(powerLast) < Math.Abs(fractalPowerAverage.Value);
           //IsPowerDown = Math.Abs(Fractals1[0].Ph.Power.Value) < Math.Abs(fractalPowerAverage.Value);
           var powerRatio = Math.Abs((Fractals1[0].Ph.Power / Fractals1[2].Ph.Power).Value);// posByPriceLastLeg >= .30;//  && (tradeLeg >= CorridorSpreadMinimumInPips || posBS >= 1.15);
-          var mptpmPrev = (Fractals1.Length > 4 ? new[] { Fractals1[2], Fractals1[4] } : Fractals1.Skip(1).Where(f => f.Ph.MassPerTradesPerMinute.HasValue))
-            .Average(f => f.Ph.MassPerTradesPerMinute);
-          var baseMass = bsBaseFoo(f => f.Ph.MassPerTradesPerMinute);
-          var massRatio = (Fractals1[0].Ph.MassPerTradesPerMinute / baseMass).Value;
+          var mptpmPrev = (Fractals1.Length > 4 ? new[] { Fractals1[2], Fractals1[4] } : Fractals1.Skip(1).Where(f => f.Ph.MassByTradesPerMinute.HasValue))
+            .Average(f => f.Ph.MassByTradesPerMinute);
+          var baseMass = bsBaseFoo(f => f.Ph.MassByTradesPerMinute);
+          var massRatio = (Fractals1[0].Ph.MassByTradesPerMinute / baseMass).Value;
           this.baseHeight = bsBaseFoo(f => f.Ph.Height.Abs());
           var heightRatio = Fractals1[0].Ph.Height.Abs() / baseHeight;
           {
@@ -949,7 +979,7 @@ namespace HedgeHog {
               case PositionModeType.MassByHeight:
                 posBS = heightRatio * massRatio; break;
               case PositionModeType.MassByHeightOrMassOrHigh:
-                posBS = new []{massRatio,heightRatio, heightRatio * massRatio}.Max(); break;
+                posBS = new[] { massRatio, heightRatio, heightRatio * massRatio }.Max(); break;
 
               default: throw new NotSupportedException(PositionMode + "");
             }
@@ -965,11 +995,10 @@ namespace HedgeHog {
           ret.Add("LegUA : " + legUpAverageInPips.ToString("n1"));
           ret.Add("LegDA : " + legDownAverageInPips.ToString("n1"));
           ret.Add("LegAA : " + string.Format("{0:n1}/{1:n1}/{2:n1}", fw.InPips(legAllAverage), fw.InPips(legAllAverageStats.AverageUp), fw.InPips(legAverageBottom)));
-          //ret.Add("LegTA : " + legTradeAverage);
-          ret.Add("LegPrc: " + fw.InPips(legPrice, 1).ToString("n1"));
+          ret.Add("LegASD: " + fw.InPips(legAllAverageStats.StDev, 1).ToString("n1"));
           ret.Add("CorSM : " + CorridorSpreadMinimumInPips.ToString("n1"));
           ret.Add("FtlTm : " + Fractals.Where(f => f.Ph.Time.HasValue).Average(f => f.Ph.Time.Value.TotalMinutes).ToString("n1"));
-          ret.Add("PosMas: " + string.Format("{0:p1}>{1:n1}", massRatio, fw.InPips(baseMass)));
+          ret.Add("PosMas: " + string.Format("{0:p1}>{1:0}K", massRatio, fw.InPips(baseMass / 1000)));
           ret.Add("PosHgh: " + string.Format("{0:p1}>{1:n1}", heightRatio, fw.InPips(baseHeight)));
           ret.Add("PosM*H: " + string.Format("{0:p1}", heightRatio * massRatio));
           ret.Add("PosBS: " + string.Format("{0:p1}", this.posBS));
@@ -993,6 +1022,9 @@ namespace HedgeHog {
           #endregion
 
           FractalStats = string.Join(Environment.NewLine, ret.ToArray());
+        }catch{
+          CanTrade = false;
+          throw;
         } finally {
         RaisePropertyChanged(() => CorridorSpreadInPips);
         RaisePropertyChanged(() => FractalWavesText, () => FractalWaveColor
@@ -1244,7 +1276,7 @@ namespace HedgeHog {
             PriceHeight = GetPriceHeight1(tickLast);
             if (drawWaves) {
               SetTicksPrice(ticks, ui.wavePolynomeOrder, r => r.PriceAvg, (tick, price) => tick.PriceAvg2 = price);
-              waves = Signaler.GetWaves(ticks.Select((t, ti) => new Signaler.DataPoint(t.PriceAvg2, t.StartDate, ti)).ToArray());
+              waves = Signaler.GetWaves(ticks.Select((t, ti) => new Signaler.DataPoint(t.PriceAvg2, t.StartDate, 0, ti)).ToArray());
             }
             #region Save to file
             if (ui.SaveVoltageToFile) {
@@ -1378,8 +1410,6 @@ namespace HedgeHog {
       if (!CorridorsScheduler.IsRunning)
         CorridorsScheduler.Command = () => {
           if (TicksInTimeFrame.Length < 10) return;
-          var wave1 = waves.OrderByDescending(w => w.Date).FirstOrDefault() ?? new Signaler.DataPoint();
-          var wave2 = waves.OrderByDescending(w => w.Date).Skip(1).FirstOrDefault() ?? wave1;
           CorridorsWindow_EURJPY.AddTicks(
             null,
             TicksInTimeFrame.ToList(),
@@ -1406,8 +1436,11 @@ namespace HedgeHog {
       tradeStats.spreadAverageHighMin = SpreadByBarPeriod(tradeRequest.highBarMinutes, false);
       tradeStats.voltPriceMax = VoltPriceHigh;
       tradeStats.voltPriceMin = VoltPriceLow;
-      tradeStats.ticksPerMinuteAverageShort = TicksPerMinuteAverage;
-      tradeStats.ticksPerMinuteAverageLong = TicksPerMinuteAverageLong;
+      tradeStats.ticksPerMinuteCurr = TicksPerMinuteCurr;
+      tradeStats.ticksPerMinutePrev = TicksPerMinutePrev;
+      tradeStats.ticksPerMinuteLong = TicksPerMinuteAverageLong;
+      tradeStats.legUpInPips = legUpAverageInPips;
+      tradeStats.legDownInPips = legDownAverageInPips;
       tradeStats.corridorMinimum = SpreadByBarPeriod(tradeRequest.corridorMinites, false);
       tradeStats.corridorSpread = CorridorSpread(tradeRequest.doTrend);
       tradeStats.voltsAverage = Voltages.Count == 0 ? 0 : Voltages.Average(v => v.Volts);
@@ -1457,6 +1490,9 @@ namespace HedgeHog {
         response.GoSell = false;
       if (tr.tradesBuy.Any(t => t.PL > 0)) response.GoBuy = false;
       if (tr.tradesSell.Any(t => t.PL > 0)) response.GoSell = false;
+      if (!CanTrade) response.GoBuy = response.GoSell = false;
+      //if (tr.tradesBuy.Length > 0 && tr.closeOnProfitOnly && !tr.tradesBuy.Any(t => t.PL > tr.profitMin)) response.GoSell = false;
+      //if (tr.tradesSell.Length > 0 && tr.closeOnProfitOnly && !tr.tradesSell.Any(t => t.PL > tr.profitMin)) response.GoBuy = false;
       //if (tr.closeAllOnTrade && tr.tradesBuy.Length > 0) response.GoBuy = false;
       //if (tr.closeAllOnTrade && tr.tradesSell.Length > 0) response.GoSell = false;
 
@@ -1476,7 +1512,7 @@ namespace HedgeHog {
         var price = eventPrice ?? priceCurrent;
 
         var logHeader = "D"; var dateNow = DateTime.Now; Func<string, string> timeSpan = step => logHeader + " : " + (DateTime.Now - dateNow).TotalMilliseconds + " - " + step;
-        if (fw == null || fw.Desk == null || FractalBuy == null || TestMode) return;
+        if (fw == null || fw.Desk == null || TestMode) return;
         VLog = timeSpan("Start");
         var ticksInTimeFrame = TicksInTimeFrame;
         VLog = timeSpan("Ticks");
@@ -1544,7 +1580,10 @@ namespace HedgeHog {
         var densityFoo_8 = new Func<bool, double>((buy) => {
           return fw.InPips(Math.Max(tr.closeOnProfitOnly ? 0 : CorridorSpreadMinimum, buy ? VolatilityDownPeak : VolatilityUpPeak), 1);
         });
-        var densityFoos = new[] { densityFoo_0, densityFoo_1, densityFoo_2, densityFoo_3, densityFoo_4, densityFoo_5, densityFoo_6, densityFoo_7, densityFoo_8 };
+        var densityFoo_9 = new Func<bool, double>((buy) => {
+          return SpreadAverageInPips;
+        });
+        var densityFoos = new[] { densityFoo_0, densityFoo_1, densityFoo_2, densityFoo_3, densityFoo_4, densityFoo_5, densityFoo_6, densityFoo_7, densityFoo_8, densityFoo_9 };
         #endregion
 
         #region GoTrade Functions
@@ -1592,46 +1631,52 @@ namespace HedgeHog {
             ti.RsiHigh = ticksRsi.Max(getRsi).Value.ToInt();
             //var rsiCanBuy = ti.RsiLow <= (tr.rsiTresholdBuy + ti.RsiRegressionOffsetBuy);
             //var rsiCanSell = ti.RsiHigh >= (tr.rsiTresholdSell + ti.RsiRegressionOffsetSell);
+            var rsiCanBuy = !tr.tradeByRsi || ti.RsiLow.Between(0.01, ti.RsiRegressionOffsetBuy * 1.15);// && lastFractalBuy != null && lastFractalBuy.StartDate > ServerTime.AddMinutes(-5);
+            var rsiCanSell = !tr.tradeByRsi || ti.RsiHigh >= ti.RsiRegressionOffsetSell * .85;// && lastFractalSell != null && lastFractalSell.StartDate > ServerTime.AddMinutes(-5); ;
           }
           #endregion
 
-          var rsiCanBuy = !tr.tradeByRsi || ti.RsiLow.Between(0.01, ti.RsiRegressionOffsetBuy * 1.15);// && lastFractalBuy != null && lastFractalBuy.StartDate > ServerTime.AddMinutes(-5);
-          var rsiCanSell = !tr.tradeByRsi || ti.RsiHigh >= ti.RsiRegressionOffsetSell * .85;// && lastFractalSell != null && lastFractalSell.StartDate > ServerTime.AddMinutes(-5); ;
           //Func<double, bool> closeToExtreamLambda = pe => Math.Abs(pe - readFrom(Ticks.Last())) < price.Spread;
           //fractalLast = ratesForRsi.HasFractal(true).Last();
-          var fractalTrade = new[] { FractalSell, FractalBuy }.OrderBarsDescending().First();
-          var ticksAfterFractal = _ticks.Where(t => t.StartDate > Fractals[0].StartDate).ToArray();
-          var priceExtream = isInSell ? ticksAfterFractal.Max(t => t.PriceHigh) : ticksAfterFractal.Min(t => t.PriceLow);
-          var fractalRange = Math.Abs(Fractals[0].FractalPrice.Value - priceExtream) * ui.peakTradeMarginHigh;// SpreadAverage * tr.tradeByFractalCoeff;
-          #region Breakthrough
-          var breakThroughBuy = false;
-          var breakThroughSell = false;
-          if (false && Fractals.Length > 0) {
-            var ticksSynceFractal = _ticks.Where(t => t.StartDate >= Fractals[0].StartDate).ToArray();
-            var fractalsLocal = ticksSynceFractal.FindFractals(0, 2.0.FromMinutes(), 1, 100);
-            var fractalsLocalSell = fractalsLocal.Where(f => f.HasFractalSell).ToArray();
-            var fractalsLocalBuy = fractalsLocal.Where(f => f.HasFractalBuy).ToArray();
-            if (isInSell && fractalsLocalSell.Length > 0 && priceCurrent.Bid > fractalsLocalSell.Max(f => f.AskHigh))
-              breakThroughBuy = true;
-            if (!isInSell && fractalsLocalBuy.Length > 0 && priceCurrent.Ask < fractalsLocalBuy.Min(f => f.BidLow))
-              breakThroughSell = true;
-          }
-          #endregion
+          if (ui.tradeByFractal) {
+            var fractalTrade = new[] { FractalSell, FractalBuy }.OrderBarsDescending().First();
+            var ticksAfterFractal = _ticks.Where(t => t.StartDate > Fractals[0].StartDate).ToArray();
+            var priceExtream = isInSell ? ticksAfterFractal.Max(t => t.PriceHigh) : ticksAfterFractal.Min(t => t.PriceLow);
+            var fractalRange = Math.Abs(Fractals[0].FractalPrice.Value - priceExtream) * ui.peakTradeMarginHigh;// SpreadAverage * tr.tradeByFractalCoeff;
+            #region Breakthrough
+            var breakThroughBuy = false;
+            var breakThroughSell = false;
+            if (false && Fractals.Length > 0) {
+              var ticksSynceFractal = _ticks.Where(t => t.StartDate >= Fractals[0].StartDate).ToArray();
+              var fractalsLocal = ticksSynceFractal.FindFractals(0, 2.0.FromMinutes(), 1, 100);
+              var fractalsLocalSell = fractalsLocal.Where(f => f.HasFractalSell).ToArray();
+              var fractalsLocalBuy = fractalsLocal.Where(f => f.HasFractalBuy).ToArray();
+              if (isInSell && fractalsLocalSell.Length > 0 && priceCurrent.Bid > fractalsLocalSell.Max(f => f.AskHigh))
+                breakThroughBuy = true;
+              if (!isInSell && fractalsLocalBuy.Length > 0 && priceCurrent.Ask < fractalsLocalBuy.Min(f => f.BidLow))
+                breakThroughSell = true;
+            }
+            #endregion
 
-          IsPowerDown = isInSell && A < 0 || isInBuy && A > 0;
+            IsPowerDown = isInSell && A < 0 || isInBuy && A > 0;
             //OverlapLast.TotalMinutes >= (OverlapAverageShort.TotalMinutes.Floor() + OverlapStDev.TotalMinutes.Floor());
-          Func<double, bool> isInPriceRange = p => p.Between(priceExtream - fractalRange, priceExtream + fractalRange);
+            Func<double, bool> isInPriceRange = p => p.Between(priceExtream - fractalRange, priceExtream + fractalRange);
 
-          PricePosition = priceExtream > Fractals[0].PriceLow
-            ? (priceExtream - price.Average) / (priceExtream - Fractals[0].PriceLow)
-            : (price.Average - priceExtream) / (Fractals[0].PriceLow - priceExtream);
+            PricePosition = priceExtream > Fractals[0].PriceLow
+              ? (priceExtream - price.Average) / (priceExtream - Fractals[0].PriceLow)
+              : (price.Average - priceExtream) / (Fractals[0].PriceLow - priceExtream);
 
-          IsPriceInPosition = PricePosition.Between(.05, ui.peakTradeMarginHigh);
+            IsPriceInPosition = PricePosition.Between(ui.peakTradeMarginLow, ui.peakTradeMarginHigh);
+          }
           //if (posBS >= posBSMin && isFractalTradeTimeFrame && IsPowerDown) {
-          if (isPosBSOk && IsPowerDown && IsPriceInPosition) {
+          if (ui.tradeByFractal && IsPowerDown && IsPriceInPosition && isPosBSOk) {
             goBuy = !isInSell;
             goSell = isInSell;
+          } else if (priceCurrent.Spread * 10 < new[] { legUpAverageInPips, legDownAverageInPips }.Min()) {
+            goBuy = A > 0;
+            goSell = A < 0;
           }
+
           ti.DencityRatio = densityFoos[tr.densityFoo](goBuy);
           ti.DencityRatioBuy = densityFoos[tr.densityFoo](true);
           ti.DencityRatioSell = densityFoos[tr.densityFoo](false);
@@ -1670,6 +1715,7 @@ namespace HedgeHog {
 
         VLog = timeSpan("**End**");
       } catch (Exception exc) {
+        CanTrade = false;
         Log = exc;
       } finally {
         RaisePropertyChanged( () => IsPowerDown, () => PricePosition, () => IsPriceInPosition);
@@ -1714,14 +1760,8 @@ namespace HedgeHog {
       #region Rid of Old Positions
       bool doShortStack = Math.Min(tr.SellPositions, tr.BuyPositions) > tr.shortStack;
       bool doTrancate = Math.Min(tr.SellPositions, tr.BuyPositions) >= tr.shortStack + tr.shortStackTruncateOffset; ;
-      List<string> closeBuyIDs = new List<string>();
-      List<string> closeSellIDs = new List<string>();
-      Func<O2G.Trade, bool> fooCloseTrade = t => t.GrossPL > 0 || !tr.closeOnProfitOnly;
-      Func<O2G.Trade, bool> closeByWaveFilter = t =>
-        Lib.FibRatioSign(t.Remark.TradeWaveInMinutes, tr.tradeAdded.Remark.TradeWaveInMinutes) < tr.closeTradeFibRatio;
-      Func<Trade[], IEnumerable<string>> closeByWave = ts =>
-        ts.OrderByDescending(t => t.Time).Where(t => t.Time < ServerTime.AddSeconds(-15))
-        .Where(closeByWaveFilter).OrderBy(t => t.Remark.TradeWaveInMinutes).Take(1).Select(t => t.Id);
+      var closeBuyIDs = new List<O2G.Trade>();
+      var closeSellIDs = new List<O2G.Trade>();
       Func<Trade[], int, double> profitMin = (trades, count) => {
         if (trades.Length < 2) return 0;
         var lastTwo = trades.OrderByDescending(t => t.PL).Take(count).ToArray();
@@ -1733,128 +1773,179 @@ namespace HedgeHog {
         var leaveOpenAfterTruncate = 0;
         while (tr.tradeAdded.Buy && tr.SellPositions > 0) {
           if (doShortStack && tr.closeAllOnTrade) {
-            closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
+            closeSellIDs.AddRange(tr.tradesSell);
             break;
           }
           var plMin = profitMin(tr.tradesSell, 3);
           if (tr.SellNetPLPip >= Math.Abs(plMin)) {
-            closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
+            closeSellIDs.AddRange(tr.tradesSell);
             break;
           }
-          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= plMin).Select(t => t.Id));
+          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= plMin));
           if (closeSellIDs.Count() > 0) break;
-          if (tr.closeOnProfitOnly) closeSellIDs.AddRange(closeByWave(tr.tradesSell));
-          else {
+          if (!tr.closeOnProfitOnly ){
             if (doShortStack || tr.BuyPositions > tr.SellPositions - tr.closeOppositeOffset)
-              closeSellIDs.Add(tr.tradesSell.Where(fooCloseTrade).OrderBy(t => t.Time).FirstOrLast(tr.sellOnProfitLast).Id);
+              closeSellIDs.Add(tr.tradesSell.OrderBy(t => t.Time).FirstOrLast(tr.sellOnProfitLast));
             if (doTrancate && (tr.SellPositions - tr.BuyPositions).Between(0, 1)) {
-              closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
-              closeBuyIDs.AddRange(tr.tradesBuy.OrderByDescending(t => t.Time).Skip(leaveOpenAfterTruncate).Select(t => t.Id));
+              closeSellIDs.AddRange(tr.tradesSell);
+              closeBuyIDs.AddRange(tr.tradesBuy.OrderByDescending(t => t.Time).Skip(leaveOpenAfterTruncate));
             }
           }
           break;
         }
         while (!tr.tradeAdded.Buy && tr.BuyPositions > 0) {
           if (doShortStack && tr.closeAllOnTrade) {
-            closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
+            closeBuyIDs.AddRange(tr.tradesBuy);
             break;
           }
           var plMin = profitMin(tr.tradesBuy, 3);
           if (tr.BuyNetPLPip >= Math.Abs(plMin)) {
-            closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
+            closeBuyIDs.AddRange(tr.tradesBuy);
             break;
           }
-          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= plMin).Select(t => t.Id));
+          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= plMin));
           if (closeBuyIDs.Count() > 0) break;
-          if (tr.closeOnProfitOnly) closeBuyIDs.AddRange(closeByWave(tr.tradesBuy));
-          else {
+          if (!tr.closeOnProfitOnly) {
             if (doShortStack || tr.SellPositions > tr.BuyPositions - tr.closeOppositeOffset)
-              closeBuyIDs.Add(tr.tradesBuy.Where(fooCloseTrade).OrderBy(t => t.Time).FirstOrLast(tr.sellOnProfitLast).Id);
+              closeBuyIDs.Add(tr.tradesBuy.OrderBy(t => t.Time).FirstOrLast(tr.sellOnProfitLast));
             if (doTrancate && (tr.BuyPositions - tr.SellPositions).Between(0, 1)) {
-              closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
-              closeSellIDs.AddRange(tr.tradesSell.OrderByDescending(t => t.Time).Skip(leaveOpenAfterTruncate).Select(t => t.Id));
+              closeBuyIDs.AddRange(tr.tradesBuy);
+              closeSellIDs.AddRange(tr.tradesSell.OrderByDescending(t => t.Time).Skip(leaveOpenAfterTruncate));
             }
           }
           break;
         }
         tr.tradeAdded = null;
+        if (closeSellIDs.Concat(closeBuyIDs).Any(t => t.PL < -1)) {
+          var i = 0;
+        }
       }
       #endregion
 
       #region Colose on Net
-      if (tr.closeOnNet && IsPowerDown) {
-        Func<Trade[],double, double> plNetMin = (trades,leg) => trades.Length == 0 ? 0 : leg / (trades.Sum(t => t.Lots) / trades.Min(t => t.Lots));
-        if (tr.tradesBuy.Length > 1) {
-          var plNetMinBuy = plNetMin(tr.tradesBuy, legUpAverageInPips);
-          if (tr.BuyNetPLPip >= plNetMinBuy) closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
-        }
-        if (tr.tradesSell.Length > 1) {
-          var plNetMinSell = plNetMin(tr.tradesSell, legDownAverageInPips);
-          if (tr.SellNetPLPip >= plNetMinSell) closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
+      if (tr.closeOnNet) {
+        if (tr.tradesBuy.Length + tr.tradesSell.Length >= 4 && tr.BuyNetPLPip + tr.SellNetPLPip > 0) {
+          closeBuyIDs.AddRange(tr.tradesBuy);
+          closeSellIDs.AddRange(tr.tradesSell);
+        } else {
+          var ch = new CloseByPositionHelper(fw, _ticks, Fractals[0]);
+          Func<Trade[], double, double> plNetMin = (trades, leg) => trades.Length == 0 ? 0 : leg / (trades.Sum(t => t.Lots) / trades.Min(t => t.Lots));
+          if (tr.tradesBuy.Length > 1 && A < 0) {
+            var plNetMinBuy = plNetMin(tr.tradesBuy, legUpAverageInPips);
+            if (tr.BuyNetPLPip >= plNetMinBuy) closeBuyIDs.AddRange(tr.tradesBuy);
+            if (ch.BuyPL(tr.BuyAvgOpen) >= plNetMinBuy && tr.BuyNetPLPip>0) closeBuyIDs.AddRange(tr.tradesBuy);
+            if (closeBuyIDs.Sum(t=>t.GrossPL) < 0) {
+              var i = 0;
+            }
+          }
+          if (tr.tradesSell.Length > 1 && A > 0) {
+            var plNetMinSell = plNetMin(tr.tradesSell, legDownAverageInPips);
+            if (tr.SellNetPLPip >= plNetMinSell) closeSellIDs.AddRange(tr.tradesSell);
+            if (ch.SellPL(tr.SellAvgOpen) >= plNetMinSell && tr.SellNetPLPip > 0) closeSellIDs.AddRange(tr.tradesSell);
+            if (closeSellIDs.Sum(t => t.GrossPL) < 0) {
+              var i = 0;
+            }
+          }
         }
       }
       #endregion
 
       #region Colose on Corridor
-      if (tr.closeOnCorridorBorder.HasValue && IsPowerDown && priceCurrent != null && legDownAverageInPips > 0 && legUpAverageInPips > 0) {
-        if (tr.closeOnCorridorBorder.Value && IsPriceInPosition && (isLegOk || isMassOk)) {
-          Func<Rate, double> priceFunc = rate => rate.PriceAvg;
-          Func<Trade, Rate[]> ticksLamda = trade => TicksInTimeFrame.Where(t => t.StartDate >= trade.Time.AddMinutes(-CorridorHeightMinutesBySchedule)).ToArray();
-          Func<Trade, double> ticksSpreadInPips = trade => { var ticks = ticksLamda(trade); return fw.InPips(ticks.Max(priceFunc) - ticks.Min(priceFunc)); };
+      if (tr.closeOnCorridorBorder.HasValue && priceCurrent != null && legDownAverageInPips > 0 && legUpAverageInPips > 0) {
+        if (tr.closeOnCorridorBorder.Value) {
+          var ch = new CloseByPositionHelper(fw, _ticks, Fractals[0]);
           closeBuyIDs.AddRange(
             tr.tradesBuy.Where(
-            t => t.PL >= legUpAverageInPips / 5 && isInSell
-            //t => t.PL >= (CorridorSpreadInPips / 2) && (priceCurrent.Average - ticksLamda(t).Min(tick => tick.PriceAvg)) >= CorridorSpread(true)
-            ).Select(t => t.Id));
+            t => ch.Up && (isInSell && isPosBSOk || ch.RangeInPips >= legUpAverageInPips)
+              && A < 0 && ch.BuyPL(t.Open) >= tr.profitMin
+              && (t.PL > 0 || ch.okToLoose(t))
+            ));
           closeSellIDs.AddRange(
             tr.tradesSell.Where(
-            t => t.PL >= legDownAverageInPips / 5 && !isInSell
-            //t => t.PL >= (CorridorSpreadInPips / 2) && (-priceCurrent.Average + ticksLamda(t).Max(tick => tick.PriceAvg)) >= CorridorSpread(true)
-            ).Select(t => t.Id));
+            t => ch.Down && (isInBuy && isPosBSOk || ch.RangeInPips >= legDownAverageInPips)
+              && A > 0 && ch.SellPL(t.Open) >= tr.profitMin
+              && (t.PL > 0 || ch.okToLoose(t))
+            ));
+        } else {
+          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL > legUpAverageInPips/* t.Remark.TradeWaveHeight*/));
+          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL > legDownAverageInPips/* t.Remark.TradeWaveHeight*/));
         }
-        closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL > legUpAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
-        closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL > legDownAverageInPips/* t.Remark.TradeWaveHeight*/).Select(t => t.Id));
+        if (closeSellIDs.Concat(closeBuyIDs).Any(t => t.PL < -1)) {
+          var i = 0;
+        }
       }
       #endregion
 
+      #region RSI
       if (tr.rsiProfit > 0) {
         if (ti.RsiHigh >= tr.rsiTresholdSell)
-          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= tr.rsiProfit).Select(t => t.Id));
+          closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= tr.rsiProfit));
         if (ti.RsiLow <= tr.rsiTresholdBuy)
-          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= tr.rsiProfit).Select(t => t.Id));
+          closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= tr.rsiProfit));
       }
+      #endregion
 
+      #region CloseIfProfitTradesMoreThen
       if (tr.closeIfProfitTradesMoreThen > 0) {
         Func<Trade[], int> tradesCount =
           (trades) => tr.closeProfitTradesMaximum > 0 ? tr.closeProfitTradesMaximum : trades.Length + tr.closeProfitTradesMaximum;
-        {
+        if (tr.tradesBuy.Length > tr.closeIfProfitTradesMoreThen) {
           var plMin = Math.Ceiling(profitMin(tr.tradesBuy, 2));
-          var closeBuys = tr.tradesBuy.Length > 1 ? tr.tradesBuy.Where(t => t.PL >= plMin).ToArray() : new Trade[] { };
-          if (closeBuys.Length >= Math.Min(tr.tradesBuy.Length, tr.closeIfProfitTradesMoreThen + 1)) {
+          var closeBuys = tr.tradesBuy.Where(t => t.PL >= plMin).ToArray();
+          if (closeBuys.Length > tr.closeIfProfitTradesMoreThen) {
             var tc = tradesCount(closeBuys);
-            closeBuyIDs.AddRange(closeBuys.OrderByDescending(t => t.GrossPL).Take(tc).Select(t => t.Id));
+            closeBuyIDs.AddRange(closeBuys.OrderByDescending(t => t.GrossPL).Take(tc));
           }
         }
-        {
+        if(tr.tradesSell.Length > tr.closeIfProfitTradesMoreThen){
           var plMin = Math.Ceiling(profitMin(tr.tradesSell, 2));
-          var closeSells = tr.tradesSell.Length > 1 ? tr.tradesSell.Where(t => t.PL >= plMin).ToArray() : new Trade[] { };
-          if (closeSells.Length >= Math.Min(tr.tradesSell.Length, tr.closeIfProfitTradesMoreThen + 1)) {
+          var closeSells =  tr.tradesSell.Where(t => t.PL >= plMin).ToArray();
+          if (closeSells.Length > tr.closeIfProfitTradesMoreThen) {
             var tc = tradesCount(closeSells);
-            closeSellIDs.AddRange(closeSells.OrderByDescending(t => t.GrossPL).Take(tc).Select(t => t.Id));
+            closeSellIDs.AddRange(closeSells.OrderByDescending(t => t.GrossPL).Take(tc));
           }
+        }
+        if (closeSellIDs.Concat(closeBuyIDs).Any(t => t.PL < -1)) {
+          var i = 0;
         }
       }
+      #endregion
+
+      #region Finalize
       if (closeBuyIDs.Count > 0 && tr.BuyNetPLPip > 0)
-        closeBuyIDs.AddRange(tr.tradesBuy.Select(t => t.Id));
+        closeBuyIDs.AddRange(tr.tradesBuy);
       if (closeSellIDs.Count > 0 && tr.SellNetPLPip > 0)
-        closeSellIDs.AddRange(tr.tradesSell.Select(t => t.Id));
-      ti.CloseTradeIDs = closeBuyIDs.Union(closeSellIDs).Distinct().ToArray();
-      if (ti.CloseTradeIDs.Length > 0) {
+        closeSellIDs.AddRange(tr.tradesSell);
+      ti.CloseTradeIDs = closeBuyIDs.Concat(closeSellIDs).Select(t=>t.Id).Distinct().ToArray(); 
+      #endregion
+
+      if (closeSellIDs.Concat(closeBuyIDs).Any(t => t.PL < -1)) {
         var i = 0;
       }
+
       #endregion
     }
     #endregion
+
+    class CloseByPositionHelper {
+      public double RangeInPips { get { return fw.InPips(maxTick.PriceAvg - minTick.PriceAvg); } }
+      public bool Up { get { return maxTick.StartDate > minTick.StartDate; } }
+      public bool Down { get { return !Up; } }
+      Rate minTick;
+      Rate maxTick;
+      FXW fw;
+      public CloseByPositionHelper(FXW fw, IEnumerable<Rate> Ticks,Rate LastFractal) {
+        this.fw = fw;
+        ///Dimok: deffer ticksSinceLastFractal
+        var ticksSinceLastFractal = Ticks.Where(t=>t.StartDate>= LastFractal.StartDate).OrderBy(t => t.PriceAvg).ToArray();
+        minTick = ticksSinceLastFractal.First();
+        maxTick = ticksSinceLastFractal.Last();
+      }
+      public bool okToLoose(O2G.Trade trade) { return fw.ServerTimeCached - trade.Time > TimeSpan.FromMinutes(1); }
+      public double SellPL(double price) { return fw.InPips(price - minTick.AskLow); }
+      public double BuyPL(double price) { return fw.InPips(maxTick.BidHigh - price); }
+    }
+
 
     #region FX Event Handlers
     void fxCoreWrapper_EURJPY_PriceChanged(Order2GoAddIn.Price price) {
