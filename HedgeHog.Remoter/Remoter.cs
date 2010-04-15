@@ -28,25 +28,16 @@ namespace HedgeHog {
     DateTime GoSellTime { get { return _goSellTime; } set { _goSellTime = value; } }
     public int TradeWaveInMinutes { get; set; }
 
-    bool _goBuy = false;
-    public bool GoBuy {
-      get { return _goBuy; }
-      set { _goBuy = value; }
-    }
-    bool goBuy { 
-      get { return (this.ServerTime - GoBuyTime).Duration().TotalSeconds.Between(0, TradeSignalDelay); }
-      set { this.GoBuyTime = value ? this.ServerTime : DateTime.MinValue; }
-    }
-
-    bool _goSell = false;
-    public bool GoSell {
-      get { return _goSell; }
-      set { _goSell = value; }
-    }
-    bool goSell { 
-      get { return (this.ServerTime - GoSellTime).TotalSeconds.Between(0, TradeSignalDelay); }
-      set { this.GoSellTime = value ? this.ServerTime : DateTime.MinValue; }
-    }
+    //bool goBuy { 
+    //  get { return (this.ServerTime - GoBuyTime).Duration().TotalSeconds.Between(0, TradeSignalDelay); }
+    //  set { this.GoBuyTime = value ? this.ServerTime : DateTime.MinValue; }
+    //}
+    //bool goSell { 
+    //  get { return (this.ServerTime - GoSellTime).TotalSeconds.Between(0, TradeSignalDelay); }
+    //  set { this.GoSellTime = value ? this.ServerTime : DateTime.MinValue; }
+    //}
+    public bool GoBuy { get; set; }
+    public bool GoSell { get; set; }
     public bool CloseBuy { get; set; }
     public bool CloseSell { get; set; }
     public bool CloseLastBuy { get; set; }
@@ -127,6 +118,8 @@ namespace HedgeHog {
     public int SellPositions;
     public double BuyNetPLPip;
     public double SellNetPLPip;
+    public double BuyAvgOpen;
+    public double SellAvgOpen;
     public Order2GoAddIn.Trade[] tradesBuy = new Order2GoAddIn.Trade[] { };
     public Order2GoAddIn.Trade[] tradesSell = new Order2GoAddIn.Trade[] { };
 
@@ -236,8 +229,11 @@ namespace HedgeHog {
     public double voltsAverage;
     public double peakVolts;
     public double valleyVolts;
-    public double ticksPerMinuteAverageShort;
-    public double ticksPerMinuteAverageLong;
+    public double ticksPerMinuteCurr;
+    public double ticksPerMinutePrev;
+    public double ticksPerMinuteLong;
+    public double legUpInPips;
+    public double legDownInPips;
     public double corridorMinimum;
     public double corridorSpread;
     public int timeFrame;

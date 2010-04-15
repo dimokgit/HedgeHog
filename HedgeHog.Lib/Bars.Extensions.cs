@@ -74,9 +74,18 @@ namespace HedgeHog.Bars {
     public static IEnumerable<TBar> Where<TBar>(this IEnumerable<TBar> bars, TBar bar1, TBar bar2) where TBar : BarBase {
       return bars.Where(b => b.StartDate.Between(bar1.StartDate, bar2.StartDate));
     }
-    
+
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, TBar barFrom, TBar barTo) where TBar : BarBase {
-      return bars.Where(b => b.StartDate.Between(barFrom.StartDate, barTo.StartDate)).TradesPerMinute();
+      return bars.TradesPerMinute(barFrom.StartDate, barTo.StartDate);
+    }
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, TBar barFrom, TimeSpan intervalTo) where TBar : BarBase {
+      return bars.TradesPerMinute(barFrom.StartDate, barFrom.StartDate + intervalTo);
+    }
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, TimeSpan intervalFrom, TBar barTo) where TBar : BarBase {
+      return bars.TradesPerMinute(barTo.StartDate-intervalFrom, barTo.StartDate);
+    }
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, DateTime DaterFrom, DateTime DateTo) where TBar : BarBase {
+      return bars.Where(b => b.StartDate.Between(DaterFrom, DateTo)).TradesPerMinute();
     }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       var count = bars.Count();

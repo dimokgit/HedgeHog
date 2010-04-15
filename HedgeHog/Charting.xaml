@@ -8,7 +8,7 @@
     Top="{state:UserSettings Default=100}"
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
 		DataContext="{DynamicResource VM}"
-    Title="Charting" Closing="Window_Closing">
+    Title="{Binding Title,StringFormat=Trader: {0}}" Closing="Window_Closing">
     <Window.Resources>
         <l:ViewModel x:Key="VM"/>
         <c:BoolToColorConverter x:Key="BoolToColorConverter"/>
@@ -208,13 +208,7 @@
               <CheckBox Name="chkOpenTradeBuy2" ToolTip="Open Buy 2 Positions"/>
               <CheckBox Name="chkOpenTradeBuy" ToolTip="Open Buy Position"/>
         <Label Name="lblOpenBuy" ToolTip="Buy" BorderThickness="1" Content="B" BorderBrush="{Binding CanBuyByCorridor}" />
-        <Label Content="{Binding RsiLow}" ToolTip="RSI Buy" />
-        <Label Content="&lt;" />
-        <Label Content="{Binding RsiBuy}" ToolTip="RSI Buy" BorderThickness="1"  BorderBrush="LightGray" />
         <Label>|</Label>
-        <Label Content="{Binding RsiSell}" ToolTip="RSI Buy" BorderThickness="1"  BorderBrush="LightGray" />
-        <Label Content="&lt;" />
-        <Label Content="{Binding RsiHigh}" ToolTip="RSI Sell" />
         <Label Name="lblOpenSell" ToolTip="Sell" Content="S" BorderThickness="1" BorderBrush="{Binding CanSellByCorridor}" />
         <CheckBox Name="chkOpenTradeSell" ToolTip="Open Sell Position"/>
         <CheckBox Name="chkOpenTradeSell2" ToolTip="Open Sell 2 Positions"/>
@@ -250,6 +244,7 @@
               <ComboBoxItem ToolTip="Price Height Minimum">PHm</ComboBoxItem>
               <ComboBoxItem ToolTip="Price Height Sum">PH∑</ComboBoxItem>
               <ComboBoxItem ToolTip="Price Height Buy/Sell">PHBS</ComboBoxItem>
+              <ComboBoxItem ToolTip="Through Fractal">F0</ComboBoxItem>
             </ComboBox>
       </TextBlock>
             <Border BorderBrush="Peru" BorderThickness="1" Margin="1" VerticalAlignment="Center" MouseDown="Voltage_MouseDown" >

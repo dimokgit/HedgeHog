@@ -263,6 +263,7 @@ namespace Order2GoAddIn {
     public string PriceFormat {
       get { return "{0:0."+"".PadRight(Digits,'0')+"}"; }
     }
+    public event EventHandler PairChanged;
     public string Pair {
       get { return _pair; }
       set {
@@ -271,6 +272,7 @@ namespace Order2GoAddIn {
           if (Desk != null && FindOfferByPair(value) == null) Desk.SetOfferSubscription(value, "Enabled");
         PointSize = 0;
         Digits = 0;
+        if (PairChanged != null) PairChanged(this, new EventArgs());
       }
     }
 
@@ -544,7 +546,8 @@ namespace Order2GoAddIn {
           Bars.Remove(bar);
     }
 
-    public DateTime ServerTime { get { return coreFX.ServerTime; } } 
+    public DateTime ServerTimeCached { get; set; }
+    public DateTime ServerTime { get { return ServerTimeCached = coreFX.ServerTime; } } 
     #region FX Tables
     public static Account GetAccount() {
       var row = GetRows(TABLE_ACCOUNTS).First();

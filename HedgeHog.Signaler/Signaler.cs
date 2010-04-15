@@ -27,28 +27,31 @@ namespace HedgeHog {
       public DateTime Date{get;set;}
       public int Index { get; set; }
       public int Slope { get { return Math.Sign(Next.Value - Value); } }
-      public DataPoint() {}
-      public DataPoint(double value,DateTime date,int index) {
+      public int CmaPeriod { get; set; } 
+      public DataPoint(double value,DateTime date,int cmaPeriod,int index) {
         Value = value;
         Date = date;
+        CmaPeriod = cmaPeriod;
         Index = index;
       }
       public override string ToString() {
         return string.Format("{0:dd HH:mm:ss}:{1}/{2}", Date, Value, Index);
       }
     }
-    public static DataPoint[] GetCurve<TBar>(this IEnumerable<TBar> ticks, int cmaPeriod) where TBar : Bars.BarBase {
+    public static DataPoint[] GetCurve<TBar>(this IEnumerable<TBar> ticks, int? cmaPeriod) where TBar : Bars.BarBase {
       double? cma1 = null;
       double? cma2 = null;
       double? cma3 = null;
       int i = 0;
       return (from tick in ticks
+              let period = cmaPeriod.HasValue ? cmaPeriod.Value : ticks.TradesPerMinute(TimeSpan.FromMinutes(1), tick).ToInt()
                    select
-                   new DataPoint(){
-                     Value = (cma3 = CMA(cma3, cmaPeriod, (cma2 = CMA(cma2, cmaPeriod, (cma1 = CMA(cma1, cmaPeriod, tick.PriceAvg)).Value)).Value)).Value,
-                     Date = tick.StartDate,
-                     Index = i++
-                   }
+                   new DataPoint(
+                     (cma3 = CMA(cma3, period, (cma2 = CMA(cma2, period, (cma1 = CMA(cma1, period, tick.PriceAvg)).Value)).Value)).Value,
+                     tick.StartDate,
+                     period,
+                     i++)
+                   
                   ).ToArray();
     }
     public static DataPoint[] GetWaves(this DataPoint[] curve) {
@@ -61,13 +64,16 @@ namespace HedgeHog {
                select dp1;
       return d2.ToArray();
     }
-    public static double[] GetWaves<TBar>(this IEnumerable<TBar> rates, int cmaPeriod) where TBar : Bars.BarBase {
+    public static double[] GetWaves<TBar>(this IEnumerable<TBar> rates) where TBar : Bars.BarBase {
+      return rates.GetWaves((int?)null);
+    }
+    public static double[] GetWaves<TBar>(this IEnumerable<TBar> rates, int? cmaPeriod) where TBar : Bars.BarBase {
       double? cma1 = null;
       var cmas3 = rates.GetCurve(cmaPeriod);
       cma1 = null;
       int i=0;
       var cmas = (from cma in cmas3
-                  select new { ma1 = (cma1 = CMA(cma1, cmaPeriod, cma.Value)).Value, ma3 = cma, i = i++}
+                  select new { ma1 = (cma1 = CMA(cma1,cma.CmaPeriod, cma.Value)).Value, ma3 = cma, i = i++}
                   ).ToArray();
       i = 0;
       var wPeak = (from ma2 in cmas
@@ -110,10 +116,12 @@ namespace HedgeHog {
     public static WaveStats GetWaveStats(this double[] waves) {
       //waves = waves.OrderBy(w => w).Take(waves.Count() - 1).ToArray();
       var wa = waves.Average();
+      var au = waves.Where(w => w >= wa).DefaultIfEmpty(wa).Average();
+      var ad = waves.Where(w => w <= wa).DefaultIfEmpty(wa).Average();
+      waves = waves.Where(w => w > ad).DefaultIfEmpty(wa).ToArray();
+      wa = waves.Average();
       var wst = waves.StdDev();
-      return new WaveStats(wa, wst
-        , waves.Where(w => w >= wa).DefaultIfEmpty(wa).Average()
-        , waves.Where(w => w <= wa).DefaultIfEmpty(wa).Average());
+      return new WaveStats(wa, wst, au, ad);
     }
 
     public static List<Volt> FindMaximasPeakAndValley(

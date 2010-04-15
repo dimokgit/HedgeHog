@@ -224,6 +224,9 @@ namespace HedgeHog {
   #region Extentions
   public static class Extentions {
     #region TimeSpan
+    public static TimeSpan Max(this IEnumerable<TimeSpan> span) {
+      return TimeSpan.FromMilliseconds(span.Max(s => s.TotalMilliseconds));
+    }
     public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
       return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
     }
@@ -271,6 +274,7 @@ namespace HedgeHog {
       var evenMinutes = dt.Minute / period * period;
       return dt.AddMinutes(-dt.Minute).AddMinutes(evenMinutes);
     }
+    public static double? Cma(this double? d, int period, double? newValue) { return Lib.CMA(d, period, newValue.Value); }
     public static bool Between(this int value, double d1, double d2) {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }

@@ -336,6 +336,7 @@ namespace HedgeHog {
         ClosePositionsScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(1), (s, e) => RaisePriceGridError(e.Exception));
         fw = FW;
         fw.PriceChanged += new Order2GoAddIn.FXCoreWrapper.PriceChangedEventHandler(fw_PriceChanged);
+        fw.PairChanged += (s, e) => DC.Title = fw.Pair;
         PriceScheduler = new ThreadScheduler(
           TimeSpan.FromSeconds(1), ThreadScheduler.infinity, ProcessPrice, (s, e) => RaisePriceGridError(e.Exception));
       }
@@ -447,7 +448,7 @@ namespace HedgeHog {
       }
     }
     public static Dictionary<string, double> DensityList = new Dictionary<string, double>();
-    public static double DensityAverage { get { return DensityList.Values.DefaultIfEmpty().Average(); } }
+    public static double DensityAverage { get { return DensityList.Values.OrderByDescending(d=>d).DefaultIfEmpty().Take(2).Average(); } }
     static int ColorTemperatute(byte value, byte from, byte to) { return ToByte( ((to - from) / 255.0) * value + from); }
     static int RedTemperature(int value) { return ToByte(value > 0 ? 255 : 0); }
     static int GreenTemperature(int value) { return ToByte(255 - value); }
@@ -523,8 +524,10 @@ namespace HedgeHog {
             tradeAdded = tradeAdded,
             BuyNetPLPip = summary.BuyNetPLPip,
             BuyPositions = (int)summary.BuyPositions,
+            BuyAvgOpen = summary.BuyAvgOpen,
             SellNetPLPip = summary.SellNetPLPip,
             SellPositions = (int)summary.SellPositions,
+            SellAvgOpen = summary.SellAvgOpen,
             closeOppositeOffset = this.closeOppositeOffset,
             corridorMinites = this.corridorMinMinuteBar,
             DecisionFoo = this.fooNumber,
@@ -598,14 +601,14 @@ namespace HedgeHog {
           spreadAverageHighMin = ts.spreadAverageHighMin;
           voltPriceMax = ts.voltPriceMax;
           voltPriceMin = ts.voltPriceMin;
-          ticksPerMinuteAverageShort = (int)ts.ticksPerMinuteAverageShort;
-          ticksPerMinuteAverageLong = (int)ts.ticksPerMinuteAverageLong;
+          ticksPerMinuteAverageShort = (int)ts.ticksPerMinuteCurr;
+          ticksPerMinuteAverageLong = (int)ts.ticksPerMinuteLong;
           ticksRatio = ticksPerMinuteAverageShort / (double)ticksPerMinuteAverageLong;
           corridorMinimum = ts.corridorMinimum;
           closeTradeIDs.AddRange(ti.CloseTradeIDs);
           CloseTrades();
           if (tradesBuy.Concat(tradesSell).Count() > 0)
-            DensityList[pair] = new[] { ti.DencityRatioBuy, ti.DencityRatioSell }.Average();
+            DensityList[pair] = new[] { ti.TradeStats.legUpInPips, ti.TradeStats.legDownInPips }.Average();
           else if (DensityList.ContainsKey(pair))
             DensityList.Remove(pair);
           Dispatcher.BeginInvoke(new Action(() => {
@@ -630,7 +633,7 @@ namespace HedgeHog {
           this.CanTrade = ti.CanTrade;
           this.CloseBuy = ti.CloseBuy;
           this.CloseSell = ti.CloseSell;
-          if (ti.DencityRatio >= 3) {
+          if (ti.DencityRatio >= 1) {
             this.GoBuy = ti.GoBuy;
             this.GoSell = ti.GoSell;
           }
@@ -705,8 +708,10 @@ namespace HedgeHog {
         var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
         var canBuyByFractal = tradesBuy.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
         var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
-        if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
-        if (!canSellByFractal && this.GoSell) this.GoSell = false;
+        if (false) {
+          if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
+          if (!canSellByFractal && this.GoSell) this.GoSell = false;
+        }
         Dispatcher.BeginInvoke(new Action(() => {
           var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
           var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;
@@ -864,6 +869,19 @@ namespace HedgeHog {
     public ViewModel() {
       TradesList = new ListCollectionView(Trades);
     }
+
+
+
+    public string Title {
+      get { return (string)GetValue(TitleProperty); }
+      set { SetValue(TitleProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for Title.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty TitleProperty =
+        DependencyProperty.Register("Title", typeof(string), typeof(ViewModel));
+
+
     public ObservableCollection<Order2GoAddIn.Trade> Trades = new ObservableCollection<Order2GoAddIn.Trade>();
     public ListCollectionView TradesList { get; set; }
 
