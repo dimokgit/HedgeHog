@@ -113,18 +113,29 @@
           <ComboBoxItem>M*|H</ComboBoxItem>
         </ComboBox>
       </StackPanel>
+      <Border 
+        Background="{Binding BuySell,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|#7DFFA07A|#7D90EE90}"
+        >
         <StackPanel Orientation="Horizontal">
-        <Label Content="{Binding FractalBuy.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalBuyColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}" ToolTip="Buy Fractal Time"/>
-        <TextBlock>:</TextBlock>
+          <Label Content="{Binding FractalBuy.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalBuyColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}" ToolTip="Buy Fractal Time"/>
+        <TextBlock Text="{Binding TradeDirection,AsyncState=true}" FontWeight="Bold"></TextBlock>
         <Label Content="{Binding FractalSell.StartDate}" ContentStringFormat="HH:mm:ss" Background="{Binding FractalSellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|LightSalmon}" ToolTip="Sell Fractal Time"/>
-        <TextBlock Text="A‡"></TextBlock>
-        <TextBlock Text="{Binding AngleRounded}"></TextBlock>
+        <Label Content="{Binding AngleRounded}" 
+               Background="{Binding AngleColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|#7DFFA07A|#7D90EE90}"
+               ContentStringFormat="0.00" />
+        <Label Content="{Binding Angle1Rounded}"
+               Background="{Binding Angle1Color,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|#7DFFA07A|#7D90EE90}"
+               ContentStringFormat="[{0:0.00}]" />
+        <Label Content="{Binding PositionHelper.Position}" ContentStringFormat="P:{0:p1}"
+               BorderBrush="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Black}"
+               />
         <!--<CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>-->
         <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtPeakTradeMarginLow" ToolTip="Peak Trade Margin Low"/>
         <TextBox Text="{state:UserSettings Default=25}" TextChanged="TextChanged" Name="txtPeakTradeMarginHigh" ToolTip="Peak Trade Margin High"/>
         <TextBox Text="{state:UserSettings Default=80}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
-      </StackPanel>
+        </StackPanel>
+      </Border>
 
       <Border BorderBrush="LightGray" BorderThickness="1">
         <WrapPanel>
@@ -151,7 +162,7 @@
             <TextBlock Text="VW:" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght" ToolTip="Volatility Wieght"/>
             <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght1" ToolTip="Volatility Wieght 1"/>
-            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" Background="{Binding FractalWaveColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|Transparent}" ToolTip="Big Waves Count Minimum"/>
+            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" ToolTip="Big Waves Count Minimum"/>
             <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtWavesCountSmall" ToolTip="Small Waves Count Minimum"/>
 
             <TextBox Text="{state:UserSettings Default=//}" TextChanged="TextChanged_ResetTicks" Name="txtTimeFrameTimeStart" ToolTip="Time Start"/>

@@ -8,7 +8,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Tziplyonak713" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="66" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="148" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="115" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="410" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
@@ -58,7 +58,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkNormalizeFractals]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkMassOrHeight]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]SelectedIndex" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="5" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="10" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginHigh]Text" value="25" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="True" />

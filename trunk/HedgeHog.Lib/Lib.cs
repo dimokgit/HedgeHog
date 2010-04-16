@@ -275,6 +275,8 @@ namespace HedgeHog {
       return dt.AddMinutes(-dt.Minute).AddMinutes(evenMinutes);
     }
     public static double? Cma(this double? d, int period, double? newValue) { return Lib.CMA(d, period, newValue.Value); }
+
+    #region Between
     public static bool Between(this int value, double d1, double d2) {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
@@ -286,6 +288,11 @@ namespace HedgeHog {
     }
     public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {
       return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
+    }
+    #endregion
+
+    public static double Position(this double Price,double Up,double Down){
+      return (Price-Down)/(Up-Down);
     }
     public static void SetProperty(this object o, string p, object v) {
       var convert = new Func<object, Type, object>((valie, type) => {

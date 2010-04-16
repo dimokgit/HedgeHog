@@ -2,7 +2,7 @@
 <dictionary>
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="3" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="304" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="299" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="308" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="499" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="MICR468485001" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="8442" />
@@ -59,7 +59,7 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkMassOrHeight]IsChecked" value="" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]Text" value="M|H" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]SelectedIndex" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="5" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="10" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginHigh]Text" value="25" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="True" />
