@@ -1023,7 +1023,9 @@ namespace Order2GoAddIn {
     FXCore.ITradeDeskEvents_OnRowAddedEventHandler FX_RowAddedHandler;
     FXCore.ITradeDeskEvents_OnRowChangedEventHandler FX_RowChangedHandler;
     FXCore.ITradeDeskEvents_OnRowBeforeRemoveEventHandler FX_RowRemovingdHandler;
+    bool isSubsribed = false;
     public void Subscribe() {
+      if (isSubsribed) return;
       Unsubscribe();
       mSink = new FXCore.TradeDeskEventsSinkClass();
       FX_RowChangedHandler  = new FXCore.ITradeDeskEvents_OnRowChangedEventHandler(FxCore_RowChanged);
@@ -1034,6 +1036,7 @@ namespace Order2GoAddIn {
       mSink.ITradeDeskEvents_Event_OnRowBeforeRemove += FX_RowRemovingdHandler;
       mSink.ITradeDeskEvents_Event_OnRowBeforeRemoveEx += new FXCore.ITradeDeskEvents_OnRowBeforeRemoveExEventHandler(mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx);
       mSubscriptionId = Desk.Subscribe(mSink);
+      isSubsribed = true;
     }
 
     void mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx(object _table, string RowID, string sExtInfo) {
@@ -1060,6 +1063,7 @@ namespace Order2GoAddIn {
         try {
           Desk.Unsubscribe(mSubscriptionId);
         } catch { }
+        isSubsribed = false;
       }
       mSubscriptionId = -1;
     }
@@ -1085,6 +1089,7 @@ namespace Order2GoAddIn {
 
     void mSink_ITradeDeskEvents_Event_OnRowAdded(object _table, string RowID) {
       try {
+        System.Threading.Thread.CurrentThread.Priority = ThreadPriority.Highest;
         FXCore.TableAut table = _table as FXCore.TableAut;
         FXCore.RowAut row;
         Func<FXCore.TableAut, FXCore.RowAut, string> showTable = (t, r) => {

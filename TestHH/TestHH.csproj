@@ -47,6 +47,8 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -59,6 +61,14 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Remoter\HedgeHog.Remoter.csproj">
+      <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
+      <Name>HedgeHog.Remoter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Server\HedgeHog.Server.csproj">
+      <Project>{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}</Project>
+      <Name>HedgeHog.Server</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Signaler\HedgeHog.Signaler.csproj">
       <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>

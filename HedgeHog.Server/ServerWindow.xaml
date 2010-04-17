@@ -54,6 +54,7 @@
           <ComboBoxItem>NZD/USD</ComboBoxItem>
           <ComboBoxItem>CHF/JPY</ComboBoxItem>
           <ComboBoxItem>AUD/CAD</ComboBoxItem>
+          <ComboBoxItem>GBP/CHF</ComboBoxItem>
         </ComboBox>
       </StackPanel>
       <StackPanel Orientation="Horizontal">

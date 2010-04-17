@@ -83,7 +83,6 @@ namespace TestHH {
     public void IndicatorList() {
       Indicators.List();
     }
-    [TestMethod]
     public void Speed() {
       var dateStart = DateTime.Parse("04/08/2010 08:00");
       var dateEnd = dateStart.AddHours(4);
@@ -123,6 +122,17 @@ namespace TestHH {
       ticks.FillMass();
       Debug.WriteLine("TicksPerMinute:{0: HH:mm:ss} -{1: HH:mm:ss}={2:n0}/{3}", ticks.First().StartDate, ticks.Last().StartDate,
         ticks.TradesPerMinute(), ticks.SumMass());
+    }
+    [TestMethod]
+    public void Waves1() {
+      var dateStart = DateTime.Parse("03/14/2010 16:00");
+      dateStart = DateTime.Now.AddHours(-2);
+      //var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
+      var ticks = o2g.GetTicks(2000);
+      Stopwatch timer = Stopwatch.StartNew();
+      var ph =new  HedgeHog.ServerWindow.CloseByPositionHelper(o2g);
+      ph.Fill(new Order2GoAddIn.Price(), ticks, ticks.First());
+      var waves = ph.FindWave(TimeSpan.FromMinutes(10));
     }
     public void Waves() {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
