@@ -841,12 +841,11 @@ namespace HedgeHog {
             var l = new List<TimeSpan>();
             if( ui.useOverlapLast)l.Add(OverlapLast);
             if( ui.useOverlapShort)l.Add(OverlapAverageShort);
-            var tp = new[] { TimeSpan.FromMinutes(1), l.Average() }.Max();
+            var tp = new[] { TimeSpan.FromMinutes(1), l.Count == 0 ? new[]{OverlapLast,OverlapAverageShort}.Max() : l.Average() }.Max();
             var ticksToRegress = _ticks.Where(t => t.StartDate >= _serverTimeCached-tp).ToArray();
-            var regress = SetTicksPrice(ticksToRegress, 1, t => t.PriceAvg, (t, v) => t.PriceAvg1 = v);
+            var regress = Lib.Regress(ticksToRegress.Select(t=>t.PriceAvg).ToArray(), 1);
             A = regress[1];
-            regress = SetTicksPrice(ticksToRegress.Where(t => t.StartDate >= _serverTimeCached.AddMinutes(-1)).ToArray()
-              , 1, t => t.PriceAvg, (t, v) => t.PriceAvg1 = v);
+            regress = Lib.Regress(ticksToRegress.Where(t => t.StartDate >= _serverTimeCached.AddMinutes(-1)).Select(t=>t.PriceAvg).ToArray(), 1);
             A1 = regress[1];
           }
           if (OverlapLast.TotalSeconds == 0) return;
@@ -1337,12 +1336,6 @@ namespace HedgeHog {
         }
       }
     }
-    static private double[] Regress(double[] prices, int polyOrder) {
-      var coeffs = new[] { 0.0, 0.0 };
-      Lib.LinearRegression(prices, out coeffs[1], out coeffs[0]);
-      return coeffs;
-      return Regression.Regress(prices, polyOrder);
-    }
     static void SetTicksPrice(IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
       double[] yy = new double[ticks.Count()];
       int i1 = 0;
@@ -1354,7 +1347,7 @@ namespace HedgeHog {
       }
     }
     static double[] SetTicksPrice(IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
-      var coeffs = Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       SetTicksPrice(ticks, coeffs, writeTo);
       return coeffs;
     }
@@ -2025,6 +2018,30 @@ namespace HedgeHog {
         _localPeak = null;
         _tail = null;
       }
+      enum WaveDirection{Up=1,Down=-1,None=0};
+      public Rate[] FindWave(TimeSpan period) {
+        List<Rate> waves = new List<Rate>();
+        WaveDirection waveDirection = WaveDirection.None;
+        foreach (var rate in ticks.OrderBarsDescending().ToArray()) {
+          var ticksToRegress = ticks.Where(period, rate).ToArray();
+          var coeffs = Lib.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
+          if (!double.IsNaN(coeffs[1])) {
+            var wd = (WaveDirection)Math.Sign(coeffs[1]);
+            if (waveDirection != WaveDirection.None) {
+              if (wd != waveDirection && wd != WaveDirection.None) {
+                var ticksForPeak = ticks.Where(ticksToRegress.Last(), TimeSpan.FromSeconds(period.TotalSeconds / 2)).ToArray();
+                waves.Add(wd == WaveDirection.Up
+                  ? ticksForPeak.OrderBy(t => t.PriceLow).First()
+                  : ticksForPeak.OrderBy(t => t.PriceHigh).Last());
+              }
+              if (waves.Count == 2) break;
+            }
+            waveDirection = wd;
+          }
+        }
+        return waves.ToArray();
+      }
+
       public bool okToLoose(O2G.Trade trade) { return fw.ServerTimeCached - trade.Time > TimeSpan.FromMinutes(1); }
       public double SellPL(double price) { return fw.InPips(price - minTick.AskLow); }
       public double BuyPL(double price) { return fw.InPips(maxTick.BidHigh - price); }

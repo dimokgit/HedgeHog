@@ -69,6 +69,7 @@
           <ComboBoxItem>NZD/USD</ComboBoxItem>
           <ComboBoxItem>CHF/JPY</ComboBoxItem>
           <ComboBoxItem>AUD/CAD</ComboBoxItem>
+          <ComboBoxItem>GBP/CHF</ComboBoxItem>
         </ComboBox>
         <Border BorderBrush="Beige" BorderThickness="1">
           <TextBlock VerticalAlignment="Center">

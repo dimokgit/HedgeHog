@@ -32,6 +32,13 @@ namespace HedgeHog {
   }
   public static class Lib {
 
+    public static double[] Regress(double[] prices, int polyOrder) {
+      var coeffs = new[] { 0.0, 0.0 };
+      Lib.LinearRegression(prices, out coeffs[1], out coeffs[0]);
+      return coeffs;
+      //return Regression.Regress(prices, polyOrder);
+    }
+
     public static double Deviation(IEnumerable<double> Values, DeviationType CalculationType) {
       double SumOfValuesSquared = 0;
       double SumOfValues = 0;
