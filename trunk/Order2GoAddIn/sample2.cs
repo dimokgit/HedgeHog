@@ -131,48 +131,6 @@ namespace Order2GoAddIn {
           rates[period - 2].FractalBuy = HedgeHog.Bars.FractalType.None;
       }
     }
-    public static Rate[] FillRsi(this Rate[] rates, int period, Func<Rate, double> getPrice) {
-      for (int i = period; i < rates.Length; i++) {
-        UpdateRsi(period, rates, i, getPrice);
-      }
-      return rates;
-    }
-    static void UpdateRsi(int numberOfPeriods, Rate[] rates, int period,Func<Rate,double> getPrice){
-      if (period >= numberOfPeriods) {
-        var i = 0;
-        var sump = 0.0;
-        var sumn = 0.0;
-        var positive = 0.0;
-        var negative = 0.0;
-        var diff = 0.0;
-        if (period == numberOfPeriods) {
-          for (i = period - numberOfPeriods + 1; i <= period; i++) {
-            diff = getPrice(rates[i]) - getPrice(rates[i - 1]);
-            if (diff >= 0)
-              sump = sump + diff;
-            else
-              sumn = sumn - diff;
-          }
-          positive = sump / numberOfPeriods;
-          negative = sumn / numberOfPeriods;
-        } else {
-          diff = getPrice(rates[period]) - getPrice(rates[period - 1]);
-          if (diff > 0)
-            sump = diff;
-          else
-            sumn = -diff;
-          positive = (rates[period - 1].PriceRsiP * (numberOfPeriods - 1) + sump) / numberOfPeriods;
-          negative = (rates[period - 1].PriceRsiN * (numberOfPeriods - 1) + sumn) / numberOfPeriods;
-        }
-        rates[period].PriceRsiP = positive;
-        rates[period].PriceRsiN = negative;
-        if (negative == 0)
-          rates[period].PriceRsi = 0;
-        else
-          rates[period].PriceRsi = 100 - (100 / (1 + positive / negative));
-      }
-    }
-
 
     public static IEnumerable<IndicatorPoint2> TSI_CR(Rate[] rates) {
       Indicore.BarSourceAut source = CreateBarsData(rates);

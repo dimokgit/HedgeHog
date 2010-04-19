@@ -377,7 +377,7 @@ namespace Order2GoAddIn {
     }
     #endregion
 
-    public IEnumerable<Tick> GetTicks(DateTime startDate, DateTime endDate) {
+    public List<Tick> GetTicks(DateTime startDate, DateTime endDate) {
       return GetTicks(startDate, endDate, maxTicks);
     }
     private static object lockHistory = new object();
@@ -418,7 +418,7 @@ namespace Order2GoAddIn {
           }
         }
       }
-      return ticks.OrderBars().Take(tickCount).ToArray();
+      return ticks.OrderBars().ToArray();
     }
 
     public IEnumerable<Rate> GetBarsBase(int period, DateTime startDate) {
@@ -484,13 +484,13 @@ namespace Order2GoAddIn {
     }
     readonly int maxTicks = 300;
     [MethodImpl(MethodImplOptions.Synchronized)]
-    IEnumerable<Rate> GetBarsBase_(int period, DateTime startDate, DateTime endDate) {
+    List<Rate> GetBarsBase_(int period, DateTime startDate, DateTime endDate) {
       try {
         return period == 0 ?
-          GetTicks(startDate, endDate).Cast<Rate>() :
+          GetTicks(startDate, endDate).Cast<Rate>().ToList() :
           GetBars(period, startDate, endDate);
       } catch (Exception exc) {
-        var empty = period == 0 ? new Tick[] { }.Cast<Rate>() : new Rate[] { };
+        var empty = (period == 0 ? new Tick[] { }.Cast<Rate>() : new Rate[] { }).ToList();
         var e = new Exception("StartDate:" + startDate + ",EndDate:" + endDate + ":" + Environment.NewLine + "\t" + exc.Message, exc);
         if (exc.Message.Contains("The specified date's range is empty.") ||
             exc.Message.Contains("Object reference not set to an instance of an object.")) {

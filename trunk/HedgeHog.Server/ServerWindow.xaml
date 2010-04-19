@@ -130,7 +130,8 @@
         <Label Content="{Binding PositionHelper.Position}" ContentStringFormat="P:{0:p1}"
                BorderBrush="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Black}"
                />
-        <!--<CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+          <Label Content="{Binding RsiAverage}" ContentStringFormat="Rsi:{0:n0}"/>
+          <!--<CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>-->
         <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtPeakTradeMarginLow" ToolTip="Peak Trade Margin Low"/>
         <TextBox Text="{state:UserSettings Default=25}" TextChanged="TextChanged" Name="txtPeakTradeMarginHigh" ToolTip="Peak Trade Margin High"/>
