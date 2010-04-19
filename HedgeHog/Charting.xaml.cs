@@ -221,11 +221,6 @@ namespace HedgeHog {
     public int _txtCloseProfitTradesMaximum;
     private int closeProfitTradesMaximum { get { return _txtCloseProfitTradesMaximum; } }
 
-    private bool forceOpenTradeBuy { get { return Lib.GetChecked(chkOpenTradeBuy).Value; } set { Lib.SetChecked(chkOpenTradeBuy, value, true); } }
-    private bool forceOpenTradeBuy2 { get { return Lib.GetChecked(chkOpenTradeBuy2).Value; } set { Lib.SetChecked(chkOpenTradeBuy2, value, true); } }
-    private bool forceOpenTradeSell { get { return Lib.GetChecked(chkOpenTradeSell).Value; } set { Lib.SetChecked(chkOpenTradeSell, value, true); } }
-    private bool forceOpenTradeSell2 { get { return Lib.GetChecked(chkOpenTradeSell2).Value; } set { Lib.SetChecked(chkOpenTradeSell2, value, true); } }
-
     private double spreadAverage = 0;
     private double spreadAverageInPips { get { return fw.InPips(spreadAverage, 1); } }
     private double spreadAverage5Min = 0;
@@ -511,7 +506,9 @@ namespace HedgeHog {
             fw.TradesCountChanged += (trade) => {
               if (IsSecondTrade(trade)) return;
               tradeAdded = trade;
-              forceOpenTradeBuy = forceOpenTradeSell = forceOpenTradeBuy2 = forceOpenTradeSell2 = false;
+              Dispatcher.BeginInvoke(new Action(() => {
+                DC.forceOpenTradeBuy = DC.forceOpenTradeSell = DC.forceOpenTradeBuy2 = DC.forceOpenTradeSell2 = false;
+              }));
               doSecondTrade = !IsSecondTrade(tradeAdded);
               //System.IO.File.AppendAllText("Trades.xml", trade.ToString() + Environment.NewLine);
             };
@@ -722,11 +719,11 @@ namespace HedgeHog {
         #endregion
 
         #region Force Trade Function
-        if (forceOpenTradeBuy) this.CanTrade = this.GoBuy = true;
-        if (forceOpenTradeBuy2) this.LotsToTradeBuy *= 2;
-        if (forceOpenTradeSell) this.CanTrade = this.GoSell = true;
-        if (forceOpenTradeSell2) this.LotsToTradeSell *= 2; 
-        if (forceOpenTradeBuy || forceOpenTradeSell) {
+        if (DC.forceOpenTradeBuy) this.CanTrade = this.GoBuy = true;
+        if (DC.forceOpenTradeBuy2) this.LotsToTradeBuy *= 2;
+        if (DC.forceOpenTradeSell) this.CanTrade = this.GoSell = true;
+        if (DC.forceOpenTradeSell2) this.LotsToTradeSell *= 2; 
+        if (DC.forceOpenTradeBuy || DC.forceOpenTradeSell) {
           this.DencityRatio = 5;
           this.TakeProfitSell = this.TakeProfitBuy = this.TradeInfo.TradeWaveHeight / 2;
         }
@@ -737,17 +734,14 @@ namespace HedgeHog {
         var timeSpanLast = DateTime.Now.Subtract(timeNow).TotalMilliseconds;
         #region UI
         //double powerCurrent = barsBest.Power, powerAverage = bsPeriods.Average(r => r.Power);
-        Lib.SetLabelText(lblVolatility, string.Format("{0:n1}/{1:n1}/{2:n1}/{3:n1}",
-          spreadAverage15MinInPips, spreadAverage10MinInPips, spreadAverage5MinInPips, spreadAverageInPips));
-        Lib.SetBackGround(lblOpenSell, new SolidColorBrush(GoSell ? Colors.PaleGreen : CloseSell ? Colors.LightSalmon : goSell ? Colors.Yellow : Colors.Transparent));
-        Lib.SetBackGround(lblOpenBuy, new SolidColorBrush(GoBuy ? Colors.PaleGreen : CloseBuy ? Colors.LightSalmon : goBuy ? Colors.Yellow : Colors.Transparent));
-        Lib.SetLabelText(lblServerTime, string.Format("/{1:n0}]", serverTime, timeSpanLast));
-        if (this.CanTrade || (summary.BuyPositions + summary.SellPositions) > 0)
-          Lib.SetBackGround(wpMain, new SolidColorBrush(Colors.Transparent));
-        Lib.SetLabelText(lblOpenBuy, string.Format("{0:n1}", positionBuy));
-        Lib.SetLabelText(lblOpenSell, string.Format("{0:n1}", positionSell));
         Dispatcher.BeginInvoke(new Action(() => {
-          DC.ServerTime = fw.ServerTime;
+          DC.PositionBuy = positionBuy.ToInt();
+          DC.PositionSell = positionSell.ToInt();
+          DC.CanSellColor = new SolidColorBrush(GoSell ? Colors.PaleGreen : CloseSell ? Colors.LightSalmon : goSell ? Colors.Yellow : Colors.Transparent);
+          DC.CanBuyColor = new SolidColorBrush(GoBuy ? Colors.PaleGreen : CloseBuy ? Colors.LightSalmon : goBuy ? Colors.Yellow : Colors.Transparent);
+          DC.Volatility = string.Format("{0:n1}/{1:n1}/{2:n1}/{3:n1}", spreadAverage15MinInPips, spreadAverage10MinInPips, spreadAverage5MinInPips, spreadAverageInPips);
+          DC.ServerTime = fw.ServerTimeCached;
+          DC.TimeSpanLast = timeSpanLast;
           DC.TicksPerMinuteAverageShort = ticksPerMinuteAverageShort;
           DC.TicksPerMinuteAverageLong = ticksPerMinuteAverageLong;
         }));
@@ -872,6 +866,17 @@ namespace HedgeHog {
 
 
 
+    public string Volatility {
+      get { return (string)GetValue(VolatilityProperty); }
+      set { SetValue(VolatilityProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for Volatility.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty VolatilityProperty =
+        DependencyProperty.Register("Volatility", typeof(string), typeof(ViewModel), new UIPropertyMetadata(""));
+
+
+
     public string Title {
       get { return (string)GetValue(TitleProperty); }
       set { SetValue(TitleProperty, value); }
@@ -902,6 +907,12 @@ namespace HedgeHog {
     #endregion
 
 
+
+
+    public bool forceOpenTradeSell { get { return (bool)GetValue(forceOpenTradeSellProperty); } set { SetValue(forceOpenTradeSellProperty, value); } }    public static readonly DependencyProperty forceOpenTradeSellProperty = DependencyProperty.Register("forceOpenTradeSell", typeof(bool), typeof(ViewModel), new UIPropertyMetadata(false));
+    public bool forceOpenTradeSell2 { get { return (bool)GetValue(forceOpenTradeSellProperty2); } set { SetValue(forceOpenTradeSellProperty2, value); } }public static readonly DependencyProperty forceOpenTradeSellProperty2 = DependencyProperty.Register("forceOpenTradeSell2", typeof(bool), typeof(ViewModel), new UIPropertyMetadata(false));
+    public bool forceOpenTradeBuy { get { return (bool)GetValue(forceOpenTradeBuyProperty); } set { SetValue(forceOpenTradeBuyProperty, value); } }    public static readonly DependencyProperty forceOpenTradeBuyProperty = DependencyProperty.Register("forceOpenTradeBuy", typeof(bool), typeof(ViewModel), new UIPropertyMetadata(false));
+    public bool forceOpenTradeBuy2 { get { return (bool)GetValue(forceOpenTradeBuyProperty2); } set { SetValue(forceOpenTradeBuyProperty2, value); } }    public static readonly DependencyProperty forceOpenTradeBuyProperty2 = DependencyProperty.Register("forceOpenTradeBuy2", typeof(bool), typeof(ViewModel), new UIPropertyMetadata(false));
 
     public string TicksColor { get { return (string)GetValue(TicksColorProperty); } set { SetValue(TicksColorProperty, value); } }    public static readonly DependencyProperty TicksColorProperty = DependencyProperty.Register("TicksColor", typeof(string), typeof(ViewModel), new UIPropertyMetadata(Colors.Transparent + ""));
 
@@ -967,6 +978,39 @@ namespace HedgeHog {
     public double CorridorSpread { get { return (double)GetValue(CorridorSperadProperty); } set { SetValue(CorridorSperadProperty, value); } }    public static readonly DependencyProperty CorridorSperadProperty = DependencyProperty.Register("CorridorSpread", typeof(double), typeof(ViewModel));
 
     #endregion
+
+
+
+
+    public SolidColorBrush CanBuyColor {
+      get { return (SolidColorBrush)GetValue(CanBuyColorProperty); }
+      set { SetValue(CanBuyColorProperty, value); }
+    }
+    public static readonly DependencyProperty CanBuyColorProperty =
+        DependencyProperty.Register("CanBuyColor", typeof(SolidColorBrush), typeof(ViewModel), new UIPropertyMetadata(new SolidColorBrush(Colors.Transparent)));
+
+
+
+    public SolidColorBrush CanSellColor {
+      get { return (SolidColorBrush)GetValue(CanSellColorProperty); }
+      set { SetValue(CanSellColorProperty, value); }
+    }
+    public static readonly DependencyProperty CanSellColorProperty =
+        DependencyProperty.Register("CanSellColor", typeof(SolidColorBrush), typeof(ViewModel), new UIPropertyMetadata(new SolidColorBrush(Colors.Transparent)));
+
+
+    
+
+
+
+    public double TimeSpanLast {
+      get { return (double)GetValue(TimeSpanLastProperty); }
+      set { SetValue(TimeSpanLastProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for TimeSpanLast.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty TimeSpanLastProperty =
+        DependencyProperty.Register("TimeSpanLast", typeof(double), typeof(ViewModel), new UIPropertyMetadata(0));
 
 
 

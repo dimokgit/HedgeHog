@@ -2,6 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data.Objects.DataClasses;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using UT = Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics;
@@ -123,17 +124,89 @@ namespace TestHH {
       Debug.WriteLine("TicksPerMinute:{0: HH:mm:ss} -{1: HH:mm:ss}={2:n0}/{3}", ticks.First().StartDate, ticks.Last().StartDate,
         ticks.TradesPerMinute(), ticks.SumMass());
     }
+    public void LoadTicks() {
+      var ticks = o2g.GetTicks(1200000).OrderBarsDescending().ToArray();
+      using (var context = new ForexEntities() { CommandTimeout = 600 }) {
+        var lastDate = ticks.Min(t => t.StartDate);
+        var a = typeof(t_Tick).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
+        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE StartDate>={0}", lastDate);
+        var t_ticks = context.t_Tick;
+        ticks.ToList().ForEach(t => {
+          var tick = context.CreateObject<t_Tick>();
+          tick.Pair = o2g.Pair;
+          tick.StartDate = t.StartDate;
+          tick.Ask = t.AskOpen;
+          tick.Bid = t.BidOpen;
+          context.AddTot_Tick(tick);
+        });
+        context.SaveChanges(System.Data.Objects.SaveOptions.DetectChangesBeforeSave);
+      }
+    }
     [TestMethod]
     public void Waves1() {
-      var dateStart = DateTime.Parse("03/14/2010 16:00");
-      dateStart = DateTime.Now.AddHours(-2);
-      //var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
-      var ticks = o2g.GetTicks(2000);
+      var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+      var dateStart = DateTime.Parse("07/20/2009 12:00");
+      var dateEnd = dateStart.AddHours(0.5);
+      var context = new ForexEntities();
+      var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute),true).Cast<EdmEntityTypeAttribute>();
+      context.ExecuteStoreCommand("DELETE "+a.First().Name+" WHERE Name={0}", statName);
+
+      var ticks = o2g.GetTicks(12000);
+      var t1 = o2g.GetTicks(900);
+      ticks = ticks.Union(t1).OrderBars().ToArray();
+      ticks.ToList().ForEach(t => t.StartDate = t.StartDate.AddMilliseconds(-t.StartDate.Millisecond));
+      var rates = ticks.Cast<Rate>().OrderBars().ToArray();
+
       Stopwatch timer = Stopwatch.StartNew();
-      var ph =new  HedgeHog.ServerWindow.CloseByPositionHelper(o2g);
-      ph.Fill(new Order2GoAddIn.Price(), ticks, ticks.First());
-      var waves = ph.FindWave(TimeSpan.FromMinutes(10));
+      foreach (var tick in rates.OrderBarsDescending())
+        tick.Trend.Volume = rates.Where(TimeSpan.FromMinutes(1), tick).Count();
+      Debug.WriteLine("Volumes:" + timer.Elapsed);
+
+      timer = Stopwatch.StartNew();
+      rates.FillRsis();
+      Debug.WriteLine("FillRsi 1:" + timer.Elapsed);
+
+      timer = Stopwatch.StartNew();
+      rates.FillRsis();
+      Debug.WriteLine("FillRsi 2:" + timer.Elapsed);
+
+      var ratesByMinute = rates.GetMinuteTicks(1);
+      var zeros = new List<Rate>();
+      Rate prev=null;
+      foreach (var rate in ratesByMinute.Where(r => r.PriceRsi.HasValue && !double.IsNaN(r.PriceRsi.Value))) {
+        if (prev != null && Math.Sign(prev.PriceRsi.Value - 50) != Math.Sign(rate.PriceRsi.Value - 50))
+          zeros.Add(prev);
+        prev = rate;
+      }
+      zeros.ForEach(w => Debug.WriteLine(w));
+
+      timer = Stopwatch.StartNew();
+      rates.SkipWhile(t=>!t.PriceRsi.HasValue).SetCMA(t => t.PriceRsi.GetValueOrDefault(), 2);
+      Debug.WriteLine("CMA:" + timer.Elapsed);
+
+      
+      //var ticks = context.v_Tick.Where(t => t.StartDate >= dateStart && t.StartDate <= dateEnd)
+      //  .ToArray().Select((t, i) => 
+      //    new Tick(t.StartDate, t.Ask, t.Bid, i, true) { Trend = new BarBase.TrendInfo() { Volume = t.Count.Value } }).ToArray();
+
+      var stats = context.t_Stat;
+      rates.Where(t=>t.PriceRsi.HasValue && !double.IsNaN(t.PriceRsi.Value)).ToList().ForEach(t =>
+        stats.AddObject(new t_Stat() {
+          Time = t.StartDate, Name = statName, Price = t.PriceAvg
+          //, Value1 = t.PriceCMA[0]
+          //, Value2 = t.PriceCMA[2]
+          , Value3 = t.PriceRsi.Value
+        }));
+      context.SaveChanges();
+
+      
+      //timer = Stopwatch.StartNew();
+      //var waves = ticks.FindWaves(3);
+      //Debug.WriteLine("FindWaves(3):"+timer.Elapsed);
+      
+      //waves.ToList().ForEach(w => Debug.WriteLine(w));
     }
+
     public void Waves() {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
       dateStart = DateTime.Now.AddHours(-2);

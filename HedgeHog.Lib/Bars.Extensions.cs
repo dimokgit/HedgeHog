@@ -5,6 +5,65 @@ using System.Text;
 
 namespace HedgeHog.Bars {
   public static class Extensions {
+
+    enum WaveDirection { Up = 1, Down = -1, None = 0 };
+    public static Rate[] FindWaves(this IEnumerable<Rate> ticks) {
+      return ticks.FindWaves(0);
+    }
+    public static Rate[] FindWaves(this IEnumerable<Rate> ticks, int wavesCount) {
+      List<Rate> waves = new List<Rate>();
+      WaveDirection waveDirection = WaveDirection.None;
+      ticks = ticks.OrderBarsDescending().ToArray();
+      var logs = new Dictionary<int, double>();
+      foreach (var rate in ticks) {
+        var period = TimeSpan.FromMinutes(5);
+        var ticksToRegress = ticks.Where(period, rate).ToArray();
+        var coeffs = Lib.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
+        if (!double.IsNaN(coeffs[1])) {
+          var wd = (WaveDirection)Math.Sign(coeffs[1]);
+          if (waveDirection != WaveDirection.None) {
+            if (wd != waveDirection && wd != WaveDirection.None) {
+              var ticksForPeak = ticks.Where(ticksToRegress.Last(), TimeSpan.FromSeconds(period.TotalSeconds/2)).ToArray();
+              waves.Add(wd == WaveDirection.Up
+                ? ticksForPeak.OrderBy(t => t.PriceLow).First()
+                : ticksForPeak.OrderBy(t => t.PriceHigh).Last());
+              waves.Last().Fractal = wd == WaveDirection.Up ? FractalType.Buy : FractalType.Sell;
+              if (waves.Count == wavesCount) break;
+            }
+          }
+          waveDirection = wd;
+        }
+      }
+      return waves.ToArray();
+    }
+
+    public static void FillFlatness(this Rate[] bars,int BarsMin) {
+      bars = bars.OrderBarsDescending().ToArray();
+      foreach (var bar in bars)
+        if (!bar.Flatness.HasValue)
+          bar.Flatness = bars.Where(TimeSpan.FromMinutes(120), bar).ToArray().GetFlatness(BarsMin);
+    }
+    public static TimeSpan GetFlatness(this Rate[] ticks,int barsMin) {
+      var ticksByMinute = ticks.GetMinuteTicks(1);
+      var tickLast = ticksByMinute.First();
+      var flats = new List<Rate>(new[] { tickLast });
+      var barsCount = 1;
+      foreach (var tick in ticksByMinute.Skip(1)) {
+        if (tick.OverlapsWith(tickLast) != OverlapType.None) flats.Add(tick);
+        if (++barsCount >= barsMin && (double)flats.Count / barsCount < .7) break;
+        if (barsCount > 20) {
+          var i = 0;
+          i++;
+        }
+      }
+      return new []{TimeSpan.FromMinutes(3), (flats.First().StartDate - flats.Last().StartDate).Add(TimeSpan.FromMinutes(1))}.Max();
+
+      //var ol = ticksByMinute.Skip(1).Where(t => t.OverlapsWith(tickLast) != OverlapType.None)
+      //  .Concat(new[] { tickLast }).OrderBars().ToArray();
+      //return ol.Length == 0 ? TimeSpan.Zero : (ol.Last().StartDate - ol.First().StartDate);
+    }
+
+
     /// <summary>
     /// Fills bar.PriceSpeed with angle from linear regression.
     /// Bars must be sorted by DateStart Descending
@@ -99,10 +158,10 @@ namespace HedgeHog.Bars {
       return GetMinuteTicks(fxTicks.Where(t => t.StartDate >= timeRounded), period);
     }
     public static Rate[] GetMinuteTicks<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
-      var startDate = fxTicks.Min(t => t.StartDate);
-      return (from t in fxTicks
+      var startDate = fxTicks.Max(t => t.StartDate);
+      return (from t in fxTicks.OrderBarsDescending().ToArray()
               where period > 0
-              group t by (((int)Math.Floor((t.StartDate - startDate).TotalMinutes) / period)) * period into tg
+              group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
               orderby tg.Key
               select new Rate() {
                 AskHigh = tg.Max(t => t.AskHigh),
@@ -116,7 +175,8 @@ namespace HedgeHog.Bars {
                 BidOpen = tg.First().BidOpen,
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
-                StartDate = startDate.AddMinutes(tg.Key)
+                PriceRsi = tg.Average(t=>t.PriceRsi),
+                StartDate = startDate.AddMinutes(-tg.Key)
               }
                 ).ToArray();
     }
@@ -224,6 +284,74 @@ namespace HedgeHog.Bars {
       using (var f = System.IO.File.CreateText(fileName)) {
         f.Write(sb.ToString());
       }
+    }
+
+
+    public static TBar[] FillRsi<TBar>(this TBar[] rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      var period = Math.Floor((rates.Last().StartDate - rates.First().StartDate).TotalMinutes).ToInt();
+      return rates.FillRsi(period, getPrice);
+    }
+    public static TBar[] FillRsi<TBar>(this TBar[] rates, int period, Func<TBar, double> getPrice) where TBar : BarBase {
+      for (int i = period; i < rates.Length; i++) {
+        UpdateRsi(period, rates, i, getPrice);
+      }
+      return rates;
+    }
+    static void UpdateRsi<TBar>(int numberOfPeriods, TBar[] rates, int period, Func<TBar, double> getPrice) where TBar : BarBase {
+      if (period >= numberOfPeriods) {
+        var i = 0;
+        var sump = 0.0;
+        var sumn = 0.0;
+        var positive = 0.0;
+        var negative = 0.0;
+        var diff = 0.0;
+        if (period == numberOfPeriods) {
+          for (i = period - numberOfPeriods + 1; i <= period; i++) {
+            diff = getPrice(rates[i]) - getPrice(rates[i - 1]);
+            if (diff >= 0)
+              sump = sump + diff;
+            else
+              sumn = sumn - diff;
+          }
+          positive = sump / numberOfPeriods;
+          negative = sumn / numberOfPeriods;
+        } else {
+          diff = getPrice(rates[period]) - getPrice(rates[period - 1]);
+          if (diff > 0)
+            sump = diff;
+          else
+            sumn = -diff;
+          positive = (rates[period - 1].PriceRsiP * (numberOfPeriods - 1) + sump) / numberOfPeriods;
+          negative = (rates[period - 1].PriceRsiN * (numberOfPeriods - 1) + sumn) / numberOfPeriods;
+        }
+        rates[period].PriceRsiP = positive;
+        rates[period].PriceRsiN = negative;
+        if (negative == 0)
+          rates[period].PriceRsi = 0;
+        else
+          rates[period].PriceRsi = 100 - (100 / (1 + positive / negative));
+      }
+    }
+
+
+    public static void FillRsis<TBar>(this TBar[] bars) where TBar : BarBase {
+      bars.FillRsis(110*14,TimeSpan.FromMinutes(14));
+    }
+    public static void FillRsis<TBar>(this TBar[] bars, int RsiTicks, TimeSpan RsiPeriodMin) where TBar : BarBase {
+      double rsiPrev = 0;
+      foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue)) {
+        var ts = bars.TakeWhile(t => t != rate);
+        if (ts.Count() > RsiTicks) {
+          ts = ts.Skip(ts.Count() - RsiTicks).ToArray();
+          if ((ts.Last().StartDate - ts.First().StartDate).Duration() > RsiPeriodMin)
+            ts = bars.Where(RsiPeriodMin, rate).ToArray();
+          rate.PriceRsi = ts.GetMinuteTicks(1).OrderBars().ToArray().FillRsi(t => t.PriceAvg).Last().PriceRsi;
+          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value) || rate.PriceRsi.GetValueOrDefault() == 0)
+            rate.PriceRsi = rsiPrev;
+          rsiPrev = rate.PriceRsi.Value;
+        } else rate.PriceRsi = 50;
+      }
+
     }
 
     //public static void RunTotal<TBar>(this IEnumerable<TBar> bars, Func<TBar, double?> source) where TBar : BarBase {

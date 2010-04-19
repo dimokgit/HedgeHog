@@ -134,8 +134,37 @@ namespace HedgeHog.Bars {
     }
     #endregion
 
+    #region Trend
+    public class TrendInfo {
+      public double? PriceAngle { get; set; }
+      public TimeSpan Period { get; set; }
+      /// <summary>
+      /// Ticks per minute
+      /// </summary>
+      public int Volume { get; set; }
+      public double? VolumeAngle { get; set; }
+      public TrendInfo() { }
+      public TrendInfo(TimeSpan Period, double PriceAngle, int Volume, double VolumeAngle) {
+        this.Period = Period;
+        this.PriceAngle = PriceAngle;
+        this.Volume = Volume;
+        this.VolumeAngle = VolumeAngle;
+      }
+    }
+    TrendInfo _trend;
+
+    public TrendInfo Trend {
+      get {
+        if (_trend == null) Trend = new TrendInfo();
+        return _trend;
+      }
+      set { _trend = value; }
+    }
+    #endregion
+
     #region Overlap
-    public OverlapType HasOverlap(BarBase bar) {
+    public TimeSpan? Flatness;
+    public OverlapType OverlapsWith(BarBase bar) {
       if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) return OverlapType.Up;
       else if (this.PriceHigh.Between(bar.PriceLow, bar.PriceHigh)) return OverlapType.Down;
       else if (bar.PriceLow.Between(this.PriceLow, this.PriceHigh)) return OverlapType.Down;
@@ -208,7 +237,7 @@ namespace HedgeHog.Bars {
 
     #region Overrides
     public override string ToString() {
-      return string.Format("{0:dd HH:mm:ss}:{1}/{2}", StartDate, AskHigh, BidLow);
+      return string.Format("{0:dd HH:mm:ss.fff}-{1}/{2}", StartDate, PriceHigh, PriceLow);
     }
     public override bool Equals(object obj) {
       return obj is BarBase ? Equals(obj as BarBase) : false;
@@ -263,19 +292,10 @@ namespace HedgeHog.Bars {
     }
     #region IEquatable<Tick> Members
 
-    public override bool Equals(BarBase other) {
-      try {
-        return (object)other != null 
-          && StartDate == other.StartDate 
-          && ((Tick)other).AskHigh == AskHigh
-          && ((Tick)other).BidLow == BidLow;
-      } catch (Exception) {
-        throw;
-      }
+    public override bool Equals(BarBase other) { 
+      return (object)other != null && StartDate == other.StartDate && AskOpen == other.AskOpen && BidOpen == other.BidOpen; 
     }
-    public override int GetHashCode() {
-      return StartDate.GetHashCode() ^ AskHigh.GetHashCode() ^ BidLow.GetHashCode();
-    }
+    public override int GetHashCode() { return StartDate.GetHashCode() ^ AskOpen.GetHashCode() ^ BidOpen.GetHashCode(); }
 
     #endregion
   }

@@ -64,6 +64,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Remoter", "HedgeHo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicDataDisplay", "DynamicDataDisplay\DynamicDataDisplay.csproj", "{ECD37682-DF7E-409F-912D-0965634556B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SQLCLR", "SQLCLR\SQLCLR.csproj", "{602127E5-9143-4ADB-95A7-37E444ACA722}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = HedgeHog.vsmdi
@@ -145,6 +147,11 @@ Global
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECD37682-DF7E-409F-912D-0965634556B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{602127E5-9143-4ADB-95A7-37E444ACA722}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{602127E5-9143-4ADB-95A7-37E444ACA722}.Release|Any CPU.Build.0 = Release|Any CPU
+		{602127E5-9143-4ADB-95A7-37E444ACA722}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
