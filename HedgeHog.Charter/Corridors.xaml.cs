@@ -82,9 +82,8 @@ namespace HedgeHog {
     #region Ctor
     public Corridors()      : this("") {    }
     public Corridors(string name) {
-      this.Name = name;
       InitializeComponent();
-
+      this.Title += ": " + name;
       plotter.Children.RemoveAll<AxisNavigation>();
 
       innerPlotter.Viewport.Restrictions.Add(new InjectionDelegateRestriction(
@@ -136,7 +135,7 @@ namespace HedgeHog {
         dsAvg3.SetXMapping(ci => dateAxis.ConvertToDouble(ci.Time));
         dsAvg3.SetYMapping(ci => ci.Price);
       }
-      if (Volts.Count > 0) {
+      if (Volts!=null) {
         dsVolts = new EnumerableDataSource<ChartTick>(Volts);
         dsVolts.SetYMapping(v => v.Price);
         dsVolts.SetXMapping(ci => dateAxis.ConvertToDouble(ci.Time));
@@ -150,7 +149,7 @@ namespace HedgeHog {
         plotter.AddLineGraph(dsAvg2, Colors.IndianRed, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
       if (dsAvg3 != null)
         plotter.AddLineGraph(dsAvg3, Colors.DarkOliveGreen, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
-      if (Volts.Count > 0)
+      if (Volts!=null)
         innerPlotter.AddLineGraph(dsVolts, Colors.DarkOrange, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
       //else {
       //  new VerticalAxis() { Placement = AxisPlacement.Right }.AddToPlotter(plotter);

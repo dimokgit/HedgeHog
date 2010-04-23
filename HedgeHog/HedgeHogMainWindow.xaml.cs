@@ -90,7 +90,12 @@ namespace HedgeHog {
         var exc = value as Exception;
         var message = exc == null ? value+"": exc.Message;
         txtAccNum.Dispatcher.BeginInvoke(new Action(delegate() {
-          txtLog.Text += DateTime.Now.ToString("HH:mm:ss") + " : " + message + Environment.NewLine;
+
+          var lines = txtLog.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+          var time = DateTime.Now.ToString("[dd HH:mm:ss] ");
+          lines.Add(time + message + Environment.NewLine);
+          txtLog.Text = string.Join(Environment.NewLine, lines.Skip(lines.Count - 30).ToArray());
+
           txtLog.ScrollToEnd();
           var text = message + Environment.NewLine + (exc == null ? "" : exc.StackTrace + Environment.NewLine);
           while (exc != null && (exc = exc.InnerException) != null)

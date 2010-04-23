@@ -86,8 +86,16 @@ namespace HedgeHog {
     public double _txtFractalShortPercent;
     public int fractalMinutes { get { return _txtFractalShortPercent.ToInt(); } }
 
-    public double _txtTimeFramesFibRatioMaximum;
-    public double timeFramesFibRatioMaximum { get { return _txtTimeFramesFibRatioMaximum; } }
+    public string _txtRsiTicks;
+    public int rsiTicks {
+      get {
+        return !_txtRsiTicks.Contains('*')
+          ? int.Parse(_txtRsiTicks)
+          : int.Parse(_txtRsiTicks.Split('*')[0]) * int.Parse(_txtRsiTicks.Split('*')[1]);
+      }
+    }
+
+    public int rsiTicksDelay { get { return int.Parse(_txtRsiTicks.Split('*')[0]); } }
 
     public bool _chkCorridorByUpDownRatio;
     public bool corridorByUpDownRatio { get { return _chkCorridorByUpDownRatio; } }
@@ -115,10 +123,10 @@ namespace HedgeHog {
     }
 
     public int _txtPeakTradeMarginLow;
-    public double peakTradeMarginLow { get { return _txtPeakTradeMarginLow / 100.0; } }
+    public double peakTradeMarginLow { get { return _txtPeakTradeMarginLow; } }
 
     public int _txtPeakTradeMarginHigh;
-    public double peakTradeMarginHigh { get { return _txtPeakTradeMarginHigh/100.0; } }
+    public double peakTradeMarginHigh { get { return _txtPeakTradeMarginHigh; } }
 
     public int _txtMass1Mass0TradeRatio;
     public double mass1Mass0TradeRatio { get { return _txtMass1Mass0TradeRatio/100.0; } }

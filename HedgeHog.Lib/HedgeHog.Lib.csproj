@@ -62,11 +62,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ap.cs" />
     <Compile Include="Bars.cs" />
+    <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Regression.cs" />
+    <Compile Include="RSI.cs" />
     <Compile Include="Schedulers.cs" />
     <Compile Include="Volt.cs" />
   </ItemGroup>

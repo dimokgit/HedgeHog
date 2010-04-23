@@ -56,7 +56,10 @@ namespace HedgeHog.Bars {
     #region Price Indicators
     public double? PriceSpeed { get; set; }
     public double PriceWave { get; set; }
+
     public double? PriceRsi { get; set; }
+    public double? PriceRsi1 { get; set; }
+    
     public double PriceRsiP { get; set; }
     public double PriceRsiN { get; set; }
     public double? PriceRsiCR { get; set; }
@@ -223,6 +226,16 @@ namespace HedgeHog.Bars {
 
 
     #region Operators
+    public static bool operator <=(BarBase b1, BarBase b2) {
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate <= b2.StartDate;
+    }
+    public static bool operator >(BarBase b1, BarBase b2) { return b2 <= b1; }
+    public static bool operator >=(BarBase b1, BarBase b2) {
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate >= b2.StartDate;
+    }
+    public static bool operator <(BarBase b1, BarBase b2) { return b2 >= b1; }
+
+
     public static bool operator ==(BarBase b1, BarBase b2) { return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2); }
     public static bool operator !=(BarBase b1, BarBase b2) { return (object)b1 == null ? (object)b2 == null ? false : !b2.Equals(b1) : !b1.Equals(b2); }
     #endregion

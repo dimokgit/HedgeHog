@@ -25,8 +25,30 @@ using O2G = Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Bars;
+using HedgeHog.Rsi;
 
 namespace HedgeHog {
+  public class SimpleDelegateCommand : ICommand {
+    // Specify the keys and mouse actions that invoke the command. 
+    public Key GestureKey { get; set; }
+    public ModifierKeys GestureModifier { get; set; }
+    public MouseAction MouseGesture { get; set; }
+
+    Action<object> _executeDelegate;
+
+    public SimpleDelegateCommand(Action<object> executeDelegate) {
+      _executeDelegate = executeDelegate;
+    }
+
+    public void Execute(object parameter) {
+      _executeDelegate(parameter);
+    }
+
+    public bool CanExecute(object parameter) { return true; }
+    public event EventHandler CanExecuteChanged;
+  }
+
+
   public sealed partial class ServerWindow : Window, IServer, INotifyPropertyChanged, IDisposable {
     #region Log
     object Log {
@@ -35,8 +57,10 @@ namespace HedgeHog {
         var exc = value as Exception;
         var message = exc == null ? value + "" : exc.Message;
         txtLog.Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(delegate() {
+          var lines = txtLog.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
           var time = DateTime.Now.ToString("[dd HH:mm:ss] ");
-          txtLog.Text += time + message + Environment.NewLine;
+          lines.Add(time + message + Environment.NewLine);
+          txtLog.Text = string.Join(Environment.NewLine, lines.Skip(lines.Count - 30).ToArray());
           txtLog.ScrollToEnd();
           var text = time + message + Environment.NewLine + (exc == null ? "" : exc.StackTrace + Environment.NewLine);
           while (exc != null && (exc = exc.InnerException) != null)
@@ -49,8 +73,10 @@ namespace HedgeHog {
     object VLog { set { if (ui.verboseLogging)Log = value; } }
     #endregion
 
-
+    public SimpleDelegateCommand FillRsisCommand { get; set; }
     #region Settings
+
+
 
     public bool TestMode { get { return ui.timeFrameTimeStart != DateTime.FromOADate(0); } }
 
@@ -86,6 +112,7 @@ namespace HedgeHog {
     List<Volt> Voltages = new List<Volt>();
     List<Rate> RatesHigh = new List<Rate>();
     Corridors CorridorsWindow_EURJPY;
+    ThreadScheduler RsiTuneUpScheduler;
     ThreadScheduler VoltageScheduler;
     ThreadScheduler TicksScheduler;
     ThreadScheduler SaveToFileScheduler;
@@ -206,7 +233,14 @@ namespace HedgeHog {
       set { buySell = value; RaisePropertyChangedCore(); }
     }
 
-    public string TradeDirection { get { return Fractals.Length < 2 ? "" : isInBuy ? "↑" : "↓"; } }
+
+    bool? _tradeDirection;
+    public string TradeDirection { get {
+      if (_tradeDirection.HasValue) return _tradeDirection.Value ? "↑" : "↓";
+      return Fractals.Length < 2 ? "" : isInBuy ? "↑" : "↓";
+    }
+      set { _tradeDirection = bool.Parse(value); }
+    }
 
     public int TimeframeInMinutesAlt { get { return TimeframeAlt == DateTime.MinValue ? 0 : (ServerTime - TimeframeAlt).TotalMinutes.ToInt(); } }
     DateTime _timeframeAlt = DateTime.MinValue;
@@ -289,6 +323,12 @@ namespace HedgeHog {
     }
     public double SpreadAverage15MinInPips { get { return fw.InPips(SpreadAverage15Min, 1); } }
 
+    int _ticksPerMinuteMax;
+    public int TicksPerMinuteMax {
+      get { return _ticksPerMinuteMax; }
+      set { _ticksPerMinuteMax = value; RaisePropertyChangedCore(); }
+    }
+
     int _ticksPerMinuteCurr;
     public int TicksPerMinuteCurr {
       get { return _ticksPerMinuteCurr; }
@@ -319,11 +359,11 @@ namespace HedgeHog {
       var spreadLong = fw.GetMinuteBars(RatesHigh.ToArray(), period).Average(spreadLambda);
       return Math.Max(spreadShort, spreadLong);
     }
-    double a1;
+    double? _a1;
 
     public double A1 {
-      get { return a1; }
-      set { a1 = value; RaisePropertyChanged(() => Angle1Rounded, () => Angle1Color); }
+      get { return _a1.GetValueOrDefault(); }
+      set { _a1 = double.IsNaN(value) ? 0 : value; RaisePropertyChanged(() => Angle1Rounded, () => Angle1Color); }
     }
     public double Angle1 {
       get { return Math.Atan(A1) * (180 / Math.PI); }
@@ -430,25 +470,36 @@ namespace HedgeHog {
           }
           ));
 
-    int _rsiBuy;
-    public int RsiBuy {
-      get { return _rsiBuy; }
-      set { _rsiBuy = value; RaisePropertyChangedCore(); }
+    Rate _rsiLocalMin;
+    public Rate RsiLocalMin {
+      get { return _rsiLocalMin; }
+      set { _rsiLocalMin = value; RaisePropertyChangedCore(); }
     }
-    int _rsiSell;
-    public int RsiSell {
-      get { return _rsiSell; }
-      set { _rsiSell = value; RaisePropertyChangedCore(); }
+
+    RsiStatistics _rsiStats;
+
+    public RsiStatistics RsiStats {
+      get { return _rsiStats; }
+      set { _rsiStats = value; RaisePropertyChangedCore(); }
     }
-    double _rsiStdDev;
-    public double RsiStdDev {
-      get { return _rsiStdDev; }
-      set { _rsiStdDev = value; RaisePropertyChangedCore(); }
+
+    bool isRsiSell;
+    public bool IsRsiSell {
+      get { return isRsiSell; }
+      set { isRsiSell = value; RaisePropertyChangedCore(); }
     }
-    double _rsiAverage;
-    public double RsiAverage {
-      get { return _rsiAverage; }
-      set { _rsiAverage = value; RaisePropertyChangedCore(); }
+
+    bool isRsiBuy;
+    public bool IsRsiBuy {
+      get { return isRsiBuy; }
+      set { isRsiBuy = value; RaisePropertyChangedCore(); }
+    }
+
+
+    Rate _rsiLocalMax;
+    public Rate RsiLocalMax {
+      get { return _rsiLocalMax; }
+      set { _rsiLocalMax = value; RaisePropertyChangedCore(); }
     }
     double _rsiOffset;
     public double RsiOffset {
@@ -473,6 +524,11 @@ namespace HedgeHog {
 
     #region Ctor
     public ServerWindow() {
+      FillRsisCommand = new SimpleDelegateCommand(o =>{
+        _ticks.ToList().ForEach(t => t.PriceRsi = null);
+        FillRsis();
+      });
+      FillRsisCommand.GestureKey = Key.Enter;
       fw = new Order2GoAddIn.FXCoreWrapper(coreFX);
       InitializeComponent();
       System.IO.File.Delete(logFileName);
@@ -483,7 +539,7 @@ namespace HedgeHog {
       fw.OrderAdded += new Order2GoAddIn.FXCoreWrapper.OrderAddedEventHandler(fxCoreWrapper_EURJPY_OrderAdded);
       fw.RowRemoving += new Order2GoAddIn.FXCoreWrapper.RowRemovingdEventHandler(fxCoreWrapper_EURJPY_RowRemoving);
       fw.PriceChanged += new Order2GoAddIn.FXCoreWrapper.PriceChangedEventHandler(fxCoreWrapper_EURJPY_PriceChanged);
-      CorridorsWindow_EURJPY = new Corridors(this.Name);
+      CorridorsWindow_EURJPY = new Corridors(fw.Pair);
       CorridorsScheduler = new Scheduler(CorridorsWindow_EURJPY.Dispatcher, (s, e) => Log = e.Exception);
       VoltageScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(1), (s, e) => Log = e.Exception);
       TicksScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
@@ -527,9 +583,7 @@ namespace HedgeHog {
           fractalChanged = false;
           Ticks = fw.GetTicks(ui.ticksBack).OfType<Rate>().OrderBars().ToList();
           Ticks.AddUp(fw.GetTicks(300));
-          Log = "Filing Rsi";
-          Ticks.ToArray().FillRsis();
-          Log = "Rsi Done";
+          FillRsis();
         }
         var ticks = _ticks.TakeWhile(b => b.IsHistory).ToArray();
         if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
@@ -538,17 +592,37 @@ namespace HedgeHog {
           Ticks.FillMass();
         }
         //TicksPerMinute(Ticks);
-        Ticks.ToArray().FillRsis();
+        FillRsis();
         RaisePropertyChanged(() => TimeframeByTicksMin);
-        ShowTicks();
         _ticks.ToArray().FillPower(TimeSpan.FromMinutes(1));
         RunMinutesBack(null);
+        if (RsiTuneUpScheduler == null)
+          RsiTuneUpScheduler = new ThreadScheduler(TimeSpan.Zero, TimeSpan.FromMinutes(5), () => TuneRsiTicks(), (s, e) => Log = e.Exception);
+
       } catch (Exception exc) {
         Log = exc;
       }
       //Select((b, i) => new Tick() {
       //  Ask = b.Ask, Bid = b.Bid, StartDate = b.StartDate, Row = i + 1, IsHistory = b.IsHistory
       //}).ToList();
+    }
+
+
+    int _rsiTicks = 0;
+
+    public int rsiTicks {
+      get { return _rsiTicks; }
+      set { 
+        _rsiTicks = value; 
+        FillRsisCommand.Execute(null);
+        Dispatcher.Invoke(DispatcherPriority.DataBind, new Action(() => {
+          txtRsiTicks.Text = rsiTicks + "";
+        }));
+      }
+    }
+    private void FillRsis() {
+      if (rsiTicks == 0) rsiTicks = ui.rsiTicks;
+      _ticks.ToArray().Rsi(rsiTicks);
     }
     public void TicksPerMinute(List<Rate> ticks) {
       var dateFrom = DateTime.Parse("3/31/2010 12:40:12");
@@ -810,6 +884,7 @@ namespace HedgeHog {
           var ret = new List<string>();
           var sw = Stopwatch.StartNew();
           #region TickByMinute
+          var ticksInTimeFrame = TicksInTimeFrame;
           var ticksByMinute = Ticks.GetMinuteTicks(1).OrderBarsDescending().ToArray();
           var dateLast = ServerTime.AddSeconds(-30);
           var ticksByMinute1 = Ticks.Where(t => t.StartDate < dateLast).GetMinuteTicks(1).OrderBarsDescending().ToArray();
@@ -844,12 +919,34 @@ namespace HedgeHog {
               var ticksToRegress = _ticks.Where(t => t.StartDate >= _serverTimeCached - tp).ToArray();
               var regress = Lib.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
               A = regress[1];
-              regress = Lib.Regress(ticksToRegress.Where(t => t.StartDate >= _serverTimeCached.AddMinutes(-1)).Select(t => t.PriceAvg).ToArray(), 1);
-              A1 = regress[1];
             }
             if (OverlapLast.TotalSeconds == 0) return;
           }
+          {
+            var ticksPerLastMinute = _ticks.Where(TimeSpan.FromMinutes(1), _ticks.Last()).Count();
+            TicksPerMinuteMax = new[] { TicksPerMinuteCurr, TicksPerMinutePrev, TicksPerMinuteAverageLong, ticksPerLastMinute }.Max();
+            var regress = Lib.Regress(_ticks.Skip(_ticks.Count - TicksPerMinuteMax).Select(t => t.PriceAvg).ToArray(), 1);
+            A1 = _a1.Cma(1, regress[1]).Value;
+          }
           #endregion
+
+
+          #region Rsi
+          var rsiSlack = ticksInTimeFrame.Last().StartDate.Subtract(OverlapAverageShort);
+          var rsiTicks = ticksInTimeFrame
+            .Where(t => t.StartDate >= rsiSlack)
+            //.Skip(ticksInTimeFrame.Length - (ui.rsiTicksDelay))
+            .Where(hasRsi).OrderBy(t => t.PriceRsi).ToArray();
+          if (rsiTicks.Length == 0) {
+            CanTrade = false;
+            return;
+          }
+          RsiLocalMin = rsiTicks.First();
+          RsiLocalMax = rsiTicks.Last();
+          TradeDirection = (new[] { RsiLocalMax.PriceRsi + RsiLocalMin.PriceRsi }.Average() < 50) + "";
+          RsiStats = ticksInTimeFrame.RsiStats();
+          #endregion
+
 
           _CorridorHeightMinutesBySchedule = Lib.CMA(_CorridorHeightMinutesBySchedule, cmaPeriod, (TimeSpan.FromSeconds((OverlapAverage.TotalSeconds * 2))).TotalMinutes);
 
@@ -1081,16 +1178,55 @@ namespace HedgeHog {
       GetPositionByFractals();
       if (Fractals.Length == 0) return;
       sw.Reset(); sw.Start();
-      var fractalEndDate = Fractals.OrderBarsDescending().Take(ui.wavesCountSmall).Min(f => f.StartDate).AddMinutes(-CorridorHeightMinutesBySchedule);
+      var fractalEndDate = Fractals.Take(4).Min(f => f.StartDate).AddMinutes(-CorridorHeightMinutesBySchedule);
       MinutesBackSampleCount = (ServerTime - fractalEndDate).TotalMinutes.ToInt();
       Timeframe = TimeframeAlt = fractalEndDate;
-      RegressionCoefficients = SetTicksPrice(
-        _ticks.Where(t => t.StartDate >= fractalEndDate).GroupTicksToRates(), 1, readFrom, writeTo);
+      var ticksLocal = _ticks.Where(t => t.StartDate >= fractalEndDate);
+      RegressionCoefficients = SetTicksPrice(ticksLocal, 1, readFrom, writeTo);
       ShowTicks();
       sw.Reset(); sw.Start();
       decisionTime = DateTime.Now - dTotal;
       MinutesBackSpeed = decisionTime.TotalSeconds;
     }
+
+    private void TuneRsiTicks() {
+      int from = 100,rt = int.MaxValue;
+      for (int interval = 100; interval > 0 && rt > 0; interval /= 10) {
+        rt = TuneRsiTicks(from, interval);
+        from = rt - interval;
+      }
+      if (rt == 0) return;
+      rsiTicks = rt;
+    }
+    private int TuneRsiTicks(int from, int interval) {
+      System.Threading.Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+      var rsiMaxTicks = 4000;
+      var sw = System.Diagnostics.Stopwatch.StartNew();
+      double? corr1Max = -1, corr2Max = -1;
+      try {
+        var countByTime = _ticks.Where(t => t.StartDate >= Timeframe).Count();
+        for (; from < rsiMaxTicks; from += interval) {
+          var skip = _ticks.Count - countByTime - from;
+          var ticksRsi = _ticks.Skip(skip).ToArray();
+          ticksRsi.ToList().ForEach(t => t.PriceRsi1 = null);
+          ticksRsi.Rsi1(from);
+          var x = ticksRsi.Where(hasRsi1).Select(r => r.PriceClose).ToArray();
+          var y = ticksRsi.Where(hasRsi1).Select(r => r.PriceRsi1.Value).ToArray();
+          var corr1 = alglib.correlation.pearsoncorrelation(ref x, ref y, x.Length);
+          var corr2 = alglib.correlation.spearmanrankcorrelation(x, y, x.Length);
+          if (corr1Max.HasValue && corr1Max > .70 && corr1Max > corr1 && corr2Max > corr2) {
+            return from;
+          }
+          corr1Max = corr1;
+          corr2Max = corr2;
+        }
+        Log = "Rsi tumer aborted at " + rsiMaxTicks + " interval.";
+        return 0;
+      } finally {
+        Log = "Corr:" + corr1Max.Value.ToString("n2") + " in " + from + " ticks, took " + sw.ElapsedMilliseconds + " ms.";
+      }
+    }
+
 
     void GetMinutesBack_() {
       RaisePropertyChanged(() => CorridorHeightMinutesBySchedule);
@@ -1292,6 +1428,8 @@ namespace HedgeHog {
     double GetPriceHeight4(Rate rate) {
       return rate.PriceHigh > rate.PriceAvg4 ? rate.PriceHigh - rate.PriceAvg4 : rate.PriceLow - rate.PriceAvg4;
     }
+    Func<Rate, bool> hasRsi = rate => rate.PriceRsi.HasValue;
+    Func<Rate, bool> hasRsi1 = rate => rate.PriceRsi1.HasValue;
     private Rate[] TicksInTimeFrame {
       get {
         {
@@ -1300,17 +1438,17 @@ namespace HedgeHog {
             if (Ticks == null || Ticks.Count == 0) return _ticksInTimeFrame;
             var ticks = _ticks.Where(t => t.StartDate >= Timeframe).ToList();
             if (ticks.Count == 0) return _ticksInTimeFrame;
-            //if (ticks.Count < ui.ticksBack) ticks = Ticks.Reverse<Rate>().Take(ui.ticksBack).Reverse().ToList();
-            SetTicksPrice(ticks, 1, r => r.PriceAvg, (tick, price) => tick.PriceAvg1 = price);
-            //SetTicksPrice(ticks, RegressionCoefficients, (tick, price) => tick.PriceAvg1 = price);
-
-            VolatilityUp = GetVolatility(ticks, t => t.BidHigh - t.PriceAvg1, ui.volatilityWieght1);
-            VolatilityDown = GetVolatility(ticks, t => t.PriceAvg1 - t.AskLow, ui.volatilityWieght1);
-            VolatilityUpPeak = GetVolatility(ticks, t => t.BidHigh - t.PriceAvg1, 0);
-            VolatilityDownPeak = GetVolatility(ticks, t => t.PriceAvg1 - t.AskLow, 0);
-
             var tickLast = ticks.Last();
-            PriceHeight = GetPriceHeight1(tickLast);
+
+            if (false) {
+              VolatilityUp = GetVolatility(ticks, t => t.BidHigh - t.PriceAvg1, ui.volatilityWieght1);
+              VolatilityDown = GetVolatility(ticks, t => t.PriceAvg1 - t.AskLow, ui.volatilityWieght1);
+              VolatilityUpPeak = GetVolatility(ticks, t => t.BidHigh - t.PriceAvg1, 0);
+              VolatilityDownPeak = GetVolatility(ticks, t => t.PriceAvg1 - t.AskLow, 0);
+              RaisePropertyChanged(() => WavesRatio);
+              PriceHeight = GetPriceHeight1(tickLast);
+            }
+
             if (drawWaves) {
               SetTicksPrice(ticks, ui.wavePolynomeOrder, r => r.PriceAvg, (tick, price) => tick.PriceAvg2 = price);
               waves = Signaler.GetWaves(ticks.Select((t, ti) => new Signaler.DataPoint(t.PriceAvg2, t.StartDate, 0, ti)).ToArray());
@@ -1327,7 +1465,6 @@ namespace HedgeHog {
             }
             #endregion
             _ticksInTimeFrame = ticks.ToArray();
-            RaisePropertyChanged(() => WavesRatio);
             VLog = timeSpan();
             //var voltsDateStart = ServerTime.AddMinutes(-15);
             //Voltages = Signaler.GetVoltageByTick(_ticksInTimeFrame.Where(t => t.StartDate > voltsDateStart), 10);
@@ -1418,6 +1555,7 @@ namespace HedgeHog {
               lastBar = new Rate(false);
             lastBar.AddTick(priceTime.Round(), price.Ask, price.Bid);
           }
+          FillRsis();
         }
         #endregion
       } catch (Exception exc) { Log = exc; }
@@ -1437,16 +1575,26 @@ namespace HedgeHog {
           Decisioner(price, bs.Key, bs.Value);
       };
     }
+    //Dimok: Close all Sum(PL)>profitMin positions
+    //Dimok: TicksForRsi,RsiPeriodMin parameters for FillRsis()
+    //Dimok: TradeAdd???
+    //Dimok: Fractals based on Rsi
     void ShowTicks() {
       if (!CorridorsScheduler.IsRunning)
         CorridorsScheduler.Command = () => {
-          if (TicksInTimeFrame.Length < 10) return;
+          var ticksInTimeFrame = TicksInTimeFrame;
+          var rsi = ticksInTimeFrame.Where(hasRsi).GetMinuteTicks(1).Select(t => new Volt() { Volts = t.PriceRsi.GetValueOrDefault(), StartDate = t.StartDate }).ToList();
+          if( rsi.Count == 0 )
+            rsi = ticksInTimeFrame.Select(t => new Volt() { Volts = t.PriceRsi.GetValueOrDefault(50), StartDate = t.StartDate }).ToList();
+          if (ticksInTimeFrame.Length < 10) return;
           CorridorsWindow_EURJPY.AddTicks(
             null,
-            TicksInTimeFrame.ToList(),
-            Voltages,
-            PeakVolt.AverageAsk,
-            ValleyVolt.AverageBid, 0, 0, 0, 0,
+            ticksInTimeFrame.ToList(),
+            rsi,
+            RsiStats.Sell,
+            RsiStats.Buy,
+            ticksInTimeFrame.Average(r => r.PriceRsi).Value,
+            0, 0, 0,
             Fractals.Length > 0 ? Fractals[0].StartDate : DateTime.MinValue, Fractals.Length > 1 ? Fractals[1].StartDate : DateTime.MinValue,
             //PeakVolt.StartDate, ValleyVolt.StartDate, 
             new[] { 0.0 });
@@ -1639,37 +1787,7 @@ namespace HedgeHog {
         bool goBuy = false, goSell = false;
         #region Action - decideByVoltage_11
         Action decideByVoltage_11 = () => {
-
-          #region RSI
-          if (false) {
-            var ratesForRsi = Ticks.Where(t => t.StartDate >= ServerTime.AddMinutes(-16)).GetMinuteTicks(1).OrderBars().ToArray();
-            ratesForRsi.FillRsi(14, r => r.PriceClose);
-            if (!ratesForRsi.Any(r => r.PriceRsi.HasValue)) return;
-            //ratesForRsi.Where(r => r.PriceRsi.HasValue).ToArray().CR(r => (double)r.PriceRsi, (Rate r, double d) => r.PriceRsiCR = d);
-            //RsiStdDev = ratesForRsi.StdDev(r => r.PriceRsi - r.PriceRsiCR);// (getRsi);
-            RsiAverage = ti.RsiRegressionAverage = ratesForRsi.Last(r => r.PriceRsi.HasValue).PriceRsi.Value;// .Average(getRsi).Value;
-            //RsiMaximum = ticksInTimeFrame.Max(getRsi).Value;
-            //RsiMinimum = ticksInTimeFrame.Min(getRsi).Value;
-            RsiOffset = RsiAverage - 50;
-
-            //ti.RsiRegressionOffsetBuy = (rsiBuy.Last().Point1 - 50).ToInt();
-            //ti.RsiRegressionOffsetSell = (rsiSell.Last().Point1 - 50).ToInt();
-            RsiBuy = (RsiAverage - RsiStdDev).ToInt();
-            ti.RsiRegressionOffsetBuy = tr.tradeByRsi ? RsiBuy : 0;
-            RsiSell = (RsiAverage + RsiStdDev).ToInt();
-            ti.RsiRegressionOffsetSell = tr.tradeByRsi ? RsiSell : 0;
-            var ticksRsi = Ticks.Where(t => t.StartDate > ServerTime.AddMinutes(-5));
-            ti.RsiLow = ticksRsi.Where(r => getRsi(r) > 0).Min(getRsi).Value.ToInt();
-            ti.RsiHigh = ticksRsi.Max(getRsi).Value.ToInt();
-            //var rsiCanBuy = ti.RsiLow <= (tr.rsiTresholdBuy + ti.RsiRegressionOffsetBuy);
-            //var rsiCanSell = ti.RsiHigh >= (tr.rsiTresholdSell + ti.RsiRegressionOffsetSell);
-            var rsiCanBuy = !tr.tradeByRsi || ti.RsiLow.Between(0.01, ti.RsiRegressionOffsetBuy * 1.15);// && lastFractalBuy != null && lastFractalBuy.StartDate > ServerTime.AddMinutes(-5);
-            var rsiCanSell = !tr.tradeByRsi || ti.RsiHigh >= ti.RsiRegressionOffsetSell * .85;// && lastFractalSell != null && lastFractalSell.StartDate > ServerTime.AddMinutes(-5); ;
-          }
-          #endregion
-
-          //Func<double, bool> closeToExtreamLambda = pe => Math.Abs(pe - readFrom(Ticks.Last())) < price.Spread;
-          //fractalLast = ratesForRsi.HasFractal(true).Last();
+          CanTrade = true;
           #region Trade By Fractal
           if (ui.tradeByFractal) {
             var fractalTrade = new[] { FractalSell, FractalBuy }.OrderBarsDescending().First();
@@ -1701,7 +1819,6 @@ namespace HedgeHog {
 
           }
           #endregion
-          RsiAverage = Ticks.Last().PriceRsi.GetValueOrDefault();
 
           IsPriceInPosition = ui.tradeByFractal
             ? PricePosition.Between(ui.peakTradeMarginLow, ui.peakTradeMarginHigh)
@@ -1711,9 +1828,11 @@ namespace HedgeHog {
           if (ui.tradeByFractal && IsPowerDown && IsPriceInPosition && isPosBSOk) {
             goBuy = !isInSell;
             goSell = isInSell;
-          } else if (IsPriceInPosition) {
-            goBuy = A >= 0 && A1 >= 0 && RsiAverage <= 20;
-            goSell = A <= 0 && A1 <= 0 && RsiAverage >= 80;
+          } else /*if (IsPriceInPosition) */ {
+            IsRsiSell = RsiLocalMax.PriceRsi >= RsiStats.Sell;
+            IsRsiBuy = RsiLocalMin.PriceRsi <= RsiStats.Buy;
+            goBuy = A >= 0 && A1 >= 0 && IsRsiBuy;
+            goSell = A <= 0 && A1 <= 0 && isRsiSell;
           }
 
           BuySell = goBuy ? true : goSell ? false : (bool?)null;
@@ -1788,13 +1907,14 @@ namespace HedgeHog {
       #region closeAllOnTrade
       if (tr.closeAllOnTrade) 
       {
-        if (ti.LotsToTradeSell <= 1 && tr.tradesSell.Length > 0) {
-          var hasProfit = true || tr.closeOnNet ? tr.SellNetPLPip > 0 : tr.tradesSell.Count(t => t.PL > 0) > 0;
+        var spreadInPips = -fw.InPips(priceCurrent.Spread);
+        if ((true || ti.LotsToTradeSell <= 1) && tr.tradesSell.Length > 0) {
+          var hasProfit = true || tr.closeOnNet ? tr.SellNetPLPip > spreadInPips : tr.tradesSell.Count(t => t.PL > spreadInPips) > 0;
           if (!hasProfit)
             ti.LotsToTradeBuy = tr.tradesSell.Max(t => t.Lots) * 2;
         }
-        if (ti.LotsToTradeBuy <= 1 && tr.tradesBuy.Length > 0) {
-          var hasProfit = true || tr.closeOnNet ? tr.BuyNetPLPip > 0 : tr.tradesBuy.Count(t => t.PL > 0) > 0;
+        if ((true || ti.LotsToTradeBuy <= 1) && tr.tradesBuy.Length > 0) {
+          var hasProfit = true || tr.closeOnNet ? tr.BuyNetPLPip > spreadInPips : tr.tradesBuy.Count(t => t.PL > priceCurrent.Spread) > 0;
           if (!hasProfit)
             ti.LotsToTradeSell = tr.tradesBuy.Max(t => t.Lots) * 2;
         }
@@ -1866,6 +1986,12 @@ namespace HedgeHog {
       }
       #endregion
 
+      #region Close on time
+      Func<Trade, bool> closeByTime = t => t.Time < fw.ServerTimeCached.AddMinutes(-15) && t.PL > 0;
+      if (A1 <= 0) closeBuyIDs.AddRange(tr.tradesBuy.Where(closeByTime));
+      if (A1 >= 0) closeSellIDs.AddRange(tr.tradesSell.Where(closeByTime));
+      #endregion
+
       #region Colose on Net
       ///Dimok: Close two positions if sum PL > 0
       if (tr.closeOnNet) {
@@ -1874,21 +2000,11 @@ namespace HedgeHog {
           closeSellIDs.AddRange(tr.tradesSell);
         } else {
           Func<Trade[], double, double> plNetMin = (trades, leg) => trades.Length == 0 ? 0 : leg / (trades.Sum(t => t.Lots) / trades.Min(t => t.Lots));
-          if (tr.tradesBuy.Length > 1 && A <= 0) {
-            var plNetMinBuy = plNetMin(tr.tradesBuy, legUpAverageInPips);
-            if (tr.BuyNetPLPip >= plNetMinBuy) closeBuyIDs.AddRange(tr.tradesBuy);
-            if (PositionHelper.BuyPL(tr.BuyAvgOpen) >= plNetMinBuy && tr.BuyNetPLPip>0) closeBuyIDs.AddRange(tr.tradesBuy);
-            if (closeBuyIDs.Sum(t=>t.GrossPL) <= 0) {
-              var i = 0;
-            }
+          if (tr.tradesBuy.Length > 1 && A1 <= 0) {
+            closeBuyIDs.AddRange(tr.tradesBuy.NetProfitTrades(tr.profitMin));
           }
-          if (tr.tradesSell.Length > 1 && A >= 0) {
-            var plNetMinSell = plNetMin(tr.tradesSell, legDownAverageInPips);
-            if (tr.SellNetPLPip >= plNetMinSell) closeSellIDs.AddRange(tr.tradesSell);
-            if (PositionHelper.SellPL(tr.SellAvgOpen) >= plNetMinSell && tr.SellNetPLPip > 0) closeSellIDs.AddRange(tr.tradesSell);
-            if (closeSellIDs.Sum(t => t.GrossPL) <= 0) {
-              var i = 0;
-            }
+          if (tr.tradesSell.Length > 1 && A1 >= 0) {
+            closeSellIDs.AddRange(tr.tradesSell.NetProfitTrades(tr.profitMin));
           }
         }
       }
@@ -1922,10 +2038,13 @@ namespace HedgeHog {
       #endregion
 
       #region RSI
-      if (tr.rsiProfit > 0) {
-        if (ti.RsiHigh >= tr.rsiTresholdSell)
+      if (tr.rsiProfit != 0) {
+        closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= tr.profitMin && RsiLocalMax.PriceRsi >= RsiStats.Sell + tr.rsiProfit));
+        closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= tr.profitMin && RsiLocalMin.PriceRsi <= RsiStats.Buy - tr.rsiProfit));
+
+        if (false && ti.RsiHigh >= tr.rsiTresholdSell)
           closeBuyIDs.AddRange(tr.tradesBuy.Where(t => t.PL >= tr.rsiProfit));
-        if (ti.RsiLow <= tr.rsiTresholdBuy)
+        if (false && ti.RsiLow <= tr.rsiTresholdBuy)
           closeSellIDs.AddRange(tr.tradesSell.Where(t => t.PL >= tr.rsiProfit));
       }
       #endregion
@@ -1970,6 +2089,7 @@ namespace HedgeHog {
 
       #endregion
     }
+
     #endregion
 
     public class CloseByPositionHelper {
@@ -2051,19 +2171,26 @@ namespace HedgeHog {
 
     #region Login
     private void Login(object sender, RoutedEventArgs e) {
-      Log = "Login is in progress ...";
-      Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
-        coreFX.LogOn(ui.Account, txtPassword.Text, ui.isDemo);
-        if (VolatilityScheduler == null) {
-          VolatilityScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(0), TimeSpan.FromMinutes(1), () => { GetVolatility(); }, (s, ee) => Log = ee.Exception);
-          VolatilityScheduler.Finished += (s1, e1) => {
-            if (getTicksCommand != null) {
-              TicksScheduler.Command = getTicksCommand;
-              getTicksCommand = null;
-            }
-          };
+      if (!coreFX.IsLoggedIn) {
+        Log = "Login is in progress ...";
+        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+          coreFX.LogOn(ui.Account, txtPassword.Text, ui.isDemo);
+          if (VolatilityScheduler == null) {
+            VolatilityScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(0), TimeSpan.FromMinutes(1), () => { GetVolatility(); }, (s, ee) => Log = ee.Exception);
+            VolatilityScheduler.Finished += (s1, e1) => {
+              if (getTicksCommand != null) {
+                TicksScheduler.Command = getTicksCommand;
+                getTicksCommand = null;
+              }
+            };
 
-        }
+          }
+        }));
+      }
+      Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+        CorridorsWindow_EURJPY.WindowState = System.Windows.WindowState.Normal;
+        CorridorsWindow_EURJPY.Activate();
+
       }));
     }
     #endregion
