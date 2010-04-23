@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="-3" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="224" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="325" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="499" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="294" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="310" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="505" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="MICR468485001" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="8442" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="20" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="410" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="253" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Width" value="410" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkVerboseLogging]IsChecked" value="False" />
@@ -55,13 +55,18 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMassTradeRatio]Text" value="0.85" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtMass1Mass0TradeRatio]Text" value="99" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMargin]Text" value=".25" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkNormalizeFractals]IsChecked" value="False" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkNormalizeFractals]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkMassOrHeight]IsChecked" value="" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]Text" value="M|H" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[.cmbPosMode]SelectedIndex" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="10" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginLow]Text" value="20" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPeakTradeMarginHigh]Text" value="80" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkTradeByFractal]IsChecked" value="False" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="-1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="432" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="200" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="500" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="1311" />
 </dictionary>

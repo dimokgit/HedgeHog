@@ -464,6 +464,7 @@ namespace HedgeHog {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
       try {
+        if (this.Visibility == System.Windows.Visibility.Hidden) return;
         if (fw == null || fw.Desk == null) return;
         #region Local Globals
         int periodMin = bsPeriodMin;
@@ -581,7 +582,7 @@ namespace HedgeHog {
               return;
               serverPort = sp + "";
             }
-          if (ti == null) throw new Exception(tcpPath + " not found.");
+          if (ti == null) throw new Exception("Server returned null response.");
 
           //if (!ti.IsReady) PriceScheduler.Run();
 
@@ -705,10 +706,8 @@ namespace HedgeHog {
         var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
         var canBuyByFractal = tradesBuy.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
         var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
-        if (false) {
-          if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
-          if (!canSellByFractal && this.GoSell) this.GoSell = false;
-        }
+        if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
+        if (!canSellByFractal && this.GoSell) this.GoSell = false;
         Dispatcher.BeginInvoke(new Action(() => {
           var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
           var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;
@@ -1010,7 +1009,7 @@ namespace HedgeHog {
 
     // Using a DependencyProperty as the backing store for TimeSpanLast.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty TimeSpanLastProperty =
-        DependencyProperty.Register("TimeSpanLast", typeof(double), typeof(ViewModel), new UIPropertyMetadata(0));
+        DependencyProperty.Register("TimeSpanLast", typeof(double), typeof(ViewModel));
 
 
 

@@ -11,6 +11,14 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 namespace HedgeHog {
   public static class Signaler {
 
+    public static Trade[] NetProfitTrades(this Trade[] trades, double profit) {
+      var tl = trades.OrderBy(t => t.PL).ToList();
+      while (tl.Count > 0 && tl.Sum(p => p.PL) < profit)
+        tl.RemoveAt(0);
+      return tl.ToArray();
+    }
+
+
     #region FindMaximas
     class PairOfVolts {
       public VoltForGrid Peak { get; set; }

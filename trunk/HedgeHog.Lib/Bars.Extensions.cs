@@ -4,7 +4,93 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog.Bars {
+  public class RsiStatistics {
+    public double Buy { get { return BuyAverage - BuyStd; } }
+    public double Sell { get { return SellAverage + SellStd; } }
+    public double Buy1 { get { return BuyMin + BuyStd*2; } }
+    public double Sell1 { get { return SellMax - SellStd*2; } }
+    public double BuyAverage { get; set; }
+    public double SellAverage { get; set; }
+    public double BuyStd { get; set; }
+    public double SellStd { get; set; }
+    public double BuyMin { get; set; }
+    public double SellMax { get; set; }
+
+    public RsiStatistics(double? BuyAverage,double? BuyStd,double? BuyMin,double? SellAverage,double? SellStd,double? SellMax ) {
+      this.BuyAverage = BuyAverage.GetValueOrDefault();
+      this.BuyStd = BuyStd.GetValueOrDefault();
+      this.BuyMin = BuyMin.GetValueOrDefault();
+      this.SellAverage = SellAverage.GetValueOrDefault();
+      this.SellStd = SellStd.GetValueOrDefault();
+      this.SellMax = SellMax.GetValueOrDefault();
+    }
+    public override string ToString() {
+      return string.Format("{0:n1}={1:n1}-{2:n1},{3:n1}={4:n1}+{5:n1}", Buy, BuyAverage, BuyStd, Sell, SellAverage, SellStd);
+    }
+  }
   public static class Extensions {
+
+    public static RsiStatistics RsiStats(this List<Rate> ratesByMinute) { return ratesByMinute.RsiStatsCore(); }
+    public static RsiStatistics RsiStats(this Rate[] ratesByMinute) { return ratesByMinute.RsiStatsCore(); }
+    static RsiStatistics RsiStatsCore<TBar>(this IEnumerable<TBar> ratesByMinute) where TBar : BarBase {
+
+      //var rsiHigh = ratesByMinute.Where(r => r.PriceRsi > 50).ToArray();
+      //var rsiLow = ratesByMinute.Where(r => r.PriceRsi < 50).ToArray();
+
+      //var fractals = GetRsiFractals(rsiHigh).Concat(GetRsiFractals(rsiLow)).OrderBarsDescending().FixFractals();
+
+      var RsiAverageHigh = ratesByMinute.Where(r => r.PriceRsi.GetValueOrDefault() != 50).Average(r => r.PriceRsi).Value;
+      var RsiAverageLow = RsiAverageHigh;
+      var rsiHigh = ratesByMinute.Where(r => r.PriceRsi > RsiAverageHigh).ToArray();
+      var rsiLow = ratesByMinute.Where(r => r.PriceRsi < RsiAverageLow).ToArray();
+      RsiAverageHigh = rsiHigh.Average(r => r.PriceRsi).Value;
+      RsiAverageLow = rsiLow.Average(r => r.PriceRsi).Value;
+
+
+      rsiHigh = rsiHigh.Where(r => r.PriceRsi > RsiAverageHigh).ToArray();
+      rsiLow = rsiLow.Where(r => r.PriceRsi < RsiAverageLow).ToArray();
+      RsiAverageHigh = rsiHigh.Average(r => r.PriceRsi).Value;
+      RsiAverageLow = rsiLow.Average(r => r.PriceRsi).Value;
+
+      rsiHigh = rsiHigh.Where(r => r.PriceRsi > RsiAverageHigh).ToArray();
+      rsiLow = rsiLow.Where(r => r.PriceRsi < RsiAverageLow).ToArray();
+      RsiAverageHigh = rsiHigh.Average(r => r.PriceRsi).Value;
+      RsiAverageLow = rsiLow.Average(r => r.PriceRsi).Value;
+
+      var RsiStdHigh = rsiHigh.StdDev(r => r.PriceRsi);
+      var RsiStdLow = rsiLow.StdDev(r => r.PriceRsi);
+
+      var rsiSellHigh = rsiHigh.Max(r => r.PriceRsi);
+      var rsiBuyLow = rsiLow.Min(r => r.PriceRsi);
+
+
+      return new RsiStatistics(RsiAverageLow, RsiStdLow, rsiBuyLow, RsiAverageHigh, RsiStdHigh, rsiSellHigh);
+    }
+
+    private static TBar[] GetRsiFractals<TBar>(this TBar[] rsiHigh) where TBar : BarBase {
+      var sell = rsiHigh[0].PriceRsi > 50;
+      var fs = new List<TBar>();
+      TBar prev = rsiHigh[0];
+      var rateMax = new List<TBar>(new[] { prev });
+      foreach (var rate in rsiHigh.Skip(1)) {
+        if ((prev.StartDate - rate.StartDate) <= TimeSpan.FromMinutes(1))
+          rateMax.Add(rate);
+        else  {
+          if (rateMax.Count > 4) {
+            var ro = rateMax.OrderBy(r => r.PriceAvg);
+            var fractal = (sell ? ro.Last() : ro.First()).Clone() as TBar;
+            fractal.Fractal = sell ? FractalType.Sell : FractalType.Buy;
+            fractal.PriceRsi = sell ? rateMax.Max(r => r.PriceRsi) : rateMax.Min(r => r.PriceRsi);
+
+            fs.Add(fractal);
+          }
+          rateMax.Clear();
+          rateMax.Add(rate);
+        }
+        prev = rate;
+      }
+      return fs.ToArray();
+    }
 
     enum WaveDirection { Up = 1, Down = -1, None = 0 };
     public static Rate[] FindWaves(this IEnumerable<Rate> ticks) {
@@ -159,6 +245,7 @@ namespace HedgeHog.Bars {
     }
     public static Rate[] GetMinuteTicks<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
       var startDate = fxTicks.Max(t => t.StartDate);
+      double? tempRsi=null;
       return (from t in fxTicks.OrderBarsDescending().ToArray()
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
@@ -175,7 +262,9 @@ namespace HedgeHog.Bars {
                 BidOpen = tg.First().BidOpen,
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
-                PriceRsi = tg.Average(t=>t.PriceRsi),
+                PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
+                : tempRsi == 50 ? 50
+                : tempRsi > 50 ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
                 StartDate = startDate.AddMinutes(-tg.Key)
               }
                 ).ToArray();
@@ -288,7 +377,8 @@ namespace HedgeHog.Bars {
 
 
     public static TBar[] FillRsi<TBar>(this TBar[] rates, Func<TBar, double> getPrice) where TBar : BarBase {
-      var period = Math.Floor((rates.Last().StartDate - rates.First().StartDate).TotalMinutes).ToInt();
+      //var period = Math.Floor((rates.Last().StartDate - rates.First().StartDate).TotalMinutes).ToInt();
+      var period = rates.Length-2;
       return rates.FillRsi(period, getPrice);
     }
     public static TBar[] FillRsi<TBar>(this TBar[] rates, int period, Func<TBar, double> getPrice) where TBar : BarBase {
@@ -326,32 +416,36 @@ namespace HedgeHog.Bars {
         }
         rates[period].PriceRsiP = positive;
         rates[period].PriceRsiN = negative;
-        if (negative == 0)
-          rates[period].PriceRsi = 0;
-        else
-          rates[period].PriceRsi = 100 - (100 / (1 + positive / negative));
+        rates[period].PriceRsi = 100 - (100 / (1 + positive / negative));
       }
     }
 
 
-    public static void FillRsis<TBar>(this TBar[] bars) where TBar : BarBase {
-      bars.FillRsis(110*14,TimeSpan.FromMinutes(14));
-    }
-    public static void FillRsis<TBar>(this TBar[] bars, int RsiTicks, TimeSpan RsiPeriodMin) where TBar : BarBase {
+    public static void FillRsis<TBar>(this TBar[] bars, TimeSpan RsiPeriod) where TBar : BarBase {
       double rsiPrev = 0;
       foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue)) {
-        var ts = bars.TakeWhile(t => t != rate);
-        if (ts.Count() > RsiTicks) {
-          ts = ts.Skip(ts.Count() - RsiTicks).ToArray();
-          if ((ts.Last().StartDate - ts.First().StartDate).Duration() > RsiPeriodMin)
-            ts = bars.Where(RsiPeriodMin, rate).ToArray();
-          rate.PriceRsi = ts.GetMinuteTicks(1).OrderBars().ToArray().FillRsi(t => t.PriceAvg).Last().PriceRsi;
-          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value) || rate.PriceRsi.GetValueOrDefault() == 0)
+        var ts = bars.TakeWhile(t => t <= rate).ToArray();
+        if ((ts.Last().StartDate-ts.First().StartDate) > RsiPeriod) {
+          ts = ts.Where(RsiPeriod,rate).ToArray();
+          rate.PriceRsi = ts.FillRsi(t => t.PriceAvg).Last().PriceRsi;
+          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value))
             rate.PriceRsi = rsiPrev;
           rsiPrev = rate.PriceRsi.Value;
         } else rate.PriceRsi = 50;
       }
-
+    }
+    public static void FillRsis<TBar>(this TBar[] bars, int RsiTicks) where TBar : BarBase {
+      double rsiPrev = 0;
+      foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue)) {
+        var ts = bars.TakeWhile(t => t <= rate).ToArray();
+        if (ts.Length > RsiTicks) {
+          ts = ts.Skip(ts.Count() - RsiTicks).ToArray();
+          rate.PriceRsi = ts./*GetMinuteTicks(1).*/OrderBars().ToArray().FillRsi(t => t.PriceAvg).Last().PriceRsi;
+          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value) )
+            rate.PriceRsi = rsiPrev;
+          rsiPrev = rate.PriceRsi.Value;
+        } else rate.PriceRsi = 50;
+      }
     }
 
     //public static void RunTotal<TBar>(this IEnumerable<TBar> bars, Func<TBar, double?> source) where TBar : BarBase {

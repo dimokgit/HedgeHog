@@ -11,6 +11,7 @@ using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Bars;
+using HedgeHog.Rsi;
 
 namespace TestHH {
   /// <summary>
@@ -20,11 +21,7 @@ namespace TestHH {
   public class UnitTest1 {
     new Order2GoAddIn.FXCoreWrapper o2g = new Order2GoAddIn.FXCoreWrapper();
     IEnumerable<Rate> bars;
-    public UnitTest1() {
-      //
-      // TODO: Add constructor logic here
-      //
-    }
+    public UnitTest1() {    }
 
     private TestContext testContextInstance;
 
@@ -59,9 +56,9 @@ namespace TestHH {
     public void MyTestInitialize() {
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
 
-      if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
-      //if (!core.LogOn("MICR466964001", "225", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("MICR466964001", "225", true)) UT.Assert.Fail("Login");
       o2g = new FXCoreWrapper(core, "EUR/USD");
     }
 
@@ -76,6 +73,70 @@ namespace TestHH {
     }
     //
     #endregion
+
+    [TestMethod]
+    public void Waves1() {
+      var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
+      var dateStart = DateTime.Parse("07/20/2009 12:00");
+      var dateEnd = dateStart.AddHours(0.5);
+      var context = new ForexEntities();
+      var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
+      context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
+
+      var ticks = o2g.GetTicks(12000);
+      var t1 = o2g.GetTicks(900);
+      ticks = ticks.Union(t1).OrderBars().ToArray();
+      ticks.ToList().ForEach(t => t.StartDate = t.StartDate.AddMilliseconds(-t.StartDate.Millisecond));
+      var rates = ticks.Cast<Rate>().OrderBars().ToArray();
+
+      Stopwatch timer = Stopwatch.StartNew();
+      foreach (var tick in rates.OrderBarsDescending())
+        tick.Trend.Volume = rates.Where(TimeSpan.FromMinutes(1), tick).Count();
+      Debug.WriteLine("Volumes:" + timer.Elapsed);
+
+      var rsiTicks = 250;
+      var rsiPeriod = TimeSpan.FromMinutes(14);
+
+      timer = Stopwatch.StartNew();
+      rates.FillRsis(rsiTicks);
+      Debug.WriteLine("FillRsi 1:" + timer.Elapsed);
+
+      timer = Stopwatch.StartNew();
+      rates.Rsi(rsiTicks, (r, v) => r.PriceAvg1 = v,r=>r.PriceAvg1);
+      Debug.WriteLine("FillRsi 2:" + timer.Elapsed);
+
+      timer = Stopwatch.StartNew();
+      var rsiStats = rates.RsiStats();
+      Debug.WriteLine("RsiStats:" + timer.Elapsed + " " + string.Format("{0:n0}/{1:n0}", rsiStats.Sell, rsiStats.Buy));
+
+
+      timer = Stopwatch.StartNew();
+      rates.SkipWhile(t => !t.PriceRsi.HasValue).SetCMA(t => t.PriceRsi.GetValueOrDefault(), 2);
+      Debug.WriteLine("CMA:" + timer.Elapsed);
+
+
+      //var ticks = context.v_Tick.Where(t => t.StartDate >= dateStart && t.StartDate <= dateEnd)
+      //  .ToArray().Select((t, i) => 
+      //    new Tick(t.StartDate, t.Ask, t.Bid, i, true) { Trend = new BarBase.TrendInfo() { Volume = t.Count.Value } }).ToArray();
+
+      var stats = context.t_Stat;
+      rates.Where(t => t.PriceRsi.HasValue && !double.IsNaN(t.PriceRsi.Value)).ToList().ForEach(t =>
+        stats.AddObject(new t_Stat() {
+          Time = t.StartDate, Name = statName, Price = t.PriceAvg
+            , Value1 = t.PriceAvg1
+            , Value2 = 0
+          ,
+          Value3 = t.PriceRsi.Value
+        }));
+      context.SaveChanges();
+
+
+      //timer = Stopwatch.StartNew();
+      //var waves = ticks.FindWaves(3);
+      //Debug.WriteLine("FindWaves(3):"+timer.Elapsed);
+
+      //waves.ToList().ForEach(w => Debug.WriteLine(w));
+    }
 
     public void GetAccount() {
       var a = FXW.GetAccount();
@@ -141,70 +202,6 @@ namespace TestHH {
         });
         context.SaveChanges(System.Data.Objects.SaveOptions.DetectChangesBeforeSave);
       }
-    }
-    [TestMethod]
-    public void Waves1() {
-      var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
-      var dateStart = DateTime.Parse("07/20/2009 12:00");
-      var dateEnd = dateStart.AddHours(0.5);
-      var context = new ForexEntities();
-      var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute),true).Cast<EdmEntityTypeAttribute>();
-      context.ExecuteStoreCommand("DELETE "+a.First().Name+" WHERE Name={0}", statName);
-
-      var ticks = o2g.GetTicks(12000);
-      var t1 = o2g.GetTicks(900);
-      ticks = ticks.Union(t1).OrderBars().ToArray();
-      ticks.ToList().ForEach(t => t.StartDate = t.StartDate.AddMilliseconds(-t.StartDate.Millisecond));
-      var rates = ticks.Cast<Rate>().OrderBars().ToArray();
-
-      Stopwatch timer = Stopwatch.StartNew();
-      foreach (var tick in rates.OrderBarsDescending())
-        tick.Trend.Volume = rates.Where(TimeSpan.FromMinutes(1), tick).Count();
-      Debug.WriteLine("Volumes:" + timer.Elapsed);
-
-      timer = Stopwatch.StartNew();
-      rates.FillRsis();
-      Debug.WriteLine("FillRsi 1:" + timer.Elapsed);
-
-      timer = Stopwatch.StartNew();
-      rates.FillRsis();
-      Debug.WriteLine("FillRsi 2:" + timer.Elapsed);
-
-      var ratesByMinute = rates.GetMinuteTicks(1);
-      var zeros = new List<Rate>();
-      Rate prev=null;
-      foreach (var rate in ratesByMinute.Where(r => r.PriceRsi.HasValue && !double.IsNaN(r.PriceRsi.Value))) {
-        if (prev != null && Math.Sign(prev.PriceRsi.Value - 50) != Math.Sign(rate.PriceRsi.Value - 50))
-          zeros.Add(prev);
-        prev = rate;
-      }
-      zeros.ForEach(w => Debug.WriteLine(w));
-
-      timer = Stopwatch.StartNew();
-      rates.SkipWhile(t=>!t.PriceRsi.HasValue).SetCMA(t => t.PriceRsi.GetValueOrDefault(), 2);
-      Debug.WriteLine("CMA:" + timer.Elapsed);
-
-      
-      //var ticks = context.v_Tick.Where(t => t.StartDate >= dateStart && t.StartDate <= dateEnd)
-      //  .ToArray().Select((t, i) => 
-      //    new Tick(t.StartDate, t.Ask, t.Bid, i, true) { Trend = new BarBase.TrendInfo() { Volume = t.Count.Value } }).ToArray();
-
-      var stats = context.t_Stat;
-      rates.Where(t=>t.PriceRsi.HasValue && !double.IsNaN(t.PriceRsi.Value)).ToList().ForEach(t =>
-        stats.AddObject(new t_Stat() {
-          Time = t.StartDate, Name = statName, Price = t.PriceAvg
-          //, Value1 = t.PriceCMA[0]
-          //, Value2 = t.PriceCMA[2]
-          , Value3 = t.PriceRsi.Value
-        }));
-      context.SaveChanges();
-
-      
-      //timer = Stopwatch.StartNew();
-      //var waves = ticks.FindWaves(3);
-      //Debug.WriteLine("FindWaves(3):"+timer.Elapsed);
-      
-      //waves.ToList().ForEach(w => Debug.WriteLine(w));
     }
 
     public void Waves() {
