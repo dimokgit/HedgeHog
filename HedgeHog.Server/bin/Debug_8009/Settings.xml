@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="294" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="477" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="310" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="505" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="668" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="MICR468485001" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="8442" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
@@ -64,9 +64,11 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkTradeByFractal]IsChecked" value="False" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="-1" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="432" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="3" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="786" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="200" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="500" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="1311" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="2300" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiCorrelationMinimum]Text" value=".1" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="3" />
 </dictionary>

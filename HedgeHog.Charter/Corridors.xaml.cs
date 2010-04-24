@@ -228,16 +228,16 @@ namespace HedgeHog {
         minuteTicks = ticks.GetMinuteTicks( period, true).Select(rateToTick);
         TicksAvg2.Clear();
         if (ticks.Any(t => t.PriceAvg2 != 0)) {
-          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg2, t.PriceAvg2, t.IsHistory)).GetMinuteTicks(period, true).Select(rateToTick);
+          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg2, t.PriceAvg2, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
           TicksAvg2.AddMany(avg);
         }
         TicksAvg3.Clear();
         if (ticks.Any(t => t.PriceAvg3 != 0)) {
-          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg3, t.PriceAvg3, t.IsHistory)).GetMinuteTicks(period, true).Select(rateToTick);
+          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg3, t.PriceAvg3, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
           TicksAvg3.AddMany(avg);
         }
       } else {
-        minuteTicks = voltsByTick.Select(v => new Rate(v.StartDate, v.AskMax, v.BidMin,false)).GetMinuteTicks( period, true).Select(rateToTick);
+        minuteTicks = voltsByTick.Select(v => new Rate(v.StartDate, v.AskMax, v.BidMin,false)).ToArray().GetMinuteTicks( period, true).Select(rateToTick);
       }
       if (voltsByTick != null && voltsByTick.Count > 0) {
         var minuteVolts =

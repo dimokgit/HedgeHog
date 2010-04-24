@@ -178,6 +178,8 @@
             <TextBlock Text="{Binding FractalsInterval,StringFormat=mm}"/>
           </WrapPanel>
         </Label>
+        <TextBox Text="{state:UserSettings Default=.8}" TextChanged="TextChanged" Name="txtRsiCorrelationMinimum" ToolTip="Rsi Correlation Minimum"/>
+        <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtRsiWavesForCorrelation" ToolTip="Rsi Correlation Minimum"/>
       </WrapPanel>
 
         <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Hidden">

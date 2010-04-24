@@ -64,8 +64,10 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkTradeByFractal]IsChecked" value="False" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="3" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="147" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="287" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="198" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="489" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="1802" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="1900" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiCorrelationMinimum]Text" value=".2" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="3" />
 </dictionary>

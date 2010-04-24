@@ -95,6 +95,13 @@ namespace HedgeHog {
       }
     }
 
+    public double _txtRsiCorrelationMinimum;
+    public double RsiCorrelationMinimum { get { return _txtRsiCorrelationMinimum; } }
+
+    public int _txtRsiWavesForCorrelation;
+    public int txtRsiWavesForCorrelation { get { return _txtRsiWavesForCorrelation; } }
+
+
     public int rsiTicksDelay { get { return int.Parse(_txtRsiTicks.Split('*')[0]); } }
 
     public bool _chkCorridorByUpDownRatio;
