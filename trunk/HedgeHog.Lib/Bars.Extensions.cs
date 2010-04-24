@@ -238,12 +238,24 @@ namespace HedgeHog.Bars {
       return count / (bo.Last().StartDate - bo.First().StartDate).TotalMinutes;
     }
 
-    public static Rate[] GetMinuteTicks<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
-      if (!round) return GetMinuteTicks(fxTicks, period);
-      var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
-      return GetMinuteTicks(fxTicks.Where(t => t.StartDate >= timeRounded), period);
+    public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period, bool round) where TBar : BarBase {
+      return fxTicks.GetMinuteTicksCore(period, round);
     }
-    public static Rate[] GetMinuteTicks<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
+    public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period) where TBar : BarBase {
+      return fxTicks.GetMinuteTicksCore(period);
+    }
+    public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period, bool round) where TBar : BarBase {
+      return fxTicks.GetMinuteTicksCore(period, round);
+    }
+    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
+      if (!round) return GetMinuteTicksCore(fxTicks, period);
+      var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
+      return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period);
+    }
+    public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period) where TBar : BarBase {
+      return fxTicks.GetMinuteTicksCore(period);
+    }
+    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
       var startDate = fxTicks.Max(t => t.StartDate);
       double? tempRsi=null;
       return (from t in fxTicks.OrderBarsDescending().ToArray()
@@ -481,7 +493,7 @@ namespace HedgeHog.Bars {
     }
     public static List<TBar> FindFractalTicks<TBar>(this IEnumerable<TBar> ticks, double waveHeight, TimeSpan period, double padRight, int count
       , TBar[] fractalsToSkip, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) where TBar : Rate {
-      var fractals = ticks.GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count, fractalsToSkip, priceHigh, priceLow);
+      var fractals = ticks.ToArray().GetMinuteTicks(1).OrderBarsDescending().FindFractals(waveHeight, period, padRight, count, fractalsToSkip, priceHigh, priceLow);
       return fractals.Select(f => {
         var tt = ticks.Where(t => t.StartDate.Between(f.StartDate.AddSeconds(-70), f.StartDate.AddSeconds(70))).OrderBy(t => t.PriceByFractal(f.Fractal));
         var fractal = (f.Fractal == FractalType.Buy ? tt.First() : tt.Last()).Clone() as TBar;
