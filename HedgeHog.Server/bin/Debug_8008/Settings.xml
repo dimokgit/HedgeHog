@@ -3,10 +3,10 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Left" value="2" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Top" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Height" value="300" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="661" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.1]Width" value="684" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtAcount]Text" value="6519040180" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtPassword]Text" value="Tziplyonak713" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="12900" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtTicksBack]Text" value="17901" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Left" value="51" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Top" value="41" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.]Height" value="177" />
@@ -67,7 +67,7 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="287" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="198" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="489" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="1900" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiCorrelationMinimum]Text" value=".2" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="3466" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiCorrelationMinimum]Text" value=".3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="4" />
 </dictionary>

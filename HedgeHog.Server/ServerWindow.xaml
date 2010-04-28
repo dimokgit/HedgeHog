@@ -64,21 +64,16 @@
       <StackPanel Orientation="Horizontal">
         <TextBlock>Ticks:</TextBlock>
         <TextBox Text="{state:UserSettings Default=1500}" Name="txtTicksBack" TextChanged="TextChanged_ResetTicks"/>
-        <Label Content="{Binding TimeframeByTicksMin}"/>
+                <Label Content="{Binding TimeframeByTicksMin}" ToolTip="Time Frame Minimum in Minutes"/>
         <TextBlock>:</TextBlock>
-        <Label Content="{Binding TimeframeInMinutes}"/>
-        <TextBlock>/</TextBlock>
-        <Label Content="{Binding TimeframeInMinutesAlt}"/>
-        <TextBlock Text="min"/>
+        <Label Content="{Binding TimeframeInMinutes}" ToolTip="Time Frame in Minutes"/>
         <TextBox Text="{state:UserSettings Default=1}" Name="txtRsiTicks" ToolTip="Rsi Ticks Count" TextChanged="TextChanged">
           <TextBox.InputBindings>
             <KeyBinding Key="{Binding FillRsisCommand.GestureKey}" Command="{Binding FillRsisCommand}"/>
           </TextBox.InputBindings>
         </TextBox>
-        <Label Content="{Binding MinutesBackSampleCount}" ToolTip="Minutes Back Sample Count" />
         <Label Content="{Binding MinutesBackSpeed}" ContentStringFormat="n2" ToolTip="Minutes Back Speed" />
         <CheckBox Name="chkGroupTicks" BorderBrush="LightGray" BorderThickness="1" Content="GT" ToolTip="Group Ticks by Second" IsChecked="{state:UserSettings}" Checked="Checked" Unchecked="Checked"/>
-        <CheckBox Name="chkCachePriceHeight" BorderBrush="LightGray" BorderThickness="1" Content="PH" ToolTip="Cache Price Height" IsChecked="{state:UserSettings Default=True}" Checked="Checked" Unchecked="Checked"/>
       </StackPanel>
       <Border BorderThickness="1">
         <StackPanel Orientation="Horizontal">
@@ -99,12 +94,6 @@
         </StackPanel>
       </Border>
       <StackPanel Orientation="Horizontal">
-        <TextBlock ToolTip="Wave Height Minimum by Overlap">WOL:</TextBlock>
-        <Label Content="{Binding WaveHeightInPips}" ContentStringFormat="n1" />
-
-        <TextBlock ToolTip="Power Bar">PB:</TextBlock>
-        <Label Content="{Binding OverlapAverageShortPower}" ContentStringFormat="n0" />
-
         <CheckBox IsChecked="{state:UserSettings}" Content="S" Name="chkUseOverlapShort"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
         <Label Content="{Binding OverlapAverageShort.TotalMinutes}" ContentStringFormat="n1" />
         <CheckBox IsChecked="{state:UserSettings}" Content="L" Name="chkUseOverlapLast"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />

@@ -256,6 +256,7 @@ namespace HedgeHog.Bars {
       return fxTicks.GetMinuteTicksCore(period);
     }
     static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
+      if (fxTicks.Count() == 0) return new Rate[] { };
       var startDate = fxTicks.Max(t => t.StartDate);
       double? tempRsi=null;
       return (from t in fxTicks.OrderBarsDescending().ToArray()
@@ -309,7 +310,7 @@ namespace HedgeHog.Bars {
           barsDelete.AddRange(new[] { bars[i - 1], bars[i - 2] });
       barsDelete.Distinct().ToList().ForEach(b => bars.Remove(b));
     }
-    public static void FillPower<TBar>(this TBar[] barsSource, TBar[] bars) where TBar : BarBase {
+    static void FillPower<TBar>(this TBar[] barsSource, TBar[] bars) where TBar : BarBase {
       foreach (var bar in bars)
         bar.Ph = null;
       TBar barPrev = null;
@@ -320,6 +321,14 @@ namespace HedgeHog.Bars {
           barPrev = bar;
         }
 
+    }
+    public static void FillFractalHeight<TBar>(this TBar[] bars) where TBar : BarBase {
+      var i=0;
+      bars.Take(bars.Length - 1).ToList()
+        .ForEach(b => {
+          b.Ph.Height = (b.FractalPrice - bars[++i].FractalPrice).Abs();
+          b.Ph.Time = b.StartDate - bars[i].StartDate;
+        });
     }
     public static void FillPower<TBar>(this TBar[] bars, TimeSpan period) where TBar : BarBase {
       bars.FillMass();
