@@ -99,7 +99,7 @@ namespace HedgeHog {
     public double RsiCorrelationMinimum { get { return _txtRsiCorrelationMinimum; } }
 
     public int _txtRsiWavesForCorrelation;
-    public int txtRsiWavesForCorrelation { get { return _txtRsiWavesForCorrelation; } }
+    public int RsiWavesForCorrelation { get { return _txtRsiWavesForCorrelation; } }
 
 
     public int rsiTicksDelay { get { return int.Parse(_txtRsiTicks.Split('*')[0]); } }
@@ -143,9 +143,6 @@ namespace HedgeHog {
 
     public bool _chkGroupTicks;
     public bool groupTicks { get { return _chkGroupTicks; } }
-
-    public bool _chkCachePriceHeight;
-    public bool cachePriceHeight { get { return _chkCachePriceHeight; } }
 
   }
 }

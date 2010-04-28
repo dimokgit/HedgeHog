@@ -275,7 +275,7 @@ namespace TestHH {
   , r => Math.Abs(r.Ph.Density.Value)
   , "C:\\Density.csv");
 
-      ticks.FillPower(fractals);
+      //????????ticks.FillPower(fractals);
       if (fractals.Count() == 0) {
         ticks.FillPower(TimeSpan.FromMinutes(1));
         Debug.WriteLine("Ticks.FillPower:" + timer.Elapsed.TotalSeconds + " sec."); timer.Reset(); timer.Start();

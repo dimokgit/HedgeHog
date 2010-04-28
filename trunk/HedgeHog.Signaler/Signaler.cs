@@ -122,6 +122,7 @@ namespace HedgeHog {
     }
 
     public static WaveStats GetWaveStats(this double[] waves) {
+      if (waves.Length == 0) return new WaveStats();
       //waves = waves.OrderBy(w => w).Take(waves.Count() - 1).ToArray();
       var wa = waves.Average();
       var au = waves.Where(w => w >= wa).DefaultIfEmpty(wa).Average();

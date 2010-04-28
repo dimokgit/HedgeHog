@@ -7,14 +7,23 @@ using HedgeHog.Bars;
 namespace HedgeHog.Rsi {
   public static class RsiExtensions {
     public static void Rsi(this Rate[] Rates, int interval) {
-      Rates.Rsi(interval, (r, v) => r.PriceRsi = v, r => r.PriceRsi);
+      Rates.Rsi(interval, false);
+    }
+    public static void Rsi(this Rate[] Rates, int interval, bool Refresh) {
+      Rates.Rsi(interval, (r, v) => r.PriceRsi = v, r => r.PriceRsi,Refresh);
     }
     public static void Rsi1(this Rate[] Rates, int interval) {
-      Rates.Rsi(interval, (r, v) => r.PriceRsi1 = v, r => r.PriceRsi1);
+      Rates.Rsi1(interval, false);
+    }
+    public static void Rsi1(this Rate[] Rates, int interval,bool Refresh) {
+      Rates.Rsi(interval, (r, v) => r.PriceRsi1 = v, r => r.PriceRsi1, Refresh);
     }
     public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue) {
+      Rates.Rsi(interval, SetValue, GetValue, false);
+    }
+    public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
       for (int i = interval; i < Rates.Length; i++)
-        if (!GetValue(Rates[i]).HasValue)
+        if (Refresh || !GetValue(Rates[i]).HasValue)
           SetValue(Rates[i], Rates.Skip(i - interval).Take(interval).ToArray().Rsi());
     }
     public static double Rsi(this Rate[] Rates) {
