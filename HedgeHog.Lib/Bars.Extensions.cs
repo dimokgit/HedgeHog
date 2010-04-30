@@ -66,7 +66,44 @@ namespace HedgeHog.Bars {
 
       return new RsiStatistics(RsiAverageLow, RsiStdLow, rsiBuyLow, RsiAverageHigh, RsiStdHigh, rsiSellHigh);
     }
-
+    public static TBar[] FindWaves<TBar>(
+      this IEnumerable<TBar> bars, Func<TBar, int> Sign, Func<TBar, double?> Sort) where TBar : BarBase {
+      bars = bars.Where(b => Sort(b).GetValueOrDefault(50) != 50).OrderBars().ToArray();
+      var barPrev = bars.First();
+      var waves = new List<TBar>();
+      var wave = new List<TBar>() { barPrev };
+      var average = bars.Average(Sort).GetValueOrDefault();
+      var stDev = bars.StdDev(Sort);
+      Func<TBar, double, double,bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
+      Sign = (r) => Math.Sign(Sort(r).Value - average);
+      foreach (var bar in bars.Where(b=>where(b,average,stDev)).Skip(1)) {
+        if (Sign(barPrev) == Sign(bar))
+          wave.Add(bar);
+        else {
+          var sort = wave.OrderBy(Sort);
+          var w = (Sign(barPrev) >= 0 ? sort.Last() : sort.First()).Clone() as TBar;
+          w.Fractal = Sign(barPrev) >= 0 ? FractalType.Sell : FractalType.Buy;
+          waves.Add(w);
+          wave.Clear();
+          wave.Add(bar);
+        }
+        barPrev = bar;
+      }
+      return waves.OrderBarsDescending().ToArray();
+      /*
+      var ws = waves.OrderBarsDescending().ToArray();
+      ws.FillHeight(Sort);
+      var wh = ws.Where(w => Sign(w) > 0).ToArray();
+      var std = wh.StdDev(Sort);
+      var avg = wh.Average(Sort);
+      wh = wh.Where(w => Sort(w) >= (avg + std)).ToArray();
+      var wl = ws.Where(w => Sign(w) < 0).ToArray();
+      std = wl.StdDev(Sort);
+      avg = wl.Average(Sort);
+      wl = wl.Where(w => Sort(w) <= (avg-std)).ToArray();
+      return wh.Concat(wl).OrderBarsDescending().ToArray().FixFractals(Sort).ToArray();
+      */
+    }
     private static TBar[] GetRsiFractals<TBar>(this TBar[] rsiHigh) where TBar : BarBase {
       var sell = rsiHigh[0].PriceRsi > 50;
       var fs = new List<TBar>();
@@ -242,23 +279,23 @@ namespace HedgeHog.Bars {
       return fxTicks.GetMinuteTicksCore(period, round);
     }
     public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period);
+      return fxTicks.GetMinuteTicksCore(period,false);
     }
     public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period, bool round) where TBar : BarBase {
       return fxTicks.GetMinuteTicksCore(period, round);
     }
-    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
-      if (!round) return GetMinuteTicksCore(fxTicks, period);
-      var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
-      return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period);
-    }
+    //static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
+    //  if (!round) return GetMinuteTicksCore(fxTicks, period,false);
+    //  var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
+    //  return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period,false);
+    //}
     public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period);
+      return fxTicks.GetMinuteTicksCore(period,false);
     }
-    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period) where TBar : BarBase {
+    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period,bool Round) where TBar : BarBase {
       if (fxTicks.Count() == 0) return new Rate[] { };
       var startDate = fxTicks.Max(t => t.StartDate);
-      double? tempRsi=null;
+      if (Round) startDate = startDate.Round().AddMinutes(1);
       return (from t in fxTicks.OrderBarsDescending().ToArray()
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
@@ -275,9 +312,7 @@ namespace HedgeHog.Bars {
                 BidOpen = tg.First().BidOpen,
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
-                PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
-                : tempRsi == 50 ? 50
-                : tempRsi > 50 ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
+                PriceRsi = tg.Average(t => t.PriceRsi),
                 StartDate = startDate.AddMinutes(-tg.Key)
               }
                 ).ToArray();
@@ -322,6 +357,13 @@ namespace HedgeHog.Bars {
         }
 
     }
+    public static void FillHeight<TBar>(this TBar[] bars,Func<TBar,double?> Price) where TBar : BarBase {
+      var i = 0;
+      bars.Take(bars.Length - 1).ToList()
+        .ForEach(b => {
+          b.Ph.Height = (Price(b) - Price(bars[++i])).Abs();
+        });
+    }
     public static void FillFractalHeight<TBar>(this TBar[] bars) where TBar : BarBase {
       var i=0;
       bars.Take(bars.Length - 1).ToList()
@@ -360,12 +402,14 @@ namespace HedgeHog.Bars {
 
       if (barSource != null) return;
     }
-
-    public static IEnumerable<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals) where TBar : BarBase {
+    public static List<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals) where TBar : BarBase {
+      return fractals.FixFractals(b => b.FractalPrice);
+    }
+    public static List<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals,Func<TBar,double?>Price) where TBar : BarBase {
       var fractalsNew = new List<TBar>();
       foreach (var f in fractals)
         if (fractalsNew.Count > 0 && fractalsNew.Last().Fractal == f.Fractal)
-          fractalsNew[fractalsNew.Count - 1] = BarBase.BiggerFractal(fractalsNew.Last(), f);
+          fractalsNew[fractalsNew.Count - 1] = BarBase.BiggerFractal(fractalsNew.Last(), f,Price);
         else fractalsNew.Add(f);
       return fractalsNew;
     }

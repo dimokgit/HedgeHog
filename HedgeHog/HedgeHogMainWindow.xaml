@@ -116,8 +116,12 @@
         <Button Name="btnOpenDB" Click="btnOpenDB_Click" Content="Save" ToolTip="Save settings to Settings.xml file"></Button>
       </WrapPanel>
       <WrapPanel Background="DarkSeaGreen" Width="Auto">
-        <Label Name="lblUsableMargin" ToolTip="Usable Margin Dollars">UM:</Label>
-        <Label Name="lblAccountBalance" ToolTip="Balance">B:</Label>
+        <Label Name="lblAccountBalance" ToolTip="Balance">
+          <ToolTipService.ToolTip>
+            <Label Name="lblUsableMargin" ToolTip="Usable Margin Dollars">UM:</Label>
+          </ToolTipService.ToolTip>
+          B:
+        </Label>
         <Label Name="lblAccountEquity" ToolTip="Equity" Foreground="#FF002216" Background="Honeydew">E:</Label>
         <Label Name="lblStartingBalance" ToolTip="Starting Balance">SB:</Label>
         <TextBox Name="txtStartingBalance" Text="-0" TextChanged="TextChanged"></TextBox>

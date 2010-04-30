@@ -564,6 +564,7 @@ namespace Order2GoAddIn {
       //  (int)(account.UsableMargin / Math.Max(.1, (Math.Abs(summary.BuyLots - summary.SellLots) / 10000)));
       return account;
     }
+    public static double CommisionPending { get { return GetTrades("").Sum(t => t.Lots) / 10000; } }
     private static double PipsToMarginCallPerUnitCurrency() {
       var sm = (from s in GetRows(TABLE_SUMMARY)
                 join o in GetRows(TABLE_OFFERS)
@@ -583,10 +584,11 @@ namespace Order2GoAddIn {
       ret.PointSize = PointSize;
       return ret;
     }
-    public static Summary GetSummary(string Pair) {
-      var rowsSumm = GetRows(TABLE_SUMMARY).Where(r => new[] { "", r.CellValue(FIELD_INSTRUMENT).ToString() }.Contains(Pair));
+    public static Summary[] GetSummaries() {
+      var rowsSumm = GetRows(TABLE_SUMMARY);
       var s = rowsSumm
         .Select(t => new Summary() {
+          Pair = t.CellValue(FIELD_INSTRUMENT) + "",
           BuyLots = ((long)(double)t.CellValue("BuyAmountK")) * 1000,
           SellLots = ((long)(double)t.CellValue("SellAmountK")) * 1000,
           BuyNetPL = ((double)t.CellValue("BuyNetPL")),
@@ -594,7 +596,23 @@ namespace Order2GoAddIn {
           SellNetPL = ((double)t.CellValue("SellNetPL")),
           //SellNetPLPip = ((double)t.CellValue("SellNetPLPip")),
           NetPL = ((double)t.CellValue("NetPL")),
-          OfferID = t.CellValue("SellNetPL") + "",
+          SellAvgOpen = (double)t.CellValue(FIELD_SELLAVGOPEN),
+          BuyAvgOpen = (double)t.CellValue(FIELD_BUYAVGOPEN),
+        }).ToArray();
+      return s;
+    }
+    public static Summary GetSummary(string Pair) {
+      var rowsSumm = GetRows(TABLE_SUMMARY).Where(r => new[] { "", r.CellValue(FIELD_INSTRUMENT).ToString() }.Contains(Pair));
+      var s = rowsSumm
+        .Select(t => new Summary() {
+          Pair = t.CellValue(FIELD_INSTRUMENT) + "",
+          BuyLots = ((long)(double)t.CellValue("BuyAmountK")) * 1000,
+          SellLots = ((long)(double)t.CellValue("SellAmountK")) * 1000,
+          BuyNetPL = ((double)t.CellValue("BuyNetPL")),
+          //BuyNetPLPip = ((double)t.CellValue("BuyNetPLPip")),
+          SellNetPL = ((double)t.CellValue("SellNetPL")),
+          //SellNetPLPip = ((double)t.CellValue("SellNetPLPip")),
+          NetPL = ((double)t.CellValue("NetPL")),
           SellAvgOpen = (double)t.CellValue(FIELD_SELLAVGOPEN),
           BuyAvgOpen = (double)t.CellValue(FIELD_BUYAVGOPEN),
         }).SingleOrDefault();
@@ -1211,19 +1229,23 @@ namespace Order2GoAddIn {
     public bool IsMarginCall { get;  set; }
     public int PipsToMC { get;  set; }
     public bool Hedging { get;  set; }
+    public double Gross { get { return Equity - Balance; } }
   }
   public class Summary {
     public static Summary Initialize(Price Price){
       return new Summary() { PriceCurrent = Price };
     }
+    public string Pair { get; set; }
     public string OfferID { get; set; }
     public string BuyTradeID_Last { get; set; }
     public string BuyTradeID_First { get; set; }
     public string SellTradeID_Last { get; set; }
     public string SellTradeID_First { get; set; }
     public double SellNetPL { get; set; }
+    //public double SellNetPLPip { get; set; }
     public double SellNetPLPip { get { return SellNetPL / SellLots * 10000; } }
     public double BuyNetPL { get; set; }
+    //public double BuyNetPLPip { get; set; }
     public double BuyNetPLPip { get { return BuyNetPL / BuyLots * 10000; } }
     public double SellLots { get; set; }
     public double BuyLots { get; set; }

@@ -95,8 +95,8 @@ namespace HedgeHog {
       }
     }
 
-    public double _txtRsiCorrelationMinimum;
-    public double RsiCorrelationMinimum { get { return _txtRsiCorrelationMinimum; } }
+    public double _txtRsiPeriodRatio;
+    public double RsiPeriodRatio { get { return _txtRsiPeriodRatio / 100; } }
 
     public int _txtRsiWavesForCorrelation;
     public int RsiWavesForCorrelation { get { return _txtRsiWavesForCorrelation; } }
