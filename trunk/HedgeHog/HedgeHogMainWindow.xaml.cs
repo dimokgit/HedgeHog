@@ -245,6 +245,7 @@ namespace HedgeHog {
       InitializeComponent();
       if (isMainWindow)
         app.FXCM.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(FXCM_LoginError);
+      app.ClosingBalanceChanged += new EventHandler<ClosingBalanceChangedEventArgs>(app_ClosingBalanceChanged);
     }
 
     bool isMainWindow { get { return this.Name == ""; } }
@@ -359,27 +360,35 @@ namespace HedgeHog {
       return spread;
     }
 
-    public double ProfitPercent;
+    void app_ClosingBalanceChanged(object sender, ClosingBalanceChangedEventArgs e) {
+      if (sender != this && startingBalance < e.ClosingBalance) startingBalance = e.ClosingBalance;
+    }
+
     void ShowAccount(Order2GoAddIn.Account Account, Order2GoAddIn.Summary Summary) {
       accountBalance = Account.Balance;
       usableMargin = Account.UsableMargin;
       pipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
       lotsLeft = (int)(Account.UsableMargin * leverage);
+      var summaries = FXW.GetSummaries();
+      var tradesAll = FXW.GetTrades("");
+      var netPL = tradesAll.Sum(t => t.PL * t.Lots) / tradesAll.Sum(t => t.Lots);
       Lib.SetLabelText(lblUsableMargin, string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity));
-      Lib.SetLabelText(lblAccountEquity, string.Format("{0:c0}", Account.Equity));
-      var doCloseLotsOfTrades = FXW.GetTrades("").Length > app.MainWindows.Count + 1 && Account.Equity > Account.Balance;
-      Commission = FXW.GetTrades("").Sum(t => t.Lots) / 10000;
-      var haveGoodProfit = (Account.Equity - Account.Balance) > (DensityAverage + Commission);
-      if (startingBalance > 0 && Account.Equity >= startingBalance ||
+      Lib.SetLabelText(lblAccountEquity, string.Format("{0:c0}/{1:n1}", Account.Equity,netPL));
+      var doCloseLotsOfTrades = tradesAll.Length > app.MainWindows.Count + 1 && Account.Gross > 0;
+      Commission = FXW.CommisionPending;
+      var haveGoodProfit = netPL >= DensityAverage;
+      if (//startingBalance > 0 && Account.Equity >= startingBalance ||
         haveGoodProfit ||
+        doCloseLotsOfTrades ||
         (priceToExit > 0 &&
         ((conditionToExit == Condition.LessThen && Summary.PriceCurrent.Average < priceToExit) ||
           (conditionToExit == Condition.MoreThen && Summary.PriceCurrent.Average > priceToExit)
         ))
         ) {
-         ClosePositions(this, new RoutedEventArgs());
-        startingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
+        // ClosePositions(this, new RoutedEventArgs());
+        //startingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
+        //app.RaiseClosingalanceChanged(this, startingBalance.ToInt());
         ruleToExit = "0";
       }
 

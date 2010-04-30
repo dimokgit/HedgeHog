@@ -170,6 +170,11 @@ namespace HedgeHog {
     }
 
     void UpdateTicks(ObservableCollection<ChartTick> dest, List<ChartTick> src) {
+      var srcDict = new Dictionary<DateTime, ChartTick>();
+      src.ForEach(s => srcDict.Add(s.Time, s));
+      dest.ToList().ForEach(d => {
+        if (srcDict.ContainsKey(d.Time)) d.Price = srcDict[d.Time].Price; 
+      });
       if (((double)dest.Count / src.Count).Between(0.5, 1.5)) {
         //var ddd = dest.Except(src,new Tick()).ToArray();
         var delete = dest.Except(src,new ChartTick()).ToList();
@@ -197,7 +202,7 @@ namespace HedgeHog {
         } else dest.AddMany(src);
       } else {
         dest.Clear();
-        dest.AddMany(src);
+        dest.AddMany(src.OrderBy(t=>t.Time));
       }
     }
     public IEnumerable<ChartTick> GroupTicks(IEnumerable<ChartTick> ticks) {
@@ -241,9 +246,8 @@ namespace HedgeHog {
       }
       if (voltsByTick != null && voltsByTick.Count > 0) {
         var minuteVolts =
-          voltsByTick.Select(v => new Rate(v.StartDate, v.Volts, v.Volts, false)).ToArray()
-          .GetMinuteTicks(1, true).Select(rateToTick).ToList();
-        Volts.Clear();
+          voltsByTick.Select(v => new Rate(v.StartDate, v.Volts, v.Volts, false)).ToArray().GetMinuteTicks(period, true)
+          .Select(t=>new ChartTick() { Price = Math.Round(t.PriceAvg,2), Time = t.StartDate }).OrderBy(t => t.Time).ToList();
         UpdateTicks( Volts,minuteVolts);
 
         if (voltsByTick.Any(v => v.VoltsPoly != 0)) {
@@ -254,7 +258,7 @@ namespace HedgeHog {
             innerPlotter.AddLineGraph(dsVoltsPoly, Colors.DarkOrange, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
           }
           var minuteVoltsPoly =
-            voltsByTick.Select(v => new Rate(v.StartDate, v.VoltsPoly, v.VoltsPoly, false)).ToArray().GetMinuteTicks(1, true)
+            voltsByTick.Select(v => new Rate(v.StartDate, v.VoltsPoly, v.VoltsPoly, false)).ToArray().GetMinuteTicks(period, true)
             .Select(t => new Volt() { StartDate = t.StartDate, VoltsPoly = t.PriceAvg });
           VoltsPoly.Clear();
           VoltsPoly.AddMany(minuteVoltsPoly);

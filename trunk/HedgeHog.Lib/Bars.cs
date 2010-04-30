@@ -240,10 +240,13 @@ namespace HedgeHog.Bars {
     public static bool operator !=(BarBase b1, BarBase b2) { return (object)b1 == null ? (object)b2 == null ? false : !b2.Equals(b1) : !b1.Equals(b2); }
     #endregion
 
-    public static TBar BiggerFractal<TBar>(TBar b1, TBar b2) where TBar : BarBase{
+    public static TBar BiggerFractal<TBar>(TBar b1, TBar b2) where TBar : BarBase {
+      return BiggerFractal(b1, b2, b => b.FractalPrice);
+    }
+    public static TBar BiggerFractal<TBar>(TBar b1, TBar b2,Func<TBar,double?>Price) where TBar : BarBase {
       if (b1.Fractal == b2.Fractal) {
-        if (b1.Fractal == FractalType.Buy) return b1.FractalPrice < b2.FractalPrice ? b1 : b2;
-        if (b1.Fractal == FractalType.Sell) return b1.FractalPrice > b2.FractalPrice ? b1 : b2;
+        if (b1.Fractal == FractalType.Buy) return  Price(b1) < Price(b2) ? b1 : b2;
+        if (b1.Fractal == FractalType.Sell) return Price(b1) > Price(b2) ? b1 : b2;
         return null;
       } else return null;
     }

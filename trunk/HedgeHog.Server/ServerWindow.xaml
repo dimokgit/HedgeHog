@@ -116,11 +116,12 @@
         >
         <StackPanel Orientation="Horizontal">
         <TextBlock Text="{Binding TradeDirection,AsyncState=true}" FontWeight="Bold"></TextBlock>
-          <Label Background="{Binding Angle1Color,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}">
+          <Label>
             <Label.Content>
               <StackPanel Orientation="Horizontal">
                 <TextBlock>[</TextBlock>
-                <TextBlock Text="{Binding Angle1Rounded,StringFormat=0.0}"/>
+                <TextBlock Text="{Binding AngleRounded,StringFormat=0.0}" Background="{Binding AngleColor,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}"/>
+                <TextBlock Text="{Binding Angle1Rounded,StringFormat=0.0}" Background="{Binding Angle1Color,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}"/>
                 <TextBlock>:</TextBlock>
                 <TextBlock Text="{Binding TicksPerMinuteMax}"/>
                 <TextBlock>]</TextBlock>
@@ -167,11 +168,11 @@
             <TextBlock Text="{Binding FractalsInterval,StringFormat=mm}"/>
           </WrapPanel>
         </Label>
-        <TextBox Text="{state:UserSettings Default=.8}" TextChanged="TextChanged" Name="txtRsiCorrelationMinimum" ToolTip="Rsi Correlation Minimum"/>
+        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRsiPeriodRatio" ToolTip="Rsi Correlation Minimum"/>
         <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtRsiWavesForCorrelation" ToolTip="Rsi Correlation Minimum"/>
       </WrapPanel>
 
-        <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Hidden">
+        <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">
         <WrapPanel>
           <Label Content="PD"  ToolTip="Power Down" Background="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
           <Label Content="{Binding Path=PricePosition,IsAsync=True}" ContentStringFormat="p0" Background="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" ToolTip="Price Position" />

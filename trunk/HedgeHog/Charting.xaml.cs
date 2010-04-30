@@ -406,10 +406,15 @@ namespace HedgeHog {
     void CloseTrades() {
       if (!ClosePositionsScheduler.IsRunning)
         ClosePositionsScheduler.Command = () => {
-          var ct = from t in fw.GetTrades()
+          var ct = (from t in fw.GetTrades()
                    join c in closeTradeIDs on t.Id equals c
-                   select c;
-          ct.ToList().ForEach(t => FXW.FixOrderClose(t));
+                   select c).ToList();
+          if (ct.Count > 0) {
+            if (FXW.GetAccount().Gross > FXW.CommisionPending)
+              FXW.ClosePositions();
+            else
+              ct.ForEach(t => FXW.FixOrderClose(t));
+          }
         };
     }
     bool doSecondTrade = false;
