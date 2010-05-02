@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_8010\</OutputPath>
+    <OutputPath>bin\Debug_8008\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -59,6 +59,7 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Runtime.Remoting" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -136,6 +137,10 @@
     <ProjectReference Include="..\HedgeHog.Signaler\HedgeHog.Signaler.csproj">
       <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>
       <Name>HedgeHog.Signaler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.WCF\HedgeHog.WCF.csproj">
+      <Project>{997C1250-13BF-4429-B0A1-0E036E745625}</Project>
+      <Name>HedgeHog.WCF</Name>
     </ProjectReference>
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>

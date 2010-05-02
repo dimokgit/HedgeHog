@@ -78,6 +78,8 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.Extensions">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -163,7 +165,25 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Service References\TradingService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
     <Compile Include="Settings.cs" />
+    <None Include="Service References\TradingService\HedgeHog.TradingService.CompositeType.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\TradingService\Trading.wsdl" />
+    <None Include="Service References\TradingService\Trading.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TradingService\Trading1.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TradingService\Trading2.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="User.config" />
     <None Include="Versions\Charting_DemoMicro.cs" />
     <None Include="Data\ForexDB.dbml.layout">
@@ -265,6 +285,27 @@
     <Resource Include="HedgeHog_01.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadataStorage Include="Service References\TradingService\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\TradingService\Trading.disco" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\TradingService\configuration91.svcinfo" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\TradingService\configuration.svcinfo" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\TradingService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
