@@ -314,6 +314,7 @@ namespace HedgeHog {
     ThreadScheduler getVoltagesScheduler;
     ThreadScheduler ClosePositionsScheduler;
     ThreadScheduler RsiScheduler;
+    HedgeHog.TradingService.TradingClient tradingClient = new TradingService.TradingClient();
     public Charting() :this("",null){
     }
     public Charting(string name, Order2GoAddIn.FXCoreWrapper FW) {
@@ -334,6 +335,7 @@ namespace HedgeHog {
         fw.PairChanged += (s, e) => DC.Title = fw.Pair;
         PriceScheduler = new ThreadScheduler(
           TimeSpan.FromSeconds(1), ThreadScheduler.infinity, ProcessPrice, (s, e) => RaisePriceGridError(e.Exception));
+        var s1 = tradingClient.GetData(46);
       }
     }
     List<Rate> rsiBars = new List<Rate>();

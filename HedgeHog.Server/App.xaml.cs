@@ -10,6 +10,9 @@ using System.Security.Permissions;
 using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
+using System.ServiceModel;
+using System.ServiceModel.Description;
+
 
 namespace HedgeHog.Server {
   /// <summary>
@@ -18,6 +21,7 @@ namespace HedgeHog.Server {
   public sealed partial class App : Application,IDisposable {
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
+    ServiceHost wcfHost;
     [EnvironmentPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public App() {
       try {
@@ -35,6 +39,8 @@ namespace HedgeHog.Server {
             MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
           }
         }));
+        wcfHost = new ServiceHost(typeof(HedgeHog.WCF.Trading));
+        wcfHost.Open();
       } catch (Exception exc) {
         MessageBox.Show(exc.Message);
         App.Current.Shutdown();
@@ -42,6 +48,7 @@ namespace HedgeHog.Server {
     }
 
     private void Application_Exit(object sender, ExitEventArgs e) {
+      wcfHost.Close();
       Dispose();
     }
 

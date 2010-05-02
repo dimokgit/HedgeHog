@@ -957,6 +957,9 @@ namespace HedgeHog {
             if (rs.Sell > 50.01 && rs.Buy < 49.99) RsiStats = rs;
           } else
             Log = "Last tick - no RSI.";
+          rsiFractals = ticksInTimeFrame
+            .FindWaves(b => Math.Sign(b.PriceRsi.GetValueOrDefault(50) - 50), b => b.PriceRsi);
+
           #endregion
 
           Debug.WriteLine("Rsi:" + sw.ElapsedMilliseconds + " ms.");
@@ -987,11 +990,6 @@ namespace HedgeHog {
                 Fractals.FillFractalHeight();
               }
             }
-
-            #region Ris
-            rsiFractals = ticksArray.GetMinuteTicks(1)
-              .FindWaves(b => Math.Sign(b.PriceRsi.GetValueOrDefault(50) - 50), b => b.PriceRsi);
-            #endregion
 
             fractalsLastUpdate = DateTime.Now;
           }
@@ -1520,9 +1518,9 @@ namespace HedgeHog {
           var priceTime = price.Time > serverTime.AddMinutes(10) ? price.Time.AddHours(-1) : price.Time;
           RunMinutesBack(price);
           if (doTicks) {
-            ticks.Add(new Tick(serverTime, price.Ask, price.Bid, 0, false));
+            //ticks.Add(new Tick(serverTime, price.Ask, price.Bid, 0, false));
             //Ticks.FillRSI(14, getPrice, getRsi, setRsi);
-            GetTicksAsync(ticksStartDate, fxDateNow);
+            GetTicksAsync();
           } else {
             var lastTickTime = serverTime.Round().AddMinutes(-1);
             if ((lastTickTime - _ticks.Last().StartDate).TotalMilliseconds > 0)

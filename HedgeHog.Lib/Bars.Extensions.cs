@@ -76,19 +76,18 @@ namespace HedgeHog.Bars {
       var stDev = bars.StdDev(Sort);
       Func<TBar, double, double,bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
       Sign = (r) => Math.Sign(Sort(r).Value - average);
-      foreach (var bar in bars.Where(b=>where(b,average,stDev)).Skip(1)) {
+      bars = bars.Where(b=>where(b,average,stDev)).Skip(1);
+      foreach (var bar in bars) {
         if (Sign(barPrev) == Sign(bar))
           wave.Add(bar);
         else {
-          var sort = wave.OrderBy(Sort);
-          var w = (Sign(barPrev) >= 0 ? sort.Last() : sort.First()).Clone() as TBar;
-          w.Fractal = Sign(barPrev) >= 0 ? FractalType.Sell : FractalType.Buy;
-          waves.Add(w);
+          GetRisFractal<TBar>(Sign, Sort, barPrev, waves, wave);
           wave.Clear();
           wave.Add(bar);
         }
         barPrev = bar;
       }
+      GetRisFractal<TBar>(Sign, Sort, barPrev, waves, wave);
       return waves.OrderBarsDescending().ToArray();
       /*
       var ws = waves.OrderBarsDescending().ToArray();
@@ -103,6 +102,13 @@ namespace HedgeHog.Bars {
       wl = wl.Where(w => Sort(w) <= (avg-std)).ToArray();
       return wh.Concat(wl).OrderBarsDescending().ToArray().FixFractals(Sort).ToArray();
       */
+    }
+
+    private static void GetRisFractal<TBar>(Func<TBar, int> Sign, Func<TBar, double?> Sort, TBar barPrev, List<TBar> waves, List<TBar> wave) where TBar : BarBase {
+      var sort = wave.OrderBy(Sort);
+      var w = (Sign(barPrev) >= 0 ? sort.Last() : sort.First()).Clone() as TBar;
+      w.Fractal = Sign(barPrev) >= 0 ? FractalType.Sell : FractalType.Buy;
+      waves.Add(w);
     }
     private static TBar[] GetRsiFractals<TBar>(this TBar[] rsiHigh) where TBar : BarBase {
       var sell = rsiHigh[0].PriceRsi > 50;
@@ -296,6 +302,7 @@ namespace HedgeHog.Bars {
       if (fxTicks.Count() == 0) return new Rate[] { };
       var startDate = fxTicks.Max(t => t.StartDate);
       if (Round) startDate = startDate.Round().AddMinutes(1);
+      double? tempRsi;
       return (from t in fxTicks.OrderBarsDescending().ToArray()
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
@@ -312,7 +319,9 @@ namespace HedgeHog.Bars {
                 BidOpen = tg.First().BidOpen,
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
-                PriceRsi = tg.Average(t => t.PriceRsi),
+                PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
+                : tempRsi == 50 ? 50
+                : tempRsi > 50 ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
                 StartDate = startDate.AddMinutes(-tg.Key)
               }
                 ).ToArray();
