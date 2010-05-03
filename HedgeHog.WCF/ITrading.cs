@@ -11,13 +11,15 @@ namespace HedgeHog.WCF {
   [ServiceContract]
   public interface ITrading {
 
+
     [OperationContract]
     string GetData(int value);
 
     [OperationContract]
     CompositeType GetDataUsingDataContract(CompositeType composite);
 
-    // TODO: Add your service operations here
+    [OperationContract]
+    TradeResponse GetPair(HedgeHog.TradeRequest request);
   }
 
 

@@ -26,30 +26,10 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Rsi;
+using HedgeHog.Models;
 
 namespace HedgeHog {
-  public class SimpleDelegateCommand : ICommand {
-    // Specify the keys and mouse actions that invoke the command. 
-    public Key GestureKey { get; set; }
-    public ModifierKeys GestureModifier { get; set; }
-    public MouseAction MouseGesture { get; set; }
-
-    Action<object> _executeDelegate;
-
-    public SimpleDelegateCommand(Action<object> executeDelegate) {
-      _executeDelegate = executeDelegate;
-    }
-
-    public void Execute(object parameter) {
-      _executeDelegate(parameter);
-    }
-
-    public bool CanExecute(object parameter) { return true; }
-    public event EventHandler CanExecuteChanged;
-  }
-
-
-  public sealed partial class ServerWindow : Window, IServer, INotifyPropertyChanged, IDisposable {
+  public sealed partial class ServerWindow : WindowModel, IServer, IDisposable {
     #region Log
     object Log {
       set {
@@ -104,6 +84,7 @@ namespace HedgeHog {
     public static string CurrentDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
     static Order2GoAddIn.CoreFX coreFX { get { return (Application.Current as Server.App).CoreFX; } }
     Order2GoAddIn.FXCoreWrapper fw;
+    public string Pair { get { return fw == null ? "" : fw.Pair; } }
     List<Rate> _ticks = new List<Rate>();
     List<Rate> Ticks {
       get { return doTicks || lastBar.Count == 0 ? _ticks : _ticks.Concat(new[] { lastBar }).ToList(); }
@@ -513,7 +494,9 @@ namespace HedgeHog {
     #endregion
 
     #region Ctor
-    public ServerWindow() {
+    public ServerWindow():this("") { }
+    public ServerWindow(string name) {
+      this.Name = name;
       FillRsisCommand = new SimpleDelegateCommand(o =>{
         FillRsis(true);
       });
@@ -521,7 +504,7 @@ namespace HedgeHog {
       fw = new Order2GoAddIn.FXCoreWrapper(coreFX);
       InitializeComponent();
       System.IO.File.Delete(logFileName);
-      Closing += new System.ComponentModel.CancelEventHandler(ServerWindow_Closing);
+      Closing += new System.ComponentModel.CancelEventHandler(Window_Closing);
       coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
       coreFX.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(coreFX_LoginError);
       fw.Pair = cmbPair.Text;
@@ -542,6 +525,8 @@ namespace HedgeHog {
       DecisionScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
       RsiTuneUpScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
       PositionHelper = new CloseByPositionHelper(fw);
+      if (coreFX.IsLoggedIn)
+        Login(null, null);
     }
     #endregion
     //Dimok Trade Signals by Currency(not pair)
@@ -575,14 +560,14 @@ namespace HedgeHog {
           Ticks.AddUp(fw.GetTicks(550));
           FillRsis();
         }
-        var ticks = _ticks.ToArray().TakeWhile(b => b.IsHistory).ToArray();
-        if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
-          //fw.GetBars(ratePeriod, StartDate, EndDate, ref ticks);
-          var ts = ticks.AddUp(fw.GetTicks(300)).ToList();
+        //var ticks = _ticks.ToArray().TakeWhile(b => b.IsHistory).ToArray();
+        //if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
+        //  //fw.GetBars(ratePeriod, StartDate, EndDate, ref ticks);
+          var ts = _ticks.ToArray().AddUp(fw.GetTicks(300)).ToList();
           lock (_ticks) {
             Ticks = ts;
-          }
-          //Ticks.FillMass();
+          //}
+          ////Ticks.FillMass();
         }
         //TicksPerMinute(Ticks);
         FillRsis();
@@ -613,7 +598,6 @@ namespace HedgeHog {
       set {
         if (_rsiTicks.HasValue && ((value - _rsiTicks.GetValueOrDefault()) / _rsiTicks).Abs() < .01) return;
         _rsiTicks = _rsiTicks.Cma(3, value);
-        FillRsisCommand.Execute(null);
         Dispatcher.Invoke(DispatcherPriority.DataBind, new Action(() => {
           txtRsiTicks.Text = rsiTicks + "";
         }));
@@ -878,7 +862,6 @@ namespace HedgeHog {
         var bsBaseFoo = bsBaseFoo4;
         try {
           var ret = new List<string>();
-          var sw = Stopwatch.StartNew();
           #region TickByMinute
           var ticksInTimeFrame = TicksInTimeFrame;
           var ticksArray = Ticks.ToArray();
@@ -893,8 +876,6 @@ namespace HedgeHog {
           TicksPerMinutePrev = (Fractals1.Length < 4 ? TicksPerMinuteCurr : ticksArray.TradesPerMinute(Fractals1[2], Fractals1[3])).ToInt();
           var cmaPeriod = TicksPerMinuteCurr / 2.0;
           #endregion
-
-          Debug.WriteLine("TickByMinute:" + sw.ElapsedMilliseconds + " ms.");
 
           #region Overlaps
           ticksByMinute.FillOverlaps();
@@ -937,8 +918,6 @@ namespace HedgeHog {
           }
           #endregion
 
-          Debug.WriteLine("Overlaps:" + sw.ElapsedMilliseconds + " ms.");
-
           #region Rsi
           var rsiSlack = ticksInTimeFrame.Last().StartDate.Subtract(OverlapAverageShort);
           var rsiTicks = ticksInTimeFrame
@@ -962,8 +941,6 @@ namespace HedgeHog {
 
           #endregion
 
-          Debug.WriteLine("Rsi:" + sw.ElapsedMilliseconds + " ms.");
-
           _CorridorHeightMinutesBySchedule = Lib.CMA(_CorridorHeightMinutesBySchedule, cmaPeriod, (TimeSpan.FromSeconds((OverlapAverage.TotalSeconds * 2))).TotalMinutes);
 
 
@@ -972,9 +949,7 @@ namespace HedgeHog {
             var fractalCountMaximun = 10;
             var fractalTicks = ticksArray.GroupTicksToRates().OrderBarsDescending().ToArray();
             Func<double?, Rate[]> findFractals = wave => fractalTicks.FindFractalTicks(wave.Value, TimeSpan.FromMinutes(CorridorHeightMinutesBySchedule), 1, fractalCountMaximun, new Rate[] { }).OrderBarsDescending().ToArray();
-            Debug.WriteLine("GroupTicksToRates:" + sw.ElapsedMilliseconds + " ms.");
             Fractals = findFractals(0);
-            Debug.WriteLine("GroupTicksToRates Done:" + sw.ElapsedMilliseconds + " ms.");
 
             if (false) { ticksArray.FillPower(TimeSpan.FromMinutes(1)); }
 
@@ -996,8 +971,6 @@ namespace HedgeHog {
           var legAllAverageStats = Fractals.Where(f => f.Ph.Height.HasValue).Select(f => f.Ph.Height.Abs().Value).ToArray().GetWaveStats();
             #endregion
 
-          Debug.WriteLine("Normalize:" + sw.ElapsedMilliseconds + " ms.");
-
           #region Fractals1
           Fractals1 = Fractals.Concat(new[] { ticksArray.Last().Clone() as Tick }).OrderBarsDescending().ToArray();
           if (Fractals1.Length > 1)
@@ -1015,9 +988,6 @@ namespace HedgeHog {
           }
 
           #endregion
-
-          Debug.WriteLine("Fractals:" + sw.ElapsedMilliseconds + " ms.");
-
 
           CorridorSpreadMinimum = Fractals.Skip(1).Select((f, i) => Math.Abs(f.PriceAvg - Fractals[i].PriceAvg)).Average();
 
@@ -1051,8 +1021,6 @@ namespace HedgeHog {
           //var waveDownsPeriod = legDowns.Length == 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(legDowns.Average(f => (f.f.StartDate - Fractals[f.i + 1].StartDate).TotalSeconds));
           #endregion
 
-          Debug.WriteLine("Legs Up/Down:" + sw.ElapsedMilliseconds + " ms.");
-
           #region Legs
           //        var fractalsWithHeight = fractals.Where(f => f.h > 0).OrderByDescending(f => f.h).ToArray();
           //        var legAllAverage = fw.InPips(fractalsWithHeight.Skip(fractalsWithHeight.Length > 1 ? 1 : 0).Average(f => f.h), 1);
@@ -1064,8 +1032,6 @@ namespace HedgeHog {
             legPriceTicks.Max(t => t.PriceHigh) - fractalTradeLong.FractalPrice.Value
             : fractalTradeLong.FractalPrice.Value - legPriceTicks.Min(t => t.PriceLow);
           #endregion
-
-          Debug.WriteLine("Legs:" + sw.ElapsedMilliseconds + " ms.");
 
           this.baseHeight = bsBaseFoo(f => f.Ph.Height.Abs());
           var heightRatio = Fractals1[0].Ph.Height.Abs() / baseHeight;
@@ -1102,8 +1068,6 @@ namespace HedgeHog {
           //ret.Add("Per.Up: " + waveUpsPeriod.TotalMinutes.ToString("n1"));
           //ret.Add("Per.Dn: " + waveDownsPeriod.TotalMinutes.ToString("n1"));
           #endregion
-
-          Debug.WriteLine("Stats:" + sw.ElapsedMilliseconds + " ms.");
 
           FractalStats = string.Join(Environment.NewLine, ret.ToArray());
         } catch (Exception exc) {
@@ -2117,57 +2081,25 @@ namespace HedgeHog {
 
     #region Login
     private void Login(object sender, RoutedEventArgs e) {
-      if (!coreFX.IsLoggedIn) {
-        Log = "Login is in progress ...";
-        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
-          coreFX.LogOn(ui.Account, txtPassword.Text, ui.isDemo);
-          if (VolatilityScheduler == null) {
-            VolatilityScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(0), TimeSpan.FromMinutes(1), () => { GetVolatility(); }, (s, ee) => Log = ee.Exception);
-            VolatilityScheduler.Finished += (s1, e1) => {
-              if (getTicksCommand != null) {
-                TicksScheduler.Command = getTicksCommand;
-                getTicksCommand = null;
-              }
-            };
+      Log = "Login is in progress ...";
+      Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+        coreFX.LogOn(ui.Account, txtPassword.Text, ui.isDemo);
+        if (VolatilityScheduler == null) {
+          VolatilityScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(0), TimeSpan.FromMinutes(1), () => { GetVolatility(); }, (s, ee) => Log = ee.Exception);
+          VolatilityScheduler.Finished += (s1, e1) => {
+            if (getTicksCommand != null) {
+              TicksScheduler.Command = getTicksCommand;
+              getTicksCommand = null;
+            }
+          };
 
-          }
-        }));
-      }
+        }
+      }));
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
         CorridorsWindow_EURJPY.WindowState = System.Windows.WindowState.Normal;
         CorridorsWindow_EURJPY.Activate();
 
       }));
-    }
-    #endregion
-
-    #region INotifyPropertyChanged Members
-    public event PropertyChangedEventHandler PropertyChanged;
-    void RaisePropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
-      if (propertyLamdas == null || propertyLamdas.Length == 0) RaisePropertyChangedCore();
-      else
-        foreach (var pl in propertyLamdas) {
-          RaisePropertyChanged(pl);
-        }
-    }
-    void RaisePropertyChanged(Expression<Func<object>> propertyLamda) {
-      var body = propertyLamda.Body as UnaryExpression;
-      if (body == null) {
-        PropertyChanged.Raise(propertyLamda);
-      } else {
-        var operand = body.Operand as MemberExpression;
-        var member = operand.Member;
-        RaisePropertyChangedCore(member.Name);
-      }
-    }
-    void RaisePropertyChangedCore(params string[] propertyNames) {
-      if (PropertyChanged == null) return;
-      if (propertyNames.Length == 0)
-        propertyNames = new[] { new System.Diagnostics.StackFrame(1).GetMethod().Name.Substring(4) };
-      foreach (var pn in propertyNames)
-        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
-          PropertyChanged(this, new PropertyChangedEventArgs(pn));
-        }));
     }
     #endregion
 
@@ -2189,10 +2121,7 @@ namespace HedgeHog {
       this.ui.SetProperty("_" + name, tb.Text);
       priceHeightMinOld = priceHeightMaxOld = 0;
     }
-    void ServerWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-      fw.Dispose();
-    }
-    private void Checked(object sender, RoutedEventArgs e) {
+    public override void Checked(object sender, RoutedEventArgs e) {
       var chb = (sender as CheckBox);
       var name = chb.Name;
       this.ui.SetProperty("_" + name, chb.IsChecked);
@@ -2226,6 +2155,30 @@ namespace HedgeHog {
       });
     }
 
+    private void Window_Closing_Hide(object sender, System.ComponentModel.CancelEventArgs e) {
+      e.Cancel = true;
+      Application.Current.Dispatcher.BeginInvoke(
+        DispatcherPriority.Background,
+        (DispatcherOperationCallback)delegate(object o) {
+        Hide();
+        return null;
+      },
+          null);
+
+    }
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+      if (HedgeHog.Server.App.serverWindows[0] == this)
+        Dispatcher.Invoke(new Action(() => {
+          if (fw != null)
+            fw.Dispose();
+          if (CorridorsWindow_EURJPY != null)
+            CorridorsWindow_EURJPY.Close();
+        }));
+      else
+        Window_Closing_Hide(sender, e);
+    }
+
+
     #region IDisposable Members
     ~ServerWindow() {
       Dispose(false);
@@ -2241,30 +2194,10 @@ namespace HedgeHog {
     }
 
     #endregion
-  }
-  public static class PropertyChangedExtensions {
-    public static void Raise(this PropertyChangedEventHandler handler, LambdaExpression propertyExpression) {
-      if (handler != null) {
-        // Retreive lambda body
-        var body = propertyExpression.Body as MemberExpression;
-        if (body == null)
-          throw new ArgumentException("'propertyExpression' should be a member expression");
 
-        // Extract the right part (after "=>")
-        var vmExpression = body.Expression as ConstantExpression;
-        if (vmExpression == null)
-          throw new ArgumentException("'propertyExpression' body should be a constant expression");
-
-        // Create a reference to the calling object to pass it as the sender
-        LambdaExpression vmlambda = System.Linq.Expressions.Expression.Lambda(vmExpression);
-        Delegate vmFunc = vmlambda.Compile();
-        object vm = vmFunc.DynamicInvoke();
-
-        // Extract the name of the property to raise a change on
-        string propertyName = body.Member.Name;
-        var e = new PropertyChangedEventArgs(propertyName);
-        handler(vm, e);
-      }
+    Server.App app { get { return Application.Current as Server.App; } }
+    private void OpenMainWindow(object sender, RoutedEventArgs e) {
+      Server.App.AddMainWindow(null);
     }
   }
 }

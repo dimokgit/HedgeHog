@@ -391,7 +391,6 @@ namespace Order2GoAddIn {
       }
     }
 
-    [MethodImpl(MethodImplOptions.Synchronized)]
     public Tick[] GetTicks(int tickCount) {
       DateTime startDate = DateTime.MinValue;
       var ticks = GetTicks(startDate, FX_DATE_NOW,tickCount);
@@ -407,7 +406,7 @@ namespace Order2GoAddIn {
             dateMin = ticks.Min(b => b.StartDate);
             if (endDate > dateMin) {
               endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
-              System.Diagnostics.Debug.WriteLine("Ticks:" + ticks.Count()+" @ "+endDate.ToLongTimeString());
+              System.Diagnostics.Debug.WriteLine("Ticks[{2}]:{0} @ {1:t}", ticks.Count(), endDate.ToLongTimeString(), Pair);
             } else
               endDate = endDate.AddSeconds(-3);
           } catch (Exception exc) {

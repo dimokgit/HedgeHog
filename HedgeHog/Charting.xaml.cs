@@ -21,6 +21,7 @@ using System.Windows.Threading;
 using HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
+using System.ServiceModel;
 namespace HedgeHog {
 
   public partial class Charting : Window, INotifyPropertyChanged {
@@ -205,12 +206,6 @@ namespace HedgeHog {
     public int _txtFoo;
     private int fooNumber { get { return _txtFoo; } }
 
-    private int fooPositionBuy { get { return Lib.GetComboBoxIndex(cbPositionFooBuy); } }
-    private int fooPositionSell { get { return Lib.GetComboBoxIndex(cbPositionFooSell); } }
-
-    private int fooDensity { get { return Lib.GetComboBoxIndex(cbDensityFoo); } }
-    private int fooGoTradeBuy { get { return Lib.GetComboBoxIndex(cbGoTradeBuy); } }
-    private int fooGoTradeSell { get { return Lib.GetComboBoxIndex(cbGoTradeSell); } }
 
     public int _txtHighMinutes;
     private int highMinutes { get { return _txtHighMinutes; } }
@@ -314,7 +309,6 @@ namespace HedgeHog {
     ThreadScheduler getVoltagesScheduler;
     ThreadScheduler ClosePositionsScheduler;
     ThreadScheduler RsiScheduler;
-    HedgeHog.TradingService.TradingClient tradingClient = new TradingService.TradingClient();
     public Charting() :this("",null){
     }
     public Charting(string name, Order2GoAddIn.FXCoreWrapper FW) {
@@ -335,7 +329,6 @@ namespace HedgeHog {
         fw.PairChanged += (s, e) => DC.Title = fw.Pair;
         PriceScheduler = new ThreadScheduler(
           TimeSpan.FromSeconds(1), ThreadScheduler.infinity, ProcessPrice, (s, e) => RaisePriceGridError(e.Exception));
-        var s1 = tradingClient.GetData(46);
       }
     }
     List<Rate> rsiBars = new List<Rate>();
@@ -468,6 +461,29 @@ namespace HedgeHog {
       get { return  ColorTemperature(ticksTemperature); }
     }
 
+    /// <summary>
+    /// WCF proxys do not clean up properly if they throw an exception. This method ensures that the service proxy is handeled correctly.
+    /// Do not call TService.Close() or TService.Abort() within the action lambda.
+    /// </summary>
+    /// <typeparam name="TService">The type of the service to use</typeparam>
+    /// <param name="action">Lambda of the action to performwith the service</param>
+
+    public static void Using<TService>(Action<TService> action)
+      where TService : ICommunicationObject, IDisposable, new() {
+      var service = new TService();
+      bool success = false;
+      try {
+        action(service);
+        if (service.State != CommunicationState.Faulted) {
+          service.Close();
+          success = true;
+        }
+      } finally {
+        if (!success) {
+          service.Abort();
+        }
+      }
+    }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
       try {
@@ -525,6 +541,7 @@ namespace HedgeHog {
 
           #region TradeRequest
           var tr = new TradeRequest() {
+            pair = pair,
             guid = this.guid,
             tradeAdded = tradeAdded,
             BuyNetPLPip = summary.BuyNetPLPip,
@@ -536,12 +553,12 @@ namespace HedgeHog {
             closeOppositeOffset = this.closeOppositeOffset,
             corridorMinites = this.corridorMinMinuteBar,
             DecisionFoo = this.fooNumber,
-            densityFoo = this.fooDensity,
-            goTradeFooBuy = this.fooGoTradeBuy,
-            goTradeFooSell = this.fooGoTradeSell,
+            densityFoo = DC.fooDensity,
+            goTradeFooBuy = DC.fooGoTradeBuy,
+            goTradeFooSell = DC.fooGoTradeSell,
             highBarMinutes = this.highMinutes,
-            lotsToTradeFooBuy = this.fooPositionBuy,
-            lotsToTradeFooSell = this.fooPositionSell,
+            lotsToTradeFooBuy = DC.fooPositionBuy,
+            lotsToTradeFooSell = DC.fooPositionSell,
             profitMin = this.profitMin,
             sellOnProfitLast = this.sellOnProfitLast,
             closeOnProfitOnly = this.closeOnProfitOnly,
@@ -579,6 +596,10 @@ namespace HedgeHog {
           tr.tradesBuy.ToList().ForEach(t => DC.Trades.Add(t));
           tr.tradesSell.ToList().ForEach(t => DC.Trades.Add(t));
 
+          Using<TradingService.TradingClient>(tradingClient => {
+            ti = tradingClient.GetPair(tr);
+          });
+          if( false)
           for (int sp = int.Parse(serverPort) - 5, spMax = sp + 10; sp < spMax; sp++) 
             try {
               var rc = RemoteClient.Activate(tcpPath);
@@ -709,18 +730,20 @@ namespace HedgeHog {
         #region Corridor
         if (!corridorOK) GoBuy = GoSell = false;
         #region Show Color
-        var lastFractalDateBuy = ti.FractalDatesBuy.DefaultIfEmpty(DateTime.MaxValue).Max();
-        var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
-        var canBuyByFractal = tradesBuy.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
-        var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
-        if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
-        if (!canSellByFractal && this.GoSell) this.GoSell = false;
-        Dispatcher.BeginInvoke(new Action(() => {
-          var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
-          var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;
-          DC.CanBuyByCorridor = colorBuy + "";
-          DC.CanSellByCorridor = colorSell + "";
-        }));
+        if (ti != null) {
+          var lastFractalDateBuy = ti.FractalDatesBuy.DefaultIfEmpty(DateTime.MaxValue).Max();
+          var lastFractalDateSell = ti.FractalDatesSell.DefaultIfEmpty(DateTime.MaxValue).Max();
+          var canBuyByFractal = tradesBuy.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateSell;
+          var canSellByFractal = tradesSell.Select(t => t.Time).OrderBy(t => t).LastOrDefault() < lastFractalDateBuy;
+          if (!canBuyByFractal && this.GoBuy) this.GoBuy = false;
+          if (!canSellByFractal && this.GoSell) this.GoSell = false;
+          Dispatcher.BeginInvoke(new Action(() => {
+            var colorBuy = corridorOK && canBuyByFractal ? Colors.Transparent : Colors.Crimson;
+            var colorSell = corridorOK && canSellByFractal ? Colors.Transparent : Colors.Crimson;
+            DC.CanBuyByCorridor = colorBuy + "";
+            DC.CanSellByCorridor = colorSell + "";
+          }));
+        }
         #endregion
         #endregion
 
@@ -871,6 +894,51 @@ namespace HedgeHog {
     }
 
 
+    public int fooPositionBuy { get { return (FooPositionBuy.Parent as ComboBox).SelectedIndex; } }
+    public ComboBoxItem FooPositionBuy {
+      get { return (ComboBoxItem)GetValue(FooPositionBuyProperty); }
+      set { SetValue(FooPositionBuyProperty, value); }
+    }
+    // Using a DependencyProperty as the backing store for FooPositionBuy.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FooPositionBuyProperty =
+        DependencyProperty.Register("FooPositionBuy", typeof(ComboBoxItem), typeof(ViewModel));
+
+    public int fooPositionSell { get { return (FooPositionSell.Parent as ComboBox).SelectedIndex; } }
+    public ComboBoxItem FooPositionSell {
+      get { return (ComboBoxItem)GetValue(FooPositionSellProperty); }
+      set { SetValue(FooPositionSellProperty, value); }
+    }
+    // Using a DependencyProperty as the backing store for FooPositionSell.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FooPositionSellProperty =
+        DependencyProperty.Register("FooPositionSell", typeof(ComboBoxItem), typeof(ViewModel));
+
+    public int fooDensity { get { return (FooDensity.Parent as ComboBox).SelectedIndex; } }
+    public ComboBoxItem FooDensity {
+      get { return (ComboBoxItem)GetValue(FooDensityProperty); }
+      set { SetValue(FooDensityProperty, value); }
+    }
+    // Using a DependencyProperty as the backing store for FooDensity.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FooDensityProperty =
+        DependencyProperty.Register("FooDensity", typeof(ComboBoxItem), typeof(ViewModel));
+
+    public int fooGoTradeBuy { get { return (FooGoTradeBuy.Parent as ComboBox).SelectedIndex; } }
+    public ComboBoxItem FooGoTradeBuy {
+      get { return (ComboBoxItem)GetValue(FooGoTradeBuyProperty); }
+      set { SetValue(FooGoTradeBuyProperty, value); }
+    }
+    // Using a DependencyProperty as the backing store for FooGoTradeBuy.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FooGoTradeBuyProperty =
+        DependencyProperty.Register("FooGoTradeBuy", typeof(ComboBoxItem), typeof(ViewModel));
+
+
+    public int fooGoTradeSell { get { return (FooGoTradeSell.Parent as ComboBox).SelectedIndex; } }
+    public ComboBoxItem FooGoTradeSell {
+      get { return (ComboBoxItem)GetValue(FooGoTradeSellProperty); }
+      set { SetValue(FooGoTradeSellProperty, value); }
+    }
+    // Using a DependencyProperty as the backing store for FooGoTradeSell.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FooGoTradeSellProperty =
+        DependencyProperty.Register("FooGoTradeSell", typeof(ComboBoxItem), typeof(ViewModel));
 
     public string Volatility {
       get { return (string)GetValue(VolatilityProperty); }

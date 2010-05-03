@@ -146,7 +146,7 @@
                     <TextBlock>
       <Label Name="lblVolatility" ToolTip="Avg15/Avg10/Avg5/Avg1 > VM" Content="{Binding Volatility}"></Label>
                 <TextBox Name="txtFoo" Text="{state:UserSettings Default=11}" TextChanged="txtBSPeriod_TextChanged" ToolTip="Decision Function Number" />
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeBuy" ToolTip="Can Trade Buy">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" SelectedItem="{Binding FooGoTradeBuy}" Name="cbGoTradeBuy"  ToolTip="Can Trade Buy">
               <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
               <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
               <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
@@ -156,7 +156,7 @@
               <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
               <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
             </ComboBox>
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" SelectedItem="{Binding FooGoTradeSell}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
               <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
               <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
               <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
@@ -220,21 +220,21 @@
           </StackPanel>
             </Border>
             <TextBlock ToolTipService.ShowDuration="300000">
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooBuy" ToolTip="Number Of Positions Buy">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooBuy" SelectedItem="{Binding FooPositionBuy}" ToolTip="Number Of Positions Buy">
               <ComboBoxItem>p*N</ComboBoxItem>
               <ComboBoxItem>∑p+1</ComboBoxItem>
               <ComboBoxItem>∑(p+1)</ComboBoxItem>
               <ComboBoxItem>1</ComboBoxItem>
               <ComboBoxItem>(p+1)*N</ComboBoxItem>
             </ComboBox>
-            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooSell" ToolTip="Number Of Positions Sell">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooSell" SelectedItem="{Binding FooPositionSell}" ToolTip="Number Of Positions Sell">
               <ComboBoxItem>p*N</ComboBoxItem>
               <ComboBoxItem>∑p+1</ComboBoxItem>
               <ComboBoxItem>∑(p+1)</ComboBoxItem>
               <ComboBoxItem>1</ComboBoxItem>
               <ComboBoxItem>(p+1)*N</ComboBoxItem>
             </ComboBox>
-            <ComboBox SelectedIndex="{state:UserSettings Default=2}" Name="cbDensityFoo" ToolTip="Next Trade Density">
+            <ComboBox SelectedIndex="{state:UserSettings Default=2}" Name="cbDensityFoo" SelectedItem="{Binding FooDensity}" ToolTip="Next Trade Density">
               <ComboBoxItem ToolTip="Max(Corridor,5min,MaxDistBtwTrade)">Max</ComboBoxItem>
               <ComboBoxItem ToolTip="Max(HighMinuteSpread,MaxDistBtwTrade)">HMM</ComboBoxItem>
               <ComboBoxItem ToolTip="HighMinuteSpread">HMS</ComboBoxItem>
@@ -250,7 +250,7 @@
             <Border BorderBrush="Peru" BorderThickness="1" Margin="1" VerticalAlignment="Center" MouseDown="Voltage_MouseDown" >
                 <TextBlock>
           <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" />
-          <Label Name="lblServerTime" Height="Auto" Content="TimeSpanLast" ContentStringFormat="/{0:n0}]" ToolTip="Server Time" VerticalAlignment="Center" VerticalContentAlignment="Center"></Label>
+          <Label Name="lblServerTime" Height="Auto" Content="{Binding TimeSpanLast}" ContentStringFormat="/{0:n0}]" ToolTip="Server Time" VerticalAlignment="Center" VerticalContentAlignment="Center"></Label>
             <Label>|</Label>      
             <Label Content="{Binding TimeFrame}" ToolTip="Time Frame"/>
         <Label Content=":" VerticalAlignment="Center" Margin="0"></Label>

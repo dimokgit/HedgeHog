@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog</RootNamespace>
     <AssemblyName>HedgeHog</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -26,6 +26,7 @@
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation />
+    <TargetFrameworkProfile />
     <PublishUrl>http://FilterRow/WcfToHedgeHog/HH/</PublishUrl>
     <Install>false</Install>
     <InstallFrom>Web</InstallFrom>
@@ -41,7 +42,6 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -171,17 +171,27 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
+    <None Include="Properties\DataSources\TradeResponse.datasource" />
+    <None Include="Service References\TradingService\Arrays.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Service References\TradingService\HedgeHog.TradingService.CompositeType.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\TradingService\Trading.wsdl" />
-    <None Include="Service References\TradingService\Trading.xsd">
+    <None Include="Service References\TradingService\HedgeHog.WCF.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TradingService\Trading1.xsd">
+    <None Include="Service References\TradingService\HedgeHog.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TradingService\Trading2.xsd">
+    <None Include="Service References\TradingService\Order2GoAddIn.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TradingService\service.wsdl" />
+    <None Include="Service References\TradingService\service.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TradingService\service1.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="User.config" />
@@ -291,9 +301,6 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadataStorage Include="Service References\TradingService\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\TradingService\Trading.disco" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Service References\TradingService\configuration91.svcinfo" />

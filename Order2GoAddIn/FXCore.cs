@@ -61,25 +61,27 @@ namespace Order2GoAddIn {
       return LogOn(user, password, URL, isDemo);
     }
     public bool LogOn(string user, string password, string url, bool isDemo) {
-      this.user = user;
-      this.password = password;
-      this.isDemo = isDemo;
-      this.URL = url + "" != "" ? url : "http://www.fxcorporate.com";
-      Logout();
-      try {
-        mCore = new FXCore.CoreAut();
-        mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
-        mDesk.SetTimeout(mDesk.TIMEOUT_PRICEHISTORY, 30000);
-        mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
-        RaiseLoggedIn();
-        InitTimer();
-        return true;
-      } catch (Exception e) {
-        mCore = null;
-        mDesk = null;
-        RaiseLoginError(e);
-        return false;
+      if (!IsLoggedIn) {
+        this.user = user;
+        this.password = password;
+        this.isDemo = isDemo;
+        this.URL = url + "" != "" ? url : "http://www.fxcorporate.com";
+        Logout();
+        try {
+          mCore = new FXCore.CoreAut();
+          mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
+          mDesk.SetTimeout(mDesk.TIMEOUT_PRICEHISTORY, 30000);
+          mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
+          InitTimer();
+        } catch (Exception e) {
+          mCore = null;
+          mDesk = null;
+          RaiseLoginError(e);
+          return false;
+        }
       }
+      RaiseLoggedIn();
+      return true;
     }
     public void Logout() {
       if (mCore != null) {

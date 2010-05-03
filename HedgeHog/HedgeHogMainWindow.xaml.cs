@@ -17,8 +17,9 @@ using System.Threading;
 using ControlExtentions;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
+using HedgeHog.Models;
 namespace HedgeHog {
-  public partial class HedgeHogMainWindow : Window,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
+  public partial class HedgeHogMainWindow : WindowModel,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
 
     #region IUserSettingsStorage Members
     public WpfPersist.SaveDelegate Save { get; set; }
@@ -29,60 +30,74 @@ namespace HedgeHog {
     Thread threadCloseSell = new Thread(() => { });
 
     public string _txtPassword, _txtAccNum;
-    public int? _txtLeverage;
-    public double? _txtTradeDelta, _txtStartingBalance, _txtPipsToMCHistory, _txtMinEquityHistory;
+    public int _txtLeverage;
+    public double _txtTradeDelta, _txtStartingBalance;
 
-    public string title {
-      get {
-        return AccountNumber + ":" + pair;
+    public string title { get { return AccountNumber + ":" + pair; } }
+    public string AccountNumber { get { return _txtAccNum; } }
+    string password { get { return _txtPassword; } }
+
+    public ComboBoxItem LotsToTradeBuy { get; set; }
+    int lotsToTradeBuy { get { return Convert.ToInt32(LotsToTradeBuy.Content); } }
+
+    public ComboBoxItem LotsToTradeSell { get; set; }
+    int lotsToTradeSell { get { return Convert.ToInt32(LotsToTradeSell.Content); } }
+
+    public ComboBoxItem Pair { get; set; }
+    string pair { get { return Pair == null ? "" : Pair.Content + ""; } }
+
+    double tradeDelta { get { return _txtTradeDelta; } }
+
+    double _accountEquity = 0;
+    public double AccountEquity {
+      get { return _accountEquity; }
+      set { 
+        _accountEquity = value; 
+        RaisePropertyChangedCore();
       }
     }
-    public string AccountNumber {
-      get { return _txtAccNum ?? Lib.GetTextBoxText(txtAccNum); }
-      set { Lib.SetTextBoxText(txtAccNum, value); }
-    }
-    string password { get { return _txtPassword ?? Lib.GetTextBoxText(txtPassword); } }
-    byte lotsToTradeBuy { get { return byte.Parse(Lib.GetSelected(cmbLotsToTradeBuy)); } }
-    byte lotsToTradeSell { get { return byte.Parse(Lib.GetSelected(cmbLotsToTradeSell)); } }
-    string pair {
-      get {
-        try {
-          return ((ContentControl)cmbPair.SelectedItem).Content + "";
-        } catch (Exception exc) {
-          MessageBox.Show(exc.Message);
-          return "";
-        }
-      }
-      set { cmbPair.Text = value; }
-    }
-    double tradeDelta { get { return _txtTradeDelta.HasValue ? _txtTradeDelta.Value : double.Parse(Lib.GetTextBoxText(txtTradeDelta)); } }
-    double startingBalance {
-      get { return _txtStartingBalance.HasValue ? _txtStartingBalance.Value : double.Parse(Lib.GetTextBoxText(txtStartingBalance)); }
-      set { Lib.SetTextBoxText(txtStartingBalance, Math.Round(value, 0) + ""); }
+
+    double _netPL;
+    public double NetPL {
+      get { return _netPL; }
+      set { _netPL = value; RaisePropertyChangedCore(); }
     }
 
-    public string _txtPriceToExit;
-    public string ruleToExit {
-      get { return _txtPriceToExit ?? Lib.GetTextBoxText(txtPriceToExit); }
-      set { Lib.SetTextBoxText(txtPriceToExit, value + ""); }
+    double _startingBalance;
+    public double StartingBalance {
+      get { return _startingBalance; }
+      set { _startingBalance = value; RaisePropertyChangedCore(); }
     }
 
-    public double? _txtPriceToAdd;
-    public double PriceToAdd { get { return _txtPriceToAdd.HasValue ? _txtPriceToAdd.Value : Lib.GetTextBoxTextDouble(txtPriceToAdd); } }
+    string _ruleToExit = "";
+
+    public string RuleToExit {
+      get { return _ruleToExit; }
+      set { _ruleToExit = value; RaisePropertyChangedCore(); }
+    }
+
+    public double _txtPriceToAdd;
+    public double PriceToAdd { get { return _txtPriceToAdd; } }
 
     enum Condition { None,LessThen, MoreThen };
-    double priceToExit { get { return double.Parse(ruleToExit.Split(new[] { '>', '<' }, StringSplitOptions.RemoveEmptyEntries)[0]); } }
-    Condition conditionToExit { get { return ruleToExit[0] == '>' ? Condition.MoreThen : ruleToExit[0] == '<' ? Condition.LessThen : Condition.None; } }
+    double priceToExit { get { return double.Parse(RuleToExit.Split(new[] { '>', '<' }, StringSplitOptions.RemoveEmptyEntries).DefaultIfEmpty("0").First()); } }
+    Condition conditionToExit { get { return RuleToExit[0] == '>' ? Condition.MoreThen : RuleToExit[0] == '<' ? Condition.LessThen : Condition.None; } }
 
-    bool isDemo { get { return Lib.GetChecked(chkDemo).Value; } }
-    bool tradeDistanceUnisex { get { return Lib.GetChecked(chkTradeDistanceUnisex).Value; } set { Lib.SetChecked(chkTradeDistanceUnisex, value); } }
-    bool isAutoPilot { get { return Lib.GetChecked(chkAutoPilot).Value; } set { Lib.SetChecked(chkAutoPilot, value); } }
-    bool isAutoAdjust { get { return Lib.GetChecked(chkAutoAdjust).Value; } set { Lib.SetChecked(chkAutoAdjust, value); } }
-    int leverage { get { return _txtLeverage.HasValue?_txtLeverage.Value : int.Parse(Lib.GetTextBoxText(txtLeverage)); } }
+    public bool _chkDemo;
+    bool isDemo { get { return _chkDemo; } }
+
+    public bool _chkTradeDistanceUnisex;
+    bool tradeDistanceUnisex { get { return _chkTradeDistanceUnisex; } }
+
+    public bool _chkAutoPilot;
+    bool isAutoPilot { get { return _chkAutoPilot; } }
+
+    public bool _chkAutoAdjust;
+    bool isAutoAdjust { get { return _chkAutoAdjust; } }
+
+    int leverage { get { return _txtLeverage; } }
     private Thread threadProc;
     private Thread threadWait;
-
-    double spreadCMA;
 
     string logFileName = "Log.txt";
     object Log {
@@ -106,134 +121,118 @@ namespace HedgeHog {
       }
     }
 
-    double _usableMargin;
-    double usableMargin {
+    string _usableMargin;
+    public string UsableMargin {
       get { return _usableMargin; }
-      set {
-        _usableMargin = value;
-        Lib.SetLabelText(lblUsableMargin, string.Format("{0:c0}", value));
-      }
+      set { _usableMargin = value; RaisePropertyChangedCore(); }
     }
     double _accountBalance;
-    double accountBalance {
+    public double AccountBalance {
       get { return _accountBalance; }
-      set {
-        _accountBalance = value;
-        Lib.SetLabelText(lblAccountBalance, string.Format("{0:c0}", value));
-      }
+      set { _accountBalance = value; RaisePropertyChangedCore(); }
     }
     int _pipsToMC;
-    int pipsToMC {
+    public int PipsToMC {
       get { return _pipsToMC; }
-      set {
-        _pipsToMC = value;
-        pipsToMCHistory = Math.Abs(value);
-        Lib.SetLabelText(lblPipsToMC, value + "");
-      }
+      set { _pipsToMC = value; RaisePropertyChangedCore(); }
     }
+
+    public int _txtPipsToMCHistory;
     int pipsToMCHistory {
-      get { return Lib.GetTextBoxTextInt(txtPipsToMCHistory); }
-      set {
-        if (value > 0)
-          Lib.SetTextBoxText(txtPipsToMCHistory, Math.Min(pipsToMCHistory, value) + "");
-      }
+      get { return _txtPipsToMCHistory; }
     }
+
+    public int _txtMinEquityHistory;
     int minEquityHistory {
-      get { return Lib.GetTextBoxTextInt(txtMinEquityHistory); }
+      get { return _txtMinEquityHistory; }
       set {
-        if (value > 0)
-          Lib.SetTextBoxText(txtMinEquityHistory, Math.Min(minEquityHistory, value) + "");
+        if (value > 0){
+          var b = txtMinEquityHistory.GetBindingExpression(TextBox.TextProperty);
+          var path = System.Text.RegularExpressions.Regex.Match(b.ParentBinding.Path.Path, @"\[(.+)\]").Groups[1] + "";
+          var dataItem = (b.DataItem as WpfPersist.UserSettingsExtension.InternalBinder).Dictionary;
+          dataItem[path] = value + "";
+          b.UpdateTarget();
+        }
       }
     }
     int _lotsLeft;
-    int lotsLeft {
+    public int LotsLeft {
       get { return _lotsLeft; }
-      set {
-        _lotsLeft = value;
-        Lib.SetLabelText(lblLotsLeft,  value.ToString("n0"));
-      }
+      set { _lotsLeft = value; RaisePropertyChangedCore(); }
     }
 
 
     double _sellPL;
-    double sellPL {
+    public double SellPL {
       get { return _sellPL; }
-      set {
-        _sellPL = value;
-        Lib.SetLabelText(lblSellPL, string.Format("{0:c0}", value));
-      }
+      set {        _sellPL = value;        RaisePropertyChangedCore();      }
     }
     double _sellLPP;
-    double sellLPP {
+    public double SellLPP {
       get { return _sellLPP; }
-      set {
-        _sellLPP = value;
-        Lib.SetLabelText(lblSellLPP, string.Format("{0:n0}", value));
-      }
+      set {        _sellLPP = value; RaisePropertyChangedCore();     }
     }
     double _sellPos;
-    double sellPos {
+    public double SellPositions {
       get { return _sellPos; }
-      set {
-        _sellPos = value;
-        Lib.SetLabelText(lblSellPositions, value + "");
-      }
+      set { _sellPos = value; RaisePropertyChangedCore(); }
     }
     int _sellPips;
-    int sellPips {
+    public int SellPips {
       get { return _sellPips; }
-      set {
-        _sellPips = value;
-        Lib.SetLabelText(lblSellPips, value + "");
-      }
+      set { _sellPips = value; RaisePropertyChangedCore(); }
     }
     double _sellLots;
-    double sellLots {
+    public double SellLots {
       get { return _sellLots; }
-      set {
-        _sellLots = value;
-        Lib.SetLabelText(lblSellLots, string.Format("{0:n0}", value));
-      }
+      set {        _sellLots = value; RaisePropertyChangedCore();      }
     }
     double _buyPL;
-    double buyPL {
+    public double BuyPL {
       get { return _buyPL; }
-      set {
-        _buyPL = value;
-        Lib.SetLabelText(lblBuyPL, string.Format("{0:c0}", value));
-      }
+      set {        _buyPL = value; RaisePropertyChangedCore();      }
     }
     double _buyLPP;
-    double buyLPP {
+    public double BuyLPP {
       get { return _buyLPP; }
-      set {
-        _buyLPP = value;
-        Lib.SetLabelText(lblBuyLPP, string.Format("{0:n0}", value));
-      }
+      set { _buyLPP = value; RaisePropertyChangedCore(); }
     }
     double _buyPos;
-    double buyPos {
+    public double BuyPositions {
       get { return _buyPos; }
-      set {
-        _buyPos = value;
-        Lib.SetLabelText(lblBuyPositions, value + "");
-      }
+      set {        _buyPos = value; RaisePropertyChangedCore();      }
     }
     int _buyPips;
-    int buyPips {
+    public int BuyPips {
       get { return _buyPips; }
-      set {
-        _buyPips = value;
-        Lib.SetLabelText(lblBuyPips, value + "");
-      }
+      set {        _buyPips = value; RaisePropertyChangedCore();      }
     }
     double _buyLots;
-    double buyLots {
+    public double BuyLots {
       get { return _buyLots; }
-      set {
-        _buyLots = value;
-        Lib.SetLabelText(lblBuyLots, string.Format("{0:n0}", value));
-      }
+      set { _buyLots = value; RaisePropertyChangedCore(); }
+    }
+
+    double _buyPipsToNet;
+    public double BuyPipsToNet {
+      get { return _buyPipsToNet; }
+      set { _buyPipsToNet = value; RaisePropertyChangedCore(); }
+    }
+    double _sellPipsToNet;
+    public double SellPipsToNet {
+      get { return _sellPipsToNet; }
+      set { _sellPipsToNet = value; RaisePropertyChangedCore(); }
+    }
+
+    double _spread;
+    public double Spread {
+      get { return _spread; }
+      set { _spread = value; RaisePropertyChangedCore(); }
+    }
+    double? _spreadCma;
+    public double? SpreadCma {
+      get { return _spreadCma; }
+      set { _spreadCma = value; RaisePropertyChangedCore(); }
     }
     #endregion
 
@@ -324,7 +323,7 @@ namespace HedgeHog {
         chartingWindow.PriceGridChanged += ProcessPrice;
         chartingWindow.PriceGridError += chartingWindow_PriceGridError;
         dataGrid1.AutoGeneratingColumn += new EventHandler<Microsoft.Windows.Controls.DataGridAutoGeneratingColumnEventArgs>(dataGrid1_AutoGeneratingColumn);
-        if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs("title"));
+        RaisePropertyChanged(()=> title);
       }));
 
       //Window w = sender as Window;
@@ -352,32 +351,29 @@ namespace HedgeHog {
       if (e.PropertyName == "GrossPL") ((Microsoft.Windows.Controls.DataGridBoundColumn)(e.Column)).Binding.StringFormat = "{0:c0}";
     }
 
-    double ShowSpread(Order2GoAddIn.Price Price) {
+    void ShowSpread(Order2GoAddIn.Price Price) {
       var digits = fw.Digits;
-      var spread = Price.Ask - Price.Bid;
-      spreadCMA = CMA(spreadCMA == 0 ? spread : spreadCMA, 50, spread);
-      Lib.SetLabelText(lblSpread, string.Format("{0:n1}/{1:n2}", spread / fw.PointSize, spreadCMA / fw.PointSize));
-      return spread;
+      Spread = fw.InPips(Price.Ask - Price.Bid);
+      SpreadCma = SpreadCma.Cma(50, Spread);
     }
 
     void app_ClosingBalanceChanged(object sender, ClosingBalanceChangedEventArgs e) {
-      if (sender != this && startingBalance < e.ClosingBalance) startingBalance = e.ClosingBalance;
+      if (sender != this && StartingBalance > 0 && StartingBalance < e.ClosingBalance) StartingBalance = e.ClosingBalance;
     }
 
     void ShowAccount(Order2GoAddIn.Account Account, Order2GoAddIn.Summary Summary) {
-      accountBalance = Account.Balance;
-      usableMargin = Account.UsableMargin;
-      pipsToMC = Account.PipsToMC;
+      AccountBalance = Account.Balance;
+      PipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
-      lotsLeft = (int)(Account.UsableMargin * leverage);
+      LotsLeft = (int)(Account.UsableMargin * leverage);
       var summaries = FXW.GetSummaries();
       var tradesAll = FXW.GetTrades("");
-      var netPL = tradesAll.Sum(t => t.PL * t.Lots) / tradesAll.Sum(t => t.Lots);
-      Lib.SetLabelText(lblUsableMargin, string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity));
-      Lib.SetLabelText(lblAccountEquity, string.Format("{0:c0}/{1:n1}", Account.Equity,netPL));
+      NetPL = tradesAll.Sum(t => t.PL * t.Lots) / tradesAll.Sum(t => t.Lots);
+      UsableMargin = string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity);
+      AccountEquity = Account.Equity;// string.Format("{0:c0}/{1:n1}", Account.Equity, netPL);
       var doCloseLotsOfTrades = tradesAll.Length > app.MainWindows.Count + 1 && Account.Gross > 0;
       Commission = FXW.CommisionPending;
-      var haveGoodProfit = netPL >= DensityAverage;
+      var haveGoodProfit = NetPL >= DensityAverage;
       if (//startingBalance > 0 && Account.Equity >= startingBalance ||
         haveGoodProfit ||
         doCloseLotsOfTrades ||
@@ -389,7 +385,7 @@ namespace HedgeHog {
         // ClosePositions(this, new RoutedEventArgs());
         //startingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
         //app.RaiseClosingalanceChanged(this, startingBalance.ToInt());
-        ruleToExit = "0";
+        RuleToExit = "0";
       }
 
     }
@@ -397,19 +393,19 @@ namespace HedgeHog {
       var summary = Summary ?? new Order2GoAddIn.Summary();
       double buyLossPerLotK;
       double sellLossPerLotK;
-      sellPL = summary.SellNetPL;
-      sellLots = summary.SellLots;
-      sellLPP = summary.SellLPP;
-      sellPos = summary.SellPositions;
-      sellPips = (int)(summary.SellDelta / summary.PointSize);
-      buyPL = summary.BuyNetPL;
-      buyLots = summary.BuyLots;
-      buyLPP = summary.BuyLPP;
-      buyPos = summary.BuyPositions;
-      buyPips = (int)(summary.BuyDelta / summary.PointSize);
+      SellPL = summary.SellNetPL;
+      SellLots = summary.SellLots;
+      SellLPP = summary.SellLPP;
+      SellPositions = summary.SellPositions;
+      SellPips = (int)(summary.SellDelta / summary.PointSize);
+      BuyPL = summary.BuyNetPL;
+      BuyLots = summary.BuyLots;
+      BuyLPP = summary.BuyLPP;
+      BuyPositions = summary.BuyPositions;
+      BuyPips = (int)(summary.BuyDelta / summary.PointSize);
       var totalPips = (summary.BuyPriceFirst - summary.SellPriceFirst) / fw.PointSize;
-      Lib.SetLabelText(lblBuyPipsToNet, string.Format("{0:n1}", summary.BuyNetPLPip));
-      Lib.SetLabelText(lblSellPipsToNet, string.Format("{0:n1}", summary.SellNetPLPip));
+      BuyPipsToNet =summary.BuyNetPLPip;
+      SellPipsToNet= summary.SellNetPLPip;
       buyLossPerLotK = summary.BuyLots > 0 ? summary.BuyNetPL / (summary.BuyLots / 1000) : 0;
       sellLossPerLotK = summary.SellLots > 0 ? summary.SellNetPL / (summary.SellLots / 1000) : 0;
     }
@@ -417,7 +413,7 @@ namespace HedgeHog {
     double _commission;
     public double Commission {
       get { return _commission; }
-      set { _commission = value; PropertyChanged(this, new PropertyChangedEventArgs("Commission")); }
+      set { _commission = value; RaisePropertyChangedCore(); }
     }
     void fw_PriceChanged(Order2GoAddIn.Price Price) {
       if (threadProc != null && threadProc.ThreadState == ThreadState.Running) {
@@ -439,11 +435,11 @@ namespace HedgeHog {
     }
     private void ProcessPrice() {
       try {
-        PropertyChanged(this, new PropertyChangedEventArgs("DensityAverage"));
+        RaisePropertyChanged(() => DensityAverage);
         if (Visibility == Visibility.Hidden) return;
         Order2GoAddIn.Price Price = fw.GetPrice();
         var digits = fw.Digits;
-        var spread = ShowSpread(Price);
+        ShowSpread(Price);
 
         var account = FXW.GetAccount();
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
@@ -547,10 +543,14 @@ namespace HedgeHog {
     private Charting chartingWindow;
     private Corridors corridorsWindow;
     private void btnOpenChart_Click(object sender, RoutedEventArgs e) {
-      chartingWindow.Show();
-      chartingWindow.WindowState = WindowState.Normal;
-      chartingWindow.fw_PriceChanged();
-      corridorsWindow.Show();
+      Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+        chartingWindow.Show();
+        chartingWindow.WindowState = WindowState.Normal;
+        chartingWindow.Activate();
+        chartingWindow.fw_PriceChanged();
+        corridorsWindow.Show();
+        corridorsWindow.Activate();
+      }));
     }
 
     private void btnOpenDB_Click(object sender, RoutedEventArgs e) {
@@ -567,19 +567,12 @@ namespace HedgeHog {
       var mw = app.MainWindows.FirstOrDefault(w => !w.IsVisible);
       if (mw == null) {
         mw = new HedgeHogMainWindow("MainWindow" + app.MainWindows.Count);
-        mw.AccountNumber = AccountNumber;
         app.MainWindows.Add(mw);
       }
       mw.Show();
     }
     App app { get { return Application.Current as App; } }
 
-
-    #region INotifyPropertyChanged Members
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    #endregion
     private void TextChanged(object sender, TextChangedEventArgs e) {
       var tb = (sender as TextBox);
       var name = tb.Name;
