@@ -71,6 +71,12 @@
   <ItemGroup>
     <Folder Include="App_Data\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Remoter\HedgeHog.Remoter.csproj">
+      <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
+      <Name>HedgeHog.Remoter</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
   <ProjectExtensions>

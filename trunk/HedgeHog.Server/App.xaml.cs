@@ -18,9 +18,25 @@ namespace HedgeHog.Server {
   /// <summary>
   /// Interaction logic for App.xaml
   /// </summary>
-  public sealed partial class App : Application,IDisposable {
+  public sealed partial class App : Application, IDisposable {
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
+    public static List<ServerWindow> serverWindows = new List<ServerWindow>();
+    public static ServerWindow AddMainWindow(ServerWindow mainWindow) {
+      if (mainWindow == null) {
+        var hidden = serverWindows.FirstOrDefault(w => w.Visibility != Visibility.Visible);
+        if (hidden != null) {
+          hidden.Show();
+          hidden.Activate();
+          return hidden;
+        }
+      }
+      var mw = mainWindow != null ? mainWindow : new ServerWindow("ServerWindow" + serverWindows.Count + 1);
+      serverWindows.Add(mw);
+      HedgeHog.Wcf.RegisterServer(mw);
+      mw.Show();
+      return mw;
+    }
     ServiceHost wcfHost;
     [EnvironmentPermission(SecurityAction.LinkDemand, Unrestricted = true)]
     public App() {
@@ -29,12 +45,14 @@ namespace HedgeHog.Server {
         RemotingConfiguration.Configure(AppDomain.CurrentDomain.BaseDirectory + "Remoting.xml", false);
         RemotingConfiguration.RegisterWellKnownServiceType(typeof(Remoter), "GET", WellKnownObjectMode.SingleCall);
         var channelUrl = ((System.Runtime.Remoting.Channels.ChannelDataStore)(((System.Runtime.Remoting.Channels.Tcp.TcpChannel)(System.Runtime.Remoting.Channels.ChannelServices.RegisteredChannels[0])).ChannelData)).ChannelUris[0];
-        var port = int.Parse(channelUrl.Split(':')[2],CultureInfo.InvariantCulture);
+        var port = int.Parse(channelUrl.Split(':')[2], CultureInfo.InvariantCulture);
         ShutdownMode = ShutdownMode.OnMainWindowClose;
         Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
           try {
+            AddMainWindow((ServerWindow)MainWindow);
             Remoter.Server = (IServer)MainWindow;
             ((ServerWindow)MainWindow).TcpPort = port;
+            MessageBox.Show(wcfHost.BaseAddresses[0] + " is running.");
           } catch (Exception exc) {
             MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
           }

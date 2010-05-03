@@ -143,30 +143,7 @@ namespace HedgeHog {
     }
  
     public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
-    public static void SetBackGround(Label Label, SolidColorBrush Brush) {
-      Brush.Freeze();
-      Label.Dispatcher.BeginInvoke(
-        DispatcherPriority.Background,
-        (DispatcherOperationCallback)delegate(object o) { Label.Background = Brush; return null; },
-        null
-      );
-    }
-    public static void SetBackGround( Panel Panel, SolidColorBrush Brush) {
-      Brush.Freeze();
-      Panel.Dispatcher.BeginInvoke(
-        DispatcherPriority.Background,
-        (DispatcherOperationCallback)delegate(object o) { Panel.Background = Brush; return null; },
-        null
-      );
-    }
-    public static void SetLabelText(Label Label, string Text) {
-      Label.Dispatcher.BeginInvoke(
-        DispatcherPriority.Background,
-        (DispatcherOperationCallback)delegate(object o) { setLabelText(Label, Text); return null; },
-        null
-      );
-    }
-    public static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
+    static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
     public static int GetTextBoxTextInt(TextBox TextBox) {
       var t = GetTextBoxText(TextBox);
       int i;
@@ -203,26 +180,6 @@ namespace HedgeHog {
       CheckBox.Dispatcher.Invoke(
         DispatcherPriority.Input,
         (DispatcherOperationCallback)delegate(object o) { return CheckBox.IsChecked; },
-        null
-      );
-    }
-    public static string GetSelected(ComboBox ComboBox) {
-      return (string)
-      ComboBox.Dispatcher.Invoke(
-        DispatcherPriority.Send,
-        (DispatcherOperationCallback)delegate(object o) {
-        return (ComboBox.SelectedIndex < 0 ? null : ((ComboBoxItem)ComboBox.SelectedItem).Content) + "";
-      },
-        null
-      );
-    }
-    private static void setLabelText(Label Label, string Text) {
-      Label.Content = (Label.Content + "").Contains(":") ? (Label.Content + "").Split(':')[0] + ":" + Text + "" : Text;
-    }
-    public static int GetComboBoxIndex(ComboBox cb) {
-      return (int)cb.Dispatcher.Invoke(
-        DispatcherPriority.Send,
-        (DispatcherOperationCallback)delegate(object o) { return cb.SelectedIndex; },
         null
       );
     }

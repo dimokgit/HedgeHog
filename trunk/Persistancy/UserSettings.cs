@@ -287,7 +287,7 @@ namespace WpfPersist {
 
     #region private types
 
-    private class InternalBinder {
+    public class InternalBinder {
       public StringDictionary Dictionary {
         get {
           return UserSettingsStorage.Dictionary;

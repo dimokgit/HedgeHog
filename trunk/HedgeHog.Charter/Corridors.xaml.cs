@@ -83,6 +83,7 @@ namespace HedgeHog {
     public Corridors()      : this("") {    }
     public Corridors(string name) {
       InitializeComponent();
+      this.Name = name.Replace("/", "");
       this.Title += ": " + name;
       plotter.Children.RemoveAll<AxisNavigation>();
 
