@@ -1,0 +1,1 @@
+﻿<%@ ServiceHost Language="C#" Debug="true" Service="HedgeHog.WCF.Trading" CodeBehind="Trading.svc.cs" %>
