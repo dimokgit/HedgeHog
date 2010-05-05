@@ -68,6 +68,7 @@
     <Compile Include="Bars.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />
+    <Compile Include="DateTimeExtender.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="WindowModel.cs" />

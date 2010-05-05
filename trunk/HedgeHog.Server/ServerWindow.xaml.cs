@@ -96,6 +96,7 @@ namespace HedgeHog {
     ThreadScheduler RsiTuneUpScheduler;
     ThreadScheduler VoltageScheduler;
     ThreadScheduler TicksScheduler;
+    ThreadScheduler TicksReLoadScheduler;
     ThreadScheduler SaveToFileScheduler;
     ThreadScheduler VolatilityScheduler;
     ThreadScheduler DecisionScheduler;
@@ -514,6 +515,7 @@ namespace HedgeHog {
       CorridorsWindow_EURJPY = new Corridors(fw.Pair);
       CorridorsScheduler = new Scheduler(CorridorsWindow_EURJPY.Dispatcher, (s, e) => Log = e.Exception);
       VoltageScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(1), (s, e) => Log = e.Exception);
+      TicksReLoadScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
       TicksScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
       TicksScheduler.Finished += (sender, e) => {
         if (getTicksCommand != null) {
@@ -555,20 +557,30 @@ namespace HedgeHog {
         if (StartDate == fxDateNow) StartDate = ticksStartDate;
         StartDate = Lib.Min(timeFrameDateStart, StartDate);
         var reLoad = Ticks.Count > 0 && lastReLoadDate < DateTime.Now.AddMinutes(-15);
-        if (ratePeriod == 0 && _ticks.Count == 0 || reLoad) {
+        if (reLoad) TicksReLoadScheduler.Command = () => {
           var sw = Stopwatch.StartNew();
-          Ticks = fw.GetTicks(ui.ticksBack).OfType<Rate>().OrderBars().ToList();
+          var ts = LoadTickByCount();
           lastReLoadDate = DateTime.Now;
-          Log = "Ticks re-loaded in"+sw.Elapsed.TotalSeconds.ToInt()+" sec.";
+          Log = "Ticks re-loaded in" + sw.Elapsed.TotalSeconds.ToInt() + " sec.";
+          FillRsis(true, ts);
+          lock (_ticks) {
+            Ticks = ts;
+          }
+          GetTicksAsync();
+        };
+        if (ratePeriod == 0 && _ticks.Count == 0) {
+          Ticks = LoadTickByCount();
         }
         //var ticks = _ticks.ToArray().TakeWhile(b => b.IsHistory).ToArray();
         //if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
         //  //fw.GetBars(ratePeriod, StartDate, EndDate, ref ticks);
+        {
           var ts = _ticks.ToArray().AddUp(fw.GetTicks(550)).ToList();
           lock (_ticks) {
             Ticks = ts;
-          //}
-          ////Ticks.FillMass();
+            //}
+            ////Ticks.FillMass();
+          }
         }
         //TicksPerMinute(Ticks);
         RaisePropertyChanged(() => TimeframeByTicksMin);
@@ -580,6 +592,10 @@ namespace HedgeHog {
       //Select((b, i) => new Tick() {
       //  Ask = b.Ask, Bid = b.Bid, StartDate = b.StartDate, Row = i + 1, IsHistory = b.IsHistory
       //}).ToList();
+    }
+
+    private List<Rate> LoadTickByCount() {
+      return fw.GetTicks(ui.ticksBack).OfType<Rate>().OrderBars().ToList();
     }
 
 
@@ -606,13 +622,16 @@ namespace HedgeHog {
     public bool DoRsiByPercent { get { return ui.RsiPeriodRatio.Between(0.001, 1); } }
     private void FillRsis() { FillRsis(false); }
     private void FillRsis(bool Refresh) {
+      FillRsis(Refresh, _ticks);
+    }
+    private void FillRsis(bool Refresh,List<Rate> rates) {
       rsiTicks = DoRsiByPercent
-        ? (_ticks.Count * ui.RsiPeriodRatio).ToInt()
-        :_ticks.Where(t=>t.StartDate>= fw.ServerTimeCached.AddMinutes(-ui.RsiPeriodRatio)).Count();
+        ? (rates.Count * ui.RsiPeriodRatio).ToInt()
+        :rates.Where(t=>t.StartDate>= fw.ServerTimeCached.AddMinutes(-ui.RsiPeriodRatio)).Count();
       if( DoRsiByPercent)
-      _ticks.ToArray().Rsi(rsiTicks, Refresh);
+      rates.ToArray().Rsi(rsiTicks, Refresh);
       else
-        _ticks.ToArray().Rsi(TimeSpan.FromMinutes(ui.RsiPeriodRatio), Refresh);
+        rates.ToArray().Rsi(TimeSpan.FromMinutes(ui.RsiPeriodRatio), Refresh);
     }
     public void TicksPerMinute(List<Rate> ticks) {
       var dateFrom = DateTime.Parse("3/31/2010 12:40:12");
@@ -1121,7 +1140,7 @@ namespace HedgeHog {
         timeTale = rsiFractals.Take(ui.RsiWavesForCorrelation).Select(t => t.Ph.Time.GetValueOrDefault()).Average();
       Timeframe = DoRsiByPercent
         ? _ticks.Skip((_ticks.Count * ui.RsiPeriodRatio).ToInt()).First().StartDate
-        : rsiFractals.Take(ui.RsiWavesForCorrelation).Min(f => f.StartDate).AddMinutes(- ui.RsiPeriodRatio);
+        : rsiFractals.Take(ui.RsiWavesForCorrelation).Min(f => f.StartDate).Subtract(timeTale.Multiply(0.5));
       MinutesBackSampleCount = (fw.ServerTimeCached - Timeframe).TotalMinutes.ToInt();
       FillRsis();
       //var ticksLocal = _ticks.Where(t => t.StartDate >= Timeframe);
