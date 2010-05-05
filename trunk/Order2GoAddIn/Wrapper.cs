@@ -1277,14 +1277,17 @@ namespace Order2GoAddIn {
     public double NetPL { get; set; }
   }
   #endregion
-  static class Extentions {
-    public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
-    public static DateTime Round(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
-    public static bool Between(this double value, double d1, double d2) {
-      return d1>d2?Between(value,d2,d1): d1 <= value && value <= d2;
+  public static class Extentions {
+    public static double GrossInPips(this IEnumerable<Trade> trades) {
+      return trades.Sum(t => t.PL * t.Lots) / trades.Sum(t => t.Lots);
     }
-    public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
-      return d1>d2?Between(value,d2,d1): d1 <= value && value <= d2;
-    }
+    //public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
+    //public static DateTime Round(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
+    //public static bool Between(this double value, double d1, double d2) {
+    //  return d1>d2?Between(value,d2,d1): d1 <= value && value <= d2;
+    //}
+    //public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
+    //  return d1>d2?Between(value,d2,d1): d1 <= value && value <= d2;
+    //}
   }
 }

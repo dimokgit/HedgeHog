@@ -6,6 +6,14 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Rsi {
   public static class RsiExtensions {
+
+    public static void Rsi(this Rate[] Rates, TimeSpan interval) {
+      Rates.Rsi(interval, false);
+    }
+    public static void Rsi(this Rate[] Rates, TimeSpan interval, bool Refresh) {
+      Rates.Rsi(interval, (r, v) => r.PriceRsi = v, r => r.PriceRsi, Refresh);
+    }
+
     public static void Rsi(this Rate[] Rates, int interval) {
       Rates.Rsi(interval, false);
     }
@@ -20,6 +28,12 @@ namespace HedgeHog.Rsi {
     }
     public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue) {
       Rates.Rsi(interval, SetValue, GetValue, false);
+    }
+    public static void Rsi(this Rate[] Rates, TimeSpan interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
+      var startDate = Rates.First().StartDate + interval;
+      foreach (var rate in Rates.Where(r => r.StartDate > startDate))
+        if (Refresh || !GetValue(rate).HasValue)
+          SetValue(rate, Rates.Where(interval, rate).ToArray().Rsi());
     }
     public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
       for (int i = interval; i < Rates.Length; i++)
