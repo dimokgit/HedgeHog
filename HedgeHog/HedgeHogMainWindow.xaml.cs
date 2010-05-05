@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Threading;
 using ControlExtentions;
+using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Models;
@@ -147,13 +148,17 @@ namespace HedgeHog {
       get { return _txtMinEquityHistory; }
       set {
         if (value > 0){
-          var b = txtMinEquityHistory.GetBindingExpression(TextBox.TextProperty);
-          var path = System.Text.RegularExpressions.Regex.Match(b.ParentBinding.Path.Path, @"\[(.+)\]").Groups[1] + "";
-          var dataItem = (b.DataItem as WpfPersist.UserSettingsExtension.InternalBinder).Dictionary;
-          dataItem[path] = value + "";
-          b.UpdateTarget();
+          SetBindedText(txtMinEquityHistory, value);
         }
       }
+    }
+
+    private static void SetBindedText(TextBox element, object value) {
+      var b = element.GetBindingExpression(TextBox.TextProperty);
+      var path = System.Text.RegularExpressions.Regex.Match(b.ParentBinding.Path.Path, @"\[(.+)\]").Groups[1] + "";
+      var dataItem = (b.DataItem as WpfPersist.UserSettingsExtension.InternalBinder).Dictionary;
+      dataItem[path] = value + "";
+      b.UpdateTarget();
     }
     int _lotsLeft;
     public int LotsLeft {
@@ -368,13 +373,13 @@ namespace HedgeHog {
       LotsLeft = (int)(Account.UsableMargin * leverage);
       var summaries = FXW.GetSummaries();
       var tradesAll = FXW.GetTrades("");
-      NetPL = tradesAll.Sum(t => t.PL * t.Lots) / tradesAll.Sum(t => t.Lots);
+      NetPL = tradesAll.GrossInPips();
       UsableMargin = string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity);
       AccountEquity = Account.Equity;// string.Format("{0:c0}/{1:n1}", Account.Equity, netPL);
       var doCloseLotsOfTrades = tradesAll.Length > app.MainWindows.Count + 1 && Account.Gross > 0;
       Commission = FXW.CommisionPending;
       var haveGoodProfit = NetPL >= DensityAverage;
-      if (//startingBalance > 0 && Account.Equity >= startingBalance ||
+      if (StartingBalance > 0 && Account.Equity >= StartingBalance ||
         haveGoodProfit ||
         doCloseLotsOfTrades ||
         (priceToExit > 0 &&
@@ -382,9 +387,9 @@ namespace HedgeHog {
           (conditionToExit == Condition.MoreThen && Summary.PriceCurrent.Average > priceToExit)
         ))
         ) {
-        // ClosePositions(this, new RoutedEventArgs());
-        //startingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
-        //app.RaiseClosingalanceChanged(this, startingBalance.ToInt());
+        ClosePositions(this, new RoutedEventArgs());
+        StartingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
+        app.RaiseClosingalanceChanged(this, StartingBalance.ToInt());
         RuleToExit = "0";
       }
 

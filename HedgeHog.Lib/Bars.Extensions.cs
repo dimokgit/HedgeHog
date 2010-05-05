@@ -374,10 +374,13 @@ namespace HedgeHog.Bars {
         });
     }
     public static void FillFractalHeight<TBar>(this TBar[] bars) where TBar : BarBase {
+      bars.FillFractalHeight(b => b.FractalPrice);
+    }
+    public static void FillFractalHeight<TBar>(this TBar[] bars,Func<TBar,double?> getPrice) where TBar : BarBase {
       var i=0;
       bars.Take(bars.Length - 1).ToList()
         .ForEach(b => {
-          b.Ph.Height = (b.FractalPrice - bars[++i].FractalPrice).Abs();
+          b.Ph.Height = (getPrice(b) - getPrice(bars[++i])).Abs();
           b.Ph.Time = b.StartDate - bars[i].StartDate;
         });
     }

@@ -170,7 +170,11 @@
             <TextBlock Text="{Binding FractalsInterval,StringFormat=mm}"/>
           </WrapPanel>
         </Label>
-        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRsiPeriodRatio" ToolTip="Rsi Correlation Minimum"/>
+        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRsiPeriodRatio" ToolTip="Rsi Correlation Minimum">
+          <TextBox.InputBindings>
+            <KeyBinding Key="{Binding FillRsisCommand.GestureKey}" Command="{Binding FillRsisCommand}"/>
+          </TextBox.InputBindings>
+        </TextBox>
         <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtRsiWavesForCorrelation" ToolTip="Rsi Correlation Minimum"/>
       </WrapPanel>
 

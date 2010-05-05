@@ -41,7 +41,8 @@ namespace HedgeHog {
       get { return _command; }
       set {
         _command = value;
-        _time.Start();
+        if( !_time.IsEnabled )
+          _time.Start();
       }
     }
     public Scheduler(Dispatcher dispatcher, EventHandler<TimerErrorException> error)
@@ -50,10 +51,10 @@ namespace HedgeHog {
     }
     public Scheduler(Dispatcher dispatcher)
       : this(dispatcher, new TimeSpan(0, 0, 0, 0, 100)) {
-      _time = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 100), DispatcherPriority.ApplicationIdle, _time_Tick, dispatcher);
+      _time = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 100), DispatcherPriority.Background, _time_Tick, dispatcher);
     }
     public Scheduler(Dispatcher dispatcher, TimeSpan delay) {
-      _time = new DispatcherTimer(delay, DispatcherPriority.ApplicationIdle, _time_Tick, dispatcher);
+      _time = new DispatcherTimer(delay, DispatcherPriority.Background, _time_Tick, dispatcher);
     }
 
 
