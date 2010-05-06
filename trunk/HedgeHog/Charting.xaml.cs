@@ -145,6 +145,11 @@ namespace HedgeHog {
       }
     }
 
+    public string wcfPath {
+      get {
+        return "net.tcp://" + serverName + ":" + serverPort + "/HedgeHog.WCF";
+      }
+    }
     public int _txtShortStack;
     private int shortStack { get { return _txtShortStack; } }
 
@@ -484,6 +489,21 @@ namespace HedgeHog {
         }
       }
     }
+    public void Using(Action<TradingService.TradingClient> action){
+      var service = new TradingService.TradingClient("NetTcpBinding_ITrading",wcfPath);
+      bool success = false;
+      try {
+        action(service);
+        if (service.State != CommunicationState.Faulted) {
+          service.Close();
+          success = true;
+        }
+      } finally {
+        if (!success) {
+          service.Abort();
+        }
+      }
+    }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
       try {
@@ -596,9 +616,13 @@ namespace HedgeHog {
           tr.tradesBuy.ToList().ForEach(t => DC.Trades.Add(t));
           tr.tradesSell.ToList().ForEach(t => DC.Trades.Add(t));
 
-          Using<TradingService.TradingClient>(tradingClient => {
-            ti = tradingClient.GetPair(tr);
-          });
+          try {
+            Using(tradingClient => {
+              ti = tradingClient.GetPair(tr);
+            });
+          } catch (Exception exc) {
+            throw new Exception(wcfPath, exc);
+          }
           if( false)
           for (int sp = int.Parse(serverPort) - 5, spMax = sp + 10; sp < spMax; sp++) 
             try {

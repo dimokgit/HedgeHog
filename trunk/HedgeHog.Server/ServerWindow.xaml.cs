@@ -158,14 +158,16 @@ namespace HedgeHog {
     /// </summary>
     public int TimeframeInMinutes { get { return Timeframe == DateTime.MinValue ? 0 : (fw.ServerTimeCached - Timeframe).TotalMinutes.ToInt(); } }
     DateTime _timeframe = DateTime.MinValue;
+    double? minutesAvg;
     public DateTime Timeframe {
       get { return _timeframe; }
       set {
 
         if (_timeframe == value) return;
         var minutes = (fw.ServerTimeCached - value).TotalMinutes;
-        var minutesAvg = _timeframe == DateTime.MinValue ? 0 : (fw.ServerTimeCached - _timeframe).TotalMinutes;
-        _timeframe = fw.ServerTimeCached.AddMinutes(-Lib.CMA(minutesAvg, 0.0, TicksPerMinuteMax, minutes));
+        //var minutesAvg = _timeframe == DateTime.MinValue ? 0 : (fw.ServerTimeCached - _timeframe).TotalMinutes;
+        minutesAvg = minutesAvg.Cma(TicksPerMinuteMax, minutes);
+        _timeframe = fw.ServerTimeCached.AddMinutes(-minutesAvg.Value);
         RaisePropertyChanged(() => TimeframeInMinutes);
         RaisePropertyChanged(() => PeakPriceHighAverage);
       }
@@ -560,7 +562,6 @@ namespace HedgeHog {
         if (reLoad) TicksReLoadScheduler.Command = () => {
           var sw = Stopwatch.StartNew();
           var ts = LoadTickByCount();
-          lastReLoadDate = DateTime.Now;
           Log = "Ticks re-loaded in" + sw.Elapsed.TotalSeconds.ToInt() + " sec.";
           FillRsis(true, ts);
           lock (_ticks) {
@@ -570,6 +571,7 @@ namespace HedgeHog {
         };
         if (ratePeriod == 0 && _ticks.Count == 0) {
           Ticks = LoadTickByCount();
+          lastReLoadDate = DateTime.Now;
         }
         //var ticks = _ticks.ToArray().TakeWhile(b => b.IsHistory).ToArray();
         //if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
@@ -614,9 +616,7 @@ namespace HedgeHog {
       set {
         if (_rsiTicks.HasValue && ((value - _rsiTicks.GetValueOrDefault()) / _rsiTicks).Abs() < .01) return;
         _rsiTicks = _rsiTicks.Cma(3, value);
-        Dispatcher.Invoke(DispatcherPriority.DataBind, new Action(() => {
-          txtRsiTicks.Text = rsiTicks + "";
-        }));
+        RaisePropertyChangedCore();
       }
     }
     public bool DoRsiByPercent { get { return ui.RsiPeriodRatio.Between(0.001, 1); } }
@@ -846,6 +846,10 @@ namespace HedgeHog {
       System.Diagnostics.Debug.WriteLine(line + sw.ElapsedMilliseconds + "ms.");
       sw.Reset(); sw.Start();
     }
+    private void LogWriteLineStopWatch(string line, Stopwatch sw) {
+      Log = line + sw.ElapsedMilliseconds + " ms.";
+      sw.Reset(); sw.Start();
+    }
     public delegate double FuncBase(Func<BarBase, double?> value);
     public delegate double FuncBase1(IEnumerable<BarBase> bars, Func<BarBase, double?> value);
     FuncBase1 Average3 = (fractals, f) => {
@@ -942,44 +946,6 @@ namespace HedgeHog {
             TicksPerMinuteMax = new[] { TicksPerMinuteCurr, TicksPerMinutePrev, TicksPerMinuteAverageLong, ticksPerLastMinute }.Max();
             var regress = Lib.Regress(ticksArray.Skip(ticksArray.Length - TicksPerMinuteMax).Select(t => t.PriceAvg).ToArray(), 1);
             A1 = _a1.Cma(1, regress[1]).Value;
-          }
-          #endregion
-
-          #region Rsi
-          if (ticksInTimeFrame.Any(hasRsi)) {
-            var rsiSlack = ticksInTimeFrame.Last().StartDate.Subtract(OverlapAverageShort);
-            var rsiTicks = ticksInTimeFrame
-              .Where(t => t.StartDate >= rsiSlack)
-              //.Skip(ticksInTimeFrame.Length - (ui.rsiTicksDelay))
-              .Where(hasRsi).OrderBy(t => t.PriceRsi).ToArray();
-            if (rsiTicks.Length == 0) {
-              CanTrade = false;
-              return;
-            }
-            RsiLocalMin = rsiTicks.First();
-            RsiLocalMax = rsiTicks.Last();
-            TradeDirection = (new[] { RsiLocalMax.PriceRsi + RsiLocalMin.PriceRsi }.Average() < 50) + "";
-            if (!ticksInTimeFrame.Last().PriceRsi.HasValue)
-              FillRsis();
-            var rs = ticksInTimeFrame.RsiStats();
-            if (rs.Sell > 50.01 && rs.Buy < 49.99) RsiStats = rs;
-            rsiFractals = ticksInTimeFrame
-              .FindWaves(b => Math.Sign(b.PriceRsi.GetValueOrDefault(50) - 50), b => b.PriceRsi);
-            rsiFractals.FillFractalHeight(r => r.PriceRsi);
-            if (false) {
-              var fractals = new List<Rate>();
-              for (int i = 1; i < rsiFractals.Length; i++) {
-                var ticks = (i == 1
-                  ? Ticks.Where(t => t.StartDate >= rsiFractals[i].StartDate)
-                  : Ticks.Where(rsiFractals[i], rsiFractals[i - 2])
-                  ).OrderBy(t => t.PriceRsi).ToArray();
-                var fractal = (rsiFractals[i].HasFractalSell ? ticks.First() : ticks.Last()).Clone() as Rate;
-                fractal.Fractal = rsiFractals[1].HasFractalSell ? FractalType.Buy : FractalType.Sell;
-                fractals.Add(fractal);
-              }
-              Fractals = fractals.OrderBarsDescending().ToArray();
-              Fractals.FillFractalHeight();
-            }
           }
           #endregion
 
@@ -1134,15 +1100,51 @@ namespace HedgeHog {
       GetPositionByFractals();
       if (Fractals.Length == 0) return;
       sw.Reset(); sw.Start();
-      var timeTales = rsiFractals.Skip(ui.RsiWavesForCorrelation - 1).Take(2).Select(t => t.StartDate).DefaultIfEmpty().ToArray();
+      var timeTales = Fractals.Skip(ui.RsiWavesForCorrelation - 1).Take(2).Select(t => t.StartDate).DefaultIfEmpty().ToArray();
       var timeTale = timeTales.First() - timeTales.Last();
       if (timeTale == TimeSpan.Zero)
-        timeTale = rsiFractals.Take(ui.RsiWavesForCorrelation).Select(t => t.Ph.Time.GetValueOrDefault()).Average();
-      Timeframe = DoRsiByPercent
-        ? _ticks.Skip((_ticks.Count * ui.RsiPeriodRatio).ToInt()).First().StartDate
-        : rsiFractals.Take(ui.RsiWavesForCorrelation).Min(f => f.StartDate).Subtract(timeTale.Multiply(0.5));
+        timeTale = Fractals.Take(ui.RsiWavesForCorrelation).Select(t => t.Ph.Time.GetValueOrDefault()).Average();
+      if (DoRsiByPercent)
+        Timeframe = _ticks.Skip((_ticks.Count * ui.RsiPeriodRatio).ToInt()).First().StartDate;
+      else {
+        Func<Rate, DateTime> m = r => r.StartDate;
+        Timeframe = Fractals.Take(ui.RsiWavesForCorrelation).ToArray().Min(m).Subtract(timeTale.Multiply(0.5));
+      }
       MinutesBackSampleCount = (fw.ServerTimeCached - Timeframe).TotalMinutes.ToInt();
-      FillRsis();
+      lock (_ticks) {
+        FillRsis();
+      }
+      var rsiStatsTicks = _ticks.Where(r=>r.StartDate>=Timeframe).Where(hasRsi).ToArray();
+      var rsiSlack = rsiStatsTicks.Last().StartDate.Subtract(OverlapAverageShort);
+      var rsiTicks = rsiStatsTicks
+        .Where(t => t.StartDate >= rsiSlack)
+        //.Skip(rsiStatsTicks.Length - (ui.rsiTicksDelay))
+        .Where(hasRsi).OrderBy(t => t.PriceRsi).ToArray();
+      if (rsiTicks.Length == 0) {
+        CanTrade = false;
+        return;
+      }
+      RsiLocalMin = rsiTicks.First();
+      RsiLocalMax = rsiTicks.Last();
+      RsiStats = rsiStatsTicks.RsiStats();
+      rsiFractals = rsiStatsTicks
+        .FindWaves(b => Math.Sign(b.PriceRsi.GetValueOrDefault(50) - 50), b => b.PriceRsi);
+      rsiFractals.FillFractalHeight(r => r.PriceRsi);
+      if (false) {
+        var fractals = new List<Rate>();
+        for (int i = 1; i < rsiFractals.Length; i++) {
+          var ticks = (i == 1
+            ? Ticks.Where(t => t.StartDate >= rsiFractals[i].StartDate)
+            : Ticks.Where(rsiFractals[i], rsiFractals[i - 2])
+            ).OrderBy(t => t.PriceRsi).ToArray();
+          var fractal = (rsiFractals[i].HasFractalSell ? ticks.First() : ticks.Last()).Clone() as Rate;
+          fractal.Fractal = rsiFractals[1].HasFractalSell ? FractalType.Buy : FractalType.Sell;
+          fractals.Add(fractal);
+        }
+        Fractals = fractals.OrderBarsDescending().ToArray();
+        Fractals.FillFractalHeight();
+      }
+      
       //var ticksLocal = _ticks.Where(t => t.StartDate >= Timeframe);
       //RegressionCoefficients = SetTicksPrice(ticksLocal, 1, readFrom, writeTo);
       sw.Reset(); sw.Start();
@@ -1150,6 +1152,7 @@ namespace HedgeHog {
       MinutesBackSpeed = decisionTime.TotalSeconds;
       //if (!RsiTuneUpScheduler.IsRunning)
       //  RsiTuneUpScheduler.Command = () => TuneRsiTicks();
+      ShowTicks();
     }
 
     private void TuneRsiTicks() { TuneRsiTicks(100,0); }
@@ -1856,7 +1859,7 @@ namespace HedgeHog {
       ti.LotsToTradeSell = lotsToTradeFoos[tr.lotsToTradeFooSell](false);
 
       #region closeAllOnTrade
-      if (tr.closeAllOnTrade) 
+      if (priceCurrent!=null && tr.closeAllOnTrade) 
       {
         var spreadInPips = -fw.InPips(priceCurrent.Spread);
         if ((true || ti.LotsToTradeSell <= 1) && tr.tradesSell.Length > 0) {

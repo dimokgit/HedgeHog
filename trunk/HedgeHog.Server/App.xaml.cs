@@ -57,7 +57,8 @@ namespace HedgeHog.Server {
             MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
           }
         }));
-        wcfHost = new ServiceHost(typeof(HedgeHog.WCF.Trading));
+        var wcfPort = ConfigurationManager.AppSettings["wcfPort"];
+        wcfHost = new ServiceHost(typeof(HedgeHog.WCF.Trading),new Uri("net.tcp://localhost:"+wcfPort+"/"));
         wcfHost.Open();
       } catch (Exception exc) {
         MessageBox.Show(exc.Message);

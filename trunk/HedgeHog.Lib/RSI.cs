@@ -31,7 +31,7 @@ namespace HedgeHog.Rsi {
     }
     public static void Rsi(this Rate[] Rates, TimeSpan interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
       var startDate = Rates.First().StartDate + interval;
-      foreach (var rate in Rates.Where(r => r.StartDate > startDate))
+      foreach (var rate in Rates.Where(r => r.StartDate > startDate).AsParallel())
         if (Refresh || !GetValue(rate).HasValue)
           SetValue(rate, Rates.Where(interval, rate).ToArray().Rsi());
     }
