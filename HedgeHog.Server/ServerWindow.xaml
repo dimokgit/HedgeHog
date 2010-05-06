@@ -69,7 +69,7 @@
                 <Label Content="{Binding TimeframeByTicksMin}" ToolTip="Time Frame Minimum in Minutes"/>
         <TextBlock>:</TextBlock>
         <Label Content="{Binding TimeframeInMinutes}" ToolTip="Time Frame in Minutes"/>
-        <TextBox Text="{state:UserSettings Default=1}" Name="txtRsiTicks" ToolTip="Rsi Ticks Count" TextChanged="TextChanged">
+        <TextBox Text="{Binding rsiTicks}" ToolTip="Rsi Ticks Count">
           <TextBox.InputBindings>
             <KeyBinding Key="{Binding FillRsisCommand.GestureKey}" Command="{Binding FillRsisCommand}"/>
           </TextBox.InputBindings>
