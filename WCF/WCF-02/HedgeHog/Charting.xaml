@@ -1,0 +1,264 @@
+﻿<Window x:Class="HedgeHog.Charting"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:l="clr-namespace:HedgeHog"
+        xmlns:c="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+    Left="{state:UserSettings Default=100}"
+    Top="{state:UserSettings Default=100}"
+  Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
+		DataContext="{DynamicResource VM}"
+    Title="{Binding Title,StringFormat=Trader: {0}}" Closing="Window_Closing">
+    <Window.Resources>
+        <l:ViewModel x:Key="VM"/>
+        <c:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <Style TargetType="Label">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,-2,0"/>
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="Peru"/>
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="SpeedBox">
+            <Setter Property="Background" Value="{Binding SpeedTrue}"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="SpreadBox">
+            <Setter Property="Background" Value="{Binding SpreadTrue}"/>
+        </Style>
+    </Window.Resources>
+    <Grid Height="auto" VerticalAlignment="Top">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition />
+    </Grid.RowDefinitions>
+    <Popup Name="popVolts">
+      <my:DataGrid xmlns:my="http://schemas.microsoft.com/wpf/2008/toolkit" ItemsSource="{Binding Voltage}" CanUserAddRows="False" CanUserDeleteRows="False" VerticalScrollBarVisibility="Auto" AutoGeneratingColumn="dgBuySellBars_AutoGeneratingColumn" />
+    </Popup>
+    <StackPanel VerticalAlignment="Top" Margin="0,-1,0,0" Name="wpMain" Grid.Row="0">
+      <Popup Name="popUpSettings">
+        <Popup.Resources>
+          <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,3,0,0"/>
+          </Style>
+          <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,1,0,1"/>
+          </Style>
+        </Popup.Resources>
+        <Border BorderThickness="2" BorderBrush="Brown">
+          <Grid Background="Wheat">
+            <Grid.RowDefinitions>
+              <RowDefinition></RowDefinition>
+              <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Row="1" Grid.ColumnSpan="2">
+              <Label>Server:</Label>
+              <TextBox Text="{state:UserSettings Default=DHOME}" Name="txtServerName" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBlock>:</TextBlock>
+              <TextBox Text="{state:UserSettings Default=8000}" Name="txtServerPort" TextChanged="txtBSPeriod_TextChanged"/>
+            </TextBlock>
+            <StackPanel>
+              <TextBlock Text="Short Stack:"/>
+              <TextBlock Text="Short Stack Trunc.Offset:"/>
+              <TextBlock Text="Corridor Smooth Seconds:"/>
+              <TextBlock Text="Do Trend:"/>
+              <TextBlock Text="Do Take Profit:"/>
+              <TextBlock Text="Close Trade Fib Ratio:"/>
+              <TextBlock Text="Trade By Direction:"/>
+              <TextBlock Text="Do Bi Direction:"/>
+              <TextBlock Text="Close All On Trade:"/>
+              <TextBlock Text="Close If Profit Trades More Then:"/>
+              <TextBlock Text="Close Profit Trades Maximum:"/>
+              <TextBlock Text="High Minutes:"/>
+              <TextBlock Text="Corridor Min. Minute Bar:"/>
+              <TextBlock Text="Close Opposite Offset:"/>
+              <TextBlock Text="Voltage CMA:"/>
+              <TextBlock Text="Profit Min:"/>
+              <TextBlock Text="Sell On Profit Last:"/>
+              <TextBlock Text="Close On Profit Only:"/>
+              <TextBlock Text="Close On Net:"/>
+              <TextBlock Text="Trade By Volatility Max:" ToolTip="Trade By Volatility Max,Avg or Strate" />
+              <TextBlock Text="Close On Corr. Border:"/>
+              <TextBlock Text="Trade By RSI(High/Low):"/>
+              <TextBlock Text="Trade On Profit After:"/>
+              <TextBlock Text="Trade Angle Max:"/>
+              <TextBlock Text="Trade Angle Min:"/>
+              <TextBlock Text="Trade By Fractal Coeff:" ToolTip="SpreadEverage*Coeff"/>
+              <TextBlock Text="RSI Period:"/>
+              <TextBlock Text="RSI Bar:"/>
+              <TextBlock Text="RSI Treshold Sell:"/>
+              <TextBlock Text="RSI Treshold Buy:"/>
+              <TextBlock Text="RSI Profit:"/>
+              <TextBlock Text="RSI Use Offset:"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+              <TextBox Name="txtShortStack" ToolTip="Close N+ buy if N+ sell" Text="{state:UserSettings Default=3}" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtShortStackTruncateOffset" ToolTip="Truncate Buy/Sell when ∑pos >= ShortStack+N" Text="{state:UserSettings Default=2}" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtCorridorSmoothSeconds" Text="{state:UserSettings Default=60}" ToolTip="Corridor Smooth Seconds" TextChanged="txtBSPeriod_TextChanged"/>
+              <CheckBox Name="chkDoTrend" ToolTip="Do Trend" IsChecked="{state:UserSettings Default=False}"></CheckBox>
+              <CheckBox Name="chkSetLimitOrder" ToolTip="Set Limit Order To Previos Trade" IsChecked="{state:UserSettings Default=True}"></CheckBox>
+              <TextBox Name="txtCloseTradeFibRatio" ToolTip="Close Trade Fib Ratio" Text="{state:UserSettings Default=.5}" TextChanged="txtBSPeriod_TextChanged"/>
+              <CheckBox Name="chkTradeByDirection" ToolTip="Trade By Direction" IsChecked="{state:UserSettings Default=True}"></CheckBox>
+              <CheckBox Name="chkDoBiDirection" ToolTip="Do Bi Direction" IsChecked="{state:UserSettings Default=False}"></CheckBox>
+              <CheckBox Name="chkCloseAllOnTrade" ToolTip="Close All On Trade" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
+
+              <TextBox Name="txtCloseIfProfitTradesMoreThen" Text="{state:UserSettings Default=3}" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtCloseProfitTradesMaximum" Text="{state:UserSettings Default=-1}" TextChanged="txtBSPeriod_TextChanged"/>
+              
+              <TextBox Name="txtHighMinutes" Text="{state:UserSettings Default=10}" ToolTip="High Minutes To Mesure Next Position Density" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtCorridorMinMinuteBar" Text="{state:UserSettings Default=10}" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtCloseOppositeOffset" ToolTip="Close opposite when BuyPos>SellPos-Offset" Text="{state:UserSettings Default=0}" TextChanged="txtBSPeriod_TextChanged"/>
+              <TextBox Name="txtVoltageCMA" Text="{state:UserSettings Default=10}" TextChanged="txtBSPeriod_TextChanged"></TextBox>
+              <TextBox Name="txtProfitMin" Text="{state:UserSettings Default=0}" ToolTip="Profit Minimum" TextChanged="txtBSPeriod_TextChanged"></TextBox>
+              <CheckBox Name="chkSellOnProfitLast" ToolTip="Sell On Profit Last or First" IsChecked="{state:UserSettings Default=True}"></CheckBox>
+              <CheckBox Name="chkCloseOnProfitOnly" IsChecked="{state:UserSettings Default=False}"></CheckBox>
+              <CheckBox Name="chkCloseOnNet" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
+              <CheckBox Name="chkTradeByVolatilityMax" IsChecked="{state:UserSettings Default=False}" IsThreeState="True" Checked="Checked" Unchecked="Checked" Loaded="chkTradeByVolatilityMax_Loaded"></CheckBox>
+              <CheckBox Name="chkCloseOnCorridorBorder" IsChecked="{state:UserSettings Default=False}" IsThreeState="True" Checked="Checked" Unchecked="Checked" Loaded="chkCloseOnCorridorBorder_Loaded" ToolTip="Close On Corridor Border"/>
+              <CheckBox Name="chkTradeByRsi" IsChecked="{state:UserSettings Default=True}" Checked="Checked" Unchecked="Checked" ToolTip="Trade By RSI"/>
+              <TextBox  Name="txtTradeOnProfitAfter" Text="{state:UserSettings Default=0}" TextChanged="TextChanged" ToolTip="Trade On Profit Only After N Positions"/>
+              <TextBox  Name="txtTradeAngleMax" Text="{state:UserSettings Default=0.0001}" TextChanged="TextChanged"/>
+              <TextBox  Name="txtTradeAngleMin" Text="{state:UserSettings Default=0.00001}" TextChanged="TextChanged"/>
+              <TextBox  Name="txtTradeByFractalCoeff" Text="{state:UserSettings Default=1}" TextChanged="TextChanged"/>
+              <TextBox Text="{state:UserSettings Default=14}" TextChanged="TextChanged" Name="txtRSITradeSignalPeriod" ToolTip="RSI Buy/Sell period to mesure aganst 50"/>
+              <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtRSITradeSignalBar" ToolTip="RSI Bar"/>
+              <TextBox Text="{state:UserSettings Default=70}" TextChanged="TextChanged" Name="txtRSITradeSignalTresholdSell" ToolTip="RSI Buy treshold"/>
+              <TextBox Text="{state:UserSettings Default=30}" TextChanged="TextChanged" Name="txtRSITradeSignalTresholdBuy" ToolTip="RSI Buy treshold"/>
+              <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRSIProfit" ToolTip="Profit in pips by RSI signal"/>
+              <CheckBox Name="chkRSIUseOffset" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Popup>
+      <Border MouseDown="ShowSettings" Background="{Binding TicksColor}">
+                <StackPanel>
+                    <TextBlock>
+      <Label Name="lblVolatility" ToolTip="Avg15/Avg10/Avg5/Avg1 > VM" Content="{Binding Volatility}"></Label>
+                <TextBox Name="txtFoo" Text="{state:UserSettings Default=11}" TextChanged="txtBSPeriod_TextChanged" ToolTip="Decision Function Number" />
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" SelectedItem="{Binding FooGoTradeBuy}" Name="cbGoTradeBuy"  ToolTip="Can Trade Buy">
+              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
+              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
+              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
+              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" SelectedItem="{Binding FooGoTradeSell}" Name="cbGoTradeSell" ToolTip="Can Trade Sell">
+              <ComboBoxItem ToolTip="1/2 - 1">+1</ComboBoxItem>
+              <ComboBoxItem ToolTip="0 - 1/2">0+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 0">-0</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1/2 - 1/2">-+</ComboBoxItem>
+              <ComboBoxItem ToolTip="-Corridor*10% - 0">-10%</ComboBoxItem>
+              <ComboBoxItem ToolTip="Corridor-Average">C-A</ComboBoxItem>
+              <ComboBoxItem ToolTip="Height From Polynom">h/2:h</ComboBoxItem>
+              <ComboBoxItem ToolTip="-1 - +1">--++</ComboBoxItem>
+            </ComboBox>
+                      <Label Content="{Binding TicksRatio}" ContentStringFormat="n1"></Label>
+          </TextBlock>
+                </StackPanel>
+            </Border>
+            <Border Padding="1">
+          <StackPanel ToolTipService.ShowDuration="300000">
+          <ToolTipService.ToolTip>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel>
+                <TextBlock Style="{StaticResource SpreadBox}">
+                            <Label>Corridor Minimum:</Label>
+                </TextBlock>
+                <TextBlock>Next Trade Range (B/S):</TextBlock>
+                <TextBlock>TicksPerMin Short&gt;Long:</TextBlock>
+
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Style="{StaticResource SpreadBox}">
+                            <Label Content="{Binding CorridorMinimum}" />
+                </TextBlock>
+                <TextBlock>
+                        <TextBlock Text="{Binding NextTradeDensityBuy}"/>
+                            <TextBlock Text="/"/>
+                        <TextBlock Text="{Binding NextTradeDensitySell}"/>
+                            </TextBlock>
+                <TextBlock>
+                            <Label Content="{Binding TicksPerMinuteAverageShort}" />
+                            <Label Content=">" />
+                            <Label Content="{Binding TicksPerMinuteAverageLong}" />
+                </TextBlock>
+
+              </StackPanel>
+            </Grid>
+          </ToolTipService.ToolTip>
+          <TextBlock Padding="0" Margin="0,1" ToolTipService.ShowDuration="300000">
+              <CheckBox Name="chkOpenTradeBuy2" ToolTip="Open Buy 2 Positions" IsChecked="{Binding forceOpenTradeBuy}"/>
+              <CheckBox Name="chkOpenTradeBuy" ToolTip="Open Buy Position" IsChecked="{Binding forceOpenTradeBuy2}"/>
+        <Label Name="lblOpenBuy" ToolTip="Buy" Content="{Binding PositionBuy}" Background="{Binding CanBuyColor}" BorderThickness="1" BorderBrush="{Binding CanBuyByCorridor}" />
+        <Label>|</Label>
+        <Label Name="lblOpenSell" ToolTip="Sell" Content="{Binding PositionSell}" Background="{Binding CanSellColor}" BorderThickness="1" BorderBrush="{Binding CanSellByCorridor}" />
+        <CheckBox Name="chkOpenTradeSell" ToolTip="Open Sell Position" IsChecked="{Binding forceOpenTradeSell}"/>
+        <CheckBox Name="chkOpenTradeSell2" ToolTip="Open Sell 2 Positions" IsChecked="{Binding forceOpenTradeSell2}"/>
+        <Label Name="lblMainWave" Content="HL:" ToolTip="High Low Spread"/>
+        <Label Content="{Binding CorridorSpread}" ToolTip="Corridor Spread" BorderBrush="LightGray" BorderThickness="1"/>
+        <Label Content="{Binding Rsi}" ToolTip="Corridor Spread" BorderBrush="LightGray" BorderThickness="1" Margin="2 0 0 0"/>
+        </TextBlock>
+
+          </StackPanel>
+            </Border>
+            <TextBlock ToolTipService.ShowDuration="300000">
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooBuy" SelectedItem="{Binding FooPositionBuy}" ToolTip="Number Of Positions Buy">
+              <ComboBoxItem>p*N</ComboBoxItem>
+              <ComboBoxItem>∑p+1</ComboBoxItem>
+              <ComboBoxItem>∑(p+1)</ComboBoxItem>
+              <ComboBoxItem>1</ComboBoxItem>
+              <ComboBoxItem>(p+1)*N</ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{state:UserSettings Default=3}" Name="cbPositionFooSell" SelectedItem="{Binding FooPositionSell}" ToolTip="Number Of Positions Sell">
+              <ComboBoxItem>p*N</ComboBoxItem>
+              <ComboBoxItem>∑p+1</ComboBoxItem>
+              <ComboBoxItem>∑(p+1)</ComboBoxItem>
+              <ComboBoxItem>1</ComboBoxItem>
+              <ComboBoxItem>(p+1)*N</ComboBoxItem>
+            </ComboBox>
+            <ComboBox SelectedIndex="{state:UserSettings Default=2}" Name="cbDensityFoo" SelectedItem="{Binding FooDensity}" ToolTip="Next Trade Density">
+              <ComboBoxItem ToolTip="Max(Corridor,5min,MaxDistBtwTrade)">Max</ComboBoxItem>
+              <ComboBoxItem ToolTip="Max(HighMinuteSpread,MaxDistBtwTrade)">HMM</ComboBoxItem>
+              <ComboBoxItem ToolTip="HighMinuteSpread">HMS</ComboBoxItem>
+              <ComboBoxItem ToolTip="Max(Corridor,HighMinuteSpread)">HMC</ComboBoxItem>
+              <ComboBoxItem ToolTip="Price Height Maximum">PHM</ComboBoxItem>
+              <ComboBoxItem ToolTip="Price Height Average">PHA</ComboBoxItem>
+              <ComboBoxItem ToolTip="Price Height Minimum">PHm</ComboBoxItem>
+              <ComboBoxItem ToolTip="Price Height Sum">PH∑</ComboBoxItem>
+              <ComboBoxItem ToolTip="Price Height Buy/Sell">PHBS</ComboBoxItem>
+              <ComboBoxItem ToolTip="Through Fractal">F0</ComboBoxItem>
+            </ComboBox>
+      </TextBlock>
+            <Border BorderBrush="Peru" BorderThickness="1" Margin="1" VerticalAlignment="Center" MouseDown="Voltage_MouseDown" >
+                <TextBlock>
+          <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" />
+          <Label Name="lblServerTime" Height="Auto" Content="{Binding TimeSpanLast}" ContentStringFormat="/{0:n0}]" ToolTip="Server Time" VerticalAlignment="Center" VerticalContentAlignment="Center"></Label>
+            <Label>|</Label>      
+            <Label Content="{Binding TimeFrame}" ToolTip="Time Frame"/>
+        <Label Content=":" VerticalAlignment="Center" Margin="0"></Label>
+            <Label Content=" min" VerticalAlignment="Center" Margin="0"/>
+                </TextBlock>
+            </Border>
+        </StackPanel>
+    <my:DataGrid Grid.Row="1" Name="dgBuySellBars" HorizontalScrollBarVisibility="Hidden" ItemsSource="{Binding TradesList}" xmlns:my="http://schemas.microsoft.com/wpf/2008/toolkit" CanUserAddRows="False" CanUserDeleteRows="False" VerticalScrollBarVisibility="Auto" AutoGeneratingColumn="dgBuySellBars_AutoGeneratingColumn" />
+
+  </Grid>
+</Window>

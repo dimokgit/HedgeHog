@@ -1,0 +1,250 @@
+﻿<wm:WindowModel x:Class="HedgeHog.ServerWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+  xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+             xmlns:wm="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+  Title="{Binding TitleAndPort}"
+  Left="{state:UserSettings Default=100}" Top="{state:UserSettings Default=100}"
+  Height="{state:UserSettings Default=100}" Width="{state:UserSettings Default=200}"
+  DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        >
+    <Grid>
+    <Grid.Resources>
+      <sys:String x:Key="BuyBackGround">Transparent|Transparent|#7D90EE90</sys:String>
+      <sys:String x:Key="SellBackGround">Transparent|Transparent|#7DFFA07A</sys:String>
+      <sys:String x:Key="BuySellBackGround">Transparent|#7DFFA07A|#7D90EE90</sys:String>
+      <lib:BoolToColorConverter x:Key="BoolToColorConverter"/>
+      <Style TargetType="{x:Type FrameworkElement}" x:Key="ElementStyle">
+        <Setter  Property="Margin" Value="0,0,3,0" />
+        <Setter  Property="VerticalAlignment" Value="Center"/>
+      </Style>
+      <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource ElementStyle}"/>
+      <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ElementStyle}"/>
+      <Style TargetType="{x:Type CheckBox}" BasedOn="{StaticResource ElementStyle}"/>
+      <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource ElementStyle}"/>
+      <Style TargetType="{x:Type Label}" BasedOn="{StaticResource ElementStyle}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="BorderBrush" Value="LightGray"/>
+        <Setter Property="BorderThickness" Value="1"/>
+      </Style>
+    </Grid.Resources>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Vertical" VerticalAlignment="Top" HorizontalAlignment="Left">
+      <StackPanel Orientation="Horizontal">
+        <TextBox Text="{state:UserSettings}" Name="txtAcount" MinWidth="30" MaxWidth="30" ToolTip="{Binding CurrentDirectory}" TextChanged="TextChanged"/>
+        <TextBox Text="{state:UserSettings}" Name="txtPassword" MinWidth="20" MaxWidth="20" />
+        <Button Name="btnLogin" Click="Login">Login</Button>
+        <Button Click="OpenMainWindow">Login</Button>
+        <CheckBox IsChecked="{state:UserSettings}" Content="D" Name="chkIsDemo" ToolTip="Demo" Checked="Checked" Unchecked="Checked" />
+        <CheckBox Name="chkSaveVoltageToFile" BorderBrush="LightGray" BorderThickness="1" Content="SV" ToolTip="Save Voltage To File" IsChecked="{state:UserSettings}" Checked="Checked" Unchecked="Checked"/>
+        <CheckBox IsChecked="{state:UserSettings}" Content="VL" Name="chkVerboseLogging" ToolTip="Verbose Logging" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <CheckBox IsChecked="{state:UserSettings}" Content="CmV" Name="chkCorridorByMinimumVolatility" IsThreeState="True"  ToolTip="Corridor By Minimum Volatility" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" Loaded="chkCorridorByMinimumVolatility_Loaded" />
+        <TextBlock Text="HB:" ToolTip="High Minutes Hours Back"/>
+        <TextBox Text="{state:UserSettings Default=8}" TextChanged="HighMinutes_TextChanged" Name="txtHighMinutesHoursBack"/>
+        <ComboBox Name="cmbPair" Margin="2" Text="{state:UserSettings EUR/JPY}">
+          <ComboBoxItem>EUR/USD</ComboBoxItem>
+          <ComboBoxItem>EUR/JPY</ComboBoxItem>
+          <ComboBoxItem>EUR/GBP</ComboBoxItem>
+          <ComboBoxItem>USD/JPY</ComboBoxItem>
+          <ComboBoxItem>GBP/JPY</ComboBoxItem>
+          <ComboBoxItem>GBP/USD</ComboBoxItem>
+          <ComboBoxItem>USD/CHF</ComboBoxItem>
+          <ComboBoxItem>EUR/CHF</ComboBoxItem>
+          <ComboBoxItem>NZD/JPY</ComboBoxItem>
+          <ComboBoxItem>NZD/USD</ComboBoxItem>
+          <ComboBoxItem>CHF/JPY</ComboBoxItem>
+          <ComboBoxItem>AUD/CAD</ComboBoxItem>
+          <ComboBoxItem>GBP/CHF</ComboBoxItem>
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal">
+        <TextBlock>Ticks:</TextBlock>
+        <TextBox Text="{state:UserSettings Default=1500}" Name="txtTicksBack" TextChanged="TextChanged_ResetTicks"/>
+                <Label Content="{Binding TimeframeByTicksMin}" ToolTip="Time Frame Minimum in Minutes"/>
+        <TextBlock>:</TextBlock>
+        <Label Content="{Binding TimeframeInMinutes}" ToolTip="Time Frame in Minutes"/>
+        <TextBox Text="{Binding rsiTicks}" ToolTip="Rsi Ticks Count">
+          <TextBox.InputBindings>
+            <KeyBinding Key="{Binding FillRsisCommand.GestureKey}" Command="{Binding FillRsisCommand}"/>
+          </TextBox.InputBindings>
+        </TextBox>
+        <Label Content="{Binding MinutesBackSpeed}" ContentStringFormat="n2" ToolTip="Minutes Back Speed" />
+        <CheckBox Name="chkGroupTicks" BorderBrush="LightGray" BorderThickness="1" Content="GT" ToolTip="Group Ticks by Second" IsChecked="{state:UserSettings}" Checked="Checked" Unchecked="Checked"/>
+      </StackPanel>
+      <Border BorderThickness="1">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="CHM:" ToolTip="Corridor Spread Minimum"/>
+          <TextBlock Text="{Binding CorridorSpreadMinimumInPips,StringFormat=n1}" ToolTip="Corridor Spread Minimum"/>
+          <TextBox Text="{state:UserSettings Default=10}" TextChanged="TextChanged" Name="txtCorridorHeightMinutes"/>
+          <TextBlock Text="{Binding CorridorHeightMinutesBySchedule}" ToolTip="Corridor Height Minutes By Schedule"/>
+
+          <TextBlock Text="CMP:" ToolTip="Corridor Minimum Percent"/>
+          <TextBlock Text="{Binding CorridorSpreadInPips,StringFormat=n1}" ToolTip="Corridor Spread"/>
+          <TextBox Text="{state:UserSettings Default=25}" TextChanged="TextChanged" Name="txtCorridorMinimumPercent"/>
+
+          <TextBlock Text="FmM:" ToolTip="Time Frame Minutes Minimum"/>
+          <TextBox Text="{state:UserSettings Default=15}" TextChanged="TextChanged" Name="txtTimeFrameMinutesMinimum"/>
+          <TextBox Text="{state:UserSettings Default=120}" TextChanged="TextChanged_TimeFrameStart" Name="txtTimeFrameMinutesMaximum"/>
+          <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtFractalPadding"/>
+          <TextBox Text="{state:UserSettings Default=.95}" TextChanged="TextChanged" Name="txtFractalShortPercent"/>
+        </StackPanel>
+      </Border>
+      <StackPanel Orientation="Horizontal">
+        <CheckBox IsChecked="{state:UserSettings}" Content="S" Name="chkUseOverlapShort"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <Label Content="{Binding OverlapAverageShort.TotalMinutes}" ContentStringFormat="n1" />
+        <CheckBox IsChecked="{state:UserSettings}" Content="L" Name="chkUseOverlapLast"  ToolTip="Overlap Short" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <Label Content="{Binding OverlapLast.TotalMinutes}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap Average">A:</TextBlock>
+        <Label Content="{Binding OverlapAverage.TotalMinutes}" ContentStringFormat="n1" />
+        <TextBlock ToolTip="Overlap StDev">SD:</TextBlock>
+        <Label Content="{Binding OverlapStDev.TotalMinutes}" ContentStringFormat="n1" />
+        <CheckBox IsChecked="{state:UserSettings}" Content="NF" Name="chkNormalizeFractals" IsThreeState="False"  ToolTip="Normalize Fractals" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <ComboBox Name="cmbPosMode" SelectedIndex="{state:UserSettings}" SelectedItem="{Binding PositionModeItem}">
+          <ComboBoxItem>M</ComboBoxItem>
+          <ComboBoxItem>H</ComboBoxItem>
+          <ComboBoxItem>M|H</ComboBoxItem>
+          <ComboBoxItem>M*H</ComboBoxItem>
+          <ComboBoxItem>M*|H</ComboBoxItem>
+        </ComboBox>
+      </StackPanel>
+      <Border 
+        Background="{Binding BuySell,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}"
+        >
+        <StackPanel Orientation="Horizontal">
+        <TextBlock Text="{Binding TradeDirection,AsyncState=true}" FontWeight="Bold"></TextBlock>
+          <Label>
+            <Label.Content>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock>[</TextBlock>
+                <TextBlock Text="{Binding AngleRounded,StringFormat=0.0}" Background="{Binding AngleColor,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}"/>
+                <TextBlock Text="{Binding Angle1Rounded,StringFormat=0.0}" Background="{Binding Angle1Color,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuySellBackGround}}"/>
+                <TextBlock>:</TextBlock>
+                <TextBlock Text="{Binding TicksPerMinuteMax}"/>
+                <TextBlock>]</TextBlock>
+              </StackPanel>
+            </Label.Content>
+          </Label>
+          <StackPanel Orientation="Horizontal">
+            <Label FontWeight="Bold">
+              <WrapPanel>
+                <TextBlock Text="{Binding RsiStats.BuyMin,StringFormat=n1}"/>
+                <TextBlock>></TextBlock>
+                <TextBlock Margin="-6 0 0 0">></TextBlock>
+                <TextBlock Text="{Binding RsiStats.Buy,StringFormat=n1}" Background="{Binding IsRsiBuy,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuyBackGround}}"/>
+                <TextBlock>></TextBlock>
+              </WrapPanel>
+            </Label>
+            <Label Content="{Binding RsiLocalMin.PriceRsi}" ContentStringFormat="n1"/>
+          </StackPanel>
+          <TextBlock>|</TextBlock>
+          <StackPanel Orientation="Horizontal">
+            <Label Content="{Binding RsiLocalMax.PriceRsi}" ContentStringFormat="n1"/>
+            <Label ContentStringFormat="&gt;{0:n1}" FontWeight="Bold">
+              <WrapPanel>
+                <TextBlock>></TextBlock>
+                <TextBlock Text="{Binding RsiStats.Sell,StringFormat=n1}" Background="{Binding IsRsiSell,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource SellBackGround}}"/>
+                <TextBlock Margin="0 0 -3 0">></TextBlock>
+                <TextBlock>></TextBlock>
+                <TextBlock Text="{Binding RsiStats.SellMax,StringFormat=n1}"/>
+              </WrapPanel>
+            </Label>
+          </StackPanel>
+          <!--<CheckBox IsChecked="{state:UserSettings}" Name="chkCorridorByUpDownRatio" ToolTip="Corridor By Up/Down Ratio" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+        <TextBlock Text="{Binding WavesRatio,StringFormat=WR:[{0:n2}]}" ToolTip="Wave Ratio"/>-->
+        </StackPanel>
+      </Border>
+      <WrapPanel>
+        <TextBlock Text="{Binding RsiStats}"/>
+        <Label Content="{Binding PositionHelper.Position}" ContentStringFormat="P:{0:p1}"
+               BorderBrush="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Black}"
+               />
+        <Label ToolTip="Fractal Interval">
+          <WrapPanel>
+            <TextBlock>FI:</TextBlock>
+            <TextBlock Text="{Binding FractalsInterval,StringFormat=mm}"/>
+          </WrapPanel>
+        </Label>
+        <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRsiPeriodRatio" ToolTip="Rsi Correlation Minimum">
+          <TextBox.InputBindings>
+            <KeyBinding Key="{Binding FillRsisCommand.GestureKey}" Command="{Binding FillRsisCommand}"/>
+          </TextBox.InputBindings>
+        </TextBox>
+        <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtRsiWavesForCorrelation" ToolTip="Rsi Correlation Minimum"/>
+      </WrapPanel>
+
+        <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">
+        <WrapPanel>
+          <Label Content="PD"  ToolTip="Power Down" Background="{Binding IsPowerDown,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" Foreground="Black" />
+          <Label Content="{Binding Path=PricePosition,IsAsync=True}" ContentStringFormat="p0" Background="{Binding IsPriceInPosition,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Transparent|Goldenrod, IsAsync=True}" ToolTip="Price Position" />
+          <CheckBox IsChecked="{state:UserSettings}" Content="DF" Name="chkTradeByFractal"  ToolTip="Trade By Fractal" Checked="Checked" Unchecked="Checked" BorderBrush="LightGray" BorderThickness="1" />
+          <TextBox Text="{state:UserSettings Default=5}" TextChanged="TextChanged" Name="txtPeakTradeMarginLow" ToolTip="Peak Trade Margin Low"/>
+          <TextBox Text="{state:UserSettings Default=25}" TextChanged="TextChanged" Name="txtPeakTradeMarginHigh" ToolTip="Peak Trade Margin High"/>
+          <TextBox Text="{state:UserSettings Default=80}" TextChanged="TextChanged" Name="txtMass1Mass0TradeRatio" ToolTip="Mass1/Mass0 Trade Ratio"/>
+        </WrapPanel>
+      </Border>
+      <Border BorderBrush="LightGray" BorderThickness="1" Visibility="Collapsed">
+          <WrapPanel>
+            <TextBlock Text="SD:" ToolTip="RSI Standard Deviation" />
+            <Label Content="{Binding RsiStdDev}" ContentStringFormat="n0"/>
+            <TextBlock Text="A:" ToolTip="RSI Average" />
+            <Label Content="{Binding RsiAverage}" ContentStringFormat="n0"/>
+            <TextBlock Text="Of:" ToolTip="RSI Offset" />
+            <Label Content="{Binding RsiOffset}" ContentStringFormat="n0"/>
+
+            <TextBlock Text="B:" ToolTip="RSI Buy Sell" />
+            <Label Content="{Binding RsiBuy}" ContentStringFormat="n0"/>
+            <TextBlock Text="S:" ToolTip="RSI Buy Sell" />
+            <Label Content="{Binding RsiSell}" ContentStringFormat="n0"/>
+
+            <TextBlock Text="VW:" ToolTip="Volatility Wieght"/>
+            <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght" ToolTip="Volatility Wieght"/>
+            <TextBox Text="{state:UserSettings Default=4}" TextChanged="TextChanged" Name="txtVolatilityWieght1" ToolTip="Volatility Wieght 1"/>
+            <TextBox Text="{state:UserSettings Default=2}" TextChanged="TextChanged" Name="txtWavesCountBig" ToolTip="Big Waves Count Minimum"/>
+            <TextBox Text="{state:UserSettings Default=3}" TextChanged="TextChanged" Name="txtWavesCountSmall" ToolTip="Small Waves Count Minimum"/>
+
+            <TextBox Text="{state:UserSettings Default=//}" TextChanged="TextChanged_ResetTicks" Name="txtTimeFrameTimeStart" ToolTip="Time Start"/>
+            <Button Content="\/" Click="TimeFrameDown_Click"/>
+            <Button Content="/\" Click="TimeFrameUp_Click"/>
+          </WrapPanel>
+        </Border>
+      <StackPanel Orientation="Horizontal">
+        <TextBox Text="{state:UserSettings}" Name="txtCorridorHeightMinutesSchedule" TextChanged="TextChanged" AcceptsReturn="True" Background="Transparent"></TextBox>
+        <Border BorderBrush="{Binding FractalWaveBuySellColor,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" BorderThickness="1">
+          <TextBlock Text="{Binding FractalWavesText}" FontFamily="Courier New " />
+        </Border>
+        <Border BorderBrush="LightGray">
+          <TextBlock Text="{Binding FractalStats}" FontFamily="Courier New " />
+        </Border>
+      </StackPanel>
+        <StackPanel Orientation="Horizontal">
+        <Border BorderBrush="LightGray" BorderThickness="1" ToolTip="15/10/5/1 Bar Average Spreads">
+          <WrapPanel>
+            <TextBlock Text="{Binding SpreadAverage15MinInPips,StringFormat=n1}"/>
+            <TextBlock>/</TextBlock>
+            <TextBlock Text="{Binding SpreadAverage10MinInPips,StringFormat=n1}"/>
+            <TextBlock>/</TextBlock>
+            <TextBlock Text="{Binding SpreadAverage5MinInPips,StringFormat=n1}"/>
+            <TextBlock>/</TextBlock>
+            <TextBlock Text="{Binding SpreadAverageInPips,StringFormat=n1}"/>
+            <TextBlock Text="{Binding SpreadAverageShortInPips,StringFormat=({0:n1})}"/>
+            <TextBlock>[</TextBlock>
+            <TextBlock Text="{Binding VolatilityUpInPips,StringFormat=n1}"/>
+            <TextBlock>/</TextBlock>
+            <TextBlock Text="{Binding VolatilityDownInPips,StringFormat=n1}"/>
+            <TextBlock>:</TextBlock>
+            <TextBlock Text="{Binding PriceHeightInPips,StringFormat=n1}"/>
+            <TextBlock>]</TextBlock>
+            <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" />
+          </WrapPanel>
+        </Border>
+      </StackPanel>
+    </StackPanel>
+      <TextBox Name="txtLog" Grid.Column="1" VerticalAlignment="Stretch" Background="AliceBlue" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
+  </Grid>
+</wm:WindowModel>
