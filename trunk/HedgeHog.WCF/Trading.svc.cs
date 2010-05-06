@@ -26,9 +26,6 @@ namespace HedgeHog.WCF {
       return composite;
     }
 
-    #region ITrading Members
-
-
     public TradeResponse GetPair(TradeRequest request) {
       //return new TradeResponse() { Pair = request.pair };
       var server = Wcf.FindServer(request.pair);
@@ -36,6 +33,5 @@ namespace HedgeHog.WCF {
       else return null;
     }
 
-    #endregion
   }
 }

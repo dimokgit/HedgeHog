@@ -64,8 +64,8 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkTradeByFractal]IsChecked" value="False" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="-30" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="858" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="343" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="200" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="500" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="986" />

@@ -7,6 +7,11 @@ using HedgeHog;
 
 namespace HedgeHog {
   public static class Wcf {
+    public static ITrader Trader;
+    public interface ITrader {
+      Order2GoAddIn.Trade[] GetTrades();
+    }
+
     public static List<IServer> Servers = new List<IServer>();
     public static void RegisterServer(IServer server) {
       Servers.Add(server);

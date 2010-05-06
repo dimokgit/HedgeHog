@@ -11,7 +11,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTradeSell]Text" value="0" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtStartingBalance]Text" value="4702" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="12122" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="11353" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[.chkAutoPilot]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[.chkAutoAdjust]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtLeverage]Text" value="400" />
@@ -92,17 +92,17 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow0.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow0.cmbLotsToTradeSell]Text" value="0" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPriceToAdd]Text" value="1" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtMinEquityHistory]Text" value="12123" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtMinEquityHistory]Text" value="11356" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow0.chkAutoPilot]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow0.chkAutoAdjust]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtLeverage]Text" value="400" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtTradeDelta]Text" value="1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow0.chkTradeDistanceUnisex]IsChecked" value="False" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow0.txtPipsToMCHistory]Text" value="147" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Left" value="473" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Left" value="451" />
   <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Top" value="204" />
   <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Height" value="187" />
-  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Width" value="248" />
+  <item key="/HedgeHog;component/charting.xaml.Charting[MainWindow0.MainWindow0]Width" value="270" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtServerName]Text" value="DHOME" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtServerPort]Text" value="8009" />
   <item key="/HedgeHog;component/charting.xaml.TextBox[MainWindow0.txtShortStack]Text" value="10" />
@@ -167,7 +167,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow1.cmbLotsToTradeBuy]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[MainWindow1.cmbLotsToTradeSell]Text" value="10" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtPriceToAdd]Text" value="1" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtMinEquityHistory]Text" value="12122" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtMinEquityHistory]Text" value="11367" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkAutoPilot]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.CheckBox[MainWindow1.chkAutoAdjust]IsChecked" value="True" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[MainWindow1.txtLeverage]Text" value="400" />

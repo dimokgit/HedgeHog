@@ -171,6 +171,8 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
+    <None Include="Properties\DataSources\HedgeHog.Alice.WCF.CompositeType.datasource" />
+    <None Include="Properties\DataSources\Order2GoAddIn.Trade.datasource" />
     <None Include="Properties\DataSources\TradeResponse.datasource" />
     <None Include="Service References\TradingService\Arrays.xsd">
       <SubType>Designer</SubType>
@@ -266,6 +268,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Alice\HedgeHog.Alice.WCF\HedgeHog.Alice.WCF.csproj">
+      <Project>{674056FB-B429-4491-92C4-36BB001751C7}</Project>
+      <Name>HedgeHog.Alice.WCF</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
