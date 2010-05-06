@@ -15,7 +15,7 @@
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.ComboBox[.cmbLotsToTrade]Text" value="1" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtStartingBalance]Text" value="5000" />
   <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtPipsToMCHistory]Text" value="1" />
-  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="21436" />
+  <item key="/HedgeHog;component/hedgehogmainwindow.xaml.TextBox[.txtMinEquityHistory]Text" value="14736" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Left" value="537" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Top" value="3" />
   <item key="/HedgeHog;component/charting.xaml.Charting[.]Height" value="219" />

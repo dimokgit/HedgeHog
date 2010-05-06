@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Xml.Linq;
@@ -1194,25 +1195,35 @@ namespace Order2GoAddIn {
   [Serializable]
   public class Price : HedgeHog.Bars.Price {  }
   [Serializable]
+  [DataContract]
   public class Trade {
+    [DataMember]
     [DisplayName("")]
     public string Id { get; set; }
+    [DataMember]
     [DisplayName("")]
     public string Pair { get; set; }
+    [DataMember]
     [DisplayName("BS")]
     public bool Buy { get; set; }
+    [DataMember]
     [DisplayName("##")]
     [DisplayFormat(DataFormatString = "{0}")]
     public TradeRemark Remark { get; set; }
+    [DataMember]
     [DisplayName("")]
     public double Open { get; set; }
+    [DataMember]
     [DisplayName("")]
     public double Limit { get; set; }
     public double PL { get; set; }
+    [DataMember]
     [DisplayName("")]
     public double GrossPL { get; set; }
+    [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
+    [DataMember]
     public int Lots { get; set; }
     public override string ToString() {
       var x = new XElement(GetType().Name,

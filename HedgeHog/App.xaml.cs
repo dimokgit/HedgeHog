@@ -4,8 +4,10 @@ using System.Configuration;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.ServiceModel;
 using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace HedgeHog {
   public class ClosingBalanceChangedEventArgs : EventArgs {
@@ -15,6 +17,7 @@ namespace HedgeHog {
     }
   }
   public partial class App : Application {
+    ServiceHost wcfTrader;
     public event EventHandler<ClosingBalanceChangedEventArgs> ClosingBalanceChanged;
     public List<HedgeHogMainWindow> MainWindows = new List<HedgeHogMainWindow>();
     public Order2GoAddIn.CoreFX FXCM = new Order2GoAddIn.CoreFX();
@@ -29,6 +32,19 @@ namespace HedgeHog {
       return FXCM;
     }
 
+    public App() {
+      Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
+        try {
+          MessageBox.Show(wcfTrader.BaseAddresses[0] + " is running.");
+        } catch (Exception exc) {
+          MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
+        }
+      }));
+      var wcfPort = 9200;
+      wcfTrader = new ServiceHost(typeof(HedgeHog.Alice.WCF.TraderService), new Uri("net.tcp://localhost:" + wcfPort + "/"));
+      wcfTrader.Open();
+
+    }
     public void RaiseClosingalanceChanged(HedgeHogMainWindow Window, int ClosingBalance) {
       if (ClosingBalanceChanged != null)
         ClosingBalanceChanged(Window, new ClosingBalanceChangedEventArgs(ClosingBalance));
