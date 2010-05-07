@@ -1216,6 +1216,7 @@ namespace Order2GoAddIn {
     [DataMember]
     [DisplayName("")]
     public double Limit { get; set; }
+    [DataMember]
     public double PL { get; set; }
     [DataMember]
     [DisplayName("")]

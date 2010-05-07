@@ -10,12 +10,6 @@ using System.Windows;
 using System.Windows.Threading;
 
 namespace HedgeHog {
-  public class ClosingBalanceChangedEventArgs : EventArgs {
-    public int ClosingBalance { get; set; }
-    public ClosingBalanceChangedEventArgs(int ClosingBalance) {
-      this.ClosingBalance = ClosingBalance;
-    }
-  }
   public partial class App : Application {
     ServiceHost wcfTrader;
     public event EventHandler<ClosingBalanceChangedEventArgs> ClosingBalanceChanged;
@@ -35,13 +29,14 @@ namespace HedgeHog {
     public App() {
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
         try {
+          HedgeHog.Wcf.Trader = (Wcf.ITraderServer)MainWindow;
           MessageBox.Show(wcfTrader.BaseAddresses[0] + " is running.");
         } catch (Exception exc) {
           MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
         }
       }));
       var wcfPort = 9200;
-      wcfTrader = new ServiceHost(typeof(HedgeHog.Alice.WCF.TraderService), new Uri("net.tcp://localhost:" + wcfPort + "/"));
+      wcfTrader = new ServiceHost(typeof(HedgeHog.Alice.WCF.TraderService));//, new Uri("net.tcp://localhost:" + wcfPort + "/"));
       wcfTrader.Open();
 
     }
@@ -51,6 +46,15 @@ namespace HedgeHog {
     }
     private void Application_Exit(object sender, ExitEventArgs e) {
       FXCM.Dispose();
+    }
+
+    private void Application_LoadCompleted(object sender, System.Windows.Navigation.NavigationEventArgs e) {
+    }
+  }
+  public class ClosingBalanceChangedEventArgs : EventArgs {
+    public int ClosingBalance { get; set; }
+    public ClosingBalanceChangedEventArgs(int ClosingBalance) {
+      this.ClosingBalance = ClosingBalance;
     }
   }
 }
