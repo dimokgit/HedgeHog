@@ -7,8 +7,8 @@ using HedgeHog;
 
 namespace HedgeHog {
   public static class Wcf {
-    public static ITrader Trader;
-    public interface ITrader {
+    public static ITraderServer Trader;
+    public interface ITraderServer {
       Order2GoAddIn.Trade[] GetTrades();
     }
 

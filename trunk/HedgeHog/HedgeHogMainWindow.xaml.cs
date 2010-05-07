@@ -20,7 +20,7 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Models;
 namespace HedgeHog {
-  public partial class HedgeHogMainWindow : WindowModel,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
+  public partial class HedgeHogMainWindow : WindowModel,Wcf.ITraderServer,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
 
     #region IUserSettingsStorage Members
     public WpfPersist.SaveDelegate Save { get; set; }
@@ -610,6 +610,23 @@ namespace HedgeHog {
         }
       }
     }
+
+    #region ITraderService Members
+
+    public string GetData(int value) {
+      throw new NotImplementedException();
+    }
+
+    public Alice.WCF.CompositeType GetDataUsingDataContract(Alice.WCF.CompositeType composite) {
+      throw new NotImplementedException();
+    }
+
+    public Trade[] GetTrades() {
+      return FXW.GetTrades("");
+    }
+
+    #endregion
+
   }
   public class ToolTips {
     public string CurrentDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
