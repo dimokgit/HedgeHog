@@ -85,6 +85,10 @@
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RunWithTimeout\RunWithTimeout.csproj">
       <Project>{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}</Project>
       <Name>RunWithTimeout</Name>

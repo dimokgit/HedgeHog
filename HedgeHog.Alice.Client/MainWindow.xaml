@@ -2,11 +2,89 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:m="clr-namespace:HedgeHog.Alice.Client"
-        Title="MainWindow" Height="350" Width="525">
+        xmlns:c="clr-namespace:HedgeHog.Alice.Client.Commands"
+        xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+    Left="{state:UserSettings Default=100}"
+    Top="{state:UserSettings Default=100}"
+  Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
+        DataContext="{DynamicResource DataModel}"
+        Title="{Binding Title,StringFormat=Alice In: {0}}">
   <Window.Resources>
     <m:TraderModel x:Key="DataModel"/>
+    <c:CommandReference x:Key="LoginCommandReference" Command="{Binding LoginCommand}"/>
+    <Style TargetType="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style TargetType="m:CheckBox2" BasedOn="{StaticResource {x:Type CheckBox}}">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
   </Window.Resources>
-    <Grid DataContext="{StaticResource DataModel}">
-    <DataGrid AutoGenerateColumns="True" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" ItemsSource="{Binding ServerTradesList}" />
+    <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <StackPanel>
+      <WrapPanel>
+        <TextBlock>Server:</TextBlock>
+        <m:TextBox2 MinWidth="50" Text2="{Binding ServerAddress,Mode=TwoWay}" Text="{state:UserSettings Default=net.tcp://localhost:9200/}" x:Name="ServerAddress"/>
+        <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" ToolTip="Server Time" VerticalContentAlignment="Center" VerticalAlignment="Center" BorderBrush="Gray" BorderThickness="1"/>
+        <ComboBox SelectedIndex="{Binding AliceMode,Mode=TwoWay}">
+          <ComboBoxItem>Stop</ComboBoxItem>
+          <ComboBoxItem>Wonderland</ComboBoxItem>
+          <ComboBoxItem>Mirror</ComboBoxItem>
+        </ComboBox>
+      </WrapPanel>
+      <WrapPanel>
+        <TextBlock>Login:</TextBlock>
+        <m:TextBox2 MinWidth="50"  Text2="{Binding TradingAccount,Mode=TwoWay}" Text="{state:UserSettings}" x:Name="TradeAccount"/>
+        <TextBlock>Pwd:</TextBlock>
+        <m:TextBox2 MinWidth="30"  Text2="{Binding TradingPassword,Mode=TwoWay}" Text="{state:UserSettings}" x:Name="TraderPassword"/>
+        <m:CheckBox2 Content="Demo" IsChecked2="{Binding TradingMode,Mode=TwoWay}" IsChecked="{state:UserSettings}" x:Name="TraderAccountType"/>
+        <Button Command="{Binding LoginCommand}">Login</Button>
+        <Button Command="{Binding OpenTradeCommand}">Open Trade</Button>
+      </WrapPanel>
+    </StackPanel>
+
+    <Expander Header="Trades (Server)"  Grid.Row="1" IsExpanded="True" Padding="0">
+      <Grid>
+        <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" VerticalAlignment="Top" HorizontalAlignment="Left">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+            <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
+            <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+            <DataGridCheckBoxColumn Header="B/S" Binding="{Binding Buy}"/>
+            <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+            <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+            <DataGridTextColumn Header="Remark" Binding="{Binding Remark}"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Expander>
+    <Expander Header="Trades (Local)"  Grid.Row="2" IsExpanded="True" Padding="0">
+      <Grid>
+        <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding LocalTradesList}" VerticalAlignment="Top" HorizontalAlignment="Left">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+            <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
+            <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+            <DataGridCheckBoxColumn Header="B/S" Binding="{Binding Buy}"/>
+            <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+            <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+            <DataGridTextColumn Header="Remark" Binding="{Binding Remark.Remark}"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </Grid>
+    </Expander>
+    <Expander Header="Log"  Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}" Padding="0">
+      <ScrollViewer>
+        <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
+      </ScrollViewer>
+    </Expander>
   </Grid>
 </Window>

@@ -35,9 +35,14 @@ namespace HedgeHog {
           MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
         }
       }));
-      var wcfPort = 9200;
-      wcfTrader = new ServiceHost(typeof(HedgeHog.Alice.WCF.TraderService));//, new Uri("net.tcp://localhost:" + wcfPort + "/"));
-      wcfTrader.Open();
+      try {
+        var wcfPort = 9200;
+        wcfTrader = new ServiceHost(typeof(HedgeHog.Alice.WCF.TraderService));//, new Uri("net.tcp://localhost:" + wcfPort + "/"));
+        wcfTrader.Open();
+      } catch (Exception exc) {
+        MessageBox.Show(exc.Message + Environment.NewLine + exc.StackTrace);
+        Shutdown(-1);
+      }
 
     }
     public void RaiseClosingalanceChanged(HedgeHogMainWindow Window, int ClosingBalance) {

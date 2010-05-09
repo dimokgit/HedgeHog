@@ -7,6 +7,7 @@ using System.Text;
 using HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
+using HedgeHog.Shared;
 
 namespace HedgeHog {
   public static class Signaler {

@@ -19,6 +19,7 @@ using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Models;
+using HedgeHog.Shared;
 namespace HedgeHog {
   public partial class HedgeHogMainWindow : WindowModel,Wcf.ITraderServer,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
 
@@ -101,24 +102,23 @@ namespace HedgeHog {
     private Thread threadWait;
 
     string logFileName = "Log.txt";
+    static readonly int logQueueLength = 10;
+    Queue<string> logQueue = new Queue<string>(logQueueLength);
     object Log {
       set {
         var exc = value as Exception;
-        var message = exc == null ? value+"": exc.Message;
+        var message = exc == null ? value + "" : exc.Message;
+        if (logQueue.Count > logQueueLength) logQueue.Dequeue();
+        var time = DateTime.Now.ToString("[dd HH:mm:ss] ");
+        logQueue.Enqueue(time + message);
         txtAccNum.Dispatcher.BeginInvoke(new Action(delegate() {
-
-          var lines = txtLog.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-          var time = DateTime.Now.ToString("[dd HH:mm:ss] ");
-          lines.Add(time + message + Environment.NewLine);
-          txtLog.Text = string.Join(Environment.NewLine, lines.Skip(lines.Count - 30).ToArray());
-
-          txtLog.ScrollToEnd();
+          txtLog.Text = string.Join(Environment.NewLine, logQueue.Reverse());
           var text = message + Environment.NewLine + (exc == null ? "" : exc.StackTrace + Environment.NewLine);
           while (exc != null && (exc = exc.InnerException) != null)
             text += "**************** Inner ***************" + Environment.NewLine + exc.Message + Environment.NewLine + exc.StackTrace + Environment.NewLine;
           System.IO.File.AppendAllText(logFileName, text);
         })
-        );
+      );
       }
     }
 
