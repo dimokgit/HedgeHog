@@ -5,6 +5,7 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Web;
 using System.Text;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.WCF {
   // NOTE: You can use the "Rename" command on the "Refactor" menu to change the class name "Service1" in code, svc and config file together.
@@ -23,7 +24,7 @@ namespace HedgeHog.Alice.WCF {
       return composite;
     }
 
-    public Order2GoAddIn.Trade[] GetTrades() {
+    public Trade[] GetTrades() {
       return Wcf.Trader.GetTrades();
     }
 

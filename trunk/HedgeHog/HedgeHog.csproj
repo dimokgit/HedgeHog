@@ -284,6 +284,10 @@
       <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
       <Name>HedgeHog.Remoter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
       <Name>Order2GoAddIn</Name>

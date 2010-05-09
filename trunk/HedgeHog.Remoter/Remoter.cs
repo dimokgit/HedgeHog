@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 using HedgeHog;
+using HedgeHog.Shared;
 
 namespace HedgeHog {
   public static class Wcf {
     public static ITraderServer Trader;
     public interface ITraderServer {
-      Order2GoAddIn.Trade[] GetTrades();
+      Trade[] GetTrades();
     }
 
     public static List<IServer> Servers = new List<IServer>();
@@ -210,7 +211,7 @@ namespace HedgeHog {
     [DataMember]
     public DateTime serverTime;
     [DataMember]
-    public Order2GoAddIn.Trade tradeAdded;
+    public Trade tradeAdded;
     [DataMember]
     public int BuyPositions;
     [DataMember]
@@ -224,9 +225,9 @@ namespace HedgeHog {
     [DataMember]
     public double SellAvgOpen;
     [DataMember]
-    public Order2GoAddIn.Trade[] tradesBuy = new Order2GoAddIn.Trade[] { };
+    public Trade[] tradesBuy = new Trade[] { };
     [DataMember]
-    public Order2GoAddIn.Trade[] tradesSell = new Order2GoAddIn.Trade[] { };
+    public Trade[] tradesSell = new Trade[] { };
 
     public void Update(TradeRequest tr) {
       foreach (var field in GetType().GetFields().Where(f=>!f.FieldType.IsArray)) 

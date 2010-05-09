@@ -135,6 +135,10 @@
       <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
       <Name>HedgeHog.Remoter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Signaler\HedgeHog.Signaler.csproj">
       <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>
       <Name>HedgeHog.Signaler</Name>

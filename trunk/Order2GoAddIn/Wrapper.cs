@@ -12,6 +12,7 @@ using System.Threading;
 using System.Xml.Linq;
 using HedgeHog;
 using HedgeHog.Bars;
+using HedgeHog.Shared;
 
 [assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
@@ -29,48 +30,6 @@ namespace Order2GoAddIn {
     public UserNotLoggedInException(string message) : base(message) { }
   }
 
-  [Serializable]
-  public class TradeRemark {
-    const char PIPE = '|';
-    int _tradeWaveInMinutes = 0;
-    public int TradeWaveInMinutes { 
-      get { return _tradeWaveInMinutes; } 
-      set {
-        if (value < 1000)
-          _tradeWaveInMinutes = value;
-        else _tradeWaveInMinutes = 0;
-      }
-    }
-    double _tradeWaveHeight = 0;
-    public double TradeWaveHeight {
-      get { return _tradeWaveHeight; }
-      set { _tradeWaveHeight = value; }
-    }
-    double _angle = 0;
-    public double Angle {
-      get { return _angle; }
-      set { _angle = value; }
-    }
-    public TradeRemark(int tradeWaveInMinutes, double tradeWaveHeight,double angle) {
-      TradeWaveInMinutes = tradeWaveInMinutes;
-      TradeWaveHeight = Math.Round(tradeWaveHeight, 1);
-      Angle = Math.Round(angle, 2);
-    }
-    public TradeRemark(string remark) {
-      var info = remark.Split(new[] { PIPE }, StringSplitOptions.RemoveEmptyEntries);
-      if (info.Length > 0) int.TryParse(info[0], out _tradeWaveInMinutes);
-      if (info.Length > 1) double.TryParse(info[1], out _tradeWaveHeight);
-      if (info.Length > 2) double.TryParse(info[2], out _angle);
-    }
-    public override string ToString() {
-      return string.Join(PIPE+"", 
-        new object[] {
-          TradeWaveInMinutes.ToString("000"),
-          TradeWaveHeight ,
-          Angle
-        }.Select(o => o + "").ToArray());
-    }
-  }
   public static class RateExtensions {
     public static void FillTSI_CR(this Rate[] ticks) {
       (from dp in Indicators.TSI_CR(ticks)
@@ -908,6 +867,22 @@ namespace Order2GoAddIn {
       if (trade != null)
         FixOrderClose(trade.Id, Desk.FIX_CLOSEMARKET,GetPrice());
     }
+
+    private static object globalOrderPending = new object();
+    private static bool isGlobalOrderPending;
+    public static bool FixOrderOpen(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark) {
+      if (isGlobalOrderPending) return false;
+      lock (globalOrderPending) {
+        object psOrderID, psDI;
+        try {
+          CoreFX.Desk.CreateFixOrder(CoreFX.Desk.FIX_OPENMARKET, "", 0, 0, "", GetAccount().ID, pair, buy, lots, remark, out psOrderID, out psDI);
+          isGlobalOrderPending = true;
+          return true;
+        } catch (Exception exc) {
+          throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots));
+        }
+      }
+    }
     public static void FixOrderClose(string tradeId) { FixOrderClose(tradeId, CoreFX.Desk.FIX_CLOSEMARKET, null); }
     public static void FixOrderClose(string tradeId, int mode,Price price) {
       object psOrderID, psDI;
@@ -1193,45 +1168,7 @@ namespace Order2GoAddIn {
   [Guid("5183ADD7-0BA2-4937-B9CE-BC8E5CAC4C80")]
   [ComVisible(true)]
   [Serializable]
-  public class Price : HedgeHog.Bars.Price {  }
-  [Serializable]
-  [DataContract]
-  public class Trade {
-    [DataMember]
-    [DisplayName("")]
-    public string Id { get; set; }
-    [DataMember]
-    [DisplayName("")]
-    public string Pair { get; set; }
-    [DataMember]
-    [DisplayName("BS")]
-    public bool Buy { get; set; }
-    [DataMember]
-    [DisplayName("##")]
-    [DisplayFormat(DataFormatString = "{0}")]
-    public TradeRemark Remark { get; set; }
-    [DataMember]
-    [DisplayName("")]
-    public double Open { get; set; }
-    [DataMember]
-    [DisplayName("")]
-    public double Limit { get; set; }
-    [DataMember]
-    public double PL { get; set; }
-    [DataMember]
-    [DisplayName("")]
-    public double GrossPL { get; set; }
-    [DataMember]
-    [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
-    public DateTime Time { get; set; }
-    [DataMember]
-    public int Lots { get; set; }
-    public override string ToString() {
-      var x = new XElement(GetType().Name,
-      GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
-      return x.ToString(SaveOptions.DisableFormatting);
-    }
-  }
+  public class Price : HedgeHog.Bars.Price { }
   public class Account {
     public string ID { get; set; }
     public double Balance { get;  set; }

@@ -61,6 +61,10 @@
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
       <Name>Order2GoAddIn</Name>

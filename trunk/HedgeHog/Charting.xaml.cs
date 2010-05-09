@@ -22,6 +22,7 @@ using HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.ServiceModel;
+using HedgeHog.Shared;
 namespace HedgeHog {
 
   public partial class Charting : Window, INotifyPropertyChanged {
@@ -85,7 +86,7 @@ namespace HedgeHog {
     public double TakeProfitSell { get; protected set; }
     public int LotsToTradeBuy = 1;
     public int LotsToTradeSell = 1;
-    public Order2GoAddIn.TradeRemark TradeInfo { get; protected set; }
+    public TradeRemark TradeInfo { get; protected set; }
     public double DencityRatio { get; protected set; }
 
     public int _txtVoltageCMA;
@@ -231,7 +232,7 @@ namespace HedgeHog {
     private double spreadAverage15MinInPips { get { return fw.InPips(spreadAverage15Min, 1); } }
     private double spreadAverageHighMin = 0;
     private double spreadAverageHighMinInPips { get { return fw.InPips(spreadAverageHighMin, 1); } }
-    private Order2GoAddIn.Trade tradeAdded = null;
+    private Trade tradeAdded = null;
 
     private bool _canTrade;
     public bool CanTrade {
@@ -398,7 +399,7 @@ namespace HedgeHog {
     }
 
     #region ProcessPrice
-    bool IsSecondTrade(Order2GoAddIn.Trade trade) {
+    bool IsSecondTrade(Trade trade) {
       return trade!=null && fw.GetTrades(!trade.Buy).Any(t => (trade.Time - t.Time).TotalSeconds.Between(0, 15));
     }
     bool isNewTradeInititalized = false;
@@ -641,7 +642,7 @@ namespace HedgeHog {
           #region Statts
           var ts = ti.TradeStats;
           if (ts == null) return;
-          TradeInfo = new Order2GoAddIn.TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1), ti.TradeStats.Angle / fw.PointSize);
+          TradeInfo = new TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1), ti.TradeStats.Angle / fw.PointSize);
           positionBuy = ts.positionBuy;
           positionSell = ts.positionSell;
           spreadAverage = ts.spreadAverage;
@@ -985,7 +986,7 @@ namespace HedgeHog {
         DependencyProperty.Register("Title", typeof(string), typeof(ViewModel));
 
 
-    public ObservableCollection<Order2GoAddIn.Trade> Trades = new ObservableCollection<Order2GoAddIn.Trade>();
+    public ObservableCollection<Trade> Trades = new ObservableCollection<Trade>();
     public ListCollectionView TradesList { get; set; }
 
     #region Position (Buy/Sell)

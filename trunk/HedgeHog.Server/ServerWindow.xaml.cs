@@ -27,21 +27,23 @@ using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Rsi;
 using HedgeHog.Models;
+using HedgeHog.Shared;
 
 namespace HedgeHog {
   public sealed partial class ServerWindow : WindowModel, IServer, IDisposable {
     #region Log
+    static readonly int logQueueLength = 20;
+    Queue<string> logQueue = new Queue<string>(logQueueLength);
     object Log {
       set {
         if ((value + "").Length == 0) return;
         var exc = value as Exception;
         var message = exc == null ? value + "" : exc.Message;
+        if (logQueue.Count > logQueueLength) logQueue.Dequeue();
+        var time = DateTime.Now.ToString("[HH:mm:ss] ");
+        logQueue.Enqueue(time + message);
         txtLog.Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(delegate() {
-          var lines = txtLog.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-          var time = DateTime.Now.ToString("[HH:mm:ss] ");
-          lines.Insert(0,time + message);
-          txtLog.Text = string.Join(Environment.NewLine, lines.Take(lines.Count));
-          //txtLog.ScrollToEnd();
+          txtLog.Text = string.Join(Environment.NewLine, logQueue.Reverse());
           var text = DateTime.Now.ToString("[dd HH:mm:ss] ") + message + Environment.NewLine + (exc == null ? "" : exc.StackTrace + Environment.NewLine);
           while (exc != null && (exc = exc.InnerException) != null)
             text += "**************** Inner ***************" + Environment.NewLine + exc.Message + Environment.NewLine + exc.StackTrace + Environment.NewLine;
@@ -1878,8 +1880,8 @@ namespace HedgeHog {
       #region Rid of Old Positions
       bool doShortStack = Math.Min(tr.SellPositions, tr.BuyPositions) > tr.shortStack;
       bool doTrancate = Math.Min(tr.SellPositions, tr.BuyPositions) >= tr.shortStack + tr.shortStackTruncateOffset; ;
-      var closeBuyIDs = new List<O2G.Trade>();
-      var closeSellIDs = new List<O2G.Trade>();
+      var closeBuyIDs = new List<Trade>();
+      var closeSellIDs = new List<Trade>();
       Func<IEnumerable<Trade>> closingTrades = ()=>closeSellIDs.Concat(closeBuyIDs);
       Func<Trade[], int, double> profitMin = (trades, count) => {
         if (trades.Length < 2) return 0;
@@ -2131,7 +2133,7 @@ namespace HedgeHog {
         _localPeak = null;
         _tail = null;
       }
-      public bool okToLoose(O2G.Trade trade) { return fw.ServerTimeCached - trade.Time > TimeSpan.FromMinutes(1); }
+      public bool okToLoose(Trade trade) { return fw.ServerTimeCached - trade.Time > TimeSpan.FromMinutes(1); }
       public double SellPL(double price) { return fw.InPips(price - minTick.AskLow); }
       public double BuyPL(double price) { return fw.InPips(maxTick.BidHigh - price); }
     }
