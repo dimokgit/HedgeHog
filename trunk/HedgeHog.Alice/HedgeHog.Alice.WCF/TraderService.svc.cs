@@ -24,8 +24,8 @@ namespace HedgeHog.Alice.WCF {
       return composite;
     }
 
-    public Trade[] GetTrades() {
-      return Wcf.Trader.GetTrades();
+    public AccountInfo GetTrades() {
+      return new AccountInfo() { Account = Wcf.Trader.GetAccount(), Trades = Wcf.Trader.GetTrades() };
     }
 
   }

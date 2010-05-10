@@ -31,6 +31,7 @@ namespace Order2GoAddIn {
     bool noTimer;
     public readonly int ServerTimeOffset = -4;
     private TimeSpan _serverTimeOffset = TimeSpan.Zero;
+    public static readonly string DefaultUrl = "http://www.fxcorporate.com";
     public DateTime ServerTime {
       get {
         if (Desk == null) return DateTime.Now;
@@ -65,7 +66,7 @@ namespace Order2GoAddIn {
         this.user = user;
         this.password = password;
         this.isDemo = isDemo;
-        this.URL = url + "" != "" ? url : "http://www.fxcorporate.com";
+        this.URL = url + "" != "" ? url : DefaultUrl;
         Logout();
         try {
           mCore = new FXCore.CoreAut();

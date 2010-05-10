@@ -37,6 +37,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DynamicLinq">
+      <HintPath>Z:\Data\Install\MicroSoft\DynamicLinq.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
@@ -73,6 +76,7 @@
     <Compile Include="Lib.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="UI\GroupFilter.cs" />
+    <Compile Include="ViewModelLocator.cs" />
     <Compile Include="WindowModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyChangedExtenssion.cs" />

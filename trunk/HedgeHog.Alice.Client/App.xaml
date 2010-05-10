@@ -3,6 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-    <ResourceDictionary Source="WhistlerBlue.xaml"/>
+    <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml"/>
   </Application.Resources>
 </Application>

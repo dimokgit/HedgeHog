@@ -11,6 +11,7 @@ using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Bars;
+using HedgeHog.Shared;
 using HedgeHog.Rsi;
 
 namespace TestHH {
