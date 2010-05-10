@@ -26,6 +26,9 @@ namespace Order2GoAddIn {
     void RowAdded(object tableType, string rowId);
   }
 
+  [CLSCompliant(false)]
+  public delegate void OnTradesCountChangedDelegate(Trade trade);
+
   public class UserNotLoggedInException : Exception {
     public UserNotLoggedInException(string message) : base(message) { }
   }
@@ -215,6 +218,8 @@ namespace Order2GoAddIn {
     public delegate void TradesCountChangedEventHandler(Trade trade);
     public event TradesCountChangedEventHandler TradesCountChanged;
 
+    public static OnTradesCountChangedDelegate OnTradeCountChangedCallback;
+
     #endregion
 
     #region Properties
@@ -278,7 +283,10 @@ namespace Order2GoAddIn {
     #region Constructor
     CoreFX coreFX;
     public FXCoreWrapper() {
-      TradesCountChanged += (t) => { isTradePending = false; };
+      TradesCountChanged += (t) => {
+        isTradePending = false;
+        isGlobalOrderPending = false;
+      };
     }
     public FXCoreWrapper(CoreFX coreFX):this(coreFX,null) { }
     public FXCoreWrapper(CoreFX coreFX,string pair) {
@@ -293,7 +301,7 @@ namespace Order2GoAddIn {
       coreFX = null;
     }
     public bool LogOn(string pair,CoreFX core, string user, string password, bool isDemo) {
-      return LogOn(pair, core, user, password, new Uri(""), isDemo);
+      return LogOn(pair, core, user, password, new Uri(CoreFX.DefaultUrl), isDemo);
     }
     bool isWiredUp;
     public bool LogOn(string pair, CoreFX core, string user, string password, string url, bool isDemo) {
@@ -763,6 +771,7 @@ namespace Order2GoAddIn {
                     Limit = (double)t.CellValue("Limit"),
                     Lots = (Int32)t.CellValue("Lot"),
                     Open = (double)t.CellValue("Open"),
+                    Close = (double)t.CellValue("Close"),
                     Time = ConvertDateToLocal((DateTime)t.CellValue("Time")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
                     Remark = new TradeRemark(t.CellValue("QTXT")+"")
                   };
@@ -879,7 +888,7 @@ namespace Order2GoAddIn {
           isGlobalOrderPending = true;
           return true;
         } catch (Exception exc) {
-          throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots));
+          throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots),exc);
         }
       }
     }
@@ -1067,7 +1076,7 @@ namespace Order2GoAddIn {
 
     bool isTradePending {
       get {
-        return _tradePending && _tradePendingDate.AddSeconds(3) > DateTime.Now;
+        return _tradePending /*&& _tradePendingDate.AddSeconds(3) > DateTime.Now*/;
       }
       set {
         _tradePending = value;
@@ -1093,9 +1102,13 @@ namespace Order2GoAddIn {
         };
         switch (table.Type.ToLower()) {
           case "trades":
+            isGlobalOrderPending = false;
             row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
+            var trade = GetTrades().OrderBy(t => t.Id).Last();
             if ((row.CellValue(FIELD_INSTRUMENT) + "") == Pair && TradesCountChanged != null)
-              TradesCountChanged(GetTrades().OrderBy(t => t.Id).Last());
+              TradesCountChanged(trade);
+            if( OnTradeCountChangedCallback!= null)
+              OnTradeCountChangedCallback(trade);
             break;
           case "orders":
             row = table.FindRow(FIELD_ORDERID, RowID, 0) as FXCore.RowAut;
@@ -1169,16 +1182,6 @@ namespace Order2GoAddIn {
   [ComVisible(true)]
   [Serializable]
   public class Price : HedgeHog.Bars.Price { }
-  public class Account {
-    public string ID { get; set; }
-    public double Balance { get;  set; }
-    public double Equity { get;  set; }
-    public double UsableMargin { get;  set; }
-    public bool IsMarginCall { get;  set; }
-    public int PipsToMC { get;  set; }
-    public bool Hedging { get;  set; }
-    public double Gross { get { return Equity - Balance; } }
-  }
   public class Summary {
     public static Summary Initialize(Price Price){
       return new Summary() { PriceCurrent = Price };

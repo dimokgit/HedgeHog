@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Linq.Dynamic;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -31,6 +32,22 @@ namespace HedgeHog {
     }
   }
   public static class Lib {
+    public static object ToDataObject(this object o) {
+      var d = o.GetType().GetProperties().Select(s => new DynamicProperty(s.Name, s.PropertyType));
+      Type t = DynamicExpression.CreateClass(d.ToArray());
+      object ret = Activator.CreateInstance(t);
+      foreach (var e in d)
+        ret.SetProperty(e.Name, o.GetProperty(e.Name));
+      return ret;
+    }
+
+    public static object GetProperty(this object o, string p) {
+      System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
+      if (pi != null) return pi.GetValue(o, null);
+      System.Reflection.FieldInfo fi = o.GetType().GetField(p);
+      if (fi != null) return fi.GetValue(o);
+      throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
+    }
 
     public static double[] Regress(double[] prices, int polyOrder) {
       var coeffs = new[] { 0.0, 0.0 };

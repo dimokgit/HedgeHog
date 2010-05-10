@@ -71,16 +71,25 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Commands\CommandReference.cs" />
-    <Compile Include="Commands\DelegateCommand.cs" />
-    <Compile Include="Controls\CheckBox2.cs" />
+    <Compile Include="Class\AbsentTrade.cs" />
+    <Compile Include="Commands\CommandReference.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Commands\DelegateCommand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CheckBox2.cs" />
     <Compile Include="Service References\TraderService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
-    <Compile Include="Controls\TextBox2.cs" />
+    <Compile Include="TextBox2.cs" />
     <Compile Include="TraderModel.cs" />
+    <Page Include="Dictionary1.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -93,7 +102,11 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="WhistlerBlue.xaml">
+    <Page Include="UI\TradesOnServer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Style\WhistlerBlue.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -117,6 +130,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="Properties\DataSources\HedgeHog.Shared.AccountInfo.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Trade.datasource" />
     <None Include="Properties\DataSources\Order2GoAddIn.Trade.datasource" />
     <None Include="Properties\Settings.settings">
@@ -127,21 +141,22 @@
     <None Include="Service References\TraderService\HedgeHog.Alice.Client.TraderService.CompositeType.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\TraderService\HedgeHog.Alice.WCF.xsd">
+    <None Include="Service References\TraderService\TraderService.wsdl" />
+    <None Include="Service References\TraderService\TraderService.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\HedgeHog.Shared.xsd">
+    <None Include="Service References\TraderService\TraderService1.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\service.wsdl" />
-    <None Include="Service References\TraderService\service.xsd">
+    <None Include="Service References\TraderService\TraderService2.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\service1.xsd">
+    <None Include="Service References\TraderService\TraderService3.xsd">
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Controls\" />
     <Folder Include="Model\" />
   </ItemGroup>
   <ItemGroup>
@@ -167,6 +182,9 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadataStorage Include="Service References\TraderService\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Service References\TraderService\TraderService.disco" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Service References\TraderService\configuration91.svcinfo" />

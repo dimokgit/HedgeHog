@@ -11,6 +11,7 @@ namespace HedgeHog {
     public static ITraderServer Trader;
     public interface ITraderServer {
       Trade[] GetTrades();
+      Account GetAccount();
     }
 
     public static List<IServer> Servers = new List<IServer>();

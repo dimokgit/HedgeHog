@@ -513,7 +513,7 @@ namespace HedgeHog {
         #region Local Globals
         int periodMin = bsPeriodMin;
         Order2GoAddIn.Summary summary = fw.GetSummary();
-        Order2GoAddIn.Account account = FXW.GetAccount();
+        Account account = FXW.GetAccount();
         var price = eventPrice ?? summary.PriceCurrent;
         #endregion
 
@@ -898,18 +898,18 @@ namespace HedgeHog {
 
 
   #region Converters
-  [ValueConversion(typeof(bool?), typeof(Color))]
-  public class BoolToColorConverter : IValueConverter {
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
-      var color = value == null ? colors[0] : (bool)value ? colors[2] : colors[1];
-      return color;
-    }
+  //[ValueConversion(typeof(bool?), typeof(Color))]
+  //public class BoolToColorConverter : IValueConverter {
+  //  public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+  //    var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
+  //    var color = value == null ? colors[0] : (bool)value ? colors[2] : colors[1];
+  //    return color;
+  //  }
 
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      throw new NotImplementedException();
-    }
-  }
+  //  public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+  //    throw new NotImplementedException();
+  //  }
+  //}
   #endregion
 
   #region ViewModel Class

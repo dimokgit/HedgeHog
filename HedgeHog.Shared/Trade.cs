@@ -30,6 +30,9 @@ namespace HedgeHog.Shared {
     public double Open { get; set; }
     [DataMember]
     [DisplayName("")]
+    public double Close { get; set; }
+    [DataMember]
+    [DisplayName("")]
     public double Limit { get; set; }
     [DataMember]
     public double PL { get; set; }
@@ -41,6 +44,24 @@ namespace HedgeHog.Shared {
     public DateTime Time { get; set; }
     [DataMember]
     public int Lots { get; set; }
+
+    public object UnKnown { get; set; }
+
+    public double OpenInPips { get { return InPips(this.Open); } }
+    public double CloseInPips { get { return InPips(this.Close); } }
+
+    /// <summary>
+    /// 100,10000
+    /// </summary>
+    public int PipValue { get { return (int)Math.Round(Math.Abs(this.PL / (this.Open - this.Close)), 0); } }
+    /// <summary>
+    /// 2,4
+    /// </summary>
+    public int PointSize { get { return (int)Math.Log10(PipValue); } }
+
+    public double InPips(double value) { return value * PipValue; }
+
+    public Trade Clone() { return this.MemberwiseClone() as Trade; }
 
     public override string ToString() {
       var x = new XElement(GetType().Name,

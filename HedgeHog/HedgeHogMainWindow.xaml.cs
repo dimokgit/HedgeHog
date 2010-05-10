@@ -366,7 +366,7 @@ namespace HedgeHog {
       if (sender != this && StartingBalance > 0 && StartingBalance < e.ClosingBalance) StartingBalance = e.ClosingBalance;
     }
 
-    void ShowAccount(Order2GoAddIn.Account Account, Order2GoAddIn.Summary Summary) {
+    void ShowAccount(Account Account, Order2GoAddIn.Summary Summary) {
       AccountBalance = Account.Balance;
       PipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
@@ -394,7 +394,7 @@ namespace HedgeHog {
       }
 
     }
-    void ShowSummary(Order2GoAddIn.Summary Summary, Order2GoAddIn.Account Account) {
+    void ShowSummary(Order2GoAddIn.Summary Summary, Account Account) {
       var summary = Summary ?? new Order2GoAddIn.Summary();
       double buyLossPerLotK;
       double sellLossPerLotK;
@@ -625,8 +625,12 @@ namespace HedgeHog {
       return FXW.GetTrades("");
     }
 
-    #endregion
 
+    public Account GetAccount() {
+      return FXW.GetAccount();
+    }
+
+    #endregion
   }
   public class ToolTips {
     public string CurrentDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }
