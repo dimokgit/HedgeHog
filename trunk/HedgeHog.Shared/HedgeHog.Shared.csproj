@@ -44,6 +44,10 @@
   <ItemGroup>
     <Compile Include="Account.cs" />
     <Compile Include="AccountInfo.cs" />
+    <Compile Include="Extenssions.cs" />
+    <Compile Include="Offer.cs" />
+    <Compile Include="Order.cs" />
+    <Compile Include="SummaryRow.cs" />
     <Compile Include="Trade.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -84,8 +84,20 @@ namespace HedgeHog.Alice.Client.TraderService {
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/GetDataUsingDataContract", ReplyAction="http://tempuri.org/ITraderService/GetDataUsingDataContractResponse")]
         HedgeHog.Alice.Client.TraderService.CompositeType GetDataUsingDataContract(HedgeHog.Alice.Client.TraderService.CompositeType composite);
         
-        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/GetTrades", ReplyAction="http://tempuri.org/ITraderService/GetTradesResponse")]
-        HedgeHog.Shared.AccountInfo GetTrades();
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/OpenNewAccount", ReplyAction="http://tempuri.org/ITraderService/OpenNewAccountResponse")]
+        void OpenNewAccount(string account, string password);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/GetAccount", ReplyAction="http://tempuri.org/ITraderService/GetAccountResponse")]
+        HedgeHog.Shared.Account GetAccount();
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/CloseTrade", ReplyAction="http://tempuri.org/ITraderService/CloseTradeResponse")]
+        string CloseTrade(string tradeID);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/CloseTrades", ReplyAction="http://tempuri.org/ITraderService/CloseTradesResponse")]
+        string[] CloseTrades(string[] tradeID);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/ITraderService/CloseAllTrades", ReplyAction="http://tempuri.org/ITraderService/CloseAllTradesResponse")]
+        string[] CloseAllTrades();
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -123,8 +135,24 @@ namespace HedgeHog.Alice.Client.TraderService {
             return base.Channel.GetDataUsingDataContract(composite);
         }
         
-        public HedgeHog.Shared.AccountInfo GetTrades() {
-            return base.Channel.GetTrades();
+        public void OpenNewAccount(string account, string password) {
+            base.Channel.OpenNewAccount(account, password);
+        }
+        
+        public HedgeHog.Shared.Account GetAccount() {
+            return base.Channel.GetAccount();
+        }
+        
+        public string CloseTrade(string tradeID) {
+            return base.Channel.CloseTrade(tradeID);
+        }
+        
+        public string[] CloseTrades(string[] tradeID) {
+            return base.Channel.CloseTrades(tradeID);
+        }
+        
+        public string[] CloseAllTrades() {
+            return base.Channel.CloseAllTrades();
         }
     }
 }

@@ -1,12 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/HedgeHog.Shared" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/HedgeHog.Shared" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-  <xs:complexType name="AccountInfo">
-    <xs:sequence>
-      <xs:element minOccurs="0" name="Account" nillable="true" type="tns:Account" />
-      <xs:element minOccurs="0" name="Trades" nillable="true" type="tns:ArrayOfTrade" />
-    </xs:sequence>
-  </xs:complexType>
-  <xs:element name="AccountInfo" nillable="true" type="tns:AccountInfo" />
   <xs:complexType name="Account">
     <xs:sequence>
       <xs:element minOccurs="0" name="Balance" type="xs:double" />
@@ -15,6 +8,7 @@
       <xs:element minOccurs="0" name="ID" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="IsMarginCall" type="xs:boolean" />
       <xs:element minOccurs="0" name="PipsToMC" type="xs:int" />
+      <xs:element minOccurs="0" name="Trades" nillable="true" type="tns:ArrayOfTrade" />
       <xs:element minOccurs="0" name="UsableMargin" type="xs:double" />
     </xs:sequence>
   </xs:complexType>

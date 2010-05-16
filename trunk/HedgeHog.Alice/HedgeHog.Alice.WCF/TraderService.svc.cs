@@ -24,8 +24,27 @@ namespace HedgeHog.Alice.WCF {
       return composite;
     }
 
-    public AccountInfo GetTrades() {
-      return new AccountInfo() { Account = Wcf.Trader.GetAccount(), Trades = Wcf.Trader.GetTrades() };
+    public Account GetAccount() {
+      return Wcf.Trader == null ? new Account() : Wcf.Trader.GetAccount();
+    }
+
+
+
+    public string CloseTrade(string tradeID) {
+      return Wcf.Trader == null ? null : Wcf.Trader.CloseTrade(tradeID);
+    }
+
+    public string[] CloseTrades(string[] tradeIDs) {
+      return Wcf.Trader == null ? null : Wcf.Trader.CloseTrades(tradeIDs);
+    }
+
+    public string[] CloseAllTrades() {
+      return Wcf.Trader == null ? null : Wcf.Trader.CloseAllTrades();
+    }
+
+
+    public void OpenNewAccount(string account,string password) {
+      Wcf.Trader.OpenNewAccount(account, password);
     }
 
   }

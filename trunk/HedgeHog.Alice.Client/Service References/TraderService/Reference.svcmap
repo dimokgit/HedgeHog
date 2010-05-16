@@ -27,6 +27,7 @@
     <MetadataFile FileName="TraderService2.xsd" MetadataType="Schema" ID="ac97e160-715d-4cb7-b9fc-79fdc51d95ad" SourceId="1" SourceUrl="http://localhost:4103/TraderService.svc?xsd=xsd3" />
     <MetadataFile FileName="TraderService3.xsd" MetadataType="Schema" ID="4d8874d1-c06a-4f7e-ae92-5e87dab82828" SourceId="1" SourceUrl="http://localhost:4103/TraderService.svc?xsd=xsd1" />
     <MetadataFile FileName="TraderService.wsdl" MetadataType="Wsdl" ID="ae3c8ecc-8160-4b8b-a235-a1f6d7c0d1cf" SourceId="1" SourceUrl="http://localhost:4103/TraderService.svc?wsdl" />
+    <MetadataFile FileName="TraderService4.xsd" MetadataType="Schema" ID="ad89017c-c7f9-43e9-b338-50231b4ebb09" SourceId="1" SourceUrl="http://localhost:4103/TraderService.svc?xsd=xsd4" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />

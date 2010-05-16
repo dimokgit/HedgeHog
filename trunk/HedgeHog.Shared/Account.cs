@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Shared {
   [DataContract]
@@ -21,6 +22,11 @@ namespace HedgeHog.Shared {
     public int PipsToMC { get; set; }
     [DataMember]
     public bool Hedging { get; set; }
-    public double Gross { get { return Equity - Balance; } }
+    [DataMember]
+    public Trade[] Trades { get; set; }
+
+    public double PL { get { return Math.Round(Trades.GrossInPips(), 1); } }
+
+    public double Gross { get { return Math.Round(Equity - Balance, 1); } }
   }
 }

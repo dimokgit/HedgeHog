@@ -10,8 +10,11 @@ namespace HedgeHog {
   public static class Wcf {
     public static ITraderServer Trader;
     public interface ITraderServer {
-      Trade[] GetTrades();
       Account GetAccount();
+      void OpenNewAccount(string account,string password);
+      string CloseTrade(string tradeID);
+      string[] CloseTrades(string[] tradeID);
+      string[] CloseAllTrades();
     }
 
     public static List<IServer> Servers = new List<IServer>();
