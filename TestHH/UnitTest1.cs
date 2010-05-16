@@ -75,7 +75,6 @@ namespace TestHH {
     //
     #endregion
 
-    [TestMethod]
     public void Waves1() {
       var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
       var dateStart = DateTime.Parse("07/20/2009 12:00");
@@ -140,7 +139,7 @@ namespace TestHH {
     }
 
     public void GetAccount() {
-      var a = FXW.GetAccount();
+      var a = o2g.GetAccount();
       MessageBox.Show("PMC:" + a.PipsToMC);
     }
     public void IndicatorList() {
@@ -536,16 +535,16 @@ namespace TestHH {
           Debug.WriteLine(c.Title+":"+r.CellValue(c.Title));
         }
       };
-      var table = FXW.GetTable(FXW.TABLE_ACCOUNTS);
+      var table = o2g.GetTable(FXW.TABLE_ACCOUNTS);
       showTable(table, 1);
       Debug.WriteLine("");
-      table = FXW.GetTable(FXW.TABLE_TRADES);
+      table = o2g.GetTable(FXW.TABLE_TRADES);
       showTable(table, 1);
       Debug.WriteLine("");
-      table = FXW.GetTable(FXW.TABLE_ORDERS);
+      table = o2g.GetTable(FXW.TABLE_ORDERS);
       showTable(table, 3);
       Debug.WriteLine("");
-      showTable(FXW.GetTable(FXW.TABLE_SUMMARY), 3);
+      showTable(o2g.GetTable(FXW.TABLE_SUMMARY), 3);
       //var account = o2g.GetAccount();
     }
     public void GetTicksTest() {

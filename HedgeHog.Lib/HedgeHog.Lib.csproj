@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="ap.cs" />
     <Compile Include="Bars.cs" />
+    <Compile Include="Converters.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Lib.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="UI\GroupFilter.cs" />
+    <Compile Include="MarkupExtemssions.cs" />
     <Compile Include="ViewModelLocator.cs" />
     <Compile Include="WindowModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

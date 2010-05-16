@@ -1,0 +1,40 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:HedgeHog.Alice.Client"
+        xmlns:l="clr-namespace:HedgeHog.Alice.Client"
+  xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
+  >
+
+
+
+  <Style TargetType="{x:Type ui:AccountInfo}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ui:AccountInfo}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" Background="#FFBDC7DE">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="Account" Binding="{Binding ID}"/>
+                <DataGridTextColumn Header="Balance" Binding="{Binding Balance,StringFormat=c0}"/>
+                <DataGridTextColumn Header="Equity" Binding="{Binding Equity,StringFormat=c0}"/>
+                <DataGridTextColumn Header="Margin" Binding="{Binding UsableMargin,StringFormat=c0}"/>
+                <DataGridTextColumn Binding="{Binding PipsToMC}">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="PMC" ToolTip="Pips to Margin Call"/>
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}"/>
+                <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=c0}"/>
+              </DataGrid.Columns>
+            </DataGrid>
+          </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

@@ -151,6 +151,7 @@ namespace HedgeHog {
         return "net.tcp://" + serverName + ":" + serverPort + "/HedgeHog.WCF";
       }
     }
+    bool doRemoting { get { return !string.IsNullOrWhiteSpace(serverName); } }
     public int _txtShortStack;
     private int shortStack { get { return _txtShortStack; } }
 
@@ -191,6 +192,9 @@ namespace HedgeHog {
 
     public bool _chkRSIUseOffset;
     public bool? RsiUseOffset { get { return _chkRSIUseOffset; } }
+
+    public bool _chkDoBailOut;
+    public bool DoBailOut { get { return _chkDoBailOut; } }
 
     public bool _chkTradeByRsi;
     private bool tradeByRsi { get { return _chkTradeByRsi; } }
@@ -333,8 +337,8 @@ namespace HedgeHog {
         fw = FW;
         fw.PriceChanged += new Order2GoAddIn.FXCoreWrapper.PriceChangedEventHandler(fw_PriceChanged);
         fw.PairChanged += (s, e) => DC.Title = fw.Pair;
-        PriceScheduler = new ThreadScheduler(
-          TimeSpan.FromSeconds(1), ThreadScheduler.infinity, ProcessPrice, (s, e) => RaisePriceGridError(e.Exception));
+        PriceScheduler = new Scheduler(
+          Dispatcher, (s, e) => RaisePriceGridError(e.Exception));
       }
     }
     List<Rate> rsiBars = new List<Rate>();
@@ -358,13 +362,13 @@ namespace HedgeHog {
     bool runPrice = false;
     IAsyncResult asyncRes = null;
     object priceSync = new object();
-    ThreadScheduler PriceScheduler;
+    Scheduler PriceScheduler;
     public void fw_PriceChanged() { fw_PriceChanged(null); }
     void fw_PriceChanged(Order2GoAddIn.Price Price) {
       lock (priceSync) {
         try {
-          PriceScheduler.Cancel();
-          ProcessPrice(Price);
+          if( !PriceScheduler.IsRunning)
+           PriceScheduler.Command = ()=> ProcessPrice(Price);
         } catch (Exception exc) {
           RaisePriceGridError(exc);
         }
@@ -411,10 +415,10 @@ namespace HedgeHog {
                    join c in closeTradeIDs on t.Id equals c
                    select c).ToList();
           if (ct.Count > 0) {
-            if (FXW.GetAccount().Gross > FXW.CommisionPending)
-              FXW.ClosePositions();
+            if (fw.GetAccount().Gross > fw.CommisionPending)
+              fw.ClosePositions();
             else
-              ct.ForEach(t => FXW.FixOrderClose(t));
+              ct.ForEach(t => fw.FixOrderClose(t));
           }
         };
     }
@@ -513,7 +517,7 @@ namespace HedgeHog {
         #region Local Globals
         int periodMin = bsPeriodMin;
         Order2GoAddIn.Summary summary = fw.GetSummary();
-        Account account = FXW.GetAccount();
+        Account account = fw.GetAccount();
         var price = eventPrice ?? summary.PriceCurrent;
         #endregion
 
@@ -602,7 +606,7 @@ namespace HedgeHog {
             rsiTresholdSell = RsiTradeSignalTresholdSell,
             rsiProfit = this.RsiProfit,
             tradeByRsi = this.tradeByRsi,
-            closeOnCorridorBorder = this.CloseOnCorridorBorder,
+            closeOnCorridorBorder = DC.CloseOnCorridorBorder,
             closeOnNet = this.closeOnNet,
             tradeOnProfitAfter = this.TradeOnProfitAfter,
             tradeAngleMax = this.TradeAngleMax,
@@ -617,13 +621,16 @@ namespace HedgeHog {
           tr.tradesBuy.ToList().ForEach(t => DC.Trades.Add(t));
           tr.tradesSell.ToList().ForEach(t => DC.Trades.Add(t));
 
-          try {
-            Using(tradingClient => {
-              ti = tradingClient.GetPair(tr);
-            });
-          } catch (Exception exc) {
-            throw new Exception(wcfPath, exc);
-          }
+          if (doRemoting) {
+            try {
+              Using(tradingClient => {
+                ti = tradingClient.GetPair(tr);
+              });
+            } catch (Exception exc) {
+              throw new Exception(wcfPath, exc);
+            }
+          } else ti = new TradeResponse();
+
           if( false)
           for (int sp = int.Parse(serverPort) - 5, spMax = sp + 10; sp < spMax; sp++) 
             try {
@@ -656,7 +663,7 @@ namespace HedgeHog {
           ticksPerMinuteAverageLong = (int)ts.ticksPerMinuteLong;
           ticksRatio = ticksPerMinuteAverageShort / (double)ticksPerMinuteAverageLong;
           corridorMinimum = ts.corridorMinimum;
-          closeTradeIDs.AddRange(ti.CloseTradeIDs);
+          closeTradeIDs.AddRange(ti.CloseTradeIDs ?? new string[]{});
           CloseTrades();
           if (tradesBuy.Concat(tradesSell).Count() > 0)
             DensityList[pair] = new[] { ti.TradeStats.legUpInPips, ti.TradeStats.legDownInPips }.Average();
@@ -730,18 +737,20 @@ namespace HedgeHog {
 
         #region Run Decider
         var pipsToMC = account.PipsToMC;
-          switch (fooNumber) {
-            case 11: decideByVoltage_11(); break;
-            default: throw new Exception("Unknown Foo Number:" + fooNumber);
-          }
+        switch (fooNumber) {
+          case 11: decideByVoltage_11(); break;
+          default: throw new Exception("Unknown Foo Number:" + fooNumber);
+        }
+        if (DoBailOut) {
           if (Math.Abs(pipsToMC) < spreadAverage15MinInPips) {
             if (pipsToMC < 0) GoBuy = false;
-            if (pipsToMC > 0) GoSell = false; 
-          } 
-        if ((Math.Abs(account.PipsToMC)< spreadAverage || account.IsMarginCall) && summary.BuyPositions != summary.SellPositions) {
-          var buy = summary.BuyPositions > summary.SellPositions;
-          fw.FixOrderClose(buy,false);
-          Thread.Sleep(5000);
+            if (pipsToMC > 0) GoSell = false;
+          }
+          if ((Math.Abs(account.PipsToMC) < spreadAverage || account.IsMarginCall) && summary.BuyPositions != summary.SellPositions) {
+            var buy = summary.BuyPositions > summary.SellPositions;
+            fw.FixOrderClose(buy, false);
+            Thread.Sleep(5000);
+          }
         }
         #endregion
 
@@ -917,6 +926,19 @@ namespace HedgeHog {
     public ViewModel() {
       TradesList = new ListCollectionView(Trades);
     }
+
+    //CloseOnCorridorBorder
+
+
+    public bool? CloseOnCorridorBorder {
+      get { return (bool?)GetValue(CloseOnCorridorBorderProperty); }
+      set { SetValue(CloseOnCorridorBorderProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for CloseOnCorridorBorder.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty CloseOnCorridorBorderProperty =
+        DependencyProperty.Register("CloseOnCorridorBorder", typeof(bool?), typeof(ViewModel));
+
 
 
     public int fooPositionBuy { get { return (FooPositionBuy.Parent as ComboBox).SelectedIndex; } }

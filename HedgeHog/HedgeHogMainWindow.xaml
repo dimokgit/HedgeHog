@@ -5,6 +5,7 @@
   xmlns:my="clr-namespace:Microsoft.Windows.Controls;assembly=WPFToolkit" 
   xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
   xmlns:wm="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+  xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
   Left="{state:UserSettings Default=100}" Top="{state:UserSettings Default=100}"
   Height="{state:UserSettings Default=180}" Width="{state:UserSettings Default=800}"
   WindowStyle="ThreeDBorderWindow" Closing="Window_Closing" 
@@ -46,7 +47,7 @@
             <Setter Property="Margin" Value="0,3,0,3"></Setter>
           </Style>
         </WrapPanel.Resources>
-        <TextBox Name="txtAccNum" Width="20" Text="{state:UserSettings}" ToolTip="Account" TextChanged="TextChanged">
+        <u:TextBox2 Name="txtAccNum" Width="20" Text2="{Binding AccountNumber,Mode=TwoWay}" Text="{state:UserSettings}" ToolTip="Account">
           <ToolTipService.ToolTip>
             <TextBlock DataContext="{StaticResource ToolTips}">
 							<TextBlock.Text>
@@ -54,9 +55,9 @@
 							</TextBlock.Text>
             </TextBlock>
           </ToolTipService.ToolTip>
-        </TextBox>
-        <TextBox Name="txtPassword" Text="{state:UserSettings}" Width="18" ToolTip="Password" TextChanged="TextChanged"  />
-        <Button  Name="btnLogin" ClipToBounds="False" Click="Login" Margin="0" Height="Auto" VerticalAlignment="Center" Content="Login"></Button>
+        </u:TextBox2>
+        <u:TextBox2 Name="txtPassword" Text2="{Binding Password,Mode=TwoWay}" Text="{state:UserSettings}" Width="18" ToolTip="Password" />
+        <Button Content="Login" Command="{Binding LoginCommand}"></Button>
         <ComboBox Name="cmbPair" Margin="2" Text="{state:UserSettings EUR/JPY}" SelectionChanged="OnPairChanged" SelectedItem="{Binding Pair}">
           <ComboBoxItem>EUR/USD</ComboBoxItem>
           <ComboBoxItem>EUR/JPY</ComboBoxItem>
@@ -123,6 +124,7 @@
         <Button Name="btnOpenChart" Click="btnOpenChart_Click" ToolTip="Show chart and trading signals" Content="Chart"></Button>
         <Button Name="btnOpenMain" Click="btnOpenMain_Click" Content="Main" ToolTip="Open another main window"></Button>
         <Button Name="btnOpenDB" Click="btnOpenDB_Click" Content="Save" ToolTip="Save settings to Settings.xml file"></Button>
+        <Button Content="New Acc" ToolTip="Create new account" Command="{Binding OpenNewAccountCommand}"></Button>
       </WrapPanel>
       <WrapPanel Background="DarkSeaGreen" Width="Auto">
         <Label ToolTipService.ShowDuration="300000">

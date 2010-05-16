@@ -19,8 +19,19 @@ namespace HedgeHog.Alice.WCF {
     CompositeType GetDataUsingDataContract(CompositeType composite);
 
     [OperationContract]
-    AccountInfo GetTrades();
+    void OpenNewAccount(string account,string password);
 
+    [OperationContract]
+    Account GetAccount();
+
+    [OperationContract]
+    string CloseTrade(string tradeID);
+
+    [OperationContract]
+    string[] CloseTrades(string[] tradeID);
+
+    [OperationContract]
+    string[] CloseAllTrades();
   }
 
 

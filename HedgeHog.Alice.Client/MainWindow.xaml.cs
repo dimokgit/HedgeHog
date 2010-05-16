@@ -20,5 +20,6 @@ namespace HedgeHog.Alice.Client {
     public MainWindow() {
       InitializeComponent();
     }
+
   }
 }

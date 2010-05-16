@@ -19,18 +19,6 @@ namespace ControlExtentions {
   }
 }
 namespace HedgeHog {
-  [ValueConversion(typeof(bool?), typeof(Color))]
-  public class BoolToColorConverter : IValueConverter {
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
-      var color = value == null ? colors[0] : (bool)value ? colors[2] : colors[1];
-      return color;
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      throw new NotImplementedException();
-    }
-  }
   public static class Lib {
     public static object ToDataObject(this object o) {
       var d = o.GetType().GetProperties().Select(s => new DynamicProperty(s.Name, s.PropertyType));

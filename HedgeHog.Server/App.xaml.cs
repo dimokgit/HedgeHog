@@ -67,7 +67,7 @@ namespace HedgeHog.Server {
     }
 
     private void Application_Exit(object sender, ExitEventArgs e) {
-      if( wcfHost.State != CommunicationState.Closed)
+      if( wcfHost!=null && wcfHost.State != CommunicationState.Closed)
       wcfHost.Close();
       Dispose();
     }

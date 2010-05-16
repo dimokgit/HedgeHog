@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Threading;
 using ControlExtentions;
+using Gala = GalaSoft.MvvmLight.Command;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
@@ -35,9 +36,17 @@ namespace HedgeHog {
     public int _txtLeverage;
     public double _txtTradeDelta, _txtStartingBalance;
 
-    public string title { get { return AccountNumber + ":" + pair; } }
-    public string AccountNumber { get { return _txtAccNum; } }
-    string password { get { return _txtPassword; } }
+    public string title { get { return AccountNumber + ":" + pair+":"+app.WcfTraderAddress; } }
+    public string AccountNumber { 
+      get { return _txtAccNum; }
+      set { _txtAccNum = value; RaisePropertyChangedCore(); } 
+    }
+    string _password;
+
+    public string Password {
+      get { return _password; }
+      set { _password = value; RaisePropertyChangedCore(); }
+    }
 
     public ComboBoxItem LotsToTradeBuy { get; set; }
     int lotsToTradeBuy { get { return Convert.ToInt32(LotsToTradeBuy.Content); } }
@@ -241,6 +250,38 @@ namespace HedgeHog {
     }
     #endregion
 
+    #region
+
+    ICommand _OpenNewAccountCommand;
+    public ICommand OpenNewAccountCommand {
+      get {
+        if (_OpenNewAccountCommand == null) {
+          _OpenNewAccountCommand = new Gala.RelayCommand(OpenNewAccount, () => true);
+        }
+
+        return _OpenNewAccountCommand;
+      }
+    }
+    public void OpenNewAccount(string account,string password) {
+      if (!isDemo) throw new NotSupportedException("Only demo accounts can be replaced with new account.");
+      AccountNumber = account;
+      Password = password;
+      if (fw != null && fw.Desk != null) {
+        Dispatcher.BeginInvoke(new Action(() => {
+          fw.LogOff();
+          Login();
+        }));
+      }
+    }
+    public void OpenNewAccount() {
+      string account, pwd;
+      FXCM.Lib.GetNewAccount(out account, out pwd);
+      OpenNewAccount(account,pwd);
+      MessageBox.Show("Account updated.");
+    }
+
+    #endregion
+
     Order2GoAddIn.FXCoreWrapper fw;
     public HedgeHogMainWindow():this("") { }
     public HedgeHogMainWindow(string name){
@@ -256,12 +297,24 @@ namespace HedgeHog {
     void FXCM_LoginError(Exception exc) {
       Log = exc;
     }
-    private void Login(object sender, RoutedEventArgs e) {
+
+    ICommand _LoginCommand;
+    public ICommand LoginCommand {
+      get {
+        if (_LoginCommand == null) {
+          _LoginCommand = new Gala.RelayCommand(Login, () => true);
+        }
+
+        return _LoginCommand;
+      }
+    }
+
+    private void Login() {
       chartingWindow.Show();
       corridorsWindow.Show();
       Dispatcher.BeginInvoke(new Action(() => {
         try {
-          if (fw.LogOn(pair,app.FXCM, AccountNumber, password, Properties.Settings.Default.ServerUrl, isDemo))
+          if (fw.LogOn(pair,app.FXCM, AccountNumber, Password, Properties.Settings.Default.ServerUrl, isDemo))
             chartingWindow.Dispatcher.BeginInvoke(new Action(() => {
               chartingWindow.ProcessPrice(null);
             }));
@@ -371,13 +424,13 @@ namespace HedgeHog {
       PipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
       LotsLeft = (int)(Account.UsableMargin * leverage);
-      var summaries = FXW.GetSummaries();
-      var tradesAll = FXW.GetTrades("");
+      var summaries = fw.GetSummaries();
+      var tradesAll = fw.GetTrades("");
       NetPL = tradesAll.GrossInPips();
       UsableMargin = string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity);
       AccountEquity = Account.Equity;// string.Format("{0:c0}/{1:n1}", Account.Equity, netPL);
       var doCloseLotsOfTrades = tradesAll.Length > app.MainWindows.Count + 1 && Account.Gross > 0;
-      Commission = FXW.CommisionPending;
+      Commission = fw.CommisionPending;
       var haveGoodProfit = NetPL >= DensityAverage;
       if (StartingBalance > 0 && Account.Equity >= StartingBalance ||
         haveGoodProfit ||
@@ -388,7 +441,7 @@ namespace HedgeHog {
         ))
         ) {
         ClosePositions(this, new RoutedEventArgs());
-        StartingBalance = Math.Round(Order2GoAddIn.FXCoreWrapper.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
+        StartingBalance = Math.Round(fw.GetAccount().Equity * (1 + PriceToAdd / 100), 0);
         app.RaiseClosingalanceChanged(this, StartingBalance.ToInt());
         RuleToExit = "0";
       }
@@ -446,7 +499,7 @@ namespace HedgeHog {
         var digits = fw.Digits;
         ShowSpread(Price);
 
-        var account = FXW.GetAccount();
+        var account = fw.GetAccount();
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
         ShowAccount(account, summary);
         ShowSummary(summary, account);
@@ -505,39 +558,12 @@ namespace HedgeHog {
           }
         }
         #endregion
-        ThreadState[] ts = new[] { ThreadState.Running, ThreadState.WaitSleepJoin };
-        if (isAutoAdjust) {
-          if (chartingWindow.CloseBuy && !ts.Contains(threadCloseBuy.ThreadState))
-            fw.CloseProfit(true, -10000);
-
-          if (chartingWindow.CloseSell && !ts.Contains(threadCloseBuy.ThreadState))
-            fw.CloseProfit(false, -10000);
-        }
-
       } catch (ThreadAbortException) {
       } catch (Exception exc) {
         Log = exc;
       }
     }
 
-    private void CloseProfit(bool Buy, double MinProfit) {
-      Thread t = new Thread(() => {
-        try {
-          var tradesIDs = fw.GetTradesToClose(Buy, MinProfit).Select(r => r.Id).ToArray();
-          while (tradesIDs.Length > 0) {
-            foreach (var tradeID in tradesIDs)
-              try {
-                Order2GoAddIn.FXCoreWrapper.FixOrderClose(tradeID);
-              } catch { }
-            tradesIDs = fw.GetTradesToClose(Buy, MinProfit).Select(r => r.Id).ToArray();
-          }
-        } catch (Exception exc) {
-          Log = exc;
-        }
-      });
-      if (Buy) threadCloseBuy = t; else threadCloseSell = t;
-      t.Start();
-    }
     public static double CMA(double MA, double Periods, double NewValue) {
       return MA + (NewValue - MA) / (Periods + 1);
     }
@@ -589,7 +615,7 @@ namespace HedgeHog {
       if (isClosingPositions) return;
       try {
         isClosingPositions = true;
-        Order2GoAddIn.FXCoreWrapper.ClosePositions();
+        fw.ClosePositions();
       } catch (Exception exc) {
         Dispatcher.BeginInvoke(new Action(() => MessageBox.Show(exc.Message)));
         return;
@@ -621,13 +647,25 @@ namespace HedgeHog {
       throw new NotImplementedException();
     }
 
-    public Trade[] GetTrades() {
-      return FXW.GetTrades("");
+    public Account GetAccount() {
+       return fw.GetAccount();
     }
 
+    public string CloseTrade(string tradeID) {
+      return fw.FixOrderClose(tradeID) + "";
+    }
 
-    public Account GetAccount() {
-      return FXW.GetAccount();
+    #endregion
+
+    #region ITraderServer Members
+
+
+    public string[] CloseTrades(string[] tradeIds) {
+      return fw.FixOrdersClose(tradeIds).Select(o => o + "").ToArray();
+    }
+
+    public string[] CloseAllTrades() {
+      return fw.FixOrdersCloseAll().Select(o => o + "").ToArray();
     }
 
     #endregion

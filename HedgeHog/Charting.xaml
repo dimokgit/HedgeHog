@@ -3,6 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
         xmlns:l="clr-namespace:HedgeHog"
+        xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:c="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
     Left="{state:UserSettings Default=100}"
     Top="{state:UserSettings Default=100}"
@@ -101,6 +102,7 @@
               <TextBlock Text="RSI Treshold Buy:"/>
               <TextBlock Text="RSI Profit:"/>
               <TextBlock Text="RSI Use Offset:"/>
+              <TextBlock Text="Do Bail Out"/>
             </StackPanel>
             <StackPanel Grid.Column="1">
               <TextBox Name="txtShortStack" ToolTip="Close N+ buy if N+ sell" Text="{state:UserSettings Default=3}" TextChanged="txtBSPeriod_TextChanged"/>
@@ -125,7 +127,7 @@
               <CheckBox Name="chkCloseOnProfitOnly" IsChecked="{state:UserSettings Default=False}"></CheckBox>
               <CheckBox Name="chkCloseOnNet" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
               <CheckBox Name="chkTradeByVolatilityMax" IsChecked="{state:UserSettings Default=False}" IsThreeState="True" Checked="Checked" Unchecked="Checked" Loaded="chkTradeByVolatilityMax_Loaded"></CheckBox>
-              <CheckBox Name="chkCloseOnCorridorBorder" IsChecked="{state:UserSettings Default=False}" IsThreeState="True" Checked="Checked" Unchecked="Checked" Loaded="chkCloseOnCorridorBorder_Loaded" ToolTip="Close On Corridor Border"/>
+              <u:CheckBox2 Name="chkCloseOnCorridorBorder" IsChecked2="{Binding CloseOnCorridorBorder,Mode=TwoWay}"  IsChecked="{state:UserSettings Default=False}" IsThreeState="True" ToolTip="Close On Corridor Border"/>
               <CheckBox Name="chkTradeByRsi" IsChecked="{state:UserSettings Default=True}" Checked="Checked" Unchecked="Checked" ToolTip="Trade By RSI"/>
               <TextBox  Name="txtTradeOnProfitAfter" Text="{state:UserSettings Default=0}" TextChanged="TextChanged" ToolTip="Trade On Profit Only After N Positions"/>
               <TextBox  Name="txtTradeAngleMax" Text="{state:UserSettings Default=0.0001}" TextChanged="TextChanged"/>
@@ -137,6 +139,7 @@
               <TextBox Text="{state:UserSettings Default=30}" TextChanged="TextChanged" Name="txtRSITradeSignalTresholdBuy" ToolTip="RSI Buy treshold"/>
               <TextBox Text="{state:UserSettings Default=0}" TextChanged="TextChanged" Name="txtRSIProfit" ToolTip="Profit in pips by RSI signal"/>
               <CheckBox Name="chkRSIUseOffset" IsChecked="{state:UserSettings Default=False}" Checked="Checked" Unchecked="Checked"></CheckBox>
+              <CheckBox Name="chkDoBailOut" IsChecked="{state:UserSettings Default=true}" Checked="Checked" Unchecked="Checked"></CheckBox>
             </StackPanel>
           </Grid>
         </Border>

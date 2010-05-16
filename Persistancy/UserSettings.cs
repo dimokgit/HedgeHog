@@ -153,6 +153,8 @@ namespace WpfPersist {
         return null;
         //                throw new NotSupportedException("The IProvideValueTarget is not supported");
       }
+      if (provideValue.TargetObject.GetType().FullName == "System.Windows.SharedDp")
+        return this;
 
       DependencyObject targetObject = provideValue.TargetObject as DependencyObject;
       if (targetObject == null) {

@@ -905,8 +905,10 @@ namespace HedgeHog {
               TicksPerMinuteAverageLong = (Fractals.Length > 1 ? ticksArray.TradesPerMinute(Fractals.Take(4).Last(), Fractals[0]) : ticksArray.TradesPerMinute()).ToInt();
             } catch (Exception exc) { Log = exc; }
           }
-          TicksPerMinuteCurr = (Fractals1.Length < 2 ? TicksPerMinuteAverageLong : ticksArray.TradesPerMinute(Fractals1[0], Fractals1[1])).ToInt();
-          TicksPerMinutePrev = (Fractals1.Length < 4 ? TicksPerMinuteCurr : ticksArray.TradesPerMinute(Fractals1[2], Fractals1[3])).ToInt();
+          try {
+            TicksPerMinuteCurr = (Fractals1.Length < 2 ? TicksPerMinuteAverageLong : ticksArray.TradesPerMinute(Fractals1[0], Fractals1[1])).ToInt();
+            TicksPerMinutePrev = (Fractals1.Length < 4 ? TicksPerMinuteCurr : ticksArray.TradesPerMinute(Fractals1[2], Fractals1[3])).ToInt();
+          } catch (Exception exc) { Log = exc; }
           var cmaPeriod = TicksPerMinuteCurr / 2.0;
           #endregion
 
