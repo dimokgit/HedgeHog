@@ -10,6 +10,7 @@
     <ResourceDictionary>
       <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
       <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
+      <hh:PassThroughConverter x:Key="PassThroughConverter"/>
       <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="VerticalAlignment" Value="Center"/>
       </Style>
@@ -18,6 +19,12 @@
       </Style>
       <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
         <Setter Property="VerticalAlignment" Value="Center"/>
+      </Style>
+      <Style TargetType="DataGrid" x:Key="ReadOnlyDataGridStyle">
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
       </Style>
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml"/>

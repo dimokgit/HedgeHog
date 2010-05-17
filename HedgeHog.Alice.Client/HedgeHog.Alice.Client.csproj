@@ -23,7 +23,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug_01\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -73,12 +73,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Class\AbsentTrade.cs" />
+    <Compile Include="Class\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Commands\DelegateCommand.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\AccountLogin.Model.cs" />
     <Compile Include="Service References\TraderService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -89,6 +91,13 @@
       <DependentUpon>Alice.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\Controls\AccountInfo.cs" />
+    <Compile Include="UI\Controls\Account\AccountLogin.xaml.cs">
+      <DependentUpon>AccountLogin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\Account\View\SlaveAccount.xaml.cs">
+      <DependentUpon>SlaveAccount.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
     <Page Include="Dictionary1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -110,6 +119,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\Alice.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Controls\Account\AccountLogin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Controls\Account\View\SlaveAccount.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -172,7 +189,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controls\" />
-    <Folder Include="Model\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HedgeHog.FXCM\HedgeHog.FXCM.csproj">

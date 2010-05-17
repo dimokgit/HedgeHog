@@ -30,4 +30,15 @@ namespace HedgeHog {
       throw new NotImplementedException();
     }
   }
+
+  [ValueConversion(typeof(object), typeof(object))]
+  public class PassThroughConverter : IValueConverter {
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      return value;
+    }
+  }
 }
