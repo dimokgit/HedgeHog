@@ -14,12 +14,20 @@ using HedgeHog.Shared;
 using HedgeHog.Alice.Client.TradeExtenssions;
 using System.Windows;
 using System.Windows.Controls;
+using HedgeHog.Alice.Client.UI.Controls;
 namespace HedgeHog.Alice.Client {
+  public class MasterListChangedEventArgs : EventArgs {
+    public Trade[] MasterTrades { get; set; }
+    public MasterListChangedEventArgs(Trade[] masterTrades)
+      : base() {
+      this.MasterTrades = masterTrades;
+    }
+  }
   public class TraderModel:HedgeHog.Models.ModelBase {
     #region FXCM
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
-    FXW fw;
+    FXW fwMaster;
     public bool IsLoggedIn { get { return CoreFX.IsLoggedIn; } }
     ComboBoxItem _ServerToLocalRatioValue;
     public ComboBoxItem ServerToLocalRatioValue {
@@ -35,7 +43,25 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
+    #region MasterListChangedEvent
+    public delegate void MasterListChangedeventHandler(object sender, MasterListChangedEventArgs e);
+    public event MasterListChangedeventHandler MasterListChangedEvent;
+
+    protected virtual void RaiseMasterListChangedEvent(Trade[] trades) {
+      if (MasterListChangedEvent != null)
+        MasterListChangedEvent(this, new MasterListChangedEventArgs(trades));
+    }
+    #endregion
+
     #region Trade Lists
+
+    List<LoginInfo> slaveAccounts = new List<LoginInfo>(new[] { new LoginInfo("MICR482923001", "1585", true) });
+
+    public List<LoginInfo> SlaveAccounts {
+      get { return slaveAccounts; }
+      set { slaveAccounts = value; }
+    }
+
     public ObservableCollection<Trade> LocalTrades { get; set; }
     public ListCollectionView LocalTradesList { get; set; }
     List<Trade> serverTradesPending = new List<Trade>();
@@ -46,11 +72,9 @@ namespace HedgeHog.Alice.Client {
     public ObservableCollection<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
-    private Account serverAccount = new Account();
-    public Account[] ServerAccountRow { get { return new[] { serverAccount }; } }
+    private TradingAccountModel serverAccount = new TradingAccountModel();
+    public TradingAccountModel[] ServerAccountRow { get { return new[] { serverAccount }; } }
 
-    private Account localAccount = new Account();
-    public Account[] LocalAccountRow { get { return new[] { localAccount }; } }
     #endregion
 
     #region ServerAddress
@@ -61,6 +85,7 @@ namespace HedgeHog.Alice.Client {
       get { return Path.Combine(serverAddressSuffix, _serverAddress, serverAddressPostfix); }
       set { _serverAddress = value; }
     }
+    bool isInRemoteMode { get { return !string.IsNullOrWhiteSpace(_serverAddress); } }
     #endregion
     
     #region AliceMode
@@ -133,19 +158,21 @@ namespace HedgeHog.Alice.Client {
     public ICommand OpenNewLocalAccountCommand {
       get {
         if (_OpenNewLocalAccountCommand == null) {
-          _OpenNewLocalAccountCommand = new Gala.RelayCommand(OpenNewLocalAccount, () => true);
+          _OpenNewLocalAccountCommand = new OpenNewAccountRelayCommand(OpenNewLocalAccount, (al) => true);
         }
 
         return _OpenNewLocalAccountCommand;
       }
     }
-    void OpenNewLocalAccount() {
+    void OpenNewLocalAccount(LoginInfo li) {
       try {
         string account, password;
         FXCM.Lib.GetNewAccount(out account, out password);
-        TradingAccount = account;
-        TradingPassword = password;
-        Login();
+        if (Login(account, password, true)) {
+          li.Account = account;
+          li.Password = password;
+          li.IsDemo = true;
+        }
       } catch (Exception exc) { Log = exc; }
     }
 
@@ -168,7 +195,11 @@ namespace HedgeHog.Alice.Client {
         Using(tsc => {
           string account, password;
           FXCM.Lib.GetNewAccount(out account, out password);
-          tsc.OpenNewAccount(account, password);
+          TradingAccount = account;
+          TradingPassword = password;
+          TradingDemo = true;
+          if( isInRemoteMode)
+            tsc.OpenNewAccount(account, password);
           Log = new Exception("New Rabit has arrived");
         });
       } catch (Exception exc) { Log = exc; }
@@ -176,6 +207,7 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
+    #region UpdatePasswordCommand
     ICommand _UpdatePasswordCommand;
     public ICommand UpdatePasswordCommand {
       get {
@@ -188,19 +220,6 @@ namespace HedgeHog.Alice.Client {
     }
     void UpdatePassword(RoutedEventArgs e) {
       TradingPassword = ((PasswordBox)(e.Source)).Password;
-    }
-
-
-    #region Login command
-    ICommand _loginCommand;
-    public ICommand LoginCommand {
-      get {
-        if (_loginCommand== null) {
-          _loginCommand = new Gala.RelayCommand(Login, () => true);
-        }
-
-        return _loginCommand;
-      }
     }
     #endregion
 
@@ -218,7 +237,7 @@ namespace HedgeHog.Alice.Client {
     void CloseLocalTrade(string tradeID) {
       try {
         var pendingTrade = serverTradesPending.FirstOrDefault(t => t.Id == tradeID);
-        if (pendingTrade == null) fw.FixOrderClose(tradeID);
+        if (pendingTrade == null) fwMaster.FixOrderClose(tradeID);
         else serverTradesPending.Remove(pendingTrade);
       } catch (Exception exc) { Log = exc; }
     }
@@ -281,7 +300,7 @@ namespace HedgeHog.Alice.Client {
     void CloseAllLocalTrades() {
       try {
         Log = new Exception("Closing all local trades.");
-        var ordersIds = fw.FixOrdersCloseAll();
+        var ordersIds = fwMaster.FixOrdersCloseAll();
         Log = new Exception("Trades closed:" + string.Join(",", ordersIds));
       } catch (Exception exc) { Log = exc; }
     }
@@ -325,7 +344,25 @@ namespace HedgeHog.Alice.Client {
     void SyncAllTrades() { syncAll = true; }
     #endregion
 
+    #region AccountLoginCommand
 
+    ICommand _AccountLoginCommand;
+    public ICommand AccountLoginCommand {
+      get {
+        if (_AccountLoginCommand == null) {
+          _AccountLoginCommand = new AccountLoginRelayCommand(AccountLogin, (li) => true);
+        }
+
+        return _AccountLoginCommand;
+      }
+    }
+    void AccountLogin(LoginInfo li) {
+      Login(li.Account, li.Password, li.IsDemo);
+    }
+
+    #endregion
+
+    #region ReverseAliceModeCommand
     ICommand _ReverseAliceModeCommand;
     public ICommand ReverseAliceModeCommand {
       get {
@@ -342,7 +379,9 @@ namespace HedgeHog.Alice.Client {
       CloseAllLocalTrades();
       SyncAllTrades();
     }
+    #endregion
 
+    #region TestCommand
     ICommand _TestCommand;
     public ICommand TestCommand {
       get {
@@ -354,7 +393,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void Test() { MessageBox.Show("Click!"); }
-
+    #endregion
 
     #endregion
 
@@ -370,8 +409,14 @@ namespace HedgeHog.Alice.Client {
       get { return _tradingPassword; }
       set { _tradingPassword = value; RaisePropertyChangedCore(); }
     }
-    
-    public bool? TradingDemo { get; set; }
+
+    bool _tradingDemo;
+
+    public bool TradingDemo {
+      get { return _tradingDemo; }
+      set { _tradingDemo = value; RaisePropertyChangedCore(); }
+    }
+
     public int TargetInPips { get; set; }
     #endregion
 
@@ -383,125 +428,117 @@ namespace HedgeHog.Alice.Client {
 
     #region Ctor
     ThreadScheduler.CommandDelegate Using_FetchServerTrades;
+    FXW.TradesCountChangedEventHandler fw_TradesCountChangedDelegate;
     private string logFileName = "Log.txt";
+    void UpdateAccountRow(Account account) {
+      var accountRow = ServerAccountRow[0];
+      accountRow.Balance = account.Balance;
+      accountRow.Equity = account.Equity;
+      accountRow.Hedging = account.Hedging;
+      accountRow.ID = account.ID;
+      accountRow.IsMarginCall = account.IsMarginCall;
+      accountRow.PipsToMC = account.PipsToMC;
+      accountRow.UsableMargin = account.UsableMargin;
+      accountRow.Trades = account.Trades;
+      accountRow.OnPropertyChanged(
+      () => accountRow.Balance,
+      () => accountRow.Equity,
+      () => accountRow.Hedging,
+      () => accountRow.ID,
+      () => accountRow.IsMarginCall,
+      () => accountRow.PipsToMC,
+      () => accountRow.PL,
+      () => accountRow.Gross,
+      () => accountRow.UsableMargin
+        );
+    }
+
+
     public TraderModel() {
       System.IO.File.Delete(logFileName);
-      Using_FetchServerTrades = () => Using(FetchServerTrades);
+      ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
+      LocalTradesList = new ListCollectionView(LocalTrades = new ObservableCollection<Trade>());
+      AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
+
+
+      fw_TradesCountChangedDelegate = new FXW.TradesCountChangedEventHandler(fw_TradesCountChanged);
+      fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
+        fwMaster.TradesCountChanged += fw_TradesCountChangedDelegate;
+        fwMaster.PriceChanged += new FXW.PriceChangedEventHandler(fwLocal_PriceChanged);
         RaisePropertyChanged(() => IsLoggedIn);
-        Log = new Exception("User logged in.");
+        Log = new Exception("Account " + TradingAccount + " logged in.");
+        UpdateAccountRow(fwMaster.GetAccount());
       };
       CoreFX.LoginError += exc => {
         Log = exc;
         RaisePropertyChanged(() => IsLoggedIn);
       };
+      CoreFX.LoggedOffEvent += (s, e) => {
+        Log = new Exception("Account " + TradingAccount + " logged out.");
+        RaisePropertyChanged(() => IsLoggedIn);
+        fwMaster.TradesCountChanged -= fw_TradesCountChangedDelegate;
+      };
 
-      ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
-      LocalTradesList = new ListCollectionView(LocalTrades = new ObservableCollection<Trade>());
-      AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
 
+      
+      Using_FetchServerTrades = () => Using(FetchServerTrades);
       if (!isInDesign) {
         GetTradesScheduler = new ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
         Using_FetchServerTrades,
         (s, e) => { Log = e.Exception; });
       }
     }
+    ~TraderModel() {
+      if (CoreFX.IsLoggedIn) CoreFX.Logout();
+    }
+
+    void fwLocal_PriceChanged(Order2GoAddIn.Price Price) {
+      var a = fwMaster.GetAccount();
+      RaiseMasterListChangedEvent(a.Trades);
+      UpdateAccountRow(a);
+      InvokeSyncronize(a.Trades);
+    }
+
     #endregion
 
     #region FXCM
-    void Login() {
+    bool Login( string tradingAccount,string tradingPassword,bool tradingDemo) {
       try {
-        if (fw == null) {
-          fw = new FXW();
-          fw.TradesCountChanged += t => Log = new Exception(string.Format("Trade was opened/removed"));
-        }
-        fw.LogOff();
-        if (fw.LogOn("", CoreFX, TradingAccount, TradingPassword, TradingDemo.GetValueOrDefault(false)))
-          Log = new Exception("Account " + TradingAccount + " is loggin now");
-        else
-          Log = new Exception("Login attempt failed for account " + TradingAccount);
-        RaisePropertyChanged(() => IsLoggedIn);
+        if (CoreFX.IsLoggedIn) CoreFX.Logout();
+        return CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo);
       } catch (Exception exc) {
         Log = exc;
         MessageBox.Show(exc + "");
+        return false;
+      } finally {
+        RaisePropertyChanged(() => IsLoggedIn);
       }
+    }
+
+    void fw_TradesCountChanged(Trade trade) {
+      throw new NotImplementedException();
     }
 
     void FetchServerTrades(TraderService.TraderServiceClient tsc) {
-      RaisePropertyChanged(() => IsLoggedIn);
-      serverAccount = tsc.GetAccount();
-      if (serverAccount.IsMarginCall)
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => OpenNewServerAccount());
-      RaisePropertyChanged(() => ServerAccountRow);
-      var serverTrades = serverAccount.Trades.ToList();
-      var localTrades = (IsLoggedIn ? fw.GetTrades("") : new Trade[] { }).ToList();
-      if( IsLoggedIn ) localAccount = fw.GetAccount();
-      RaisePropertyChanged(() => LocalAccountRow);
-      // Need to run in on UI thread because of ListCollectionView ServerTradesList and such
-      ServerTradesList.Dispatcher.Invoke(new Action(() => Syncronize(serverTrades, localTrades)));
+      try {
+        RaisePropertyChanged(() => IsLoggedIn);
+        UpdateAccountRow(tsc.GetAccount());
+        if (serverAccount.IsMarginCall)
+          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => OpenNewServerAccount());
+        RaisePropertyChanged(() => ServerAccountRow);
+        var serverTrades = serverAccount.Trades;
+        RaiseMasterListChangedEvent(serverTrades);
+        InvokeSyncronize(serverTrades);
+      } catch (Exception exc) { Log = exc; }
     }
 
-    private void Syncronize(List<Trade> serverTrades, List<Trade> localTrades) {
-      ShowTrades(serverTrades, ServerTrades);
-      if (CoreFX.IsLoggedIn) {
-
-        #region Absent trades
-        var penditTradesToRemove = (from tl in localTrades
-                                   join tp in serverTradesPending on tl.MasterTradeId() equals tp.MasterTradeId()
-                                   select tp).ToList();
-        penditTradesToRemove.ForEach(pt => serverTradesPending.Remove(pt));
-
-        serverTradesPending.ForEach(pt => localTrades.Add(pt));
-        ShowTrades(localTrades, LocalTrades);
-
-        var absentTrades = (from ts in serverTrades
-                            join tl in localTrades on ts.Id equals tl.MasterTradeId() into svrTrds
-                            from st in svrTrds.DefaultIfEmpty()
-                            where st == null
-                            select ts).ToList();
-
-
-        AbsentTrades.Clear();
-        absentTrades.ForEach(a => AbsentTrades.Add(a.InitUnKnown(fw.ServerTime)));
-
-        if (syncAll) {
-          SyncTrade(AbsentTrades);
-          syncAll = false;
-        } else if (IsAliceActive) {
-          var tradeToCopy = AbsentTrades.FirstOrDefault(t => t.GetUnKnown().AutoSync);
-          if (tradeToCopy != null) {
-            SyncTrade(tradeToCopy);
-          }
-        }
-        #endregion
-
-        #region Close/Cancel Trades
-        if (TargetInPips != 0 && localAccount.Trades.Length > 0 && localAccount.PL >= TargetInPips) CloseAllLocalTrades();
-        else {
-          if (IsAliceActive) {
-            var tradesToClose = (from tl in localTrades
-                                 join ts in serverTrades on tl.MasterTradeId() equals ts.Id into lclTrds
-                                 from st in lclTrds.DefaultIfEmpty()
-                                 where st == null
-                                 select tl).ToList();
-            var tradeToClose = tradesToClose.FirstOrDefault();
-            if (tradeToClose != null) {
-              try {
-                if (tradeToClose.IsPending()) {
-                  serverTradesPending.Remove(tradeToClose);
-                  Log = new Exception("Pending trade " + tradeToClose.Id + " was canceled.");
-                } else {
-                  var orderId = fw.FixOrderClose(tradeToClose.Id);
-                  Log = new Exception("Closing trade " + tradeToClose.Id + ". OrderId:" + orderId);
-                }
-              } catch (Exception exc) { Log = new Exception("TradeId:" + tradeToClose.Id, exc); }
-            }
-          }
-        }
-        #endregion
-      }
-      ServerTime = DateTime.Now;
+    void InvokeSyncronize(Trade[] trades) {
+      ServerTradesList.Dispatcher.Invoke(new Action(() => {
+        ShowTrades(trades.ToList(), ServerTrades);
+      }));
     }
+
 
     private bool IsAliceActive {
       get {
@@ -529,7 +566,7 @@ namespace HedgeHog.Alice.Client {
 
     private void OpenTrade(string pair, bool buy, int lots, string serverTradeID) {
       try {
-        fw.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
+        fwMaster.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
       } catch (Exception exc) { Log = exc; }
     }
     private void ShowTrades(List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
@@ -541,6 +578,7 @@ namespace HedgeHog.Alice.Client {
 
     #region WCF Service
     public void Using(Action<TraderService.TraderServiceClient> action) {
+      if (!isInRemoteMode || isInDesign) return;
       var service = new TraderService.TraderServiceClient("NetTcpBinding_ITraderService", ServerAddress);
       bool success = false;
       try {

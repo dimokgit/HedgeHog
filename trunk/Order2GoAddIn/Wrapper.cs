@@ -287,9 +287,9 @@ namespace Order2GoAddIn {
     public FXCoreWrapper(CoreFX coreFX,string pair) {
       this.coreFX = coreFX;
       if (pair != null) this.Pair = pair;
-      isWiredUp = false;
       coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
       coreFX.LoggedOffEvent += new EventHandler<EventArgs>(coreFX_LoggedOffEvent);
+      isWiredUp = true;
     }
     ~FXCoreWrapper() {
       LogOff();
@@ -303,11 +303,13 @@ namespace Order2GoAddIn {
       return LogOn(pair, core, user, password, new Uri(url), isDemo);
     }
     public bool LogOn(string pair, CoreFX core, string user, string password, Uri url, bool isDemo) {
+      if (this.coreFX != null) 
+        throw new NotSupportedException(GetType().Name + ".LogOn is not supported when " + GetType().Name + ".coreFx is pre-set in cobstructor.");
       coreFX = core;
       if (!isWiredUp) {
-        isWiredUp = true;
         core.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
         core.LoggedOffEvent += new EventHandler<EventArgs>(coreFX_LoggedOffEvent);
+        isWiredUp = true;
       }
       this.Pair = pair;
       if (!core.IsLoggedIn) {
@@ -1216,7 +1218,9 @@ namespace Order2GoAddIn {
         switch (table.Type.ToLower()) {
           case "offers":
             row = table.FindRow("OfferID", rowID, 0) as FXCore.RowAut;
-            if ((DateTime)row.CellValue(FIELD_TIME) != _prevOfferDate && (row.CellValue(FIELD_INSTRUMENT) + "") == Pair && PriceChanged != null) {
+            if ((DateTime)row.CellValue(FIELD_TIME) != _prevOfferDate 
+              && new[]{"", row.CellValue(FIELD_INSTRUMENT) + ""}.Contains(Pair.ToUpper())
+              && PriceChanged != null) {
               _prevOfferDate = (DateTime)row.CellValue(FIELD_TIME);
               PriceChanged(GetPrice(row));
             }

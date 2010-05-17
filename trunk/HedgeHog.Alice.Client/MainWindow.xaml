@@ -9,6 +9,8 @@
       mc:Ignorable="d"
 
         xmlns:l="clr-namespace:HedgeHog.Alice.Client"
+        xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
+        xmlns:uiAccounts="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
         xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
         xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.WPF4"
@@ -18,7 +20,8 @@
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
         DataContext="{DynamicResource DataModel}"
         d:DataContext="{DynamicResource DataModelDesign}"
-        Title="{Binding Title,StringFormat=Alice In: {0}}">
+        Title="{Binding Title,StringFormat=Alice In: {0}}"
+        >
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -27,13 +30,42 @@
       <Style TargetType="Expander" BasedOn="{StaticResource {x:Type Expander}}">
         <Setter Property="Padding" Value="0" />
       </Style>
+      <!--TradesOnServer-->
+      <DataTemplate x:Key="TradesOnServer">
+        <StackPanel>
+          <StackPanel.Resources>
+            <Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>
+          </StackPanel.Resources>
+          <WrapPanel>
+            <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
+          </WrapPanel>
+          <ui:AccountInfo DataContext="{Binding ServerAccountRow}"/>
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" >
+            <DataGrid.Columns>
+              <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
+              <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+              <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+              <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+              <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+                <DataGridTextColumn.ElementStyle>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                  </Style>
+                </DataGridTextColumn.ElementStyle>
+              </DataGridTextColumn>
+              <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+              <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </StackPanel>
+      </DataTemplate>
     </ResourceDictionary>
   </Window.Resources>
     <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
@@ -55,24 +87,26 @@
         </ComboBox>
         <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
       </WrapPanel>
-      <WrapPanel>
-        <TextBlock>Login:</TextBlock>
-        <u:TextBox2 MinWidth="50"  Text2="{Binding TradingAccount,Mode=TwoWay}" Text="{state:UserSettings}" x:Name="TradeAccount"/>
-        <TextBlock>Pwd:</TextBlock>
-        <u:TextBox2 Width="10" Text2="{Binding TradingPassword,Mode=TwoWay}" Text="{state:UserSettings}" x:Name="TraderPassword"/>
-        <u:CheckBox2 Content="Demo" IsChecked2="{Binding TradingDemo,Mode=TwoWay}" IsChecked="{state:UserSettings}" x:Name="TraderAccountType"/>
-        <Button Command="{Binding LoginCommand}">Login</Button>
-        <Button Command="{Binding OpenNewLocalAccountCommand}">Login</Button>
-      </WrapPanel>
+      <ui:AccountLoginView AccountLoginCommand="{Binding AccountLoginCommand}" OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
+        TradingAccount="{Binding TradingAccount}" TradingPassword="{Binding TradingPassword}" TradingDemo="{Binding TradingDemo}"/>
     </StackPanel>
 
     <Expander Header="Rabbit" Grid.Row="1" ContentTemplate="{StaticResource TradesOnServer}"  Content="{Binding}" IsExpanded="True"/>
-    <Expander Header="Alice" Grid.Row="2" ContentTemplate="{StaticResource TradesOnLocal}"  Content="{Binding}" IsExpanded="True"/>
-    <Expander Header="Cheshire Cat" Grid.Row="3" ContentTemplate="{StaticResource TradesDifference}"  Content="{Binding}" IsExpanded="True"/>
-    <Expander Header="Log"  Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}" Padding="0" Grid.RowSpan="2">
-      <ScrollViewer>
-        <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
+      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+    <Expander Header="Alice" IsExpanded="True">
+      <ItemsControl ItemsSource="{Binding SlaveAccounts}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+      <uiAccounts:SlaveAccount MasterModel="{Binding DataContext,RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+        TradingAccount="{Binding Account}" TradingPassword="{Binding Password}" TradingDemo="{Binding IsDemo}" Background="BlanchedAlmond"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      </Expander>
       </ScrollViewer>
+    <Expander Header="Cheshire Cat" Grid.Row="3" ContentTemplate="{StaticResource TradesDifference}"  Content="{Binding}" IsExpanded="True"/>
+    <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}" Padding="0" Grid.RowSpan="2">
+    <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
     </Expander>
   </Grid>
 </Window>
