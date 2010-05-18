@@ -3,23 +3,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:HedgeHog.Alice.Client"
         xmlns:l="clr-namespace:HedgeHog.Alice.Client"
+        xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
   xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
   >
 
-
-
-  <Style TargetType="{x:Type ui:AccountInfo}">
+  <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
+  <Style TargetType="DataGridCell" x:Key="GreenCellStyle">
+    <Setter Property="Background" Value="Green"/>
+    <Setter Property="Foreground" Value="White"/>
+  </Style>
+    <Style TargetType="{x:Type ui:AccountInfo}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ui:AccountInfo}">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" Background="#FFBDC7DE">
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" 
+                      RowBackground="{Binding [0].HasProfit,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Pink|#FFD9F5D9}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}"/>
                 <DataGridTextColumn Header="Balance" Binding="{Binding Balance,StringFormat=c0}"/>
                 <DataGridTextColumn Header="Equity" Binding="{Binding Equity,StringFormat=c0}"/>
+                <DataGridTextColumn Header="Pos" Binding="{Binding Trades.Length}" ToolTipService.ToolTip="Total Positions"/>
                 <DataGridTextColumn Header="Margin" Binding="{Binding UsableMargin,StringFormat=c0}"/>
                 <DataGridTextColumn Binding="{Binding PipsToMC}">
                   <DataGridTextColumn.HeaderTemplate>

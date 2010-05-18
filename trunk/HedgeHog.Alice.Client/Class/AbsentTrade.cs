@@ -8,6 +8,7 @@ namespace HedgeHog.Alice.Client.TradeExtenssions {
   public class TradeUnKNown {
     public bool AutoSync { get; set; }
     public bool IsSyncPending { get; set; }
+    public string ErrorMessage { get; set; }
   }
   public static class TradeExtenssions {
     public static Trade InitUnKnown(this Trade trade, DateTime serverTime) {
@@ -16,8 +17,12 @@ namespace HedgeHog.Alice.Client.TradeExtenssions {
       trade.UnKnown = uk;
       return trade;
     }
-    public static TradeUnKNown GetUnKnown(this Trade trade) { return trade.UnKnown as TradeUnKNown; }
+    public static TradeUnKNown GetUnKnown(this Trade trade) {
+      if (trade.UnKnown == null) trade.InitUnKnown(DateTime.MinValue);
+      return trade.UnKnown as TradeUnKNown; 
+    }
     public static string MasterTradeId(this Trade trade) { return trade.Remark.Remark; }
     public static bool IsPending(this Trade trade) { return trade.Id == trade.MasterTradeId(); }
+    public static string ErrorMessage(this Trade trade) { return trade.GetUnKnown().ErrorMessage; }
   }
 }

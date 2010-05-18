@@ -45,6 +45,11 @@ namespace HedgeHog.Shared {
     [DataMember]
     public int Lots { get; set; }
 
+    [DataMember]
+    public string OpenOrderID { get; set; }
+    [DataMember]
+    public string OpenOrderReqID { get; set; }
+
     public object UnKnown { get; set; }
 
     public double OpenInPips { get { return InPips(this.Open); } }

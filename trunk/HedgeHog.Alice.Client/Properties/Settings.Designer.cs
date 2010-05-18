@@ -22,5 +22,15 @@ namespace HedgeHog.Alice.Client.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=DHOME\\SQLEXPRESS2008;Initial Catalog=Forex;Integrated Security=True")]
+        public string ForexConnectionString {
+            get {
+                return ((string)(this["ForexConnectionString"]));
+            }
+        }
     }
 }

@@ -20,8 +20,7 @@
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
         DataContext="{DynamicResource DataModel}"
         d:DataContext="{DynamicResource DataModelDesign}"
-        Title="{Binding Title,StringFormat=Alice In: {0}}"
-        >
+        Title="{Binding Title,StringFormat=Alice In: {0}}" xmlns:my="clr-namespace:HedgeHog.Alice.Client.Models" Loaded="Window_Loaded">
   <Window.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
@@ -39,10 +38,9 @@
           <WrapPanel>
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
           </WrapPanel>
-          <ui:AccountInfo DataContext="{Binding ServerAccountRow}"/>
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" >
             <DataGrid.Columns>
-              <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
+              <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
               <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
               <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
@@ -59,6 +57,17 @@
           </DataGrid>
         </StackPanel>
       </DataTemplate>
+      <CollectionViewSource x:Key="tradingAccountsViewSource" d:DesignSource="{d:DesignInstance my:TradingAccount, CreateList=True}" />
+      <DataTemplate x:Key="DeleteAccountCellTemplate">
+        <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+            Command="{Binding DataContext.DeleteTradingAccountCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      </DataTemplate>
+
+      <DataTemplate x:Key="CloseServerTradeTemplate">
+        <Button Content="{Binding Id}" CommandParameter="{Binding Id}"
+            Command="{Binding DataContext.CloseServerTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      </DataTemplate>
+
     </ResourceDictionary>
   </Window.Resources>
     <Grid>
@@ -67,9 +76,8 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <StackPanel Background="{Binding IsLoggedIn,Converter={StaticResource BoolToColorConverter},ConverterParameter=transparent|Red|#3A98EF71}">
+    <StackPanel Background="{Binding IsLoggedIn,Converter={StaticResource BoolToColorConverter},ConverterParameter=transparent|Pink|#3A98EF71}">
           <WrapPanel>
             <TextBlock>Server:</TextBlock>
         <u:TextBox2 MinWidth="50" Text2="{Binding ServerAddress,Mode=TwoWay}" Text="{state:UserSettings Default=localhost:9200/}" x:Name="ServerAddress"/>
@@ -88,24 +96,64 @@
         <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
       </WrapPanel>
       <ui:AccountLoginView AccountLoginCommand="{Binding AccountLoginCommand}" OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
-        TradingAccount="{Binding TradingAccount}" TradingPassword="{Binding TradingPassword}" TradingDemo="{Binding TradingDemo}"/>
+        TradingAccount="{Binding TradingMaster.AccountId,Mode=TwoWay}" TradingPassword="{Binding TradingMaster.Password,Mode=TwoWay}" TradingDemo="{Binding TradingMaster.IsDemo,Mode=TwoWay}"/>
+      <!--Account Manager-->
+      <Expander Header="Accounts Manager">
+        <StackPanel>
+      <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" 
+                ItemsSource="{Binding TradingAccountsSet}" RowDetailsVisibilityMode="VisibleWhenSelected">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"></DataGridTemplateColumn>
+          <DataGridTextColumn Binding="{Binding Path=AccountId}" Header="Account" />
+          <DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" Foreground="Transparent" />
+          <DataGridCheckBoxColumn Binding="{Binding Path=IsDemo}" Header="Demo" Width="SizeToHeader" />
+          <DataGridTextColumn Binding="{Binding Path=TradeRatio}" Header="M:S" ToolTipService.ToolTip="Trade Ratio" />
+          <DataGridCheckBoxColumn Binding="{Binding Path=IsMaster}" Header="Master" Width="SizeToHeader" />
+          <DataGridTextColumn Binding="{Binding Path=EntityState}" Header="State" />
+          <DataGridTextColumn Binding="{Binding Path=Id}" Header="Id" />
+        </DataGrid.Columns>
+      </DataGrid>
+      <Button Command="{Binding SaveTradingSlavesCommand}">Save</Button>
+        </StackPanel>
+      </Expander>
+      <!--<DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" ItemsSource="{Binding Source={StaticResource tradingAccountsViewSource}}" Name="tradingAccountsDataGrid" RowDetailsVisibilityMode="VisibleWhenSelected"><DataGrid.Columns><DataGridTextColumn x:Name="idColumn" Binding="{Binding Path=Id}" Header="Id" /><DataGridTextColumn x:Name="passwordColumn" Binding="{Binding Path=Password}" Header="Password" /><DataGridTextColumn x:Name="masterIdColumn" Binding="{Binding Path=MasterId}" Header="Master Id" /><DataGridCheckBoxColumn x:Name="isDemoColumn" Binding="{Binding Path=IsDemo}" Header="Is Demo" Width="SizeToHeader" /></DataGrid.Columns></DataGrid></Expander>-->
     </StackPanel>
 
-    <Expander Header="Rabbit" Grid.Row="1" ContentTemplate="{StaticResource TradesOnServer}"  Content="{Binding}" IsExpanded="True"/>
-      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-    <Expander Header="Alice" IsExpanded="True">
-      <ItemsControl ItemsSource="{Binding SlaveAccounts}">
+      <!--Master Account-->
+    <Expander Grid.Row="1" ContentTemplate="{StaticResource TradesOnServer}"  Content="{Binding}">
+      <Expander.Header>
+        <StackPanel>
+          <TextBlock>Master Account</TextBlock>
+          <ui:AccountInfo DataContext="{Binding ServerAccountRow}"/>
+        </StackPanel>
+      </Expander.Header>
+    </Expander>
+
+    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <!--Slave Accounts-->
+    <Expander>
+        <Expander.Header>
+          <TextBlock Text="{Binding SlaveModels.Length,StringFormat=Slave Accounts {0}}"/>
+        </Expander.Header>
+          <ItemsControl ItemsSource="{Binding SlaveModels}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-      <uiAccounts:SlaveAccount MasterModel="{Binding DataContext,RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-        TradingAccount="{Binding Account}" TradingPassword="{Binding Password}" TradingDemo="{Binding IsDemo}" Background="BlanchedAlmond"/>
+              <Expander Header="{Binding TradingAccount}">
+                <uiAccounts:SlaveAccount
+                  SlaveModel="{Binding BindsDirectlyToSource=True}"
+                  MasterModel="{Binding DataContext,RelativeSource={RelativeSource AncestorType=Grid}}"
+                               TradingAccount="{Binding TradingAccount,Mode=TwoWay}"
+                               TradingPassword="{Binding TradingPassword,Mode=TwoWay}"
+                               TradingDemo="{Binding TradingDemo,Mode=TwoWay}" 
+                               TradeRatio="{Binding ServerToLocalRatioValue,Mode=TwoWay}"
+                               Background="BlanchedAlmond"/>
+              </Expander>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
       </Expander>
       </ScrollViewer>
-    <Expander Header="Cheshire Cat" Grid.Row="3" ContentTemplate="{StaticResource TradesDifference}"  Content="{Binding}" IsExpanded="True"/>
-    <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}" Padding="0" Grid.RowSpan="2">
+    <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=OneWay}" Padding="0" Grid.RowSpan="2">
     <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
     </Expander>
   </Grid>
