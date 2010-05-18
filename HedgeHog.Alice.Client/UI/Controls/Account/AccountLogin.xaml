@@ -12,7 +12,7 @@
       <TextBlock>Login:</TextBlock>
       <TextBox MinWidth="50" Text="{Binding TradingAccount,Mode=TwoWay}" />
       <TextBlock>Pwd:</TextBlock>
-      <TextBox Width="15" Text="{ Binding TradingPassword,Mode=TwoWay}" />
+      <TextBox Width="25" Text="{ Binding TradingPassword,Mode=TwoWay}" Foreground="White" />
       <CheckBox Content="Demo" IsChecked="{Binding TradingDemo,Mode=TwoWay}" VerticalAlignment="Center"/>
       <Button Margin="10 0" Click="Ligin_Click">Login</Button>
       <Button Click="NewAccount_Click" ToolTip="Open new demo account">Re-New</Button>

@@ -23,7 +23,9 @@ namespace HedgeHog.Shared {
     [DataMember]
     public bool Hedging { get; set; }
     [DataMember]
-    public Trade[] Trades { get; set; }
+    Trade[] _trades = new Trade[] { };
+
+    public Trade[] Trades { get { return _trades; } set { _trades = value; } }
 
     public double PL { get { return Math.Round(Trades.GrossInPips(), 1); } }
 

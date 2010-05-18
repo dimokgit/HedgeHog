@@ -9,12 +9,14 @@
              xmlns:l="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
         xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
                xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
+             xmlns:hhs="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
              mc:Ignorable="d"
 >
-  <UserControl.Resources>
+  <!--<UserControl.Resources>
     <l:SlaveAccountModel x:Key="DataModel"/>
-  </UserControl.Resources>
-    <StackPanel x:Name="LayoutRoot" DataContext="{StaticResource DataModel}">
+  </UserControl.Resources>-->
+  <StackPanel x:Name="LayoutRoot">
+    <!--<StackPanel x:Name="LayoutRoot" DataContext="{StaticResource DataModel}">-->
       <StackPanel.Resources>
         <Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>
         <DataTemplate x:Key="CloseLocalTradeTemplate">
@@ -27,14 +29,14 @@
   </DataTemplate>
       </StackPanel.Resources>
       <StackPanel Orientation="Horizontal">
-      <ui:AccountLoginView TradingAccount="{Binding TradingAccount,RelativeSource={RelativeSource AncestorType=UserControl},Mode=TwoWay}"
-                           TradingPassword="{Binding TradingPassword,RelativeSource={RelativeSource AncestorType=UserControl},Mode=TwoWay}"
-                           TradingDemo="{Binding TradingDemo,RelativeSource={RelativeSource AncestorType=UserControl},Mode=TwoWay}"
+      <ui:AccountLoginView TradingAccount="{Binding TradingAccount,Mode=TwoWay}"
+                           TradingPassword="{Binding TradingPassword,Mode=TwoWay}"
+                           TradingDemo="{Binding TradingDemo,Mode=TwoWay}"
                            AccountLoginCommand="{Binding AccountLoginCommand}"
                            OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
          />
       <TextBlock Margin="10 0 0 0" ToolTip="Trading Ratio">TR:</TextBlock>
-      <TextBox Text="{Binding ServerToLocalRatioValue,Mode=TwoWay}"/>
+      <TextBox Text="{Binding TradingAccountModel.TradeRatio,Mode=TwoWay}"/>
       <Button Command="{Binding CloseAllLocalTradesCommand}" Margin="15 0 15 0">Close All</Button>
         <Button Command="{Binding ReverseAliceModeCommand}" ToolTip="Close Alice and change mode to oposite.">Reverse</Button>
         <WrapPanel Margin="15 0">
@@ -42,46 +44,62 @@
           <u:TextBox2 x:Name="TargetInPips" Text2="{Binding TargetInPips,Mode=TwoWay}" Text="0" />
         </WrapPanel>
       </StackPanel>
-    <ui:AccountInfo DataContext="{Binding LocalAccounts}"/>
-      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding LocalTradesList}" >
-        <DataGrid.Columns>
-          <DataGridTemplateColumn CellTemplate="{StaticResource CloseLocalTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
-          <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
-          <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
-          <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
-          <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
-            <DataGridTextColumn.ElementStyle>
-              <Style TargetType="TextBlock">
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-              </Style>
-            </DataGridTextColumn.ElementStyle>
-          </DataGridTextColumn>
-          <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
-          <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
-          <DataGridTextColumn Header="Server ID" Binding="{Binding Remark.Remark}"/>
-        </DataGrid.Columns>
-      </DataGrid>
-    <Expander Header="Trades to Sync" IsExpanded="true">
-      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
-        <DataGrid.Columns>
-          <DataGridTemplateColumn CellTemplate="{StaticResource SyncTradeTemplate}" SortMemberPath="{Binding}" Header="Id"/>
-          <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
-          <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
-          <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
-          <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
-            <DataGridTextColumn.ElementStyle>
-              <Style TargetType="TextBlock">
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-              </Style>
-            </DataGridTextColumn.ElementStyle>
-          </DataGridTextColumn>
-          <DataGridTextColumn Header="PL" Binding="{Binding PL,StringFormat=n1}"/>
-          <DataGridTextColumn Header="Sync" Binding="{Binding UnKnown.AutoSync}"/>
-        </DataGrid.Columns>
-      </DataGrid>
-    </Expander>
-    <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}" Padding="0" Grid.RowSpan="2">
-      <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
+    <Expander>
+      <Expander.Header>
+        <StackPanel>
+          <!--<TextBlock Text="{Binding LocalTradesList.Count,StringFormat=Local Trades {0}}"/>-->
+          <ui:AccountInfo DataContext="{Binding LocalAccounts}"/>
+        </StackPanel>
+      </Expander.Header>
+      <StackPanel>
+        <StackPanel.Resources>
+          <ObjectDataProvider x:Key="UnKnown" MethodName="ErrorMessage" ObjectType="{x:Type hhs:Trade}"/>
+        </StackPanel.Resources>
+        <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding LocalTradesList}"  RowBackground="#FFF5E4C6">
+          <DataGrid.Columns>
+            <DataGridTemplateColumn CellTemplate="{StaticResource CloseLocalTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
+            <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+            <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+            <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+            <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+              <DataGridTextColumn.ElementStyle>
+                <Style TargetType="TextBlock">
+                  <Setter Property="HorizontalAlignment" Value="Center"/>
+                </Style>
+              </DataGridTextColumn.ElementStyle>
+            </DataGridTextColumn>
+            <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+            <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+            <DataGridTextColumn Header="Server ID" Binding="{Binding Remark.Remark}"/>
+            <DataGridTextColumn Header="Error" Binding="{Binding UnKnown.ErrorMessage}"/>
+          </DataGrid.Columns>
+        </DataGrid>
+        <Expander>
+          <Expander.Header>
+            <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>
+          </Expander.Header>
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
+            <DataGrid.Columns>
+              <DataGridTemplateColumn CellTemplate="{StaticResource SyncTradeTemplate}" SortMemberPath="{Binding}" Header="Id"/>
+              <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+              <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
+              <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+              <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+                <DataGridTextColumn.ElementStyle>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                  </Style>
+                </DataGridTextColumn.ElementStyle>
+              </DataGridTextColumn>
+              <DataGridTextColumn Header="PL" Binding="{Binding PL,StringFormat=n1}"/>
+              <DataGridTextColumn Header="Sync" Binding="{Binding UnKnown.AutoSync}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Expander>
+        <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=OneWay}" Padding="0" Grid.RowSpan="2">
+          <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
+        </Expander>
+      </StackPanel>
     </Expander>
   </StackPanel>
 </UserControl>

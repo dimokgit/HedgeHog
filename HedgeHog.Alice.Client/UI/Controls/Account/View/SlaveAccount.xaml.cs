@@ -16,7 +16,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
   /// <summary>
   /// Interaction logic for SlaveAccount.xaml
   /// </summary>
-  public partial class SlaveAccount : UserControl {
+  public partial class SlaveAccount : UserControl,IAccountHolder {
     public SlaveAccount() {
       InitializeComponent();
 
@@ -36,7 +36,39 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             sam.MasterModel = p.NewValue as TraderModel;
         }));
 
-    
+
+
+    public SlaveAccountModel SlaveModel {
+      get { return (SlaveAccountModel)GetValue(SlaveModelProperty); }
+      set { SetValue(SlaveModelProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for SlaveModel.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty SlaveModelProperty =
+        DependencyProperty.Register("SlaveModel", typeof(SlaveAccountModel), typeof(SlaveAccount), new UIPropertyMetadata((d, p) => {
+          var sa = d as SlaveAccount;
+          sa.LayoutRoot.DataContext = p.NewValue;
+        }));
+
+
+
+    static void SetModelDP<T>(DependencyObject d, DependencyPropertyChangedEventArgs p,Func<SlaveAccountModel,T> getter,Action<SlaveAccountModel,T> setter) {
+      var sa = d as SlaveAccount;
+      var sam = sa.LayoutRoot.DataContext as SlaveAccountModel;
+      if (p.NewValue == null || !p.NewValue.Equals(getter(sam)))
+        setter(sam, (T)p.NewValue);
+    }
+
+    public string TradeRatio {
+      get { return (string)GetValue(TradeRatioProperty); }
+      set { SetValue(TradeRatioProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for TradeRatio.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty TradeRatioProperty =
+        DependencyProperty.Register("TradeRatio", typeof(string), typeof(SlaveAccount));
+
+
 
     public string TradingAccount {
       get { return (string)GetValue(TradingAccountProperty); }
@@ -45,7 +77,10 @@ namespace HedgeHog.Alice.Client.UI.Controls {
 
     // Using a DependencyProperty as the backing store for TradingAccount.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty TradingAccountProperty =
-        DependencyProperty.Register("TradingAccount", typeof(string), typeof(SlaveAccount));
+        DependencyProperty.Register("TradingAccount", typeof(string), typeof(SlaveAccount), new UIPropertyMetadata((d,p) => {
+          SetModelDP(d, p, sm => sm.TradingAccount, (sm, ta) => sm.TradingAccount = ta);
+          ((d as SlaveAccount).LayoutRoot.DataContext as SlaveAccountModel).TradingAccount = p.NewValue + "";
+        }));
 
 
 
@@ -70,5 +105,13 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         DependencyProperty.Register("TradingDemo", typeof(bool), typeof(SlaveAccount));
     #endregion
 
+
+    #region IAccountHolder Members
+
+    public bool Login(string account, string password, bool isDemo) {
+      return (this.LayoutRoot.DataContext as IAccountHolder).Login(account, password, isDemo);
+    }
+
+    #endregion
   }
 }

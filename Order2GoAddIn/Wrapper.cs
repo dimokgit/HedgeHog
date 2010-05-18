@@ -782,7 +782,9 @@ namespace Order2GoAddIn {
                     Open = (double)t.CellValue("Open"),
                     Close = (double)t.CellValue("Close"),
                     Time = ConvertDateToLocal((DateTime)t.CellValue("Time")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
-                    Remark = new TradeRemark(t.CellValue("QTXT")+"")
+                    OpenOrderID = t.CellValue("OpenOrderID")+"",
+                    OpenOrderReqID = t.CellValue("OpenOrderReqID")+"",
+                    Remark = new TradeRemark(t.CellValue("QTXT") + "")
                   };
         return ret.ToArray();
       }
@@ -937,14 +939,20 @@ namespace Order2GoAddIn {
     private static object globalOrderPending = new object();
     private bool isGlobalOrderPending { get { return GetOrders("").Length > 0; } }
     public bool FixOrderOpen(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark) {
-      if (isGlobalOrderPending) return false;
+      string orderId, tradeId;
+      return FixOrderOpen(pair, buy, lots, takeProfit, stopLoss, remark, out orderId, out tradeId);
+    }
+    public bool FixOrderOpen(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, out string orderId, out string tradeId) {
+      if (isGlobalOrderPending) { orderId = tradeId = ""; return false; }
       lock (globalOrderPending) {
         object psOrderID, psDI;
         try {
           coreFX.Desk.CreateFixOrder(coreFX.Desk.FIX_OPENMARKET, "", 0, 0, "", GetAccount().ID, pair, buy, lots, remark, out psOrderID, out psDI);
           var orders = GetOrders("");
           var trades = GetTrades("");
-          return true;
+          orderId = psOrderID+"";
+          tradeId = trades.Where(t => t.OpenOrderID == psOrderID + "").Select(t => t.Id).FirstOrDefault() + "";
+          return !string.IsNullOrWhiteSpace(tradeId);
         } catch (Exception exc) {
           throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots),exc);
         }
@@ -1186,7 +1194,7 @@ namespace Order2GoAddIn {
             isTradePending = false;
             row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
             var trade = GetTrades().OrderBy(t => t.Id).Last();
-            if ((row.CellValue(FIELD_INSTRUMENT) + "") == Pair && TradesCountChanged != null)
+            if (new[]{"", (row.CellValue(FIELD_INSTRUMENT) + "").ToUpper()}.Contains(Pair) && TradesCountChanged != null)
               TradesCountChanged(trade);
             if( OnTradeCountChangedCallback!= null)
               OnTradeCountChangedCallback(trade);

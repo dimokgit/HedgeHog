@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 
 namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
+    public bool HasProfit { get { return Gross > 0; } }
     public void OnPropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       foreach (var pl in propertyLamdas) 
         RaisePropertyChanged(pl);
