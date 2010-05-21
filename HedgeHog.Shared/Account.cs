@@ -24,6 +24,13 @@ namespace HedgeHog.Shared {
     public bool Hedging { get; set; }
     [DataMember]
     Trade[] _trades = new Trade[] { };
+    [DataMember]
+    public double StopAmount { get; set; }
+
+    public double StopToBalanceRatio { get { return StopAmount / Balance; } }
+
+    [DataMember]
+    public WiredException Error { get; set; }
 
     public Trade[] Trades { get { return _trades; } set { _trades = value; } }
 

@@ -15,7 +15,5 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\bin\Debug\HedgeHogXbap.xbap
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.TrustInfo.xml
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.exe.manifest
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\HedgeHogXbap.xbap
-C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource-ResGen.read.1.tlog
-C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource-ResGen.write.1.tlog
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource.read.1.tlog
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHogXbap\obj\Debug\GenerateResource.write.1.tlog

@@ -57,7 +57,6 @@
           </DataGrid>
         </StackPanel>
       </DataTemplate>
-      <CollectionViewSource x:Key="tradingAccountsViewSource" d:DesignSource="{d:DesignInstance my:TradingAccount, CreateList=True}" />
       <DataTemplate x:Key="DeleteAccountCellTemplate">
         <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" 
             Command="{Binding DataContext.DeleteTradingAccountCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
@@ -84,24 +83,17 @@
             <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" ToolTip="Server Time" VerticalContentAlignment="Center" VerticalAlignment="Center" BorderBrush="Gray" BorderThickness="1"/>
             <ComboBox SelectedValue="{Binding AliceMode,Mode=TwoWay}" SelectedIndex="{state:UserSettings Default=0}" ItemsSource="{hhmu:EnumValues l:AliceModes}" Name="AliceMode"/>
         <!---->
-        <ComboBox SelectedIndex="{state:UserSettings Default=1}" Name="ServerToLocalRatio" SelectedValue="{Binding ServerToLocalRatioValue,Mode=OneWayToSource}">
-          <ComboBoxItem>1:1</ComboBoxItem>
-          <ComboBoxItem>1:2</ComboBoxItem>
-          <ComboBoxItem>1:3</ComboBoxItem>
-          <ComboBoxItem>1:4</ComboBoxItem>
-          <ComboBoxItem>1:5</ComboBoxItem>
-          <ComboBoxItem>1:7</ComboBoxItem>
-          <ComboBoxItem>1:10</ComboBoxItem>
-        </ComboBox>
+        
         <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
+        <Button Command="{Binding AddNewSlaveAccountCommand}">Add Alice</Button>
       </WrapPanel>
       <ui:AccountLoginView AccountLoginCommand="{Binding AccountLoginCommand}" OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
         TradingAccount="{Binding TradingMaster.AccountId,Mode=TwoWay}" TradingPassword="{Binding TradingMaster.Password,Mode=TwoWay}" TradingDemo="{Binding TradingMaster.IsDemo,Mode=TwoWay}"/>
       <!--Account Manager-->
       <Expander Header="Accounts Manager">
         <StackPanel>
-      <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" 
-                ItemsSource="{Binding TradingAccountsSet}" RowDetailsVisibilityMode="VisibleWhenSelected">
+          <!--Slave Account Infos-->
+      <DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" ItemsSource="{Binding TradingAccountsSet}" RowDetailsVisibilityMode="VisibleWhenSelected">
         <DataGrid.Columns>
           <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"></DataGridTemplateColumn>
           <DataGridTextColumn Binding="{Binding Path=AccountId}" Header="Account" />
@@ -112,7 +104,7 @@
           <DataGridTextColumn Binding="{Binding Path=EntityState}" Header="State" />
           <DataGridTextColumn Binding="{Binding Path=Id}" Header="Id" />
         </DataGrid.Columns>
-      </DataGrid>
+            </DataGrid>
       <Button Command="{Binding SaveTradingSlavesCommand}">Save</Button>
         </StackPanel>
       </Expander>
@@ -129,17 +121,28 @@
       </Expander.Header>
     </Expander>
 
-    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
         <!--Slave Accounts-->
-    <Expander>
-        <Expander.Header>
-          <TextBlock Text="{Binding SlaveModels.Length,StringFormat=Slave Accounts {0}}"/>
-        </Expander.Header>
-          <ItemsControl ItemsSource="{Binding SlaveModels}">
-        <ItemsControl.ItemTemplate>
+    <DataGrid Grid.Row="2" ItemsSource="{Binding SlaveModels}" AutoGenerateColumns="False" EnableRowVirtualization="False" HorizontalAlignment="Left" RowDetailsVisibilityMode="VisibleWhenSelected" VerticalAlignment="Top" CanUserAddRows="False" CanUserDeleteRows="False" KeyDown="SlaveModelGrid_KeyDown" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontWeight="Bold">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Account" Binding="{Binding AccountModel.ID,Mode=OneWay}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Balance" Binding="{Binding AccountModel.Balance,StringFormat=c0}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Equity" Binding="{Binding AccountModel.Equity,StringFormat=c0}" IsReadOnly="True"/>
+          <DataGridTextColumn Header="Pos" Binding="{Binding AccountModel.Trades.Length,Mode=OneWay}" IsReadOnly="True" ToolTipService.ToolTip="Total Positions"/>
+        <DataGridTextColumn Header="Margin" Binding="{Binding AccountModel.UsableMargin,StringFormat=c0}" IsReadOnly="True"/>
+        <DataGridTextColumn Binding="{Binding AccountModel.PipsToMC}" IsReadOnly="True">
+            <DataGridTextColumn.HeaderTemplate>
+              <DataTemplate>
+                <TextBlock Text="PMC" ToolTip="Pips to Margin Call"/>
+              </DataTemplate>
+            </DataGridTextColumn.HeaderTemplate>
+          </DataGridTextColumn>
+        <DataGridTextColumn Header="Pips" Binding="{Binding AccountModel.PL,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="$$$" Binding="{Binding AccountModel.Gross,StringFormat=c0}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Ratio" Binding="{Binding AccountModel.TradingRatio,StringFormat=p0}"/>
+      </DataGrid.Columns>
+      <DataGrid.RowDetailsTemplate>
           <DataTemplate>
-              <Expander Header="{Binding TradingAccount}">
-                <uiAccounts:SlaveAccount
+            <uiAccounts:SlaveAccount
                   SlaveModel="{Binding BindsDirectlyToSource=True}"
                   MasterModel="{Binding DataContext,RelativeSource={RelativeSource AncestorType=Grid}}"
                                TradingAccount="{Binding TradingAccount,Mode=TwoWay}"
@@ -147,12 +150,9 @@
                                TradingDemo="{Binding TradingDemo,Mode=TwoWay}" 
                                TradeRatio="{Binding ServerToLocalRatioValue,Mode=TwoWay}"
                                Background="BlanchedAlmond"/>
-              </Expander>
           </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      </Expander>
-      </ScrollViewer>
+        </DataGrid.RowDetailsTemplate>
+      </DataGrid>
     <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=OneWay}" Padding="0" Grid.RowSpan="2">
     <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
     </Expander>

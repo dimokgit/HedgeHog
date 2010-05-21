@@ -13,7 +13,7 @@ namespace HedgeHog.Alice.Client.TradeExtenssions {
   public static class TradeExtenssions {
     public static Trade InitUnKnown(this Trade trade, DateTime serverTime) {
       var uk = new TradeUnKNown();
-      uk.AutoSync = Math.Abs(trade.PL) < 3 || (serverTime - trade.Time) < TimeSpan.FromSeconds(5);
+      uk.AutoSync = Math.Abs(trade.PL) <= Config.PipsDifferenceToSync || (serverTime - trade.Time) < TimeSpan.FromSeconds(Config.SecondsDifferenceToSync);
       trade.UnKnown = uk;
       return trade;
     }

@@ -100,6 +100,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="Properties\DataSources\HedgeHog.Alice.Client.TradingAccountModel.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -107,9 +108,17 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Alice.Client\HedgeHog.Alice.Client.csproj">
+      <Project>{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}</Project>
+      <Name>HedgeHog.Alice.Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.FXCM\HedgeHog.FXCM.csproj">
       <Project>{18E142A3-5835-4AD3-8462-DD2D8C725756}</Project>
       <Name>HedgeHog.FXCM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

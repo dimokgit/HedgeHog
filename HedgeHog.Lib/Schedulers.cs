@@ -100,8 +100,10 @@ namespace HedgeHog {
       if (Finished != null) Finished(this, new EventArgs());
     }
     public EventWaitHandle WaitHandler { get; private set; }
-    public readonly static TimeSpan infinity = new TimeSpan(0, 0, 0, 0, -1);
+    public readonly static TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
+    public readonly static TimeSpan zero = TimeSpan.Zero;
     TimeSpan _period = infinity;
+    TimeSpan _delay = zero;
 
     public TimeSpan Period {
       get { return _period; }
@@ -112,7 +114,6 @@ namespace HedgeHog {
       }
     }
     System.Threading.Timer _timer;
-    TimeSpan _delay = new TimeSpan(0, 0, 0, 0, 500);
     private bool _isRunning;
     public bool IsRunning {
       get { return _isRunning; }
@@ -164,6 +165,7 @@ namespace HedgeHog {
     }
     public ThreadScheduler(TimeSpan delay, TimeSpan period, CommandDelegate command)      : this(delay, period, command,null) {
     }
+    public ThreadScheduler(CommandDelegate command, EventHandler<TimerErrorException> error) : this(zero, infinity, command, error) { }
     public ThreadScheduler(TimeSpan delay, TimeSpan period, CommandDelegate command, EventHandler<TimerErrorException> error) {
       this.WaitHandler = new EventWaitHandle(true, EventResetMode.AutoReset);
       this._period = period;
