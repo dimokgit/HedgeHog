@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="HedgeHog.Alice.Client.UI.Controls.AccountLoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+             xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+             d:DesignHeight="20" d:DesignWidth="300">
+    <Grid x:Name="LayoutRoot">
+    <WrapPanel>
+      <TextBlock>Login:</TextBlock>
+      <TextBox MinWidth="50" Text="{Binding TradingAccount,Mode=TwoWay}" />
+      <TextBlock>Pwd:</TextBlock>
+      <TextBox Width="25" Text="{ Binding TradingPassword,Mode=TwoWay}" Foreground="White" />
+      <CheckBox Content="Demo" IsChecked="{Binding TradingDemo,Mode=TwoWay}" VerticalAlignment="Center"/>
+      <Button Margin="10 0" Click="Ligin_Click">Login</Button>
+      <Button Click="NewAccount_Click" ToolTip="Open new demo account">Re-New</Button>
+    </WrapPanel>
+  </Grid>
+</UserControl>

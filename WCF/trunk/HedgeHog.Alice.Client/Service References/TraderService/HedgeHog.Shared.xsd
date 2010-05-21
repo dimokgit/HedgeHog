@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/HedgeHog.Shared" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/HedgeHog.Shared" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="http://schemas.datacontract.org/2004/07/System" />
+  <xs:complexType name="Account">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Balance" type="xs:double" />
+      <xs:element minOccurs="0" name="Equity" type="xs:double" />
+      <xs:element minOccurs="0" name="Error" nillable="true" type="tns:WiredException" />
+      <xs:element minOccurs="0" name="Hedging" type="xs:boolean" />
+      <xs:element minOccurs="0" name="ID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="IsMarginCall" type="xs:boolean" />
+      <xs:element minOccurs="0" name="PipsToMC" type="xs:int" />
+      <xs:element minOccurs="0" name="StopAmount" type="xs:double" />
+      <xs:element minOccurs="0" name="UsableMargin" type="xs:double" />
+      <xs:element minOccurs="0" name="_trades" nillable="true" type="tns:ArrayOfTrade" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Account" nillable="true" type="tns:Account" />
+  <xs:complexType name="WiredException">
+    <xs:complexContent mixed="false">
+      <xs:extension xmlns:q1="http://schemas.datacontract.org/2004/07/System" base="q1:Exception" />
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="WiredException" nillable="true" type="tns:WiredException" />
+  <xs:complexType name="ArrayOfTrade">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Trade" nillable="true" type="tns:Trade" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfTrade" nillable="true" type="tns:ArrayOfTrade" />
+  <xs:complexType name="Trade">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Buy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="Close" type="xs:double" />
+      <xs:element minOccurs="0" name="GrossPL" type="xs:double" />
+      <xs:element minOccurs="0" name="Id" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Limit" type="xs:double" />
+      <xs:element minOccurs="0" name="Lots" type="xs:int" />
+      <xs:element minOccurs="0" name="Open" type="xs:double" />
+      <xs:element minOccurs="0" name="OpenOrderID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="OpenOrderReqID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="PL" type="xs:double" />
+      <xs:element minOccurs="0" name="Pair" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Remark" nillable="true" type="tns:TradeRemark" />
+      <xs:element minOccurs="0" name="Time" type="xs:dateTime" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Trade" nillable="true" type="tns:Trade" />
+  <xs:complexType name="TradeRemark">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Remark" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="_angle" type="xs:double" />
+      <xs:element minOccurs="0" name="_tradeWaveHeight" type="xs:double" />
+      <xs:element minOccurs="0" name="_tradeWaveInMinutes" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="TradeRemark" nillable="true" type="tns:TradeRemark" />
+</xs:schema>

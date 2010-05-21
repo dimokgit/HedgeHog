@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="HedgeHog.Alice.Client.UI.Controls.SlaveAccount"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.WPF4"
+        xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
+             xmlns:l="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
+        xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+               xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
+             xmlns:hhs="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
+             mc:Ignorable="d"
+>
+  <StackPanel x:Name="LayoutRoot">
+    <StackPanel.Resources>
+      <Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>
+      <DataTemplate x:Key="CloseLocalTradeTemplate">
+        <Button Content="{Binding Id}" CommandParameter="{Binding Id}"
+                  Command="{Binding DataContext.CloseLocalTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      </DataTemplate>
+      <DataTemplate x:Key="SyncTradeTemplate">
+        <Button Content="{Binding Id}" CommandParameter="{Binding Id}" 
+            Command="{Binding DataContext.SyncTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      </DataTemplate>
+    </StackPanel.Resources>
+    <StackPanel Orientation="Horizontal">
+      <ui:AccountLoginView TradingAccount="{Binding TradingAccount,Mode=TwoWay}"
+                           TradingPassword="{Binding TradingPassword,Mode=TwoWay}"
+                           TradingDemo="{Binding TradingDemo,Mode=TwoWay}"
+                           AccountLoginCommand="{Binding AccountLoginCommand}"
+                           OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
+         />
+      <TextBlock Margin="10 0 0 0" ToolTip="Trading Ratio">TR:</TextBlock>
+      <TextBox Text="{Binding TradingAccountModel.TradeRatio,Mode=TwoWay}"/>
+      <Button Command="{Binding CloseAllLocalTradesCommand}" Margin="15 0 15 0">Close All</Button>
+      <Button Command="{Binding ReverseAliceModeCommand}" ToolTip="Close Alice and change mode to oposite.">Reverse</Button>
+      <WrapPanel Margin="15 0">
+        <TextBlock ToolTip="Target In Pips">TP:</TextBlock>
+        <u:TextBox2 x:Name="TargetInPips" Text2="{Binding TargetInPips,Mode=TwoWay}" Text="0" />
+      </WrapPanel>
+    </StackPanel>
+    <StackPanel>
+      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding LocalTradesList}"  RowBackground="#FFF5E4C6">
+        <DataGrid.Columns>
+          <DataGridTemplateColumn CellTemplate="{StaticResource CloseLocalTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
+          <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+          <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+          <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+          <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+            <DataGridTextColumn.ElementStyle>
+              <Style TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+              </Style>
+            </DataGridTextColumn.ElementStyle>
+          </DataGridTextColumn>
+          <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+          <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+          <DataGridTextColumn Header="Server ID" Binding="{Binding Remark.Remark}"/>
+          <DataGridTextColumn Header="Error" Binding="{Binding UnKnown.ErrorMessage}"/>
+        </DataGrid.Columns>
+      </DataGrid>
+      <Expander>
+        <Expander.Header>
+          <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>
+        </Expander.Header>
+        <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
+          <DataGrid.Columns>
+            <DataGridTemplateColumn CellTemplate="{StaticResource SyncTradeTemplate}" SortMemberPath="{Binding}" Header="Id"/>
+            <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+            <DataGridTextColumn Header="ID" Binding="{Binding Id}"/>
+            <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+            <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+              <DataGridTextColumn.ElementStyle>
+                <Style TargetType="TextBlock">
+                  <Setter Property="HorizontalAlignment" Value="Center"/>
+                </Style>
+              </DataGridTextColumn.ElementStyle>
+            </DataGridTextColumn>
+            <DataGridTextColumn Header="PL" Binding="{Binding PL,StringFormat=n1}"/>
+            <DataGridTextColumn Header="Sync" Binding="{Binding UnKnown.AutoSync}"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </Expander>
+      <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=OneWay}" Padding="0" Grid.RowSpan="2">
+        <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
+      </Expander>
+    </StackPanel>
+  </StackPanel>
+</UserControl>
