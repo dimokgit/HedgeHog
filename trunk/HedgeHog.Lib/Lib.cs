@@ -146,7 +146,10 @@ namespace HedgeHog {
     public static int Abs(this int v) {
       return Math.Abs(v);
     }
- 
+
+    public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }
+    public static double? Round(this double? v,int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
+
     public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
     static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
     public static int GetTextBoxTextInt(TextBox TextBox) {

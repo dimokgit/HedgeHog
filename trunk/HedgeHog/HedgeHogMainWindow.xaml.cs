@@ -22,7 +22,7 @@ using HedgeHog;
 using HedgeHog.Models;
 using HedgeHog.Shared;
 namespace HedgeHog {
-  public partial class HedgeHogMainWindow : WindowModel,Wcf.ITraderServer,INotifyPropertyChanged,WpfPersist.IUserSettingsStorage {
+  public partial class HedgeHogMainWindow : WindowModel, Wcf.ITraderServer, INotifyPropertyChanged, WpfPersist.IUserSettingsStorage {
 
     #region IUserSettingsStorage Members
     public WpfPersist.SaveDelegate Save { get; set; }
@@ -33,13 +33,12 @@ namespace HedgeHog {
     Thread threadCloseSell = new Thread(() => { });
 
     public string _txtPassword, _txtAccNum;
-    public int _txtLeverage;
     public double _txtTradeDelta, _txtStartingBalance;
 
-    public string title { get { return AccountNumber + ":" + pair+":"+app.WcfTraderAddress; } }
-    public string AccountNumber { 
+    public string title { get { return AccountNumber + ":" + pair + ":" + app.WcfTraderAddress; } }
+    public string AccountNumber {
       get { return _txtAccNum; }
-      set { _txtAccNum = value; RaisePropertyChangedCore(); } 
+      set { _txtAccNum = value; RaisePropertyChangedCore(); }
     }
     string _password;
 
@@ -49,10 +48,10 @@ namespace HedgeHog {
     }
 
     public ComboBoxItem LotsToTradeBuy { get; set; }
-    int lotsToTradeBuy { get { return Convert.ToInt32(LotsToTradeBuy.Content); } }
+    int lotsToBuyRatio { get { return Convert.ToInt32(LotsToTradeBuy.Content); } }
 
     public ComboBoxItem LotsToTradeSell { get; set; }
-    int lotsToTradeSell { get { return Convert.ToInt32(LotsToTradeSell.Content); } }
+    int lotsToSellRatio { get { return Convert.ToInt32(LotsToTradeSell.Content); } }
 
     public ComboBoxItem Pair { get; set; }
     string pair { get { return Pair == null ? "" : Pair.Content + ""; } }
@@ -62,8 +61,8 @@ namespace HedgeHog {
     double _accountEquity = 0;
     public double AccountEquity {
       get { return _accountEquity; }
-      set { 
-        _accountEquity = value; 
+      set {
+        _accountEquity = value;
         RaisePropertyChangedCore();
       }
     }
@@ -90,7 +89,7 @@ namespace HedgeHog {
     public double _txtPriceToAdd;
     public double PriceToAdd { get { return _txtPriceToAdd; } }
 
-    enum Condition { None,LessThen, MoreThen };
+    enum Condition { None, LessThen, MoreThen };
     double priceToExit { get { return double.Parse(RuleToExit.Split(new[] { '>', '<' }, StringSplitOptions.RemoveEmptyEntries).DefaultIfEmpty("0").First()); } }
     Condition conditionToExit { get { return RuleToExit[0] == '>' ? Condition.MoreThen : RuleToExit[0] == '<' ? Condition.LessThen : Condition.None; } }
 
@@ -106,7 +105,6 @@ namespace HedgeHog {
     public bool _chkAutoAdjust;
     bool isAutoAdjust { get { return _chkAutoAdjust; } }
 
-    int leverage { get { return _txtLeverage; } }
     private Thread threadProc;
     private Thread threadWait;
 
@@ -156,7 +154,7 @@ namespace HedgeHog {
     int minEquityHistory {
       get { return _txtMinEquityHistory; }
       set {
-        if (value > 0){
+        if (value > 0) {
           SetBindedText(txtMinEquityHistory, value);
         }
       }
@@ -179,12 +177,12 @@ namespace HedgeHog {
     double _sellPL;
     public double SellPL {
       get { return _sellPL; }
-      set {        _sellPL = value;        RaisePropertyChangedCore();      }
+      set { _sellPL = value; RaisePropertyChangedCore(); }
     }
     double _sellLPP;
     public double SellLPP {
       get { return _sellLPP; }
-      set {        _sellLPP = value; RaisePropertyChangedCore();     }
+      set { _sellLPP = value; RaisePropertyChangedCore(); }
     }
     double _sellPos;
     public double SellPositions {
@@ -199,12 +197,12 @@ namespace HedgeHog {
     double _sellLots;
     public double SellLots {
       get { return _sellLots; }
-      set {        _sellLots = value; RaisePropertyChangedCore();      }
+      set { _sellLots = value; RaisePropertyChangedCore(); }
     }
     double _buyPL;
     public double BuyPL {
       get { return _buyPL; }
-      set {        _buyPL = value; RaisePropertyChangedCore();      }
+      set { _buyPL = value; RaisePropertyChangedCore(); }
     }
     double _buyLPP;
     public double BuyLPP {
@@ -214,12 +212,12 @@ namespace HedgeHog {
     double _buyPos;
     public double BuyPositions {
       get { return _buyPos; }
-      set {        _buyPos = value; RaisePropertyChangedCore();      }
+      set { _buyPos = value; RaisePropertyChangedCore(); }
     }
     int _buyPips;
     public int BuyPips {
       get { return _buyPips; }
-      set {        _buyPips = value; RaisePropertyChangedCore();      }
+      set { _buyPips = value; RaisePropertyChangedCore(); }
     }
     double _buyLots;
     public double BuyLots {
@@ -262,7 +260,7 @@ namespace HedgeHog {
         return _OpenNewAccountCommand;
       }
     }
-    public void OpenNewAccount(string account,string password) {
+    public void OpenNewAccount(string account, string password) {
       if (!isDemo) throw new NotSupportedException("Only demo accounts can be replaced with new account.");
       AccountNumber = account;
       Password = password;
@@ -276,16 +274,16 @@ namespace HedgeHog {
     public void OpenNewAccount() {
       string account, pwd;
       FXCM.Lib.GetNewAccount(out account, out pwd);
-      OpenNewAccount(account,pwd);
+      OpenNewAccount(account, pwd);
       MessageBox.Show("Account updated.");
     }
 
     #endregion
 
     Order2GoAddIn.FXCoreWrapper fw;
-    public HedgeHogMainWindow():this("") { }
-    public HedgeHogMainWindow(string name){
-      if( name+"" != "") this.Name = name;
+    public HedgeHogMainWindow() : this("") { }
+    public HedgeHogMainWindow(string name) {
+      if (name + "" != "") this.Name = name;
       System.Diagnostics.Debug.WriteLine(AppDomain.CurrentDomain.GetData("DataDirectory"));
       InitializeComponent();
       if (isMainWindow)
@@ -314,10 +312,14 @@ namespace HedgeHog {
       corridorsWindow.Show();
       Dispatcher.BeginInvoke(new Action(() => {
         try {
-          if (fw.LogOn(pair,app.FXCM, AccountNumber, Password, Properties.Settings.Default.ServerUrl, isDemo))
+          if (app.FXCM.LogOn(AccountNumber, Password, Properties.Settings.Default.ServerUrl, isDemo)) {
+            fw.Pair = pair;
+            var mmr = fw.GetOffers().First(o => o.Pair.ToUpper() == pair.ToUpper()).MMR;
+            Leverage = fw.MinimumQuantity / mmr;
             chartingWindow.Dispatcher.BeginInvoke(new Action(() => {
               chartingWindow.ProcessPrice(null);
             }));
+          }
         } catch (Exception exc) {
           System.Windows.MessageBox.Show(exc.Message);
         }
@@ -326,11 +328,23 @@ namespace HedgeHog {
 
     #region Event Handlers
 
+    double _leverage;
+
+    public double Leverage {
+      get { return _leverage; }
+      set {
+        _leverage = isDemo ? value * 4.0 : value;
+        RaisePropertyChangedCore();
+      }
+    }
+
     private void OnPairChanged(object sender, SelectionChangedEventArgs e) {
       if (fw != null && fw.IsLoggedIn) {
         try {
           fw.Pair = pair;
           dataGrid1.ItemsSource = fw.GetTrades().ToList();
+          var mmr = fw.GetOffers().First(o => o.Pair.ToUpper() == pair.ToUpper()).MMR;
+          Leverage = fw.MinimumQuantity / mmr;
         } catch (Order2GoAddIn.FXCoreWrapper.PairNotFoundException exc) {
           MessageBox.Show(exc.Message);
           ((System.Windows.Controls.ListBoxItem)e.RemovedItems[0]).IsSelected = true;
@@ -353,12 +367,11 @@ namespace HedgeHog {
     }
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
       if (Name == "")
-        Dispatcher.Invoke(new Action(() => {
-          if (fw != null)
-            fw.Dispose();
+        if (fw != null) {
+          app.FXCM.Logout();
+        }
           if (chartingWindow != null)
             chartingWindow.Close();
-        }));
       else
         Window_Closing_Hide(sender, e);
     }
@@ -374,14 +387,14 @@ namespace HedgeHog {
           return;
         }
         if (isMainWindow) System.IO.File.Delete(logFileName);
-        fw = new Order2GoAddIn.FXCoreWrapper();
+        fw = new Order2GoAddIn.FXCoreWrapper(app.FXCM);
         chartingWindow = new HedgeHog.Charting(this.Name, fw);
         corridorsWindow = new Corridors(this.Name);
         chartingWindow.TicksChanged += chartingWindow_TicksChanged;
         chartingWindow.PriceGridChanged += ProcessPrice;
         chartingWindow.PriceGridError += chartingWindow_PriceGridError;
         dataGrid1.AutoGeneratingColumn += new EventHandler<Microsoft.Windows.Controls.DataGridAutoGeneratingColumnEventArgs>(dataGrid1_AutoGeneratingColumn);
-        RaisePropertyChanged(()=> title);
+        RaisePropertyChanged(() => title);
       }));
 
       //Window w = sender as Window;
@@ -423,7 +436,7 @@ namespace HedgeHog {
       AccountBalance = Account.Balance;
       PipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
-      LotsLeft = (int)(Account.UsableMargin * leverage);
+      LotsLeft = (int)(Account.UsableMargin * Leverage);
       var summaries = fw.GetSummaries();
       var tradesAll = fw.GetTrades("");
       NetPL = tradesAll.GrossInPips();
@@ -431,7 +444,7 @@ namespace HedgeHog {
       AccountEquity = Account.Equity;// string.Format("{0:c0}/{1:n1}", Account.Equity, netPL);
       var doCloseLotsOfTrades = tradesAll.Length > app.MainWindows.Count + 1 && Account.Gross > 0;
       Commission = fw.CommisionPending;
-      var haveGoodProfit = NetPL >= DensityAverage;
+      var haveGoodProfit = DensityAverage>0 && NetPL.Abs() >= DensityAverage;
       if (StartingBalance > 0 && Account.Equity >= StartingBalance ||
         haveGoodProfit ||
         doCloseLotsOfTrades ||
@@ -462,8 +475,8 @@ namespace HedgeHog {
       BuyPositions = summary.BuyPositions;
       BuyPips = (int)(summary.BuyDelta / summary.PointSize);
       var totalPips = (summary.BuyPriceFirst - summary.SellPriceFirst) / fw.PointSize;
-      BuyPipsToNet =summary.BuyNetPLPip;
-      SellPipsToNet= summary.SellNetPLPip;
+      BuyPipsToNet = summary.BuyNetPLPip;
+      SellPipsToNet = summary.SellNetPLPip;
       buyLossPerLotK = summary.BuyLots > 0 ? summary.BuyNetPL / (summary.BuyLots / 1000) : 0;
       sellLossPerLotK = summary.SellLots > 0 ? summary.SellNetPL / (summary.SellLots / 1000) : 0;
     }
@@ -491,6 +504,10 @@ namespace HedgeHog {
         threadProc.Start();
       }
     }
+    static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
+      var amountToTrade = balance * leverage * tradeRatio / 100.0;
+      return Math.Ceiling (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
+    }
     private void ProcessPrice() {
       try {
         RaisePropertyChanged(() => DensityAverage);
@@ -500,6 +517,10 @@ namespace HedgeHog {
         ShowSpread(Price);
 
         var account = fw.GetAccount();
+        var usableMargin = account.UsableMargin;
+        var avalibleTotal = usableMargin * Leverage;
+        AmountToBuy = GetLotstoTrade(account.Balance, Leverage, lotsToBuyRatio, fw.MinimumQuantity);
+        AmountToSell = GetLotstoTrade(account.Balance, Leverage, lotsToSellRatio, fw.MinimumQuantity);
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
         ShowAccount(account, summary);
         ShowSummary(summary, account);
@@ -517,8 +538,8 @@ namespace HedgeHog {
             : -chartingWindow.TakeProfitNet(chartingWindow.TakeProfitBuy, summary, true);
           if ((isAutoPilot || summary.BuyPositions > 0) && canBuy /*&& lots > 0 && fw.CanTrade(true, buyTradeDelta)*/)
             try {
-              var lots = chartingWindow.LotsToTradeBuy > 1000 ? chartingWindow.LotsToTradeBuy : chartingWindow.LotsToTradeBuy * lotsToTradeBuy * 1000;
-              var l = fw.CanTrade2(true, buyTradeDelta, lots,tradeDistanceUnisex);
+              var lots = chartingWindow.LotsToTradeBuy > 1000 ? chartingWindow.LotsToTradeBuy : chartingWindow.LotsToTradeBuy * AmountToBuy;
+              var l = fw.CanTrade2(true, buyTradeDelta, lots, tradeDistanceUnisex);
               lots = chartingWindow.LotsToTradeBuy > 1 && l < lots ? 0 : l;
               if (lots > 0)
                 fw.FixOrderOpen(true, lots, takeProfitBuy, chartingWindow.StopLossBuy, chartingWindow.TradeInfo.ToString());
@@ -530,8 +551,8 @@ namespace HedgeHog {
             : -chartingWindow.TakeProfitNet(chartingWindow.TakeProfitSell, summary, false);
           if ((isAutoPilot || summary.SellPositions > 0) && canSell/* && lots > 0 && fw.CanTrade(false, sellTradeDelta)*/)
             try {
-              var lots = chartingWindow.LotsToTradeSell > 1000 ? chartingWindow.LotsToTradeSell : chartingWindow.LotsToTradeSell * lotsToTradeSell * 1000;
-              var l = fw.CanTrade2(false, sellTradeDelta, lots,tradeDistanceUnisex);
+              var lots = chartingWindow.LotsToTradeSell > 1000 ? chartingWindow.LotsToTradeSell : chartingWindow.LotsToTradeSell * AmountToSell;
+              var l = fw.CanTrade2(false, sellTradeDelta, lots, tradeDistanceUnisex);
               lots = chartingWindow.LotsToTradeSell > 1 && l < lots ? 0 : l;
               if (lots > 0)
                 fw.FixOrderOpen(false, lots, takeProfitSell, chartingWindow.StopLossSell, chartingWindow.TradeInfo.ToString());
@@ -648,7 +669,7 @@ namespace HedgeHog {
     }
 
     public Account GetAccount() {
-       return fw.GetAccount();
+      return fw.GetAccount();
     }
 
     public string CloseTrade(string tradeID) {
@@ -669,6 +690,20 @@ namespace HedgeHog {
     }
 
     #endregion
+
+    private int amountToSell;
+    public int AmountToSell {
+      get { return amountToSell; }
+      set { amountToSell = value; RaisePropertyChanged(() => LotsToSell); }
+    }
+
+    int amountToBuy;
+    public int AmountToBuy {
+      get { return amountToBuy; }
+      set { amountToBuy = value; RaisePropertyChanged(() => LotsToBuy); }
+    }
+    public int LotsToBuy { get { return fw == null || !fw.IsLoggedIn ? 0 : AmountToBuy / fw.MinimumQuantity; } }
+    public int LotsToSell { get { return fw == null || !fw.IsLoggedIn ? 0 : AmountToSell / fw.MinimumQuantity; } }
   }
   public class ToolTips {
     public string CurrentDirectory { get { return AppDomain.CurrentDomain.BaseDirectory; } }

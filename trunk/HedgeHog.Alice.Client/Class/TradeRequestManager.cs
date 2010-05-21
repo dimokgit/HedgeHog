@@ -70,6 +70,7 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    Queue<string> closeQueue = new Queue<string>();
     Queue<OpenRequest> openQueue = new Queue<OpenRequest>();
     public void AddOpenTradeRequest(string pair, bool buy, int lots, string serverTradeID,Trade pendingTrade ) {
       var or = new OpenRequest(pair, buy, lots, serverTradeID,pendingTrade);

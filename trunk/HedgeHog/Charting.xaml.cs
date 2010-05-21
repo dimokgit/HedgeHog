@@ -335,11 +335,17 @@ namespace HedgeHog {
         //  () => GetRsiRates(), (s, e) => RaisePriceGridError(e.Exception));
         ClosePositionsScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(1), (s, e) => RaisePriceGridError(e.Exception));
         fw = FW;
-        fw.PriceChanged += new Order2GoAddIn.FXCoreWrapper.PriceChangedEventHandler(fw_PriceChanged);
+        fw.PriceChanged += fw_PriceChanged;
         fw.PairChanged += (s, e) => DC.Title = fw.Pair;
+        fw.TradesCountChanged += TradeCountChangedHandler;
         PriceScheduler = new Scheduler(
           Dispatcher, (s, e) => RaisePriceGridError(e.Exception));
       }
+    }
+    ~Charting() {
+      fw.PriceChanged -= fw_PriceChanged;
+      fw.PairChanged -= (s, e) => DC.Title = fw.Pair;
+      fw.TradesCountChanged -= TradeCountChangedHandler;
     }
     List<Rate> rsiBars = new List<Rate>();
     void ProcessRsi() {
@@ -406,7 +412,6 @@ namespace HedgeHog {
     bool IsSecondTrade(Trade trade) {
       return trade!=null && fw.GetTrades(!trade.Buy).Any(t => (trade.Time - t.Time).TotalSeconds.Between(0, 15));
     }
-    bool isNewTradeInititalized = false;
     List<string> closeTradeIDs = new List<string>();
     void CloseTrades() {
       if (!ClosePositionsScheduler.IsRunning)
@@ -549,20 +554,6 @@ namespace HedgeHog {
         #region Deciders 11
 
         Action decideByVoltage_11 = () => {
-          #region Rid of Old Positions
-          if (!isNewTradeInititalized) {
-            isNewTradeInititalized = true;
-            fw.TradesCountChanged += (trade) => {
-              if (IsSecondTrade(trade)) return;
-              tradeAdded = trade;
-              Dispatcher.BeginInvoke(new Action(() => {
-                DC.forceOpenTradeBuy = DC.forceOpenTradeSell = DC.forceOpenTradeBuy2 = DC.forceOpenTradeSell2 = false;
-              }));
-              doSecondTrade = !IsSecondTrade(tradeAdded);
-              //System.IO.File.AppendAllText("Trades.xml", trade.ToString() + Environment.NewLine);
-            };
-          }
-          #endregion
 
           #region TradeRequest
           var tr = new TradeRequest() {
@@ -828,6 +819,15 @@ namespace HedgeHog {
         if (PriceGridError != null) PriceGridError(exc);
       } finally {
       }
+    }
+
+    private void TradeCountChangedHandler(Trade trade) {
+      if (IsSecondTrade(trade)) return;
+      tradeAdded = trade;
+      Dispatcher.BeginInvoke(new Action(() => {
+        DC.forceOpenTradeBuy = DC.forceOpenTradeSell = DC.forceOpenTradeBuy2 = DC.forceOpenTradeSell2 = false;
+      }));
+      doSecondTrade = !IsSecondTrade(tradeAdded);
     }
     #endregion
 

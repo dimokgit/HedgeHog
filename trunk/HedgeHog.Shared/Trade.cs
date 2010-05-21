@@ -22,7 +22,7 @@ namespace HedgeHog.Shared {
     [DisplayName("BS")]
     public bool Buy { get; set; }
     [DataMember]
-    [DisplayName("##")]
+    [DisplayName("")]
     [DisplayFormat(DataFormatString = "{0}")]
     public TradeRemark Remark { get; set; }
     [DataMember]
@@ -34,6 +34,8 @@ namespace HedgeHog.Shared {
     [DataMember]
     [DisplayName("")]
     public double Limit { get; set; }
+    [DisplayName("")]
+    public double Stop { get; set; }
     [DataMember]
     public double PL { get; set; }
     [DataMember]

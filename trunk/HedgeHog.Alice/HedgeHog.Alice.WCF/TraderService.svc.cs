@@ -24,8 +24,15 @@ namespace HedgeHog.Alice.WCF {
       return composite;
     }
 
+    static object getAccountRequest = new object();
     public Account GetAccount() {
-      return Wcf.Trader == null ? new Account() : Wcf.Trader.GetAccount();
+      try {
+        lock (getAccountRequest) {
+          return Wcf.Trader == null ? new Account() : Wcf.Trader.GetAccount();
+        }
+      } catch (Exception exc) {
+        return new Account() { Error = new WiredException(GetType().Name + " error.", exc) };
+      }
     }
 
 

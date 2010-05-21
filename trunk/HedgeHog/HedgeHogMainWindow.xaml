@@ -100,6 +100,8 @@
           <ComboBoxItem Tag="400">400</ComboBoxItem>
           <ComboBoxItem Tag="500">500</ComboBoxItem>
         </ComboBox>
+        <Label Content="{Binding LotsToBuy}"/>
+        
         <ComboBox Name="cmbLotsToTradeSell" Margin="2"  Text="{state:UserSettings 10}" SelectedItem="{Binding LotsToTradeSell}" ToolTip="Sell">
           <ComboBoxItem Tag="0">0</ComboBoxItem>
           <ComboBoxItem Tag="1">1</ComboBoxItem>
@@ -121,6 +123,7 @@
           <ComboBoxItem Tag="400">400</ComboBoxItem>
           <ComboBoxItem Tag="500">500</ComboBoxItem>
         </ComboBox>
+        <Label Content="{Binding LotsToSell}"/>
         <Button Name="btnOpenChart" Click="btnOpenChart_Click" ToolTip="Show chart and trading signals" Content="Chart"></Button>
         <Button Name="btnOpenMain" Click="btnOpenMain_Click" Content="Main" ToolTip="Open another main window"></Button>
         <Button Name="btnOpenDB" Click="btnOpenDB_Click" Content="Save" ToolTip="Save settings to Settings.xml file"></Button>
@@ -170,7 +173,7 @@
           </StackPanel>
         </Label>
         <Label BorderThickness="0" ToolTip="Leverage">Lvg:</Label>
-        <TextBox Name="txtLeverage" Text="{state:UserSettings 200}" TextChanged="TextChanged" ></TextBox>
+        <Label Content="{Binding Leverage}" ContentStringFormat="n0" />
         <Label ToolTip="Trade Delta">T^:</Label>
         <TextBox Name="txtTradeDelta" ToolTip="Trade distance in pips." Text="{state:UserSettings 1}" TextChanged="TextChanged" ></TextBox>
         <CheckBox Name="chkTradeDistanceUnisex" ToolTip="Trade Distance Unisex" IsChecked="{state:UserSettings False}" Content="T^U" Checked="Checked" VerticalAlignment="Center"/>

@@ -20,7 +20,7 @@ namespace TestHH {
   /// </summary>
   [TestClass]
   public class UnitTest1 {
-    new Order2GoAddIn.FXCoreWrapper o2g = new Order2GoAddIn.FXCoreWrapper();
+    new Order2GoAddIn.FXCoreWrapper o2g = new Order2GoAddIn.FXCoreWrapper(new CoreFX());
     IEnumerable<Rate> bars;
     public UnitTest1() {    }
 
@@ -59,7 +59,8 @@ namespace TestHH {
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
-      if (!core.LogOn("MICR466964001", "225", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
       o2g = new FXCoreWrapper(core, "EUR/USD");
     }
 
@@ -74,6 +75,13 @@ namespace TestHH {
     }
     //
     #endregion
+
+    [TestMethod]
+    public void GetOrders() {
+      var orders = o2g.GetOrders("");
+
+    }
+
 
     public void Waves1() {
       var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
@@ -142,6 +150,27 @@ namespace TestHH {
       var a = o2g.GetAccount();
       MessageBox.Show("PMC:" + a.PipsToMC);
     }
+    [TestMethod]
+    public void GetTrades() {
+      var account = o2g.GetAccount();
+      Debug.WriteLine("StopAmount:{0}", account.StopAmount);
+      var aID = account.ID;
+      var pair = "USD/JPY";
+      var baseUnitSize = o2g.MinimumQuantity;
+      var pipCost = o2g.GetPipCost(pair);
+      var lots = 10000;
+      var pips = 10;
+      MessageBox.Show(pips + " pips cost for " + lots + " of " + pair + " = " + FXW.PipsToMoney(pips, lots, pipCost, baseUnitSize));
+      o2g.GetTrades("").Where(t=>t.Stop>0).ToList()
+        .ForEach(t => Debug.WriteLine("Id:{0},Stop:{1}", t.Id, t.Stop));
+    }
+    public void GetOffers() {
+      var aID = o2g.GetAccount().ID;
+      dynamic c = o2g.Desk.TradingSettingsProvider;
+      List<string> str = new List<string>();
+      o2g.GetOffers().ToList().ForEach(o => str.Add(string.Format("Pair:{0} - MMR:{1},BU:{2},", o.Pair, o.MMR, c.GetBaseUnitSize("EUR/USD", aID))));
+    }
+
     public void IndicatorList() {
       Indicators.List();
     }

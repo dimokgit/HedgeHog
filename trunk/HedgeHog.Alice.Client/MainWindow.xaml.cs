@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Data.Objects;
+using System.Windows.Controls.Primitives;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -31,12 +32,15 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) {
-      return;
-      HedgeHog.Alice.Client.Models.AliceEntities aliceEntities = new HedgeHog.Alice.Client.Models.AliceEntities();
-      // Load data into TradingAccounts. You can modify this code as needed.
-      CollectionViewSource tradingAccountsViewSource = ((CollectionViewSource)(this.FindResource("tradingAccountsViewSource")));
-      ObjectQuery<HedgeHog.Alice.Client.Models.TradingAccount> tradingAccountsQuery = this.GetTradingAccountsQuery(aliceEntities);
-      tradingAccountsViewSource.Source = tradingAccountsQuery.Execute(MergeOption.AppendOnly);
+    }
+
+    private void DataGrid_KeyDown(object sender, KeyEventArgs e) {
+
+    }
+
+    private void SlaveModelGrid_KeyDown(object sender, KeyEventArgs e) {
+      if (e.Key == Key.Escape)
+        (sender as Selector).SelectedIndex = -1;
     }
 
   }

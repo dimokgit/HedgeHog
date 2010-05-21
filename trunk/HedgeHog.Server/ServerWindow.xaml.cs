@@ -1108,17 +1108,17 @@ namespace HedgeHog {
       var timeTale = timeTales.First() - timeTales.Last();
       if (timeTale == TimeSpan.Zero)
         timeTale = Fractals.Take(ui.RsiWavesForCorrelation).Select(t => t.Ph.Time.GetValueOrDefault()).Average();
-      if (DoRsiByPercent)
+      if (false && DoRsiByPercent)
         Timeframe = _ticks.Skip((_ticks.Count * ui.RsiPeriodRatio).ToInt()).First().StartDate;
       else {
         Func<Rate, DateTime> m = r => r.StartDate;
-        Timeframe = Fractals.Take(ui.RsiWavesForCorrelation).ToArray().Min(m).Subtract(timeTale.Multiply(0.5));
+        Timeframe = Fractals.Take(ui.RsiWavesForCorrelation).ToArray().Min(m);//.Subtract(timeTale.Multiply(0.5));
       }
       MinutesBackSampleCount = (fw.ServerTimeCached - Timeframe).TotalMinutes.ToInt();
       lock (_ticks) {
         FillRsis();
       }
-      var rsiStatsTicks = _ticks.Where(r=>r.StartDate>=Timeframe).Where(hasRsi).ToArray();
+      var rsiStatsTicks = _ticks.ToArray().Where(r=>r.StartDate>=Timeframe).Where(hasRsi).ToArray();
       var rsiSlack = rsiStatsTicks.Last().StartDate.Subtract(OverlapAverageShort);
       var rsiTicks = rsiStatsTicks
         .Where(t => t.StartDate >= rsiSlack)
@@ -1787,8 +1787,8 @@ namespace HedgeHog {
             CanTrade = false;
             return;
           }
-          IsRsiSell = RsiLocalMax.PriceRsi >= RsiStats.Sell;
-          IsRsiBuy = RsiLocalMin.PriceRsi <= RsiStats.Buy;
+          IsRsiSell = RsiLocalMax.PriceRsi.Round(1) >= RsiStats.Sell.Round(1);
+          IsRsiBuy = RsiLocalMin.PriceRsi.Round(1) <= RsiStats.Buy.Round(1);
 
           goBuy = AreAnglesBuy && IsRsiBuy;
           goSell = AreAnglesSell && isRsiSell;

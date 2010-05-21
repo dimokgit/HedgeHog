@@ -61,6 +61,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Data.Linq" />
@@ -91,11 +92,13 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Class\AbsentTrade.cs" />
+    <Compile Include="Class\Config.cs" />
     <Compile Include="Class\Converters.cs" />
+    <Compile Include="Class\FileLogger.cs" />
     <Compile Include="Class\GlobalStorage.cs" />
     <Compile Include="Class\IAccountHolder.cs" />
     <Compile Include="Class\TradeRequestManager.cs" />
-    <Compile Include="Class\TradingAccountModel.cs" />
+    <Compile Include="Models\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -195,28 +198,32 @@
     <None Include="Properties\DataSources\HedgeHog.Shared.AccountInfo.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Trade.datasource" />
     <None Include="Properties\DataSources\Order2GoAddIn.Trade.datasource" />
+    <None Include="Properties\DataSources\TradingAccountModel.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <None Include="Service References\TraderService\Arrays.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Service References\TraderService\HedgeHog.Alice.Client.TraderService.CompositeType.datasource">
       <DependentUpon>Reference.svcmap</DependentUpon>
     </None>
-    <None Include="Service References\TraderService\TraderService.wsdl" />
-    <None Include="Service References\TraderService\TraderService.xsd">
+    <None Include="Service References\TraderService\HedgeHog.Alice.WCF.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\TraderService1.xsd">
+    <None Include="Service References\TraderService\HedgeHog.Shared.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\TraderService2.xsd">
+    <None Include="Service References\TraderService\service.wsdl" />
+    <None Include="Service References\TraderService\service.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\TraderService3.xsd">
+    <None Include="Service References\TraderService\service1.xsd">
       <SubType>Designer</SubType>
     </None>
-    <None Include="Service References\TraderService\TraderService4.xsd">
+    <None Include="Service References\TraderService\System.xsd">
       <SubType>Designer</SubType>
     </None>
     <None Include="Store\Alice.xls" />
@@ -255,24 +262,6 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadataStorage Include="Service References\TraderService\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\TraderService\TraderService.disco" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\TraderService\configuration91.svcinfo" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\TraderService\configuration.svcinfo" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Service References\TraderService\Reference.svcmap">
-      <Generator>WCF Proxy Generator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
   </ItemGroup>
   <ItemGroup>
@@ -308,9 +297,16 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Store\Alice.sdf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Include="Service References\TraderService\configuration91.svcinfo" />
+    <None Include="Service References\TraderService\configuration.svcinfo" />
+    <None Include="Service References\TraderService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <Content Include="Store\Alice.sdf" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadataStorage Include="Service References\TraderService\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

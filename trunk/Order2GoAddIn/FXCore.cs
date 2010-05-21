@@ -6,8 +6,8 @@ using System.Text;
 
 namespace Order2GoAddIn {
   public class CoreFX :IDisposable{
-    FXCore.CoreAut mCore = null;
-    public FXCore.TradeDeskAut mDesk = null;
+    dynamic mCore = null;
+    public dynamic mDesk = null;
     public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
     private void RaiseLoginError(Exception exc) {
@@ -32,12 +32,13 @@ namespace Order2GoAddIn {
     public readonly int ServerTimeOffset = -4;
     private TimeSpan _serverTimeOffset = TimeSpan.Zero;
     public static readonly string DefaultUrl = "http://www.fxcorporate.com";
+    private DateTime serverTimeLast = DateTime.MaxValue;
     public DateTime ServerTime {
       get {
         if (Desk == null) return DateTime.Now;
         if (_serverTimeOffset == TimeSpan.Zero)
           _serverTimeOffset = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Desk.ServerTime, TimeZoneInfo.Local) - DateTime.Now;
-        return DateTime.Now + _serverTimeOffset;
+        return serverTimeLast = DateTime.Now + _serverTimeOffset;
       }
     }
     public CoreFX():this(false) { }
@@ -47,13 +48,21 @@ namespace Order2GoAddIn {
     ~CoreFX() {
       Logout();
     }
+    TimeSpan silenceInterval = TimeSpan.FromSeconds(60);
     void InitTimer() {
       if (noTimer || timer != null) return;
       timer = new System.Threading.Timer(o => {
-        if (ServerTime.AddMinutes(2) > DateTime.Now) return;
-        LogOn();
+        try {
+          if (serverTimeLast > DateTime.Now - silenceInterval) return;
+          timer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+          RaiseLoggedOff();
+          mDesk = null;
+          mCore = null;
+          LogOn();
+          timer.Change(TimeSpan.Zero, silenceInterval);
+        } catch (Exception exc) { RaiseLoginError(exc); }
       },
-      null, TimeSpan.FromMilliseconds(0), TimeSpan.FromMinutes(2));
+      null, TimeSpan.Zero, silenceInterval);
     }
     public bool LogOn(string user, string password, bool isDemo) {
       return LogOn(user, password, "", isDemo);
@@ -85,16 +94,16 @@ namespace Order2GoAddIn {
       return true;
     }
     public void Logout() {
-      if (mCore != null) {
-        if (IsLoggedIn) {
-          try { mDesk.Logout(); } catch { }
-          RaiseLoggedOff();
-          mDesk = null;
-          mCore = null;
-          if (timer != null)
-            timer.Dispose();
+      try {
+        if (mCore != null) {
+          if (IsLoggedIn) {
+            try { mDesk.Logout(); } catch { }
+            RaiseLoggedOff();
+            mDesk = null;
+            mCore = null;
+          }
         }
-      }
+      } catch { }
     }
     public bool IsLoggedIn { get { try { return Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
 
