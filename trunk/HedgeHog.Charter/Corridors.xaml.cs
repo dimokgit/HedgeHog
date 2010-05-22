@@ -211,7 +211,7 @@ namespace HedgeHog {
              group tick by tick.Time into gt
              select new ChartTick() { Time = gt.Key, Price = gt.Average(t1 => t1.Price) };
     }
-    public ChartTick[] AddTicks(Order2GoAddIn.Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
+    public ChartTick[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
       DateTime d = DateTime.Now;

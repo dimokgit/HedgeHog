@@ -12,6 +12,7 @@
       <xs:element minOccurs="0" name="PipsToMC" type="xs:int" />
       <xs:element minOccurs="0" name="StopAmount" type="xs:double" />
       <xs:element minOccurs="0" name="UsableMargin" type="xs:double" />
+      <xs:element minOccurs="0" name="_orders" nillable="true" type="tns:ArrayOfOrder" />
       <xs:element minOccurs="0" name="_trades" nillable="true" type="tns:ArrayOfTrade" />
     </xs:sequence>
   </xs:complexType>
@@ -22,6 +23,59 @@
     </xs:complexContent>
   </xs:complexType>
   <xs:element name="WiredException" nillable="true" type="tns:WiredException" />
+  <xs:complexType name="ArrayOfOrder">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Order" nillable="true" type="tns:Order" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfOrder" nillable="true" type="tns:ArrayOfOrder" />
+  <xs:complexType name="Order">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="AccountID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="AccountName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="AmountK" type="xs:double" />
+      <xs:element minOccurs="0" name="AtMarket" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="BS" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="BuyRate" type="xs:double" />
+      <xs:element minOccurs="0" name="Distance" type="xs:int" />
+      <xs:element minOccurs="0" name="FixStatus" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="GTC" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="IsBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="IsConditionalOrder" type="xs:boolean" />
+      <xs:element minOccurs="0" name="IsEntryOrder" type="xs:boolean" />
+      <xs:element minOccurs="0" name="Kind" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Lifetime" type="xs:int" />
+      <xs:element minOccurs="0" name="Limit" type="xs:double" />
+      <xs:element minOccurs="0" name="LimitOrderID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Lot" type="xs:int" />
+      <xs:element minOccurs="0" name="NetQuantity" type="xs:boolean" />
+      <xs:element minOccurs="0" name="OCOBulkID" type="xs:int" />
+      <xs:element minOccurs="0" name="OfferID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Pair" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="QTXT" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Rate" type="xs:double" />
+      <xs:element minOccurs="0" name="RequestID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="SellRate" type="xs:double" />
+      <xs:element minOccurs="0" name="Side" type="xs:int" />
+      <xs:element minOccurs="0" name="Stage" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Status" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="StatusCaption" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="StatusCode" type="xs:int" />
+      <xs:element minOccurs="0" name="Stop" type="xs:double" />
+      <xs:element minOccurs="0" name="StopOrderID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Time" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="TradeID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TrlMinMove" type="xs:int" />
+      <xs:element minOccurs="0" name="TrlRate" type="xs:double" />
+      <xs:element minOccurs="0" name="Type" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="TypeLimit" type="xs:int" />
+      <xs:element minOccurs="0" name="TypeSL" type="xs:int" />
+      <xs:element minOccurs="0" name="TypeStop" type="xs:int" />
+      <xs:element minOccurs="0" name="UntTrlMove" type="xs:double" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Order" nillable="true" type="tns:Order" />
   <xs:complexType name="ArrayOfTrade">
     <xs:sequence>
       <xs:element minOccurs="0" maxOccurs="unbounded" name="Trade" nillable="true" type="tns:Trade" />
@@ -42,6 +96,7 @@
       <xs:element minOccurs="0" name="PL" type="xs:double" />
       <xs:element minOccurs="0" name="Pair" nillable="true" type="xs:string" />
       <xs:element minOccurs="0" name="Remark" nillable="true" type="tns:TradeRemark" />
+      <xs:element minOccurs="0" name="Stop" type="xs:double" />
       <xs:element minOccurs="0" name="Time" type="xs:dateTime" />
     </xs:sequence>
   </xs:complexType>

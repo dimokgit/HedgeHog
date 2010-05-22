@@ -41,6 +41,7 @@
       </WrapPanel>
     </StackPanel>
     <StackPanel>
+      <!--Trades-->
       <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding LocalTradesList}"  RowBackground="#FFF5E4C6">
         <DataGrid.Columns>
           <DataGridTemplateColumn CellTemplate="{StaticResource CloseLocalTradeTemplate}" SortMemberPath="{Binding Id}" Header="Id"/>
@@ -56,15 +57,15 @@
           </DataGridTextColumn>
           <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
           <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+          <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
+          <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
           <DataGridTextColumn Header="Server ID" Binding="{Binding Remark.Remark}"/>
           <DataGridTextColumn Header="Error" Binding="{Binding UnKnown.ErrorMessage}"/>
         </DataGrid.Columns>
       </DataGrid>
-      <Expander>
-        <Expander.Header>
-          <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>
-        </Expander.Header>
-        <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
+      <!--<Expander>        <Expander.Header>          <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>        </Expander.Header>-->
+      <!--Sync Trades-->
+      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
           <DataGrid.Columns>
             <DataGridTemplateColumn CellTemplate="{StaticResource SyncTradeTemplate}" SortMemberPath="{Binding}" Header="Id"/>
             <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
@@ -78,10 +79,12 @@
               </DataGridTextColumn.ElementStyle>
             </DataGridTextColumn>
             <DataGridTextColumn Header="PL" Binding="{Binding PL,StringFormat=n1}"/>
-            <DataGridTextColumn Header="Sync" Binding="{Binding UnKnown.AutoSync}"/>
+          <DataGridTextColumn Header="Sync" Binding="{Binding UnKnown.AutoSync}"/>
+          <DataGridTextColumn Header="Stop" Binding="{Binding UnKnown.SyncStop}"/>
+          <DataGridTextColumn Header="Limit" Binding="{Binding UnKnown.SyncLimit}"/>
           </DataGrid.Columns>
         </DataGrid>
-      </Expander>
+      <!--</Expander>-->
       <Expander Header="Log" Grid.Row="10" IsExpanded="{Binding IsLogExpanded,Mode=OneWay}" Padding="0" Grid.RowSpan="2">
         <Label Content="{Binding LogText}" BorderBrush="Gray" BorderThickness="1"></Label>
       </Expander>

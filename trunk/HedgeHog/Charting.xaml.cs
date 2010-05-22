@@ -370,7 +370,7 @@ namespace HedgeHog {
     object priceSync = new object();
     Scheduler PriceScheduler;
     public void fw_PriceChanged() { fw_PriceChanged(null); }
-    void fw_PriceChanged(Order2GoAddIn.Price Price) {
+    void fw_PriceChanged(Price Price) {
       lock (priceSync) {
         try {
           if( !PriceScheduler.IsRunning)
@@ -382,7 +382,7 @@ namespace HedgeHog {
       return;
       runPrice = true;
       if (asyncRes == null || asyncRes.IsCompleted) {
-        var d = new Action<Order2GoAddIn.Price>(ProcessPrice);
+        var d = new Action<Price>(ProcessPrice);
         asyncRes = d.BeginInvoke(Price, priceCallBack, d);
         runPrice = false;
       }
@@ -515,7 +515,7 @@ namespace HedgeHog {
       }
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public void ProcessPrice( Order2GoAddIn.Price eventPrice) {
+    public void ProcessPrice( Price eventPrice) {
       try {
         if (this.Visibility == System.Windows.Visibility.Hidden) return;
         if (fw == null || fw.Desk == null) return;

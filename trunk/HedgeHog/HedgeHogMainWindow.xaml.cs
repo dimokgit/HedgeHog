@@ -21,6 +21,7 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 using HedgeHog;
 using HedgeHog.Models;
 using HedgeHog.Shared;
+using HedgeHog.Bars;
 namespace HedgeHog {
   public partial class HedgeHogMainWindow : WindowModel, Wcf.ITraderServer, INotifyPropertyChanged, WpfPersist.IUserSettingsStorage {
 
@@ -422,7 +423,7 @@ namespace HedgeHog {
       if (e.PropertyName == "GrossPL") ((Microsoft.Windows.Controls.DataGridBoundColumn)(e.Column)).Binding.StringFormat = "{0:c0}";
     }
 
-    void ShowSpread(Order2GoAddIn.Price Price) {
+    void ShowSpread(Price Price) {
       var digits = fw.Digits;
       Spread = fw.InPips(Price.Ask - Price.Bid);
       SpreadCma = SpreadCma.Cma(50, Spread);
@@ -486,7 +487,7 @@ namespace HedgeHog {
       get { return _commission; }
       set { _commission = value; RaisePropertyChangedCore(); }
     }
-    void fw_PriceChanged(Order2GoAddIn.Price Price) {
+    void fw_PriceChanged(Price Price) {
       if (threadProc != null && threadProc.ThreadState == ThreadState.Running) {
         if (threadWait != null && threadWait.ThreadState == ThreadState.Running) threadWait.Abort();
         threadWait = new Thread(delegate() {
@@ -512,7 +513,7 @@ namespace HedgeHog {
       try {
         RaisePropertyChanged(() => DensityAverage);
         if (Visibility == Visibility.Hidden) return;
-        Order2GoAddIn.Price Price = fw.GetPrice();
+        Price Price = fw.GetPrice();
         var digits = fw.Digits;
         ShowSpread(Price);
 
@@ -669,7 +670,9 @@ namespace HedgeHog {
     }
 
     public Account GetAccount() {
-      return fw.GetAccount();
+      var account = fw.GetAccount();
+      account.Orders = fw.GetOrders("");
+      return account;
     }
 
     public string CloseTrade(string tradeID) {

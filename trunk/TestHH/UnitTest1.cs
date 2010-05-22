@@ -13,6 +13,8 @@ using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
 using HedgeHog.Rsi;
+using System.Windows.Data;
+using System.Threading;
 
 namespace TestHH {
   /// <summary>
@@ -56,12 +58,17 @@ namespace TestHH {
     [TestInitialize()]
     public void MyTestInitialize() {
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
+      o2g = new FXCoreWrapper(core, "EUR/USD");
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
       //if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
-      o2g = new FXCoreWrapper(core, "EUR/USD");
+      o2g.OrderRemovedEvent += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
+    }
+
+    void o2g_OrderRemovedEvent(Order order) {
+      Debug.WriteLine("Order remover with status:" + order.FixStatus);
     }
 
     void core_LoginError(Exception exc) {
@@ -77,9 +84,22 @@ namespace TestHH {
     #endregion
 
     [TestMethod]
+    public void CreateEntryOrder() {
+    }
     public void GetOrders() {
       var orders = o2g.GetOrders("");
-
+      string orderID = "", tradeID = "";
+      var toc = o2g.Desk.GetTimeout(o2g.Desk.TIMEOUT_COMMON);
+      var pair = "USD/JPY";
+      var price = o2g.GetOffers().First(o => o.Pair == pair).Ask;
+      o2g.FixOrderOpen("USD/JPY", true, 1000, price + o2g.InPoints(pair, 15), price - o2g.InPoints(pair, 15), "Dimok",out orderID,out tradeID);
+      var t = new Thread(() => Thread.Sleep(5000));
+      t.Start();
+      t.Join();
+      if (tradeID != "")
+        o2g.FixOrdersClose(tradeID);
+      t = new Thread(() => Thread.Sleep(5000));
+      ListCollectionView List = new ListCollectionView(orders);
     }
 
 
@@ -150,7 +170,6 @@ namespace TestHH {
       var a = o2g.GetAccount();
       MessageBox.Show("PMC:" + a.PipsToMC);
     }
-    [TestMethod]
     public void GetTrades() {
       var account = o2g.GetAccount();
       Debug.WriteLine("StopAmount:{0}", account.StopAmount);

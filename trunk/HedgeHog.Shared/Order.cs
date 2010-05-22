@@ -18,7 +18,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     public String OfferID { get; set; }
     [DataMember]
-    public String Instrument { get; set; }
+    public String Pair { get; set; }
     [DataMember]
     public String TradeID { get; set; }
     [DataMember]
