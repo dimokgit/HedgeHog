@@ -38,6 +38,7 @@
           <WrapPanel>
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
           </WrapPanel>
+          <!--Server Trades-->
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" >
             <DataGrid.Columns>
               <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
@@ -51,8 +52,24 @@
                   </Style>
                 </DataGridTextColumn.ElementStyle>
               </DataGridTextColumn>
+              <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
+              <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
               <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
               <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <Label Content="Orders"/>
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding OrdersList}" >
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+              <DataGridTextColumn Header="BS" Binding="{Binding BS}"/>
+              <DataGridTextColumn Header="Rate" Binding="{Binding Rate}"/>
+              <DataGridTextColumn Header="Lot" Binding="{Binding Lot}"/>
+              <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
+              <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
+              <DataGridTextColumn Header="FixStatus" Binding="{Binding Status}"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}"/>
+              <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>

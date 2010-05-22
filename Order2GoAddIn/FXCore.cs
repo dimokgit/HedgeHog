@@ -48,7 +48,7 @@ namespace Order2GoAddIn {
     ~CoreFX() {
       Logout();
     }
-    TimeSpan silenceInterval = TimeSpan.FromSeconds(60);
+    TimeSpan silenceInterval = TimeSpan.FromSeconds(60*5);
     void InitTimer() {
       if (noTimer || timer != null) return;
       timer = new System.Threading.Timer(o => {

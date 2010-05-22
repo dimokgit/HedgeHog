@@ -16,6 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using HedgeHog.Alice.Client.UI.Controls;
 using System.Data.Objects;
+using HedgeHog.Bars;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -104,9 +105,8 @@ namespace HedgeHog.Alice.Client {
 
     public CollectionViewSource TradingAccountsView { get; set; }
 
-    public ObservableCollection<Trade> LocalTrades { get; set; }
-    public ListCollectionView LocalTradesList { get; set; }
-    List<Trade> serverTradesPending = new List<Trade>();
+    public ObservableCollection<Order> orders { get; set; }
+    public ListCollectionView OrdersList { get; set; }
 
     public ObservableCollection<Trade> ServerTrades { get; set; }
     public ListCollectionView ServerTradesList { get; set; }
@@ -474,7 +474,7 @@ namespace HedgeHog.Alice.Client {
 
     public TraderModel() {
       ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
-      LocalTradesList = new ListCollectionView(LocalTrades = new ObservableCollection<Trade>());
+      OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
 
       fwMaster = new FXW(this.CoreFX);
@@ -528,7 +528,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    void fwLocal_PriceChanged(Order2GoAddIn.Price Price) {
+    void fwLocal_PriceChanged(Price Price) {
       InvokeSyncronize(fwMaster.GetAccount());
     }
     void fw_TradesCountChanged(Trade trade) {
@@ -551,6 +551,7 @@ namespace HedgeHog.Alice.Client {
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.Invoke(new Action(() => {
           ShowTrades(trades.ToList(), ServerTrades);
+          ShowTrades((account.Orders ?? new Order[0]).ToList(), orders);
         }));
       }
     }
@@ -567,7 +568,7 @@ namespace HedgeHog.Alice.Client {
         fwMaster.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
       } catch (Exception exc) { Log = exc; }
     }
-    private void ShowTrades(List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
+    private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {
       tradesCollection.Clear();
       tradesList.ForEach(a => tradesCollection.Add(a));
     }

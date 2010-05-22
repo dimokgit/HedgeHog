@@ -35,6 +35,7 @@ namespace HedgeHog.Shared {
     [DisplayName("")]
     public double Limit { get; set; }
     [DisplayName("")]
+    [DataMember]
     public double Stop { get; set; }
     [DataMember]
     public double PL { get; set; }

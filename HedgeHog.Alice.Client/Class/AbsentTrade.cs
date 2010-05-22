@@ -7,6 +7,8 @@ using HedgeHog.Shared;
 namespace HedgeHog.Alice.Client.TradeExtenssions {
   public class TradeUnKNown {
     public bool AutoSync { get; set; }
+    public bool SyncStop { get; set; }
+    public bool SyncLimit { get; set; }
     public bool IsSyncPending { get; set; }
     public string ErrorMessage { get; set; }
   }

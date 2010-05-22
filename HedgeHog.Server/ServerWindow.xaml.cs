@@ -109,7 +109,7 @@ namespace HedgeHog {
     #endregion
 
     #region Statistics
-    public O2G.Price Price { get; set; }
+    public Price Price { get; set; }
     private DateTime _serverTimeCached;
     public DateTime ServerTime {
       get { return fw == null ? DateTime.Now : _serverTimeCached = fw.ServerTime; }
@@ -337,7 +337,7 @@ namespace HedgeHog {
       var spreadShort = (_ticksInTimeFrame.Length > 0 ? _ticksInTimeFrame : TicksInTimeFrame)
         .ToArray().GetMinuteTicks(period).Average(spreadLambda);
       if (shortOnly || RatesHigh.Count == 0) return spreadShort;
-      var spreadLong = fw.GetMinuteBars(RatesHigh.ToArray(), period).Average(spreadLambda);
+      var spreadLong = RatesHigh.GetMinuteTicks(period).Average(spreadLambda);
       return Math.Max(spreadShort, spreadLong);
     }
 
@@ -513,9 +513,8 @@ namespace HedgeHog {
       coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
       coreFX.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(coreFX_LoginError);
       fw.Pair = cmbPair.Text;
-      fw.OrderAdded += new Order2GoAddIn.FXCoreWrapper.OrderAddedEventHandler(fxCoreWrapper_EURJPY_OrderAdded);
-      fw.RowRemoving += new Order2GoAddIn.FXCoreWrapper.RowRemovingdEventHandler(fxCoreWrapper_EURJPY_RowRemoving);
-      fw.PriceChanged += new Order2GoAddIn.FXCoreWrapper.PriceChangedEventHandler(fxCoreWrapper_EURJPY_PriceChanged);
+      fw.RowRemoving += fxCoreWrapper_EURJPY_RowRemoving;
+      fw.PriceChanged += fxCoreWrapper_EURJPY_PriceChanged;
       CorridorsWindow_EURJPY = new Corridors(fw.Pair);
       CorridorsScheduler = new Scheduler(CorridorsWindow_EURJPY.Dispatcher, (s, e) => Log = e.Exception);
       VoltageScheduler = new ThreadScheduler(TimeSpan.FromMilliseconds(1), (s, e) => Log = e.Exception);
@@ -1501,9 +1500,9 @@ namespace HedgeHog {
     #endregion
 
     #region ProcessPrice
-    O2G.Price priceCurrent;
+    Price priceCurrent;
     Rate lastBar = new Rate();
-    void ProcessPrice(Order2GoAddIn.Price price, ref List<Rate> ticks) {
+    void ProcessPrice(Price price, ref List<Rate> ticks) {
       try {
         var serverTime = ServerTime;
         RaisePropertyChanged(() => ServerTime);
@@ -1550,7 +1549,7 @@ namespace HedgeHog {
         #endregion
       } catch (Exception exc) { Log = exc; }
     }
-    void RunMinutesBack(O2G.Price price) {
+    void RunMinutesBack(Price price) {
       if (!MinutesBackScheduler.IsRunning)
         MinutesBackScheduler.Command = () => {
           GetMinutesBack();
@@ -1558,7 +1557,7 @@ namespace HedgeHog {
           RunDecider(price);
         };
     }
-    void RunDecider(O2G.Price price) {
+    void RunDecider(Price price) {
       DecisionScheduler.Command = () => {
         buySellSignals.Keys.Where(tr => (ServerTime - tr.serverTime).TotalMinutes > 1).ToList()
           .ForEach(tr => buySellSignals.Remove(tr));
@@ -1682,7 +1681,7 @@ namespace HedgeHog {
     }
     public double PricePosition { get; set; }
     public bool IsPriceInPosition { get; set; }
-    public void Decisioner(Order2GoAddIn.Price eventPrice, TradeRequest tr, TradeResponse ti) {
+    public void Decisioner(Price eventPrice, TradeRequest tr, TradeResponse ti) {
       try {
         var price = eventPrice ?? priceCurrent;
         #region Log Helper
@@ -2092,7 +2091,7 @@ namespace HedgeHog {
       Rate maxTick;
       FXW fw;
       Rate[] ticks;
-      O2G.Price price;
+      Price price;
       Rate lastFractal { get { return new[] { maxTick, minTick }.OrderBars().Last(); } }
       double spread { get { return maxTick.PriceHigh - minTick.PriceLow; } }
       Rate _localPeak;
@@ -2126,7 +2125,7 @@ namespace HedgeHog {
       public CloseByPositionHelper(FXW fw) {
         this.fw = fw;
       }
-      public void Fill(O2G.Price price, IEnumerable<Rate> Ticks,Rate OldestFractal) {
+      public void Fill(Price price, IEnumerable<Rate> Ticks,Rate OldestFractal) {
         ///Dimok: deffer ticksSinceLastFractal
         this.ticks = Ticks.ToArray().Where(t=>t.StartDate>= OldestFractal.StartDate).OrderBy(t => t.PriceAvg).ToArray();
         this.minTick = ticks.First();
@@ -2142,7 +2141,7 @@ namespace HedgeHog {
 
 
     #region FX Event Handlers
-    void fxCoreWrapper_EURJPY_PriceChanged(Order2GoAddIn.Price price) {
+    void fxCoreWrapper_EURJPY_PriceChanged(Price price) {
       Price = price;
       lock (_ticks) {
         ProcessPrice(price, ref _ticks);
