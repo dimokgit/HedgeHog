@@ -171,11 +171,11 @@ namespace HedgeHog {
     }
 
     void UpdateTicks(ObservableCollection<ChartTick> dest, List<ChartTick> src) {
-      var srcDict = new Dictionary<DateTime, ChartTick>();
-      src.ForEach(s => srcDict.Add(s.Time, s));
-      dest.ToList().ForEach(d => {
-        if (srcDict.ContainsKey(d.Time)) d.Price = srcDict[d.Time].Price; 
-      });
+      //var srcDict = new Dictionary<DateTime, ChartTick>();
+      //src.ForEach(s => srcDict.Add(s.Time, s));
+      //dest.ToList().ForEach(d => {
+      //  if (srcDict.ContainsKey(d.Time)) d.Price = srcDict[d.Time].Price; 
+      //});
       if (((double)dest.Count / src.Count).Between(0.5, 1.5)) {
         //var ddd = dest.Except(src,new Tick()).ToArray();
         var delete = dest.Except(src,new ChartTick()).ToList();

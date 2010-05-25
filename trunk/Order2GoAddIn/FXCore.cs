@@ -6,8 +6,8 @@ using System.Text;
 
 namespace Order2GoAddIn {
   public class CoreFX :IDisposable{
-    dynamic mCore = null;
-    public dynamic mDesk = null;
+    FXCore.CoreAut mCore = null;
+    public FXCore.TradeDeskAut mDesk = null;
     public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
     private void RaiseLoginError(Exception exc) {
