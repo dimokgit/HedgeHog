@@ -195,6 +195,15 @@ namespace HedgeHog {
 
   #region Extentions
   public static class Extentions {
+
+    public static string PropertiesToString(this object o, string separator) {
+      List<string> props = new List<string>();
+      foreach (var prop in o.GetType().GetProperties().OrderBy(p => p.Name))
+        props.Add(prop.Name + ":" + prop.GetValue(o, new object[0]));
+      return string.Join(separator, props);
+    }
+
+
     #region TimeSpan
     public static TimeSpan Max(this IEnumerable<TimeSpan> span) {
       return TimeSpan.FromMilliseconds(span.Max(s => s.TotalMilliseconds));

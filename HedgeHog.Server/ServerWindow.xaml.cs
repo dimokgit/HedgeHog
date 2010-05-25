@@ -513,7 +513,6 @@ namespace HedgeHog {
       coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
       coreFX.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(coreFX_LoginError);
       fw.Pair = cmbPair.Text;
-      fw.RowRemoving += fxCoreWrapper_EURJPY_RowRemoving;
       fw.PriceChanged += fxCoreWrapper_EURJPY_PriceChanged;
       CorridorsWindow_EURJPY = new Corridors(fw.Pair);
       CorridorsScheduler = new Scheduler(CorridorsWindow_EURJPY.Dispatcher, (s, e) => Log = e.Exception);
@@ -1786,8 +1785,8 @@ namespace HedgeHog {
             CanTrade = false;
             return;
           }
-          IsRsiSell = RsiLocalMax.PriceRsi.Round(1) >= RsiStats.Sell.Round(1);
-          IsRsiBuy = RsiLocalMin.PriceRsi.Round(1) <= RsiStats.Buy.Round(1);
+          IsRsiSell = RsiLocalMax.PriceRsi.Round(2) >= RsiStats.Sell.Round(2);
+          IsRsiBuy = RsiLocalMin.PriceRsi.Round(2) <= RsiStats.Buy.Round(2);
 
           goBuy = AreAnglesBuy && IsRsiBuy;
           goSell = AreAnglesSell && isRsiSell;
@@ -2146,9 +2145,6 @@ namespace HedgeHog {
       lock (_ticks) {
         ProcessPrice(price, ref _ticks);
       }
-    }
-    void fxCoreWrapper_EURJPY_RowRemoving(string TableType, string RowID) {
-      Log = "Row " + RowID + " is being removed.";
     }
     void fxCoreWrapper_EURJPY_OrderAdded(FXCore.RowAut fxRow) {
       Log = "Order " + fxRow.CellValue("OrderID") + "";

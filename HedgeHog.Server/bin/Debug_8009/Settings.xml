@@ -64,14 +64,14 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapShort]IsChecked" value="True" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[.chkTradeByFractal]IsChecked" value="False" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="-9" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="769" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="239" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Left" value="-3" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Top" value="794" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Height" value="262" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[.1]Width" value="500" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiTicks]Text" value="986" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiCorrelationMinimum]Text" value=".1" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="3" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiPeriodRatio]Text" value=".61" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiWavesForCorrelation]Text" value="5" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[.txtRsiPeriodRatio]Text" value=".81" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.]Left" value="1" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.]Top" value="0" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[.]Height" value="338" />
@@ -113,8 +113,8 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow01.txtWavesCountSmall]Text" value="3" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow01.txtTimeFrameTimeStart]Text" value="//" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow01.txtCorridorHeightMinutesSchedule]Text" value="" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Left" value="0" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Top" value="506" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Left" value="1" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Top" value="530" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Height" value="297" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ServerWindow[ServerWindow11.ServerWindow11]Width" value="514" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtAcount]Text" value="" />
@@ -137,8 +137,8 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow11.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow11.chkNormalizeFractals]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[ServerWindow11.cmbPosMode]SelectedIndex" value="1" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtRsiPeriodRatio]Text" value=".61" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtRsiWavesForCorrelation]Text" value="3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtRsiPeriodRatio]Text" value=".81" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtRsiWavesForCorrelation]Text" value="5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow11.chkTradeByFractal]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtPeakTradeMarginLow]Text" value="5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow11.txtPeakTradeMarginHigh]Text" value="25" />
@@ -173,8 +173,8 @@
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow21.chkUseOverlapLast]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow21.chkNormalizeFractals]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.ComboBox[ServerWindow21.cmbPosMode]SelectedIndex" value="1" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtRsiPeriodRatio]Text" value=".61" />
-  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtRsiWavesForCorrelation]Text" value="3" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtRsiPeriodRatio]Text" value=".81" />
+  <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtRsiWavesForCorrelation]Text" value="5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.CheckBox[ServerWindow21.chkTradeByFractal]IsChecked" value="False" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtPeakTradeMarginLow]Text" value="5" />
   <item key="/HedgeHog.Server;component/serverwindow.xaml.TextBox[ServerWindow21.txtPeakTradeMarginHigh]Text" value="25" />

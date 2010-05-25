@@ -71,10 +71,11 @@ namespace HedgeHog.Shared {
 
     public Trade Clone() { return this.MemberwiseClone() as Trade; }
 
-    public override string ToString() {
+    public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
+    public string ToString(SaveOptions saveOptions) {
       var x = new XElement(GetType().Name,
       GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
-      return x.ToString(SaveOptions.DisableFormatting);
+      return x.ToString(saveOptions);
     }
   }
   [Serializable]
@@ -119,7 +120,7 @@ namespace HedgeHog.Shared {
       if (info.Length > 2) double.TryParse(info[2], out _angle);
     }
     public override string ToString() {
-      return string.Join(PIPE + "",
+      return !(Remark ?? "").Contains('|')?Remark: string.Join(PIPE + "",
         new object[] {
           TradeWaveInMinutes.ToString("000"),
           TradeWaveHeight ,

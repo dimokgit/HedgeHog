@@ -28,11 +28,11 @@ namespace HedgeHog.Shared {
     Order[] _orders = null;
     [DataMember]
     public double StopAmount { get; set; }
-
-    public double StopToBalanceRatio { get { return StopAmount / Balance; } }
-
+    [DataMember]
+    public DateTime ServerTime { get; set; }
     [DataMember]
     public WiredException Error { get; set; }
+
 
     public Trade[] Trades { get { return _trades; } set { _trades = value; } }
     public Order[] Orders { get { return _orders; } set { _orders = value; } }
@@ -40,5 +40,8 @@ namespace HedgeHog.Shared {
     public double PL { get { return Math.Round(Trades.GrossInPips(), 1); } }
 
     public double Gross { get { return Math.Round(Equity - Balance, 1); } }
+
+    public double StopToBalanceRatio { get { return StopAmount / Balance; } }
+
   }
 }

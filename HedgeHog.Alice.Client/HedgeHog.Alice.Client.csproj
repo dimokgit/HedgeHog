@@ -94,7 +94,6 @@
     <Compile Include="Class\AbsentTrade.cs" />
     <Compile Include="Class\Config.cs" />
     <Compile Include="Class\Converters.cs" />
-    <Compile Include="Class\FileLogger.cs" />
     <Compile Include="Class\GlobalStorage.cs" />
     <Compile Include="Class\IAccountHolder.cs" />
     <Compile Include="Class\TradeRequestManager.cs" />
