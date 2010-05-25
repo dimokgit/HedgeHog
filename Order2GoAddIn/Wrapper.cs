@@ -1455,10 +1455,10 @@ namespace Order2GoAddIn {
 
     void mSink_ITradeDeskEvents_Event_OnRequestCompleted(string sRequestID) {
       try {
-        Debug.WriteLine("Request +" + sRequestID + " completed.");
-        var po = PendingOrders.SingleOrDefault(o => o.RequestId == sRequestID);
-        if (po != null && !po.HasKids(PendingOrders)) 
-          RemovePendingOrder(po);
+        //Debug.WriteLine("Request +" + sRequestID + " completed.");
+        //var po = PendingOrders.SingleOrDefault(o => o.RequestId == sRequestID);
+        //if (po != null && !po.HasKids(PendingOrders)) 
+        //  RemovePendingOrder(po);
       } catch (Exception exc) {
         RaiseError(exc);
       }
