@@ -70,6 +70,7 @@
     <Compile Include="ap.cs" />
     <Compile Include="Bars.cs" />
     <Compile Include="Converters.cs" />
+    <Compile Include="FileLogger.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />

@@ -298,11 +298,12 @@ namespace HedgeHog.Bars {
     public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period) where TBar : BarBase {
       return fxTicks.GetMinuteTicksCore(period,false);
     }
-    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period,bool Round) where TBar : BarBase {
+    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
       if (fxTicks.Count() == 0) return new Rate[] { };
       var startDate = fxTicks.Max(t => t.StartDate);
       if (Round) startDate = startDate.Round().AddMinutes(1);
       double? tempRsi;
+      var rsiAverage = fxTicks.Average(t => t.PriceRsi.GetValueOrDefault());
       return (from t in fxTicks.OrderBarsDescending().ToArray()
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
@@ -320,8 +321,7 @@ namespace HedgeHog.Bars {
                 BidClose = tg.Last().BidClose,
                 Mass = tg.Sum(t => t.Mass),
                 PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
-                : tempRsi == 50 ? 50
-                : tempRsi > 50 ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
+                             : tempRsi > rsiAverage ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
                 StartDate = startDate.AddMinutes(-tg.Key)
               }
                 ).ToArray();

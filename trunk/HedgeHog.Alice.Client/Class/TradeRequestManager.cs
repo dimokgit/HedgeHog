@@ -92,7 +92,7 @@ namespace HedgeHog.Alice.Client {
       try {
         string orderId = "", tradeId = "";
         while (true) {
-          fw.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID, out orderId, out tradeId);
+          fw.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
           if (string.IsNullOrWhiteSpace(orderId))
             GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
               pendingTrade.GetUnKnown().ErrorMessage = "Waiting";

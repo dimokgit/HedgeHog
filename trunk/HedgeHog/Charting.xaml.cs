@@ -337,7 +337,7 @@ namespace HedgeHog {
         fw = FW;
         fw.PriceChanged += fw_PriceChanged;
         fw.PairChanged += (s, e) => DC.Title = fw.Pair;
-        fw.TradesCountChanged += TradeCountChangedHandler;
+        fw.TradeAdded += TradeCountChangedHandler;
         PriceScheduler = new Scheduler(
           Dispatcher, (s, e) => RaisePriceGridError(e.Exception));
       }
@@ -345,7 +345,7 @@ namespace HedgeHog {
     ~Charting() {
       fw.PriceChanged -= fw_PriceChanged;
       fw.PairChanged -= (s, e) => DC.Title = fw.Pair;
-      fw.TradesCountChanged -= TradeCountChangedHandler;
+      fw.TradeAdded -= TradeCountChangedHandler;
     }
     List<Rate> rsiBars = new List<Rate>();
     void ProcessRsi() {

@@ -479,7 +479,7 @@ namespace HedgeHog.Alice.Client {
 
       fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
-        fwMaster.TradesCountChanged += fw_TradesCountChanged;
+        fwMaster.TradeAdded += fw_TradesCountChanged;
         fwMaster.PriceChanged += fwLocal_PriceChanged;
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
@@ -492,7 +492,7 @@ namespace HedgeHog.Alice.Client {
       CoreFX.LoggedOffEvent += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
-        fwMaster.TradesCountChanged -= fw_TradesCountChanged;
+        fwMaster.TradeAdded -= fw_TradesCountChanged;
         fwMaster.PriceChanged -= fwLocal_PriceChanged;
       };
       Using_FetchServerTrades = () => { 
@@ -529,7 +529,9 @@ namespace HedgeHog.Alice.Client {
     }
 
     void fwLocal_PriceChanged(Price Price) {
-      InvokeSyncronize(fwMaster.GetAccount());
+      var a = fwMaster.GetAccount();
+      a.Orders = fwMaster.GetOrders("");
+      InvokeSyncronize(a);
     }
     void fw_TradesCountChanged(Trade trade) {
       fwLocal_PriceChanged(null);

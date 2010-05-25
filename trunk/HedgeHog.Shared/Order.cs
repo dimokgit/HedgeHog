@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Xml.Linq;
 
 namespace HedgeHog.Shared {
   [DataContract]
@@ -91,5 +92,18 @@ namespace HedgeHog.Shared {
     public int TypeLimit { get; set; }
     [DataMember]
     public int OCOBulkID { get; set; }
+
+    public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
+    public string ToString(SaveOptions saveOptions) {
+      var x = new XElement(GetType().Name,
+      GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
+      return x.ToString(saveOptions);
+    }
+    public string ToString(string separator) {
+      List<string> props = new List<string>();
+      foreach (var prop in GetType().GetProperties().OrderBy(p=>p.Name))
+        props.Add(prop.Name + ":" + prop.GetValue(this, new object[0]));
+      return string.Join(separator, props);
+    }
   }
 }

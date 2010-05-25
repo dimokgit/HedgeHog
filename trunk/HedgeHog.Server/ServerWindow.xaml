@@ -133,25 +133,25 @@
           <StackPanel Orientation="Horizontal">
             <Label FontWeight="Bold">
               <WrapPanel>
-                <TextBlock Text="{Binding RsiStats.BuyMin,StringFormat=n1}"/>
+                <TextBlock Text="{Binding RsiStats.BuyMin,StringFormat=n2}"/>
                 <TextBlock>></TextBlock>
                 <TextBlock Margin="-6 0 0 0">></TextBlock>
-                <TextBlock Text="{Binding RsiStats.Buy,StringFormat=n1}" Background="{Binding IsRsiBuy,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuyBackGround}}"/>
+                <TextBlock Text="{Binding RsiStats.Buy,StringFormat=n2}" Background="{Binding IsRsiBuy,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource BuyBackGround}}"/>
                 <TextBlock>></TextBlock>
               </WrapPanel>
             </Label>
-            <Label Content="{Binding RsiLocalMin.PriceRsi}" ContentStringFormat="n1"/>
+            <Label Content="{Binding RsiLocalMin.PriceRsi}" ContentStringFormat="n2"/>
           </StackPanel>
           <TextBlock>|</TextBlock>
           <StackPanel Orientation="Horizontal">
-            <Label Content="{Binding RsiLocalMax.PriceRsi}" ContentStringFormat="n1"/>
-            <Label ContentStringFormat="&gt;{0:n1}" FontWeight="Bold">
+            <Label Content="{Binding RsiLocalMax.PriceRsi}" ContentStringFormat="n2"/>
+            <Label ContentStringFormat="&gt;{0:n2}" FontWeight="Bold">
               <WrapPanel>
                 <TextBlock>></TextBlock>
-                <TextBlock Text="{Binding RsiStats.Sell,StringFormat=n1}" Background="{Binding IsRsiSell,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource SellBackGround}}"/>
+                <TextBlock Text="{Binding RsiStats.Sell,StringFormat=n2}" Background="{Binding IsRsiSell,Converter={StaticResource BoolToColorConverter},ConverterParameter={StaticResource SellBackGround}}"/>
                 <TextBlock Margin="0 0 -3 0">></TextBlock>
                 <TextBlock>></TextBlock>
-                <TextBlock Text="{Binding RsiStats.SellMax,StringFormat=n1}"/>
+                <TextBlock Text="{Binding RsiStats.SellMax,StringFormat=n2}"/>
               </WrapPanel>
             </Label>
           </StackPanel>

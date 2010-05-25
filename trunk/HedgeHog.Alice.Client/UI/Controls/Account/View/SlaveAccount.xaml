@@ -60,7 +60,7 @@
           <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
           <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
           <DataGridTextColumn Header="Server ID" Binding="{Binding Remark.Remark}"/>
-          <DataGridTextColumn Header="Error" Binding="{Binding UnKnown.ErrorMessage}"/>
+          <DataGridTextColumn Header="Message" Binding="{Binding UnKnown.ErrorMessage}"/>
         </DataGrid.Columns>
       </DataGrid>
       <!--<Expander>        <Expander.Header>          <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>        </Expander.Header>-->

@@ -64,7 +64,7 @@ namespace TestHH {
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
       //if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
-      o2g.OrderRemovedEvent += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
+      o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
     void o2g_OrderRemovedEvent(Order order) {
@@ -84,7 +84,9 @@ namespace TestHH {
     #endregion
 
     [TestMethod]
-    public void CreateEntryOrder() {
+    public void GetTradingSettings() {
+      Debug.WriteLine(o2g.GetTradingSettings("USD/JPY").GetMinQuantity);
+      Debug.WriteLine(o2g.GetTradingSettings("USD/JPY").PropertiesToString(Environment.NewLine));
     }
     public void GetOrders() {
       var orders = o2g.GetOrders("");
@@ -92,7 +94,7 @@ namespace TestHH {
       var toc = o2g.Desk.GetTimeout(o2g.Desk.TIMEOUT_COMMON);
       var pair = "USD/JPY";
       var price = o2g.GetOffers().First(o => o.Pair == pair).Ask;
-      o2g.FixOrderOpen("USD/JPY", true, 1000, price + o2g.InPoints(pair, 15), price - o2g.InPoints(pair, 15), "Dimok",out orderID,out tradeID);
+      o2g.FixOrderOpen("USD/JPY", true, 1000, price + o2g.InPoints(pair, 15), price - o2g.InPoints(pair, 15), "Dimok");
       var t = new Thread(() => Thread.Sleep(5000));
       t.Start();
       t.Join();
@@ -102,6 +104,13 @@ namespace TestHH {
       ListCollectionView List = new ListCollectionView(orders);
     }
 
+    void ServerTime() {
+      var sw = Stopwatch.StartNew();
+      var st = o2g.ServerTime;
+      sw.Stop();
+      Debug.WriteLine("ServerTime:{0:HH:mm:ss},LocalTime:{1:HH:mm:ss},Diff:{3},StopWatch:{2} ms", st, DateTime.Now, sw.ElapsedMilliseconds, (st - DateTime.Now).TotalSeconds);
+      return;
+    }
 
     public void Waves1() {
       var statName = System.Reflection.MethodBase.GetCurrentMethod().Name;
