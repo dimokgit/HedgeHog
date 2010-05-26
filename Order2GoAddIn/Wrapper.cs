@@ -1515,6 +1515,12 @@ namespace Order2GoAddIn {
     #endregion
 
     #region FXCore Helpers
+    public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
+      var amountToTrade = balance * leverage * tradeRatio / 100.0;
+      return Math.Ceiling(amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
+    }
+
+
     dynamic _tradingSettingsProvider;
     dynamic TradingSettingsProvider{
       get{
@@ -1551,7 +1557,6 @@ namespace Order2GoAddIn {
       public int GetMaxQuantity { get { return TradingSettingsProvider.GetMaxQuantity(pair,accountId); } }
       public int GetMinQuantity { get { return TradingSettingsProvider.GetMinQuantity(pair,accountId); } }
     }
-    TradingSettings _tradingSettingsHelper;
     Dictionary<string, TradingSettings> tradingSettingsCatalog = new Dictionary<string, TradingSettings>();
 
 
@@ -1569,6 +1574,19 @@ namespace Order2GoAddIn {
       var converter = timeZoneConverter;
       return converter.Convert(date, converter.ZONE_UTC, converter.ZONE_LOCAL);
     }
+
+    Dictionary<string, double> leverages = new Dictionary<string, double>();
+
+    public double Leverage() { return Leverage(Pair); }
+    public double Leverage(string pair) {
+      if (leverages.Count == 0)
+        foreach (var offer in GetOffers()) {
+          var l = MinimumQuantity / offer.MMR;
+          leverages.Add(offer.Pair, coreFX.IsDemo ? l * 4 : l);
+        }
+      return leverages[pair];
+    }
+
     static string GetOrderStatusDescr(string orderStatus) {
       if (orderStatus.Length != 1)
         return "Unknown";

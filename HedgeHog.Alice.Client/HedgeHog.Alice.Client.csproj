@@ -38,7 +38,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_01\</OutputPath>
+    <OutputPath>bin\Debug_02\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -91,12 +91,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Class\AbsentTrade.cs" />
-    <Compile Include="Class\Config.cs" />
-    <Compile Include="Class\Converters.cs" />
-    <Compile Include="Class\GlobalStorage.cs" />
-    <Compile Include="Class\IAccountHolder.cs" />
-    <Compile Include="Class\TradeRequestManager.cs" />
+    <Compile Include="Classes\AbsentTrade.cs" />
+    <Compile Include="Classes\Config.cs" />
+    <Compile Include="Classes\Converters.cs" />
+    <Compile Include="Classes\GlobalStorage.cs" />
+    <Compile Include="Classes\IAccountHolder.cs" />
+    <Compile Include="Classes\IMainModel.cs" />
+    <Compile Include="Classes\TradeRequestManager.cs" />
     <Compile Include="Models\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
       <SubType>Code</SubType>
@@ -111,12 +112,16 @@
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
     <Compile Include="Models\AliceEntityExtender.cs" />
+    <Compile Include="RemoteControl\RemoteControl.xaml.cs">
+      <DependentUpon>RemoteControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RemoteControl\RemoteControlModel.cs" />
     <Compile Include="Service References\TraderService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
-    <Compile Include="TraderModel.cs" />
+    <Compile Include="Classes\TraderModel.cs" />
     <Compile Include="UI\Alice.xaml.cs">
       <DependentUpon>Alice.xaml</DependentUpon>
     </Compile>
@@ -144,6 +149,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="RemoteControl\RemoteControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -302,6 +311,8 @@
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
+    <Content Include="bin\Debug_01\Store\Alice.sdf" />
+    <Content Include="bin\Debug_02\Store\Alice.sdf" />
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>

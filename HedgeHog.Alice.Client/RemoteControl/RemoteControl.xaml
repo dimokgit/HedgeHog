@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="HedgeHog.Alice.Client.RemoteControlView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+>
+  <UserControl.Resources>
+    <DataTemplate x:Key="InstrumentTemplate">
+      <ContentPresenter Content="{Binding Pair}"/>
+    </DataTemplate>
+    <DataTemplate x:Key="InstrumentEditTemplate">
+      <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
+    </DataTemplate>
+    <DataTemplate x:Key="TradingRatioTemplate">
+      <ContentPresenter Content="{Binding TradingRatio}"/>
+    </DataTemplate>
+    <DataTemplate x:Key="TradingRatioEditTemplate">
+      <ComboBox ItemsSource="{Binding DataContext.TradingRatios,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{ Binding TradingRatio,Mode=TwoWay}"></ComboBox>
+    </DataTemplate>
+  </UserControl.Resources>
+    <Grid>
+    <DataGrid ItemsSource="{Binding TradingMacros}" CanUserAddRows="False" AutoGenerateColumns="True" EnableRowVirtualization="False">
+      <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
+        <DataGridTemplateColumn Header="Ratio" CellTemplate="{StaticResource TradingRatioTemplate}" CellEditingTemplate="{StaticResource TradingRatioEditTemplate}"/>
+      </DataGrid.Columns>
+    </DataGrid>
+
+  </Grid>
+</UserControl>
