@@ -315,8 +315,7 @@ namespace HedgeHog {
         try {
           if (app.FXCM.LogOn(AccountNumber, Password, Properties.Settings.Default.ServerUrl, isDemo)) {
             fw.Pair = pair;
-            var mmr = fw.GetOffers().First(o => o.Pair.ToUpper() == pair.ToUpper()).MMR;
-            Leverage = fw.MinimumQuantity / mmr;
+            Leverage = fw.Leverage();
             chartingWindow.Dispatcher.BeginInvoke(new Action(() => {
               chartingWindow.ProcessPrice(null);
             }));
@@ -334,7 +333,7 @@ namespace HedgeHog {
     public double Leverage {
       get { return _leverage; }
       set {
-        _leverage = isDemo ? value * 4.0 : value;
+        _leverage = value;
         RaisePropertyChangedCore();
       }
     }
@@ -344,8 +343,7 @@ namespace HedgeHog {
         try {
           fw.Pair = pair;
           dataGrid1.ItemsSource = fw.GetTrades().ToList();
-          var mmr = fw.GetOffers().First(o => o.Pair.ToUpper() == pair.ToUpper()).MMR;
-          Leverage = fw.MinimumQuantity / mmr;
+          Leverage = fw.Leverage();
         } catch (Order2GoAddIn.FXCoreWrapper.PairNotFoundException exc) {
           MessageBox.Show(exc.Message);
           ((System.Windows.Controls.ListBoxItem)e.RemovedItems[0]).IsSelected = true;
@@ -505,10 +503,6 @@ namespace HedgeHog {
         threadProc.Start();
       }
     }
-    static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
-      var amountToTrade = balance * leverage * tradeRatio / 100.0;
-      return Math.Ceiling (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
-    }
     private void ProcessPrice() {
       try {
         RaisePropertyChanged(() => DensityAverage);
@@ -520,8 +514,8 @@ namespace HedgeHog {
         var account = fw.GetAccount();
         var usableMargin = account.UsableMargin;
         var avalibleTotal = usableMargin * Leverage;
-        AmountToBuy = GetLotstoTrade(account.Balance, Leverage, lotsToBuyRatio, fw.MinimumQuantity);
-        AmountToSell = GetLotstoTrade(account.Balance, Leverage, lotsToSellRatio, fw.MinimumQuantity);
+        AmountToBuy = FXW.GetLotstoTrade(account.Balance, Leverage, lotsToBuyRatio, fw.MinimumQuantity);
+        AmountToSell = FXW.GetLotstoTrade(account.Balance, Leverage, lotsToSellRatio, fw.MinimumQuantity);
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
         ShowAccount(account, summary);
         ShowSummary(summary, account);

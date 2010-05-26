@@ -126,6 +126,7 @@
         </StackPanel>
       </Expander>
       <!--<DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" ItemsSource="{Binding Source={StaticResource tradingAccountsViewSource}}" Name="tradingAccountsDataGrid" RowDetailsVisibilityMode="VisibleWhenSelected"><DataGrid.Columns><DataGridTextColumn x:Name="idColumn" Binding="{Binding Path=Id}" Header="Id" /><DataGridTextColumn x:Name="passwordColumn" Binding="{Binding Path=Password}" Header="Password" /><DataGridTextColumn x:Name="masterIdColumn" Binding="{Binding Path=MasterId}" Header="Master Id" /><DataGridCheckBoxColumn x:Name="isDemoColumn" Binding="{Binding Path=IsDemo}" Header="Is Demo" Width="SizeToHeader" /></DataGrid.Columns></DataGrid></Expander>-->
+      <l:RemoteControlView DataContext="{Binding RemoteController}" />
     </StackPanel>
 
       <!--Master Account-->

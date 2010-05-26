@@ -7,6 +7,7 @@
     <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="AliceModelStoreContainer">
           <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
+          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -20,12 +21,21 @@
           <Property Name="IsMaster" Type="bit" Nullable="false" />
           <Property Name="TradeRatio" Type="nvarchar" Nullable="false" MaxLength="6" />
         </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="TradingRatio" Type="int" Nullable="false" />
+          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+        </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="AliceModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
         <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
+          <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -38,6 +48,14 @@
           <Property Type="Guid" Name="Id" annotation:StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Type="Boolean" Name="IsMaster" Nullable="false" />
           <Property Type="String" Name="TradeRatio" Nullable="false" MaxLength="6" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
+          <Property Type="Int32" Name="TradingRatio" Nullable="false" />
+          <Property Type="Guid" Name="UID" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -55,6 +73,15 @@
                 <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
                 <ScalarProperty Name="MasterId" ColumnName="MasterId" />
                 <ScalarProperty Name="Password" ColumnName="Password" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TradingMacroes">
+            <EntityTypeMapping TypeName="AliceModel.TradingMacro">
+              <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -80,6 +107,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="1.4279589843749996" />
       </Diagram>
     </Diagrams>
   </Designer>

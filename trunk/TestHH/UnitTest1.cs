@@ -62,8 +62,8 @@ namespace TestHH {
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
-      if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      //if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -84,8 +84,10 @@ namespace TestHH {
     #endregion
 
     [TestMethod]
+    public void Legerages() {
+      o2g.GetOffers().Select(o => o.Pair).ToList().ForEach(p => Debug.WriteLine("{0}:{1:n2}", p, o2g.Leverage(p)));
+    }
     public void GetTradingSettings() {
-      Debug.WriteLine(o2g.GetTradingSettings("USD/JPY").GetMinQuantity);
       Debug.WriteLine(o2g.GetTradingSettings("USD/JPY").PropertiesToString(Environment.NewLine));
     }
     public void GetOrders() {

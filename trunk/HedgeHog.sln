@@ -4,7 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18C2BF14-0A50-4042-9F0D-0B4458180DFF}"
 	ProjectSection(SolutionItems) = preProject
 		Performance1.psess = Performance1.psess
-		Performance10.psess = Performance10.psess
 		Performance3.psess = Performance3.psess
 		Performance5.psess = Performance5.psess
 		Performance7.psess = Performance7.psess
@@ -205,7 +204,6 @@ Global
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}.Release|Any CPU.Build.0 = Release|Any CPU
@@ -245,7 +243,6 @@ Global
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|Mixed Platforms.Deploy.0 = Debug|Any CPU
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{602127E5-9143-4ADB-95A7-37E444ACA722}.Release|Any CPU.Build.0 = Release|Any CPU
@@ -276,6 +273,7 @@ Global
 		{674056FB-B429-4491-92C4-36BB001751C7}.Release|x86.ActiveCfg = Release|Any CPU
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Mixed Platforms.Build.0 = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|x86.ActiveCfg = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|x86.Build.0 = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Release|Any CPU.ActiveCfg = Release|x86

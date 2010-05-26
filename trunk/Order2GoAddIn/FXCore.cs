@@ -27,6 +27,7 @@ namespace Order2GoAddIn {
     string user = "";
     string password = "";
     bool isDemo = true;
+    public bool IsDemo { get { return isDemo; } }
     string URL = "";
     bool noTimer;
     public readonly int ServerTimeOffset = -4;
@@ -41,6 +42,8 @@ namespace Order2GoAddIn {
         return serverTimeLast = DateTime.Now + _serverTimeOffset;
       }
     }
+
+    #region Ctor
     public CoreFX():this(false) { }
     public CoreFX(bool noTimer) {
       this.noTimer = noTimer;
@@ -48,6 +51,18 @@ namespace Order2GoAddIn {
     ~CoreFX() {
       Logout();
     }
+    #endregion
+
+    public string[] Instruments { 
+      get {
+        var instruments = Desk.GetInstruments() as FXCore.StringEnumAut;
+        List<string> l = new List<string>();
+        foreach (var i in instruments)
+          l.Add(i+"");
+        return l.ToArray();
+      } 
+    }
+
     TimeSpan silenceInterval = TimeSpan.FromSeconds(60*5);
     void InitTimer() {
       if (noTimer || timer != null) return;

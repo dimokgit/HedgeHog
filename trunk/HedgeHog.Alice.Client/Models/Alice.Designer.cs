@@ -80,6 +80,22 @@ namespace HedgeHog.Alice.Client.Models
             }
         }
         private ObjectSet<TradingAccount> _TradingAccounts;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<TradingMacro> TradingMacroes
+        {
+            get
+            {
+                if ((_TradingMacroes == null))
+                {
+                    _TradingMacroes = base.CreateObjectSet<TradingMacro>("TradingMacroes");
+                }
+                return _TradingMacroes;
+            }
+        }
+        private ObjectSet<TradingMacro> _TradingMacroes;
 
         #endregion
         #region AddTo Methods
@@ -90,6 +106,14 @@ namespace HedgeHog.Alice.Client.Models
         public void AddToTradingAccounts(TradingAccount tradingAccount)
         {
             base.AddObject("TradingAccounts", tradingAccount);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the TradingMacroes EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToTradingMacroes(TradingMacro tradingMacro)
+        {
+            base.AddObject("TradingMacroes", tradingMacro);
         }
 
         #endregion
@@ -302,6 +326,114 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.String _TradeRatio;
         partial void OnTradeRatioChanging(global::System.String value);
         partial void OnTradeRatioChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="AliceModel", Name="TradingMacro")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class TradingMacro : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new TradingMacro object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="tradingRatio">Initial value of the TradingRatio property.</param>
+        /// <param name="uID">Initial value of the UID property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Int32 tradingRatio, global::System.Guid uID)
+        {
+            TradingMacro tradingMacro = new TradingMacro();
+            tradingMacro.Pair = pair;
+            tradingMacro.TradingRatio = tradingRatio;
+            tradingMacro.UID = uID;
+            return tradingMacro;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                OnPairChanging(value);
+                
+              ReportPropertyChanging("Pair");
+                _Pair = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Pair");
+                OnPairChanged();
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 TradingRatio
+        {
+            get
+            {
+                return _TradingRatio;
+            }
+            set
+            {
+                OnTradingRatioChanging(value);
+                ReportPropertyChanging("TradingRatio");
+                _TradingRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradingRatio");
+                OnTradingRatioChanged();
+            }
+        }
+        private global::System.Int32 _TradingRatio;
+        partial void OnTradingRatioChanging(global::System.Int32 value);
+        partial void OnTradingRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Guid UID
+        {
+            get
+            {
+                return _UID;
+            }
+            set
+            {
+                if (_UID != value)
+                {
+                    OnUIDChanging(value);
+                    ReportPropertyChanging("UID");
+                    _UID = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("UID");
+                    OnUIDChanged();
+                }
+            }
+        }
+        private global::System.Guid _UID;
+        partial void OnUIDChanging(global::System.Guid value);
+        partial void OnUIDChanged();
 
         #endregion
     
