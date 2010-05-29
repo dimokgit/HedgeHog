@@ -84,6 +84,24 @@ namespace TestHH {
     #endregion
 
     [TestMethod]
+    public void MunuteRsi(){
+      var minutesBack = 60*24*2;
+      var rates = o2g.GetBarsBase(1,DateTime.Now.AddMinutes(-minutesBack)).ToArray();
+      rates.FillRsis((minutesBack * 0.5).ToInt());
+      var statName = "MinuteRsi";
+      var context = new ForexEntities();
+      var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
+      context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
+      var stats = context.t_Stat;
+      rates.Where(t => t.PriceRsi.GetValueOrDefault(50)!=50).ToList().ForEach(t =>
+        stats.AddObject(new t_Stat() {
+          Time = t.StartDate, Name = statName, Price = t.PriceAvg,
+          Value1 = 0,
+          Value2 = 0,
+          Value3 = t.PriceRsi.Value
+        }));
+      context.SaveChanges();
+    }
     public void Legerages() {
       o2g.GetOffers().Select(o => o.Pair).ToList().ForEach(p => Debug.WriteLine("{0}:{1:n2}", p, o2g.Leverage(p)));
     }
@@ -141,7 +159,7 @@ namespace TestHH {
       Debug.WriteLine("FillRsi 1:" + timer.Elapsed);
 
       timer = Stopwatch.StartNew();
-      rates.Rsi(rsiTicks, (r, v) => r.PriceAvg1 = v,r=>r.PriceAvg1);
+      rates.Rsi(rsiTicks, (r, v) => r.PriceAvg1 = (double)v,r=>r.PriceAvg1);
       Debug.WriteLine("FillRsi 2:" + timer.Elapsed);
 
       timer = Stopwatch.StartNew();
