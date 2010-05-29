@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Controls.Primitives;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -19,6 +20,11 @@ namespace HedgeHog.Alice.Client {
   public partial class RemoteControlView : UserControl {
     public RemoteControlView() {
       InitializeComponent();
+    }
+
+    private void DataGrid_KeyDown(object sender, KeyEventArgs e) {
+      if (e.Key == Key.Escape)
+        (sender as Selector).SelectedIndex = -1;
     }
   }
 }
