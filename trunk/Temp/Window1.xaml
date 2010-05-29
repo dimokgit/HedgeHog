@@ -1,23 +1,43 @@
-﻿<Window x:Class="Temp.Window1"
+﻿<wm:WindowModel x:Class="Temp.Window1"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Tick Test" Height="300" Width="300">
+             xmlns:wm="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+                xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+                xmlns:ui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+    Title="Tick Test"                 Top="{state:UserSettings Default=100}"                Left="{state:UserSettings Default=100}"                Width="{state:UserSettings Default=300}"                Height="{state:UserSettings Default=300}"
+DataContext="{Binding RelativeSource={RelativeSource Self}}"
+                xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        >
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <WrapPanel>
-      <Button Click="Button_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Test" />
-      <Button Click="OpenTrade_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Open Trade" />
-      <Button Click="CloseTrade_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Close Trade" />
-      <Button Click="ShowTrades_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Trades" />
-    </WrapPanel>
+    <StackPanel>
+      <WrapPanel>
+        <Button Click="Button_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Test" />
+        <Button Click="OpenTrade_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Open Trade" />
+        <Button Click="CloseTrade_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Close Trade" />
+        <Button Click="ShowTrades_Click" VerticalAlignment="Top" HorizontalAlignment="Left" Content="Trades" />
+      </WrapPanel>
+      <WrapPanel VerticalAlignment="Center">
+        <ComboBox ItemsSource="{Binding Instruments}" />
+        <ui:TextBox Text="{Binding PeriodsBack,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="DaysBack"/>
+        <ui:TextBox Text="{Binding RsiPeriods,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="Rsi Days"/>
+        <ComboBox SelectedValue="{Binding Period}">
+          <sys:Int32>1</sys:Int32>
+          <sys:Int32>15</sys:Int32>
+          <sys:Int32>60</sys:Int32>
+          <sys:Int32>1440</sys:Int32>
+        </ComboBox>
+        <ui:CheckBox2 IsChecked2="{Binding NoGaps,Mode=TwoWay}" IsChecked="{state:UserSettings Default=True}" Content="NG" ToolTip="No Gaps"/>
+      </WrapPanel>
+    </StackPanel>
     <TextBox Grid.Row="1" Name="txtMessage" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"></TextBox>
     <StackPanel Grid.Row="2">
       <DataGrid Name="dgOrders"/>
       <DataGrid Name="dgTrades"/>
     </StackPanel>
   </Grid>
-</Window>
+</wm:WindowModel>

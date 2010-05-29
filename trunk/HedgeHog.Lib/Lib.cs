@@ -10,6 +10,8 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Linq.Dynamic;
+using LE = System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -20,9 +22,47 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static class Lib {
+    public static string GetLambda(LE.Expression<Func<object>> func) { return func.Name(); }
+    public static string[] GetLambdas(params LE.Expression<Func<object>>[] funcs) { return funcs.Names(); }
+    public static string[] Names(this LE.Expression<Func<object>>[] funcs) {
+      var names = new List<string>();
+      foreach (var e in funcs)
+        names.Add(e.Name());
+      return names.ToArray();
+    }
+
+    public static string Name(this Expression<Func<object>> propertyLamda) {
+      var body = propertyLamda.Body as UnaryExpression;
+      if (body == null) {
+        return ((propertyLamda as LambdaExpression).Body as MemberExpression).Member.Name;
+      } else {
+        var operand = body.Operand as MemberExpression;
+        var member = operand.Member;
+        return member.Name;
+      }
+    }
+
+    public static string Name(this LambdaExpression propertyExpression) {
+        var body = propertyExpression.Body as MemberExpression;
+        if (body == null)
+          throw new ArgumentException("'propertyExpression' should be a member expression");
+
+        // Extract the right part (after "=>")
+        var vmExpression = body.Expression as ConstantExpression;
+        if (vmExpression == null)
+          throw new ArgumentException("'propertyExpression' body should be a constant expression");
+
+        // Create a reference to the calling object to pass it as the sender
+        LambdaExpression vmlambda = System.Linq.Expressions.Expression.Lambda(vmExpression);
+        Delegate vmFunc = vmlambda.Compile();
+        object vm = vmFunc.DynamicInvoke();
+        return body.Member.Name;
+    }
+
+
     public static object ToDataObject(this object o) {
       var d = o.GetType().GetProperties().Select(s => new DynamicProperty(s.Name, s.PropertyType));
-      Type t = DynamicExpression.CreateClass(d.ToArray());
+      Type t = System.Linq.Dynamic.DynamicExpression.CreateClass(d.ToArray());
       object ret = Activator.CreateInstance(t);
       foreach (var e in d)
         ret.SetProperty(e.Name, o.GetProperty(e.Name));

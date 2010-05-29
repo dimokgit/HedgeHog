@@ -29,6 +29,8 @@ namespace HedgeHog.Shared {
     [DataMember]
     public double StopAmount { get; set; }
     [DataMember]
+    public double LimitAmount { get; set; }
+    [DataMember]
     public DateTime ServerTime { get; set; }
     [DataMember]
     public WiredException Error { get; set; }

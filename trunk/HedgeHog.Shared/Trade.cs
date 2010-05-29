@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
-  public class Trade {
+  public class Trade : INotifyPropertyChanged {
     [DataMember]
     [DisplayName("")]
     public string Id { get; set; }
@@ -43,6 +43,10 @@ namespace HedgeHog.Shared {
     [DisplayName("")]
     public double GrossPL { get; set; }
     [DataMember]
+    public double StopAmount { get; set; }
+    [DataMember]
+    public double LimitAmount { get; set; }
+    [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
     [DataMember]
@@ -71,12 +75,38 @@ namespace HedgeHog.Shared {
 
     public Trade Clone() { return this.MemberwiseClone() as Trade; }
 
+    public void Update(Trade trade) {
+      this.Close = trade.Close;
+      this.GrossPL = trade.GrossPL;
+      this.Limit = trade.Limit;
+      this.LimitAmount = this.LimitAmount;
+      this.PL = trade.PL;
+      this.Stop = trade.Stop;
+      this.StopAmount = trade.StopAmount;
+      OnPropertyChanged("Close", "GrossPL", "Limit", "LimitAmount", "PL", "Stop", "StopAmount");
+    }
+
     public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
     public string ToString(SaveOptions saveOptions) {
       var x = new XElement(GetType().Name,
       GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
       return x.ToString(saveOptions);
     }
+
+    #region INotifyPropertyChanged Members
+
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected virtual void OnPropertyChanged(params string[] propertyNames) {
+      foreach (var pn in propertyNames)
+        OnPropertyChanged(pn);
+    }
+    protected virtual void OnPropertyChanged(string propertyName) {
+      if (PropertyChanged == null) return;
+      PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    #endregion
   }
   [Serializable]
   [DataContract]
