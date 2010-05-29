@@ -44,6 +44,7 @@
                     </DataTemplate>
                   </DataGridTextColumn.HeaderTemplate>
                 </DataGridTextColumn>
+                <DataGridTextColumn Header="Limit ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Stop ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Time" Binding="{Binding ServerTime,StringFormat=HH:mm:ss,Mode=OneWay}" IsReadOnly="True"/>
               </DataGrid.Columns>
