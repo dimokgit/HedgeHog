@@ -26,8 +26,12 @@
             <PropertyRef Name="UID" />
           </Key>
           <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
-          <Property Name="TradingRatio" Type="int" Nullable="false" />
+          <Property Name="TradingRatio" Type="float" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="Stop" Type="float" Nullable="false" />
+          <Property Name="Limit" Type="float" Nullable="false" />
+          <Property Name="Price" Type="float" Nullable="false" />
+          <Property Name="Buy" Type="bit" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -54,8 +58,12 @@
             <PropertyRef Name="UID" />
           </Key>
           <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
-          <Property Type="Int32" Name="TradingRatio" Nullable="false" />
+          <Property Type="Double" Name="TradingRatio" Nullable="false" />
           <Property Type="Guid" Name="UID" Nullable="false" />
+          <Property Type="Double" Name="Stop" Nullable="false" />
+          <Property Type="Double" Name="Limit" Nullable="false" />
+          <Property Type="Double" Name="Price" Nullable="false" />
+          <Property Type="Boolean" Name="Buy" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -79,6 +87,10 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="Buy" ColumnName="Buy" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
+                <ScalarProperty Name="Limit" ColumnName="Limit" />
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
                 <ScalarProperty Name="Pair" ColumnName="Pair" />
@@ -107,7 +119,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="1.4279589843749996" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.0853483072916656" />
       </Diagram>
     </Diagrams>
   </Designer>

@@ -347,12 +347,20 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="pair">Initial value of the Pair property.</param>
         /// <param name="tradingRatio">Initial value of the TradingRatio property.</param>
         /// <param name="uID">Initial value of the UID property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Int32 tradingRatio, global::System.Guid uID)
+        /// <param name="stop">Initial value of the Stop property.</param>
+        /// <param name="limit">Initial value of the Limit property.</param>
+        /// <param name="price">Initial value of the Price property.</param>
+        /// <param name="buy">Initial value of the Buy property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
             tradingMacro.TradingRatio = tradingRatio;
             tradingMacro.UID = uID;
+            tradingMacro.Stop = stop;
+            tradingMacro.Limit = limit;
+            tradingMacro.Price = price;
+            tradingMacro.Buy = buy;
             return tradingMacro;
         }
 
@@ -373,8 +381,7 @@ namespace HedgeHog.Alice.Client.Models
             set
             {
                 OnPairChanging(value);
-                
-              ReportPropertyChanging("Pair");
+                ReportPropertyChanging("Pair");
                 _Pair = StructuralObject.SetValidValue(value, false);
                 ReportPropertyChanged("Pair");
                 OnPairChanged();
@@ -389,7 +396,7 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int32 TradingRatio
+        public global::System.Double TradingRatio
         {
             get
             {
@@ -404,8 +411,8 @@ namespace HedgeHog.Alice.Client.Models
                 OnTradingRatioChanged();
             }
         }
-        private global::System.Int32 _TradingRatio;
-        partial void OnTradingRatioChanging(global::System.Int32 value);
+        private global::System.Double _TradingRatio;
+        partial void OnTradingRatioChanging(global::System.Double value);
         partial void OnTradingRatioChanged();
     
         /// <summary>
@@ -434,6 +441,102 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Guid _UID;
         partial void OnUIDChanging(global::System.Guid value);
         partial void OnUIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Stop
+        {
+            get
+            {
+                return _Stop;
+            }
+            set
+            {
+                OnStopChanging(value);
+                ReportPropertyChanging("Stop");
+                _Stop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Stop");
+                OnStopChanged();
+            }
+        }
+        private global::System.Double _Stop;
+        partial void OnStopChanging(global::System.Double value);
+        partial void OnStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Limit
+        {
+            get
+            {
+                return _Limit;
+            }
+            set
+            {
+                OnLimitChanging(value);
+                ReportPropertyChanging("Limit");
+                _Limit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Limit");
+                OnLimitChanged();
+            }
+        }
+        private global::System.Double _Limit;
+        partial void OnLimitChanging(global::System.Double value);
+        partial void OnLimitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Price
+        {
+            get
+            {
+                return _Price;
+            }
+            set
+            {
+                OnPriceChanging(value);
+                ReportPropertyChanging("Price");
+                _Price = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Price");
+                OnPriceChanged();
+            }
+        }
+        private global::System.Double _Price;
+        partial void OnPriceChanging(global::System.Double value);
+        partial void OnPriceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean Buy
+        {
+            get
+            {
+                return _Buy;
+            }
+            set
+            {
+                OnBuyChanging(value);
+                ReportPropertyChanging("Buy");
+                _Buy = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Buy");
+                OnBuyChanged();
+            }
+        }
+        private global::System.Boolean _Buy;
+        partial void OnBuyChanging(global::System.Boolean value);
+        partial void OnBuyChanged();
 
         #endregion
     
