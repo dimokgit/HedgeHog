@@ -26,6 +26,7 @@ namespace HedgeHog.Alice.Client {
       accountRow.TradingRatio = tradingRatio;
       accountRow.ServerTime = serverTime;
       accountRow.StopAmount = account.StopAmount;
+      accountRow.LimitAmount = account.LimitAmount;
       accountRow.OnPropertyChanged(
       () => accountRow.Balance,
       () => accountRow.Equity,
@@ -40,6 +41,7 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.HasProfit,
       () => accountRow.TradingRatio,
       () => accountRow.StopAmount,
+      () => accountRow.LimitAmount,
       () => accountRow.StopToBalanceRatio,
       () => accountRow.ProfitPercent,
       () => accountRow.ServerTime
