@@ -17,6 +17,7 @@ using System.Windows.Controls;
 using HedgeHog.Alice.Client.UI.Controls;
 using System.Data.Objects;
 using HedgeHog.Bars;
+using System.ComponentModel;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -37,6 +38,12 @@ namespace HedgeHog.Alice.Client {
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
     FXW fwMaster;
     public bool IsLoggedIn { get { return CoreFX.IsLoggedIn; } }
+    bool _isInLogin;
+    public bool IsInLogin {
+      get { return _isInLogin; }
+      set { _isInLogin = value; RaisePropertyChanged(() => IsInLogin, () => IsNotInLogin); }
+    }
+    public bool IsNotInLogin { get { return !IsInLogin; } }
     ComboBoxItem _ServerToLocalRatioValue;
     public ComboBoxItem ServerToLocalRatioValue {
       set { _ServerToLocalRatioValue = value; }
@@ -206,6 +213,46 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Commanding
+
+    ICommand _DecreaseStopCommand;
+    public ICommand DecreaseStopCommand {
+      get {
+        if (_DecreaseStopCommand == null) {
+          _DecreaseStopCommand = new Gala.RelayCommand<Trade>(DecreaseStop, (trade) => trade!=null && trade.Stop != 0);
+        }
+
+        return _DecreaseStopCommand;
+      }
+    }
+    void DecreaseStop(Trade trade) {
+      try {
+        var newStop = trade.Stop - 1.0/trade.PipValue;
+        fwMaster.FixOrderSetStop(trade.Id, newStop, "");
+      } catch (Exception exc) {
+        Log = new Exception("DecreaseStop Error", exc);
+      }
+    }
+
+
+    ICommand _EncreaseStopCommand;
+    public ICommand EncreaseStopCommand {
+      get {
+        if (_EncreaseStopCommand == null) {
+          _EncreaseStopCommand = new Gala.RelayCommand<Trade>(EncreaseStop, (trade) => true);
+        }
+
+        return _EncreaseStopCommand;
+      }
+    }
+    void EncreaseStop(Trade trade) {
+      try {
+        var newStop = trade.Stop + 1.0 / trade.PipValue;
+        fwMaster.FixOrderSetStop(trade.Id, newStop, "");
+      } catch (Exception exc) {
+        Log = new Exception("EncreaseStop Error", exc);
+      }
+    }
+
 
     #region DeleteTradingAccountCommand
 
@@ -482,12 +529,15 @@ namespace HedgeHog.Alice.Client {
 
     public TraderModel() {
       ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
       OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
 
       #region FXCM
       fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
+        IsInLogin = false;
         fwMaster.TradeAdded += fw_TradesCountChanged;
         fwMaster.PriceChanged += fwLocal_PriceChanged;
         RaisePropertyChanged(() => IsLoggedIn);
@@ -495,6 +545,7 @@ namespace HedgeHog.Alice.Client {
         AccountModel.Update(fwMaster.GetAccount(), 0, fwMaster.ServerTime);
       };
       CoreFX.LoginError += exc => {
+        IsInLogin = false;
         Log = exc;
         RaisePropertyChanged(() => IsLoggedIn);
       };
@@ -527,6 +578,7 @@ namespace HedgeHog.Alice.Client {
     bool Login( string tradingAccount,string tradingPassword,bool tradingDemo) {
       try {
         if (CoreFX.IsLoggedIn) CoreFX.Logout();
+        IsInLogin = true;
         if (CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
           return true;
@@ -536,6 +588,7 @@ namespace HedgeHog.Alice.Client {
         MessageBox.Show(exc + "");
         return false;
       } finally {
+        IsInLogin = false;
         RaisePropertyChanged(() => IsLoggedIn);
       }
     }
@@ -564,7 +617,7 @@ namespace HedgeHog.Alice.Client {
         AccountModel.Update(account, 0, fwMaster.IsLoggedIn ? fwMaster.ServerTime : DateTime.Now);
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.Invoke(new Action(() => {
-          ShowTrades(trades.ToList(), ServerTrades);
+          UpdateTrades(trades.ToList(), ServerTrades);
           ShowTrades((account.Orders ?? new Order[0]).ToList(), orders);
         }));
       }
@@ -581,6 +634,16 @@ namespace HedgeHog.Alice.Client {
       try {
         fwMaster.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
       } catch (Exception exc) { Log = exc; }
+    }
+    private void UpdateTrades(List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
+      var oldIds = tradesCollection.Select(t => t.Id).ToArray();
+      var newIds = tradesList.Select(t => t.Id);
+      var deleteIds = oldIds.Except(newIds).ToList();
+      deleteIds.ForEach(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d)));
+      var addIds = newIds.Except(oldIds).ToList();
+      addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
+      foreach (var trade in tradesList)
+        tradesCollection.Single(t => t.Id == trade.Id).Update(trade);
     }
     private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {
       tradesCollection.Clear();

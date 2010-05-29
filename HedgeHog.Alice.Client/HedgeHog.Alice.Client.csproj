@@ -38,7 +38,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_02\</OutputPath>
+    <OutputPath>bin\Debug_03\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -81,6 +81,10 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
+    <Reference Include="Telerik.Windows.Controls, Version=2010.1.422.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7" />
+    <Reference Include="Telerik.Windows.Controls.Input, Version=2010.1.422.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -313,6 +317,7 @@
     </None>
     <Content Include="bin\Debug_01\Store\Alice.sdf" />
     <Content Include="bin\Debug_02\Store\Alice.sdf" />
+    <Content Include="bin\Debug_03\Store\Alice.sdf" />
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>
