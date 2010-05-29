@@ -627,7 +627,7 @@ namespace HedgeHog {
     private void FillRsis(bool Refresh,List<Rate> rates) {
       rsiTicks = DoRsiByPercent
         ? (rates.Count * ui.RsiPeriodRatio).ToInt()
-        :rates.Where(t=>t.StartDate>= fw.ServerTimeCached.AddMinutes(-ui.RsiPeriodRatio)).Count();
+        :rates.Where(t=>t.StartDate>= fw.ServerTime.AddMinutes(-ui.RsiPeriodRatio)).Count();
       if( DoRsiByPercent)
       rates.ToArray().Rsi(rsiTicks, Refresh);
       else

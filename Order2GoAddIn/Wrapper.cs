@@ -395,6 +395,7 @@ namespace Order2GoAddIn {
     }
 
     void coreFX_LoggedOffEvent(object sender, EventArgs e) {
+      _accountID = "";
       Unsubscribe();
     }
 
@@ -599,7 +600,8 @@ namespace Order2GoAddIn {
         Equity = (double)row.CellValue(FIELD_EQUITY),
         Hedging = row.CellValue("Hedging").ToString() == "Y",
         Trades = includeOtherInfo ? trades = GetTrades("") : null,
-        StopAmount = includeOtherInfo? AmountOfStopLoss(trades):0,
+        StopAmount = includeOtherInfo ? AmountOfStopLoss(trades) : 0,
+        LimitAmount = includeOtherInfo ? AmountOfTakeProfit(trades) : 0,
         ServerTime = ServerTime
       };
       if( includeOtherInfo)
@@ -611,6 +613,11 @@ namespace Order2GoAddIn {
     double AmountOfStopLoss(Trade[] trades) {
       var sum = 0.0;
       trades.Where(t=>t.Stop>0).ToList().ForEach(t => sum += PipsToMoney(InPips(t.Pair,(t.Open - t.Stop).Abs()), t.Lots, GetPipCost(t.Pair), MinimumQuantity));
+      return sum;
+    }
+    double AmountOfTakeProfit(Trade[] trades) {
+      var sum = 0.0;
+      trades.Where(t => t.Limit > 0).ToList().ForEach(t => sum += PipsToMoney(InPips(t.Pair, (t.Open - t.Limit).Abs()), t.Lots, GetPipCost(t.Pair), MinimumQuantity));
       return sum;
     }
     public double CommisionPending { get { return GetTrades("").Sum(t => t.Lots) / 10000; } }
@@ -705,7 +712,7 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Get Tables
-
+    //Dimok: Fill offers from RowChanged Event
     #region GetOffers
     public Offer[] GetOffers() {
       return (from t in GetRows(TABLE_OFFERS)
@@ -765,6 +772,8 @@ namespace Order2GoAddIn {
             NetPL = ((double)t.CellValue("NetPL")),
             SellAvgOpen = (double)t.CellValue(FIELD_SELLAVGOPEN),
             BuyAvgOpen = (double)t.CellValue(FIELD_BUYAVGOPEN),
+            StopAmount = AmountOfStopLoss(GetTrades(t.CellValue(FIELD_INSTRUMENT) + "")),
+            LimitAmount = AmountOfTakeProfit(GetTrades(t.CellValue(FIELD_INSTRUMENT) + ""))
           }).ToArray();
         return s;
       } catch (System.Runtime.InteropServices.COMException) {
@@ -868,7 +877,7 @@ namespace Order2GoAddIn {
       //    }
     }
     Trade InitTrade(FXCore.RowAut t) {
-      return new Trade() {
+      var trade = new Trade() {
         Id = t.CellValue("TradeID") + "",
         Pair = t.CellValue(FIELD_INSTRUMENT) + "",
         Buy = (t.CellValue("BS") + "") == "B",
@@ -884,9 +893,12 @@ namespace Order2GoAddIn {
         OpenOrderReqID = t.CellValue("OpenOrderReqID") + "",
         Remark = new TradeRemark(t.CellValue("QTXT") + "")
       };
+      trade.StopAmount = AmountOfStopLoss(new[] { trade });
+      trade.LimitAmount = AmountOfTakeProfit(new[] { trade });
+      return trade;
     }
     Trade InitTrade(FXCore.ParserAut t) {
-      return new Trade() {
+      var trade = new Trade() {
         Id = t.GetValue("TradeID") + "",
         Pair = t.GetValue(FIELD_INSTRUMENT) + "",
         Buy = (t.GetValue("BS") + "") == "B",
@@ -902,6 +914,9 @@ namespace Order2GoAddIn {
         OpenOrderReqID = t.GetValue("OpenOrderReqID") + "",
         Remark = new TradeRemark(t.GetValue("QTXT") + "")
       };
+      trade.StopAmount = AmountOfStopLoss(new[] { trade });
+      trade.LimitAmount = AmountOfTakeProfit(new[] { trade });
+      return trade;
     }
     #endregion
 
@@ -1038,25 +1053,34 @@ namespace Order2GoAddIn {
       return FixCreateStopLimit(Desk.FIX_LIMIT, tradeId, limit, remark);
     }
     PendingOrder FixCreateStopLimit(int fixOrderKnd, string tradeId, double rate, string remark) {
-      lock (globalOrderPending) {
-        object requestID;
-        try {
-          var isStop = fixOrderKnd == Desk.FIX_STOP;
-          var isLimit = fixOrderKnd == Desk.FIX_LIMIT;
-          var stop = isStop ? rate:0;
-          var limit = isLimit ? rate : 0;
-          var po = new PendingOrder(tradeId, stop, limit, remark);
-          if (!PendingOrders.Contains(po)) {
-            var rateFlag = isStop ? Desk.SL_STOP : isLimit ? Desk.SL_LIMIT : Desk.SL_NONE;
-            coreFX.Desk.CreateFixOrderAsync(fixOrderKnd,tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag, out requestID);
-            po.RequestId = requestID + "";
-            PendingOrders.Add(po);
-          }
-          return po;
-        } catch (Exception exc) {
-          RaiseError(new Exception(string.Format("TradeId:{0},Stop:{1},Remark:{2}", tradeId, rate, remark), exc));
-          return null;
+      object requestID;
+      var isStop = fixOrderKnd == Desk.FIX_STOP;
+      var isLimit = fixOrderKnd == Desk.FIX_LIMIT;
+      var stop = isStop ? rate : 0;
+      var limit = isLimit ? rate : 0;
+      var po = new PendingOrder(tradeId, stop, limit, remark);
+      try {
+        //lock (PendingOrders) {
+        //  if (PendingOrders.Contains(po)) return po;
+        //  PendingOrders.Add(po);
+        //}
+        Debug.WriteLine("FixCreateStopLimit:" + po);
+        var rateFlag = isStop ? Desk.SL_STOP : isLimit ? Desk.SL_LIMIT : Desk.SL_NONE;
+        lock (globalOrderPending) {
+          coreFX.Desk.CreateFixOrderAsync(fixOrderKnd, tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag, out requestID);
         }
+        po.RequestId = requestID + "";
+        return po;
+      }catch(ArgumentException exc){
+        PendingOrders.Remove(po);
+        if (exc.Message.Contains("The trade with the specified identifier is not found."))
+          throw new TradeNotFoundException(tradeId);
+        RaiseError(new Exception(string.Format("TradeId:{0},Stop:{1},Remark:{2}", tradeId, rate, remark), exc));
+        return null;
+      } catch (Exception exc) {
+        RemovePendingOrder(po);
+        RaiseError(new Exception(string.Format("TradeId:{0},Stop:{1},Remark:{2}", tradeId, rate, remark), exc));
+        return null;
       }
     }
 
@@ -1089,33 +1113,42 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Open
+    ObservableCollection<PendingOrder> _pendingLimits = new ObservableCollection<PendingOrder>();
+    public ObservableCollection<PendingOrder> PendingLimits { get { return _pendingLimits; } set { _pendingLimits = value; } }
+
+    ObservableCollection<PendingOrder> _pendingStops = new ObservableCollection<PendingOrder>();
+    public ObservableCollection<PendingOrder> PendingStops { get { return _pendingStops; } set { _pendingStops = value; } }
+
     ObservableCollection<PendingOrder> _pendingOrders = new ObservableCollection<PendingOrder>();
-    public ObservableCollection<PendingOrder> PendingOrders {
-      get { return _pendingOrders; }
-      set { _pendingOrders = value; }
-    }
+    public ObservableCollection<PendingOrder> PendingOrders { get { return _pendingOrders; } set { _pendingOrders = value; } }
+
     public void FixOrderOpen(bool buy, int lots, double takeProfit, double stopLoss, string remark) {
       FixOrderOpen(Pair, buy, lots, takeProfit, stopLoss, remark);
     }
     static private object globalOrderPending = new object();
     public PendingOrder FixOrderOpen(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark) {
-      lock (globalOrderPending) {
         object requestID;
+        var po = new PendingOrder(pair, buy, lots, 0, stopLoss, takeProfit, remark);
         try {
-          var po = new PendingOrder(pair, buy, lots, 0, stopLoss, takeProfit, remark);
-          if (PendingOrders.Contains(po)) return po;
-          coreFX.Desk.CreateFixOrderAsync(coreFX.Desk.FIX_OPENMARKET, "", 0, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
+          lock (PendingOrders) {
+            if (PendingOrders.Contains(po)) return po;
+            PendingOrders.Add(po);
+          }
+          Debug.WriteLine("FixOrderOpen:" + po);
+          lock (globalOrderPending) {
+            coreFX.Desk.CreateFixOrderAsync(coreFX.Desk.FIX_OPENMARKET, "", 0, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
+          }
           //var iSLType = Desk.SL_NONE;
           //if (stopLoss > 0) iSLType += Desk.SL_STOP;
           //if (takeProfit > 0) iSLType += Desk.SL_LIMIT;
           //Desk.OpenTrade2(AccountID, pair, buy, lots, 0, "", 0, iSLType, stopLoss, takeProfit, 0, out psOrderID, out psDI);
           po.RequestId = requestID + "";
-          PendingOrders.Add(po);
           return po;
         } catch (Exception exc) {
-          throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots), exc);
+          RemovePendingOrder(po);
+          RaiseError(new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots), exc));
+          return null;
         }
-      }
     }
     #endregion
 
@@ -1131,14 +1164,17 @@ namespace Order2GoAddIn {
     public PendingOrder FixOrderClose(string tradeId, int lots, string remark) {
       lock (globalClosePending) {
         object requestID;
+        var po = new PendingOrder(tradeId, 0, 0, remark);
         try {
-          var po = new PendingOrder(tradeId, 0, 0, remark);
-          if (PendingOrders.Contains(po)) return po;
+          lock (PendingOrders) {
+            if (PendingOrders.Contains(po)) return po;
+            PendingOrders.Add(po);
+          }
           coreFX.Desk.CreateFixOrderAsync(coreFX.Desk.FIX_CLOSEMARKET, tradeId, 0, 0, "", "", "", true, lots, remark, 0, out requestID);
           po.RequestId = requestID + "";
-          PendingOrders.Add(po);
           return po;
         } catch (Exception exc) {
+          RemovePendingOrder(po);
           RaiseError(new Exception(string.Format("TradeId:{0},Lots:{1}", tradeId, lots), exc));
           return null;
         }
@@ -1357,7 +1393,9 @@ namespace Order2GoAddIn {
 
     #region FXCore Event Handlers
     void RemovePendingOrder(PendingOrder po) {
+      lock (PendingOrders) {
         PendingOrders.Remove(po);
+      }
     }
 
     void mSink_ITradeDeskEvents_Event_OnRowAdded(object _table, string RowID,string rowText) {
@@ -1377,11 +1415,30 @@ namespace Order2GoAddIn {
               lock (globalOrderPending) {
                 parser.ParseEventRow(rowText, table.Type);
                 var tradeParsed = InitTrade(parser);
+                Debug.WriteLine("Trade Added:" + tradeParsed);
+                var poStop = PendingStops.SingleOrDefault(po => po.TradeId == RowID);
+                if (poStop != null) {
+                  try {
+                    FixCreateStop(poStop.TradeId, poStop.Stop, poStop.Remark);
+                    PendingStops.Remove(poStop);
+                  } catch (TradeNotFoundException) {
+                    Debug.WriteLine("Tarde " + RowID + " is not found. Again!");
+                  }
+                }
+                var poLimit = PendingLimits.SingleOrDefault(po => po.TradeId == RowID);
+                if (poLimit != null) {
+                  try {
+                    FixCreateLimit(poLimit.TradeId, poLimit.Limit, poLimit.Remark);
+                    PendingLimits.Remove(poLimit);
+                  } catch (TradeNotFoundException) {
+                    Debug.WriteLine("Tarde " + RowID + " is not found. Again!");
+                  }
+                }
                 var poTrade = PendingOrders.SingleOrDefault(po => po.RequestId == tradeParsed.OpenOrderReqID);
-                if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
+                //if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
+                Trade trade = GetTrade(tradeParsed.Id);
                 if (new[] { "", tradeParsed.Pair }.Contains(Pair))
                   RaiseTradeAdded(tradeParsed);
-                var trade = GetTrades("").SingleOrDefault(t => t.Id == tradeParsed.Id);
                 if (trade == null && poTrade!=null) {
                   FixOrderOpen(poTrade.Pair, poTrade.Buy, poTrade.Lot, poTrade.Limit, poTrade.Stop, poTrade.Remark);
                 }
@@ -1391,28 +1448,37 @@ namespace Order2GoAddIn {
           case "orders":
             parser.ParseEventRow(rowText, table.Type);
             var order = InitOrder(parser);
+            Debug.WriteLine("Order Add:" + order);
             var poOrder = PendingOrders.SingleOrDefault(o => o.RequestId == order.RequestID);
             if (poOrder != null) {
               poOrder.OrderId = order.OrderID;
               poOrder.TradeId = order.TradeID;
               var complete = true;
-              if (order.Stop != poOrder.Stop) {
-                complete = false;
-                FixCreateStop(poOrder.TradeId, poOrder.Stop, poOrder.Remark).Parent = poOrder;
+              try {
+                if (order.Stop != poOrder.Stop) {
+                  FixCreateStop(poOrder.TradeId, poOrder.Stop, poOrder.Remark);
+                  complete = false;
+                }
+                if (order.Limit != poOrder.Limit) {
+                  FixCreateLimit(poOrder.TradeId, poOrder.Limit, poOrder.Remark);
+                  complete = false;
+                }
+              } catch (TradeNotFoundException) {
+                PendingLimits.Add(poOrder);
+                PendingStops.Add(poOrder);
+                complete = true;
               }
-              if (order.Limit != poOrder.Limit) {
-                complete = false;
-                FixCreateLimit(poOrder.TradeId, poOrder.Limit, poOrder.Remark).Parent = poOrder;
-              }
-              if( complete) PendingOrders.Remove(poOrder);
+              //if (complete) 
+                PendingOrders.Remove(poOrder);
             }
             break;
           case "closed trades": {
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
+              Debug.WriteLine("Closed Trades:" + RowID);
               System.IO.File.AppendAllText("ClosedTrades.txt", showTable(table, row) + Environment.NewLine);
 
               var poTrade = PendingOrders.SingleOrDefault(po => po.TradeId == RowID);
-              if (poTrade != null && !poTrade.HasKids(PendingOrders)) PendingOrders.Remove(poTrade);
+              if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
             }
             break;
         }
@@ -1436,10 +1502,10 @@ namespace Order2GoAddIn {
             }
             break;
           case TABLE_ORDERS:
-            parser.ParseEventRow(rowText, table.Type);
-            var order = InitOrder(parser);
-            var poOrder = PendingOrders.SingleOrDefault(po => po.RequestId == order.RequestID);
-            if (poOrder != null && !poOrder.HasKids(PendingOrders)) PendingOrders.Remove(poOrder);
+            //parser.ParseEventRow(rowText, table.Type);
+            //var order = InitOrder(parser);
+            //var poOrder = PendingOrders.SingleOrDefault(po => po.RequestId == order.RequestID);
+            //if (poOrder != null && !poOrder.HasKids(PendingOrders)) RemovePendingOrder(poOrder);
             break;
           case TABLE_TRADES:
             //parser.ParseEventRow(rowText, table.Type);
@@ -1671,8 +1737,18 @@ namespace Order2GoAddIn {
     public double BuyToSellLots { get { return (double)Math.Min(BuyLots, SellLots) / Math.Max(BuyLots, SellLots); } }
     public double SellAvgOpen { get; set; }
     public double BuyAvgOpen { get; set; }
+    public double StopAmount { get; set; }
+    public double LimitAmount { get; set; }
     public HedgeHog.Bars.Price PriceCurrent { get; set; }
     public double NetPL { get; set; }
   }
   #endregion
+
+  public class TradeNotFoundException : Exception {
+    public string TradeId { get; set; }
+    public TradeNotFoundException(string tradeId)
+      : base("The trade with the specified identifier["+tradeId+"] is not found.") {
+        this.TradeId = tradeId;
+    }
+  }
 }

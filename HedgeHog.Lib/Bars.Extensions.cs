@@ -513,7 +513,7 @@ namespace HedgeHog.Bars {
     }
     public static void FillRsis<TBar>(this TBar[] bars, int RsiTicks) where TBar : BarBase {
       double rsiPrev = 0;
-      foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue)) {
+      foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue).AsParallel()) {
         var ts = bars.TakeWhile(t => t <= rate).ToArray();
         if (ts.Length > RsiTicks) {
           ts = ts.Skip(ts.Count() - RsiTicks).ToArray();

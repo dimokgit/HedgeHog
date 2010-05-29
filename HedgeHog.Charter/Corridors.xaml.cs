@@ -160,8 +160,8 @@ namespace HedgeHog {
       plotter.Children.Add(lineNetBuy);
       innerPlotter.Children.Add(lineMax);
       innerPlotter.Children.Add(lineMaxAvg);
+      innerPlotter.Children.Add(lineMinAvg);
       innerPlotter.Children.Add(lineMin);
-      plotter.Children.Add(lineMinAvg);
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
       plotter.Children.Add(lineTimeMin);
@@ -276,6 +276,7 @@ namespace HedgeHog {
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
       LineMax = voltageHigh;
       LineMaxAvg = priceMaxAvg;
+      LineMinAvg = priceMinAvg;
       LineMin = voltageCurr;
       LineTimeMax = timeHigh;
       LineTimeMin = timeCurr;
@@ -283,7 +284,6 @@ namespace HedgeHog {
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle,
         (DispatcherOperationCallback)delegate(object o)
       {
-        LineMinAvg = priceMinAvg;
         LineNetSell = netSell;
         LineNetBuy = netBuy;
         LineAvgAsk = priceAverageAskBid.OrderBy(p => p).Last();

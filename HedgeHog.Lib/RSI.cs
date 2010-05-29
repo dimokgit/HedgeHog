@@ -26,18 +26,20 @@ namespace HedgeHog.Rsi {
     public static void Rsi1(this Rate[] Rates, int interval,bool Refresh) {
       Rates.Rsi(interval, (r, v) => r.PriceRsi1 = v, r => r.PriceRsi1, Refresh);
     }
-    public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue) {
+    public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double?> SetValue, Func<Rate, double?> GetValue) {
       Rates.Rsi(interval, SetValue, GetValue, false);
     }
-    public static void Rsi(this Rate[] Rates, TimeSpan interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
+    public static void Rsi(this Rate[] Rates, TimeSpan interval, Action<Rate, double?> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
       var startDate = Rates.First().StartDate + interval;
-      foreach (var rate in Rates.Where(r => r.StartDate > startDate).AsParallel())
-        if (Refresh || !GetValue(rate).HasValue)
+      foreach (var rate in Rates.Where(r => r.StartDate > startDate))
+        if (Refresh && rate.StartDate <= startDate) SetValue(rate, null);
+        else if (Refresh || !GetValue(rate).HasValue)
           SetValue(rate, Rates.Where(interval, rate).ToArray().Rsi());
     }
-    public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
-      for (int i = interval; i < Rates.Length; i++)
-        if (Refresh || !GetValue(Rates[i]).HasValue)
+    public static void Rsi(this Rate[] Rates, int interval, Action<Rate, double?> SetValue, Func<Rate, double?> GetValue, bool Refresh) {
+      for (int i = 0; i < Rates.Length; i++)
+        if (Refresh && i < interval) SetValue(Rates[i], null);
+        else if (Refresh || !GetValue(Rates[i]).HasValue)
           SetValue(Rates[i], Rates.Skip(i - interval).Take(interval).ToArray().Rsi());
     }
     public static double Rsi(this Rate[] Rates) {
