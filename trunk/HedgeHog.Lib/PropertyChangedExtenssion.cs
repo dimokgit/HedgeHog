@@ -7,8 +7,14 @@ using System.Linq.Expressions;
 
 namespace HedgeHog {
   public static class PropertyChangedExtensions {
+    public static string GetLambda(this LambdaExpression propertyExpression) {
+      var m = propertyExpression.Body.GetPropertyLocal("Member");
+      return m.GetPropertyLocal("Name") + "";
+    }
     public static void Raise(this PropertyChangedEventHandler handler, LambdaExpression propertyExpression) {
       if (handler != null) {
+        handler(null, new PropertyChangedEventArgs(propertyExpression.GetLambda()));
+        /*
         // Retreive lambda body
         var body = propertyExpression.Body as MemberExpression;
         if (body == null)
@@ -28,7 +34,9 @@ namespace HedgeHog {
         string propertyName = body.Member.Name;
         var e = new PropertyChangedEventArgs(propertyName);
         handler(vm, e);
+        */
       }
     }
+    static object GetPropertyLocal(this object o, string name) { return o.GetType().GetProperty(name).GetValue(o, null); }
   }
 }

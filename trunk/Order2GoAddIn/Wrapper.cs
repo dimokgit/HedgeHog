@@ -255,6 +255,15 @@ namespace Order2GoAddIn {
       if (TradeAdded != null) TradeAdded(trade);
     }
 
+    public delegate void OrderAddedEventHandler(Order Order);
+    public event OrderAddedEventHandler OrderAdded;
+
+    void RaiseOrderAdded(Order Order) {
+      if (OrderAdded != null) OrderAdded(Order);
+    }
+
+
+
     public delegate void TradeRemovedEventHandler(Trade trade);
     public event TradeRemovedEventHandler TradeRemoved;
     void RaiseTradeRemoved(Trade trade) {
@@ -1097,10 +1106,25 @@ namespace Order2GoAddIn {
         return null;
       }
     }
-
+    public void ChangeEntryOrderStopLimit(string orderId, double rate, bool isStop) {
+      Desk.ChangeEntryOrderStopLimit(orderId, rate, isStop, 0);
+    }
+    public void ChangeOrderRate(string orderId, double rate) {
+      Desk.ChangeOrderRate(orderId, rate, 0);
+    }
+    public void ChangeOrderAmount(string orderId, int lot) {
+      Desk.ChangeEntryOrderAmount(orderId, lot);
+    }
     #endregion
 
     #region Entry
+    public void DeleteOrder(string orderId) {
+      try {
+        Desk.DeleteOrder(orderId);
+      } catch (Exception exc) {
+        RaiseError(exc);
+      }
+    }
     int GetFixOrderLind(bool buy, Price currentPrice, double orderRate) {
       if (buy)
         return currentPrice.Ask > orderRate ? Desk.FIX_ENTRYLIMIT : Desk.FIX_ENTRYSTOP;
@@ -1123,6 +1147,18 @@ namespace Order2GoAddIn {
           throw new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots), exc);
         }
       }
+    }
+    public void ChangeEntryOrderPeggedLimit(string orderId,double rate) {
+      object o1;
+      var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);
+      if (order != null) {
+        rate = order.IsBuy ? rate.Abs() : -rate.Abs();
+        Desk.ChangeEntryOrderStopLimit2(orderId, rate, Desk.SL_PEGLIMITOPEN, 0, out o1);
+      }
+    }
+    public void ChangeEntryOrderPeggedStop(string orderId, double rate) {
+      object o;
+      Desk.ChangeEntryOrderStopLimit2(orderId, rate, Desk.SL_PEGGEDSTOP, 0, out o);
     }
     #endregion
 
@@ -1483,6 +1519,7 @@ namespace Order2GoAddIn {
           case "orders":
             parser.ParseEventRow(rowText, table.Type);
             var order = InitOrder(parser);
+            RaiseOrderAdded(order);
             Debug.WriteLine("Order Add:" + order);
             var poOrder = PendingOrders.SingleOrDefault(o => o.RequestId == order.RequestID);
             if (poOrder != null) {
@@ -1579,9 +1616,12 @@ namespace Order2GoAddIn {
         FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
         switch (table.Type.ToLower()) {
           case "trades":
-            parser.ParseEventRow(sExtInfo, table.Type);
-            var tradeParsed = InitTrade(parser);
-            RaiseTradeRemoved(tradeParsed);
+            var trade = GetTrade(RowID);
+            if (trade == null) {
+              parser.ParseEventRow(sExtInfo, table.Type);
+              trade = InitTrade(parser);
+            }
+            RaiseTradeRemoved(trade);
             break;
         }
       } catch (Exception exc) {

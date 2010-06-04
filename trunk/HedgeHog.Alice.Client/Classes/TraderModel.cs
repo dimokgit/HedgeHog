@@ -680,6 +680,7 @@ namespace HedgeHog.Alice.Client {
         IsInLogin = true;
         if (CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
+          InvokeSyncronize(fwMaster.GetAccount());
           return true;
         } else return false;
       } catch (Exception exc) {
