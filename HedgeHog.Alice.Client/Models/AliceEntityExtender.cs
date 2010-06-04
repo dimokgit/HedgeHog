@@ -31,12 +31,132 @@ namespace HedgeHog.Alice.Client.Models {
       d.ForEach(e => setField(e, Guid.NewGuid()));
     }
   }
+
   public partial class TradingMacro {
     int _lotSize;
-    public int LotSize { get { return _lotSize; } set { _lotSize = value; OnPropertyChanged("LotSize"); } }
-    
-    int _lots = 1;
-    public int Lots { get { return _lots; } set { _lots = value; } }
+    public int LotSize {
+      get { return _lotSize; }
+      set {
+        if (_lotSize == value) return;
+        _lotSize = value;
+        OnPropertyChanged("LotSize");
+        OnPropertyChanged("TradeAmount");
+      }
+    }
+
+    public int TradeAmount {
+      get { return LotSize * Lots; }
+    }
+
+    double _corridornes;
+
+    public double Corridornes {
+      get { return _corridornes; }
+      set {
+        if (_corridornes == value) return;
+        _corridornes = value; OnPropertyChanged("Corridornes");
+      }
+    }
+
+    bool _freezLimit;
+    public bool FreezLimit {
+      get { return _freezLimit; }
+      set {
+        if (_freezLimit == value) return;
+        _freezLimit = value; OnPropertyChanged("FreezLimit");
+      }
+    }
+
+    DateTime _lastRateTime;
+    public DateTime LastRateTime {
+      get { return _lastRateTime; }
+      set {
+        if (_lastRateTime == value) return;
+        _lastRateTime = value;
+        OnPropertyChanged("LastRateTime"); }
+    }
+
+    double _currentLoss;
+
+    public double CurrentLoss {
+      get { return _currentLoss; }
+      set {
+        if (_currentLoss == value) return;
+        _currentLoss = value; OnPropertyChanged("CurrentLoss");
+      }
+    }
+
+    public double AngleInRadians { get { return Math.Atan(Angle) * (180 / Math.PI); } }
+    double _angle;
+    public double Angle {
+      get { return _angle; }
+      set {
+        if (_angle == value) return;
+        _angle = value;
+        OnPropertyChanged("Angle"); OnPropertyChanged("AngleInRadians"); }
+    }
+
+    double _overlap;
+    public double Overlap {
+      get { return _overlap; }
+      set {
+        if (_overlap == value) return;
+        _overlap = value; 
+        OnPropertyChanged("Overlap"); }
+    }
+
+    int _overlap5;
+    public int Overlap5 {
+      get { return _overlap5; }
+      set {
+        if (_overlap5 == value) return;
+        _overlap5 = value; OnPropertyChanged("Overlap5");
+      }
+    }
+
+    bool _PendingSell;
+    public bool PendingSell {
+      get { return _PendingSell; }
+      set {
+        if (_PendingSell == value) return;
+        _PendingSell = value; 
+        OnPropertyChanged("PendingSell"); }
+    }
+
+    bool _PendingBuy;
+    public bool PendingBuy {
+      get { return _PendingBuy; }
+      set {
+        if (_PendingBuy == value) return;
+        _PendingBuy = value;
+        OnPropertyChanged("PendingBuy");
+      }
+    }
+
+
+    double _currentPrice;
+    public double CurrentPrice {
+      get { return _currentPrice; }
+      set { _currentPrice = value; OnPropertyChanged("CurrentPrice"); }
+    }
+
+    double _balanceOnStop;
+    public double BalanceOnStop {
+      get { return _balanceOnStop; }
+      set {
+        if (_balanceOnStop == value) return;
+        _balanceOnStop = value;
+        OnPropertyChanged("BalanceOnStop"); }
+    }
+
+    double _balanceOnLimit;
+    public double BalanceOnLimit {
+      get { return _balanceOnLimit; }
+      set {
+        if (_balanceOnLimit == value) return;
+        _balanceOnLimit = value; 
+        OnPropertyChanged("BalanceOnLimit"); }
+    }
 
     double? _net;
     public double? Net { get { return _net; } 

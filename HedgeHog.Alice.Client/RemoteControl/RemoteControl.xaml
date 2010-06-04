@@ -4,6 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
@@ -45,19 +46,52 @@
     <DataTemplate x:Key="StopCellEditTemplate">
       <tlrkInput:RadNumericUpDown Value="{Binding Stop,Mode=TwoWay}" />
     </DataTemplate>
-    <DataTemplate x:Key="LimitCellTemplate">
-      <ContentPresenter HorizontalAlignment="Center" Content="{Binding Limit}"/>
+    <DataTemplate x:Key="LimitBarCellTemplate">
+      <ContentPresenter HorizontalAlignment="Center" Content="{Binding LimitBar}"/>
     </DataTemplate>
-    <DataTemplate x:Key="LimitCellEditTemplate">
-      <tlrkInput:RadNumericUpDown Value="{Binding Limit,Mode=TwoWay}" />
+    <DataTemplate x:Key="LimitBarCellEditTemplate">
+      <ComboBox SelectedValue="{Binding LimitBar}">
+        <sys:Int32>1</sys:Int32>
+        <sys:Int32>2</sys:Int32>
+        <sys:Int32>3</sys:Int32>
+        <sys:Int32>4</sys:Int32>
+        <sys:Int32>5</sys:Int32>
+        <sys:Int32>6</sys:Int32>
+        <sys:Int32>7</sys:Int32>
+        <sys:Int32>8</sys:Int32>
+        <sys:Int32>9</sys:Int32>
+        <sys:Int32>10</sys:Int32>
+        <sys:Int32>11</sys:Int32>
+        <sys:Int32>12</sys:Int32>
+        <sys:Int32>13</sys:Int32>
+        <sys:Int32>14</sys:Int32>
+        <sys:Int32>15</sys:Int32>
+        <sys:Int32>16</sys:Int32>
+        <sys:Int32>17</sys:Int32>
+        <sys:Int32>18</sys:Int32>
+        <sys:Int32>19</sys:Int32>
+        <sys:Int32>20</sys:Int32>
+      </ComboBox>
+    </DataTemplate>
+    <DataTemplate x:Key="TradeAmountCellTemplate">
+      <ContentPresenter HorizontalAlignment="Right" Content="{Binding TradeAmount}" ContentStringFormat="c0" />
     </DataTemplate>
 
     <DataTemplate x:Key="NetCellTemplate">
       <Label Content="{Binding Net}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
     </DataTemplate>
+    <DataTemplate x:Key="LossCellTemplate">
+      <Label Content="{Binding CurrentLoss}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding CurrentLoss,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
+    </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
       <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" 
             Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+    </DataTemplate>
+    <DataTemplate x:Key="OverlapCellTemplate">
+      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding AngleInRadians,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
+    </DataTemplate>
+    <DataTemplate x:Key="PendingTradeCellTemplate">
+      <Label HorizontalAlignment="Stretch" Background="{Binding PendingOrder,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
     </DataTemplate>
   </UserControl.Resources>
     <Grid>
@@ -68,14 +102,37 @@
         <DataGridTemplateColumn Header="Ratio" CellTemplate="{StaticResource TradingRatioTemplate}" CellEditingTemplate="{StaticResource TradingRatioEditTemplate}"/>
         <DataGridTextColumn Header="$/Lot" Binding="{Binding LotSize,Mode=OneWay}" IsReadOnly="True" />
         <DataGridTemplateColumn Header="#Lots" CellTemplate="{StaticResource NumberOfLotsCellTemplate}" CellEditingTemplate="{StaticResource NumberOfLotsCellEditTemplate}" />
-        <DataGridTemplateColumn Header="Stop" CellTemplate="{StaticResource StopCellTemplate}" CellEditingTemplate="{StaticResource StopCellEditTemplate}" />
-        <DataGridTemplateColumn Header="Limit" CellTemplate="{StaticResource LimitCellTemplate}" CellEditingTemplate="{StaticResource LimitCellEditTemplate}" />
+        <DataGridTemplateColumn Header="$Lot" CellTemplate="{StaticResource TradeAmountCellTemplate}" IsReadOnly="True" />
+        <DataGridTextColumn Header="Stop" Binding="{Binding Stop}" IsReadOnly="True" />
+        <DataGridTextColumn Header="|L|" Binding="{Binding LimitBar}" />
+        <DataGridTextColumn Header="L=" Binding="{Binding Limit}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Loss" CellTemplate="{StaticResource LossCellTemplate}" />
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
+        <DataGridCheckBoxColumn Header="FL" Binding="{Binding FreezLimit}" />
         <DataGridTemplateColumn CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
+
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
+        <!--<DataGridTextColumn Header="LB" Binding="{Binding BalanceOnLimit,StringFormat=c0}" IsReadOnly="True"/>
         <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="SB" Binding="{Binding BalanceOnStop,StringFormat=c0}" IsReadOnly="True"/>-->
+
+        <DataGridTextColumn Header="Ŧ" Binding="{Binding Corridornes,StringFormat=p0}" IsReadOnly="True"/>
+        <DataGridTemplateColumn Header="OL"  IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock Text="{Binding Overlap}"/>
+                <TextBlock Text="{Binding Overlap5,StringFormat=/{0:n0}}"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
+        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>
+        <DataGridTemplateColumn Header="PT" CellTemplate="{StaticResource PendingTradeCellTemplate}" />
+        <DataGridTextColumn Header="LastRate" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
       </DataGrid.Columns>
     </DataGrid>
 

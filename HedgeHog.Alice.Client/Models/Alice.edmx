@@ -32,6 +32,9 @@
           <Property Name="Limit" Type="float" Nullable="false" />
           <Property Name="Price" Type="float" Nullable="false" />
           <Property Name="Buy" Type="bit" Nullable="false" />
+          <Property Name="Lots" Type="int" Nullable="false" />
+          <Property Name="LimitBar" Type="int" Nullable="false" />
+          <Property Name="OverlapToStop" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -64,6 +67,9 @@
           <Property Type="Double" Name="Limit" Nullable="false" />
           <Property Type="Double" Name="Price" Nullable="false" />
           <Property Type="Boolean" Name="Buy" Nullable="false" />
+          <Property Type="Int32" Name="Lots" Nullable="false" />
+          <Property Type="Int32" Name="LimitBar" Nullable="false" />
+          <Property Type="Int32" Name="OverlapToStop" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -87,6 +93,9 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="OverlapToStop" ColumnName="OverlapToStop" />
+                <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
+                <ScalarProperty Name="Lots" ColumnName="Lots" />
                 <ScalarProperty Name="Buy" ColumnName="Buy" />
                 <ScalarProperty Name="Price" ColumnName="Price" />
                 <ScalarProperty Name="Limit" ColumnName="Limit" />
@@ -119,7 +128,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.0853483072916656" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.2496956380208335" />
       </Diagram>
     </Diagrams>
   </Designer>

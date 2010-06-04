@@ -6,5 +6,7 @@ using System.Text;
 namespace HedgeHog.Alice.Client {
   public interface IMainModel {
     Order2GoAddIn.CoreFX CoreFX { get; }
+    Exception Log { set; }
+    double CurrentLoss { set; }
   }
 }

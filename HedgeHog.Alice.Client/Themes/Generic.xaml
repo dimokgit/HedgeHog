@@ -12,6 +12,12 @@
     <Setter Property="Background" Value="Green"/>
     <Setter Property="Foreground" Value="White"/>
   </Style>
+  <DataTemplate x:Key="CombinedBalanceCellTemplate">
+    <WrapPanel>
+      <TextBlock Text="{Binding Balance,StringFormat=c0}"/>
+      <TextBlock Text="{Binding OriginalBalance,StringFormat=/{0:c0}}"/>
+    </WrapPanel>
+  </DataTemplate>
     <Style TargetType="{x:Type ui:AccountInfo}">
         <Setter Property="Template">
             <Setter.Value>
@@ -23,9 +29,10 @@
                       RowBackground="{Binding [0].HasProfit,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Pink|#FFD9F5D9}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Balance" Binding="{Binding Balance,StringFormat=c0}" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="Balance" CellTemplate="{StaticResource CombinedBalanceCellTemplate}" IsReadOnly="True">
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Equity" Binding="{Binding Equity,StringFormat=c0}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Profit" Binding="{Binding ProfitPercent,StringFormat=p0,Mode=OneWay}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Profit" Binding="{Binding ProfitPercent,StringFormat=p1,Mode=OneWay}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Pos" Binding="{Binding Trades.Length,Mode=OneWay}" IsReadOnly="True" ToolTipService.ToolTip="Total Positions"/>
                 <DataGridTextColumn Header="Margin" Binding="{Binding UsableMargin,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding PipsToMC}" IsReadOnly="True">
@@ -44,8 +51,28 @@
                     </DataTemplate>
                   </DataGridTextColumn.HeaderTemplate>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Limit ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Stop ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="Limit ∑">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <WrapPanel>
+                        <TextBlock Text="{Binding LimitAmount,StringFormat=c0}"/>
+                        <TextBlock Text="{Binding BalanceOnLimit,StringFormat=/{0:c0}}"/>
+                      </WrapPanel>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Stop ∑">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <WrapPanel>
+                        <TextBlock Text="{Binding StopAmount,StringFormat=c0}"/>
+                        <TextBlock Text="{Binding BalanceOnStop,StringFormat=/{0:c0}}"/>
+                      </WrapPanel>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTextColumn Header="Time" Binding="{Binding ServerTime,StringFormat=HH:mm:ss,Mode=OneWay}" IsReadOnly="True"/>
               </DataGrid.Columns>
             </DataGrid>

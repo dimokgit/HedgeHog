@@ -11,6 +11,9 @@ using System.Data.Objects;
 using System.Windows.Input;
 using System.Windows;
 using HedgeHog.Shared;
+using HedgeHog.Bars;
+using System.IO;
+using System.Xml.Linq;
 
 namespace HedgeHog.Alice.Client {
   public class RemoteControlModel : HedgeHog.Models.ModelBase {
@@ -20,18 +23,75 @@ namespace HedgeHog.Alice.Client {
     public bool IsLoggedIn { get { return MasterModel.CoreFX.IsLoggedIn; } }
     public IMainModel MasterModel { get; set; }
     public ObservableCollection<string> Instruments { get; set; }
-    public double[] TradingRatios { get { return new double[] { 0.1,0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }; } }
+    public double[] TradingRatios { get { return new double[] {0, 0.1,0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }; } }
     public double[] StopsAndLimits { get { return new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120, 135, 150 }; } }
+
+    double CurrentLoss { get { return TradingMacrosCopy.Sum(tm => tm.CurrentLoss); } }
+    Models.TradingMacro[] _tradingMacrosCiopy;
+    public Models.TradingMacro[] TradingMacrosCopy {
+      get {
+        if (_tradingMacrosCiopy == null) _tradingMacrosCiopy = TradingMacros.ToArray();
+        return _tradingMacrosCiopy; 
+      }
+    }
+    Models.TradingMacro GetTradingMacro(string pair) {
+      var tms = TradingMacrosCopy.Where(tm => tm.Pair == pair).ToArray();
+      if (tms.Length == 0)
+        new NullReferenceException("TradingMacro is null");
+      return tms.OrderBy(tm => tm.TradeAmount).ThenBy(tm => tm.Limit).ThenBy(tm => tm.Stop).FirstOrDefault();
+    }
+
     public IQueryable<Models.TradingMacro> TradingMacros {
       get {
         try {
-          return !IsInDesigh && MasterModel.CoreFX.IsLoggedIn ? GlobalStorage.Context.TradingMacroes : GlobalStorage.Context.TradingMacroes.Take(0);
+          return !IsInDesigh && MasterModel.CoreFX.IsLoggedIn ? GlobalStorage.Context.TradingMacroes : new[] { new Models.TradingMacro() }.AsQueryable();
         } catch (Exception exc) {
           Debug.Fail("TradingMacros is null.");
           return null;
         }
       }
     }
+    private Exception Log { set { MasterModel.Log = value; } }
+    List<Trade> tradesWithLoss = new List<Trade>();
+    Dictionary<string, List<Rate>> ratesByPair = new Dictionary<string, List<Rate>>();
+    Dictionary<string, Tick[]> ticksByPair = new Dictionary<string, Tick[]>();
+    Dictionary<string, double> anglesByPair = new Dictionary<string, double>();
+
+    Dictionary<string, ThreadScheduler> _loadTicks = new Dictionary<string, ThreadScheduler>();
+    ThreadScheduler GetTickLoader(string pair) {
+      if (!_loadTicks.ContainsKey(pair)) 
+        _loadTicks.Add(pair, new ThreadScheduler(() => LoadTicks(pair), (s, e) => Log = e.Exception));
+      return _loadTicks[pair];
+    }
+
+    #region PendingTrade
+    class PendingTrade {
+      public string Pair { get; set; }
+      public bool IsBuy { get; set; }
+      public Func<bool> Condition { get; set; }
+      public Action OpenTradeCommand;
+      public PendingTrade(string pair, bool isBuy, Func<bool> condition,Action openTradeCommand) {
+        this.Pair = pair;
+        this.IsBuy = isBuy;
+        this.Condition = condition;
+        this.OpenTradeCommand = openTradeCommand;
+      }
+    }
+    List<PendingTrade> _pendingTrades= new List<PendingTrade>();
+    PendingTrade GetPendingTrade(string pair, bool isBuy) {
+       var pt = _pendingTrades.SingleOrDefault(po => po.Pair == pair && po.IsBuy == isBuy);
+       return pt == null ? null : pt;
+    }
+    bool HasPendingOrder(string pair, bool isBuy) { return GetPendingTrade(pair, isBuy) != null; }
+    void RemovePendingOrder(string pair, bool isBuy) {
+      var pt = GetPendingTrade(pair, isBuy);
+      if (pt != null) _pendingTrades.Remove(pt);
+    }
+    void AddPendingOrder(bool isBuy, string pair, Func<bool> condition, Action openTradeCommand) {
+      _pendingTrades.Add(new PendingTrade(pair, isBuy, condition, openTradeCommand));
+    }
+    #endregion
+
     #endregion
 
     #region Commands
@@ -86,8 +146,9 @@ namespace HedgeHog.Alice.Client {
     }
     void Buy(object tradingMacro) {
       var tm = tradingMacro as Models.TradingMacro;
-      OpenTrade(tm, true);
       try {
+        OpenTrade(tm, true);
+        //AddPendingOrder(true, tm.Pair, () => openTradeCondition( tm,true), () => OpenTrade(tm, true));
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
       }
@@ -106,20 +167,12 @@ namespace HedgeHog.Alice.Client {
     }
     void Sell(object tradingMacro) {
       var tm = tradingMacro as Models.TradingMacro;
-      OpenTrade(tm, false);
       try {
+        OpenTrade(tm, false);
+        //AddPendingOrder(false, tm.Pair, () => openTradeCondition(tm, false), () => OpenTrade(tm, false));
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
       }
-    }
-
-
-    private void OpenTrade(Models.TradingMacro tm,bool buy) {
-      var tradeAmount = tm.LotSize * tm.Lots;
-      var price = fw.GetPrice(tm.Pair);
-      var limit = tm.Limit == 0 ? 0 : buy ? price.Ask + fw.InPoints(tm.Pair, tm.Limit) : price.Bid - fw.InPoints(tm.Pair,tm.Limit);
-      var stop = tm.Stop == 0 ? 0 : buy ? price.Bid - fw.InPoints(tm.Pair, tm.Stop) : price.Ask + fw.InPoints(tm.Pair, tm.Stop);
-      fw.FixOrderOpen(tm.Pair, buy, tradeAmount, limit, stop, "");
     }
 
     #endregion
@@ -130,53 +183,332 @@ namespace HedgeHog.Alice.Client {
       this.MasterModel = tradesModel;
       if (!IsInDesigh) {
         fw = new FXW(MasterModel.CoreFX);
+        fw.TradeRemoved += fw_TradeRemoved;
+        fw.Error += fw_Error;
         MasterModel.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
         MasterModel.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
+
         GlobalStorage.Context.ObjectMaterialized += new ObjectMaterializedEventHandler(Context_ObjectMaterialized);
+        GlobalStorage.Context.ObjectStateManager.ObjectStateManagerChanged += new System.ComponentModel.CollectionChangeEventHandler(ObjectStateManager_ObjectStateManagerChanged);
+
+        var xmlString = File.ReadAllText(@"ClosedTrades.txt");
+        var x = XElement.Parse("<x>" + xmlString + "</x>");
+        var nodes = x.Nodes().ToArray();
+        foreach (XElement node in nodes.Reverse().Take(150)) {
+          var trade = new Trade();
+          trade.FromString(node);
+          if (trade.GrossPL < 0 && !tradesWithLoss.Any(t => t.Id == trade.Id))
+            tradesWithLoss.Add(trade);
+        }
+
       }
     }
 
+    void fw_Error(object sender, Order2GoAddIn.ErrorEventArgs e) {
+      Log = e.Error;
+    }
+
+
     ~RemoteControlModel() {
+      fw.TradeRemoved -= fw_TradeRemoved;
+      fw.Error -= fw_Error;
       MasterModel.CoreFX.LoggedInEvent -= CoreFX_LoggedInEvent;
       MasterModel.CoreFX.LoggedOffEvent -= CoreFX_LoggedOffEvent;
     }
     #endregion
 
     #region Event Handlers
+    void ObjectStateManager_ObjectStateManagerChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) {
+      var tm = e.Element as Models.TradingMacro;
+      if (tm != null) {
+        if (tm.EntityState == System.Data.EntityState.Detached)
+          tm.PropertyChanged -= TradingMacro_PropertyChanged;
+        else if (tm.EntityState == System.Data.EntityState.Added)
+          InitTradingMacro(tm);
+      }
+    }
+
     void Context_ObjectMaterialized(object sender, ObjectMaterializedEventArgs e) {
       var tm = e.Entity as Models.TradingMacro;
       if (tm == null) return;
-      SetLotSize(tm);
-      tm.PropertyChanged += TradingMacro_PropertyChanged;
+      InitTradingMacro(tm);
+      LoadRates(tm.Pair);
     }
+
     void TradingMacro_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
       var tm = sender as Models.TradingMacro;
-      var propsToHandle = Lib.GetLambdas(() => tm.Pair, () => tm.TradingRatio);
-      if (  propsToHandle.Contains(e.PropertyName)) SetLotSize(tm);
+      var propsToHandle = Lib.GetLambdas(() => tm.Pair, () => tm.TradingRatio, () => tm.Lots, () => tm.Stop, () => tm.Limit);
+      if (propsToHandle.Contains(e.PropertyName)) SetLotSize(tm, fw.GetAccount());
+      if (e.PropertyName == Lib.GetLambda(() => tm.LimitBar)) SetLimitByBar(tm);
+      if (e.PropertyName == Lib.GetLambda(() => tm.OverlapToStop)) LoadRates(tm.Pair);
     }
+
     void CoreFX_LoggedInEvent(object sender, EventArgs e) {
       InitInstruments();
       fw.PriceChanged += fw_PriceChanged;
+      foreach (var trade in fw.GetTrades()) {
+        var prevLoss = getChainGross(trade) - trade.GrossPL;
+        if (prevLoss != 0) GetTradingMacro(trade.Pair).CurrentLoss = prevLoss;
+      }
+      MasterModel.CurrentLoss = CurrentLoss;
     }
+
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       fw.PriceChanged -= fw_PriceChanged;
     }
+
+    Dictionary<string, ThreadScheduler> _PriceChangedChedulers = new Dictionary<string, ThreadScheduler>();
+    ThreadScheduler GetPriceChanceScheduler(string pair) {
+      if (!_PriceChangedChedulers.ContainsKey(pair)) 
+        _PriceChangedChedulers.Add(pair, new ThreadScheduler(() => RunPrice(pair), (s, e) => Log = e.Exception));
+      return _PriceChangedChedulers[pair];
+    }
+
     void fw_PriceChanged(Bars.Price Price) {
-      var summaries = fw.GetSummaries();
-      foreach (var tm in TradingMacros) {
-        var summary = summaries.SingleOrDefault(s => s.Pair == tm.Pair);
+      var pc = GetPriceChanceScheduler(Price.Pair);
+      if (!pc.IsRunning) pc.Run();
+    }
+
+    private void RunPrice(string pair) {
+      try {
+        var tm = GetTradingMacro(pair);
+        if (tm == null) return;
+        var tl = GetTickLoader(pair);
+        if (!tl.IsRunning) tl.Run();
+        var summary = fw.GetSummary(pair);
+        var account = fw.GetAccount();
         tm.Net = summary != null ? summary.NetPL : (double?)null;
-        tm.StopAmount = summary != null ? summary.StopAmount : (double?)null;
-        tm.LimitAmount = summary != null ? summary.LimitAmount : (double?)null;
+        tm.BalanceOnStop = account.Balance + tm.StopAmount.GetValueOrDefault();
+        tm.BalanceOnLimit = account.Balance + tm.LimitAmount.GetValueOrDefault();
+        SetLotSize(tm, account);
+        CheckTrades(account.Trades);
+        ProcessPendingOrders(pair);
+      } catch (Exception exc) { Log = exc; }
+    }
+
+    Func<Models.TradingMacro, bool, bool> openTradeCondition = (tm,isBuy) => isBuy ? tm.Angle < 0 : tm.Angle > 0;
+    void fw_TradeRemoved(Trade trade) {
+      try {
+        #region Locals
+        var pair = trade.Pair;
+        var tm = GetTradingMacro(pair);
+        if (tm.Lots == 0) return;
+        var limitBar = tm.LimitBar;
+        var totalGross = getChainGross(trade);
+        bool isBuy = !trade.IsBuy;
+        #endregion
+        if (totalGross < 0) {
+          //isBuy = !trade.IsBuy;// Convert.ToBoolean(DateTime.Now.Millisecond % 2);// !trade.IsBuy;
+          tradesWithLoss.Add(trade);
+          tm.CurrentLoss = totalGross;
+          var ratesForStop = ratesByPair[pair].Union(new[] { new Rate(fw.GetPrice(pair), false) }).ToArray();
+          var stop = GetStopByFractal(pair, ratesByPair[pair], isBuy);
+          var limit = tm.Limit;
+          var lot = fw.MoneyAndPipsToLot(totalGross.Abs(), limit, pair) + tm.LotSize;
+          //AddPendingOrder(isBuy, pair, () => openTradeCondition(tm,isBuy),() => 
+          OpenTrade(isBuy, pair, lot, 0, 0, stop, trade.Id);
+        } else {
+          tm.CurrentLoss = 0;
+          //isBuy = trade.IsBuy;
+          //AddPendingOrder(trade.IsBuy, pair, () => openTradeCondition(tm,trade.IsBuy),() => 
+          OpenTrade(tm, isBuy);
+        }
+        MasterModel.CurrentLoss = CurrentLoss;
+      } catch (Exception exc) {
+        Log = exc;
       }
+      //fw.FixOrderOpen(trade.Pair, !trade.IsBuy, lot, limit, stop, trade.GrossPL < 0 ? trade.Id : "");
+    }
+    private void OpenOpositTrade(Trade[] trades, string pair, bool isBuy) {
+      if (!trades.Any(t => t.Pair == pair && t.Limit==0)) {
+        OpenTrade(GetTradingMacro(pair), !isBuy);
+      }
+    }
+
+    #endregion
+
+    #region Rate Loading
+    void LoadTicks(string pair) {
+      if (!IsLoggedIn) return;
+      try {
+        var ticks = fw.GetTicks(pair, 300);
+        ticksByPair[pair] = ticks;
+        var regress = Lib.Regress(ticks.Select(t => t.PriceAvg).ToArray(), 1);
+        GetTradingMacro(pair).Angle = regress[1];
+      } catch (Exception exc) {
+        Log = exc;
+      }
+    }
+    void LoadRates(string pair) {
+      if (IsLoggedIn) {
+        var rates = ratesByPair[pair];
+        var dateEnd = fw.ServerTime.Round();
+        fw.GetBars(pair, 1, dateEnd.AddHours(-1), dateEnd, ref rates);
+        ratesByPair[pair] = rates;
+        FillOverlaps(pair, rates);
+        SetLimitByBar(GetTradingMacro(pair));
+        var tm = GetTradingMacro(pair);
+        tm.LastRateTime = rates.Max(r => r.StartDate);
+        tm.Corridornes = ScanCorridor(rates.ToArray().Reverse().Take(60 * 3));
+      }
+      new ThreadScheduler(TimeSpan.FromMinutes(1), ThreadScheduler.infinity, () => LoadRates(pair), (s, e) => { });
+    }
+    bool IsInCorridor(Models.TradingMacro tm) { return tm.Corridornes >= .5; }
+    double ScanCorridor(IEnumerable<Rate> rates) {
+      var averageHigh = rates.Average(r => r.PriceHigh);
+      var averageLow = rates.Average(r => r.PriceLow);
+      var count = 0.0;
+      foreach (var rate in rates)
+        if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
+      return count / rates.Count();
+    }
+
+    private void FillOverlaps(string pair, IEnumerable<Rate> rates) {
+      var ratesOverlap = rates.ToArray().Reverse().ToArray();
+      ratesOverlap.FillOverlaps();
+      var overlapAverage = ratesOverlap.Select(r => r.Overlap).Average();
+      var tm = GetTradingMacro(pair);
+      var highOverlapPeriod = 5;
+      var mb = MinutesBack(tm);
+      tm.Overlap = Math.Ceiling(overlapAverage.TotalMinutes).ToInt();
+      tm.Overlap5 = Math.Ceiling(rates.ToArray().GetMinuteTicks(highOverlapPeriod).OrderBarsDescending().ToArray().FillOverlaps().Where(r => r.Overlap != TimeSpan.Zero).Select(r => r.Overlap).Average().TotalMinutes / highOverlapPeriod).ToInt();
+      var trade = fw.GetTrade(pair);
+      if (trade != null)
+        if (mb != MinutesBack(tm))
+          fw.FixOrderSetStop(trade.Id, 0, "");
+    }
+
+    int MinutesBack(Models.TradingMacro tm) {
+      return IsInCorridor(tm) ? ratesByPair[tm.Pair].Count : (tm.Overlap.ToInt() + tm.Overlap5) * tm.OverlapToStop;
+    }
+    void SetLimitByBar(Models.TradingMacro tm) {
+      tm.Limit = fw.InPips(tm.Pair, 
+        ratesByPair[tm.Pair].GetMinuteTicks(tm.LimitBar).OrderBarsDescending().Take(MinutesBack(tm)).Average(r => r.Spread)).Round(1);
+      tm.Stop = -tm.Limit;
     }
     #endregion
 
     #region Helpers
-    void SetLotSize(Models.TradingMacro tm) {
-      if( IsLoggedIn )
-        tm.LotSize = FXW.GetLotstoTrade(fw.GetAccount().Balance, fw.Leverage(tm.Pair), tm.TradingRatio, fw.MinimumQuantity);
+
+    #region OpenTrade
+    private void OpenTrade(Models.TradingMacro tm, bool buy) {
+      var lot = tm.TradeAmount;
+      if (lot == 0) return;
+      var pair = tm.Pair;
+      var limitInPips = tm.Limit;
+      var stop = GetStopByFractal(tm.Pair,ratesByPair[tm.Pair], buy);
+      OpenTrade(buy, pair, lot, 0, 0, stop, "");
     }
+
+    private void OpenTrade(bool buy, string pair, int lot, double limitInPips, double stopInPips, double stop, string remark) {
+      var price = fw.GetPrice(pair);
+      var limit = limitInPips == 0 ? 0 : buy ? price.Ask + fw.InPoints(pair, limitInPips) : price.Bid - fw.InPoints(pair, limitInPips);
+      if (stop == 0 && stopInPips != 0)
+        stop = buy ? price.Bid + fw.InPoints(pair, stopInPips) : price.Ask - fw.InPoints(pair, stopInPips);
+      fw.FixOrderOpen(pair, buy, lot, limit, stop, remark);
+    }
+    #endregion
+
+    void ProcessPendingOrders(string pair) {
+      var tm = GetTradingMacro(pair);
+      tm.PendingSell = HasPendingOrder(pair,false);
+      if (tm.PendingSell) {
+        var pt = GetPendingTrade(pair, false);
+        if (pt.Condition()) {
+          RemovePendingOrder(pair, false);
+          pt.OpenTradeCommand();
+        }
+      }
+      tm.PendingBuy = HasPendingOrder(pair, true);
+      if (tm.PendingBuy) {
+        var pt = GetPendingTrade(pair, true);
+        if (pt.Condition()) {
+          RemovePendingOrder(pair, true);
+          pt.OpenTradeCommand();
+        }
+      }
+    }
+
+    #region Get (stop/limit)
+    private double GetStopByFractal(string pair, IEnumerable<Rate> rates, bool isBuy) {
+      return GetStopByFractal(0,pair, rates, isBuy);
+    }
+    private double GetStopByFractal(double stopCurrent, string pair, IEnumerable<Rate> rates, bool isBuy) {
+      if (rates.Count() == 0) return stopCurrent;
+      var tm = GetTradingMacro(pair);
+      var stopSlack = rates.Average(r => r.Spread);
+      var ratesForStop = rates.OrderBarsDescending().Take(MinutesBack(tm)).ToArray();
+      var stop = isBuy ? ratesForStop.Min(r => r.BidLow) - stopSlack : ratesForStop.Max(r => r.AskHigh) + stopSlack;
+      var price = fw.GetPrice(pair);
+      if (isBuy && stop >= price.Bid) stop = price.Bid - stopSlack;
+      if (!isBuy && stop <= price.Ask) stop = price.Ask + stopSlack;
+      return stop;
+    }
+    private double GetLimitByFractal(Trade trade, IEnumerable<Rate> rates) {
+      string pair = trade.Pair;
+      bool isBuy = trade.IsBuy;
+      var tm = GetTradingMacro(pair);
+      var slack = fw.InPoints(pair, tm.Limit);// rates.Reverse().Take((tm.Overlap + tm.Overlap5).ToInt()).Average(r => r.Spread);
+      var ratesForLimit = rates.OrderBarsDescending().Take(MinutesBack(tm)).ToArray();
+      var price = fw.GetPrice(pair);
+      var limit = isBuy ? Math.Max(trade.Open,ratesForLimit.Max(r => r.BidHigh)) + slack 
+        : Math.Min(trade.Open, ratesForLimit.Min(r => r.AskLow)) - slack;
+      if (isBuy && limit <= price.Bid) return 0;
+      if (!isBuy && limit >= price.Ask) return 0;
+      return limit;
+    }
+    double GetLimit(Trade trade) {
+      var limitInPoints = fw.InPoints(trade.Pair, GetTradingMacro(trade.Pair).Limit);
+      return Math.Round(trade.IsBuy ? trade.Open + limitInPoints : trade.Open - limitInPoints, fw.GetDigits(trade.Pair));
+    }
+    #endregion
+
+    private void CheckTrades(Trade[] trades) {
+      foreach (var trade in trades) {
+        var tm = GetTradingMacro(trade.Pair);
+        var round = fw.GetDigits(trade.Pair);
+        var stopNew = Math.Round(GetStopByFractal(trade.Pair, ratesByPair[trade.Pair], trade.IsBuy), round);
+        var stopOld = Math.Round(trade.Stop, round);
+        if (trade.Stop == 0 || IsInCorridor(tm) || trade.IsBuy && stopNew > stopOld || !trade.IsBuy && stopNew < stopOld)
+          fw.FixCreateStop(trade.Id, stopNew, "");
+        if (!tm.FreezLimit) {
+          var limitNew = GetLimitByFractal(trade, ratesByPair[trade.Pair]);
+          if (limitNew != 0) {
+            var limitOld = Math.Round(trade.Limit, round);
+            if (limitNew != limitOld)
+              fw.FixCreateLimit(trade.Id, limitNew, "");
+          }
+        }
+      }
+    }
+
+    #region Child trade helpers
+    double getChainPL(Trade trade, ref int count) {
+      if (trade == null) return 0;
+      count++;
+      return trade.PL + getChainPL(tradesWithLoss.SingleOrDefault(t => t.Id == trade.Remark.Remark), ref count);
+    }
+    double getChainGross(Trade trade) {
+      if (trade == null) return 0;
+      return trade.GrossPL + getChainGross(tradesWithLoss.SingleOrDefault(t => t.Id == trade.Remark.Remark));
+    }
+
+    void SetLotSize(Models.TradingMacro tm, Account account) {
+      if (IsLoggedIn) {
+        tm.LotSize = FXW.GetLotstoTrade(account.Balance, fw.Leverage(tm.Pair), tm.TradingRatio, fw.MinimumQuantity);
+        var stopAmount = 0.0;
+        var limitAmount = 0.0;
+        foreach (var trade in fw.GetTrades().Where(t => t.Pair == tm.Pair)) {
+          stopAmount += trade.StopAmount;
+          limitAmount += trade.LimitAmount;
+        }
+        tm.StopAmount = stopAmount;
+        tm.LimitAmount = limitAmount;
+      }
+    }
+    #endregion
+
+    #region Init ...
     private void InitInstruments() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(new Action(() => {
         while (Instruments.Count > 0) Instruments.RemoveAt(0);
@@ -184,6 +516,15 @@ namespace HedgeHog.Alice.Client {
         RaisePropertyChanged(() => TradingMacros);
       }));
     }
+    private void InitTradingMacro(Models.TradingMacro tm) {
+      tm.PropertyChanged += TradingMacro_PropertyChanged;
+      if (!ratesByPair.ContainsKey(tm.Pair)) {
+        ratesByPair.Add(tm.Pair, new List<Rate>());
+      }
+      TradingMacro_PropertyChanged(tm, new System.ComponentModel.PropertyChangedEventArgs("Pair"));
+    }
+    #endregion
+
     #endregion
 
   }

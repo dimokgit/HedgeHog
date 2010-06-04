@@ -35,7 +35,7 @@ namespace HedgeHog {
   public class DoubleToColorConverter : IValueConverter {
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
       var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
-      var d = (double?)value;
+      var d = value is double? ? (double?)value : System.Convert.ToDouble(value);
       var color = d.GetValueOrDefault() == 0 ? colors[0] : d > 0 ? colors[2] : colors[1];
       return color;
     }

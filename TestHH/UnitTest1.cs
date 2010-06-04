@@ -15,6 +15,8 @@ using HedgeHog.Shared;
 using HedgeHog.Rsi;
 using System.Windows.Data;
 using System.Threading;
+using System.IO;
+using System.Xml.Linq;
 
 namespace TestHH {
   /// <summary>
@@ -84,9 +86,20 @@ namespace TestHH {
     #endregion
 
     [TestMethod]
+    public void LoadTradeFromXml() {
+      var xmlString = File.ReadAllText(@"C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_03\ClosedTrades.txt");
+      var x = XElement.Parse("<x>" + xmlString + "</x>");
+      var nodes = x.Nodes().ToArray();
+      foreach (XElement node in nodes.Reverse().Take(150)) {
+        var trade = new Trade();
+        trade.FromString(node);
+        Debug.WriteLine(trade);
+      }
+
+    }
     public void MunuteRsi(){
       var minutesBack = 60*24*2;
-      var rates = o2g.GetBarsBase(1,DateTime.Now.AddMinutes(-minutesBack)).ToArray();
+      var rates = o2g.GetBarsBase(o2g.Pair, 1,DateTime.Now.AddMinutes(-minutesBack)).ToArray();
       rates.FillRsis((minutesBack * 0.5).ToInt());
       var statName = "MinuteRsi";
       var context = new ForexEntities();
@@ -140,8 +153,8 @@ namespace TestHH {
       var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
       context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
 
-      var ticks = o2g.GetTicks(12000);
-      var t1 = o2g.GetTicks(900);
+      var ticks = o2g.GetTicks(o2g.Pair, 12000);
+      var t1 = o2g.GetTicks(o2g.Pair, 900);
       ticks = ticks.Union(t1).OrderBars().ToArray();
       ticks.ToList().ForEach(t => t.StartDate = t.StartDate.AddMilliseconds(-t.StartDate.Millisecond));
       var rates = ticks.Cast<Rate>().OrderBars().ToArray();
@@ -225,7 +238,7 @@ namespace TestHH {
     public void Speed() {
       var dateStart = DateTime.Parse("04/08/2010 08:00");
       var dateEnd = dateStart.AddHours(4);
-      var ticks = o2g.GetBarsBase(0, dateStart, dateEnd).Cast<Tick>().GroupTicksToRates().ToArray();
+      var ticks = o2g.GetBarsBase(o2g.Pair, 0, dateStart, dateEnd).Cast<Tick>().GroupTicksToRates().ToArray();
       var rates = ticks.GetMinuteTicks(1);
       rates.OrderBarsDescending().FillOverlaps();
       int np = 4;
@@ -255,7 +268,7 @@ namespace TestHH {
     public void TicksPerMinute() {
       var dateFrom = DateTime.Parse("4/2/2010 10:13:16");
       var dateTo = DateTime.Parse("4/2/2010 10:33:27");
-      var ticks = o2g.GetTicks(13000).Where(dateFrom, dateTo).ToArray();
+      var ticks = o2g.GetTicks(o2g.Pair, 13000).Where(dateFrom, dateTo).ToArray();
       //var ticks = new List<Rate>();
       //o2g.GetBars(0,dateFrom,dateTo,ref ticks);
       ticks.FillMass();
@@ -263,7 +276,7 @@ namespace TestHH {
         ticks.TradesPerMinute(), ticks.SumMass());
     }
     public void LoadTicks() {
-      var ticks = o2g.GetTicks(1200000).OrderBarsDescending().ToArray();
+      var ticks = o2g.GetTicks(o2g.Pair, 1200000).OrderBarsDescending().ToArray();
       using (var context = new ForexEntities() { CommandTimeout = 600 }) {
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Tick).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
@@ -285,7 +298,7 @@ namespace TestHH {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
       dateStart = DateTime.Now.AddHours(-2);
       //var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
-      var ticks = o2g.GetTicks(12000).OrderBarsDescending().ToArray();
+      var ticks = o2g.GetTicks(o2g.Pair, 12000).OrderBarsDescending().ToArray();
       ticks.FillMass();
       Stopwatch timer = Stopwatch.StartNew();
       var period = ticks.Count() / (ticks.Max(t => t.StartDate) - ticks.Min(t => t.StartDate)).Duration().TotalMinutes;
@@ -311,7 +324,7 @@ namespace TestHH {
     public void Mass() {
       var dateStart = DateTime.Parse("03/14/2010 16:00");
       dateStart = DateTime.Now.AddHours(-4);
-      var ticks = o2g.GetBarsBase(0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
+      var ticks = o2g.GetBarsBase(o2g.Pair, 0, dateStart, DateTime.FromOADate(0)).Cast<Tick>().OrderBarsDescending().ToArray();
       //var ticks = o2g.GetTicks(12000).OrderBarsDescending().ToArray();
       ticks.FillMass();
       var waveHeight = 0.00053;
@@ -382,7 +395,7 @@ namespace TestHH {
     }
     public void Overlaps() {
       Stopwatch timer = Stopwatch.StartNew(); timer.Start();
-      var rates = o2g.GetBarsBase(1, DateTime.Now.AddHours(-1), DateTime.FromOADate(0)).ToArray();
+      var rates = o2g.GetBarsBase(o2g.Pair, 1, DateTime.Now.AddHours(-1), DateTime.FromOADate(0)).ToArray();
       Debug.WriteLine("Get Ticks:" + timer.Elapsed.TotalSeconds+" sec.");
       timer.Reset(); timer.Start();
       rates.OrderBarsDescending().FillOverlaps();
@@ -399,14 +412,14 @@ namespace TestHH {
       //Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
     }
     public void CmaBars() {
-      var rates = o2g.GetBars(1, DateTime.Now.AddMinutes(-320));
+      var rates = o2g.GetBars(o2g.Pair, 1, DateTime.Now.AddMinutes(-320));
       var sw = Stopwatch.StartNew();
       rates.SetCMA(1);
       Debug.WriteLine("Get CMABars:" + sw.Elapsed.TotalSeconds);
       SaveToFile(rates, r => r.PriceCMA[2], "C:\\CMA.csv");
     }
     public void CMA() {
-      var ticks = o2g.GetTicks(5000).ToArray();
+      var ticks = o2g.GetTicks(o2g.Pair, 5000).ToArray();
       var sw = Stopwatch.StartNew();
       var rates = ticks.ToArray().GroupTicksToRates().ToArray();
       rates.SetCMA(5);
@@ -414,7 +427,7 @@ namespace TestHH {
       SaveToFile(rates, r => r.PriceCMA[2], "C:\\CMA.csv");
     }
     public void Wave() {
-      var ticks = o2g.GetTicks(5000).ToArray();
+      var ticks = o2g.GetTicks(o2g.Pair, 5000).ToArray();
       var sw = Stopwatch.StartNew();
       var rates = ticks.ToArray().GroupTicksToRates().ToArray();
       var startDate = rates.Last().StartDate.AddMinutes(-5);
@@ -429,7 +442,7 @@ namespace TestHH {
       DateTime timer = DateTime.Now;
       Func<Rate, double?> getTsi = r => r.PriceTsi;
       Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      Rate[] rates = o2g.GetBarsBase(1,DateTime.Now.AddMinutes(-41)).ToArray();
+      Rate[] rates = o2g.GetBarsBase(o2g.Pair, 1, DateTime.Now.AddMinutes(-41)).ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -449,7 +462,7 @@ namespace TestHH {
       DateTime timer = DateTime.Now;
       Func<Rate, double?> getTsi = r => r.PriceTsi;
       Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      Rate[] rates = o2g.GetTicks(10000).OrderBars().ToArray();
+      Rate[] rates = o2g.GetTicks(o2g.Pair, 10000).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -462,7 +475,7 @@ namespace TestHH {
       Func<Rate, double?> getTsi = r => r.PriceTsi;
       Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
       var dateStart = DateTime.Now.AddHours(-12);//.Parse("12/10/09 3:30");
-      Rate[] rates = o2g.GetBarsBase(1,dateStart ).OrderBars().ToArray();
+      Rate[] rates = o2g.GetBarsBase(o2g.Pair, 1, dateStart).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -477,7 +490,7 @@ namespace TestHH {
       DateTime timer = DateTime.Now;
       Func<Rate, double?> getTsi = r => r.PriceTsi;
       Action<Rate, double?> setTsi = (r, d) => r.PriceTsi = d;
-      Rate[] rates = o2g.GetBars(1, DateTime.Now.AddHours(-8)).OrderBars().ToArray();
+      Rate[] rates = o2g.GetBars(o2g.Pair, 1, DateTime.Now.AddHours(-8)).OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -487,7 +500,7 @@ namespace TestHH {
     }
     public void Fractals() {
       DateTime timer = DateTime.Now;
-      Rate[] rates = o2g.GetBars(1,DateTime.Now.AddHours(-8)).ToArray();
+      Rate[] rates = o2g.GetBars(o2g.Pair, 1, DateTime.Now.AddHours(-8)).ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now - timer).TotalSeconds);
       Func<Rate , double> getFractal = t => t.FractalBuy > 0 ? -1 : t.FractalSell > 0 ? 1 : 0;
       timer = DateTime.Now;
@@ -499,7 +512,7 @@ namespace TestHH {
       DateTime timer = DateTime.Now;
       Func<Rate, double?> getRsi = r => r.PriceRsi;
       Action<Rate, double?> setRsi = (r, d) => r.PriceRsi = d;
-      Rate[] rates = o2g.GetTicks(10000).ToArray().GroupTicksToRates().OrderBars().ToArray();
+      Rate[] rates = o2g.GetTicks(o2g.Pair, 10000).ToArray().GroupTicksToRates().OrderBars().ToArray();
       Debug.WriteLine("Get Ticks:" + (DateTime.Now-timer).TotalSeconds);
 
       timer = DateTime.Now;
@@ -509,7 +522,7 @@ namespace TestHH {
       Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
     }
     public void GetRSI() {
-      var rates = o2g.GetTicks(10000).ToArray();
+      var rates = o2g.GetTicks(o2g.Pair, 10000).ToArray();
       var t = DateTime.Now;
       var dd = rates.FillRsi(14, r => r.PriceClose);// Indicators.RSI(rates, r => r.AskClose, 14);
       System.Diagnostics.Debug.WriteLine((DateTime.Now - t).TotalSeconds + " ms");
@@ -524,7 +537,7 @@ namespace TestHH {
       }
     }
     public void GetRLW() {
-      var rates = o2g.GetTicks(15000).OrderBars().ToArray();
+      var rates = o2g.GetTicks(o2g.Pair, 15000).OrderBars().ToArray();
       rates.ToList().ForEach(r => r.PriceAvg4 = -101);
       var time = DateTime.Now;
       var peaks = new []{0.0,-100.0};
@@ -626,7 +639,7 @@ namespace TestHH {
     }
     public void GetTicksTest() {
       DateTime d = DateTime.Now;
-      var ticks = o2g.GetTicks(5000);
+      var ticks = o2g.GetTicks(o2g.Pair, 5000);
       Debug.WriteLine("Ticks:" + ticks.Count() + ",From:" + ticks.Min(t => t.StartDate) + " To:" + ticks.Max(t => t.StartDate));
       Debug.WriteLine("Ticks Time:"+(DateTime.Now-d).TotalMilliseconds);
       d = DateTime.Now;

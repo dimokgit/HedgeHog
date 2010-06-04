@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
-  public class Trade : INotifyPropertyChanged {
+  public class Trade : PositioBase {
     [DataMember]
     [DisplayName("")]
     public string Id { get; set; }
@@ -23,6 +23,9 @@ namespace HedgeHog.Shared {
     public bool Buy { get; set; }
     [DataMember]
     [DisplayName("")]
+    public bool IsBuy { get; set; }
+    [DataMember]
+    [DisplayName("")]
     [DisplayFormat(DataFormatString = "{0}")]
     public TradeRemark Remark { get; set; }
     [DataMember]
@@ -30,25 +33,29 @@ namespace HedgeHog.Shared {
     public double Open { get; set; }
     [DataMember]
     [DisplayName("")]
+    [UpdateOnUpdate]
     public double Close { get; set; }
     [DataMember]
     [DisplayName("")]
+    [UpdateOnUpdate]
     public double Limit { get; set; }
     [DisplayName("")]
     [DataMember]
+    [UpdateOnUpdate]
     public double Stop { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public double PL { get; set; }
     [DataMember]
     [DisplayName("")]
+    [UpdateOnUpdate]
     public double GrossPL { get; set; }
-    [DataMember]
-    public double StopAmount { get; set; }
-    [DataMember]
-    public double LimitAmount { get; set; }
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
+    [DataMember]
+    [DisplayName("")]
+    public DateTime TimeClose { get; set; }
     [DataMember]
     public int Lots { get; set; }
 
@@ -56,8 +63,6 @@ namespace HedgeHog.Shared {
     public string OpenOrderID { get; set; }
     [DataMember]
     public string OpenOrderReqID { get; set; }
-
-    public object UnKnown { get; set; }
 
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }
@@ -71,20 +76,11 @@ namespace HedgeHog.Shared {
     /// </summary>
     public int PointSize { get { return (int)Math.Log10(PipValue); } }
 
+    public string PointSizeFormat { get { return "n" + PointSize; } }
+
     public double InPips(double value) { return value * PipValue; }
 
     public Trade Clone() { return this.MemberwiseClone() as Trade; }
-
-    public void Update(Trade trade) {
-      this.Close = trade.Close;
-      this.GrossPL = trade.GrossPL;
-      this.Limit = trade.Limit;
-      this.LimitAmount = this.LimitAmount;
-      this.PL = trade.PL;
-      this.Stop = trade.Stop;
-      this.StopAmount = trade.StopAmount;
-      OnPropertyChanged("Close", "GrossPL", "Limit", "LimitAmount", "PL", "Stop", "StopAmount");
-    }
 
     public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
     public string ToString(SaveOptions saveOptions) {
@@ -92,21 +88,19 @@ namespace HedgeHog.Shared {
       GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
       return x.ToString(saveOptions);
     }
+    public void FromString(XElement xmlElement) {
+      this.Buy = this.IsBuy = xmlElement.Attribute("BS").Value == "B";
+      this.Close = double.Parse(xmlElement.Attribute("Close").Value);
+      this.GrossPL = double.Parse(xmlElement.Attribute("GrossPL").Value);
+      this.Id= xmlElement.Attribute("TradeID").Value;
+      this.Lots = int.Parse(xmlElement.Attribute("Lot").Value);
+      this.Pair = xmlElement.Attribute("Instrument").Value;
+      this.PL = double.Parse(xmlElement.Attribute("PL").Value);
+      this.Time = DateTime.Parse(xmlElement.Attribute("OpenTime").Value);
+      this.TimeClose = DateTime.Parse(xmlElement.Attribute("CloseTime").Value);
 
-    #region INotifyPropertyChanged Members
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected virtual void OnPropertyChanged(params string[] propertyNames) {
-      foreach (var pn in propertyNames)
-        OnPropertyChanged(pn);
+      this.Remark = new TradeRemark(xmlElement.Attribute("CQTXT").Value);
     }
-    protected virtual void OnPropertyChanged(string propertyName) {
-      if (PropertyChanged == null) return;
-      PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    #endregion
   }
   [Serializable]
   [DataContract]
