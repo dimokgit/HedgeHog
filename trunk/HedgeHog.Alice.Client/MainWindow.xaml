@@ -34,7 +34,8 @@
         <tlrkInput:RadNumericUpDown Value="{Binding Stop,Mode=TwoWay}" />
       </DataTemplate>
       <DataTemplate x:Key="GrossCellTemplate">
-        <Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding GrossPL,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
+        <!--<Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding GrossPL,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />-->
+        <Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" />
       </DataTemplate>
 
       <!--TradesOnServer-->
@@ -48,6 +49,11 @@
           </WrapPanel>
           <!--Server Trades-->
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" >
+            <DataGrid.Resources>
+              <Style TargetType="DataGridCell" x:Key="StrechCellStyle">
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+              </Style>
+            </DataGrid.Resources>
             <DataGrid.Columns>
               <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
@@ -60,13 +66,13 @@
                   </Style>
                 </DataGridTextColumn.ElementStyle>
               </DataGridTextColumn>
-              <DataGridTemplateColumn Header="Stop" >
+              <DataGridTemplateColumn Header="Stop" CellStyle="{StaticResource StrechCellStyle}" >
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                       <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
                         Command="{Binding DataContext.DecreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                      <TextBlock Text="{Binding StopInPips,StringFormat=n1}"/>
+                      <TextBlock Text="{Binding StopInPips,StringFormat=n1}" HorizontalAlignment="Stretch"/>
                       <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
                         Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </StackPanel>
@@ -78,10 +84,10 @@
               <DataGridTemplateColumn Header="Limit" >
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                       <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" 
                         Command="{Binding DataContext.DecreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                      <TextBlock Text="{Binding LimitInPips,StringFormat=n1}" />
+                      <TextBlock Text="{Binding LimitInPips,StringFormat=n1}" HorizontalAlignment="Stretch" />
                       <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" 
                         Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </StackPanel>

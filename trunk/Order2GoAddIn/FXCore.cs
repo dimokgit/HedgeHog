@@ -49,7 +49,9 @@ namespace Order2GoAddIn {
       this.noTimer = noTimer;
     }
     ~CoreFX() {
-      Logout();
+      try {
+        Logout();
+      } catch { }
     }
     #endregion
 
