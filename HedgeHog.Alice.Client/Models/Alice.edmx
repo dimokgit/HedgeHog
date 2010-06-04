@@ -29,7 +29,6 @@
           <Property Name="TradingRatio" Type="float" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
           <Property Name="Stop" Type="float" Nullable="false" />
-          <Property Name="Limit" Type="float" Nullable="false" />
           <Property Name="Price" Type="float" Nullable="false" />
           <Property Name="Buy" Type="bit" Nullable="false" />
           <Property Name="Lots" Type="int" Nullable="false" />
@@ -65,7 +64,6 @@
           <Property Type="Double" Name="TradingRatio" Nullable="false" />
           <Property Type="Guid" Name="UID" Nullable="false" />
           <Property Type="Double" Name="Stop" Nullable="false" />
-          <Property Type="Double" Name="Limit" Nullable="false" />
           <Property Type="Double" Name="Price" Nullable="false" />
           <Property Type="Boolean" Name="Buy" Nullable="false" />
           <Property Type="Int32" Name="Lots" Nullable="false" />
@@ -101,7 +99,6 @@
                 <ScalarProperty Name="Lots" ColumnName="Lots" />
                 <ScalarProperty Name="Buy" ColumnName="Buy" />
                 <ScalarProperty Name="Price" ColumnName="Price" />
-                <ScalarProperty Name="Limit" ColumnName="Limit" />
                 <ScalarProperty Name="Stop" ColumnName="Stop" />
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
@@ -131,7 +128,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.2496956380208335" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.5783902994791665" />
       </Diagram>
     </Diagrams>
   </Designer>

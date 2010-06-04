@@ -27,11 +27,14 @@ namespace HedgeHog.Alice.Client {
     public double[] StopsAndLimits { get { return new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120, 135, 150 }; } }
 
     double CurrentLoss { get { return TradingMacrosCopy.Sum(tm => tm.CurrentLoss); } }
+    object _tradingMacrosLocker = new object();
     Models.TradingMacro[] _tradingMacrosCiopy;
     public Models.TradingMacro[] TradingMacrosCopy {
       get {
-        if (_tradingMacrosCiopy == null) _tradingMacrosCiopy = TradingMacros.ToArray();
-        return _tradingMacrosCiopy; 
+        lock (_tradingMacrosLocker) {
+          if (_tradingMacrosCiopy == null) _tradingMacrosCiopy = TradingMacros.ToArray();
+          return _tradingMacrosCiopy;
+        } 
       }
     }
     Models.TradingMacro GetTradingMacro(string pair) {
@@ -260,10 +263,12 @@ namespace HedgeHog.Alice.Client {
       }
     }
     ~RemoteControlModel() {
-      fw.TradeRemoved -= fw_TradeRemoved;
-      fw.TradeAdded -= fw_TradeAdded;
-      fw.OrderAdded += fw_OrderAdded;
-      fw.Error -= fw_Error;
+      if (fw != null) {
+        fw.TradeRemoved -= fw_TradeRemoved;
+        fw.TradeAdded -= fw_TradeAdded;
+        fw.OrderAdded += fw_OrderAdded;
+        fw.Error -= fw_Error;
+      }
       MasterModel.CoreFX.LoggedInEvent -= CoreFX_LoggedInEvent;
       MasterModel.CoreFX.LoggedOffEvent -= CoreFX_LoggedOffEvent;
     }
@@ -284,7 +289,6 @@ namespace HedgeHog.Alice.Client {
       var tm = e.Entity as Models.TradingMacro;
       if (tm == null) return;
       InitTradingMacro(tm);
-      LoadRates(tm.Pair);
     }
 
     void TradingMacro_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {

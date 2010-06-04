@@ -33,6 +33,7 @@ namespace HedgeHog.Alice.Client.Models {
   }
 
   public partial class TradingMacro {
+
     int _lotSize;
     public int LotSize {
       get { return _lotSize; }
@@ -41,6 +42,16 @@ namespace HedgeHog.Alice.Client.Models {
         _lotSize = value;
         OnPropertyChanged("LotSize");
         OnPropertyChanged("TradeAmount");
+      }
+    }
+
+    double _Limit;
+    public double Limit {
+      get { return _Limit; }
+      set {
+        if (_Limit == value) return;
+        _Limit = value;
+        OnPropertyChanged("Limit");
       }
     }
 

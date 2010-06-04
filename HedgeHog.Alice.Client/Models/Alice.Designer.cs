@@ -348,21 +348,19 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="tradingRatio">Initial value of the TradingRatio property.</param>
         /// <param name="uID">Initial value of the UID property.</param>
         /// <param name="stop">Initial value of the Stop property.</param>
-        /// <param name="limit">Initial value of the Limit property.</param>
         /// <param name="price">Initial value of the Price property.</param>
         /// <param name="buy">Initial value of the Buy property.</param>
         /// <param name="lots">Initial value of the Lots property.</param>
         /// <param name="limitBar">Initial value of the LimitBar property.</param>
         /// <param name="overlapToStop">Initial value of the OverlapToStop property.</param>
         /// <param name="currentLoss">Initial value of the CurrentLoss property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss)
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
             tradingMacro.TradingRatio = tradingRatio;
             tradingMacro.UID = uID;
             tradingMacro.Stop = stop;
-            tradingMacro.Limit = limit;
             tradingMacro.Price = price;
             tradingMacro.Buy = buy;
             tradingMacro.Lots = lots;
@@ -473,30 +471,6 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Double _Stop;
         partial void OnStopChanging(global::System.Double value);
         partial void OnStopChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Double Limit
-        {
-            get
-            {
-                return _Limit;
-            }
-            set
-            {
-                OnLimitChanging(value);
-                ReportPropertyChanging("Limit");
-                _Limit = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("Limit");
-                OnLimitChanged();
-            }
-        }
-        private global::System.Double _Limit;
-        partial void OnLimitChanging(global::System.Double value);
-        partial void OnLimitChanged();
     
         /// <summary>
         /// No Metadata Documentation available.

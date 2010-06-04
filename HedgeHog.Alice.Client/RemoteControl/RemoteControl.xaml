@@ -99,9 +99,6 @@
     <DataTemplate x:Key="OverlapCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding AngleInRadians,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
     </DataTemplate>
-    <DataTemplate x:Key="PendingTradeCellTemplate">
-      <Label HorizontalAlignment="Stretch" Background="{Binding PendingOrder,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
-    </DataTemplate>
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
@@ -150,10 +147,9 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
-        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>
-        <DataGridTemplateColumn Header="PT" CellTemplate="{StaticResource PendingTradeCellTemplate}" />
-        <DataGridTextColumn Header="LastRate" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
+        <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
+        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
+        <DataGridTextColumn Header="RateTime" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
       </DataGrid.Columns>
     </DataGrid>
 

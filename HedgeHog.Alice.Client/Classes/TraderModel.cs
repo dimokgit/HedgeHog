@@ -37,7 +37,7 @@ namespace HedgeHog.Alice.Client {
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
     FXW fwMaster;
-    public bool IsLoggedIn { get { return CoreFX.IsLoggedIn; } }
+    public bool IsLoggedIn { get { return CoreFX!= null && CoreFX.IsLoggedIn; } }
     bool _isInLogin;
     public bool IsInLogin {
       get { return _isInLogin; }
@@ -667,7 +667,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     ~TraderModel() {
-      if (CoreFX.IsLoggedIn) CoreFX.Logout();
+      if (IsLoggedIn) CoreFX.Logout();
     }
 
 
