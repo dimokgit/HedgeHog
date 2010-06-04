@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
+using System.ComponentModel;
 
 namespace HedgeHog.Shared {
   [DataContract]
-  public class Order {
+  public class Order : PositioBase {
     [DataMember]
     public String OrderID { get; set; }
     [DataMember]

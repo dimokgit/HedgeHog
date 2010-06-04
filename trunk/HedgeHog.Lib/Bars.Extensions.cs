@@ -645,9 +645,10 @@ namespace HedgeHog.Bars {
     }
 
 
-    public static void FillOverlaps<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+    public static IEnumerable<TBar> FillOverlaps<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       foreach (var bar in bars)
-        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate).Take(10));
+        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/);
+      return bars;
     }
     public static void SetCMA<TBars>(this IEnumerable<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {
       double? cma1 = null;

@@ -159,7 +159,8 @@ namespace HedgeHog {
     public ThreadScheduler(TimeSpan delay, EventHandler<TimerErrorException> error) : this(delay) {
       Error += error;
     }
-    public ThreadScheduler(TimeSpan delay) : this(delay, TimeSpan.FromMilliseconds(-1)) { }
+    public ThreadScheduler() : this(zero, infinity) { }
+    public ThreadScheduler(TimeSpan delay) : this(delay, infinity) { }
     public ThreadScheduler(TimeSpan delay, TimeSpan period)
       : this(delay, period, null,null) {
     }

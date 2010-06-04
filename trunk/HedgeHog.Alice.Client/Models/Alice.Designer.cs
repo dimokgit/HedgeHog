@@ -351,7 +351,10 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="limit">Initial value of the Limit property.</param>
         /// <param name="price">Initial value of the Price property.</param>
         /// <param name="buy">Initial value of the Buy property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy)
+        /// <param name="lots">Initial value of the Lots property.</param>
+        /// <param name="limitBar">Initial value of the LimitBar property.</param>
+        /// <param name="overlapToStop">Initial value of the OverlapToStop property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -361,6 +364,9 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.Limit = limit;
             tradingMacro.Price = price;
             tradingMacro.Buy = buy;
+            tradingMacro.Lots = lots;
+            tradingMacro.LimitBar = limitBar;
+            tradingMacro.OverlapToStop = overlapToStop;
             return tradingMacro;
         }
 
@@ -537,6 +543,78 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Boolean _Buy;
         partial void OnBuyChanging(global::System.Boolean value);
         partial void OnBuyChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Lots
+        {
+            get
+            {
+                return _Lots;
+            }
+            set
+            {
+                OnLotsChanging(value);
+                ReportPropertyChanging("Lots");
+                _Lots = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Lots");
+                OnLotsChanged();
+            }
+        }
+        private global::System.Int32 _Lots;
+        partial void OnLotsChanging(global::System.Int32 value);
+        partial void OnLotsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 LimitBar
+        {
+            get
+            {
+                return _LimitBar;
+            }
+            set
+            {
+                OnLimitBarChanging(value);
+                ReportPropertyChanging("LimitBar");
+                _LimitBar = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LimitBar");
+                OnLimitBarChanged();
+            }
+        }
+        private global::System.Int32 _LimitBar;
+        partial void OnLimitBarChanging(global::System.Int32 value);
+        partial void OnLimitBarChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 OverlapToStop
+        {
+            get
+            {
+                return _OverlapToStop;
+            }
+            set
+            {
+                OnOverlapToStopChanging(value);
+                ReportPropertyChanging("OverlapToStop");
+                _OverlapToStop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("OverlapToStop");
+                OnOverlapToStopChanged();
+            }
+        }
+        private global::System.Int32 _OverlapToStop;
+        partial void OnOverlapToStopChanging(global::System.Int32 value);
+        partial void OnOverlapToStopChanged();
 
         #endregion
     

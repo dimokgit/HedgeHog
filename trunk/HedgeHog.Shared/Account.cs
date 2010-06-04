@@ -30,6 +30,10 @@ namespace HedgeHog.Shared {
     public double StopAmount { get; set; }
     [DataMember]
     public double LimitAmount { get; set; }
+
+    public double BalanceOnStop { get { return Balance + StopAmount; } }
+    public double BalanceOnLimit { get { return Balance + LimitAmount; } }
+
     [DataMember]
     public DateTime ServerTime { get; set; }
     [DataMember]

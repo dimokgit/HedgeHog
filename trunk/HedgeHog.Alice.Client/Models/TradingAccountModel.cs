@@ -12,6 +12,12 @@ namespace HedgeHog.Alice.Client {
     public double TradingRatio { get; set; }
     public DateTime ServerTime { get; set; }
     public double ProfitPercent { get { return (Equity - Balance) / Balance; } }
+    double _originalBalance;
+
+    public double OriginalBalance {
+      get { return _originalBalance; }
+      set { _originalBalance = value; OnPropertyChanged(() => OriginalBalance); }
+    }
 
     public void Update(Account account,double tradingRatio,DateTime serverTime) {
       TradingAccountModel accountRow = this;
@@ -41,7 +47,9 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.HasProfit,
       () => accountRow.TradingRatio,
       () => accountRow.StopAmount,
+      () => accountRow.BalanceOnStop,
       () => accountRow.LimitAmount,
+      () => accountRow.BalanceOnLimit,
       () => accountRow.StopToBalanceRatio,
       () => accountRow.ProfitPercent,
       () => accountRow.ServerTime

@@ -132,6 +132,7 @@ namespace HedgeHog.Alice.Client {
     private TradingAccountModel _accountModel = new TradingAccountModel();
     public TradingAccountModel AccountModel { get { return _accountModel; } }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
+    public double CurrentLoss { set { AccountModel.OriginalBalance = AccountModel.Balance - value; } }
 
     #region SlaveAccountInfos
     ObservableCollection<TradingAccountModel> SlaveAccountInfos = new ObservableCollection<TradingAccountModel>();
@@ -182,7 +183,7 @@ namespace HedgeHog.Alice.Client {
     public string LogText { get { return string.Join(Environment.NewLine, _logQueue.Reverse()); } }
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
-    Exception Log {
+    public Exception Log {
       get { return _log; }
       set {
         if (isInDesign) return;
@@ -214,6 +215,101 @@ namespace HedgeHog.Alice.Client {
 
     #region Commanding
 
+    #region IncreaseLimitCommand
+    ICommand _IncreaseLimitCommand;
+    public ICommand IncreaseLimitCommand {
+      get {
+        if (_IncreaseLimitCommand == null) {
+          _IncreaseLimitCommand = new Gala.RelayCommand<Trade>(IncreaseLimit, (trade) =>trade != null && trade.Limit !=0);
+        }
+
+        return _IncreaseLimitCommand;
+      }
+    }
+    void IncreaseLimit(Trade trade) {
+      try {
+        AddtDelta(trade.Id, 1, limitDeltas);
+        if (!changeLimitScheduler.IsRunning)
+          changeLimitScheduler.Run();
+      } catch (Exception exc) {
+        Log = new Exception("DecreaseLimit Error", exc);
+      }
+    }
+    #endregion
+
+    #region DecreaseLimitCommand
+    ICommand _DecreaseLimitCommand;
+    public ICommand DecreaseLimitCommand {
+      get {
+        if (_DecreaseLimitCommand == null) {
+          _DecreaseLimitCommand = new Gala.RelayCommand<Trade>(DecreaseLimit, (trade) =>trade!=null && trade.Limit!=0);
+        }
+
+        return _DecreaseLimitCommand;
+      }
+    }
+    void DecreaseLimit(Trade trade) {
+      try {
+        AddtDelta(trade.Id, -1, limitDeltas);
+        if( !changeLimitScheduler.IsRunning) 
+          changeLimitScheduler.Run();
+      } catch (Exception exc) {
+        Log = new Exception("DecreaseLimit Error", exc);
+      }
+    }
+    #endregion
+
+    #region Change Stop/Limit
+    void changeStop(string tradeId, double newStop) {
+      fwMaster.FixOrderSetStop(tradeId, newStop, "");
+    }
+    void changeStops() {
+      changeStopsOrLimits(stopDeltas, trade => trade.Stop, (id, v) => changeStop(id, v), changeStopScheduler);
+    }
+    void changeLimit(string tradeId, double newLimit) {
+      fwMaster.FixOrderSetLimit(tradeId, newLimit, "");
+    }
+    void changeLimits() {
+      changeStopsOrLimits(limitDeltas, trade => trade.Limit, (id, v) => changeLimit(id, v), changeLimitScheduler);
+    }
+    void changeStopsOrLimits(Dictionary<string, double> deltas, Func<Trade, double> getValue, Action<string, double> changeValue, ThreadScheduler changeScheduler) {
+      foreach (var ld in deltas.Where(kv => kv.Value != 0).ToArray()) {
+        var trade = fwMaster.GetTrade(ld.Key);
+        if (trade == null) deltas.Remove(ld.Key);
+        else {
+          var newValue = fwMaster.InPoints(trade.Pair, ld.Value) + getValue(trade);
+          deltas[ld.Key] = 0;
+          changeValue(ld.Key, newValue);
+          if (deltas[ld.Key] != 0)
+            changeScheduler.Run();
+        }
+      }
+    }
+    Dictionary<string, double> stopDeltas = new Dictionary<string, double>();
+    Dictionary<string, double> limitDeltas = new Dictionary<string, double>();
+    void AddtDelta(string pair, double limitDelta, Dictionary<string, double> deltas) {
+      if (!deltas.ContainsKey(pair)) deltas.Add(pair, limitDelta);
+      else deltas[pair] = deltas[pair] + limitDelta;
+    }
+    ThreadScheduler _changeLimitScheduler;
+    ThreadScheduler changeLimitScheduler {
+      get {
+        if (_changeLimitScheduler == null) 
+          _changeLimitScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeLimits, (s, e) => Log = e.Exception);
+        return _changeLimitScheduler;
+      }
+    }
+    ThreadScheduler _changeStopScheduler;
+    ThreadScheduler changeStopScheduler {
+      get {
+        if (_changeStopScheduler == null)
+          _changeStopScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeStops, (s, e) => Log = e.Exception);
+        return _changeStopScheduler;
+      }
+    }
+    #endregion
+
+    #region DecreaseStopCommand
     ICommand _DecreaseStopCommand;
     public ICommand DecreaseStopCommand {
       get {
@@ -226,14 +322,16 @@ namespace HedgeHog.Alice.Client {
     }
     void DecreaseStop(Trade trade) {
       try {
-        var newStop = trade.Stop - 1.0/trade.PipValue;
-        fwMaster.FixOrderSetStop(trade.Id, newStop, "");
+        AddtDelta(trade.Id, -1, stopDeltas);
+        if (!changeStopScheduler.IsRunning)
+          changeStopScheduler.Run();
       } catch (Exception exc) {
         Log = new Exception("DecreaseStop Error", exc);
       }
     }
+    #endregion
 
-
+    #region EncreaseStopCommand
     ICommand _EncreaseStopCommand;
     public ICommand EncreaseStopCommand {
       get {
@@ -246,13 +344,14 @@ namespace HedgeHog.Alice.Client {
     }
     void EncreaseStop(Trade trade) {
       try {
-        var newStop = trade.Stop + 1.0 / trade.PipValue;
-        fwMaster.FixOrderSetStop(trade.Id, newStop, "");
+        AddtDelta(trade.Id, 1, stopDeltas);
+        if (!changeStopScheduler.IsRunning)
+          changeStopScheduler.Run();
       } catch (Exception exc) {
         Log = new Exception("EncreaseStop Error", exc);
       }
     }
-
+    #endregion
 
     #region DeleteTradingAccountCommand
 
@@ -616,8 +715,8 @@ namespace HedgeHog.Alice.Client {
         var trades = account.Trades;
         AccountModel.Update(account, 0, fwMaster.IsLoggedIn ? fwMaster.ServerTime : DateTime.Now);
         RaiseMasterListChangedEvent(trades);
-        ServerTradesList.Dispatcher.Invoke(new Action(() => {
-          UpdateTrades(trades.ToList(), ServerTrades);
+        ServerTradesList.Dispatcher.BeginInvoke(new Action(() => {
+          UpdateTrades(account, trades.ToList(), ServerTrades);
           ShowTrades((account.Orders ?? new Order[0]).ToList(), orders);
         }));
       }
@@ -635,15 +734,20 @@ namespace HedgeHog.Alice.Client {
         fwMaster.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
       } catch (Exception exc) { Log = exc; }
     }
-    private void UpdateTrades(List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
+    private void UpdateTrades(Account account, List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
       var oldIds = tradesCollection.Select(t => t.Id).ToArray();
       var newIds = tradesList.Select(t => t.Id);
       var deleteIds = oldIds.Except(newIds).ToList();
       deleteIds.ForEach(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d)));
       var addIds = newIds.Except(oldIds).ToList();
       addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
-      foreach (var trade in tradesList)
-        tradesCollection.Single(t => t.Id == trade.Id).Update(trade);
+      foreach (var trade in tradesList) {
+        var trd = tradesCollection.Single(t => t.Id == trade.Id);
+        trd.Update(trade,
+          o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
+          o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
+          );
+      }
     }
     private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {
       tradesCollection.Clear();

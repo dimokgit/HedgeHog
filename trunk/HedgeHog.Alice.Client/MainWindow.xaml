@@ -33,6 +33,10 @@
       <DataTemplate x:Key="StopCellEditTemplate">
         <tlrkInput:RadNumericUpDown Value="{Binding Stop,Mode=TwoWay}" />
       </DataTemplate>
+      <DataTemplate x:Key="GrossCellTemplate">
+        <Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding GrossPL,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
+      </DataTemplate>
+
       <!--TradesOnServer-->
       <DataTemplate x:Key="TradesOnServer">
         <StackPanel>
@@ -56,27 +60,42 @@
                   </Style>
                 </DataGridTextColumn.ElementStyle>
               </DataGridTextColumn>
-              <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
               <DataGridTemplateColumn Header="Stop" >
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                      <TextBlock Text="{Binding Stop}"></TextBlock>
-                      <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                      <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
                         Command="{Binding DataContext.DecreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                      <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                      <Label Content="{Binding Stop}" ContentStringFormat="{Binding PointSizeFormat}" Background="White">
+                      </Label>
+                      <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
                         Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </StackPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
-              <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
-              <DataGridTextColumn Header="$$$" Binding="{Binding GrossPL,StringFormat=c0}"/>
-              <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
               <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
+              <DataGridTextColumn Header="S ∑∑" Binding="{Binding UnKnown.BalanceOnStop,StringFormat=c0}" IsReadOnly="True"/>
+              <DataGridTemplateColumn Header="Limit" >
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                      <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                        Command="{Binding DataContext.DecreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                      <Label Content="{Binding Limit}" ContentStringFormat="{Binding PointSizeFormat}" Background="White"/>
+                      <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                        Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                    </StackPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
+              <DataGridTextColumn Header="L ∑∑" Binding="{Binding UnKnown.BalanceOnLimit,StringFormat=c0}" IsReadOnly="True"/>
+              <DataGridTextColumn Header="Pips" Binding="{Binding PL}"/>
+              <DataGridTemplateColumn Header="$$$" CellTemplate="{StaticResource GrossCellTemplate}"/>
             </DataGrid.Columns>
           </DataGrid>
+          <!--Server Orders-->
           <Label Content="Orders"/>
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding OrdersList}" >
             <DataGrid.Columns>
@@ -88,6 +107,8 @@
               <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
               <DataGridTextColumn Header="FixStatus" Binding="{Binding Status}"/>
               <DataGridTextColumn Header="Type" Binding="{Binding Type}"/>
+              <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
+              <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
               <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
             </DataGrid.Columns>
           </DataGrid>
@@ -150,7 +171,7 @@
     </StackPanel>
 
       <!--Master Account-->
-    <Expander Grid.Row="1" ContentTemplate="{StaticResource TradesOnServer}"  Content="{Binding}">
+    <Expander Grid.Row="1" ContentTemplate="{StaticResource TradesOnServer}" IsExpanded="True" Content="{Binding}">
       <Expander.Header>
         <StackPanel>
           <TextBlock>Master Account</TextBlock>
