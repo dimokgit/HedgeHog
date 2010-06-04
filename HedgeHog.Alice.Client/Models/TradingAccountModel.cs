@@ -76,7 +76,7 @@ namespace HedgeHog.Alice.Client {
     protected virtual void RaisePropertyChanged(params LambdaExpression[] propertyExpressions) {
       if (PropertyChanged != null)
         foreach (var propertyExpression in propertyExpressions)
-          PropertyChanged.Raise(propertyExpression);
+          RaisePropertyChanged(propertyExpression.GetLambda());
       }
     protected virtual void RaisePropertyChanged(string propertyName) {
       VerifyPropertyName(propertyName);

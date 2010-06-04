@@ -44,6 +44,15 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    int _currentLot;
+    public int CurrentLot {
+      get { return _currentLot; }
+      set {
+        if (_currentLot == value) return;
+        _currentLot = value; OnPropertyChanged("CurrentLot");
+      }
+    }
+
     public int TradeAmount {
       get { return LotSize * Lots; }
     }
@@ -58,12 +67,42 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    bool _freezLimit;
+    int _corridorMinutes;
+
+    public int CorridorMinutes {
+      get { return _corridorMinutes; }
+      set {
+        if (_corridorMinutes == value) return;
+        _corridorMinutes = value; OnPropertyChanged("CorridorMinutes");
+      }
+    }
+
+
+    bool _freezLimit = true;
     public bool FreezLimit {
       get { return _freezLimit; }
       set {
         if (_freezLimit == value) return;
         _freezLimit = value; OnPropertyChanged("FreezLimit");
+      }
+    }
+
+    bool _freezStop;
+    public bool FreezStop {
+      get { return _freezStop; }
+      set {
+        if (_freezStop == value) return;
+        _freezStop = value; OnPropertyChanged("FreezStop");
+      }
+    }
+
+    bool _IsReverseOnProfit;
+
+    public bool IsReverseOnProfit {
+      get { return _IsReverseOnProfit; }
+      set {
+        if (_IsReverseOnProfit == value) return;
+        _IsReverseOnProfit = value; OnPropertyChanged("IsReverseOnProfit");
       }
     }
 
@@ -74,16 +113,6 @@ namespace HedgeHog.Alice.Client.Models {
         if (_lastRateTime == value) return;
         _lastRateTime = value;
         OnPropertyChanged("LastRateTime"); }
-    }
-
-    double _currentLoss;
-
-    public double CurrentLoss {
-      get { return _currentLoss; }
-      set {
-        if (_currentLoss == value) return;
-        _currentLoss = value; OnPropertyChanged("CurrentLoss");
-      }
     }
 
     public double AngleInRadians { get { return Math.Atan(Angle) * (180 / Math.PI); } }

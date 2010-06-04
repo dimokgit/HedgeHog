@@ -354,7 +354,8 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="lots">Initial value of the Lots property.</param>
         /// <param name="limitBar">Initial value of the LimitBar property.</param>
         /// <param name="overlapToStop">Initial value of the OverlapToStop property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop)
+        /// <param name="currentLoss">Initial value of the CurrentLoss property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double limit, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -367,6 +368,7 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.Lots = lots;
             tradingMacro.LimitBar = limitBar;
             tradingMacro.OverlapToStop = overlapToStop;
+            tradingMacro.CurrentLoss = currentLoss;
             return tradingMacro;
         }
 
@@ -615,6 +617,30 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _OverlapToStop;
         partial void OnOverlapToStopChanging(global::System.Int32 value);
         partial void OnOverlapToStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CurrentLoss
+        {
+            get
+            {
+                return _CurrentLoss;
+            }
+            set
+            {
+                OnCurrentLossChanging(value);
+                ReportPropertyChanging("CurrentLoss");
+                _CurrentLoss = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CurrentLoss");
+                OnCurrentLossChanged();
+            }
+        }
+        private global::System.Double _CurrentLoss;
+        partial void OnCurrentLossChanging(global::System.Double value);
+        partial void OnCurrentLossChanged();
 
         #endregion
     

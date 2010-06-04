@@ -40,9 +40,13 @@ namespace HedgeHog.Shared {
     [UpdateOnUpdate]
     public double Limit { get; set; }
     [DisplayName("")]
+    public double LimitInPips { get { return InPips(Limit - Open); } }
+    [DisplayName("")]
     [DataMember]
     [UpdateOnUpdate]
     public double Stop { get; set; }
+    [DisplayName("")]
+    public double StopInPips { get { return InPips(Stop - Open); } }
     [DataMember]
     [UpdateOnUpdate]
     public double PL { get; set; }

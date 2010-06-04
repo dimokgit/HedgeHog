@@ -66,8 +66,7 @@
                     <StackPanel Orientation="Horizontal">
                       <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
                         Command="{Binding DataContext.DecreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                      <Label Content="{Binding Stop}" ContentStringFormat="{Binding PointSizeFormat}" Background="White">
-                      </Label>
+                      <TextBlock Text="{Binding StopInPips,StringFormat=n1}"/>
                       <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
                         Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </StackPanel>
@@ -82,7 +81,7 @@
                     <StackPanel Orientation="Horizontal">
                       <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" 
                         Command="{Binding DataContext.DecreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                      <Label Content="{Binding Limit}" ContentStringFormat="{Binding PointSizeFormat}" Background="White"/>
+                      <TextBlock Text="{Binding LimitInPips,StringFormat=n1}" />
                       <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" 
                         Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </StackPanel>
@@ -110,6 +109,8 @@
               <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
               <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
               <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+              <DataGridTextColumn Header="OrderId" Binding="{Binding OrderID}"/>
+              <DataGridTextColumn Header="QTXT" Binding="{Binding QTXT}"/>
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>

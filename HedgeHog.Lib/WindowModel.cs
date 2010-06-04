@@ -22,7 +22,7 @@ namespace HedgeHog.Models {
     protected void RaisePropertyChanged(Expression<Func<object>> propertyLamda) {
       var body = propertyLamda.Body as UnaryExpression;
       if (body == null) {
-        PropertyChanged.Raise(propertyLamda);
+        RaisePropertyChangedCore(propertyLamda.GetLambda());
       } else {
         var operand = body.Operand as MemberExpression;
         var member = operand.Member;
@@ -61,7 +61,7 @@ namespace HedgeHog.Models {
     protected void RaisePropertyChanged(Expression<Func<object>> propertyLamda) {
       var body = propertyLamda.Body as UnaryExpression;
       if (body == null) {
-        PropertyChanged.Raise(propertyLamda);
+        RaisePropertyChangedCore(propertyLamda.GetLambda());
       } else {
         var operand = body.Operand as MemberExpression;
         var member = operand.Member;
