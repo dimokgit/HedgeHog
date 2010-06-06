@@ -11,15 +11,20 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.ComponentModel.Composition;
 
 namespace HedgeHog.Alice.Client.UI.Controls {
   /// <summary>
   /// Interaction logic for AccountLogin.xaml
   /// </summary>
   public partial class AccountLoginView : UserControl {
+    [Import(typeof(IMainModel))]
+    public IMainModel masterModel { get; set; }
 
     #region Ctor
     public AccountLoginView() {
+      if (!GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
+        App.container.SatisfyImportsOnce(this);
       InitializeComponent();
       LayoutRoot.DataContext = this;
     }
@@ -78,14 +83,18 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     }
 
     private void NewAccount_Click(object sender, RoutedEventArgs e) {
-      var li = new LoginInfo("","",true);
-      if (OpenNewAccountCommand != null) {
-        OpenNewAccountCommand.Execute(li);
-        if (!li.Canceled) {
-          this.TradingAccount = li.Account;
-          this.TradingPassword = li.Password;
-          this.TradingDemo = li.IsDemo;
+      try {
+        var li = new LoginInfo("", "", true);
+        if (OpenNewAccountCommand != null) {
+          OpenNewAccountCommand.Execute(li);
+          if (!li.Canceled) {
+            this.TradingAccount = li.Account;
+            this.TradingPassword = li.Password;
+            this.TradingDemo = li.IsDemo;
+          }
         }
+      } catch (Exception exc) {
+        masterModel.Log = exc;
       }
     }
     #endregion

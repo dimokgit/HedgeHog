@@ -78,7 +78,7 @@ namespace Temp {
         }
         ClearLog();
         AddLog("Rates.");
-        fw.GetBars(1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+        fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
         AddLog("RSI.");
         rates.ToArray().Rsi((Period * RsiPeriods).ToInt(),true);
         resetRsi = false;

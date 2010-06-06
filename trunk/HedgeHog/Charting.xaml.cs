@@ -349,7 +349,7 @@ namespace HedgeHog {
     }
     List<Rate> rsiBars = new List<Rate>();
     void ProcessRsi() {
-      fw.GetBars(5, fw.ServerTime.Round(5).AddHours(-12), DateTime.FromOADate(0), ref rsiBars);
+      fw.GetBars(fw.Pair, 5, fw.ServerTime.Round(5).AddHours(-12), DateTime.FromOADate(0), ref rsiBars);
     }
     void timer_Tick(object sender, EventArgs e) {
       try {
@@ -399,7 +399,7 @@ namespace HedgeHog {
       //if (RsiScheduler.IsRunning) { RaisePriceGridError(new Exception("RsiScheduler is overwelmed.")); return; }
       var startTime = fw.ServerTime.AddHours(-12).Round(1);
       var endTime = DateTime.FromOADate(0);
-      fw.GetBars(1, startTime, endTime, ref rsiRates);
+      fw.GetBars(fw.Pair, 1, startTime, endTime, ref rsiRates);
       rsiRates.Where(r => r.StartDate < startTime).ToList().ForEach(r => rsiRates.Remove(r));
       rsiRates.Remove(rsiRates.Last());
       var rsiChart = rsiRates.GetMinuteTicks(RsiTradeSignalBar);

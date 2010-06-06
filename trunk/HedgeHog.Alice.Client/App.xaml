@@ -11,7 +11,7 @@
 
     <ResourceDictionary>
       <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
-      <l:DoubleToColorConverter x:Key="DoubleToColorConverter"/>
+      <l:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
       <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
       <hh:PassThroughConverter x:Key="PassThroughConverter"/>
       <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">

@@ -18,6 +18,7 @@ using HedgeHog.Alice.Client.UI.Controls;
 using System.Data.Objects;
 using HedgeHog.Bars;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -32,6 +33,9 @@ namespace HedgeHog.Alice.Client {
       this.Accounts = accounts;
     }
   }
+  [Export]
+  [Export(typeof(IMainModel))]
+  [Export("MainWindowModel")]
   public class TraderModel:HedgeHog.Models.ModelBase,IMainModel {
     #region FXCM
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
@@ -60,9 +64,14 @@ namespace HedgeHog.Alice.Client {
 
     #region Properties
     RemoteControlModel _remoteController;
-    public RemoteControlModel RemoteController {
-      get { return _remoteController; }
-      set { _remoteController = value; RaisePropertyChangedCore(); }
+    public RemoteControlModel RemoteController1 {
+      get {
+        if (_remoteController == null) {
+          _remoteController = new RemoteControlModel();
+          RaisePropertyChangedCore();
+        }
+        return _remoteController;
+      }
     }
     #endregion
 
@@ -219,10 +228,7 @@ namespace HedgeHog.Alice.Client {
     ICommand _IncreaseLimitCommand;
     public ICommand IncreaseLimitCommand {
       get {
-        if (_IncreaseLimitCommand == null) {
-          _IncreaseLimitCommand = new Gala.RelayCommand<Trade>(IncreaseLimit, (trade) =>trade != null && trade.Limit !=0);
-        }
-
+        if (_IncreaseLimitCommand == null) _IncreaseLimitCommand = new Gala.RelayCommand<Trade>(IncreaseLimit, CanExecuteLimitChange);
         return _IncreaseLimitCommand;
       }
     }
@@ -241,13 +247,11 @@ namespace HedgeHog.Alice.Client {
     ICommand _DecreaseLimitCommand;
     public ICommand DecreaseLimitCommand {
       get {
-        if (_DecreaseLimitCommand == null) {
-          _DecreaseLimitCommand = new Gala.RelayCommand<Trade>(DecreaseLimit, (trade) =>trade!=null && trade.Limit!=0);
-        }
-
+        if (_DecreaseLimitCommand == null) _DecreaseLimitCommand = new Gala.RelayCommand<Trade>(DecreaseLimit, CanExecuteLimitChange);
         return _DecreaseLimitCommand;
       }
     }
+
     void DecreaseLimit(Trade trade) {
       try {
         AddtDelta(trade.Id, -1, limitDeltas);
@@ -259,64 +263,11 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    #region Change Stop/Limit
-    void changeStop(string tradeId, double newStop) {
-      fwMaster.FixOrderSetStop(tradeId, newStop, "");
-    }
-    void changeStops() {
-      changeStopsOrLimits(stopDeltas, trade => trade.Stop, (id, v) => changeStop(id, v), changeStopScheduler);
-    }
-    void changeLimit(string tradeId, double newLimit) {
-      fwMaster.FixOrderSetLimit(tradeId, newLimit, "");
-    }
-    void changeLimits() {
-      changeStopsOrLimits(limitDeltas, trade => trade.Limit, (id, v) => changeLimit(id, v), changeLimitScheduler);
-    }
-    void changeStopsOrLimits(Dictionary<string, double> deltas, Func<Trade, double> getValue, Action<string, double> changeValue, ThreadScheduler changeScheduler) {
-      foreach (var ld in deltas.Where(kv => kv.Value != 0).ToArray()) {
-        var trade = fwMaster.GetTrade(ld.Key);
-        if (trade == null) deltas.Remove(ld.Key);
-        else {
-          var newValue = fwMaster.InPoints(trade.Pair, ld.Value) + getValue(trade);
-          deltas[ld.Key] = 0;
-          changeValue(ld.Key, newValue);
-          if (deltas[ld.Key] != 0)
-            changeScheduler.Run();
-        }
-      }
-    }
-    Dictionary<string, double> stopDeltas = new Dictionary<string, double>();
-    Dictionary<string, double> limitDeltas = new Dictionary<string, double>();
-    void AddtDelta(string pair, double limitDelta, Dictionary<string, double> deltas) {
-      if (!deltas.ContainsKey(pair)) deltas.Add(pair, limitDelta);
-      else deltas[pair] = deltas[pair] + limitDelta;
-    }
-    ThreadScheduler _changeLimitScheduler;
-    ThreadScheduler changeLimitScheduler {
-      get {
-        if (_changeLimitScheduler == null) 
-          _changeLimitScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeLimits, (s, e) => Log = e.Exception);
-        return _changeLimitScheduler;
-      }
-    }
-    ThreadScheduler _changeStopScheduler;
-    ThreadScheduler changeStopScheduler {
-      get {
-        if (_changeStopScheduler == null)
-          _changeStopScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeStops, (s, e) => Log = e.Exception);
-        return _changeStopScheduler;
-      }
-    }
-    #endregion
-
     #region DecreaseStopCommand
     ICommand _DecreaseStopCommand;
     public ICommand DecreaseStopCommand {
       get {
-        if (_DecreaseStopCommand == null) {
-          _DecreaseStopCommand = new Gala.RelayCommand<Trade>(DecreaseStop, (trade) => trade!=null && trade.Stop != 0);
-        }
-
+        if (_DecreaseStopCommand == null) _DecreaseStopCommand = new Gala.RelayCommand<Trade>(DecreaseStop, CanExecuteStopChange);
         return _DecreaseStopCommand;
       }
     }
@@ -335,13 +286,11 @@ namespace HedgeHog.Alice.Client {
     ICommand _EncreaseStopCommand;
     public ICommand EncreaseStopCommand {
       get {
-        if (_EncreaseStopCommand == null) {
-          _EncreaseStopCommand = new Gala.RelayCommand<Trade>(EncreaseStop, (trade) => true);
-        }
-
+        if (_EncreaseStopCommand == null) _EncreaseStopCommand = new Gala.RelayCommand<Trade>(EncreaseStop, CanExecuteStopChange);
         return _EncreaseStopCommand;
       }
     }
+
     void EncreaseStop(Trade trade) {
       try {
         AddtDelta(trade.Id, 1, stopDeltas);
@@ -637,8 +586,12 @@ namespace HedgeHog.Alice.Client {
       fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
         IsInLogin = false;
-        fwMaster.TradeAdded += fw_TradesCountChanged;
-        fwMaster.PriceChanged += fwLocal_PriceChanged;
+        fwMaster.TradeAdded += fwMaster_TradesCountChanged;
+        fwMaster.TradeChanged += fwMaster_TradeChanged;
+        fwMaster.PriceChanged += fwMaster_PriceChanged;
+        fwMaster.OrderChanged += fwMaster_OrderChanged;
+        fwMaster.OrderAdded += fwMaster_OrderAdded;
+      
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
         AccountModel.Update(fwMaster.GetAccount(), 0, fwMaster.ServerTime);
@@ -651,12 +604,14 @@ namespace HedgeHog.Alice.Client {
       CoreFX.LoggedOffEvent += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
-        fwMaster.TradeAdded -= fw_TradesCountChanged;
-        fwMaster.PriceChanged -= fwLocal_PriceChanged;
+        fwMaster.TradeAdded -= fwMaster_TradesCountChanged;
+        fwMaster.TradeChanged -= fwMaster_TradeChanged;
+        fwMaster.PriceChanged -= fwMaster_PriceChanged;
+        fwMaster.OrderChanged -= fwMaster_OrderChanged;
+        fwMaster.OrderAdded -= fwMaster_OrderAdded;
       };
       #endregion
 
-      RemoteController = new RemoteControlModel(this);
       Using_FetchServerTrades = () => { 
         Using(FetchServerTrades);
       };
@@ -666,6 +621,7 @@ namespace HedgeHog.Alice.Client {
         (s, e) => { Log = e.Exception; });
       }
     }
+
     ~TraderModel() {
       if (IsLoggedIn) CoreFX.Logout();
     }
@@ -693,14 +649,25 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    void fwLocal_PriceChanged(Price Price) {
+    void fwMaster_PriceChanged(Price Price) {
       var a = fwMaster.GetAccount();
       a.Orders = fwMaster.GetOrders("");
       InvokeSyncronize(a);
     }
-    void fw_TradesCountChanged(Trade trade) {
-      fwLocal_PriceChanged(null);
+    void fwMaster_TradesCountChanged(Trade trade) {
+      fwMaster_PriceChanged(null);
     }
+    void fwMaster_TradeChanged(object sender, FXW.TradeEventArgs e) {
+      fwMaster_PriceChanged(null);
+    }
+
+    void fwMaster_OrderChanged(object sender, FXW.OrderEventArgs e) {
+      fwMaster_PriceChanged(null);
+    }
+    void fwMaster_OrderAdded(object sender, FXW.OrderEventArgs e) {
+      fwMaster_PriceChanged(null);
+    }
+
 
     void FetchServerTrades(TraderService.TraderServiceClient tsc) {
       try {
@@ -774,6 +741,66 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
+    #endregion
+
+    #region Methods
+
+    #region Change Stop/Limit
+    void changeStop(string tradeId, double newStop) {
+      fwMaster.FixOrderSetStop(tradeId, newStop, "");
+    }
+    void changeStops() {
+      changeStopsOrLimits(stopDeltas, trade => trade.Stop, (id, v) => changeStop(id, v), changeStopScheduler);
+    }
+    void changeLimit(string tradeId, double newLimit) {
+      fwMaster.FixOrderSetLimit(tradeId, newLimit, "");
+    }
+    void changeLimits() {
+      changeStopsOrLimits(limitDeltas, trade => trade.Limit, (id, v) => changeLimit(id, v), changeLimitScheduler);
+    }
+    void changeStopsOrLimits(Dictionary<string, double> deltas, Func<Trade, double> getValue, Action<string, double> changeValue, ThreadScheduler changeScheduler) {
+      foreach (var ld in deltas.Where(kv => kv.Value != 0).ToArray()) {
+        var trade = fwMaster.GetTrade(ld.Key);
+        if (trade == null) deltas.Remove(ld.Key);
+        else {
+          var newValue = fwMaster.InPoints(trade.Pair, ld.Value) + getValue(trade);
+          deltas[ld.Key] = 0;
+          changeValue(ld.Key, newValue);
+          if (deltas[ld.Key] != 0)
+            changeScheduler.Run();
+        }
+      }
+    }
+
+    private bool CanExecuteStopLimitChange(Trade trade, Func<Trade, bool> predicate) {
+      return trade != null && predicate(trade);
+    }
+    private bool CanExecuteStopChange(Trade trade) { return CanExecuteStopLimitChange(trade, t => t.Stop != 0); }
+    private bool CanExecuteLimitChange(Trade trade) { return CanExecuteStopLimitChange(trade, t => t.Limit != 0); }
+    Dictionary<string, double> stopDeltas = new Dictionary<string, double>();
+    Dictionary<string, double> limitDeltas = new Dictionary<string, double>();
+    void AddtDelta(string pair, double limitDelta, Dictionary<string, double> deltas) {
+      if (!deltas.ContainsKey(pair)) deltas.Add(pair, limitDelta);
+      else deltas[pair] = deltas[pair] + limitDelta;
+    }
+    ThreadScheduler _changeLimitScheduler;
+    ThreadScheduler changeLimitScheduler {
+      get {
+        if (_changeLimitScheduler == null)
+          _changeLimitScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeLimits, (s, e) => Log = e.Exception);
+        return _changeLimitScheduler;
+      }
+    }
+    ThreadScheduler _changeStopScheduler;
+    ThreadScheduler changeStopScheduler {
+      get {
+        if (_changeStopScheduler == null)
+          _changeStopScheduler = new ThreadScheduler(TimeSpan.FromSeconds(0.5), ThreadScheduler.infinity, changeStops, (s, e) => Log = e.Exception);
+        return _changeStopScheduler;
+      }
+    }
+    #endregion
+
     #endregion
   }
   public class TraderModelDesign : TraderModel {

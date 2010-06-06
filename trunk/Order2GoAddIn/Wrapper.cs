@@ -255,11 +255,35 @@ namespace Order2GoAddIn {
       if (TradeAdded != null) TradeAdded(trade);
     }
 
-    public delegate void OrderAddedEventHandler(Order Order);
-    public event OrderAddedEventHandler OrderAdded;
 
+    public class TradeEventArgs : EventArgs {
+      public Trade Trade { get; set; }
+      public TradeEventArgs(Trade newTrade) {
+        this.Trade = newTrade;
+      }
+    }
+
+    public event EventHandler<TradeEventArgs> TradeChanged;
+    void RaiseTradeChanged(Trade Trade) {
+      if (TradeChanged != null) TradeChanged(this, new TradeEventArgs(Trade));
+    }
+
+
+
+    public class OrderEventArgs : EventArgs {
+      public Order Order { get; set; }
+      public OrderEventArgs(Order newOrder) {
+        this.Order = newOrder;
+      }
+    }
+
+    public event EventHandler<OrderEventArgs> OrderAdded;
     void RaiseOrderAdded(Order Order) {
-      if (OrderAdded != null) OrderAdded(Order);
+      if (OrderAdded != null) OrderAdded(this, new OrderEventArgs(Order));
+    }
+    public event EventHandler<OrderEventArgs> OrderChanged;
+    void RaiseOrderChanged(Order Order) {
+      if (OrderChanged != null) OrderChanged(this, new OrderEventArgs(Order));
     }
 
 
@@ -533,14 +557,15 @@ namespace Order2GoAddIn {
         AskLow = Math.Round(r.AskLow, digits), AskOpen = Math.Round(r.AskOpen, digits),
         BidClose = Math.Round(r.BidClose, digits), BidHigh = Math.Round(r.BidHigh, digits),
         BidLow = Math.Round(r.BidLow, digits), BidOpen = Math.Round(r.BidOpen, digits),
-        StartDate = r.StartDate
+        StartDate = ConvertDateToLocal(r.StartDate)
       };
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public List<Rate> GetBars(string pair, int period, DateTime startDate, DateTime endDate) {
+      if (endDate != FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
       lock (lockHistory) {
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
-          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistory(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
+          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
           .Cast<FXCore.MarketRateAut>().ToArray();
         return mr.Select((r) => RateFromMarketRate(pair,r)).ToList();
         //);
@@ -706,37 +731,42 @@ namespace Order2GoAddIn {
     //Dimok: Fill offers from RowChanged Event
     #region GetOffers
     public Offer[] GetOffers() {
-      return (from t in GetRows(TABLE_OFFERS)
-              select new Offer() {
-                OfferID = (String)t.CellValue("OfferID"),
-                Pair = (String)t.CellValue("Instrument"),
-                InstrumentType = (int)t.CellValue("InstrumentType"),
-                Bid = (Double)t.CellValue("Bid"),
-                Ask = (Double)t.CellValue("Ask"),
-                Hi = (Double)t.CellValue("Hi"),
-                Low = (Double)t.CellValue("Low"),
-                IntrS = (Double)t.CellValue("IntrS"),
-                IntrB = (Double)t.CellValue("IntrB"),
-                ContractCurrency = (String)t.CellValue("ContractCurrency"),
-                ContractSize = (int)t.CellValue("ContractSize"),
-                Digits = (int)t.CellValue("Digits"),
-                DefaultSortOrder = (int)t.CellValue("DefaultSortOrder"),
-                PipCost = (Double)t.CellValue("PipCost"),
-                MMR = (Double)t.CellValue("MMR"),
-                Time = (DateTime)t.CellValue("Time"),
-                BidChangeDirection = (int)t.CellValue("BidChangeDirection"),
-                AskChangeDirection = (int)t.CellValue("AskChangeDirection"),
-                HiChangeDirection = (int)t.CellValue("HiChangeDirection"),
-                LowChangeDirection = (int)t.CellValue("LowChangeDirection"),
-                QuoteID = (String)t.CellValue("QuoteID"),
-                BidID = (String)t.CellValue("BidID"),
-                AskID = (String)t.CellValue("AskID"),
-                BidExpireDate = (DateTime)t.CellValue("BidExpireDate"),
-                AskExpireDate = (DateTime)t.CellValue("AskExpireDate"),
-                BidTradable = (String)t.CellValue("BidTradable"),
-                AskTradable = (String)t.CellValue("AskTradable"),
-                PointSize = (Double)t.CellValue("PointSize"),
-              }).ToArray();
+      try {
+        return (from t in GetRows(TABLE_OFFERS)
+                select new Offer() {
+                  OfferID = (String)t.CellValue("OfferID"),
+                  Pair = (String)t.CellValue("Instrument"),
+                  InstrumentType = (int)t.CellValue("InstrumentType"),
+                  Bid = (Double)t.CellValue("Bid"),
+                  Ask = (Double)t.CellValue("Ask"),
+                  Hi = (Double)t.CellValue("Hi"),
+                  Low = (Double)t.CellValue("Low"),
+                  IntrS = (Double)t.CellValue("IntrS"),
+                  IntrB = (Double)t.CellValue("IntrB"),
+                  ContractCurrency = (String)t.CellValue("ContractCurrency"),
+                  ContractSize = (int)t.CellValue("ContractSize"),
+                  Digits = (int)t.CellValue("Digits"),
+                  DefaultSortOrder = (int)t.CellValue("DefaultSortOrder"),
+                  PipCost = (Double)t.CellValue("PipCost"),
+                  MMR = (Double)t.CellValue("MMR"),
+                  Time = (DateTime)t.CellValue("Time"),
+                  BidChangeDirection = (int)t.CellValue("BidChangeDirection"),
+                  AskChangeDirection = (int)t.CellValue("AskChangeDirection"),
+                  HiChangeDirection = (int)t.CellValue("HiChangeDirection"),
+                  LowChangeDirection = (int)t.CellValue("LowChangeDirection"),
+                  QuoteID = (String)t.CellValue("QuoteID"),
+                  BidID = (String)t.CellValue("BidID"),
+                  AskID = (String)t.CellValue("AskID"),
+                  BidExpireDate = (DateTime)t.CellValue("BidExpireDate"),
+                  AskExpireDate = (DateTime)t.CellValue("AskExpireDate"),
+                  BidTradable = (String)t.CellValue("BidTradable"),
+                  AskTradable = (String)t.CellValue("AskTradable"),
+                  PointSize = (Double)t.CellValue("PointSize"),
+                }).ToArray();
+      } catch (Exception exc) {
+        if (wasRowDeleted(exc)) return GetOffers();
+        throw exc;
+      }
     }
     #endregion
 
@@ -1575,14 +1605,18 @@ namespace Order2GoAddIn {
             }
             break;
           case TABLE_ORDERS:
+            parser.ParseEventRow(rowText, table.Type);
+            var order = InitOrder(parser);
+            RaiseOrderChanged(order);
             //parser.ParseEventRow(rowText, table.Type);
             //var order = InitOrder(parser);
             //var poOrder = PendingOrders.SingleOrDefault(po => po.RequestId == order.RequestID);
             //if (poOrder != null && !poOrder.HasKids(PendingOrders)) RemovePendingOrder(poOrder);
             break;
           case TABLE_TRADES:
-            //parser.ParseEventRow(rowText, table.Type);
-            //var trade = InitTrade(parser);
+            parser.ParseEventRow(rowText, table.Type);
+            var trade = InitTrade(parser);
+            RaiseTradeChanged(trade);
             //var poTrade = PendingOrders.SingleOrDefault(po => po.RequestId == trade.OpenOrderReqID);
             //if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
             break;
@@ -1726,6 +1760,10 @@ namespace Order2GoAddIn {
     DateTime ConvertDateToLocal(DateTime date) {
       var converter = timeZoneConverter;
       return converter.Convert(date, converter.ZONE_UTC, converter.ZONE_LOCAL);
+    }
+    DateTime ConvertDateToUTC(DateTime date) {
+      var converter = timeZoneConverter;
+      return converter.Convert(date, converter.ZONE_LOCAL, converter.ZONE_UTC);
     }
 
     Dictionary<string, double> leverages = new Dictionary<string, double>();

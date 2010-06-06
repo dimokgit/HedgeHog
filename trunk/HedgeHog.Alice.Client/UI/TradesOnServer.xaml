@@ -6,19 +6,16 @@
                xmlns:ui="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
                     >
 
-  <l:TraderModel x:Key="DataModel"/>
-  <l:TraderModelDesign x:Key="DataModelDesign"/>
-  
   <!--Command Buttons-->
   <DataTemplate x:Key="CloseLocalTradeTemplate">
-    <Button Content="{Binding Id}" CommandParameter="{Binding Id}" Command="{Binding CloseLocalTradeCommand,Source={StaticResource DataModel}}"/>
+    <Button Content="{Binding Id}" CommandParameter="{Binding Id}" Command="{Binding CloseLocalTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
   </DataTemplate>
   <DataTemplate x:Key="CloseServerTradeTemplate">
     <Button Content="{Binding Id}" CommandParameter="{Binding Id}"
             Command="{Binding DataContext.CloseServerTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
   </DataTemplate>
   <DataTemplate x:Key="SyncTradeTemplate">
-    <Button Content="{Binding Id}" CommandParameter="{Binding Id}" Command="{Binding SyncTradeCommand,Source={StaticResource DataModel}}"/>
+    <Button Content="{Binding Id}" CommandParameter="{Binding Id}" Command="{Binding SyncTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
   </DataTemplate>
 
 <!--Trades On Local-->

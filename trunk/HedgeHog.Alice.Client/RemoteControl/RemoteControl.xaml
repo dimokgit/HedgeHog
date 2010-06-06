@@ -78,7 +78,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="NetCellTemplate">
-      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}">
+      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
         <WrapPanel>
           <TextBlock Text="{Binding Net,StringFormat=c1}"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
@@ -86,7 +86,10 @@
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
-      <Label Content="{Binding CurrentLoss}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding CurrentLoss,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
+      <Label Content="{Binding CurrentLoss}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />
+    </DataTemplate>
+    <DataTemplate x:Key="LossEditCellTemplate">
+      <TextBox Text="{Binding CurrentLoss}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
     </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
       <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" 
@@ -102,6 +105,17 @@
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
+      <DataGrid.RowStyle>
+        <Style TargetType="DataGridRow">
+          <Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />
+          <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter Property="Background" Value="Blue"/>
+              <Setter Property="Foreground" Value="WhiteSmoke"/>
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </DataGrid.RowStyle>
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
@@ -113,7 +127,7 @@
         <DataGridTextColumn Header="|L|" Binding="{Binding LimitBar}" />
         <DataGridTextColumn Header="L=" Binding="{Binding Limit}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="Loss" CellTemplate="{StaticResource LossCellTemplate}" />
+        <DataGridTemplateColumn Header="Loss" CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}" />
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>

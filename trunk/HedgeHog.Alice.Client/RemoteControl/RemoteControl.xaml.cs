@@ -20,6 +20,10 @@ namespace HedgeHog.Alice.Client {
   public partial class RemoteControlView : UserControl {
     public RemoteControlView() {
       InitializeComponent();
+      if (App.IsInDesignMode)
+        DataContext = new RemoteControlModel();
+      else
+        DataContext = App.container.GetExportedValue<RemoteControlModel>();
     }
 
     private void DataGrid_KeyDown(object sender, KeyEventArgs e) {
