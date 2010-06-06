@@ -13,6 +13,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Data.Objects;
 using System.Windows.Controls.Primitives;
+using System.ComponentModel.Composition.Hosting;
+using System.ComponentModel.Composition;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -21,7 +23,11 @@ namespace HedgeHog.Alice.Client {
   public partial class MainWindow : Window {
     public MainWindow() {
       InitializeComponent();
+      App.container.SatisfyImportsOnce(this);
     }
+
+    [Import("MainWindowModel")]
+    public object ViewModel { get { return this.DataContext; } set { this.DataContext = value; } }
 
     private System.Data.Objects.ObjectQuery<Models.TradingAccount> GetTradingAccountsQuery(Models.AliceEntities aliceEntities) {
       // Auto generated code

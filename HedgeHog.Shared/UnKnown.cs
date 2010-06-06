@@ -31,6 +31,8 @@ namespace HedgeHog.Shared {
       foreach (var prop in propsToUpdate) {
         prop.SetValue(this, prop.GetValue(trade, null), null);
         props.Add(prop.Name);
+        var names = (prop.GetCustomAttributes(typeof(UpdateOnUpdateAttribute), true).First() as UpdateOnUpdateAttribute).Names;
+        if (names != null) props.AddRange(names);
       }
       OnPropertyChanged(props.ToArray());
       foreach (var su in setUnKnown)
@@ -72,5 +74,13 @@ namespace HedgeHog.Shared {
     #endregion
   }
 
-  public class UpdateOnUpdateAttribute : Attribute {}
+  public class UpdateOnUpdateAttribute : Attribute {
+    public string[] Names { get; set; }
+    public UpdateOnUpdateAttribute(params string[] names) {
+      this.Names = names;
+    }
+    public UpdateOnUpdateAttribute() {
+
+    }
+  }
 }

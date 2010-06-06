@@ -1490,7 +1490,7 @@ namespace HedgeHog {
         RatesHigh.Where(r => r.StartDate < endTime).ToList().ForEach(r => RatesHigh.Remove(r));
         endTime = ServerTime.Round(1).AddMinutes(-1);
         do {
-          fw.GetBars(1, startTime, endTime, ref RatesHigh);
+          fw.GetBars(fw.Pair, 1, startTime, endTime, ref RatesHigh);
           if (RatesHigh.Count > 0 && (RatesHigh.Max(r => r.StartDate) - RatesHigh.Min(r => r.StartDate)).TotalHours >= ui.highMinutesHoursBack) break;
           startTime = startTime.AddHours(-1);
         } while (true);

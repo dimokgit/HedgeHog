@@ -19,8 +19,6 @@
         Left="{state:UserSettings Default=100}"
     Top="{state:UserSettings Default=100}"
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
-        DataContext="{DynamicResource DataModel}"
-        d:DataContext="{DynamicResource DataModelDesign}"
         Title="{Binding Title,StringFormat=Alice In: {0}}" xmlns:my="clr-namespace:HedgeHog.Alice.Client.Models" Loaded="Window_Loaded">
   <Window.Resources>
     <ResourceDictionary>
@@ -48,12 +46,7 @@
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
           </WrapPanel>
           <!--Server Trades-->
-          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" >
-            <DataGrid.Resources>
-              <Style TargetType="DataGridCell" x:Key="StrechCellStyle">
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
-              </Style>
-            </DataGrid.Resources>
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}">
             <DataGrid.Columns>
               <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
@@ -66,15 +59,27 @@
                   </Style>
                 </DataGridTextColumn.ElementStyle>
               </DataGridTextColumn>
-              <DataGridTemplateColumn Header="Stop" CellStyle="{StaticResource StrechCellStyle}" >
+              <DataGridTemplateColumn Header="Stop" >
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                      <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
-                        Command="{Binding DataContext.DecreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
+                        Command="{Binding DataContext.DecreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                       <TextBlock Text="{Binding StopInPips,StringFormat=n1}" HorizontalAlignment="Stretch"/>
-                      <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
-                        Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
+                        Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                            <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                              <Image.LayoutTransform>
+                                <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                              </Image.LayoutTransform>
+                            </Image>
+                      </Button>
                     </StackPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -85,11 +90,23 @@
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                      <Button Content="&lt;" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-                        Command="{Binding DataContext.DecreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                        Command="{Binding DataContext.DecreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                       <TextBlock Text="{Binding LimitInPips,StringFormat=n1}" HorizontalAlignment="Stretch" />
-                      <Button Content=">" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-                        Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                        Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                     </StackPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -140,7 +157,7 @@
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <StackPanel Background="{Binding IsLoggedIn,Converter={StaticResource BoolToColorConverter},ConverterParameter=transparent|Pink|#3A98EF71}">
+    <StackPanel Background="{Binding IsLoggedIn,Converter={StaticResource ProfitToColorConverter}}">
           <WrapPanel>
             <TextBlock>Server:</TextBlock>
         <u:TextBox2 MinWidth="50" Text2="{Binding ServerAddress,Mode=TwoWay}" Text="{state:UserSettings Default=localhost:9200/}" x:Name="ServerAddress"/>
@@ -174,7 +191,7 @@
         </StackPanel>
       </Expander>
       <!--<DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" ItemsSource="{Binding Source={StaticResource tradingAccountsViewSource}}" Name="tradingAccountsDataGrid" RowDetailsVisibilityMode="VisibleWhenSelected"><DataGrid.Columns><DataGridTextColumn x:Name="idColumn" Binding="{Binding Path=Id}" Header="Id" /><DataGridTextColumn x:Name="passwordColumn" Binding="{Binding Path=Password}" Header="Password" /><DataGridTextColumn x:Name="masterIdColumn" Binding="{Binding Path=MasterId}" Header="Master Id" /><DataGridCheckBoxColumn x:Name="isDemoColumn" Binding="{Binding Path=IsDemo}" Header="Is Demo" Width="SizeToHeader" /></DataGrid.Columns></DataGrid></Expander>-->
-      <l:RemoteControlView DataContext="{Binding RemoteController}" />
+      <l:RemoteControlView />
     </StackPanel>
 
       <!--Master Account-->

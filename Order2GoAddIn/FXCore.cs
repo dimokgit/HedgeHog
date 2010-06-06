@@ -101,8 +101,6 @@ namespace Order2GoAddIn {
           mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
           InitTimer();
         } catch (Exception e) {
-          mCore = null;
-          mDesk = null;
           RaiseLoginError(e);
           return false;
         }
@@ -116,8 +114,6 @@ namespace Order2GoAddIn {
           if (IsLoggedIn) {
             try { mDesk.Logout(); } catch { }
             RaiseLoggedOff();
-            mDesk = null;
-            mCore = null;
           }
         }
       } catch { }

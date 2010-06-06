@@ -5,19 +5,37 @@ using System.Text;
 using System.Windows.Data;
 using HedgeHog.Alice.Client.TradeExtenssions;
 using System.Windows.Media;
+using System.Globalization;
 
 namespace HedgeHog.Alice.Client {
-  [ValueConversion(typeof(double?), typeof(Color))]
-  public class DoubleToColorConverter : IValueConverter {
-    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
+
+
+  public class ProfitToColorConverter : IValueConverter {
+    private static readonly ProfitToColorConverter defaultInstance = new ProfitToColorConverter();
+
+    public static ProfitToColorConverter Default { get { return defaultInstance; } }
+
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      var colors = (parameter + "").Split(new[]{'|'}, StringSplitOptions.RemoveEmptyEntries);//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
+      if (colors.Length == 0) colors = new string[] { Colors.Transparent + "", Colors.LightPink + "", "#3A98EF71" };
+
+      if (value == null) return colors[0];
+
+      if (value is bool?)
+        return ((bool?)value).Value ? colors[2] : colors[1];
+
+      if (value is bool) 
+        return (bool)value ? colors[2] : colors[1];
+
       var d = value is double? ? (double?)value : System.Convert.ToDouble(value);
-      var color = d.GetValueOrDefault() == 0 ? colors[0] : d > 0 ? colors[2] : colors[1];
-      return color;
+      return d.GetValueOrDefault() == 0 ? colors[0] : d > 0 ? colors[2] : colors[1];
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
       throw new NotImplementedException();
     }
   }
+
+
 }

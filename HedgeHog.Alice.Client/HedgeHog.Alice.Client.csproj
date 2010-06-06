@@ -64,6 +64,7 @@
       <HintPath>obj\x86\Debug\Interop.FXCore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
@@ -105,6 +106,7 @@
     <Compile Include="Classes\GlobalStorage.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\IMainModel.cs" />
+    <Compile Include="Classes\StyleSelectors.cs" />
     <Compile Include="Classes\TradeRequestManager.cs" />
     <Compile Include="Models\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
@@ -120,8 +122,12 @@
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
     <Compile Include="Models\AliceEntityExtender.cs" />
+    <Compile Include="RemoteControl\ButtonImage.xaml.cs">
+      <DependentUpon>ButtonImage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="RemoteControl\RemoteControl.xaml.cs">
       <DependentUpon>RemoteControl.xaml</DependentUpon>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
     <Compile Include="RemoteControl\RemoteControlModel.cs" />
     <Compile Include="Service References\TraderService\Reference.cs">
@@ -141,6 +147,7 @@
       <DependentUpon>SlaveAccount.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
+    <Compile Include="UI\Overrides\DataGrid_D.cs" />
     <Page Include="Dictionary1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -157,9 +164,14 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="RemoteControl\ButtonImage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="RemoteControl\RemoteControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -313,6 +325,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Images\down-arrow-3675-16.png" />
+    <Resource Include="Themes\UpArrow-32.png" />
+    <Resource Include="Themes\DownArrow-32.png" />
     <None Include="Service References\TraderService\configuration91.svcinfo" />
     <None Include="Service References\TraderService\configuration.svcinfo" />
     <None Include="Service References\TraderService\Reference.svcmap">
@@ -322,6 +337,8 @@
     <Content Include="bin\Debug_01\Store\Alice.sdf" />
     <Content Include="bin\Debug_02\Store\Alice.sdf" />
     <Content Include="bin\Debug_03\Store\Alice.sdf" />
+    <Resource Include="Images\DownArrow-32.png" />
+    <Resource Include="Images\UpArrow-32.png" />
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>
