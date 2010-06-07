@@ -35,6 +35,8 @@
           <Property Name="LimitBar" Type="int" Nullable="false" />
           <Property Name="OverlapToStop" Type="int" Nullable="false" />
           <Property Name="CurrentLoss" Type="float" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="FreezLimit" Type="bit" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -70,6 +72,8 @@
           <Property Type="Int32" Name="LimitBar" Nullable="false" />
           <Property Type="Int32" Name="OverlapToStop" Nullable="false" />
           <Property Type="Double" Name="CurrentLoss" Nullable="false" />
+          <Property Type="Boolean" Name="ReverseOnProfit" Nullable="false" />
+          <Property Type="Boolean" Name="FreezLimit" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -93,6 +97,8 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+                <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
                 <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
                 <ScalarProperty Name="OverlapToStop" ColumnName="OverlapToStop" />
                 <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />

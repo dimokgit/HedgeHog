@@ -11,13 +11,14 @@ namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
     public double TradingRatio { get; set; }
     public DateTime ServerTime { get; set; }
-    public double ProfitPercent { get { return (Equity - Balance) / Balance; } }
+    public double ProfitPercent { get { return Equity / Balance - 1; } }
     double _originalBalance;
 
     public double OriginalBalance {
       get { return _originalBalance; }
-      set { _originalBalance = value; OnPropertyChanged(() => OriginalBalance); }
+      set { _originalBalance = value; OnPropertyChanged(() => OriginalBalance, () => OriginalProfit); }
     }
+    public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
     public void Update(Account account,double tradingRatio,DateTime serverTime) {
       TradingAccountModel accountRow = this;
@@ -52,7 +53,8 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.BalanceOnLimit,
       () => accountRow.StopToBalanceRatio,
       () => accountRow.ProfitPercent,
-      () => accountRow.ServerTime
+      () => accountRow.ServerTime,
+      () => accountRow.OriginalProfit
         );
     }
 

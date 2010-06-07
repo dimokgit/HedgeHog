@@ -15,7 +15,14 @@
       <TextBlock Text="{Binding OriginalBalance,StringFormat=/{0:c0}}"/>
     </WrapPanel>
   </DataTemplate>
-    <Style TargetType="{x:Type ui:AccountInfo}">
+  <DataTemplate x:Key="CombinedProfitCellTemplate">
+    <WrapPanel>
+      <TextBlock Text="{Binding ProfitPercent,StringFormat=p1}"/>
+      <TextBlock Text="{Binding OriginalProfit,StringFormat=/{0:p1}}"/>
+    </WrapPanel>
+  </DataTemplate>
+
+  <Style TargetType="{x:Type ui:AccountInfo}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ui:AccountInfo}">
@@ -28,8 +35,8 @@
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="Balance" CellTemplate="{StaticResource CombinedBalanceCellTemplate}" IsReadOnly="True">
                 </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Profit" CellTemplate="{StaticResource CombinedProfitCellTemplate}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Equity" Binding="{Binding Equity,StringFormat=c0}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Profit" Binding="{Binding ProfitPercent,StringFormat=p1,Mode=OneWay}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Pos" Binding="{Binding Trades.Length,Mode=OneWay}" IsReadOnly="True" ToolTipService.ToolTip="Total Positions"/>
                 <DataGridTextColumn Header="Margin" Binding="{Binding UsableMargin,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding PipsToMC}" IsReadOnly="True">
