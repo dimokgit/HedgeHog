@@ -71,6 +71,8 @@ namespace HedgeHog.Shared {
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }
 
+    public bool IsParsed { get; set; }
+
     /// <summary>
     /// 100,10000
     /// </summary>

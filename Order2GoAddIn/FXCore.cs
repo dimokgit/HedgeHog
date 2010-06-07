@@ -23,13 +23,12 @@ namespace Order2GoAddIn {
     }
     System.Threading.Timer timer;
     public FXCore.TradeDeskAut Desk { get { return mDesk; } }
-    public bool LoggedIn { get { return mDesk != null; } }
     string user = "";
     string password = "";
     bool isDemo = true;
     public bool IsDemo { get { return isDemo; } }
     string URL = "";
-    bool noTimer;
+    bool noTimer = true;
     public readonly int ServerTimeOffset = -4;
     private TimeSpan _serverTimeOffset = TimeSpan.Zero;
     public static readonly string DefaultUrl = "http://www.fxcorporate.com";
@@ -73,8 +72,6 @@ namespace Order2GoAddIn {
           if (serverTimeLast > DateTime.Now - silenceInterval) return;
           timer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
           RaiseLoggedOff();
-          mDesk = null;
-          mCore = null;
           LogOn();
           timer.Change(TimeSpan.Zero, silenceInterval);
         } catch (Exception exc) { RaiseLoginError(exc); }

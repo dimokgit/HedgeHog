@@ -354,7 +354,9 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="limitBar">Initial value of the LimitBar property.</param>
         /// <param name="overlapToStop">Initial value of the OverlapToStop property.</param>
         /// <param name="currentLoss">Initial value of the CurrentLoss property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss)
+        /// <param name="reverseOnProfit">Initial value of the ReverseOnProfit property.</param>
+        /// <param name="freezLimit">Initial value of the FreezLimit property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Boolean freezLimit)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -367,6 +369,8 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.LimitBar = limitBar;
             tradingMacro.OverlapToStop = overlapToStop;
             tradingMacro.CurrentLoss = currentLoss;
+            tradingMacro.ReverseOnProfit = reverseOnProfit;
+            tradingMacro.FreezLimit = freezLimit;
             return tradingMacro;
         }
 
@@ -615,6 +619,54 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Double _CurrentLoss;
         partial void OnCurrentLossChanging(global::System.Double value);
         partial void OnCurrentLossChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean ReverseOnProfit
+        {
+            get
+            {
+                return _ReverseOnProfit;
+            }
+            set
+            {
+                OnReverseOnProfitChanging(value);
+                ReportPropertyChanging("ReverseOnProfit");
+                _ReverseOnProfit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ReverseOnProfit");
+                OnReverseOnProfitChanged();
+            }
+        }
+        private global::System.Boolean _ReverseOnProfit;
+        partial void OnReverseOnProfitChanging(global::System.Boolean value);
+        partial void OnReverseOnProfitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean FreezLimit
+        {
+            get
+            {
+                return _FreezLimit;
+            }
+            set
+            {
+                OnFreezLimitChanging(value);
+                ReportPropertyChanging("FreezLimit");
+                _FreezLimit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("FreezLimit");
+                OnFreezLimitChanged();
+            }
+        }
+        private global::System.Boolean _FreezLimit;
+        partial void OnFreezLimitChanging(global::System.Boolean value);
+        partial void OnFreezLimitChanged();
 
         #endregion
     

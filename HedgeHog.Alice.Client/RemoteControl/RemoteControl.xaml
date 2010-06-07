@@ -107,15 +107,25 @@
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
       <DataGrid.RowStyle>
         <Style TargetType="DataGridRow">
-          <Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />
+          <!--<Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />-->
           <Style.Triggers>
             <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="Blue"/>
+              <Setter Property="Background" Value="Red"/>
               <Setter Property="Foreground" Value="WhiteSmoke"/>
             </Trigger>
           </Style.Triggers>
         </Style>
       </DataGrid.RowStyle>
+      <DataGrid.CellStyle>
+        <Style TargetType="DataGridCell">
+          <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter Property="Background" Value="WhiteSmoke"/>
+              <Setter Property="Foreground" Value="Navy"/>
+            </Trigger>
+          </Style.Triggers>
+        </Style>
+      </DataGrid.CellStyle>
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
@@ -125,7 +135,7 @@
         <DataGridTemplateColumn Header="$Lot" CellTemplate="{StaticResource TradeAmountCellTemplate}" IsReadOnly="True" />
         <DataGridTextColumn Header="Stop" Binding="{Binding Stop}" IsReadOnly="True" />
         <DataGridTextColumn Header="|L|" Binding="{Binding LimitBar}" />
-        <DataGridTextColumn Header="L=" Binding="{Binding Limit}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Loss" CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}" />
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
@@ -133,7 +143,7 @@
         <DataGridTemplateColumn CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
         <DataGridCheckBoxColumn Header="FL" Binding="{Binding FreezLimit}" />
         <DataGridCheckBoxColumn Header="FS" Binding="{Binding FreezStop}" />
-        <DataGridCheckBoxColumn Header="ROP" Binding="{Binding IsReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
+        <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}"></DataGridTemplateColumn>
 
@@ -161,6 +171,8 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
+        <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTextColumn Header="RateTime" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>

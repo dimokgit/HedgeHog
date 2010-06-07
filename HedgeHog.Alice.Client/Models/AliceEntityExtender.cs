@@ -55,6 +55,32 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    private double _buyStopByCorridor;
+
+    public double BuyStopByCorridor {
+      get { return _buyStopByCorridor; }
+      set {
+        if (_buyStopByCorridor != value) {
+          _buyStopByCorridor = value;
+          OnPropertyChanged("BuyStopByCorridor");
+        }
+      }
+    }
+
+    private double _sellStopByCorridor;
+
+    public double SellStopByCorridor {
+      get { return _sellStopByCorridor; }
+      set {
+        if (_sellStopByCorridor != value) {
+          _sellStopByCorridor = value;
+          OnPropertyChanged("SellStopByCorridor");
+        }
+      }
+    }
+
+
+
     int _currentLot;
     public int CurrentLot {
       get { return _currentLot; }
@@ -88,32 +114,12 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-
-    bool _freezLimit = true;
-    public bool FreezLimit {
-      get { return _freezLimit; }
-      set {
-        if (_freezLimit == value) return;
-        _freezLimit = value; OnPropertyChanged("FreezLimit");
-      }
-    }
-
     bool _freezStop;
     public bool FreezStop {
       get { return _freezStop; }
       set {
         if (_freezStop == value) return;
         _freezStop = value; OnPropertyChanged("FreezStop");
-      }
-    }
-
-    bool _IsReverseOnProfit;
-
-    public bool IsReverseOnProfit {
-      get { return _IsReverseOnProfit; }
-      set {
-        if (_IsReverseOnProfit == value) return;
-        _IsReverseOnProfit = value; OnPropertyChanged("IsReverseOnProfit");
       }
     }
 

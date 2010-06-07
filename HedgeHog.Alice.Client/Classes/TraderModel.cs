@@ -586,6 +586,7 @@ namespace HedgeHog.Alice.Client {
       fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
         IsInLogin = false;
+        fwMaster.Error += fwMaster_Error;
         fwMaster.TradeAdded += fwMaster_TradesCountChanged;
         fwMaster.TradeChanged += fwMaster_TradeChanged;
         fwMaster.PriceChanged += fwMaster_PriceChanged;
@@ -605,6 +606,7 @@ namespace HedgeHog.Alice.Client {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
         fwMaster.TradeAdded -= fwMaster_TradesCountChanged;
+        fwMaster.Error -= fwMaster_Error;
         fwMaster.TradeChanged -= fwMaster_TradeChanged;
         fwMaster.PriceChanged -= fwMaster_PriceChanged;
         fwMaster.OrderChanged -= fwMaster_OrderChanged;
@@ -620,6 +622,10 @@ namespace HedgeHog.Alice.Client {
         Using_FetchServerTrades,
         (s, e) => { Log = e.Exception; });
       }
+    }
+
+    void fwMaster_Error(object sender, O2G.ErrorEventArgs e) {
+      Log = e.Error;
     }
 
     ~TraderModel() {
