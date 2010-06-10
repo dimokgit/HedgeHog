@@ -95,10 +95,21 @@ namespace HedgeHog {
       }
     }
     public event EventHandler<TimerErrorException> Error;
+    EventHandler<EventArgs> _finishedHandler;
     public event EventHandler<EventArgs> Finished;
     void RaiseFinished() {
       if (Finished != null) Finished(this, new EventArgs());
+      if (_finishedHandler != null) {
+        Finished -= _finishedHandler;
+        _finishedHandler = null;
+      }
     }
+    public void SetFinished(EventHandler<EventArgs> handler) {
+      if (_finishedHandler != null) Finished -= _finishedHandler;
+      _finishedHandler = handler;
+      Finished += handler;
+    }
+
     public EventWaitHandle WaitHandler { get; private set; }
     public readonly static TimeSpan infinity = TimeSpan.FromMilliseconds(-1);
     public readonly static TimeSpan zero = TimeSpan.Zero;
@@ -189,4 +200,15 @@ namespace HedgeHog {
 
   }
   #endregion
+  public class ThreadSchedulersDispenser : Dictionary<string, ThreadScheduler> {
+    public ThreadScheduler Get(string key) {
+      if (!this.ContainsKey(key)) this.Add(key, new ThreadScheduler());
+      return this[key];
+    }
+    public void Run(string key, Action runner) {
+      var ts = Get(key);
+      if (ts.IsRunning) ts.SetFinished((s, ea) => runner());
+      else ts.Command = () => runner();
+    }
+  }
 }

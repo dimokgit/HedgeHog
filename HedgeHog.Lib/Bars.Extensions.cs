@@ -28,7 +28,43 @@ namespace HedgeHog.Bars {
       return string.Format("{0:n1}={1:n1}-{2:n1},{3:n1}={4:n1}+{5:n1}", Buy, BuyAverage, BuyStd, Sell, SellAverage, SellStd);
     }
   }
+  public class CorridorStatistics {
+    public double AverageHigh { get; set; }
+    public double AverageLow { get; set; }
+    public double Density { get; set; }
+    public CorridorStatistics(double density,double averageHigh,double averageLow) {
+      this.Density = density;
+      this.AverageHigh = averageHigh;
+      this.AverageLow = averageLow;
+    }
+  }
   public static class Extensions {
+
+    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, string pair, int minutesStart, out int minutes) {
+      if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
+      var corridornesses = new Dictionary<int, CorridorStatistics>();
+      for (minutes = minutesStart; minutes < rates.Count(); minutes++) {
+        corridornesses.Add(minutes, ScanCorridor(rates.Take(minutes)));
+      }
+      var corrAverage = corridornesses.Values.Average(c=>c.Density);
+      var corrAfterAverage = corridornesses.Where(c => c.Value.Density > corrAverage).ToArray();
+      corrAverage = corrAfterAverage.Average(c => c.Value.Density);
+      corrAfterAverage = corrAfterAverage.Where(c => c.Value.Density > corrAverage).ToArray();
+      corrAverage = corrAfterAverage.Average(c => c.Value.Density);
+      corrAfterAverage = corrAfterAverage.Where(c => c.Value.Density > corrAverage).ToArray();
+      var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
+      minutes = corr.Key;
+      return corr.Value;
+    }
+    static CorridorStatistics ScanCorridor(IEnumerable<Rate> rates) {
+      var averageHigh = rates.Average(r => r.PriceHigh);
+      var averageLow = rates.Average(r => r.PriceLow);
+      var count = 0.0;
+      foreach (var rate in rates)
+        if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
+      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow); ;
+    }
+
 
     public static RsiStatistics RsiStats(this List<Rate> ratesByMinute) { return ratesByMinute.RsiStatsCore(); }
     public static RsiStatistics RsiStats(this Rate[] ratesByMinute) { return ratesByMinute.RsiStatsCore(); }

@@ -34,10 +34,9 @@
       <TextBlock Margin="10 0 0 0" ToolTip="Trading Ratio">TR:</TextBlock>
       <TextBox Text="{Binding TradingAccountModel.TradeRatio,Mode=TwoWay}"/>
       <Button Command="{Binding CloseAllLocalTradesCommand}" Margin="15 0 15 0">Close All</Button>
-      <Button Command="{Binding ReverseAliceModeCommand}" ToolTip="Close Alice and change mode to oposite.">Reverse</Button>
       <WrapPanel Margin="15 0">
         <TextBlock ToolTip="Target In Pips">TP:</TextBlock>
-        <u:TextBox2 x:Name="TargetInPips" Text2="{Binding TargetInPips,Mode=TwoWay}" Text="0" />
+        <TextBox Text="{Binding TargetInPips,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" />
       </WrapPanel>
     </StackPanel>
     <StackPanel>

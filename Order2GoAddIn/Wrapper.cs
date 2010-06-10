@@ -141,9 +141,23 @@ namespace Order2GoAddIn {
 
   #region EventArgs classes
   public class ErrorEventArgs : EventArgs {
+    public string Pair { get; set; }
+    public bool IsBuy { get; set; }
+    public int Lot { get; set; }
+    public double Stop { get; set; }
+    public double Limit { get; set; }
+    public string Remark { get; set; }
     public Exception Error { get; set; }
     public ErrorEventArgs(Exception error) {
       this.Error = error;
+    }
+    public ErrorEventArgs(Exception error,string pair,bool isBuy,int lot,double stop,double limit,string remark) :this(error){
+      this.Pair = pair;
+      this.IsBuy = isBuy;
+      this.Lot = lot;
+      this.Stop = stop;
+      this.Limit = limit;
+      this.Remark = remark;
     }
   }
   public class OrderErrorEventArgs : ErrorEventArgs {
@@ -219,10 +233,16 @@ namespace Order2GoAddIn {
       } catch (Exception exc) { FileLogger.LogToFile(exc,ERROR_FILE_NAME); }
     }
     public event EventHandler<ErrorEventArgs> Error;
+    void RaiseError(Exception exception,string pair,bool isBuy,int lot,double stop,double limit,string remark) {
+      RaiseError(new ErrorEventArgs(exception,pair,isBuy,lot,stop,limit,remark));
+    }
     void RaiseError(Exception exception) {
+      RaiseError(new ErrorEventArgs(exception));
+    }
+    void RaiseError(ErrorEventArgs eventArgs) {
       try {
-        if (Error != null) Error(this, new ErrorEventArgs(exception));
-        else Debug.Fail(exception + "");
+        if (Error != null) Error(this, eventArgs);
+        else Debug.Fail(eventArgs.Error + "");
       } catch (Exception exc) { FileLogger.LogToFile(exc,ERROR_FILE_NAME); }
     }
     public class PairNotFoundException : NotSupportedException {
@@ -566,20 +586,23 @@ namespace Order2GoAddIn {
     public List<Rate> GetBars(string pair, int period, DateTime startDate) {
       return GetBars(pair, period, startDate, DateTime.FromOADate(0));
     }
+    static object rateFromMarketRateLocker = new object();
     Rate RateFromMarketRate(string pair, FXCore.MarketRateAut r) {
       var digits = GetDigits(pair);
-      return new Rate(true) {
-        AskClose = Math.Round(r.AskClose, digits), AskHigh = Math.Round(r.AskHigh, digits),
-        AskLow = Math.Round(r.AskLow, digits), AskOpen = Math.Round(r.AskOpen, digits),
-        BidClose = Math.Round(r.BidClose, digits), BidHigh = Math.Round(r.BidHigh, digits),
-        BidLow = Math.Round(r.BidLow, digits), BidOpen = Math.Round(r.BidOpen, digits),
-        StartDate = ConvertDateToLocal(r.StartDate)
-      };
+      lock (rateFromMarketRateLocker) {
+        return new Rate(true) {
+          AskClose = Math.Round(r.AskClose, digits), AskHigh = Math.Round(r.AskHigh, digits),
+          AskLow = Math.Round(r.AskLow, digits), AskOpen = Math.Round(r.AskOpen, digits),
+          BidClose = Math.Round(r.BidClose, digits), BidHigh = Math.Round(r.BidHigh, digits),
+          BidLow = Math.Round(r.BidLow, digits), BidOpen = Math.Round(r.BidOpen, digits),
+          StartDate = ConvertDateToLocal(r.StartDate)
+        };
+      }
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public List<Rate> GetBars(string pair, int period, DateTime startDate, DateTime endDate) {
-      if (endDate != FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
       lock (lockHistory) {
+        if (endDate != FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
           ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
           .Cast<FXCore.MarketRateAut>().ToArray();
@@ -1193,7 +1216,8 @@ namespace Order2GoAddIn {
     #region Entry
     public void DeleteOrder(string orderId) {
       try {
-        Desk.DeleteOrder(orderId);
+        if(GetOrders("").Select(o=>o.OrderID).Contains(orderId))
+          Desk.DeleteOrder(orderId);
       } catch (Exception exc) {
         RaiseError(exc);
       }
@@ -1283,13 +1307,26 @@ namespace Order2GoAddIn {
           return po;
         } catch (Exception exc) {
           RemovePendingOrder(po);
-          RaiseError(new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots), exc));
+          RaiseError(new Exception(string.Format("Pair:{0},Buy:{1},Lots:{2}", pair, buy, lots), exc),pair,buy,lots,stopLoss,takeProfit,remark);
           return null;
         }
     }
     #endregion
 
     #region Close
+    public void CloseTradesAsync(Trade[] trades) {
+      foreach (var trade in trades)
+        CloseTradeAsync(trade);
+    }
+
+    public void CloseTradeAsync(Trade trade) {
+      object o1;
+      try {
+        Desk.CloseTradeAsync(trade.Id, trade.Lots, 0, "", 0, out o1);
+      } catch (Exception exc) {
+        RaiseError(exc);
+      }
+    }
     public void CloseAllTrades() {
       var trades = GetTrades("");
       var pairs = trades.Select(t => t.Pair).Distinct().ToArray();
@@ -1532,7 +1569,8 @@ namespace Order2GoAddIn {
       Unsubscribe();
       mSink = new FXCore.TradeDeskEventsSinkClass();
       mSink.ITradeDeskEvents_Event_OnRowChangedEx += FxCore_RowChanged;
-      mSink.ITradeDeskEvents_Event_OnRowAddedEx += mSink_ITradeDeskEvents_Event_OnRowAdded;
+      mSink.ITradeDeskEvents_Event_OnRowAdded += mSink_ITradeDeskEvents_Event_OnRowAdded;
+      mSink.ITradeDeskEvents_Event_OnRowAddedEx += mSink_ITradeDeskEvents_Event_OnRowAddedEx;
       mSink.ITradeDeskEvents_Event_OnRowBeforeRemoveEx += mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx;
       mSink.ITradeDeskEvents_Event_OnRequestCompleted += mSink_ITradeDeskEvents_Event_OnRequestCompleted;
       mSink.ITradeDeskEvents_Event_OnRequestFailed += mSink_ITradeDeskEvents_Event_OnRequestFailed;
@@ -1544,7 +1582,8 @@ namespace Order2GoAddIn {
       if (mSubscriptionId != -1) {
         try {
           mSink.ITradeDeskEvents_Event_OnRowChangedEx -= FxCore_RowChanged;
-          mSink.ITradeDeskEvents_Event_OnRowAddedEx -= mSink_ITradeDeskEvents_Event_OnRowAdded;
+          mSink.ITradeDeskEvents_Event_OnRowAdded -= mSink_ITradeDeskEvents_Event_OnRowAdded;
+          mSink.ITradeDeskEvents_Event_OnRowAddedEx -= mSink_ITradeDeskEvents_Event_OnRowAddedEx;
           mSink.ITradeDeskEvents_Event_OnRowBeforeRemoveEx -= mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx;
           mSink.ITradeDeskEvents_Event_OnRequestCompleted -= mSink_ITradeDeskEvents_Event_OnRequestCompleted;
           mSink.ITradeDeskEvents_Event_OnRequestFailed -= mSink_ITradeDeskEvents_Event_OnRequestFailed;
@@ -1568,10 +1607,30 @@ namespace Order2GoAddIn {
       }
     }
 
-    static List<string> ClosedTradeIDs = new List<string>();
-    void mSink_ITradeDeskEvents_Event_OnRowAdded(object _table, string RowID,string rowText) {
+    List<string> ClosedTradeIDs = new List<string>();
+    List<string> OpenedTradeIDs = new List<string>();
+
+    void mSink_ITradeDeskEvents_Event_OnRowAdded(object _table, string sRowID) {
+      FXCore.TableAut table = _table as FXCore.TableAut;
+      FXCore.RowAut row;
+      FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
       try {
-        System.Threading.Thread.CurrentThread.Priority = ThreadPriority.Highest;
+        switch (table.Type.ToLower()) {
+          case "trades":
+            try {
+              row = table.FindRow("TradeID", sRowID, 0) as FXCore.RowAut;
+            } catch { break; }
+            var trade = InitTrade(row);
+            RaiseTradeAdded(trade);
+            break;
+        }
+      } catch (Exception exc) { RaiseError(exc); }
+    }
+
+
+
+    void mSink_ITradeDeskEvents_Event_OnRowAddedEx(object _table, string RowID,string rowText) {
+      try {
         FXCore.TableAut table = _table as FXCore.TableAut;
         FXCore.RowAut row;
         Func<FXCore.TableAut, FXCore.RowAut, string> showTable = (t, r) => {
@@ -1606,10 +1665,10 @@ namespace Order2GoAddIn {
                   }
                 }
                 var poTrade = PendingOrders.SingleOrDefault(po => po.RequestId == tradeParsed.OpenOrderReqID);
-                //if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
+                ////if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
                 Trade trade = GetTrade(tradeParsed.Id);
-                if (new[] { "", tradeParsed.Pair }.Contains(Pair))
-                  RaiseTradeAdded(tradeParsed);
+                //if (new[] { "", tradeParsed.Pair }.Contains(Pair))
+                //  RaiseTradeAdded(tradeParsed);
                 if (trade == null && poTrade!=null) {
                   FixOrderOpen(poTrade.Pair, poTrade.Buy, poTrade.Lot, poTrade.Limit, poTrade.Stop, poTrade.Remark);
                 }
@@ -1649,7 +1708,6 @@ namespace Order2GoAddIn {
           case "closed trades": {
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
               var trade = InitClosedTrade(row);
-              RaiseTradeRemoved(trade);
               try {
                 if (ClosedTradeIDs.Contains(trade.Id)) break;
                 ClosedTradeIDs.Add(trade.Id);
@@ -1700,7 +1758,10 @@ namespace Order2GoAddIn {
               trade = InitTrade(row);
             } catch {
             }
-            RaiseTradeChanged(trade);
+            if (!OpenedTradeIDs.Contains(rowID)) {
+              OpenedTradeIDs.Add(rowID);
+            }else
+              RaiseTradeChanged(trade);
             //var poTrade = PendingOrders.SingleOrDefault(po => po.RequestId == trade.OpenOrderReqID);
             //if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
             break;
@@ -1730,19 +1791,20 @@ namespace Order2GoAddIn {
 
     void mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx(object _table, string RowID, string sExtInfo) {
       try {
-
-        return;
-
         FXCore.TableAut table = _table as FXCore.TableAut;
         Dictionary<string, string> fields = parse(sExtInfo);
         FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
         switch (table.Type.ToLower()) {
           case "trades":
-            var trade = GetTrade(RowID);
-            if (trade == null) {
-              parser.ParseEventRow(sExtInfo, table.Type);
-              trade = InitTrade(parser);
-            }
+            parser.ParseEventRow(sExtInfo, table.Type);
+            var trade = InitTrade(parser);
+            trade.IsParsed = true;
+            try {
+              var row = table.FindRow("TradeID", RowID, 0) as FXCore.RowAut;
+              if (row != null)
+                trade = InitTrade(row);
+            } catch { }
+            RaiseTradeRemoved(trade);
             break;
         }
       } catch (Exception exc) {
@@ -1788,7 +1850,7 @@ namespace Order2GoAddIn {
 
 
     public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
-      var amountToTrade = balance * leverage * tradeRatio / 100.0;
+      var amountToTrade = balance * leverage * tradeRatio;
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
@@ -1842,15 +1904,19 @@ namespace Order2GoAddIn {
 
     public DateTime ServerTimeCached { get; set; }
     public DateTime ServerTime { get { return ServerTimeCached = coreFX.ServerTime; } }
-    FXCore.ITimeZoneConverterAut timeZoneConverter { get { return coreFX.Desk.TimeZoneConverter as FXCore.ITimeZoneConverterAut; } }
+    static object converterLocker = new object();
     //[MethodImpl(MethodImplOptions.Synchronized)]
     DateTime ConvertDateToLocal(DateTime date) {
-      var converter = timeZoneConverter;
-      return converter.Convert(date, converter.ZONE_UTC, converter.ZONE_LOCAL);
+      lock (converterLocker) {
+        var converter = coreFX.Desk.TimeZoneConverter as FXCore.ITimeZoneConverterAut; ;
+        return converter.Convert(date, converter.ZONE_UTC, converter.ZONE_LOCAL);
+      }
     }
     DateTime ConvertDateToUTC(DateTime date) {
-      var converter = timeZoneConverter;
-      return converter.Convert(date, converter.ZONE_LOCAL, converter.ZONE_UTC);
+      lock (converterLocker) {
+        var converter = coreFX.Desk.TimeZoneConverter as FXCore.ITimeZoneConverterAut;
+        return converter.Convert(date, converter.ZONE_LOCAL, converter.ZONE_UTC);
+      }
     }
 
     Dictionary<string, double> leverages = new Dictionary<string, double>();

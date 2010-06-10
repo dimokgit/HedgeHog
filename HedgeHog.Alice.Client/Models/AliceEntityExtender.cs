@@ -41,7 +41,6 @@ namespace HedgeHog.Alice.Client.Models {
         if (_lotSize == value) return;
         _lotSize = value;
         OnPropertyChanged("LotSize");
-        OnPropertyChanged("TradeAmount");
       }
     }
 
@@ -63,6 +62,7 @@ namespace HedgeHog.Alice.Client.Models {
         if (_buyStopByCorridor != value) {
           _buyStopByCorridor = value;
           OnPropertyChanged("BuyStopByCorridor");
+          OnPropertyChanged("CorridorFib");
         }
       }
     }
@@ -75,8 +75,13 @@ namespace HedgeHog.Alice.Client.Models {
         if (_sellStopByCorridor != value) {
           _sellStopByCorridor = value;
           OnPropertyChanged("SellStopByCorridor");
+          OnPropertyChanged("CorridorFib");
         }
       }
+    }
+
+    public double CorridorFib {
+      get { return Lib.FibRatioSign(BuyStopByCorridor, SellStopByCorridor); }
     }
 
 
@@ -88,10 +93,6 @@ namespace HedgeHog.Alice.Client.Models {
         if (_currentLot == value) return;
         _currentLot = value; OnPropertyChanged("CurrentLot");
       }
-    }
-
-    public int TradeAmount {
-      get { return LotSize * Lots; }
     }
 
     double _corridornes;
@@ -142,13 +143,21 @@ namespace HedgeHog.Alice.Client.Models {
         OnPropertyChanged("Angle"); OnPropertyChanged("AngleInRadians"); }
     }
 
+
+    private int _OverlapTotal;
+
+    public int OverlapTotal { get { return Overlap.ToInt() + Overlap5; } }
+
+
     double _overlap;
     public double Overlap {
       get { return _overlap; }
       set {
         if (_overlap == value) return;
-        _overlap = value; 
-        OnPropertyChanged("Overlap"); }
+        _overlap = value;
+        OnPropertyChanged("Overlap");
+        OnPropertyChanged("OverlapTotal"); 
+      }
     }
 
     int _overlap5;
@@ -156,7 +165,9 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _overlap5; }
       set {
         if (_overlap5 == value) return;
-        _overlap5 = value; OnPropertyChanged("Overlap5");
+        _overlap5 = value;
+        OnPropertyChanged("Overlap5");
+        OnPropertyChanged("OverlapTotal");
       }
     }
 
@@ -233,5 +244,16 @@ namespace HedgeHog.Alice.Client.Models {
         if (_netInPips == value) return;
         _netInPips = value; 
         OnPropertyChanged("NetInPips"); } }
+
+    public Freezing FreezeType {
+      get { return (Freezing)this.FreezLimit; }
+      set {
+        if (this.FreezLimit != (int)value) {
+          this.FreezLimit = (int)value;
+          OnPropertyChanged("FreezeType");
+        }
+      }
+    }
   }
+  public enum Freezing { None = 0, Freez = 1, Float = 2 }
 }

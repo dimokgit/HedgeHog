@@ -28,15 +28,11 @@
           <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
           <Property Name="TradingRatio" Type="float" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
-          <Property Name="Stop" Type="float" Nullable="false" />
-          <Property Name="Price" Type="float" Nullable="false" />
-          <Property Name="Buy" Type="bit" Nullable="false" />
-          <Property Name="Lots" Type="int" Nullable="false" />
           <Property Name="LimitBar" Type="int" Nullable="false" />
-          <Property Name="OverlapToStop" Type="int" Nullable="false" />
           <Property Name="CurrentLoss" Type="float" Nullable="false" />
           <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
-          <Property Name="FreezLimit" Type="bit" Nullable="false" />
+          <Property Name="FreezLimit" Type="int" Nullable="false" />
+          <Property Name="CorridorRatio" Type="float" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -65,15 +61,11 @@
           <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
           <Property Type="Double" Name="TradingRatio" Nullable="false" />
           <Property Type="Guid" Name="UID" Nullable="false" />
-          <Property Type="Double" Name="Stop" Nullable="false" />
-          <Property Type="Double" Name="Price" Nullable="false" />
-          <Property Type="Boolean" Name="Buy" Nullable="false" />
-          <Property Type="Int32" Name="Lots" Nullable="false" />
           <Property Type="Int32" Name="LimitBar" Nullable="false" />
-          <Property Type="Int32" Name="OverlapToStop" Nullable="false" />
           <Property Type="Double" Name="CurrentLoss" Nullable="false" />
           <Property Type="Boolean" Name="ReverseOnProfit" Nullable="false" />
-          <Property Type="Boolean" Name="FreezLimit" Nullable="false" />
+          <Property Type="Int32" Name="FreezLimit" Nullable="false" />
+          <Property Type="Double" Name="CorridorRatio" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -97,15 +89,11 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="CorridorRatio" ColumnName="CorridorRatio" />
                 <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
                 <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
                 <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
-                <ScalarProperty Name="OverlapToStop" ColumnName="OverlapToStop" />
                 <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
-                <ScalarProperty Name="Lots" ColumnName="Lots" />
-                <ScalarProperty Name="Buy" ColumnName="Buy" />
-                <ScalarProperty Name="Price" ColumnName="Price" />
-                <ScalarProperty Name="Stop" ColumnName="Stop" />
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
                 <ScalarProperty Name="Pair" ColumnName="Pair" />
@@ -134,7 +122,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.5783902994791665" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.0853483072916656" />
       </Diagram>
     </Diagrams>
   </Designer>

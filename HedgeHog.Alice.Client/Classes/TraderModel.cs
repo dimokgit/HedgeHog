@@ -189,7 +189,12 @@ namespace HedgeHog.Alice.Client {
 
     #region Log
     DateTime lastLogTime = DateTime.MinValue;
-    public string LogText { get { return string.Join(Environment.NewLine, _logQueue.Reverse()); } }
+    public string LogText { get {
+      lock (_logQueue) {
+        return string.Join(Environment.NewLine, _logQueue.Reverse());
+      }
+    }
+    }
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
     public Exception Log {
@@ -198,14 +203,15 @@ namespace HedgeHog.Alice.Client {
         if (isInDesign) return;
         _log = value;
         var exc = value is Exception ? value : null;
-        if (_logQueue.Count > 5) _logQueue.Dequeue();
-        var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
-        while (value.InnerException != null) {
-          messages.Add(GetExceptionShort(value.InnerException));
-          value = value.InnerException;
+        lock (_logQueue) {
+          if (_logQueue.Count > 5) _logQueue.Dequeue();
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
+          while (value.InnerException != null) {
+            messages.Add(GetExceptionShort(value.InnerException));
+            value = value.InnerException;
+          }
+          _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
         }
-        _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
-
         exc = FileLogger.LogToFile(exc);
         RaisePropertyChanged(() => LogText, () => IsLogExpanded);
       }
@@ -481,11 +487,13 @@ namespace HedgeHog.Alice.Client {
           } catch (Exception exc) { Log = exc; }
         });
       else {
-        Log = new Exception("Closing all server trades.");
-        var ordersIds = fwMaster.FixOrdersCloseAll();
-        Log = new Exception("Trades closed:" + string.Join(",", ordersIds));
+        Log = new Exception("Closing all trades.");
+        var trades = fwMaster.GetTrades("");
+        fwMaster.CloseTradesAsync(trades);
+        Log = new Exception("Trades closed:" + string.Join(",", trades.Select(t => t.Id)));
       }
     }
+
     #endregion
 
     #region AccountLoginCommand
@@ -506,26 +514,26 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
-    #region ReverseAliceModeCommand
-    ICommand _ReverseAliceModeCommand;
-    public ICommand ReverseAliceModeCommand {
-      get {
-        if (_ReverseAliceModeCommand == null) {
-          _ReverseAliceModeCommand = new Gala.RelayCommand(ReverseAliceMode, () => true);
-        }
+    //#region ReverseAliceModeCommand
+    //ICommand _ReverseAliceModeCommand;
+    //public ICommand ReverseAliceModeCommand {
+    //  get {
+    //    if (_ReverseAliceModeCommand == null) {
+    //      _ReverseAliceModeCommand = new Gala.RelayCommand(ReverseAliceMode, () => true);
+    //    }
 
-        return _ReverseAliceModeCommand;
-      }
-    }
-    void ReverseAliceMode() {
-      MessageBox.Show("This method is not implemented.");
-      return;
-      if (AliceMode == AliceModes.Wonderland) AliceMode = AliceModes.Mirror;
-      if (AliceMode == AliceModes.Mirror) AliceMode = AliceModes.Wonderland;
-      //CloseAllLocalTrades();
-      //SyncAllTrades();
-    }
-    #endregion
+    //    return _ReverseAliceModeCommand;
+    //  }
+    //}
+    //void ReverseAliceMode() {
+    //  MessageBox.Show("This method is not implemented.");
+    //  return;
+    //  if (AliceMode == AliceModes.Wonderland) AliceMode = AliceModes.Mirror;
+    //  if (AliceMode == AliceModes.Mirror) AliceMode = AliceModes.Wonderland;
+    //  //CloseAllLocalTrades();
+    //  //SyncAllTrades();
+    //}
+    //#endregion
 
     #region TestCommand
     ICommand _TestCommand;
@@ -655,23 +663,37 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    ThreadSchedulersDispenser PriceChangedSchedulers = new ThreadSchedulersDispenser();
+    void fwMaster_PriceChanged(string pair) {
+      fwMaster_PriceChanged(new Price() { Pair = pair });
+    }
     void fwMaster_PriceChanged(Price Price) {
-      var a = fwMaster.GetAccount();
-      a.Orders = fwMaster.GetOrders("");
-      InvokeSyncronize(a);
+      PriceChangedSchedulers.Run(Price.Pair, RunPriceChanged);
+    }
+
+    int runPriceChangedCounter = 3;
+    private void RunPriceChanged() {
+      try {
+        runPriceChangedCounter--;
+        var a = fwMaster.GetAccount();
+        a.Orders = fwMaster.GetOrders("");
+        InvokeSyncronize(a);
+      } catch (Exception exc) { Log = exc; } finally {
+        runPriceChangedCounter++;
+      }
     }
     void fwMaster_TradesCountChanged(Trade trade) {
-      fwMaster_PriceChanged(null);
+      fwMaster_PriceChanged(trade.Pair);
     }
     void fwMaster_TradeChanged(object sender, FXW.TradeEventArgs e) {
-      fwMaster_PriceChanged(null);
+      fwMaster_PriceChanged(e.Trade.Pair);
     }
 
     void fwMaster_OrderChanged(object sender, FXW.OrderEventArgs e) {
-      fwMaster_PriceChanged(null);
+      fwMaster_PriceChanged(e.Order.Pair);
     }
     void fwMaster_OrderAdded(object sender, FXW.OrderEventArgs e) {
-      fwMaster_PriceChanged(null);
+      fwMaster_PriceChanged(e.Order.Pair);
     }
 
 

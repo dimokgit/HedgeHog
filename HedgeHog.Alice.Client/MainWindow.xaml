@@ -208,10 +208,27 @@
     <DataGrid Grid.Row="2" ItemsSource="{Binding SlaveModels}" AutoGenerateColumns="False" EnableRowVirtualization="False" HorizontalAlignment="Left" RowDetailsVisibilityMode="VisibleWhenSelected" VerticalAlignment="Top" CanUserAddRows="False" CanUserDeleteRows="False" KeyDown="SlaveModelGrid_KeyDown" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontWeight="Bold">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Account" Binding="{Binding AccountModel.ID,Mode=OneWay}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="Balance" Binding="{Binding AccountModel.Balance,StringFormat=c0}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="Equity" Binding="{Binding AccountModel.Equity,StringFormat=c0}" IsReadOnly="True"/>
-          <DataGridTextColumn Header="Pos" Binding="{Binding AccountModel.Trades.Length,Mode=OneWay}" IsReadOnly="True" ToolTipService.ToolTip="Total Positions"/>
-        <DataGridTextColumn Header="Margin" Binding="{Binding AccountModel.UsableMargin,StringFormat=c0}" IsReadOnly="True"/>
+        <DataGridTemplateColumn Header="Balance" IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock Text="{Binding AccountModel.Equity,StringFormat=c0}"/>
+                <TextBlock Text="{Binding AccountModel.Balance,StringFormat=/{0:c0}}"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Profit" IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel Background="{Binding AccountModel.Gross,Converter={StaticResource ProfitToColorConverter}}">
+                <TextBlock Text="{Binding AccountModel.Gross,StringFormat=c0}"/>
+                <TextBlock Text="{Binding AccountModel.ProfitPercent,StringFormat=/{0:p1}}"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Pos" Binding="{Binding AccountModel.Trades.Length,Mode=OneWay}" IsReadOnly="True" ToolTipService.ToolTip="Total Positions"/>
         <DataGridTextColumn Binding="{Binding AccountModel.PipsToMC}" IsReadOnly="True">
             <DataGridTextColumn.HeaderTemplate>
               <DataTemplate>
@@ -220,8 +237,8 @@
             </DataGridTextColumn.HeaderTemplate>
           </DataGridTextColumn>
         <DataGridTextColumn Header="Pips" Binding="{Binding AccountModel.PL,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="$$$" Binding="{Binding AccountModel.Gross,StringFormat=c0}" IsReadOnly="True"/>
         <DataGridTextColumn Header="Ratio" Binding="{Binding AccountModel.TradingRatio,StringFormat=p0}"/>
+        <DataGridTextColumn Header="Margin" Binding="{Binding AccountModel.UsableMargin,StringFormat=c0}" IsReadOnly="True"/>
       </DataGrid.Columns>
       <DataGrid.RowDetailsTemplate>
           <DataTemplate>
