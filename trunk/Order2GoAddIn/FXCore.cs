@@ -43,7 +43,7 @@ namespace Order2GoAddIn {
     }
 
     #region Ctor
-    public CoreFX():this(false) { }
+    public CoreFX():this(true) { }
     public CoreFX(bool noTimer) {
       this.noTimer = noTimer;
     }

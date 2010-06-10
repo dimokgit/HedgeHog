@@ -280,12 +280,12 @@ namespace HedgeHog {
       LineMin = voltageCurr;
       LineTimeMax = timeHigh;
       LineTimeMin = timeCurr;
+      LineNetSell = netSell;
+      LineNetBuy = netBuy;
       return Ticks.ToArray();
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle,
         (DispatcherOperationCallback)delegate(object o)
       {
-        LineNetSell = netSell;
-        LineNetBuy = netBuy;
         LineAvgAsk = priceAverageAskBid.OrderBy(p => p).Last();
         LineAvgBid = priceAverageAskBid.OrderBy(p => p).First();
 

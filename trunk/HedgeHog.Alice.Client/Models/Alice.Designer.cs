@@ -347,30 +347,22 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="pair">Initial value of the Pair property.</param>
         /// <param name="tradingRatio">Initial value of the TradingRatio property.</param>
         /// <param name="uID">Initial value of the UID property.</param>
-        /// <param name="stop">Initial value of the Stop property.</param>
-        /// <param name="price">Initial value of the Price property.</param>
-        /// <param name="buy">Initial value of the Buy property.</param>
-        /// <param name="lots">Initial value of the Lots property.</param>
         /// <param name="limitBar">Initial value of the LimitBar property.</param>
-        /// <param name="overlapToStop">Initial value of the OverlapToStop property.</param>
         /// <param name="currentLoss">Initial value of the CurrentLoss property.</param>
         /// <param name="reverseOnProfit">Initial value of the ReverseOnProfit property.</param>
         /// <param name="freezLimit">Initial value of the FreezLimit property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Double stop, global::System.Double price, global::System.Boolean buy, global::System.Int32 lots, global::System.Int32 limitBar, global::System.Int32 overlapToStop, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Boolean freezLimit)
+        /// <param name="corridorRatio">Initial value of the CorridorRatio property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
             tradingMacro.TradingRatio = tradingRatio;
             tradingMacro.UID = uID;
-            tradingMacro.Stop = stop;
-            tradingMacro.Price = price;
-            tradingMacro.Buy = buy;
-            tradingMacro.Lots = lots;
             tradingMacro.LimitBar = limitBar;
-            tradingMacro.OverlapToStop = overlapToStop;
             tradingMacro.CurrentLoss = currentLoss;
             tradingMacro.ReverseOnProfit = reverseOnProfit;
             tradingMacro.FreezLimit = freezLimit;
+            tradingMacro.CorridorRatio = corridorRatio;
             return tradingMacro;
         }
 
@@ -457,102 +449,6 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Double Stop
-        {
-            get
-            {
-                return _Stop;
-            }
-            set
-            {
-                OnStopChanging(value);
-                ReportPropertyChanging("Stop");
-                _Stop = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("Stop");
-                OnStopChanged();
-            }
-        }
-        private global::System.Double _Stop;
-        partial void OnStopChanging(global::System.Double value);
-        partial void OnStopChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Double Price
-        {
-            get
-            {
-                return _Price;
-            }
-            set
-            {
-                OnPriceChanging(value);
-                ReportPropertyChanging("Price");
-                _Price = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("Price");
-                OnPriceChanged();
-            }
-        }
-        private global::System.Double _Price;
-        partial void OnPriceChanging(global::System.Double value);
-        partial void OnPriceChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Boolean Buy
-        {
-            get
-            {
-                return _Buy;
-            }
-            set
-            {
-                OnBuyChanging(value);
-                ReportPropertyChanging("Buy");
-                _Buy = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("Buy");
-                OnBuyChanged();
-            }
-        }
-        private global::System.Boolean _Buy;
-        partial void OnBuyChanging(global::System.Boolean value);
-        partial void OnBuyChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Int32 Lots
-        {
-            get
-            {
-                return _Lots;
-            }
-            set
-            {
-                OnLotsChanging(value);
-                ReportPropertyChanging("Lots");
-                _Lots = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("Lots");
-                OnLotsChanged();
-            }
-        }
-        private global::System.Int32 _Lots;
-        partial void OnLotsChanging(global::System.Int32 value);
-        partial void OnLotsChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.Int32 LimitBar
         {
             get
@@ -571,30 +467,6 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _LimitBar;
         partial void OnLimitBarChanging(global::System.Int32 value);
         partial void OnLimitBarChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Int32 OverlapToStop
-        {
-            get
-            {
-                return _OverlapToStop;
-            }
-            set
-            {
-                OnOverlapToStopChanging(value);
-                ReportPropertyChanging("OverlapToStop");
-                _OverlapToStop = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("OverlapToStop");
-                OnOverlapToStopChanged();
-            }
-        }
-        private global::System.Int32 _OverlapToStop;
-        partial void OnOverlapToStopChanging(global::System.Int32 value);
-        partial void OnOverlapToStopChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -649,7 +521,7 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Boolean FreezLimit
+        public global::System.Int32 FreezLimit
         {
             get
             {
@@ -664,9 +536,33 @@ namespace HedgeHog.Alice.Client.Models
                 OnFreezLimitChanged();
             }
         }
-        private global::System.Boolean _FreezLimit;
-        partial void OnFreezLimitChanging(global::System.Boolean value);
+        private global::System.Int32 _FreezLimit;
+        partial void OnFreezLimitChanging(global::System.Int32 value);
         partial void OnFreezLimitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorridorRatio
+        {
+            get
+            {
+                return _CorridorRatio;
+            }
+            set
+            {
+                OnCorridorRatioChanging(value);
+                ReportPropertyChanging("CorridorRatio");
+                _CorridorRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorRatio");
+                OnCorridorRatioChanged();
+            }
+        }
+        private global::System.Double _CorridorRatio;
+        partial void OnCorridorRatioChanging(global::System.Double value);
+        partial void OnCorridorRatioChanged();
 
         #endregion
     

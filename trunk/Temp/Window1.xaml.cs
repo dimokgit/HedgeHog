@@ -55,7 +55,7 @@ namespace Temp {
       else {
         fw.PendingOrderCompleted += fw_PendingOrderCompleted;
         fw.TradeAdded += fw_TradeAdded;
-        statsScheduler = new ThreadScheduler(TimeSpan.FromSeconds(10),TimeSpan.FromMinutes(0.1), () => MinuteRsi(), (s, e) => AddLog(e.Exception.Message));
+        statsScheduler = new ThreadScheduler(TimeSpan.FromSeconds(10),TimeSpan.FromMinutes(0.1), () => Corridor(), (s, e) => AddLog(e.Exception.Message));
         fw.GetOffers().Select(o => o.Pair).ToList().ForEach(i => instruments.Add(i));
         Instruments.MoveCurrentToFirst();
         charter = new Corridors();
@@ -68,6 +68,23 @@ namespace Temp {
       resetRates = true;
     }
 
+    public void Corridor() {
+      if (fw.Pair == "") return;
+      var minutesBack = Period * PeriodsBack;
+      lock (rates) {
+        if (resetRates) {
+          rates.Clear();
+          resetRates = false;
+        }
+        ClearLog();
+        AddLog("Rates.");
+        fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+        int minutes;
+        var corridorStats = rates.ScanCorridors(fw.Pair, 7, out minutes);
+        new Scheduler(charter.Dispatcher).Command = () =>
+          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AverageHigh, corridorStats.AverageLow, rates.Last().StartDate.AddMinutes(-minutes), DateTime.MinValue, new double[0]);
+      }
+    }
     public void MinuteRsi() {
       if (fw.Pair == "") return;
       var minutesBack = Period * PeriodsBack;

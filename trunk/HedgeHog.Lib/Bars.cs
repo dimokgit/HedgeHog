@@ -285,6 +285,7 @@ namespace HedgeHog.Bars {
     public string Pair { get; set; }
     public int BidChangeDirection { get; set; }
     public int AskChangeDirection { get; set; }
+    public bool IsReal { get { return Time != DateTime.MinValue; } }
   }
 
   public enum BarsPeriodType { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24, W1 = 7 }

@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:localModels="clr-namespace:HedgeHog.Alice.Client.Models"             
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
@@ -18,12 +19,6 @@
     <DataTemplate x:Key="InstrumentEditTemplate">
       <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
     </DataTemplate>
-    <DataTemplate x:Key="TradingRatioTemplate">
-      <ContentPresenter HorizontalAlignment="Center" Content="{Binding TradingRatio}"/>
-    </DataTemplate>
-    <DataTemplate x:Key="TradingRatioEditTemplate">
-      <ComboBox ItemsSource="{Binding DataContext.TradingRatios,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{ Binding TradingRatio,Mode=TwoWay}"></ComboBox>
-    </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">
       <Button Content="Buy" CommandParameter="{Binding BindsDirectlyToSource=True}" 
             Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
@@ -31,13 +26,6 @@
     <DataTemplate x:Key="SellCellTemplate">
       <Button Content="Sell" CommandParameter="{Binding BindsDirectlyToSource=True}" 
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-    </DataTemplate>
-
-    <DataTemplate x:Key="NumberOfLotsCellTemplate">
-      <ContentPresenter Content="{Binding Lots}" HorizontalAlignment="Center" />
-    </DataTemplate>
-    <DataTemplate x:Key="NumberOfLotsCellEditTemplate">
-      <tlrkInput:RadNumericUpDown Value="{Binding Lots,Mode=TwoWay}" />
     </DataTemplate>
 
     <DataTemplate x:Key="StopCellTemplate">
@@ -49,34 +37,6 @@
     <DataTemplate x:Key="LimitBarCellTemplate">
       <ContentPresenter HorizontalAlignment="Center" Content="{Binding LimitBar}"/>
     </DataTemplate>
-    <DataTemplate x:Key="LimitBarCellEditTemplate">
-      <ComboBox SelectedValue="{Binding LimitBar}">
-        <sys:Int32>1</sys:Int32>
-        <sys:Int32>2</sys:Int32>
-        <sys:Int32>3</sys:Int32>
-        <sys:Int32>4</sys:Int32>
-        <sys:Int32>5</sys:Int32>
-        <sys:Int32>6</sys:Int32>
-        <sys:Int32>7</sys:Int32>
-        <sys:Int32>8</sys:Int32>
-        <sys:Int32>9</sys:Int32>
-        <sys:Int32>10</sys:Int32>
-        <sys:Int32>11</sys:Int32>
-        <sys:Int32>12</sys:Int32>
-        <sys:Int32>13</sys:Int32>
-        <sys:Int32>14</sys:Int32>
-        <sys:Int32>15</sys:Int32>
-        <sys:Int32>16</sys:Int32>
-        <sys:Int32>17</sys:Int32>
-        <sys:Int32>18</sys:Int32>
-        <sys:Int32>19</sys:Int32>
-        <sys:Int32>20</sys:Int32>
-      </ComboBox>
-    </DataTemplate>
-    <DataTemplate x:Key="TradeAmountCellTemplate">
-      <ContentPresenter HorizontalAlignment="Right" Content="{Binding TradeAmount}" ContentStringFormat="c0" />
-    </DataTemplate>
-
     <DataTemplate x:Key="NetCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
         <WrapPanel>
@@ -102,48 +62,32 @@
     <DataTemplate x:Key="OverlapCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding AngleInRadians,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
     </DataTemplate>
+    <ObjectDataProvider MethodName="GetValues"
+                        ObjectType="{x:Type sys:Enum}"
+                        x:Key="FreezeValues">
+      <ObjectDataProvider.MethodParameters>
+        <x:Type TypeName="localModels:Freezing" />
+      </ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
-      <DataGrid.RowStyle>
-        <Style TargetType="DataGridRow">
-          <!--<Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />-->
-          <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="Red"/>
-              <Setter Property="Foreground" Value="WhiteSmoke"/>
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </DataGrid.RowStyle>
-      <DataGrid.CellStyle>
-        <Style TargetType="DataGridCell">
-          <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="WhiteSmoke"/>
-              <Setter Property="Foreground" Value="Navy"/>
-            </Trigger>
-          </Style.Triggers>
-        </Style>
-      </DataGrid.CellStyle>
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
-        <DataGridTemplateColumn Header="Ratio" CellTemplate="{StaticResource TradingRatioTemplate}" CellEditingTemplate="{StaticResource TradingRatioEditTemplate}"/>
-        <DataGridTextColumn Header="$/Lot" Binding="{Binding LotSize,Mode=OneWay}" IsReadOnly="True" />
-        <DataGridTemplateColumn Header="#Lots" CellTemplate="{StaticResource NumberOfLotsCellTemplate}" CellEditingTemplate="{StaticResource NumberOfLotsCellEditTemplate}" />
-        <DataGridTemplateColumn Header="$Lot" CellTemplate="{StaticResource TradeAmountCellTemplate}" IsReadOnly="True" />
-        <DataGridTextColumn Header="Stop" Binding="{Binding Stop}" IsReadOnly="True" />
-        <DataGridTextColumn Header="|L|" Binding="{Binding LimitBar}" />
-        <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Ratio" Binding="{Binding TradingRatio,Mode=TwoWay}" />
         <DataGridTemplateColumn CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="Loss" CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}" />
+        <DataGridTemplateColumn CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}">
+          <DataGridTemplateColumn.Header>
+            <WrapPanel>
+              <TextBlock>Loss</TextBlock>
+              <Button Content="x" Command="{Binding DataContext.ClearCurrentLossCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+            </WrapPanel>
+          </DataGridTemplateColumn.Header>
+        </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
-        <DataGridCheckBoxColumn Header="FL" Binding="{Binding FreezLimit}" />
-        <DataGridCheckBoxColumn Header="FS" Binding="{Binding FreezStop}" />
-        <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}"></DataGridTemplateColumn>
 
@@ -161,6 +105,13 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
+        <DataGridTextColumn Header="C*R" Binding="{Binding CorridorRatio}" />
+        <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Fib" Binding="{Binding CorridorFib,StringFormat=n2}" IsReadOnly="True"/>
+        <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
+        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTemplateColumn Header="OL"  IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -171,10 +122,10 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
-        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
+        <DataGridTextColumn Header="$/Lot" Binding="{Binding LotSize,Mode=OneWay}" IsReadOnly="True" />
+        <DataGridComboBoxColumn Header="FZ" SelectedValueBinding="{Binding FreezeType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
+        <DataGridCheckBoxColumn Header="FS" Binding="{Binding FreezStop}" />
+        <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTextColumn Header="RateTime" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
       </DataGrid.Columns>
     </DataGrid>

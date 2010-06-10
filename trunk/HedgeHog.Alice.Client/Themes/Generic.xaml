@@ -9,6 +9,7 @@
   >
 
   <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
+  <l:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
   <DataTemplate x:Key="CombinedBalanceCellTemplate">
     <WrapPanel>
       <TextBlock Text="{Binding Balance,StringFormat=c0}"/>
@@ -30,7 +31,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
             <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" 
-                      RowBackground="{Binding [0].HasProfit,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|Pink|#FFD9F5D9}">
+                      RowBackground="{Binding [0].OriginalProfit,Converter={StaticResource ProfitToColorConverter}}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="Balance" CellTemplate="{StaticResource CombinedBalanceCellTemplate}" IsReadOnly="True">

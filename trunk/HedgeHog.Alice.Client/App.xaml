@@ -10,10 +10,13 @@
     <Application.Resources>
 
     <ResourceDictionary>
+      <!--Converters-->
       <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
       <l:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
       <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
       <hh:PassThroughConverter x:Key="PassThroughConverter"/>
+      <!---->
+
       <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="VerticalAlignment" Value="Center"/>
       </Style>
@@ -23,12 +26,31 @@
       <Style TargetType="Label" BasedOn="{StaticResource {x:Type Label}}">
         <Setter Property="VerticalAlignment" Value="Center"/>
       </Style>
+      <!--DataGrid-->
       <Style TargetType="DataGrid" x:Key="ReadOnlyDataGridStyle">
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="CanUserDeleteRows" Value="False"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
       </Style>
+      <Style TargetType="DataGridRow">
+        <!--<Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />-->
+        <Style.Triggers>
+          <Trigger Property="IsSelected" Value="True">
+            <Setter Property="Background" Value="Red"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+          </Trigger>
+        </Style.Triggers>
+      </Style>
+      <Style TargetType="DataGridCell">
+        <Style.Triggers>
+          <Trigger Property="IsSelected" Value="True">
+            <Setter Property="Background" Value="WhiteSmoke"/>
+            <Setter Property="Foreground" Value="Navy"/>
+          </Trigger>
+        </Style.Triggers>
+      </Style>
+      <!---->
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml"/>
       </ResourceDictionary.MergedDictionaries>

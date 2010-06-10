@@ -40,13 +40,13 @@ namespace HedgeHog.Shared {
     [UpdateOnUpdate("LimitInPips")]
     public double Limit { get; set; }
     [DisplayName("")]
-    public double LimitInPips { get { return InPips(IsBuy ? Limit - Open : Open - Limit); } }
+    public double LimitInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Open : Open - Limit); } }
     [DisplayName("")]
     [DataMember]
     [UpdateOnUpdate("StopInPips")]
     public double Stop { get; set; }
     [DisplayName("")]
-    public double StopInPips { get { return InPips(IsBuy ? Stop - Open : Open - Stop); } }
+    public double StopInPips { get { return Stop == 0 ? 0 : InPips(IsBuy ? Stop - Open : Open - Stop); } }
     [DataMember]
     [UpdateOnUpdate]
     public double PL { get; set; }
