@@ -1,50 +1,48 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
   <CodeSnippet Format="1.0.0">
     <Header>
-      <Title>wafpropn</Title>
-      <Shortcut>wafpropn</Shortcut>
-      <Description>Code snippet for property with INotifyPropertyChanged support</Description>
-      <Author>WPF Application Framework (WAF)</Author>
       <SnippetTypes>
         <SnippetType>Expansion</SnippetType>
       </SnippetTypes>
+      <Title>wafpropn</Title>
+      <Author>WPF Application Framework (WAF)</Author>
+      <Description>Code snippet for property with INotifyPropertyChanged support</Description>
+      <HelpUrl>
+      </HelpUrl>
+      <Shortcut>wafpropn</Shortcut>
     </Header>
     <Snippet>
       <Declarations>
-        <Literal>
+        <Literal Editable="true">
           <ID>type</ID>
           <ToolTip>Property type</ToolTip>
           <Default>int</Default>
+          <Function>
+          </Function>
         </Literal>
-        <Literal>
-          <ID>property</ID>
-          <ToolTip>Property name</ToolTip>
-          <Default>MyProperty</Default>
-        </Literal>
-        <Literal>
+        <Literal Editable="true">
           <ID>field</ID>
           <ToolTip>The variable backing this property</ToolTip>
           <Default>myProperty</Default>
+          <Function>
+          </Function>
         </Literal>
       </Declarations>
-      <Code Language="csharp">
-        <![CDATA[private $type$ $field$;
-
-	public $type$ $property$
+      <Code Language="csharp"><![CDATA[private $type$ _$field$;
+	public $type$ $field$
 	{
 		get { return $field$;}
 		set 
     { 
-      if ($field$ != value)
+      if (_$field$ != value)
       {
-        $field$ = value;
-        RaisePropertyChanged("$property$");
+        _$field$ = value;
+        OnPropertyChanged("$field$");
       }
     }
 	}
-	$end$]]>
-      </Code>
+	$end$]]></Code>
     </Snippet>
   </CodeSnippet>
 </CodeSnippets>

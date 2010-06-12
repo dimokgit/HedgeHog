@@ -68,6 +68,29 @@ namespace Temp {
       resetRates = true;
     }
 
+    private bool _UseStDev;
+    public bool UseStDev {
+      get { return _UseStDev; }
+      set {
+        if (_UseStDev != value) {
+          _UseStDev = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+    private int _CorridorIterations;
+    public int CorridorIterations {
+      get { return _CorridorIterations; }
+      set {
+        if (_CorridorIterations != value) {
+          _CorridorIterations = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+
     public void Corridor() {
       if (fw.Pair == "") return;
       var minutesBack = Period * PeriodsBack;
@@ -79,10 +102,11 @@ namespace Temp {
         ClearLog();
         AddLog("Rates.");
         fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
-        int minutes;
-        var corridorStats = rates.ScanCorridors(fw.Pair, 7, out minutes);
+        AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
+        var corridorStats = rates.ScanCorridors(CorridorIterations, CorridorIterations, UseStDev);
+        AddLog("Chart Corridor["+corridorStats.Minutes+"] minutes.");
         new Scheduler(charter.Dispatcher).Command = () =>
-          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AverageHigh, corridorStats.AverageLow, rates.Last().StartDate.AddMinutes(-minutes), DateTime.MinValue, new double[0]);
+          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AskHigh, corridorStats.BidLow, rates.Last().StartDate.AddMinutes(-corridorStats.Minutes), DateTime.MinValue, new double[0]);
       }
     }
     public void MinuteRsi() {

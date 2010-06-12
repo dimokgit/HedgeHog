@@ -32,37 +32,54 @@ namespace HedgeHog.Bars {
     public double AverageHigh { get; set; }
     public double AverageLow { get; set; }
     public double Density { get; set; }
-    public CorridorStatistics(double density,double averageHigh,double averageLow) {
+    public double AskHigh { get; set; }
+    public double BidLow { get; set; }
+    public int Minutes { get; set; }
+
+    public CorridorStatistics(double density, double averageHigh, double averageLow, double askHigh, double bidLow,int minutes) {
       this.Density = density;
       this.AverageHigh = averageHigh;
       this.AverageLow = averageLow;
+      this.AskHigh = askHigh;
+      this.BidLow = bidLow;
+      this.Minutes = minutes;
     }
   }
   public static class Extensions {
 
-    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, string pair, int minutesStart, out int minutes) {
+    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, int minutesStart,int iterations, bool useStDev) {
       if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
       var corridornesses = new Dictionary<int, CorridorStatistics>();
-      for (minutes = minutesStart; minutes < rates.Count(); minutes++) {
-        corridornesses.Add(minutes, ScanCorridor(rates.Take(minutes)));
+      for (var minutes = minutesStart; minutes < rates.Count(); minutes++) {
+        corridornesses.Add(minutes, ScanCorridor(rates.Take(minutes),useStDev));
       }
       var corrAverage = corridornesses.Values.Average(c=>c.Density);
       var corrAfterAverage = corridornesses.Where(c => c.Value.Density > corrAverage).ToArray();
-      corrAverage = corrAfterAverage.Average(c => c.Value.Density);
-      corrAfterAverage = corrAfterAverage.Where(c => c.Value.Density > corrAverage).ToArray();
-      corrAverage = corrAfterAverage.Average(c => c.Value.Density);
-      corrAfterAverage = corrAfterAverage.Where(c => c.Value.Density > corrAverage).ToArray();
+
+      while (--iterations > 0) {
+        corrAverage = corrAfterAverage.Average(c => c.Value.Density);
+        corrAfterAverage = corrAfterAverage.Where(c => c.Value.Density > corrAverage).ToArray();
+      }
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
-      minutes = corr.Key;
+      var startDate = rates.Max(r => r.StartDate).AddMinutes(-corr.Value.Minutes);
+      var ratesForCorridor = rates//.Where(r => r.Spread <= slack * 2)
+          .Where(r => r.StartDate >= startDate).ToArray();
+      corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
+      corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
       return corr.Value;
     }
-    static CorridorStatistics ScanCorridor(IEnumerable<Rate> rates) {
+    static CorridorStatistics ScanCorridor(IEnumerable<Rate> rates,bool useStDev) {
       var averageHigh = rates.Average(r => r.PriceHigh);
       var averageLow = rates.Average(r => r.PriceLow);
+      if (useStDev) {
+        var values = new List<double>();
+        rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
+        return new CorridorStatistics(1 / values.StdDev(), averageHigh, averageLow, 0, 0, rates.Count());
+      }
       var count = 0.0;
       foreach (var rate in rates)
         if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
-      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow); ;
+      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow, 0, 0, rates.Count());
     }
 
 

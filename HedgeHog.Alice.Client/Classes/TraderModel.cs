@@ -595,7 +595,8 @@ namespace HedgeHog.Alice.Client {
       CoreFX.LoggedInEvent += (s, e) => {
         IsInLogin = false;
         fwMaster.Error += fwMaster_Error;
-        fwMaster.TradeAdded += fwMaster_TradesCountChanged;
+        fwMaster.TradeAdded += fwMaster_TradeAdded;
+        fwMaster.TradeRemoved += fwMaster_TradeRemoved;
         fwMaster.TradeChanged += fwMaster_TradeChanged;
         fwMaster.PriceChanged += fwMaster_PriceChanged;
         fwMaster.OrderChanged += fwMaster_OrderChanged;
@@ -613,7 +614,8 @@ namespace HedgeHog.Alice.Client {
       CoreFX.LoggedOffEvent += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
-        fwMaster.TradeAdded -= fwMaster_TradesCountChanged;
+        fwMaster.TradeAdded -= fwMaster_TradeAdded;
+        fwMaster.TradeRemoved -= fwMaster_TradeRemoved;
         fwMaster.Error -= fwMaster_Error;
         fwMaster.TradeChanged -= fwMaster_TradeChanged;
         fwMaster.PriceChanged -= fwMaster_PriceChanged;
@@ -630,6 +632,14 @@ namespace HedgeHog.Alice.Client {
         Using_FetchServerTrades,
         (s, e) => { Log = e.Exception; });
       }
+    }
+
+    public event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
+    protected void OnMasterTradeRemoved(Trade trade) {
+      if (MasterTradeRemoved != null) MasterTradeRemoved(this, new MasterTradeEventArgs(trade));
+    }
+    void fwMaster_TradeRemoved(Trade trade) {
+      OnMasterTradeRemoved(trade);
     }
 
     void fwMaster_Error(object sender, O2G.ErrorEventArgs e) {
@@ -668,21 +678,27 @@ namespace HedgeHog.Alice.Client {
       fwMaster_PriceChanged(new Price() { Pair = pair });
     }
     void fwMaster_PriceChanged(Price Price) {
-      PriceChangedSchedulers.Run(Price.Pair, RunPriceChanged);
+      PriceChangedSchedulers.Run(Price.Pair, () => RunPriceChanged(Price.Pair));
     }
 
-    int runPriceChangedCounter = 3;
-    private void RunPriceChanged() {
+    private void RunPriceChanged(string pair) {
       try {
-        runPriceChangedCounter--;
         var a = fwMaster.GetAccount();
-        a.Orders = fwMaster.GetOrders("");
-        InvokeSyncronize(a);
-      } catch (Exception exc) { Log = exc; } finally {
-        runPriceChangedCounter++;
-      }
+        if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
+          a.Orders = fwMaster.GetOrders("");
+          InvokeSyncronize(a);
+        }
+      } catch (Exception exc) { Log = exc; }
     }
-    void fwMaster_TradesCountChanged(Trade trade) {
+
+    public event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
+    protected void OnMasterTradeAdded(Trade trade) {
+      if (MasterTradeAdded != null) 
+        MasterTradeAdded(this, new MasterTradeEventArgs(trade));
+    }
+
+    void fwMaster_TradeAdded(Trade trade) {
+      OnMasterTradeAdded(trade);
       fwMaster_PriceChanged(trade.Pair);
     }
     void fwMaster_TradeChanged(object sender, FXW.TradeEventArgs e) {
