@@ -62,6 +62,15 @@
     <DataTemplate x:Key="OverlapCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding AngleInRadians,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />
     </DataTemplate>
+    <DataTemplate x:Key="TakeProfitPipsCellTemplate">
+        <WrapPanel>
+          <TextBlock Text="{Binding CorridorRatio}"/>
+          <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n1}}"/>
+        </WrapPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="TakeProfitPipsEditCellTemplate">
+      <TextBox Text="{Binding CorridorRatio}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
+    </DataTemplate>
     <ObjectDataProvider MethodName="GetValues"
                         ObjectType="{x:Type sys:Enum}"
                         x:Key="FreezeValues">
@@ -69,6 +78,17 @@
         <x:Type TypeName="localModels:Freezing" />
       </ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
+    <ObjectDataProvider MethodName="GetValues"
+                        ObjectType="{x:Type sys:Enum}"
+                        x:Key="CorridorCalculationValues">
+      <ObjectDataProvider.MethodParameters>
+        <x:Type TypeName="localModels:CorridorCalculationMethod" />
+      </ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
+    <Style TargetType="{x:Type DataGridCell}" x:Key="PapayaWhipBackgroundStyle">
+      <Setter Property="Background" Value="PapayaWhip"></Setter>
+      <Setter Property="Foreground" Value="Black"></Setter>
+    </Style>
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
@@ -105,11 +125,11 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="C*R" Binding="{Binding CorridorRatio}" />
-        <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTemplateColumn Header="C*R" CellTemplate="{StaticResource TakeProfitPipsCellTemplate}" CellEditingTemplate="{StaticResource TakeProfitPipsEditCellTemplate}" />
+        <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" CellStyle="{StaticResource PapayaWhipBackgroundStyle}" IsReadOnly="True"/>
         <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
         <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="Fib" Binding="{Binding CorridorFib,StringFormat=n2}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="Fib" Binding="{Binding CorridorFib,StringFormat=n2}" IsReadOnly="True" CellStyle="{StaticResource PapayaWhipBackgroundStyle}"/>
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTemplateColumn Header="OL"  IsReadOnly="True">
@@ -118,11 +138,16 @@
               <WrapPanel>
                 <TextBlock Text="{Binding Overlap}"/>
                 <TextBlock Text="{Binding Overlap5,StringFormat=/{0:n0}}"/>
+                <TextBlock Text="{Binding SlackInPips,StringFormat=[{0:n1}]}"/>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="$/Lot" Binding="{Binding LotSize,Mode=OneWay}" IsReadOnly="True" />
+        
+        <DataGridTextColumn Header="CI" Binding="{Binding CorridorIterations,Mode=TwoWay}" />
+        <DataGridComboBoxColumn SelectedValueBinding="{Binding CorridorCalcMethod}" ItemsSource="{Binding Source={StaticResource CorridorCalculationValues}}" />
+
         <DataGridComboBoxColumn Header="FZ" SelectedValueBinding="{Binding FreezeType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
         <DataGridCheckBoxColumn Header="FS" Binding="{Binding FreezStop}" />
         <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />

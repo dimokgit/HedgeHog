@@ -352,7 +352,9 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="reverseOnProfit">Initial value of the ReverseOnProfit property.</param>
         /// <param name="freezLimit">Initial value of the FreezLimit property.</param>
         /// <param name="corridorRatio">Initial value of the CorridorRatio property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio)
+        /// <param name="corridorMethod">Initial value of the CorridorMethod property.</param>
+        /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -363,6 +365,8 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.ReverseOnProfit = reverseOnProfit;
             tradingMacro.FreezLimit = freezLimit;
             tradingMacro.CorridorRatio = corridorRatio;
+            tradingMacro.CorridorMethod = corridorMethod;
+            tradingMacro.CorridorIterations = corridorIterations;
             return tradingMacro;
         }
 
@@ -563,6 +567,54 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Double _CorridorRatio;
         partial void OnCorridorRatioChanging(global::System.Double value);
         partial void OnCorridorRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorMethod
+        {
+            get
+            {
+                return _CorridorMethod;
+            }
+            set
+            {
+                OnCorridorMethodChanging(value);
+                ReportPropertyChanging("CorridorMethod");
+                _CorridorMethod = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorMethod");
+                OnCorridorMethodChanged();
+            }
+        }
+        private global::System.Int32 _CorridorMethod;
+        partial void OnCorridorMethodChanging(global::System.Int32 value);
+        partial void OnCorridorMethodChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorIterations
+        {
+            get
+            {
+                return _CorridorIterations;
+            }
+            set
+            {
+                OnCorridorIterationsChanging(value);
+                ReportPropertyChanging("CorridorIterations");
+                _CorridorIterations = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorIterations");
+                OnCorridorIterationsChanged();
+            }
+        }
+        private global::System.Int32 _CorridorIterations;
+        partial void OnCorridorIterationsChanging(global::System.Int32 value);
+        partial void OnCorridorIterationsChanged();
 
         #endregion
     

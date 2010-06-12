@@ -51,11 +51,15 @@ namespace HedgeHog.Alice.Client.Models {
         if (_Limit == value) return;
         _Limit = value;
         OnPropertyChanged("Limit");
+        OnPropertyChanged("TakeProfitPips");
       }
     }
+    public double TakeProfitPips {
+      get { return CorridorRatio == 0 ? 0 : Limit / CorridorRatio; }
+    }
+
 
     private double _buyStopByCorridor;
-
     public double BuyStopByCorridor {
       get { return _buyStopByCorridor; }
       set {
@@ -83,7 +87,6 @@ namespace HedgeHog.Alice.Client.Models {
     public double CorridorFib {
       get { return Lib.FibRatioSign(BuyStopByCorridor, SellStopByCorridor); }
     }
-
 
 
     int _currentLot;
@@ -130,7 +133,8 @@ namespace HedgeHog.Alice.Client.Models {
       set {
         if (_lastRateTime == value) return;
         _lastRateTime = value;
-        OnPropertyChanged("LastRateTime"); }
+        OnPropertyChanged("LastRateTime");
+      }
     }
 
     public double AngleInRadians { get { return Math.Atan(Angle) * (180 / Math.PI); } }
@@ -140,7 +144,8 @@ namespace HedgeHog.Alice.Client.Models {
       set {
         if (_angle == value) return;
         _angle = value;
-        OnPropertyChanged("Angle"); OnPropertyChanged("AngleInRadians"); }
+        OnPropertyChanged("Angle"); OnPropertyChanged("AngleInRadians");
+      }
     }
 
 
@@ -156,7 +161,7 @@ namespace HedgeHog.Alice.Client.Models {
         if (_overlap == value) return;
         _overlap = value;
         OnPropertyChanged("Overlap");
-        OnPropertyChanged("OverlapTotal"); 
+        OnPropertyChanged("OverlapTotal");
       }
     }
 
@@ -176,8 +181,9 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _PendingSell; }
       set {
         if (_PendingSell == value) return;
-        _PendingSell = value; 
-        OnPropertyChanged("PendingSell"); }
+        _PendingSell = value;
+        OnPropertyChanged("PendingSell");
+      }
     }
 
     bool _PendingBuy;
@@ -203,7 +209,8 @@ namespace HedgeHog.Alice.Client.Models {
       set {
         if (_balanceOnStop == value) return;
         _balanceOnStop = value;
-        OnPropertyChanged("BalanceOnStop"); }
+        OnPropertyChanged("BalanceOnStop");
+      }
     }
 
     double _balanceOnLimit;
@@ -211,39 +218,60 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _balanceOnLimit; }
       set {
         if (_balanceOnLimit == value) return;
-        _balanceOnLimit = value; 
-        OnPropertyChanged("BalanceOnLimit"); }
+        _balanceOnLimit = value;
+        OnPropertyChanged("BalanceOnLimit");
+      }
     }
 
     double? _net;
-    public double? Net { get { return _net; } 
+    public double? Net {
+      get { return _net; }
       set {
         if (_net == value) return;
-        _net = value; OnPropertyChanged("Net"); } }
+        _net = value; OnPropertyChanged("Net");
+      }
+    }
 
     double? _StopAmount;
     public double? StopAmount {
       get { return _StopAmount; }
       set {
         if (_StopAmount == value) return;
-        _StopAmount = value; 
-        OnPropertyChanged("StopAmount"); }
+        _StopAmount = value;
+        OnPropertyChanged("StopAmount");
+      }
     }
     double? _LimitAmount;
     public double? LimitAmount {
       get { return _LimitAmount; }
       set {
         if (_LimitAmount == value) return;
-        _LimitAmount = value; 
-        OnPropertyChanged("LimitAmount"); }
+        _LimitAmount = value;
+        OnPropertyChanged("LimitAmount");
+      }
     }
 
     double? _netInPips;
-    public double? NetInPips { get { return _netInPips; } 
+    public double? NetInPips {
+      get { return _netInPips; }
       set {
         if (_netInPips == value) return;
-        _netInPips = value; 
-        OnPropertyChanged("NetInPips"); } }
+        _netInPips = value;
+        OnPropertyChanged("NetInPips");
+      }
+    }
+
+    private double _SlackInPips;
+    public double SlackInPips {
+      get { return _SlackInPips; }
+      set {
+        if (_SlackInPips != value) {
+          _SlackInPips = value;
+          OnPropertyChanged("SlackInPips");
+        }
+      }
+    }
+
 
     public Freezing FreezeType {
       get { return (Freezing)this.FreezLimit; }
@@ -254,6 +282,16 @@ namespace HedgeHog.Alice.Client.Models {
         }
       }
     }
+    public CorridorCalculationMethod CorridorCalcMethod {
+      get { return (CorridorCalculationMethod)this.CorridorMethod; }
+      set {
+        if (this.CorridorMethod != (int)value) {
+          this.CorridorMethod = (int)value;
+          OnPropertyChanged("CorridorCalcMethod");
+        }
+      }
+    }
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
+  public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
 }

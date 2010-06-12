@@ -109,7 +109,7 @@ namespace HedgeHog {
     public static double StdDev<T>(this IEnumerable<T> values, Func<T, double?> value) {
       return values.Where(v=>value(v).HasValue).Select(v=>value(v).Value).ToArray().StdDev();
     }
-    public static double StdDev(this double[] values) {
+    public static double StdDev(this IEnumerable<double> values) {
       double ret = 0;
       if (values.Count() > 0) {
         double avg = values.Average();

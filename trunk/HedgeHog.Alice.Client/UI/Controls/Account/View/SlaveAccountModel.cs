@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +20,7 @@ using Order2GoAddIn;
 namespace HedgeHog.Alice.Client.UI.Controls {
   public class SlaveAccountModel : HedgeHog.Models.ModelBase,IAccountHolder {
     #region Fields
+    private double secondsToWaitForTrade = 10;
     private string logFileName = "Log.txt";
     protected bool isInDesign { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     public int TargetInPips { get; set; }
@@ -34,9 +36,21 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       set {
         if (_masterModel == value) return;
         _masterModel = value;
-        value.MasterListChangedEvent += new TraderModel.MasterListChangedeventHandler(value_MasterListChangedEvent);
-        value.SlaveLoginRequestEvent += new EventHandler(value_SlaveLoginRequestEvent);
+        value.MasterListChangedEvent += value_MasterListChangedEvent;
+        value.SlaveLoginRequestEvent += value_SlaveLoginRequestEvent;
+        value.MasterTradeAdded += value_MasterTradeAdded;
+        value.MasterTradeRemoved += value_MasterTradeRemoved;
       }
+    }
+
+    void value_MasterTradeRemoved(object sender, MasterTradeEventArgs e) {
+      var slaveTrade = fwLocal.GetTrades("").SingleOrDefault(t => t.MasterTradeId() == e.MasterTrade.Id);
+      if (slaveTrade != null)
+        fwLocal.CloseTradeAsync(slaveTrade);
+    }
+
+    void value_MasterTradeAdded(object sender, MasterTradeEventArgs e) {
+        SyncTrade(e.MasterTrade);
     }
 
     void value_SlaveLoginRequestEvent(object sender, EventArgs e) {
@@ -97,7 +111,8 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     public ObservableCollection<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
-    List<Trade> masterTradesPending = new List<Trade>();
+    List<string> masterTradesPending = new List<string>();
+    List<string> masterTradesSynced = new List<string>();
     Trade[] _masterList = new Trade[] { };
 
     public Trade[] MasterList {
@@ -119,14 +134,15 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         };
       }
     }
-    private void Syncronize(Account masterAccount, Account slaveAccount ) {
+    private void Syncronize(Account masterAccount, Account slaveAccount) {
       Func<Trade, bool?> localBuyOrSell = t => !IsAliceActive ? (bool?)null : AliceMode == AliceModes.Wonderland ? t.Buy : !t.Buy;
       Func<Trade[]> localTrades = () => fwLocal.GetTrades("");
+      Trade tradeOut;
       var serverTrades = masterAccount.Trades;
       if (MasterModel != null && (MasterModel.isInRemoteMode || MasterModel.IsLoggedIn)) {
 
         #region Close/Cancel Trades
-        if (TargetInPips != 0 && localTrades().Count() > 0 && AccountModel.Equity/AccountModel.Balance >= TargetInPips) CloseAllLocalTrades();
+        if (TargetInPips != 0 && localTrades().Count() > 0 && AccountModel.Equity / AccountModel.Balance >= TargetInPips) CloseAllLocalTrades();
         else {
           if (IsAliceActive) {
             var tradesToClose = (from tl in localTrades()
@@ -140,7 +156,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             foreach (var tradeToClose in tradesToClose) {
               try {
                 if (tradeToClose.IsPending()) {
-                  masterTradesPending.Remove(tradeToClose);
+                  masterTradesPending.Remove(tradeToClose.Id);
                   Log = new Exception("Pending trade " + tradeToClose.Id + " was canceled.");
                 } else {
                   fwLocal.CloseTradeAsync(tradeToClose);
@@ -153,18 +169,16 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         }
         #endregion
 
-
-
         #region Absent trades
         var penditTradesToRemove = (from tl in localTrades()
-                                    join tp in masterTradesPending on tl.MasterTradeId() equals tp.MasterTradeId()
+                                    join tp in masterTradesPending on tl.MasterTradeId() equals tp
                                     select tp).ToList();
         penditTradesToRemove.ForEach(pt => masterTradesPending.Remove(pt));
 
         DateTime localServerTime = fwLocal.ServerTime;
         var absentTrades = (from ts in serverTrades
                             join tl in localTrades()
-                            on new { Id = ts.Id, Buy = (bool?)ts.Buy}
+                            on new { Id = ts.Id, Buy = (bool?)ts.Buy }
                             equals new { Id = tl.MasterTradeId(), Buy = localBuyOrSell(tl) }
                             into svrTrds
                             from st in svrTrds.DefaultIfEmpty()
@@ -172,7 +186,9 @@ namespace HedgeHog.Alice.Client.UI.Controls {
                             select ts.InitUnKnown(localServerTime)).ToList();
 
         //masterTradesPending.ForEach(pt => localTrades.Add(pt));
-        ShowTrades(localTrades().Concat(masterTradesPending).ToList(), LocalTrades);
+        ShowTrades(
+          localTrades().Concat(masterTradesPending.Select(id => new Trade() { Id = id, Remark = new TradeRemark(id) })).ToList(),
+          LocalTrades);
 
         #region Sync (Open)
         if (AliceMode != AliceModes.Mirror) {
@@ -191,8 +207,10 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             });
             foreach (var serverTrade in syncStop) {
               var locatTrade = localTrades().FirstOrDefault(lt => lt.MasterTradeId() == serverTrade.Id);
-              if (locatTrade != null)
-                fwLocal.FixOrderSetStop(locatTrade.Id, GetMasterStop(serverTrade, AliceMode), serverTrade.Id);
+              if (locatTrade != null) {
+                var stop = GetMasterStop(serverTrade, AliceMode);
+                new ThreadScheduler().Command = () => fwLocal.FixOrderSetStop(locatTrade.Id, stop, serverTrade.Id);
+              }
             }
           }
           if (absentTrades.Count == 0) {
@@ -211,8 +229,10 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             });
             foreach (var serverTrade in syncLimit) {
               var locatTrade = localTrades().FirstOrDefault(lt => lt.MasterTradeId() == serverTrade.Id);
-              if (locatTrade != null)
-                fwLocal.FixOrderSetLimit(locatTrade.Id, GetMasterLimit(serverTrade, AliceMode), serverTrade.Id);
+              if (locatTrade != null) {
+                var limit = GetMasterLimit(serverTrade, AliceMode);
+                new ThreadScheduler().Command = () => fwLocal.FixOrderSetLimit(locatTrade.Id, limit, serverTrade.Id);
+              }
             }
           }
         }
@@ -220,7 +240,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
           AbsentTrades.Clear();
           absentTrades.ForEach(a => AbsentTrades.Add(a));
         }));
-        if (masterTradesPending.Count == 0|| resubmitMasterPendingTrade!=null) {
+        if (masterTradesPending.Count == 0 || resubmitMasterPendingTrade != null) {
           if (syncAll) {
             SyncTrade(AbsentTrades);
             syncAll = false;
@@ -262,13 +282,6 @@ namespace HedgeHog.Alice.Client.UI.Controls {
           Log = new Exception("Can't syncronize while Alice is in " + AliceMode);
         else {
           var serverTradeId = tradeToCopy.Id;
-          Trade pendingTrade = new Trade() { Id = serverTradeId, Remark = new TradeRemark(serverTradeId) };
-          pendingTrade.GetUnKnown().MasterTrade = tradeToCopy;
-          if (!masterTradesPending.Any(t => t.MasterTradeId() == pendingTrade.MasterTradeId()) &&
-            !masterTradesPending.Any(t => new PendingOrder(t) == new PendingOrder(pendingTrade))
-            ) {
-
-            masterTradesPending.Add(pendingTrade);
             Log = new Exception(string.Format("Trade {0} is being clonned", tradeToCopy.Id));
             var buy = AliceMode == AliceModes.Wonderland ? tradeToCopy.Buy : !tradeToCopy.Buy;
             var mq = fwLocal.MinimumQuantity;
@@ -276,8 +289,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             var stop = AliceMode == AliceModes.Mirror ? 0 : GetMasterStop(tradeToCopy, AliceMode);
             var limit = AliceMode == AliceModes.Mirror ? 0 : GetMasterLimit(tradeToCopy, AliceMode);
             if (lots == 0) Log = new Exception("Balance is to small to trade with master.");
-            else OpenTradeByStop(tradeToCopy.Pair, buy, lots,limit,stop, serverTradeId, pendingTrade);
-          }
+            else OpenTrade(fwLocal, tradeToCopy.Pair, buy, lots, limit, stop, tradeToCopy);
         }
       } catch (Exception exc) { Log = exc; }
     }
@@ -290,18 +302,15 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     static double GetMasterLimit(Trade masterTrade, AliceModes aliceMode) {
       return aliceMode == AliceModes.Wonderland ? masterTrade.Limit : masterTrade.Stop;
     }
-    private void OpenTrade(string pair, bool buy, int lots,double limit,double stop, string serverTradeID, Trade pendingTrade) {
-      try {
-        var po = fwLocal.FixOrderOpen(pair, buy, lots, limit, stop, serverTradeID);
-        pendingTrade.GetUnKnown().ErrorMessage = "Waiting for " + po.RequestId;
-      } catch (Exception exc) { Log = exc; }
-    }
 
-    void OpenTradeByStop(string pair, bool buy, int lots, double limit, double stop, string serverTradeID, Trade pendingTrade) {
-      PendingOrder po = null; ;
+    void OpenTrade(FXW fw, string pair, bool buy, int lots, double limit, double stop, Trade masterTrade) {
+      string serverTradeID = masterTrade.Id;
+      if (masterTradesPending.Contains(serverTradeID) || masterTradesSynced.Contains(serverTradeID)) return;
+      masterTradesPending.Add(serverTradeID);
+      PendingOrder po = null;
       Action<object, FXW.RequestEventArgs> reqiesFailedAction = (s, e) => {
         if (po != null && e.ReqiestId == po.RequestId) {
-          RemoveMasterTradePending(pendingTrade);
+          masterTradesPending.Remove(serverTradeID);
           po = null;
           Log = new Exception(e.Error);
         }
@@ -310,8 +319,8 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         var o = order.FixStatus;
       };
       Action<object, ErrorEventArgs> errorAction = (s, e) => {
-        if (pendingTrade.Id == e.Remark) {
-          RemoveMasterTradePending(pendingTrade);
+        if (serverTradeID == e.Remark) {
+          masterTradesPending.Remove(serverTradeID);
           po = null;
           Log = e.Error;
         }
@@ -320,23 +329,24 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
       var erh = new EventHandler<Order2GoAddIn.ErrorEventArgs>(errorAction);
       try {
-        fwLocal.RequestFailed += rfh;
-        fwLocal.OrderRemoved += orh;
-        fwLocal.Error += erh;
-        po = fwLocal.FixOrderOpen(pair, buy, lots, limit, stop, serverTradeID);
-        if (po != null)
-          pendingTrade.GetUnKnown().ErrorMessage = "Waiting for " + po.RequestId;
-        var startTime = DateTime.Now;
-        var stopSpan = TimeSpan.FromSeconds(30);
-        while (po != null
-          && fwLocal.GetTrades("").SingleOrDefault(t => t.MasterTradeId() == serverTradeID) == null
-          && (DateTime.Now - startTime) < stopSpan)
-          Thread.Sleep(100);
-        RemoveMasterTradePending(pendingTrade);
-      } catch (Exception exc) { Log = exc; } finally {
-        fwLocal.RequestFailed -= rfh;
-        fwLocal.OrderRemoved -= orh;
-        fwLocal.Error -= erh;
+        fw.RequestFailed += rfh;
+        fw.OrderRemoved += orh;
+        fw.Error += erh;
+        po = fw.FixOrderOpen(pair, buy, lots, limit, stop, serverTradeID);
+        //if (po != null)          pendingTrade.GetUnKnown().ErrorMessage = "Waiting for " + po.RequestId;
+        SpinWait.SpinUntil(
+          () => { 
+            Thread.Sleep(100);
+            return masterTradesPending.Contains(serverTradeID) && po != null && !fw.GetTrades("").Any(t => t.MasterTradeId() == serverTradeID); 
+          },
+          TimeSpan.FromSeconds(secondsToWaitForTrade));
+      } catch (Exception exc) { Log = exc; } 
+      finally {
+        masterTradesSynced.Add(serverTradeID);
+        masterTradesPending.Remove(serverTradeID);
+        fw.RequestFailed -= rfh;
+        fw.OrderRemoved -= orh;
+        fw.Error -= erh;
       }
     }
 
@@ -366,7 +376,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       fwLocal = new FXW(this.CoreFX);
       tradeRequestManager = new TradeRequestManager(fwLocal);
       CoreFX.LoggedInEvent += (s, e) => {
-        fwLocal.TradeAdded += fw_TradesCountChanged;
+        //fwLocal.TradeAdded += fw_TradeAded;
         fwLocal.PriceChanged += fwLocal_PriceChanged;
         fwLocal.OrderRemoved += DoOrderRemoved;
         fwLocal.Error+=fwLocal_Error;
@@ -380,7 +390,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       CoreFX.LoggedOffEvent += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
-        fwLocal.TradeAdded -= fw_TradesCountChanged;
+        //fwLocal.TradeAdded -= fw_TradeAded;
         fwLocal.PriceChanged -= fwLocal_PriceChanged;
         fwLocal.OrderRemoved -= DoOrderRemoved;
         fwLocal.Error -= fwLocal_Error;
@@ -414,22 +424,16 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       InvokeSyncronize();
     }
     Trade resubmitMasterPendingTrade = null;
-    void fw_TradesCountChanged(Trade trade) {
-      Log = new Exception("Trades count changed. TradeId:" + trade.Id);
-      AccountModel.Trades = AccountModel.Trades.Concat(new[] { trade }).ToArray();
-      Debug.WriteLine("Trade with RequestId " + trade.OpenOrderReqID + " added.");
-      var mp = masterTradesPending.SingleOrDefault(m => m.Id == trade.MasterTradeId());
-      if (mp != null) {
-        masterTradesPending.Remove(mp);
-        if (fwLocal.GetTrade(trade.Id) == null) 
-          SyncTrade(mp.GetUnKnown().MasterTrade);
-      }
-    }
-    void RemoveMasterTradePending(Trade trade) {
-      var mp = masterTradesPending.SingleOrDefault(m => m == trade);
-      if (mp != null) {
-        masterTradesPending.Remove(mp);
-      }
+    void fw_TradeAded(Trade trade) {
+      //Log = new Exception("Trades count changed. TradeId:" + trade.Id);
+      //AccountModel.Trades = AccountModel.Trades.Concat(new[] { trade }).ToArray();
+      //Debug.WriteLine("Trade with RequestId " + trade.OpenOrderReqID + " added.");
+      //var mp = masterTradesPending.SingleOrDefault(m => m.Id == trade.MasterTradeId());
+      //if (mp != null) {
+      //  masterTradesPending.Remove(mp);
+      //  if (fwLocal.GetTrade(trade.Id) == null) 
+      //    SyncTrade(mp.GetUnKnown().MasterTrade);
+      //}
     }
     #endregion
 
@@ -546,9 +550,8 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     }
     void CloseLocalTrade(string tradeID) {
       try {
-        var pendingTrade = masterTradesPending.FirstOrDefault(t => t.Id == tradeID);
-        if (pendingTrade == null) fwLocal.FixOrderClose(tradeID);
-        else masterTradesPending.Remove(pendingTrade);
+        if (masterTradesPending.Contains(tradeID)) masterTradesPending.Remove(tradeID);
+        else fwLocal.CloseTradeAsync(fwLocal.GetTrade(tradeID));
       } catch (Exception exc) { Log = exc; }
     }
     #endregion

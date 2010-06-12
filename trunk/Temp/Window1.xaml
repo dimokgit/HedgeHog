@@ -32,6 +32,9 @@ DataContext="{Binding RelativeSource={RelativeSource Self}}"
           <sys:Int32>1440</sys:Int32>
         </ComboBox>
         <ui:CheckBox2 IsChecked2="{Binding NoGaps,Mode=TwoWay}" IsChecked="{state:UserSettings Default=True}" Content="NG" ToolTip="No Gaps"/>
+        <ui:CheckBox2 IsChecked2="{Binding UseStDev,Mode=TwoWay}" IsChecked="{state:UserSettings Default=True}" Content="SD" ToolTip="Use StDev"/>
+        <TextBlock>CI:</TextBlock>
+        <ui:TextBox Text="{Binding CorridorIterations,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="CorridorIteration"/>
       </WrapPanel>
     </StackPanel>
     <TextBox Grid.Row="1" Name="txtMessage" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"></TextBox>
