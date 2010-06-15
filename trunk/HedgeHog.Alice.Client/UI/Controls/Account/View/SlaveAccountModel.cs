@@ -20,7 +20,7 @@ using Order2GoAddIn;
 namespace HedgeHog.Alice.Client.UI.Controls {
   public class SlaveAccountModel : HedgeHog.Models.ModelBase,IAccountHolder {
     #region Fields
-    private double secondsToWaitForTrade = 10;
+    private double secondsToWaitForTrade = 30;
     private string logFileName = "Log.txt";
     protected bool isInDesign { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     public int TargetInPips { get; set; }
@@ -47,6 +47,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       var slaveTrade = fwLocal.GetTrades("").SingleOrDefault(t => t.MasterTradeId() == e.MasterTrade.Id);
       if (slaveTrade != null)
         fwLocal.CloseTradeAsync(slaveTrade);
+      masterTradesPending.Remove(e.MasterTrade.Id);
     }
 
     void value_MasterTradeAdded(object sender, MasterTradeEventArgs e) {
@@ -282,14 +283,17 @@ namespace HedgeHog.Alice.Client.UI.Controls {
           Log = new Exception("Can't syncronize while Alice is in " + AliceMode);
         else {
           var serverTradeId = tradeToCopy.Id;
-            Log = new Exception(string.Format("Trade {0} is being clonned", tradeToCopy.Id));
+            //Log = new Exception(string.Format("Trade {0} is being clonned", tradeToCopy.Id));
             var buy = AliceMode == AliceModes.Wonderland ? tradeToCopy.Buy : !tradeToCopy.Buy;
             var mq = fwLocal.MinimumQuantity;
             var lots = ((tradeToCopy.Lots * ServerToLocalRatio) / mq).ToInt() * mq;
             var stop = AliceMode == AliceModes.Mirror ? 0 : GetMasterStop(tradeToCopy, AliceMode);
             var limit = AliceMode == AliceModes.Mirror ? 0 : GetMasterLimit(tradeToCopy, AliceMode);
             if (lots == 0) Log = new Exception("Balance is to small to trade with master.");
-            else OpenTrade(fwLocal, tradeToCopy.Pair, buy, lots, limit, stop, tradeToCopy);
+            else {
+              if (!OpenTradeSchedulers.ContainsKey(tradeToCopy.Id))
+                OpenTradeSchedulers.Run(tradeToCopy.Id, () => OpenTrade(fwLocal, tradeToCopy.Pair, buy, lots, limit, stop, tradeToCopy));
+            }
         }
       } catch (Exception exc) { Log = exc; }
     }
@@ -303,51 +307,56 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       return aliceMode == AliceModes.Wonderland ? masterTrade.Limit : masterTrade.Stop;
     }
 
+    ThreadSchedulersDispenser OpenTradeSchedulers = new ThreadSchedulersDispenser();
     void OpenTrade(FXW fw, string pair, bool buy, int lots, double limit, double stop, Trade masterTrade) {
       string serverTradeID = masterTrade.Id;
-      if (masterTradesPending.Contains(serverTradeID) || masterTradesSynced.Contains(serverTradeID)) return;
-      masterTradesPending.Add(serverTradeID);
-      PendingOrder po = null;
-      Action<object, FXW.RequestEventArgs> reqiesFailedAction = (s, e) => {
-        if (po != null && e.ReqiestId == po.RequestId) {
+      Func<string, bool> tradeExists = id => fw.GetTrade(serverTradeID) != null;
+      if (!tradeExists(serverTradeID)) {
+        if (masterTradesPending.Contains(serverTradeID) || masterTradesSynced.Contains(serverTradeID)) return;
+        masterTradesPending.Add(serverTradeID);
+        PendingOrder po = null;
+        Action<object, FXW.RequestEventArgs> reqiesFailedAction = (s, e) => {
+          if (po != null && e.ReqiestId == po.RequestId) {
+            masterTradesPending.Remove(serverTradeID);
+            po = null;
+            Log = new Exception(e.Error);
+          }
+        };
+        Action<Order> orderRemovedAvtion = order => {
+          var o = order.FixStatus;
+        };
+        Action<object, ErrorEventArgs> errorAction = (s, e) => {
+          if (serverTradeID == e.Remark) {
+            masterTradesPending.Remove(serverTradeID);
+            po = null;
+            Log = e.Error;
+          }
+        };
+        var rfh = new EventHandler<FXW.RequestEventArgs>(reqiesFailedAction);
+        var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
+        var erh = new EventHandler<Order2GoAddIn.ErrorEventArgs>(errorAction);
+        try {
+          fw.RequestFailed += rfh;
+          fw.OrderRemoved += orh;
+          fw.Error += erh;
+          po = fw.FixOrderOpen(pair, buy, lots, limit, stop, serverTradeID);
+          //if (po != null)          pendingTrade.GetUnKnown().ErrorMessage = "Waiting for " + po.RequestId;
+          var done = SpinWait.SpinUntil(
+            () => {
+              Thread.Sleep(100);
+              return masterTradesPending.Contains(serverTradeID) && po != null && tradeExists(serverTradeID);
+            },
+            TimeSpan.FromSeconds(secondsToWaitForTrade));
+          if (tradeExists(serverTradeID))
+            masterTradesSynced.Add(serverTradeID);
+        } catch (Exception exc) { Log = exc; } finally {
           masterTradesPending.Remove(serverTradeID);
-          po = null;
-          Log = new Exception(e.Error);
+          fw.RequestFailed -= rfh;
+          fw.OrderRemoved -= orh;
+          fw.Error -= erh;
         }
-      };
-      Action<Order> orderRemovedAvtion = order => {
-        var o = order.FixStatus;
-      };
-      Action<object, ErrorEventArgs> errorAction = (s, e) => {
-        if (serverTradeID == e.Remark) {
-          masterTradesPending.Remove(serverTradeID);
-          po = null;
-          Log = e.Error;
-        }
-      };
-      var rfh = new EventHandler<FXW.RequestEventArgs>(reqiesFailedAction);
-      var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
-      var erh = new EventHandler<Order2GoAddIn.ErrorEventArgs>(errorAction);
-      try {
-        fw.RequestFailed += rfh;
-        fw.OrderRemoved += orh;
-        fw.Error += erh;
-        po = fw.FixOrderOpen(pair, buy, lots, limit, stop, serverTradeID);
-        //if (po != null)          pendingTrade.GetUnKnown().ErrorMessage = "Waiting for " + po.RequestId;
-        SpinWait.SpinUntil(
-          () => { 
-            Thread.Sleep(100);
-            return masterTradesPending.Contains(serverTradeID) && po != null && !fw.GetTrades("").Any(t => t.MasterTradeId() == serverTradeID); 
-          },
-          TimeSpan.FromSeconds(secondsToWaitForTrade));
-      } catch (Exception exc) { Log = exc; } 
-      finally {
-        masterTradesSynced.Add(serverTradeID);
-        masterTradesPending.Remove(serverTradeID);
-        fw.RequestFailed -= rfh;
-        fw.OrderRemoved -= orh;
-        fw.Error -= erh;
       }
+      OpenTradeSchedulers.Remove(serverTradeID);
     }
 
     void fwLocal_Error(object sender, Order2GoAddIn.ErrorEventArgs e) {

@@ -29,6 +29,39 @@ namespace HedgeHog.Alice.Client.TradeExtenssions {
   }
 
   public class OrderUnKnown : UnKnownAliceBase {
+    private double _NoLossLimit;
+    public double NoLossLimit {
+      get { return _NoLossLimit; }
+      set {
+        if (_NoLossLimit != value) {
+          _NoLossLimit = value;
+          OnPropertyChanged("NoLossLimit");
+        }
+      }
+    }
+    private double _PercentOnStop;
+    public double PercentOnStop {
+      get { return _PercentOnStop; }
+      set {
+        if (_PercentOnStop != value) {
+          _PercentOnStop = value;
+          OnPropertyChanged("PercentOnStop");
+        }
+      }
+    }
+
+    private double _PercentOnLimit;
+    public double PercentOnLimit {
+      get { return _PercentOnLimit; }
+      set {
+        if (_PercentOnLimit != value) {
+          _PercentOnLimit = value;
+          OnPropertyChanged("PercentOnLimit");
+        }
+      }
+    }
+
+
   }
   public static class TradeExtenssions {
     public static Trade InitUnKnown(this Trade trade, DateTime serverTime) {

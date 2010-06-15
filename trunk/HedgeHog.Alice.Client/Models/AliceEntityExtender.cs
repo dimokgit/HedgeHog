@@ -118,15 +118,6 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    bool _freezStop;
-    public bool FreezStop {
-      get { return _freezStop; }
-      set {
-        if (_freezStop == value) return;
-        _freezStop = value; OnPropertyChanged("FreezStop");
-      }
-    }
-
     DateTime _lastRateTime;
     public DateTime LastRateTime {
       get { return _lastRateTime; }
@@ -282,6 +273,17 @@ namespace HedgeHog.Alice.Client.Models {
         }
       }
     }
+
+    public Freezing FreezeStopType {
+      get { return (Freezing)this.FreezeStop; }
+      set {
+        if (this.FreezeStop != (int)value) {
+          this.FreezeStop = (int)value;
+          OnPropertyChanged("FreezeStopType");
+        }
+      }
+    }
+
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return (CorridorCalculationMethod)this.CorridorMethod; }
       set {

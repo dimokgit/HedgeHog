@@ -125,15 +125,51 @@
               <DataGridTextColumn Header="BS" Binding="{Binding BS}"/>
               <DataGridTextColumn Header="Rate" Binding="{Binding Rate}"/>
               <DataGridTextColumn Header="Lot" Binding="{Binding Lot}"/>
-              <DataGridTextColumn Header="Stop" Binding="{Binding Stop}"/>
-              <DataGridTextColumn Header="Limit" Binding="{Binding Limit}"/>
-              <DataGridTextColumn Header="FixStatus" Binding="{Binding Status}"/>
-              <DataGridTextColumn Header="Type" Binding="{Binding Type}"/>
-              <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
-              <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c0}" IsReadOnly="True"/>
+              
+              <DataGridTemplateColumn Header="Stop">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <WrapPanel Background="LightSalmon">
+                      <TextBlock Text="{Binding StopInPips,StringFormat=n1}"/>
+                      <TextBlock Text="{Binding StopAmount,StringFormat=[{0:c1}}"/>
+                      <TextBlock Text="{Binding UnKnown.PercentOnStop,StringFormat=/{0:p1}}"/>
+                      <TextBlock Text="{Binding UnKnown.BalanceOnStop,StringFormat=/{0:c0}]}"/>
+                    </WrapPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="L->$0">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="{Binding UnKnown.NoLossLimit}" ContentStringFormat="n1"
+                            CommandParameter="{Binding BindsDirectlyToSource=True}" 
+                            Command="{Binding DataContext.SetOrderToNoLossCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Limit">
+                <DataGridTemplateColumn.HeaderStyle>
+                  <Style TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                  </Style>
+                </DataGridTemplateColumn.HeaderStyle>
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <WrapPanel Background="LightGreen">
+                      <TextBlock Text="{Binding LimitInPips,StringFormat=n1}"/>
+                      <TextBlock Text="{Binding LimitAmount,StringFormat=[{0:c1}}"/>
+                      <TextBlock Text="{Binding UnKnown.PercentOnLimit,StringFormat=/{0:p1}}"/>
+                      <TextBlock Text="{Binding UnKnown.BalanceOnLimit,StringFormat=/{0:c0}]}"/>
+                    </WrapPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+
+              <DataGridTextColumn Header="FixStatus" Binding="{Binding Status}" Visibility="Collapsed"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}" Visibility="Collapsed"/>
               <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
               <DataGridTextColumn Header="OrderId" Binding="{Binding OrderID}"/>
-              <DataGridTextColumn Header="QTXT" Binding="{Binding QTXT}"/>
+              <DataGridTextColumn Header="QTXT" Binding="{Binding QTXT}" Visibility="Collapsed"/>
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>

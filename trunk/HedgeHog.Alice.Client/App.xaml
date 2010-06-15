@@ -50,6 +50,9 @@
           </Trigger>
         </Style.Triggers>
       </Style>
+      <Style TargetType="{x:Type DataGridColumnHeader}">
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      </Style>
       <!---->
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml"/>

@@ -149,7 +149,7 @@
         <DataGridComboBoxColumn SelectedValueBinding="{Binding CorridorCalcMethod}" ItemsSource="{Binding Source={StaticResource CorridorCalculationValues}}" />
 
         <DataGridComboBoxColumn Header="FZ" SelectedValueBinding="{Binding FreezeType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
-        <DataGridCheckBoxColumn Header="FS" Binding="{Binding FreezStop}" />
+        <DataGridComboBoxColumn Header="FS" SelectedValueBinding="{Binding FreezeStopType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
         <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTextColumn Header="RateTime" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
       </DataGrid.Columns>

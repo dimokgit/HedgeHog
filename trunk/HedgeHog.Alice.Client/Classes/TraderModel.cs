@@ -75,6 +75,16 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    #region Events
+    public event EventHandler<FXW.OrderEventArgs> OrderToNoLoss;
+    protected void OnOrderToNoLoss(Order order) {
+      if (OrderToNoLoss != null) {
+        try {
+          OrderToNoLoss(this, new FXW.OrderEventArgs(order));
+        } catch (Exception exc) { Log = exc; }
+      }
+    }
+
     #region MasterListChangedEvent
     public delegate void MasterListChangedeventHandler(object sender, MasterListChangedEventArgs e);
     public event MasterListChangedeventHandler MasterListChangedEvent;
@@ -90,6 +100,7 @@ namespace HedgeHog.Alice.Client {
       if (SlaveLoginRequestEvent != null)
         SlaveLoginRequestEvent(this, new EventArgs());
     }
+    #endregion
 
     #region Trade Lists
 
@@ -141,7 +152,7 @@ namespace HedgeHog.Alice.Client {
     private TradingAccountModel _accountModel = new TradingAccountModel();
     public TradingAccountModel AccountModel { get { return _accountModel; } }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
-    public double CurrentLoss { set { AccountModel.OriginalBalance = AccountModel.Balance - value; } }
+    public double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
 
     #region SlaveAccountInfos
     ObservableCollection<TradingAccountModel> SlaveAccountInfos = new ObservableCollection<TradingAccountModel>();
@@ -229,6 +240,22 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Commanding
+
+
+    ICommand _SetOrderToNoLossCommand;
+    public ICommand SetOrderToNoLossCommand {
+      get {
+        if (_SetOrderToNoLossCommand == null) {
+          _SetOrderToNoLossCommand = new Gala.RelayCommand<Order>(SetOrderToNoLoss, (o) => true);
+        }
+
+        return _SetOrderToNoLossCommand;
+      }
+    }
+    void SetOrderToNoLoss(Order order) {
+      OnOrderToNoLoss(order);
+    }
+
 
     #region IncreaseLimitCommand
     ICommand _IncreaseLimitCommand;
@@ -729,7 +756,7 @@ namespace HedgeHog.Alice.Client {
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.BeginInvoke(new Action(() => {
           UpdateTrades(account, trades.ToList(), ServerTrades);
-          ShowTrades((account.Orders ?? new Order[0]).ToList(), orders);
+          UpdateOrders(account, (account.Orders ?? new Order[0]).ToList(), orders);
         }));
       }
     }
@@ -758,6 +785,24 @@ namespace HedgeHog.Alice.Client {
         trd.Update(trade,
           o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
           o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
+          );
+      }
+    }
+    private void UpdateOrders(Account account,List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
+      var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
+      var newIds = ordersList.Select(t => t.OrderID);
+      var deleteIds = oldIds.Except(newIds).ToList();
+      deleteIds.ForEach(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)));
+      var addIds = newIds.Except(oldIds).ToList();
+      addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
+      foreach (var order in ordersList) {
+        var trd = ordersCollection.Single(t => t.OrderID == order.OrderID);
+        trd.Update(order,
+          o => { trd.InitUnKnown<OrderUnKnown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
+          o => { trd.InitUnKnown<OrderUnKnown>().BalanceOnStop = account.Balance + trd.StopAmount; },
+          o => { trd.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(fwMaster, account.Trades, false, AccountModel.CurrentLoss).Round(1); },
+          o => { trd.InitUnKnown<OrderUnKnown>().PercentOnStop = trd.StopAmount/account.Balance ; },
+          o => { trd.InitUnKnown<OrderUnKnown>().PercentOnLimit = trd.LimitAmount/account.Balance ; }
           );
       }
     }
