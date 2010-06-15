@@ -354,7 +354,8 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="corridorRatio">Initial value of the CorridorRatio property.</param>
         /// <param name="corridorMethod">Initial value of the CorridorMethod property.</param>
         /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations)
+        /// <param name="freezeStop">Initial value of the FreezeStop property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations, global::System.Int32 freezeStop)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -367,6 +368,7 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.CorridorRatio = corridorRatio;
             tradingMacro.CorridorMethod = corridorMethod;
             tradingMacro.CorridorIterations = corridorIterations;
+            tradingMacro.FreezeStop = freezeStop;
             return tradingMacro;
         }
 
@@ -615,6 +617,30 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _CorridorIterations;
         partial void OnCorridorIterationsChanging(global::System.Int32 value);
         partial void OnCorridorIterationsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 FreezeStop
+        {
+            get
+            {
+                return _FreezeStop;
+            }
+            set
+            {
+                OnFreezeStopChanging(value);
+                ReportPropertyChanging("FreezeStop");
+                _FreezeStop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("FreezeStop");
+                OnFreezeStopChanged();
+            }
+        }
+        private global::System.Int32 _FreezeStop;
+        partial void OnFreezeStopChanging(global::System.Int32 value);
+        partial void OnFreezeStopChanged();
 
         #endregion
     

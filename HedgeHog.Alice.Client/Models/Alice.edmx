@@ -35,6 +35,7 @@
           <Property Name="CorridorRatio" Type="float" Nullable="false" />
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
           <Property Name="CorridorIterations" Type="int" Nullable="false" />
+          <Property Name="FreezeStop" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -70,6 +71,7 @@
           <Property Type="Double" Name="CorridorRatio" Nullable="false" />
           <Property Type="Int32" Name="CorridorMethod" Nullable="false" />
           <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
+          <Property Type="Int32" Name="FreezeStop" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -93,6 +95,7 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
                 <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
                 <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
                 <ScalarProperty Name="CorridorRatio" ColumnName="CorridorRatio" />

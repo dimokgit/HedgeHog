@@ -221,7 +221,7 @@ namespace TestHH {
       var pipCost = o2g.GetPipCost(pair);
       var lots = 10000;
       var pips = 10;
-      MessageBox.Show(pips + " pips cost for " + lots + " of " + pair + " = " + FXW.PipsToMoney(pips, lots, pipCost, baseUnitSize));
+      MessageBox.Show(pips + " pips cost for " + lots + " of " + pair + " = " + FXW.PipsAndLotToMoney(pips, lots, pipCost, baseUnitSize));
       o2g.GetTrades("").Where(t=>t.Stop>0).ToList()
         .ForEach(t => Debug.WriteLine("Id:{0},Stop:{1}", t.Id, t.Stop));
     }

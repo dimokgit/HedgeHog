@@ -10,14 +10,20 @@ using HedgeHog.Shared;
 namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
     public double TradingRatio { get; set; }
-    public DateTime ServerTime { get; set; }
     public double ProfitPercent { get { return Equity / Balance - 1; } }
-    double _originalBalance;
-
-    public double OriginalBalance {
-      get { return _originalBalance; }
-      set { _originalBalance = value; OnPropertyChanged(() => OriginalBalance, () => OriginalProfit); }
+    private double _CurrentLoss;
+    public double CurrentLoss {
+      get { return _CurrentLoss; }
+      set {
+        if (_CurrentLoss != value) {
+          _CurrentLoss = value;
+          OnPropertyChanged(() => CurrentLoss, () => OriginalBalance, () => OriginalProfit);
+        }
+      }
     }
+
+
+    public double OriginalBalance { get { return Balance - CurrentLoss; } }
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
     public void Update(Account account,double tradingRatio,DateTime serverTime) {

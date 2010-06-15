@@ -769,6 +769,9 @@ namespace Order2GoAddIn {
     #region Get Tables
     //Dimok: Fill offers from RowChanged Event
     #region GetOffers
+    public Offer GetOffer(string pair) {
+      return GetOffers().SingleOrDefault(o => o.Pair == pair.ToUpper());
+    }
     public Offer[] GetOffers() {
       try {
         return (from t in GetRows(TABLE_OFFERS)
@@ -989,12 +992,12 @@ namespace Order2GoAddIn {
     double StopAmount(Trade trade) {
       if (trade.Stop == 0) return 0;
       var diff = InPips(trade.Pair, trade.Stop - trade.Open);
-      return PipsInMoney(trade.IsBuy ? diff : -diff, trade.Lots, trade.Pair);
+      return PipsAndLotInMoney(trade.IsBuy ? diff : -diff, trade.Lots, trade.Pair);
     }
     double LimitAmount(Trade trade) {
       if (trade.Limit == 0) return 0;
       var diff = InPips(trade.Pair, trade.Limit - trade.Open);
-      return PipsInMoney(trade.IsBuy ? diff : -diff, trade.Lots, trade.Pair);
+      return PipsAndLotInMoney(trade.IsBuy ? diff : -diff, trade.Lots, trade.Pair);
     }
     Trade InitTrade(FXCore.ParserAut t) {
       var trade = new Trade() {
@@ -1084,18 +1087,28 @@ namespace Order2GoAddIn {
       order.TypeStop = (int)row.CellValue("TypeStop");
       order.TypeLimit = (int)row.CellValue("TypeLimit");
       order.OCOBulkID = (int)row.CellValue("OCOBulkID");
-      if (order.Stop != 0) order.StopAmount = StopAmount(order);
-      if (order.Limit != 0) order.LimitAmount = LimitAmount(order);
+      if (order.Stop != 0) {
+        order.StopInPips = order.GetStopInPips((p, s) => InPips(p, s));
+        order.StopInPoints = order.GetStopInPoints((p, s) => InPoints(p, s));
+        order.StopAmount = PipsAndLotInMoney(order.StopInPips, order.Lot, order.Pair);
+      }
+      if (order.Limit != 0) {
+        order.LimitInPips = order.GetLimitInPips((p, l) => InPips(p, l));
+        order.LimitInPoints = order.GetLimitInPoints((p, l) => InPoints(p, l));
+        order.LimitAmount = PipsAndLotInMoney(order.LimitInPips, order.Lot, order.Pair);
+      }
       return order;
     }
     double StopAmount(Order order) {
-      return PipsInMoney(order.TypeStop > 1 ? order.Stop : order.Stop - order.Rate, order.Lot, order.Pair).Abs();
+      var pips = (order.TypeStop > 1 ? order.Stop : InPips(order.Pair, order.Stop - order.Rate)).Abs();
+      if( !order.IsBuy )pips = -pips;
+      return PipsAndLotInMoney(pips, order.Lot, order.Pair);
     }
     double LimitAmount(Order order) {
-      return PipsInMoney(order.TypeLimit > 1 ? order.Limit : order.Limit - order.Rate, order.Lot, order.Pair).Abs();
+      return PipsAndLotInMoney(order.TypeLimit > 1 ? order.Limit : InPips(order.Pair, order.Limit - order.Rate), order.Lot, order.Pair).Abs();
     }
     double DifferenceInMoney(double price1, double price2, int lot, string pair) { 
-      return PipsInMoney(InPips(pair, price1 - price2), lot, pair); }
+      return PipsAndLotInMoney(InPips(pair, price1 - price2), lot, pair); }
 
     Order InitOrder(FXCore.ParserAut row) {
       var order = new Order();
@@ -1265,7 +1278,7 @@ namespace Order2GoAddIn {
     }
     public void ChangeEntryOrderPeggedStop(string orderId, double rate) {
       object o;
-      Desk.ChangeEntryOrderStopLimit2(orderId, rate, Desk.SL_PEGGEDSTOP, 0, out o);
+      Desk.ChangeEntryOrderStopLimit2(orderId, rate, Desk.SL_PEGSTOPCLOSE, 0, out o);
     }
     public void DeleteEntryOrderLimit(string orderId) { DeleteEntryOrderStopLimit(orderId, false); }
     public void DeleteEntryOrderStop(string orderId) { DeleteEntryOrderStopLimit(orderId, true); }
@@ -1507,8 +1520,14 @@ namespace Order2GoAddIn {
     Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>();
     public double GetPipSize(string pair) {
       pair = pair.ToUpper();
-      if (!pointSizeDictionary.ContainsKey(pair))
-        GetOffers().ToList().ForEach(o => pointSizeDictionary[o.Pair] = o.PointSize);
+      if (!pointSizeDictionary.ContainsKey(pair)) {
+        var offer = GetOffer(pair);
+        if (offer == null) {
+          Desk.SetOfferSubscription(pair, "Enabled");
+          offer = GetOffer(pair);
+        }
+        pointSizeDictionary[pair] = offer.PointSize;
+      }
       return pointSizeDictionary[pair];
     }
 
@@ -1520,7 +1539,6 @@ namespace Order2GoAddIn {
       return pipCostDictionary[pair];
     }
 
-
     Dictionary<string, int> digitDictionary = new Dictionary<string,int>();
     public int GetDigits(string pair){
       pair = pair.ToUpper();
@@ -1530,12 +1548,6 @@ namespace Order2GoAddIn {
     }
     public int Digits() { return GetDigits(Pair); }
 
-    public static double PipsToMoney(double pips, double lots, double pipCost, double baseUnitSize) {
-      return pips * lots * pipCost / baseUnitSize;
-    }
-    public double PipsInMoney(double pips, int lot, string pair) {
-      return PipsToMoney(pips, lot, GetPipCost(pair), MinimumQuantity);
-    }
     private double PipsToMarginCallPerUnitCurrency() {
       var sm = (from s in GetSummaries()
                 join o in pipCostDictionary
@@ -1549,6 +1561,21 @@ namespace Order2GoAddIn {
       var pipCostWieghtedAverage = sm.Sum(s => s.AmountK * s.PipCost) / sm.Sum(s => s.AmountK);
       return -1 / (sm.Sum(s => s.AmountK) * pipCostWieghtedAverage);
     }
+
+    public static double PipsAndLotToMoney(double pips, double lots, double pipCost, double baseUnitSize) {
+      return pips * lots * pipCost / baseUnitSize;
+    }
+    public double PipsAndLotInMoney(double pips, int lot, string pair) {
+      return PipsAndLotToMoney(pips, lot, GetPipCost(pair), MinimumQuantity);
+    }
+
+    public double MoneyAndLotToPips(double money, double lots, string pair) {
+      return MoneyAndLotToPips(money, lots, GetPipCost(pair), MinimumQuantity);
+    }
+    public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
+      return money / lots / pipCost * baseUnitSize;
+    }
+
 
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
       return MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);

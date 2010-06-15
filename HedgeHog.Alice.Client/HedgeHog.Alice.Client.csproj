@@ -113,9 +113,10 @@
     <Compile Include="Classes\GlobalStorage.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\IMainModel.cs" />
+    <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />
     <Compile Include="Classes\TradeRequestManager.cs" />
-    <Compile Include="Models\TradingAccountModel.cs" />
+    <Compile Include="Classes\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
       <SubType>Code</SubType>
     </Compile>

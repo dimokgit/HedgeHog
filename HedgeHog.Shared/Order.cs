@@ -24,38 +24,52 @@ namespace HedgeHog.Shared {
     [DataMember]
     public String TradeID { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Boolean NetQuantity { get; set; }
     [DataMember]
     public String BS { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public String Stage { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public int Side { get; set; }
     [DataMember]
     public String Type { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public String FixStatus { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public String Status { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public int StatusCode { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public String StatusCaption { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public int Lot { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double AmountK { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double Rate { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double SellRate { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double BuyRate { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double Stop { get; set; }
     [DataMember]
     public Double UntTrlMove { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public Double Limit { get; set; }
     [DataMember]
     public DateTime Time { get; set; }
@@ -74,6 +88,7 @@ namespace HedgeHog.Shared {
     [DataMember]
     public Double TrlRate { get; set; }
     [DataMember]
+    [UpdateOnUpdate]
     public int Distance { get; set; }
     [DataMember]
     public String GTC { get; set; }
@@ -93,6 +108,34 @@ namespace HedgeHog.Shared {
     public int TypeLimit { get; set; }
     [DataMember]
     public int OCOBulkID { get; set; }
+
+    [DataMember]
+    [UpdateOnUpdate]
+    public double StopInPips { get; set; }
+    [DataMember]
+    [UpdateOnUpdate]
+    public double LimitInPips { get; set; }
+
+    [DataMember]
+    [UpdateOnUpdate]
+    public double StopInPoints { get; set; }
+    [DataMember]
+    [UpdateOnUpdate]
+    public double LimitInPoints { get; set; }
+
+
+    public double GetStopInPips(Func<string, double, double> inPips) { return TypeStop > 1 ? -Math.Abs(Stop) : inPips(Pair, Stop - Rate); }
+    public double GetStopInPoints(Func<string, double, double> inPoints) {
+      if (TypeStop == 1) return Stop;
+      var stopInPoints = inPoints(Pair, Stop);
+      return Rate + stopInPoints;
+    }
+    public double GetLimitInPips(Func<string, double, double> inPips) { return TypeLimit > 1 ? Math.Abs(Limit) : Math.Abs(inPips(Pair, Stop - Rate)); }
+    public double GetLimitInPoints(Func<string, double, double> inPoints) {
+      if (TypeLimit == 1) return Limit;
+      var limitInPoints = inPoints(Pair, Limit);
+      return Rate - limitInPoints;
+    }
 
     public override string ToString() { return ToString(SaveOptions.DisableFormatting); }
     public string ToString(SaveOptions saveOptions) {

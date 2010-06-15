@@ -25,7 +25,7 @@ namespace HedgeHog.Shared {
       return UnKnown as TU;
     }
 
-    public void Update(Trade trade,params Action<object>[] setUnKnown) {
+    public void Update(PositioBase trade,params Action<object>[] setUnKnown) {
       var props = new List<string>();
       var propsToUpdate = GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(UpdateOnUpdateAttribute), true).Count()>0).ToArray();
       foreach (var prop in propsToUpdate) {
