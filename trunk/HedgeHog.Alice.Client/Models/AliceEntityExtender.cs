@@ -44,6 +44,29 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    private double _LotSizePercent;
+    public double LotSizePercent {
+      get { return _LotSizePercent; }
+      set {
+        if (_LotSizePercent != value) {
+          _LotSizePercent = value;
+          OnPropertyChanged("LotSizePercent");
+        }
+      }
+    }
+
+    private int _LotSizeByLoss;
+    public int LotSizeByLoss {
+      get { return _LotSizeByLoss; }
+      set {
+        if (_LotSizeByLoss != value) {
+          _LotSizeByLoss = value;
+          OnPropertyChanged("LotSizeByLoss");
+        }
+      }
+    }
+
+
     double _Limit;
     public double Limit {
       get { return _Limit; }
@@ -104,7 +127,9 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _corridornes; }
       set {
         if (_corridornes == value) return;
-        _corridornes = value; OnPropertyChanged("Corridornes");
+        _corridornes = value;
+        OnPropertyChanged("Corridornes");
+        OnPropertyChanged("MinutesBack");
       }
     }
 
@@ -114,9 +139,20 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _corridorMinutes; }
       set {
         if (_corridorMinutes == value) return;
-        _corridorMinutes = value; OnPropertyChanged("CorridorMinutes");
+        _corridorMinutes = value;
+        OnPropertyChanged("CorridorMinutes");
+        OnPropertyChanged("MinutesBack");
       }
     }
+
+    public int MinutesBack {
+      get {
+        return
+          (CorridorMinutes /
+          (CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Corridornes : 1)).ToInt();
+      }
+    }
+
 
     DateTime _lastRateTime;
     public DateTime LastRateTime {
@@ -259,6 +295,17 @@ namespace HedgeHog.Alice.Client.Models {
         if (_SlackInPips != value) {
           _SlackInPips = value;
           OnPropertyChanged("SlackInPips");
+        }
+      }
+    }
+
+    private double _CurrentLossPercent;
+    public double CurrentLossPercent {
+      get { return _CurrentLossPercent; }
+      set {
+        if (_CurrentLossPercent != value) {
+          _CurrentLossPercent = value;
+          OnPropertyChanged("CurrentLossPercent");
         }
       }
     }

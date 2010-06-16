@@ -20,12 +20,24 @@
       <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
     </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">
-      <Button Content="Buy" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-            Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
+            Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+        <Button.ContentTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding StringFormat=c0}"/>
+          </DataTemplate>
+        </Button.ContentTemplate>
+      </Button>
     </DataTemplate>
     <DataTemplate x:Key="SellCellTemplate">
-      <Button Content="Sell" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-            Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
+            Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+        <Button.ContentTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding StringFormat=c0}"/>
+          </DataTemplate>
+        </Button.ContentTemplate>
+      </Button>
     </DataTemplate>
 
     <DataTemplate x:Key="StopCellTemplate">
@@ -46,7 +58,12 @@
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
-      <Label Content="{Binding CurrentLoss}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />
+      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalContentAlignment="Stretch" Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" >
+        <WrapPanel>
+          <TextBlock Text="{Binding CurrentLoss,StringFormat=c1}"  />
+          <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
+        </WrapPanel>
+      </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossEditCellTemplate">
       <TextBox Text="{Binding CurrentLoss}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
@@ -96,7 +113,6 @@
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
         <DataGridTextColumn Header="Ratio" Binding="{Binding TradingRatio,Mode=TwoWay}" />
-        <DataGridTemplateColumn CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}">
           <DataGridTemplateColumn.Header>
             <WrapPanel>
@@ -107,9 +123,10 @@
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
-        <DataGridTemplateColumn CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}"></DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Buy" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Sell" CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
 
         <!--<DataGridTextColumn Header="LB" Binding="{Binding BalanceOnLimit,StringFormat=c0}" IsReadOnly="True"/>
         <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c1}" IsReadOnly="True"/>
@@ -119,8 +136,9 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
-                <TextBlock Text="{Binding Corridornes,StringFormat=p0}" />
-                <TextBlock Text="{Binding CorridorMinutes,StringFormat=/{0:n0}}" />
+                <TextBlock Text="{Binding CorridorMinutes,StringFormat=n0}" />
+                <TextBlock Text="{Binding Corridornes,StringFormat=/{0:p0}}" />
+                <TextBlock Text="{Binding MinutesBack,StringFormat='={0:n0}'}" />
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
@@ -143,8 +161,19 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="$/Lot" Binding="{Binding LotSize,Mode=OneWay}" IsReadOnly="True" />
-        
+        <DataGridTemplateColumn Header="$/Lot" IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Label Margin="0">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{Binding LotSize,StringFormat=c0}"></TextBlock>
+                  <TextBlock Text="{Binding LotSizePercent,StringFormat=/{0:p2}}"></TextBlock>
+                </StackPanel>
+              </Label>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+
         <DataGridTextColumn Header="CI" Binding="{Binding CorridorIterations,Mode=TwoWay}" />
         <DataGridComboBoxColumn SelectedValueBinding="{Binding CorridorCalcMethod}" ItemsSource="{Binding Source={StaticResource CorridorCalculationValues}}" />
 
