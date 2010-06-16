@@ -14,7 +14,10 @@ namespace HedgeHog.Alice.Client {
         if (currentLoss == 0)
           currentLoss = Math.Max(0, trades.Sum(t => t.LimitAmount));
         else
-          profitInPips = trades.Select(t => t.StopInPips).Where(s => s < 0).OrderBy(s => s).FirstOrDefault().Abs() / 2;
+          profitInPips = Math.Max(
+            trades.Select(t => t.StopInPips).Where(s => s < 0).OrderBy(s => s).FirstOrDefault().Abs(),
+            trades.Select(t => t.LimitInPips).Where(l => l > 0).OrderBy(s => s).FirstOrDefault().Abs()
+            ) / 2;
       }
       var stopLoss = currentLoss - trades.Sum(t => t.StopAmount);
       var lots = trades.Sum(t => t.Lots) * 2;

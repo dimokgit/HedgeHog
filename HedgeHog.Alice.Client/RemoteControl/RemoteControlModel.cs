@@ -46,8 +46,6 @@ namespace HedgeHog.Alice.Client {
     }
 
     public ObservableCollection<string> Instruments { get; set; }
-    public double[] TradingRatios { get { return new double[] {0, 0.1,0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }; } }
-    public double[] StopsAndLimits { get { return new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 120, 135, 150 }; } }
 
     double CurrentLoss { get { return TradingMacrosCopy.Sum(tm => tm.CurrentLoss); } }
     object _tradingMacrosLocker = new object();
@@ -238,7 +236,9 @@ namespace HedgeHog.Alice.Client {
     }
     void Buy(object tradingMacro) {
       try {
-        OpenChainTrade(tradingMacro as Models.TradingMacro, true);
+        var tm = tradingMacro as Models.TradingMacro;
+        if (MessageBox.Show("Buy " + tm.LotSizeByLoss.ToString("c0"), "Trade Confirmation", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+          OpenChainTrade(tm, true);
         //AddPendingOrder(true, tm.Pair, () => openTradeCondition( tm,true), () => OpenTrade(tm, true));
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
@@ -411,6 +411,7 @@ namespace HedgeHog.Alice.Client {
         if (!tl.IsRunning) tl.Run();
         var summary = fw.GetSummary(pair);
         var account = fw.GetAccount();
+        tm.CurrentLossPercent = tm.CurrentLoss / account.Balance;
         tm.Net = summary != null ? summary.NetPL : (double?)null;
         tm.BalanceOnStop = account.Balance + tm.StopAmount.GetValueOrDefault();
         tm.BalanceOnLimit = account.Balance + tm.LimitAmount.GetValueOrDefault();
@@ -601,6 +602,7 @@ namespace HedgeHog.Alice.Client {
     private int CalculateLot(Models.TradingMacro tm) {
       var trades = fw.GetTrades(tm.Pair);
       if (trades.Length > 0) return trades.Sum(t => t.Lots) * 2;
+      return tm.LotSizeByLoss;
       var stopLoss = fw.GetTrades(tm.Pair).Sum(t => t.StopAmount);
       return CalculateLotCore(tm, CurrentLoss / ActiveTradingMacros.Length + stopLoss);
     }
@@ -659,7 +661,7 @@ namespace HedgeHog.Alice.Client {
         ThreadScheduler.infinity, () => LoadRates(pair), (s, e) => Log = e.Exception);
     }
 
-    int MinutesBack(Models.TradingMacro tm) { return tm.CorridorMinutes; }
+    int MinutesBack(Models.TradingMacro tm) { return tm.MinutesBack; }
 
     private void FillOverlaps(string pair, IEnumerable<Rate> rates) {
       var ratesOverlap = rates.ToArray().Reverse().ToArray();
@@ -948,6 +950,8 @@ namespace HedgeHog.Alice.Client {
       if (IsLoggedIn) {
         tm.LotSize = tm.TradingRatio >= 1 ? (tm.TradingRatio * 1000).ToInt() 
           : FXW.GetLotstoTrade(account.Balance, fw.Leverage(tm.Pair), tm.TradingRatio, fw.MinimumQuantity);
+        tm.LotSizePercent = tm.LotSize / account.Balance / fw.Leverage(tm.Pair);
+        tm.LotSizeByLoss = Math.Max(tm.LotSize, FXW.GetLotSize(tm.CurrentLossPercent.Abs() / tm.LotSizePercent * tm.LotSize, fw.MinimumQuantity));
         var stopAmount = 0.0;
         var limitAmount = 0.0;
         foreach (var trade in fw.GetTrades(tm.Pair )) {
