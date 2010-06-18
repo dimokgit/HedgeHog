@@ -36,6 +36,9 @@
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
           <Property Name="CorridorIterations" Type="int" Nullable="false" />
           <Property Name="FreezeStop" Type="int" Nullable="false" />
+          <Property Name="FibMax" Type="float" Nullable="false" />
+          <Property Name="FibMin" Type="float" Nullable="false" />
+          <Property Name="CorridornessMin" Type="float" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -72,6 +75,9 @@
           <Property Type="Int32" Name="CorridorMethod" Nullable="false" />
           <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
           <Property Type="Int32" Name="FreezeStop" Nullable="false" />
+          <Property Type="Double" Name="FibMax" Nullable="false" />
+          <Property Type="Double" Name="FibMin" Nullable="false" />
+          <Property Type="Double" Name="CorridornessMin" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -95,6 +101,9 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+                <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+                <ScalarProperty Name="FibMax" ColumnName="FibMax" />
                 <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
                 <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
                 <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
@@ -131,7 +140,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="2.0853483072916656" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="3.0714322916666656" />
       </Diagram>
     </Diagrams>
   </Designer>

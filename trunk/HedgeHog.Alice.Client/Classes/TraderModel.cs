@@ -214,6 +214,9 @@ namespace HedgeHog.Alice.Client {
         if (isInDesign) return;
         _log = value;
         var exc = value is Exception ? value : null;
+        var comExc = exc as System.Runtime.InteropServices.COMException;
+        if (comExc != null && comExc.ErrorCode == -2147467259)
+          AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
         lock (_logQueue) {
           if (_logQueue.Count > 5) _logQueue.Dequeue();
           var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
@@ -750,7 +753,6 @@ namespace HedgeHog.Alice.Client {
       if (account.Error!= null)
         Log = account.Error;
       else {
-        AccountModel.Update(account, 0, DateTime.Now);
         var trades = account.Trades;
         AccountModel.Update(account, 0, fwMaster.IsLoggedIn ? fwMaster.ServerTime : DateTime.Now);
         RaiseMasterListChangedEvent(trades);
@@ -796,13 +798,14 @@ namespace HedgeHog.Alice.Client {
       var addIds = newIds.Except(oldIds).ToList();
       addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
       foreach (var order in ordersList) {
-        var trd = ordersCollection.Single(t => t.OrderID == order.OrderID);
-        trd.Update(order,
-          o => { trd.InitUnKnown<OrderUnKnown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
-          o => { trd.InitUnKnown<OrderUnKnown>().BalanceOnStop = account.Balance + trd.StopAmount; },
-          o => { trd.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(fwMaster, account.Trades, false, AccountModel.CurrentLoss).Round(1); },
-          o => { trd.InitUnKnown<OrderUnKnown>().PercentOnStop = trd.StopAmount/account.Balance ; },
-          o => { trd.InitUnKnown<OrderUnKnown>().PercentOnLimit = trd.LimitAmount/account.Balance ; }
+        var odr = ordersCollection.Single(t => t.OrderID == order.OrderID);
+        var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
+        odr.Update(order,
+          o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
+          o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
+          o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(fwMaster, account.Trades,odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
+          o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount/stopBalance ; },
+          o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount/stopBalance ; }
           );
       }
     }

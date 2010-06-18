@@ -14,7 +14,16 @@
             Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentTemplate">
-      <ContentPresenter Content="{Binding Pair}"/>
+      <TextBlock Text="{Binding Pair}">
+        <TextBlock.ToolTip>
+          <ToolTip>
+            <TextBlock>
+                    <TextBlock FontWeight="Black">Rate First:</TextBlock>
+                    <TextBlock Text="{Binding RateFirst.StartDate,StringFormat='HH:mm'}"></TextBlock>
+            </TextBlock>
+          </ToolTip>
+        </TextBlock.ToolTip>
+      </TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentEditTemplate">
       <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
@@ -132,22 +141,47 @@
         <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTextColumn Header="SB" Binding="{Binding BalanceOnStop,StringFormat=c0}" IsReadOnly="True"/>-->
 
-        <DataGridTemplateColumn Header="Ŧ" IsReadOnly="True">
+        <DataGridTemplateColumn Header="Ŧ">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
                 <TextBlock Text="{Binding CorridorMinutes,StringFormat=n0}" />
-                <TextBlock Text="{Binding Corridornes,StringFormat=/{0:p0}}" />
-                <TextBlock Text="{Binding MinutesBack,StringFormat='={0:n0}'}" />
+                <TextBlock Text="{Binding Corridornes,StringFormat=[{0:p0}}" FontWeight="Black" />
+                <TextBlock Text="{Binding CorridornessMin,StringFormat='&gt;{0:p0}]'}" />
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding CorridornessMin}"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="C*R" CellTemplate="{StaticResource TakeProfitPipsCellTemplate}" CellEditingTemplate="{StaticResource TakeProfitPipsEditCellTemplate}" />
         <DataGridTextColumn Header="L=" Binding="{Binding Limit,StringFormat=n1}" CellStyle="{StaticResource PapayaWhipBackgroundStyle}" IsReadOnly="True"/>
         <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
         <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="Fib" Binding="{Binding CorridorFib,StringFormat=n2}" IsReadOnly="True" CellStyle="{StaticResource PapayaWhipBackgroundStyle}"/>
+        <DataGridTemplateColumn Header="Fib" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock Text="{Binding FibMin,StringFormat=n1}"></TextBlock>
+                <TextBlock Text="{Binding CorridorFib,StringFormat=&lt;{0:n1}&lt;}" FontWeight="Black"
+                           Foreground="{Binding CorridorFib,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkGreen|DarkRed}"
+                           ></TextBlock>
+                <TextBlock Text="{Binding FibMax,StringFormat=n1}"></TextBlock>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
+                <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTemplateColumn Header="OL"  IsReadOnly="True">

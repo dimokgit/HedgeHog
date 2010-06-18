@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Client.Models {
   public partial class AliceEntities {
@@ -108,9 +109,11 @@ namespace HedgeHog.Alice.Client.Models {
     }
 
     public double CorridorFib {
-      get { return Lib.FibRatioSign(BuyStopByCorridor, SellStopByCorridor); }
+      get { 
+        var fib = Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+        return double.IsNaN(fib) ? 0 : fib;
+      }
     }
-
 
     int _currentLot;
     public int CurrentLot {
@@ -122,7 +125,6 @@ namespace HedgeHog.Alice.Client.Models {
     }
 
     double _corridornes;
-
     public double Corridornes {
       get { return _corridornes; }
       set {
@@ -147,9 +149,10 @@ namespace HedgeHog.Alice.Client.Models {
 
     public int MinutesBack {
       get {
-        return
-          (CorridorMinutes /
-          (CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Corridornes : 1)).ToInt();
+        //if (CorridorCalcMethod == Models.CorridorCalculationMethod.Density && Corridornes > .5) 
+          return CorridorMinutes;
+        var div = CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Corridornes : 1;
+        return div == 0 ? 0 : (CorridorMinutes / div).ToInt();
       }
     }
 
@@ -340,6 +343,18 @@ namespace HedgeHog.Alice.Client.Models {
         }
       }
     }
+
+    private Rate _RateFirst;
+    public Rate RateFirst {
+      get { return _RateFirst; }
+      set {
+        if (_RateFirst != value) {
+          _RateFirst = value;
+          OnPropertyChanged("RateFirst");
+        }
+      }
+    }
+
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }

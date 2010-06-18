@@ -355,7 +355,10 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="corridorMethod">Initial value of the CorridorMethod property.</param>
         /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
         /// <param name="freezeStop">Initial value of the FreezeStop property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations, global::System.Int32 freezeStop)
+        /// <param name="fibMax">Initial value of the FibMax property.</param>
+        /// <param name="fibMin">Initial value of the FibMin property.</param>
+        /// <param name="corridornessMin">Initial value of the CorridornessMin property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -369,6 +372,9 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.CorridorMethod = corridorMethod;
             tradingMacro.CorridorIterations = corridorIterations;
             tradingMacro.FreezeStop = freezeStop;
+            tradingMacro.FibMax = fibMax;
+            tradingMacro.FibMin = fibMin;
+            tradingMacro.CorridornessMin = corridornessMin;
             return tradingMacro;
         }
 
@@ -641,6 +647,78 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _FreezeStop;
         partial void OnFreezeStopChanging(global::System.Int32 value);
         partial void OnFreezeStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double FibMax
+        {
+            get
+            {
+                return _FibMax;
+            }
+            set
+            {
+                OnFibMaxChanging(value);
+                ReportPropertyChanging("FibMax");
+                _FibMax = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("FibMax");
+                OnFibMaxChanged();
+            }
+        }
+        private global::System.Double _FibMax;
+        partial void OnFibMaxChanging(global::System.Double value);
+        partial void OnFibMaxChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double FibMin
+        {
+            get
+            {
+                return _FibMin;
+            }
+            set
+            {
+                OnFibMinChanging(value);
+                ReportPropertyChanging("FibMin");
+                _FibMin = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("FibMin");
+                OnFibMinChanged();
+            }
+        }
+        private global::System.Double _FibMin;
+        partial void OnFibMinChanging(global::System.Double value);
+        partial void OnFibMinChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorridornessMin
+        {
+            get
+            {
+                return _CorridornessMin;
+            }
+            set
+            {
+                OnCorridornessMinChanging(value);
+                ReportPropertyChanging("CorridornessMin");
+                _CorridornessMin = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridornessMin");
+                OnCorridornessMinChanged();
+            }
+        }
+        private global::System.Double _CorridornessMin;
+        partial void OnCorridornessMinChanging(global::System.Double value);
+        partial void OnCorridornessMinChanged();
 
         #endregion
     

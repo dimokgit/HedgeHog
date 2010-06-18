@@ -56,15 +56,17 @@ namespace HedgeHog.Bars {
       var corrAverage = corridornesses.Values.Average(c=>c.Density);
       var corrAfterAverage = corridornesses.Where(c => c.Value.Density > corrAverage).ToArray();
 
-      while (--iterations > 0) {
+      for (var i = iterations - 1; i > 0; i--) {
         var avg = corrAfterAverage.Average(c => c.Value.Density);
         var corrAvg = corrAfterAverage.Where(c => c.Value.Density > avg).ToArray();
-        if (corrAvg.Length>0) {
+        if (corrAvg.Length > 0) {
           corrAverage = avg;
           corrAfterAverage = corrAvg;
         } else break;
       }
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
+      if (rates.Count() / (double)corr.Value.Minutes < 1.01) 
+        return rates.ScanCorridors(minutesStart, iterations + 1, useStDev);
       var startDate = rates.Max(r => r.StartDate).AddMinutes(-corr.Value.Minutes);
       var ratesForCorridor = rates//.Where(r => r.Spread <= slack * 2)
           .Where(r => r.StartDate >= startDate).ToArray();
