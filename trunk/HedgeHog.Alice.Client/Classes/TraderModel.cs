@@ -214,9 +214,9 @@ namespace HedgeHog.Alice.Client {
         if (isInDesign) return;
         _log = value;
         var exc = value is Exception ? value : null;
-        var comExc = exc as System.Runtime.InteropServices.COMException;
-        if (comExc != null && comExc.ErrorCode == -2147467259)
-          AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
+        //var comExc = exc as System.Runtime.InteropServices.COMException;
+        //if (comExc != null && comExc.ErrorCode == -2147467259)
+        //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
         lock (_logQueue) {
           if (_logQueue.Count > 5) _logQueue.Dequeue();
           var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
