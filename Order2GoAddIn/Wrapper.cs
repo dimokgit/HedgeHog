@@ -1648,6 +1648,7 @@ namespace Order2GoAddIn {
               row = table.FindRow("TradeID", sRowID, 0) as FXCore.RowAut;
             } catch { break; }
             var trade = InitTrade(row);
+            Debug.WriteLine("Trade:" + trade.Id + " was added.");
             RaiseTradeAdded(trade);
             break;
         }

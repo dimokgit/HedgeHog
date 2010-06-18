@@ -119,8 +119,6 @@ namespace HedgeHog {
       return ret;
     }
 
-    public static double FibRatioSign(double d1, double d2) { return d1 / d2 - d2 / d1; }
-    public static double FibRatio(double d1, double d2) { return Math.Abs(d1 / d2 - d2 / d1); }
     public static double StandardDeviation(List<double> doubleList) {
       double average = doubleList.Average();
       double sumOfDerivation = 0;

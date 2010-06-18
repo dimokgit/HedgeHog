@@ -60,6 +60,7 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.StopToBalanceRatio,
       () => accountRow.ProfitPercent,
       () => accountRow.ServerTime,
+      () => accountRow.OriginalBalance,
       () => accountRow.OriginalProfit
         );
     }
