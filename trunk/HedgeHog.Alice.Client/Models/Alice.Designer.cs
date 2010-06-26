@@ -353,12 +353,14 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="freezLimit">Initial value of the FreezLimit property.</param>
         /// <param name="corridorRatio">Initial value of the CorridorRatio property.</param>
         /// <param name="corridorMethod">Initial value of the CorridorMethod property.</param>
-        /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
         /// <param name="freezeStop">Initial value of the FreezeStop property.</param>
         /// <param name="fibMax">Initial value of the FibMax property.</param>
         /// <param name="fibMin">Initial value of the FibMin property.</param>
         /// <param name="corridornessMin">Initial value of the CorridornessMin property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 corridorIterations, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin)
+        /// <param name="corridorIterationsIn">Initial value of the CorridorIterationsIn property.</param>
+        /// <param name="corridorIterationsOut">Initial value of the CorridorIterationsOut property.</param>
+        /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -370,11 +372,13 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.FreezLimit = freezLimit;
             tradingMacro.CorridorRatio = corridorRatio;
             tradingMacro.CorridorMethod = corridorMethod;
-            tradingMacro.CorridorIterations = corridorIterations;
             tradingMacro.FreezeStop = freezeStop;
             tradingMacro.FibMax = fibMax;
             tradingMacro.FibMin = fibMin;
             tradingMacro.CorridornessMin = corridornessMin;
+            tradingMacro.CorridorIterationsIn = corridorIterationsIn;
+            tradingMacro.CorridorIterationsOut = corridorIterationsOut;
+            tradingMacro.CorridorIterations = corridorIterations;
             return tradingMacro;
         }
 
@@ -605,30 +609,6 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int32 CorridorIterations
-        {
-            get
-            {
-                return _CorridorIterations;
-            }
-            set
-            {
-                OnCorridorIterationsChanging(value);
-                ReportPropertyChanging("CorridorIterations");
-                _CorridorIterations = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("CorridorIterations");
-                OnCorridorIterationsChanged();
-            }
-        }
-        private global::System.Int32 _CorridorIterations;
-        partial void OnCorridorIterationsChanging(global::System.Int32 value);
-        partial void OnCorridorIterationsChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.Int32 FreezeStop
         {
             get
@@ -719,6 +699,78 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Double _CorridornessMin;
         partial void OnCorridornessMinChanging(global::System.Double value);
         partial void OnCorridornessMinChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorIterationsIn
+        {
+            get
+            {
+                return _CorridorIterationsIn;
+            }
+            set
+            {
+                OnCorridorIterationsInChanging(value);
+                ReportPropertyChanging("CorridorIterationsIn");
+                _CorridorIterationsIn = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorIterationsIn");
+                OnCorridorIterationsInChanged();
+            }
+        }
+        private global::System.Int32 _CorridorIterationsIn;
+        partial void OnCorridorIterationsInChanging(global::System.Int32 value);
+        partial void OnCorridorIterationsInChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorIterationsOut
+        {
+            get
+            {
+                return _CorridorIterationsOut;
+            }
+            set
+            {
+                OnCorridorIterationsOutChanging(value);
+                ReportPropertyChanging("CorridorIterationsOut");
+                _CorridorIterationsOut = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorIterationsOut");
+                OnCorridorIterationsOutChanged();
+            }
+        }
+        private global::System.Int32 _CorridorIterationsOut;
+        partial void OnCorridorIterationsOutChanging(global::System.Int32 value);
+        partial void OnCorridorIterationsOutChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorIterations
+        {
+            get
+            {
+                return _CorridorIterations;
+            }
+            set
+            {
+                OnCorridorIterationsChanging(value);
+                ReportPropertyChanging("CorridorIterations");
+                _CorridorIterations = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorIterations");
+                OnCorridorIterationsChanged();
+            }
+        }
+        private global::System.Int32 _CorridorIterations;
+        partial void OnCorridorIterationsChanging(global::System.Int32 value);
+        partial void OnCorridorIterationsChanged();
 
         #endregion
     

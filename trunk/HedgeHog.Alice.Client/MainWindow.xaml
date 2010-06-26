@@ -203,6 +203,8 @@
         
         <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
         <Button Command="{Binding AddNewSlaveAccountCommand}">Add Alice</Button>
+        <TextBlock>Status:</TextBlock>
+        <TextBlock Text="{Binding SessionStatus}"/>
       </WrapPanel>
       <ui:AccountLoginView AccountLoginCommand="{Binding AccountLoginCommand}" OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
                            IsEnabled="{Binding IsNotInLogin}"

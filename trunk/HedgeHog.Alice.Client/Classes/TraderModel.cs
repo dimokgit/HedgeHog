@@ -48,6 +48,18 @@ namespace HedgeHog.Alice.Client {
       set { _isInLogin = value; RaisePropertyChanged(() => IsInLogin, () => IsNotInLogin); }
     }
     public bool IsNotInLogin { get { return !IsInLogin; } }
+    private string _SessionStatus;
+    public string SessionStatus {
+      get { return _SessionStatus; }
+      set {
+        if (_SessionStatus != value) {
+          _SessionStatus = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+
     ComboBoxItem _ServerToLocalRatioValue;
     public ComboBoxItem ServerToLocalRatioValue {
       set { _ServerToLocalRatioValue = value; }
@@ -631,6 +643,7 @@ namespace HedgeHog.Alice.Client {
         fwMaster.PriceChanged += fwMaster_PriceChanged;
         fwMaster.OrderChanged += fwMaster_OrderChanged;
         fwMaster.OrderAdded += fwMaster_OrderAdded;
+        fwMaster.SessionStatusChanged += fwMaster_SessionStatusChanged;
       
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
@@ -651,6 +664,7 @@ namespace HedgeHog.Alice.Client {
         fwMaster.PriceChanged -= fwMaster_PriceChanged;
         fwMaster.OrderChanged -= fwMaster_OrderChanged;
         fwMaster.OrderAdded -= fwMaster_OrderAdded;
+        fwMaster.SessionStatusChanged -= fwMaster_SessionStatusChanged;
       };
       #endregion
 
@@ -661,6 +675,14 @@ namespace HedgeHog.Alice.Client {
         GetTradesScheduler = new ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
         Using_FetchServerTrades,
         (s, e) => { Log = e.Exception; });
+      }
+    }
+
+    void fwMaster_SessionStatusChanged(object sender, FXW.SesstionStatusEventArgs e) {
+      SessionStatus = e.Status;
+      if (e.Status == "Disconnected") {
+        CoreFX.Logout();
+        CoreFX.LogOn();
       }
     }
 
@@ -894,6 +916,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #endregion
+
   }
   public class TraderModelDesign : TraderModel {
   }

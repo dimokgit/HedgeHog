@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Order2GoAddIn {
   public class CoreFX :IDisposable{
-    FXCore.CoreAut mCore = null;
+    FXCore.CoreAut mCore = new FXCore.CoreAut();
     public FXCore.TradeDeskAut mDesk = null;
     public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
@@ -81,8 +81,11 @@ namespace Order2GoAddIn {
     public bool LogOn(string user, string password, bool isDemo) {
       return LogOn(user, password, "", isDemo);
     }
+    object loginLocker = new object();
     public bool LogOn() {
-      return LogOn(user, password, URL, isDemo);
+      lock (loginLocker) {
+        return LogOn(user, password, URL, isDemo);
+      }
     }
     public bool LogOn(string user, string password, string url, bool isDemo) {
       if (!IsLoggedIn) {
@@ -92,7 +95,6 @@ namespace Order2GoAddIn {
         this.URL = url + "" != "" ? url : DefaultUrl;
         Logout();
         try {
-          mCore = new FXCore.CoreAut();
           mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
           mDesk.SetTimeout(mDesk.TIMEOUT_PRICEHISTORY, 30000);
           mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
@@ -108,10 +110,9 @@ namespace Order2GoAddIn {
     public void Logout() {
       try {
         if (mCore != null) {
-          if (IsLoggedIn) {
+          if (IsLoggedIn)
             try { mDesk.Logout(); } catch { }
-            RaiseLoggedOff();
-          }
+          try { RaiseLoggedOff(); } catch { }
         }
       } catch { }
     }

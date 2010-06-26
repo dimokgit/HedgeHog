@@ -34,11 +34,13 @@
           <Property Name="FreezLimit" Type="int" Nullable="false" />
           <Property Name="CorridorRatio" Type="float" Nullable="false" />
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
-          <Property Name="CorridorIterations" Type="int" Nullable="false" />
           <Property Name="FreezeStop" Type="int" Nullable="false" />
           <Property Name="FibMax" Type="float" Nullable="false" />
           <Property Name="FibMin" Type="float" Nullable="false" />
           <Property Name="CorridornessMin" Type="float" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
+          <Property Name="CorridorIterations" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -73,11 +75,13 @@
           <Property Type="Int32" Name="FreezLimit" Nullable="false" />
           <Property Type="Double" Name="CorridorRatio" Nullable="false" />
           <Property Type="Int32" Name="CorridorMethod" Nullable="false" />
-          <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
           <Property Type="Int32" Name="FreezeStop" Nullable="false" />
           <Property Type="Double" Name="FibMax" Nullable="false" />
           <Property Type="Double" Name="FibMin" Nullable="false" />
           <Property Type="Double" Name="CorridornessMin" Nullable="false" />
+          <Property Type="Int32" Name="CorridorIterationsIn" Nullable="false" />
+          <Property Type="Int32" Name="CorridorIterationsOut" Nullable="false" />
+          <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -101,11 +105,13 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+                <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+                <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
                 <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
                 <ScalarProperty Name="FibMin" ColumnName="FibMin" />
                 <ScalarProperty Name="FibMax" ColumnName="FibMax" />
                 <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
-                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
                 <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
                 <ScalarProperty Name="CorridorRatio" ColumnName="CorridorRatio" />
                 <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
@@ -140,7 +146,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="3.0714322916666656" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="3.5644742838541656" />
       </Diagram>
     </Diagrams>
   </Designer>
