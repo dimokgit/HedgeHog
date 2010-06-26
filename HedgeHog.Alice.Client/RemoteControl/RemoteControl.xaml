@@ -144,8 +144,17 @@
         <DataGridTemplateColumn Header="Ŧ">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding CorridorMinutes,StringFormat=n0}" />
+              <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
+                <TextBlock Text="{Binding RateFirst.StartDate,StringFormat='HH:mm'}">
+        <TextBlock.ToolTip>
+          <ToolTip>
+            <TextBlock>
+                    <TextBlock FontWeight="Black">Minutes:</TextBlock>
+                    <TextBlock Text="{Binding CorridorMinutes,StringFormat=n0}"></TextBlock>
+            </TextBlock>
+          </ToolTip>
+        </TextBlock.ToolTip>
+                </TextBlock>
                 <TextBlock Text="{Binding Corridornes,StringFormat=[{0:p0}}" FontWeight="Black" />
                 <TextBlock Text="{Binding CorridornessMin,StringFormat='&gt;{0:p0}]'}" />
               </WrapPanel>
@@ -166,9 +175,10 @@
             <DataTemplate>
               <WrapPanel>
                 <TextBlock Text="{Binding FibMin,StringFormat=n1}"></TextBlock>
-                <TextBlock Text="{Binding CorridorFib,StringFormat=&lt;{0:n1}&lt;}" FontWeight="Black"
+                <TextBlock Text="{Binding CorridorFib,StringFormat=&lt;{0:n1}}" FontWeight="Black"
                            Foreground="{Binding CorridorFib,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkGreen|DarkRed}"
                            ></TextBlock>
+                <TextBlock Text="{Binding CorridorFibAverage,StringFormat=[{0:n1}]&lt;}"></TextBlock>
                 <TextBlock Text="{Binding FibMax,StringFormat=n1}"></TextBlock>
               </WrapPanel>
             </DataTemplate>
@@ -208,7 +218,21 @@
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
 
-        <DataGridTextColumn Header="CI" Binding="{Binding CorridorIterations,Mode=TwoWay}" />
+        <DataGridTemplateColumn Header="CI">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding CorridorIterationsCalc}"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBox Text="{Binding CorridorIterationsIn}"/>
+                <TextBox Text="{Binding CorridorIterationsOut}"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
         <DataGridComboBoxColumn SelectedValueBinding="{Binding CorridorCalcMethod}" ItemsSource="{Binding Source={StaticResource CorridorCalculationValues}}" />
 
         <DataGridComboBoxColumn Header="FZ" SelectedValueBinding="{Binding FreezeType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />

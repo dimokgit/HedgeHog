@@ -622,7 +622,13 @@ namespace HedgeHog.Alice.Client.UI.Controls {
 
     #region Log
     DateTime lastLogTime = DateTime.MinValue;
-    public string LogText { get { return string.Join(Environment.NewLine, _logQueue.Reverse()); } }
+    public string LogText {
+      get {
+        lock (_logQueue) {
+          return string.Join(Environment.NewLine, _logQueue.Reverse());
+        }
+      }
+    }
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
     Exception Log {
@@ -632,14 +638,15 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         lastLogTime = DateTime.Now;
         _log = value;
         var exc = value is Exception ? value : null;
-        if (_logQueue.Count > 5) _logQueue.Dequeue();
-        var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
-        while (value.InnerException != null) {
-          messages.Add(GetExceptionShort(value.InnerException));
-          value = value.InnerException;
+        lock (_logQueue) {
+          if (_logQueue.Count > 5) _logQueue.Dequeue();
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
+          while (value.InnerException != null) {
+            messages.Add(GetExceptionShort(value.InnerException));
+            value = value.InnerException;
+          }
+          _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
         }
-        _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
-
         FileLogger.LogToFile(exc);
         RaisePropertyChanged(() => LogText, () => IsLogExpanded);
       }

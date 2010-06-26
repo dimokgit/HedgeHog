@@ -20,11 +20,15 @@ using System.Threading;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : HedgeHog.Models.ModelBase {
+    //Dimok:Show Closed trades
+    //Dimok:Analize fractal around previous trades
+
     #region Settings
     readonly int historyMinutesBack = 60 * 5;
     readonly double profitToClose = 0.01;
     readonly double fibRatioHigh = 3;
     #endregion
+
     #region Properties
     public bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     FXW fw;
@@ -177,9 +181,7 @@ namespace HedgeHog.Alice.Client {
     void ClosePair(object tradingMacro) {
       try {
         var pair = (tradingMacro as Models.TradingMacro).Pair;
-        var tradeIds = fw.GetTrades(pair).Select(t => t.Id).ToArray();
-        if (tradeIds.Length > 0) AddTradeToReverse(tradeIds.Last());
-        fw.FixOrdersClose(tradeIds);
+        fw.CloseTradesAsync(fw.GetTrades(pair));
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
       }
@@ -370,20 +372,20 @@ namespace HedgeHog.Alice.Client {
     private void ScanCorridor(string pair, IEnumerable<Rate> rates) {
       try {
         var tm = GetTradingMacro(pair);
-        var corridorStats = rates.ScanCorridors(tm.Overlap.ToInt(), tm.CorridorIterations, tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
+        var corridorStats = rates.ScanCorridors(tm.Overlap.ToInt(), tm.CorridorIterationsCalc, tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
         var mb = tm.MinutesBack;
         tm.Corridornes = tm.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? corridorStats.Density : 1 / corridorStats.Density;
         tm.CorridorMinutes = Lib.CMA(tm.CorridorMinutes, 0, 1, corridorStats.Minutes).ToInt();
         var ratesForCorridor = GetRatesForCorridor(ratesByPair[pair], tm);
         tm.Limit = fw.InPips(tm.Pair, ratesForCorridor.Max(r => r.AskHigh) - ratesForCorridor.Min(r => r.BidLow)).Round(1);
-        var updateStop = mb > 0 && tm.MinutesBack > mb + 3;
+        var updateStop = false;// mb > 0 && tm.MinutesBack > mb + 3;
         if (tm.FreezeStopType != Models.Freezing.Freez && updateStop) {
           var trades = fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
           if (trades.Length > 0) {
             var lastTradeDate = trades.Max(t => t.Time);
             foreach (var trade in trades) {
               try {
-                var newStop = GetStopByFractal(trade.Pair, rates.Take(rates.Count() - tm.OverlapTotal), trade.IsBuy, lastTradeDate);
+                var newStop = GetStopByFractal(trade.Pair, rates.Take(rates.Count() - mb), trade.IsBuy, lastTradeDate);
                 ChangeTradeStop(trade, newStop);
               } catch (Exception exc) { Log = exc; }
             }
@@ -395,16 +397,40 @@ namespace HedgeHog.Alice.Client {
     }
 
     ThreadSchedulersDispenser RunPriceSchedulers = new ThreadSchedulersDispenser();
-    void fw_PriceChanged(Bars.Price Price) {
-      if (!CanTrade(Price.Pair)) return;
-      var pair = Price.Pair;
-      CurrentRateAdd(pair, fw.ServerTime, Price.Ask, Price.Bid, false);
-      ScanCorridorSchedulers.Run(pair, () => ScanCorridor(pair, ratesByPair[pair]));
-      RunPriceSchedulers.Run(pair, () => RunPrice(Price));
+    Dictionary<string, Queue<Price>> priceStackByPair = new Dictionary<string, Queue<Price>>();
+
+    void PriceStackAdd(Price price) {
+      var queue = PriceStackGet(price.Pair);
+      if (queue.Count > 300) queue.Dequeue();
+      queue.Enqueue(price);
+      GetTradingMacro(price.Pair).TickPerMinute = (queue.Count / (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes).ToInt();
+    }
+
+    private Queue<Price> PriceStackGet(string pair) {
+      if (!priceStackByPair.ContainsKey(pair)) priceStackByPair.Add(pair, new Queue<Price>());
+      return priceStackByPair[pair];
+    }
+    void fw_PriceChanged(Bars.Price price) {
+      var pair = price.Pair;
+      var tm = GetTradingMacro(pair);
+      if (tm != null) {
+        PriceStackAdd(price);
+        CurrentRateAdd(pair, fw.ServerTime, price.Ask, price.Bid, false);
+        ScanCorridorSchedulers.Run(pair, () => ScanCorridor(pair, ratesByPair[pair]));
+      }
+      if (!CanTrade(price.Pair)) return;
+      RunPriceSchedulers.Run(pair, () => RunPrice(price));
+    }
+    Dictionary<string, Price> pricesByPair = new Dictionary<string, Price>();
+    Price GetCurrentPrice(string pair) {
+      if (!IsLoggedIn) return new Price();
+      if (!pricesByPair.ContainsKey(pair)) pricesByPair[pair] = fw.GetPrice(pair);
+      return pricesByPair[pair]; 
     }
     Account accountCached = new Account();
     private void RunPrice(Price price) {
       try {
+        if (price != null) pricesByPair[price.Pair] = price;
         string pair = price.Pair;
         if (!CanTrade(pair)) return;
         if (!price.IsReal) price = fw.GetPrice(pair);
@@ -425,10 +451,9 @@ namespace HedgeHog.Alice.Client {
           CheckProfitScheduler.Command = () => CheckProfit(account);
         var ratesForCorridor = GetRatesForCorridor(ratesByPair[pair], tm).ToArray();
         var rateBuy = ratesForCorridor.OrderBy(r => r.BidLow).First();
-        tm.BuyStopByCorridor = fw.InPips(pair, price.Bid - rateBuy.BidLow);
         var rateSell = ratesForCorridor.OrderBy(r => r.AskHigh).Last();
-        tm.SellStopByCorridor = fw.InPips(pair, rateSell.AskHigh - price.Ask);
-        CheckTrade(trades);
+        tm.SetCorridorFib(fw.InPips(pair, price.Bid - rateBuy.BidLow), fw.InPips(pair, rateSell.AskHigh - price.Ask));
+        CheckTrades(trades);
         if (!OpenTradeByStopScheduler.IsRunning)
           OpenTradeByStopScheduler.Command = () => OpenTradeByStop(pair);
       } catch (Exception exc) { Log = exc; }
@@ -452,27 +477,30 @@ namespace HedgeHog.Alice.Client {
       };
       var rfh = new EventHandler<FXW.RequestEventArgs>(reqiesFailedAction);
       var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
-      var fib = Fibonacci.FibRatioSign(tm.BuyStopByCorridor, tm.SellStopByCorridor).Round(1);
+      var fib = tm.CorridorFib.Round(1);
+      var fibAvg = tm.CorridorFibAverage.Round(1);
       double fibMin = tm.FibMin, fibMax = tm.FibMax;
-      bool? buy = fib.Between(-fibMax, -fibMin) ? true : fib.Between(fibMin, fibMax) ? false : (bool?)null;
-      if (buy.HasValue && !TradeExists(pair,buy.Value)) {
+      bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
+      if (buy.HasValue && !TradeExists(pair, buy.Value, t => t.Limit == 0 || t.IsBuy && t.Limit > t.Open || !t.IsBuy && t.Limit < t.Open)) {
         var trades = fw.GetTrades(pair);
-        if (trades.Length > 0) {
+        var tradesToClose = trades.Where(t => t.IsBuy != buy).ToArray();
+        if (tradesToClose.Length > 0) {
           try {
-            fw.CloseTradesAsync(trades);
+            fw.CloseTradesAsync(tradesToClose);
           } catch (Exception exc) {
             Log = exc;
           }
           return;
         }
-        if( tm.Corridornes >= tm.CorridornessMin )
+        if (tm.IsCorridornessOk && trades.Length < 3)
           try {
+            var currentCount = trades.Length;
             fw.RequestFailed += rfh;
             fw.OrderRemoved += orh;
             po = OpenChainTrade(tm, buy.Value);
             var start = DateTime.Now;
             var stop = TimeSpan.FromSeconds(30);
-            while (po != null && fw.GetTrades(pair).Count() == 0 && (DateTime.Now - start) < stop)
+            while (po != null && fw.GetTrades(pair).Count() == currentCount && (DateTime.Now - start) < stop)
               Thread.Sleep(100);
           } catch (Exception exc) {
             Log = exc;
@@ -509,11 +537,10 @@ namespace HedgeHog.Alice.Client {
       if (tm == null) return;
       tm.CurrentLot = fw.GetTrades(trade.Pair).Sum(t => t.Lots);
       if (tm.ReverseOnProfit) {
-        foreach (var trd in fw.GetTrades(trade.Pair).Where(t => t.Id != trade.Id))
+        foreach (var trd in fw.GetTrades(trade.Pair).Where(t => t.Id != trade.Id && t.IsBuy != trade.IsBuy))
           fw.CloseTradeAsync(trd);
-      } else {
+      } else
         CreateEntryOrder(trade);
-      }
     }
 
 
@@ -677,11 +704,14 @@ namespace HedgeHog.Alice.Client {
           correlations.Add(alglib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs());
         }
       }
-      return correlations.Average();
+      return correlations.Count > 0 ? correlations.Average() : 0;
     }
     void LoadRates(string pair) {
       var error = false;
       var tm = GetTradingMacro(pair);
+      if (ratesByPair.ContainsKey(pair) && ratesByPair[pair].Count > 0 && !IsLoggedIn) {
+        MasterModel.CoreFX.LogOn();
+      }
       if (tm == null || !IsLoggedIn || tm.TradingRatio == 0) error = true;
       else
         try {
@@ -750,8 +780,10 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region TradeExists
-    bool TradeExists(Trade trade) { return TradeExists(trade.Pair, trade.IsBuy); }
-    bool TradeExists(string pair, bool isBuy) { return fw.GetTrades(pair).Any(t => t.IsBuy == isBuy); }
+    bool TradeExists(Trade trade,Func<Trade,bool> condition) { return TradeExists(trade.Pair, trade.IsBuy,condition); }
+    bool TradeExists(string pair, bool isBuy, Func<Trade, bool> condition) { 
+      return fw.GetTrades(pair).Any(t => t.IsBuy == isBuy && condition(t)); 
+    }
     #endregion
 
     #region Entry Orders
@@ -867,7 +899,8 @@ namespace HedgeHog.Alice.Client {
     #region OpenTrade
     PendingOrder OpenChainTrade(Models.TradingMacro tm, bool isBuy) {
       var lot = CalculateLot(tm);
-      return OpenTrade(isBuy, tm.Pair, lot, tm.TakeProfitPips, 0, GetStopByFractal(tm.Pair, isBuy, fw.ServerTime), "");
+      var stop = tm.FreezeStopType == Models.Freezing.None ? 0 : GetStopByFractal(tm.Pair, isBuy, fw.ServerTime);
+      return OpenTrade(isBuy, tm.Pair, lot, tm.TakeProfitPips, 0, stop, "");
     }
 
 
@@ -919,7 +952,7 @@ namespace HedgeHog.Alice.Client {
           var tm = GetTradingMacro(pair);
           var stopSlack = GetSlack(pair).Round(round);
           var ratesForStop = GetRatesForCorridor(rates, tm);
-          var skip = Math.Min(tm.Overlap.ToInt(), Math.Ceiling((fw.ServerTime - tradeDate).TotalMinutes)).ToInt();
+          var skip = Math.Min(tm.OverlapTotal, Math.Floor((fw.ServerTime - tradeDate).TotalMinutes)).ToInt();
           ratesForStop = ratesForStop.OrderBarsDescending().Skip(skip).ToArray();
           if (ratesForStop.Count() == 0) {
             Log = new Exception("Pair [" + pair + "] has no rates.");
@@ -957,7 +990,7 @@ namespace HedgeHog.Alice.Client {
       if(tm.FreezeType != Models.Freezing.Freez) {
         if (tm.ReverseOnProfit) {
           double rateMax, rateMin;
-          var leg = GetFibSlack(tm.FibMax, tm, out rateMax, out rateMin);
+          var leg = GetFibSlack(tm.FibMin, tm, out rateMax, out rateMin);
           limit = isBuy ? rateMax - leg : rateMin + leg;
           return returnLimit();
         }
@@ -1001,30 +1034,39 @@ namespace HedgeHog.Alice.Client {
     void ChangeTradeStop(Trade trade, double stopAbsolute) {
       fw.FixOrderSetStop(trade.Id, trade.Stop = stopAbsolute, "");
     }
-    private void CheckTrade(Trade[] trades) {
+    private void CheckTrades(Trade[] trades) {
       try {
-        Trade trade = trades.OrderBy(t=>t.Id).LastOrDefault();
-        if (trade == null) return;
         var stopAmount = trades.Sum(t => t.StopAmount);
-        var tm = GetTradingMacro(trade.Pair);
-        var round = fw.GetDigits(trade.Pair)-1;
-        var stopNew = GetStopByFractal(trade).Round(round);
-        var stopOld = trade.Stop.Round(round);
-        if (DoStop(trade, tm, stopNew, round))
-          ChangeTradeStop(trade, stopNew);
-        var limitNew = GetLimitByFractal(trade, ratesByPair[trade.Pair]).Round(round);
-        if( DoLimit(trade, tm,limitNew, round))
-          fw.FixCreateLimit(trade.Id, limitNew, "");
-        //if (trade.Lots >= tm.LotSize * 10 && tm.CurrentLoss < 0 && trade.LimitAmount >= tm.CurrentLoss.Abs() * tm.LimitBar) tm.FreezLimit = true;
-        if (stopAmount > 0 && tm.CurrentLoss == 0) 
-          RemoveEntryOrder(trade.Pair);
-        if (stopAmount < 0 && tm.FreezeStopType == Models.Freezing.Float)
-          CreateEntryOrder(trade);
+        foreach (var trade in trades)
+          CheckTrade(trade, stopAmount);
         UpdateEntryOrder(trades);
       } catch (Exception exc) { Log = exc; }
     }
 
+    private void CheckTrade(Trade trade, double stopAmount) {
+      var tm = GetTradingMacro(trade.Pair);
+      var round = fw.GetDigits(trade.Pair) - 1;
+      if (tm.FreezeStopType != Models.Freezing.None) {
+        var stopNew = GetStopByFractal(trade).Round(round);
+        var stopOld = trade.Stop.Round(round);
+        if (DoStop(trade, tm, stopNew, round))
+          ChangeTradeStop(trade, stopNew);
+      }
+      if (tm.FreezeType != Models.Freezing.None) {
+        var limitNew = GetLimitByFractal(trade, ratesByPair[trade.Pair]).Round(round);
+        if (DoLimit(trade, tm, limitNew, round))
+          fw.FixCreateLimit(trade.Id, limitNew, "");
+      }
+      //if (trade.Lots >= tm.LotSize * 10 && tm.CurrentLoss < 0 && trade.LimitAmount >= tm.CurrentLoss.Abs() * tm.LimitBar) tm.FreezLimit = true;
+      if (stopAmount > 0 && tm.CurrentLoss == 0)
+        RemoveEntryOrder(trade.Pair);
+      if (stopAmount < 0 && tm.FreezeStopType == Models.Freezing.Float)
+        CreateEntryOrder(trade);
+    }
+
     private bool DoLimit(Trade trade, Models.TradingMacro tm, double limitNew, int round) {
+      if (trade.IsBuy && limitNew <= GetCurrentPrice(trade.Pair).Ask) return false;
+      if (!trade.IsBuy && limitNew >= GetCurrentPrice(trade.Pair).Bid) return false;
       if (tm.FreezeType == Models.Freezing.None) return false;
       if (trade.Limit == 0) return true;
       if (tm.FreezeType == Models.Freezing.Freez && trade.Limit != 0) return false;
@@ -1038,7 +1080,7 @@ namespace HedgeHog.Alice.Client {
       stopNew = stopNew.Round(round);
       if (stopOld == stopNew) return false;
       if (tm.FreezeStopType == Models.Freezing.Freez && stopOld != 0) return false;
-      return trade.Stop == 0 || tm.ReverseOnProfit || trade.IsBuy && stopNew > stopOld || !trade.IsBuy && stopNew < stopOld;
+      return trade.Stop == 0 || trade.IsBuy && stopNew > stopOld || !trade.IsBuy && stopNew < stopOld;
     }
 
     #region Child trade helpers

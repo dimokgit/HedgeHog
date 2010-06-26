@@ -291,6 +291,18 @@ namespace Order2GoAddIn {
       if (TradeChanged != null) TradeChanged(this, new TradeEventArgs(Trade));
     }
 
+    public class SesstionStatusEventArgs : EventArgs {
+      public string Status { get; set; }
+      public SesstionStatusEventArgs(string status) {
+        this.Status = status;
+      }
+    }
+    public event EventHandler<SesstionStatusEventArgs> SessionStatusChanged;
+    private void OnSessionStatusChanged(string status) {
+      if (SessionStatusChanged != null) 
+        SessionStatusChanged(this, new SesstionStatusEventArgs(status));
+    }
+
 
 
     public class OrderEventArgs : EventArgs {
@@ -1601,6 +1613,7 @@ namespace Order2GoAddIn {
       mSink.ITradeDeskEvents_Event_OnRowBeforeRemoveEx += mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx;
       mSink.ITradeDeskEvents_Event_OnRequestCompleted += mSink_ITradeDeskEvents_Event_OnRequestCompleted;
       mSink.ITradeDeskEvents_Event_OnRequestFailed += mSink_ITradeDeskEvents_Event_OnRequestFailed;
+      mSink.ITradeDeskEvents_Event_OnSessionStatusChanged += mSink_ITradeDeskEvents_Event_OnSessionStatusChanged;
       mSubscriptionId = Desk.Subscribe(mSink);
       isSubsribed = true;
     }
@@ -1614,6 +1627,7 @@ namespace Order2GoAddIn {
           mSink.ITradeDeskEvents_Event_OnRowBeforeRemoveEx -= mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx;
           mSink.ITradeDeskEvents_Event_OnRequestCompleted -= mSink_ITradeDeskEvents_Event_OnRequestCompleted;
           mSink.ITradeDeskEvents_Event_OnRequestFailed -= mSink_ITradeDeskEvents_Event_OnRequestFailed;
+          mSink.ITradeDeskEvents_Event_OnSessionStatusChanged -= mSink_ITradeDeskEvents_Event_OnSessionStatusChanged;
         } catch { }
         mSink = null;
         try {
@@ -1815,6 +1829,9 @@ namespace Order2GoAddIn {
       RemovePendingOrder(PendingOrders.SingleOrDefault(po => po.RequestId == sRequestID));
     }
 
+    void mSink_ITradeDeskEvents_Event_OnSessionStatusChanged(string sStatus) {
+      OnSessionStatusChanged(sStatus);
+    }
 
 
     void mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx(object _table, string RowID, string sExtInfo) {

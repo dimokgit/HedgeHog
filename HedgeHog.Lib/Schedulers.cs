@@ -148,17 +148,19 @@ namespace HedgeHog {
       if (delay != TimeSpan.MinValue) Delay = delay;
       _timer = new Timer(o => {
         if (IsRunning) return;
-        WaitHandler.Reset();
-        IsRunning = true;
         TimerErrorException tex = null;
         try {
+          WaitHandler.Reset();
+          IsRunning = true;
           command();
           if (_period == infinity) Cancel();
         } catch (Exception exc) {
-          if (Error != null) Error(this,tex = new TimerErrorException(exc));
+          if (Error != null) Error(this, tex = new TimerErrorException(exc));
         } finally {
           IsRunning = false;
-          WaitHandler.Set();
+          try {
+            WaitHandler.Set();
+          } catch { }
           if (tex == null || !tex.CancelFinishedEvent) RaiseFinished();
         }
       },
