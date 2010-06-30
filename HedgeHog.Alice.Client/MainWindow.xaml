@@ -19,6 +19,7 @@
         Left="{state:UserSettings Default=100}"
     Top="{state:UserSettings Default=100}"
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
+        Closed="Window_Closed"
         Title="{Binding Title,StringFormat=Alice In: {0}}" xmlns:my="clr-namespace:HedgeHog.Alice.Client.Models" Loaded="Window_Loaded">
   <Window.Resources>
     <ResourceDictionary>

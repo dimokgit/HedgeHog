@@ -49,5 +49,11 @@ namespace HedgeHog.Alice.Client {
         (sender as Selector).SelectedIndex = -1;
     }
 
+    private void Window_Closed(object sender, EventArgs e) {
+      App.container.ReleaseExport(App.container.GetExport<IMainModel>());
+      foreach (var w in App.ChildWindows)
+        w.Close();
+    }
+
   }
 }

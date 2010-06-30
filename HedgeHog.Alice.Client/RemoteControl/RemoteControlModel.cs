@@ -56,6 +56,7 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
           var charter = new Corridors(pair);
           charters.Add(pair, charter);
+          App.ChildWindows.Add(charter);
           charter.Show();
         }));
       }
@@ -84,7 +85,7 @@ namespace HedgeHog.Alice.Client {
     public IQueryable<Models.TradingMacro> TradingMacros {
       get {
         try {
-          return !IsInDesigh ? GlobalStorage.Context.TradingMacroes : new[] { new Models.TradingMacro() }.AsQueryable();
+          return !IsInDesigh ? GlobalStorage.Context.TradingMacroes.OrderBy(tm=>tm.PairIndex) : new[] { new Models.TradingMacro() }.AsQueryable();
         } catch (Exception exc) {
           Debug.Fail("TradingMacros is null.");
           return null;
@@ -313,8 +314,6 @@ namespace HedgeHog.Alice.Client {
         MasterModel.CoreFX.LoggedInEvent -= CoreFX_LoggedInEvent;
         MasterModel.CoreFX.LoggedOffEvent -= CoreFX_LoggedOffEvent;
       }
-      foreach (var charter in charters.Values)
-        charter.Close();
     }
     #endregion
 
@@ -1003,7 +1002,7 @@ namespace HedgeHog.Alice.Client {
         .Where(r => r.StartDate >= tm.CorridorStats.StartDate).ToArray();
       return rts;
     }
-    private double GetLimitByFractal(Trade trade, IEnumerable<Rate> rates) {
+    private double GetLimitByFractal(Trade[] trades, Trade trade, IEnumerable<Rate> rates) {
       string pair = trade.Pair;
       bool isBuy = trade.IsBuy;
       var tm = GetTradingMacro(pair);
@@ -1014,9 +1013,12 @@ namespace HedgeHog.Alice.Client {
       Func<double> returnLimit = () => limit.Round(digits);
       if(tm.FreezeType != Models.Freezing.Freez) {
         if (tm.ReverseOnProfit) {
-          double rateMax, rateMin;
-          var leg = GetFibSlack(tm.FibMin, tm, out rateMax, out rateMin);
-          limit = isBuy ? rateMax - leg : rateMin + leg;
+          if (trades.Length > 1) {
+            limit = trade.IsBuy ? tm.CorridorStats.AverageHigh : tm.CorridorStats.AverageLow;
+          } else {
+            var leg = GetFibSlack(tm.FibMin, tm);
+            limit = isBuy ? tm.CorridorStats.AskHigh - leg : tm.CorridorStats.BidLow + leg;
+          }
           return returnLimit();
         }
         if (tm.TakeProfitPips == 0) return 0;
@@ -1043,15 +1045,7 @@ namespace HedgeHog.Alice.Client {
     private double GetFibSlack(double fib, string pair) { return GetFibSlack(fib, GetTradingMacro(pair)); }
     private double GetFibSlack(Models.TradingMacro tm) { return GetFibSlack(tm.FibMax, tm); }
     private double GetFibSlack(double fib, Models.TradingMacro tm) {
-      double rateMax, rateMin;
-      return GetFibSlack(fib, tm, out rateMax, out rateMin);
-    }
-    private double GetFibSlack(double fib, Models.TradingMacro tm, out double rateMax, out double rateMin) {
-      var ratesForLimit = GetRatesForCorridor(tm);
-      rateMax = ratesForLimit.Max(r => r.AskHigh);
-      rateMin = ratesForLimit.Min(r => r.BidLow);
-      var corridor = rateMax - rateMin;
-      var slack = fib.FibReverse().YofS(corridor);
+      var slack = fib.FibReverse().YofS(tm.CorridorStats.Heigth);
       tm.SlackInPips = fw.InPips(tm.Pair, slack);
       return slack;
     }
@@ -1065,12 +1059,12 @@ namespace HedgeHog.Alice.Client {
       try {
         var stopAmount = trades.Sum(t => t.StopAmount);
         foreach (var trade in trades)
-          CheckTrade(trade, stopAmount);
+          CheckTrade(trades, trade, stopAmount);
         UpdateEntryOrder(trades);
       } catch (Exception exc) { Log = exc; }
     }
 
-    private void CheckTrade(Trade trade, double stopAmount) {
+    private void CheckTrade(Trade[] trades, Trade trade, double stopAmount) {
       var tm = GetTradingMacro(trade.Pair);
       var round = fw.GetDigits(trade.Pair) - 1;
       if (tm.FreezeStopType != Models.Freezing.None) {
@@ -1080,7 +1074,7 @@ namespace HedgeHog.Alice.Client {
           ChangeTradeStop(trade, stopNew);
       }
       if (tm.FreezeType != Models.Freezing.None) {
-        var limitNew = GetLimitByFractal(trade, ratesByPair[trade.Pair]).Round(round);
+        var limitNew = GetLimitByFractal(trades, trade, ratesByPair[trade.Pair]).Round(round);
         if (DoLimit(trade, tm, limitNew, round))
           fw.FixCreateLimit(trade.Id, limitNew, "");
       }
