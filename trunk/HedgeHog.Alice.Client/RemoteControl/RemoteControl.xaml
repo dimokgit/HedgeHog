@@ -121,6 +121,7 @@
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
+        <DataGridTextColumn Binding="{Binding PairIndex}"/>
         <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
         <DataGridTextColumn Header="Ratio" Binding="{Binding TradingRatio,Mode=TwoWay}" />
         <DataGridTemplateColumn CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}">

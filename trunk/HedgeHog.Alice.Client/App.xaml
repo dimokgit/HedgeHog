@@ -5,6 +5,7 @@
         xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
              StartupUri="MainWindow.xaml"
+             ShutdownMode="OnMainWindowClose"
              Exit="Application_Exit"
              >
     <Application.Resources>

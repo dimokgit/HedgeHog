@@ -16,6 +16,7 @@ namespace HedgeHog.Alice.Client {
   public partial class App : Application {
     public static bool IsInDesignMode { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
   static public CompositionContainer container;
+  static public List<Window> ChildWindows = new List<Window>();
     App() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
@@ -38,7 +39,6 @@ namespace HedgeHog.Alice.Client {
         ) + ".backup" + Path.GetExtension(Connection.DataSource);
       if (File.Exists(newName)) File.Delete(newName);
       File.Copy(Connection.DataSource, newName);
-
     }
     protected override void OnStartup(StartupEventArgs e) {
       base.OnStartup(e);
