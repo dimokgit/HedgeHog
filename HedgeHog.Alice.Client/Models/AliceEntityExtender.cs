@@ -113,7 +113,7 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _CorridorFibAverage; }
       set {
         if (value != 0 && _CorridorFibAverage != value) {
-          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, _corrodorCmaPeriodHigh, value);
+          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, TicksPerMinuteAverage, value);
           OnPropertyChanged("CorridorFibAverage");
         }
       }
@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _CorridorFib; }
       set {
         if (value!= 0 && _CorridorFib != value) {
-          _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, _corrodorCmaPeriodLow, Math.Min(99, value.Abs()) * Math.Sign(value));
+          _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, TicksPerMinuteAverage, Math.Min(99, value.Abs()) * Math.Sign(value));
           CorridorFibAverage = _CorridorFib;
           OnPropertyChanged("CorridorFib");
         }
@@ -228,8 +228,8 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _TicksPerMinute; }
       set {
         if (_TicksPerMinute != value) {
-          _TicksPerMinute = value;
-          TicksPerMinuteAverage = value;
+          _TicksPerMinute = Lib.CMA(_TicksPerMinute, 0, Math.Max(1, TicksPerMinuteAverage.ToInt()), value);
+          TicksPerMinuteAverage = _TicksPerMinute;
           OnPropertyChanged("TicksPerMinute");
         }
       }
