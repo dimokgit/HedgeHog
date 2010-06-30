@@ -50,6 +50,18 @@ namespace HedgeHog.Alice.Client {
       fw.DeleteEntryOrderLimit(e.Order.OrderID);
     }
 
+    Dictionary<string, Corridors> charters = new Dictionary<string, Corridors>();
+    Corridors GetCharter(string pair) {
+      if (!charters.ContainsKey(pair)) {
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => {
+          var charter = new Corridors(pair);
+          charters.Add(pair, charter);
+          charter.Show();
+        }));
+      }
+      return charters[pair];
+    }
+
     public ObservableCollection<string> Instruments { get; set; }
 
     double CurrentLoss { get { return TradingMacrosCopy.Sum(tm => tm.CurrentLoss); } }
@@ -289,6 +301,7 @@ namespace HedgeHog.Alice.Client {
           fw = new FXW(MasterModel.CoreFX);
           MasterModel.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
           MasterModel.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
+
         }
       } catch (Exception exc) {
         Log = exc;
@@ -300,6 +313,8 @@ namespace HedgeHog.Alice.Client {
         MasterModel.CoreFX.LoggedInEvent -= CoreFX_LoggedInEvent;
         MasterModel.CoreFX.LoggedOffEvent -= CoreFX_LoggedOffEvent;
       }
+      foreach (var charter in charters.Values)
+        charter.Close();
     }
     #endregion
 
@@ -326,6 +341,8 @@ namespace HedgeHog.Alice.Client {
         var propsToHandle = Lib.GetLambdas(() => tm.Pair, () => tm.TradingRatio, () => tm.Limit);
         if (propsToHandle.Contains(e.PropertyName)) SetLotSize(tm, fw.GetAccount());
         //if (e.PropertyName == Lib.GetLambda(() => tm.OverlapToStop)) LoadRates(tm.Pair);
+        if (e.PropertyName == Lib.GetLambda(() => tm.CorridorBarMinutes))
+          ratesByPair[tm.Pair].Clear();
         if (e.PropertyName == Lib.GetLambda(() => tm.CurrentLoss)) {
           System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => {
             try {
@@ -369,15 +386,15 @@ namespace HedgeHog.Alice.Client {
 
 
     ThreadSchedulersDispenser ScanCorridorSchedulers = new ThreadSchedulersDispenser();
-    private void ScanCorridor(string pair, IEnumerable<Rate> rates) {
+    private void ScanCorridor(string pair, List<Rate> rates) {
       try {
         var tm = GetTradingMacro(pair);
-        var corridorStats = rates.ScanCorridors(tm.Overlap.ToInt(), tm.CorridorIterationsCalc, tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
-        var mb = tm.MinutesBack;
-        tm.Corridornes = tm.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? corridorStats.Density : 1 / corridorStats.Density;
-        tm.CorridorMinutes = Lib.CMA(tm.CorridorMinutes, 0, 1, corridorStats.Minutes).ToInt();
+        var mb = tm.CorridorStats == null ? DateTime.MinValue : tm.CorridorStats.StartDate;
+        tm.CorridorStats = rates.ScanCorridors(tm.Overlap.ToInt(), tm.CorridorIterationsCalc, tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
         var ratesForCorridor = GetRatesForCorridor(ratesByPair[pair], tm);
-        tm.Limit = fw.InPips(tm.Pair, ratesForCorridor.Max(r => r.AskHigh) - ratesForCorridor.Min(r => r.BidLow)).Round(1);
+        var askHigh = ratesForCorridor.Max(r => r.AskHigh);
+        var bidLow = ratesForCorridor.Min(r => r.BidLow);
+        tm.Limit = fw.InPips(tm.Pair, askHigh - bidLow).Round(1);
         var updateStop = false;// mb > 0 && tm.MinutesBack > mb + 3;
         if (tm.FreezeStopType != Models.Freezing.Freez && updateStop) {
           var trades = fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
@@ -385,12 +402,16 @@ namespace HedgeHog.Alice.Client {
             var lastTradeDate = trades.Max(t => t.Time);
             foreach (var trade in trades) {
               try {
-                var newStop = GetStopByFractal(trade.Pair, rates.Take(rates.Count() - mb), trade.IsBuy, lastTradeDate);
+                var newStop = GetStopByFractal(trade.Pair, rates.Where(r => r.StartDate < mb), trade.IsBuy, lastTradeDate);
                 ChangeTradeStop(trade, newStop);
               } catch (Exception exc) { Log = exc; }
             }
           }
         }
+          var charter = GetCharter(pair);
+          new Scheduler(charter.Dispatcher).Command = () => {
+            charter.AddTicks(null, rates, null, 0, 0, 0, 0, tm.CorridorStats.AverageHigh, tm.CorridorStats.AverageLow, tm.CorridorStats.StartDate, DateTime.MinValue, new double[0]);
+          };
       } catch (Exception exc) {
         Log = exc;
       }
@@ -403,7 +424,8 @@ namespace HedgeHog.Alice.Client {
       var queue = PriceStackGet(price.Pair);
       if (queue.Count > 300) queue.Dequeue();
       queue.Enqueue(price);
-      GetTradingMacro(price.Pair).TickPerMinute = (queue.Count / (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes).ToInt();
+      var totalMinutes = (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes;
+      GetTradingMacro(price.Pair).TicksPerMinute = queue.Count / Math.Max(1, totalMinutes);
     }
 
     private Queue<Price> PriceStackGet(string pair) {
@@ -437,6 +459,7 @@ namespace HedgeHog.Alice.Client {
         var tm = GetTradingMacro(pair);
         if (tm == null) return;
         var trades = fw.GetTrades(tm.Pair);
+        tm.Positions = trades.Length;
         var tl = GetTickLoader(pair);
         if (!tl.IsRunning) tl.Run();
         var summary = fw.GetSummary(pair);
@@ -717,12 +740,14 @@ namespace HedgeHog.Alice.Client {
         try {
           var sw = Stopwatch.StartNew();
           var dateEnd = fw.ServerTime.Round();
-          var rates = fw.GetBars(pair, 1, DateTime.MinValue);
+          var rates = ratesByPair[pair];// fw.GetBars(pair, tm.CorridorBarMinutes, DateTime.MinValue);
+          var minutesBack = tm.CorridorBarMinutes * historyMinutesBack;
+          fw.GetBars(pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
           if (sw.Elapsed > TimeSpan.FromSeconds(5))
             Debug.WriteLine("GetRates[" + pair + "]:{0:n2} sec", sw.ElapsedMilliseconds / 1000.0);
           var price = fw.GetPrice(pair);
           CurrentRateAdd(pair, fw.ServerTime, price.Ask, price.Bid, true);
-          rates = rates.Skip(rates.Count - historyMinutesBack).Concat(new[] { CurrentRate(pair) }).ToList();
+          rates = rates.Skip(rates.Count - minutesBack).Concat(new[] { CurrentRate(pair) }).ToList();
           ratesByPair[pair] = rates;
           FillOverlaps(pair, rates);
           tm.LastRateTime = rates.Max(r => r.StartDate);
@@ -740,20 +765,14 @@ namespace HedgeHog.Alice.Client {
         ThreadScheduler.infinity, () => LoadRates(pair), (s, e) => Log = e.Exception);
     }
 
-    int MinutesBack(Models.TradingMacro tm) { return tm.MinutesBack; }
-
     private void FillOverlaps(string pair, IEnumerable<Rate> rates) {
       var ratesOverlap = rates.ToArray().Reverse().ToArray();
       ratesOverlap.FillOverlaps();
       var overlapAverage = ratesOverlap.Select(r => r.Overlap).Average();
       var tm = GetTradingMacro(pair);
       var highOverlapPeriod = 5;
-      var mb = MinutesBack(tm);
       tm.Overlap = Math.Ceiling(overlapAverage.TotalMinutes).ToInt();
       tm.Overlap5 = Math.Ceiling(rates.ToArray().GetMinuteTicks(highOverlapPeriod).OrderBarsDescending().ToArray().FillOverlaps().Where(r => r.Overlap != TimeSpan.Zero).Select(r => r.Overlap).Average().TotalMinutes / highOverlapPeriod).ToInt();
-      //var trade = fw.GetTrades(pair).FirstOrDefault();
-      //if (tm.FreezeStopType == Models.Freezing.Float  && trade != null && mb < MinutesBack(tm))
-      //    fw.FixOrderSetStop(trade.Id, 0, "");
     }
 
     double GetCorridorByMinutesBack(Models.TradingMacro tm) {
@@ -974,8 +993,7 @@ namespace HedgeHog.Alice.Client {
     }
     private Rate[] GetRatesForCorridor(IEnumerable<Rate> rates, Models.TradingMacro tm) {
       var rts = rates//.Where(r => r.Spread <= slack * 2)
-        .Where(r => r.StartDate >= fw.ServerTime.AddMinutes(-MinutesBack(tm))).ToArray();
-      tm.RateFirst = rts.First();
+        .Where(r => r.StartDate >= tm.CorridorStats.StartDate).ToArray();
       return rts;
     }
     private double GetLimitByFractal(Trade trade, IEnumerable<Rate> rates) {
@@ -1008,11 +1026,11 @@ namespace HedgeHog.Alice.Client {
 
     #region GetSlack
     double GetSlack(string pair) {
-      var slack = GetFibSlack(pair);
+      return GetFibSlack(pair);
       //var rates = ratesByPair[pair].Skip(ratesByPair[pair].Count - GetTradingMacro(pair).MinutesBack);
       //var slack = rates.Average(r => r.Spread);
-      GetTradingMacro(pair).SlackInPips = fw.InPips(pair, slack);
-      return slack;
+      //GetTradingMacro(pair).SlackInPips = fw.InPips(pair, slack);
+      //return slack;
     }
     private double GetFibSlack(string pair) { return GetFibSlack(GetTradingMacro(pair)); }
     private double GetFibSlack(double fib, string pair) { return GetFibSlack(fib, GetTradingMacro(pair)); }
@@ -1026,7 +1044,9 @@ namespace HedgeHog.Alice.Client {
       rateMax = ratesForLimit.Max(r => r.AskHigh);
       rateMin = ratesForLimit.Min(r => r.BidLow);
       var corridor = rateMax - rateMin;
-      return fib.FibReverse().YofS(corridor);
+      var slack = fib.FibReverse().YofS(corridor);
+      tm.SlackInPips = fw.InPips(tm.Pair, slack);
+      return slack;
     }
     #endregion
     #endregion

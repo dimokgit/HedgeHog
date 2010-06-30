@@ -23,11 +23,13 @@ DataContext="{Binding RelativeSource={RelativeSource Self}}"
       </WrapPanel>
       <WrapPanel VerticalAlignment="Center">
         <ComboBox ItemsSource="{Binding Instruments}" />
-        <ui:TextBox Text="{Binding PeriodsBack,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="DaysBack"/>
+        <ui:TextBox Text="{Binding PeriodsBack,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="Periods Back"/>
         <ui:TextBox Text="{Binding RsiPeriods,Mode=TwoWay}" MinWidth="20" Text2="{state:UserSettings}" ToolTip="Rsi Days"/>
-        <ComboBox SelectedValue="{Binding Period}">
+        <ComboBox SelectedValue="{Binding Period}" ToolTip="Period in minutes">
           <sys:Int32>1</sys:Int32>
+          <sys:Int32>5</sys:Int32>
           <sys:Int32>15</sys:Int32>
+          <sys:Int32>30</sys:Int32>
           <sys:Int32>60</sys:Int32>
           <sys:Int32>1440</sys:Int32>
         </ComboBox>

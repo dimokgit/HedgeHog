@@ -360,7 +360,8 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="corridorIterationsIn">Initial value of the CorridorIterationsIn property.</param>
         /// <param name="corridorIterationsOut">Initial value of the CorridorIterationsOut property.</param>
         /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations)
+        /// <param name="corridorBarMinutes">Initial value of the CorridorBarMinutes property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -379,6 +380,7 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.CorridorIterationsIn = corridorIterationsIn;
             tradingMacro.CorridorIterationsOut = corridorIterationsOut;
             tradingMacro.CorridorIterations = corridorIterations;
+            tradingMacro.CorridorBarMinutes = corridorBarMinutes;
             return tradingMacro;
         }
 
@@ -771,6 +773,30 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _CorridorIterations;
         partial void OnCorridorIterationsChanging(global::System.Int32 value);
         partial void OnCorridorIterationsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorBarMinutes
+        {
+            get
+            {
+                return _CorridorBarMinutes;
+            }
+            set
+            {
+                OnCorridorBarMinutesChanging(value);
+                ReportPropertyChanging("CorridorBarMinutes");
+                _CorridorBarMinutes = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorBarMinutes");
+                OnCorridorBarMinutesChanged();
+            }
+        }
+        private global::System.Int32 _CorridorBarMinutes;
+        partial void OnCorridorBarMinutesChanging(global::System.Int32 value);
+        partial void OnCorridorBarMinutesChanged();
 
         #endregion
     

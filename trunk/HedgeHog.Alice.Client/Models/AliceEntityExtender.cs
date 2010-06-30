@@ -146,9 +146,21 @@ namespace HedgeHog.Alice.Client.Models {
         if (_currentLot == value) return;
         _currentLot = value;
         OnPropertyChanged("CurrentLot");
-        OnPropertyChanged("CorridorIterationsCalc");
       }
     }
+
+    private HedgeHog.Bars.CorridorStatistics _CorridorStats;
+    public HedgeHog.Bars.CorridorStatistics CorridorStats {
+      get { return _CorridorStats; }
+      set {
+        if (_CorridorStats != value) {
+          _CorridorStats = value;
+          Corridornes = CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? _CorridorStats.Density : 1 / _CorridorStats.Density;
+          OnPropertyChanged("CorridorStats");
+        }
+      }
+    }
+
 
     double _corridornes;
     public double Corridornes {
@@ -165,29 +177,6 @@ namespace HedgeHog.Alice.Client.Models {
     public bool IsCorridornessOk {
       get { return Corridornes <= CorridornessMin; }
     }
-
-
-    int _corridorMinutes;
-
-    public int CorridorMinutes {
-      get { return _corridorMinutes; }
-      set {
-        if (_corridorMinutes == value) return;
-        _corridorMinutes = value;
-        OnPropertyChanged("CorridorMinutes");
-        OnPropertyChanged("MinutesBack");
-      }
-    }
-
-    public int MinutesBack {
-      get {
-        //if (CorridorCalcMethod == Models.CorridorCalculationMethod.Density && Corridornes > .5) 
-          return CorridorMinutes;
-        var div = CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Corridornes : 1;
-        return div == 0 ? 0 : (CorridorMinutes / div).ToInt();
-      }
-    }
-
 
     DateTime _lastRateTime;
     public DateTime LastRateTime {
@@ -234,14 +223,24 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    private int _TickPerMinute;
-    public int TickPerMinute {
-      get { return _TickPerMinute; }
+    private double _TicksPerMinute;
+    public double TicksPerMinute {
+      get { return _TicksPerMinute; }
       set {
-        if (_TickPerMinute != value) {
-          _TickPerMinute = value;
-          OnPropertyChanged("TickPerMinute");
+        if (_TicksPerMinute != value) {
+          _TicksPerMinute = value;
+          TicksPerMinuteAverage = value;
+          OnPropertyChanged("TicksPerMinute");
         }
+      }
+    }
+
+    private double _TicksPerMinuteAverage;
+    public double TicksPerMinuteAverage {
+      get { return _TicksPerMinuteAverage; }
+      set {
+        _TicksPerMinuteAverage = Lib.CMA(_TicksPerMinuteAverage, 0, Math.Max(1, value.ToInt()), value);
+        OnPropertyChanged("TicksPerMinuteAverage");
       }
     }
 
@@ -384,19 +383,20 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    private Rate _RateFirst;
-    public Rate RateFirst {
-      get { return _RateFirst; }
+    private int _Positions;
+    public int Positions {
+      get { return _Positions; }
       set {
-        if (_RateFirst != value) {
-          _RateFirst = value;
-          OnPropertyChanged("RateFirst");
+        if (_Positions != value) {
+          _Positions = value;
+          OnPropertyChanged("Positions");
+          OnPropertyChanged("CorridorIterationsCalc");
         }
       }
     }
 
 
-    public int CorridorIterationsCalc { get { return CurrentLot > 0 ? CorridorIterationsOut : CorridorIterationsIn; } }
+    public int CorridorIterationsCalc { get { return Positions == 1 ? CorridorIterationsOut : CorridorIterationsIn; } }
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
