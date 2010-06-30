@@ -394,7 +394,7 @@ namespace HedgeHog.Alice.Client {
         var ratesForCorridor = GetRatesForCorridor(ratesByPair[pair], tm);
         var askHigh = ratesForCorridor.Max(r => r.AskHigh);
         var bidLow = ratesForCorridor.Min(r => r.BidLow);
-        tm.Limit = fw.InPips(tm.Pair, askHigh - bidLow).Round(1);
+        tm.Limit = fw.InPips(tm.Pair, tm.CorridorStats.Heigth).Round(1);
         var updateStop = false;// mb > 0 && tm.MinutesBack > mb + 3;
         if (tm.FreezeStopType != Models.Freezing.Freez && updateStop) {
           var trades = fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
@@ -504,8 +504,12 @@ namespace HedgeHog.Alice.Client {
       var fibAvg = tm.CorridorFibAverage.Round(1);
       double fibMin = tm.FibMin, fibMax = tm.FibMax;
       bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
-      if (buy.HasValue && !TradeExists(pair, buy.Value, t => t.Limit == 0 || t.IsBuy && t.Limit > t.Open || !t.IsBuy && t.Limit < t.Open)) {
-        var trades = fw.GetTrades(pair);
+      var trades = fw.GetTrades(pair);
+      var maxPL = trades.Max(t => t.PL);
+      if (buy.HasValue 
+        && !TradeExists(trades, pair, buy.Value, t => t.Limit == 0 || t.IsBuy && t.Limit > t.Open || !t.IsBuy && t.Limit < t.Open)
+        && (trades.Length == 0 || maxPL < -tm.Limit)
+        ) {
         var tradesToClose = trades.Where(t => t.IsBuy != buy).ToArray();
         if (tradesToClose.Length > 0) {
           try {
@@ -799,9 +803,12 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region TradeExists
-    bool TradeExists(Trade trade,Func<Trade,bool> condition) { return TradeExists(trade.Pair, trade.IsBuy,condition); }
-    bool TradeExists(string pair, bool isBuy, Func<Trade, bool> condition) { 
-      return fw.GetTrades(pair).Any(t => t.IsBuy == isBuy && condition(t)); 
+    bool TradeExists(Trade[] trades,Func<Trade,bool> condition) {
+      if( trades.Length == 0)return false;
+      return TradeExists(trades, trades[0].Pair, trades[0].IsBuy,condition); 
+    }
+    bool TradeExists(Trade[] trades, string pair, bool isBuy, Func<Trade, bool> condition) { 
+      return trades.Any(t => t.IsBuy == isBuy && condition(t)); 
     }
     #endregion
 

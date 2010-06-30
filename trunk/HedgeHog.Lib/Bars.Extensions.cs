@@ -34,6 +34,7 @@ namespace HedgeHog.Bars {
     public double Density { get; set; }
     public double AskHigh { get; set; }
     public double BidLow { get; set; }
+    public double Heigth { get { return AskHigh - BidLow; } }
     public DateTime EndDate { get; set; }
     public DateTime StartDate { get; set; }
     public int Periods { get; set; }
