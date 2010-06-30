@@ -269,6 +269,10 @@
     <Folder Include="Data\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
+      <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
+      <Name>HedgeHog.Charter</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.FXCM\HedgeHog.FXCM.csproj">
       <Project>{18E142A3-5835-4AD3-8462-DD2D8C725756}</Project>
       <Name>HedgeHog.FXCM</Name>

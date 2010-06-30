@@ -51,7 +51,7 @@ namespace Temp {
       Instruments = new ListCollectionView(instruments = new ObservableCollection<string>(new string[] { "" }));
       Instruments.CurrentChanged += Instruments_CurrentChanged;
       InitializeComponent();
-      if (!fw.CoreFX.LogOn("MICR485510001", "9071", true)) System.Diagnostics.Debug.Fail("Login");
+      if (!fw.CoreFX.LogOn("MICR498120001", "6648", true)) System.Diagnostics.Debug.Fail("Login");
       else {
         fw.PendingOrderCompleted += fw_PendingOrderCompleted;
         fw.TradeAdded += fw_TradeAdded;
@@ -101,12 +101,13 @@ namespace Temp {
         }
         ClearLog();
         AddLog("Rates.");
-        fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+        fw.GetBars(fw.Pair, Period, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
         AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
         var corridorStats = rates.ScanCorridors(CorridorIterations, CorridorIterations, UseStDev);
-        AddLog("Chart Corridor["+corridorStats.Minutes+"] minutes.");
+        var corridorMinutes = corridorStats.Periods * Period;
+        AddLog("Chart Corridor["+corridorStats.Periods+"] minutes.");
         new Scheduler(charter.Dispatcher).Command = () =>
-          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AskHigh, corridorStats.BidLow, rates.Last().StartDate.AddMinutes(-corridorStats.Minutes), DateTime.MinValue, new double[0]);
+          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AskHigh, corridorStats.BidLow, rates.Last().StartDate.AddMinutes(-corridorStats.Periods*Period), DateTime.MinValue, new double[0]);
       }
     }
     public void MinuteRsi() {

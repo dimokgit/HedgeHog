@@ -62,6 +62,7 @@
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
         <WrapPanel>
           <TextBlock Text="{Binding Net,StringFormat=c1}"/>
+          <TextBlock Text="{Binding Positions,StringFormat=/{0}}"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
         </WrapPanel>
       </Label>
@@ -133,7 +134,7 @@
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
-        <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}"></DataGridTemplateColumn>
+        <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}" Visibility="Collapsed"></DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Buy" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Sell" CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
 
@@ -145,12 +146,12 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
-                <TextBlock Text="{Binding RateFirst.StartDate,StringFormat='HH:mm'}">
+                <TextBlock Text="{Binding CorridorStats.StartDate,StringFormat='HH:mm'}">
         <TextBlock.ToolTip>
           <ToolTip>
             <TextBlock>
-                    <TextBlock FontWeight="Black">Minutes:</TextBlock>
-                    <TextBlock Text="{Binding CorridorMinutes,StringFormat=n0}"></TextBlock>
+              <TextBlock FontWeight="Black">Minutes:</TextBlock>
+              <TextBlock Text="{Binding CorridorStats.StartDate,StringFormat='d HH:mm'}"/>
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
@@ -205,6 +206,19 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.Header>
+            <TextBlock ToolTip="Ticks Per Second">TPS</TextBlock>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n0}"/>
+                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n0}]}"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="$/Lot" IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
@@ -221,7 +235,10 @@
         <DataGridTemplateColumn Header="CI">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding CorridorIterationsCalc}"/>
+              <WrapPanel>
+                <TextBlock Text="{Binding CorridorStats.Iterations}"/>
+                <TextBlock Text="{Binding CorridorIterationsCalc,StringFormat=[{0}]}" ToolTip="Current Iterations"/>
+              </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
@@ -238,7 +255,18 @@
         <DataGridComboBoxColumn Header="FZ" SelectedValueBinding="{Binding FreezeType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
         <DataGridComboBoxColumn Header="FS" SelectedValueBinding="{Binding FreezeStopType}" ItemsSource="{Binding Source={StaticResource FreezeValues}}" />
         <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
-        <DataGridTextColumn Header="RateTime" Binding="{Binding LastRateTime,StringFormat=HH:mm}" IsReadOnly="True"/>
+        <DataGridTemplateColumn Header="RateTime">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding LastRateTime,StringFormat=HH:mm}"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding CorridorBarMinutes}"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
 

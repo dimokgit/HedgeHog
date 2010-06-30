@@ -260,15 +260,33 @@ namespace Order2GoAddIn {
     }
 
     public delegate void PriceChangedEventHandler(Price Price);
-    public event PriceChangedEventHandler PriceChanged;
+    event PriceChangedEventHandler PriceChangedEvent;
+    public event PriceChangedEventHandler PriceChanged {
+      add {
+        if (PriceChangedEvent==null || !PriceChangedEvent.GetInvocationList().Contains(value))
+          PriceChangedEvent += value;
+      }
+      remove {
+        PriceChangedEvent -= value;
+      }
+    }
     protected void OnPriceChanged(Price price) {
-      if (PriceChanged != null) PriceChanged(price);
+      if (PriceChangedEvent != null) PriceChangedEvent(price);
     }
 
     public delegate void OrderRemovedEventHandler(Order order);
-    public event OrderRemovedEventHandler OrderRemoved;
+    event OrderRemovedEventHandler OrderRemovedEvent;
+    public event OrderRemovedEventHandler OrderRemoved {
+      add {
+        if (OrderRemovedEvent==null || !OrderRemovedEvent.GetInvocationList().Contains(value))
+          OrderRemovedEvent += value;
+      }
+      remove {
+        OrderRemovedEvent -= value;
+      }
+    }
     void RaiseOrderRemoved(Order order) {
-      if (OrderRemoved != null) OrderRemoved(order);
+      if (OrderRemovedEvent != null) OrderRemovedEvent(order);
     }
 
     public delegate void TradeAddedEventHandler(Trade trade);
@@ -615,6 +633,7 @@ namespace Order2GoAddIn {
     public List<Rate> GetBars(string pair, int period, DateTime startDate, DateTime endDate) {
       lock (lockHistory) {
         if (endDate != FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
+        startDate = ConvertDateToUTC(startDate);
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
           ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
           .Cast<FXCore.MarketRateAut>().ToArray();
@@ -635,16 +654,17 @@ namespace Order2GoAddIn {
       else {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
-          Bars = Bars.Union(GetBarsBase(pair, Period, StartDate, minimumDate)).OrderBars().ToList();
+          Bars = GetBarsBase(pair, Period, StartDate, minimumDate).Union(Bars).OrderBars().ToList();
         var maximumDate = Bars.Max(b => b.StartDate);
         if (EndDate == DateTime.FromOADate(0) || EndDate > maximumDate) {
           var b = GetBarsBase(pair, Period, maximumDate, EndDate);
-          Bars = Bars.Union(b).OrderBars().ToList();
+          Bars = b.Union(Bars).OrderBars().ToList();
         }
       }
       if (EndDate != DateTime.FromOADate(0))
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
           Bars.Remove(bar);
+      Bars = Bars.OrderBars().ToList();
     }
     #endregion
 
