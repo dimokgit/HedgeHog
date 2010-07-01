@@ -101,6 +101,10 @@ namespace HedgeHog.Alice.Client {
       }
     }
     Dictionary<string, List<Rate>> ratesByPair = new Dictionary<string, List<Rate>>();
+    List<Rate> GetRatesByPair(string pair) {
+      if (!ratesByPair.ContainsKey(pair)) ratesByPair.Add(pair, new List<Rate>());
+      return ratesByPair[pair];
+    }
     Dictionary<string, Tick[]> ticksByPair = new Dictionary<string, Tick[]>();
     Dictionary<string, double> anglesByPair = new Dictionary<string, double>();
 
@@ -386,9 +390,12 @@ namespace HedgeHog.Alice.Client {
 
     ThreadSchedulersDispenser ScanCorridorSchedulers = new ThreadSchedulersDispenser();
     private void ScanCorridor(string pair, List<Rate> rates) {
+      if (rates.Count == 0) return;
       try {
+        var trades = fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
         var tm = GetTradingMacro(pair);
         var mb = tm.CorridorStats == null ? DateTime.MinValue : tm.CorridorStats.StartDate;
+        tm.CorridorIterationsCalc = trades.Length == 0 || trades.Max(t => t.PL) > 0 ? tm.CorridorIterationsOut : tm.CorridorIterationsIn;
         tm.CorridorStats = rates.ScanCorridors(tm.Overlap.ToInt(), tm.CorridorIterationsCalc, tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
         var ratesForCorridor = GetRatesForCorridor(ratesByPair[pair], tm);
         var askHigh = ratesForCorridor.Max(r => r.AskHigh);
@@ -396,7 +403,6 @@ namespace HedgeHog.Alice.Client {
         tm.Limit = fw.InPips(tm.Pair, tm.CorridorStats.Heigth).Round(1);
         var updateStop = false;// mb > 0 && tm.MinutesBack > mb + 3;
         if (tm.FreezeStopType != Models.Freezing.Freez && updateStop) {
-          var trades = fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
           if (trades.Length > 0) {
             var lastTradeDate = trades.Max(t => t.Time);
             foreach (var trade in trades) {
@@ -437,7 +443,7 @@ namespace HedgeHog.Alice.Client {
       if (tm != null) {
         PriceStackAdd(price);
         CurrentRateAdd(pair, fw.ServerTime, price.Ask, price.Bid, false);
-        ScanCorridorSchedulers.Run(pair, () => ScanCorridor(pair, ratesByPair[pair]));
+        ScanCorridorSchedulers.Run(pair, () => ScanCorridor(pair, GetRatesByPair(pair)));
       }
       if (!CanTrade(price.Pair)) return;
       RunPriceSchedulers.Run(pair, () => RunPrice(price));
@@ -502,11 +508,12 @@ namespace HedgeHog.Alice.Client {
       var fib = tm.CorridorFib.Round(1);
       var fibAvg = tm.CorridorFibAverage.Round(1);
       double fibMin = tm.FibMin, fibMax = tm.FibMax;
-      bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
+      //bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
+      bool? buy = fib > fibAvg && fibAvg < -fibMax ? true : fib < fibMax && fibAvg > fibMax ? false : (bool?)null;
       var trades = fw.GetTrades(pair);
-      var maxPL = trades.Max(t => t.PL);
-      if (buy.HasValue
-        && !TradeExists(trades, pair, buy.Value, t => t.IsBuy && tm.CorridorStats.AskHigh > t.Open || !t.IsBuy && tm.CorridorStats.BidLow < t.Open)
+      var maxPL = trades.Length == 0 ? 0 : trades.Max(t => t.PL);
+      if (buy.HasValue 
+        && !TradeExists(trades, pair, buy.Value, t => t.Limit == 0 || t.IsBuy && t.Limit > t.Open || !t.IsBuy && t.Limit < t.Open)
         && (trades.Length == 0 || maxPL < -tm.Limit)
         ) {
         var tradesToClose = trades.Where(t => t.IsBuy != buy).ToArray();
