@@ -395,8 +395,18 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    private int _CorridorIterationsCalc;
+    public int CorridorIterationsCalc {
+      get { return _CorridorIterationsCalc; }
+      set {
+        if (_CorridorIterationsCalc != value) {
+          _CorridorIterationsCalc = value;
+          OnPropertyChanged("CorridorIterationsCalc");
+        }
+      }
+    }
 
-    public int CorridorIterationsCalc { get { return Positions == 1 ? CorridorIterationsOut : CorridorIterationsIn; } }
+    public int CorridorIterationsCalc_ { get { return Positions == 1 ? CorridorIterationsOut : CorridorIterationsIn; } }
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
