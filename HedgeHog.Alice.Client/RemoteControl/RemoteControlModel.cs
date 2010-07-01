@@ -505,8 +505,8 @@ namespace HedgeHog.Alice.Client {
       bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
       var trades = fw.GetTrades(pair);
       var maxPL = trades.Max(t => t.PL);
-      if (buy.HasValue 
-        && !TradeExists(trades, pair, buy.Value, t => t.Limit == 0 || t.IsBuy && t.Limit > t.Open || !t.IsBuy && t.Limit < t.Open)
+      if (buy.HasValue
+        && !TradeExists(trades, pair, buy.Value, t => t.IsBuy && tm.CorridorStats.AskHigh > t.Open || !t.IsBuy && tm.CorridorStats.BidLow < t.Open)
         && (trades.Length == 0 || maxPL < -tm.Limit)
         ) {
         var tradesToClose = trades.Where(t => t.IsBuy != buy).ToArray();
