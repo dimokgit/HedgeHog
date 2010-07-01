@@ -1020,12 +1020,8 @@ namespace HedgeHog.Alice.Client {
       Func<double> returnLimit = () => limit.Round(digits);
       if(tm.FreezeType != Models.Freezing.Freez) {
         if (tm.ReverseOnProfit) {
-          if (trades.Length > 1) {
-            limit = trade.IsBuy ? tm.CorridorStats.AverageHigh : tm.CorridorStats.AverageLow;
-          } else {
-            var leg = GetFibSlack(tm.FibMin, tm);
-            limit = isBuy ? tm.CorridorStats.AskHigh - leg : tm.CorridorStats.BidLow + leg;
-          }
+          var leg = GetFibSlack(tm.FibMin, tm);
+          limit = isBuy ? tm.CorridorStats.AskHigh - leg : tm.CorridorStats.BidLow + leg;
           return returnLimit();
         }
         if (tm.TakeProfitPips == 0) return 0;
