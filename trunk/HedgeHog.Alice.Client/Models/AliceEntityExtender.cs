@@ -106,15 +106,14 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    int _corrodorCmaPeriodHigh = 10;
-    int _corrodorCmaPeriodLow = 10;
-    private double _CorridorFibAverage;
-    public double CorridorFibAverage {
-      get { return _CorridorFibAverage; }
+    private double _CorridorFibInstant;
+    public double CorridorFibInstant {
+      get { return _CorridorFibInstant; }
       set {
-        if (value != 0 && _CorridorFibAverage != value) {
-          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, TicksPerMinuteAverage, value);
-          OnPropertyChanged("CorridorFibAverage");
+        if (_CorridorFibInstant != value) {
+          _CorridorFibInstant = value;
+          CorridorFib = value;
+          OnPropertyChanged("CorridorFibInstant");
         }
       }
     }
@@ -131,12 +130,23 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    private double _CorridorFibAverage;
+    public double CorridorFibAverage {
+      get { return _CorridorFibAverage; }
+      set {
+        if (value != 0 && _CorridorFibAverage != value) {
+          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, TicksPerMinuteAverage, value);
+          OnPropertyChanged("CorridorFibAverage");
+        }
+      }
+    }
+
 
 
     public void SetCorridorFib(double buyStop, double sellStop) {
       BuyStopByCorridor = buyStop;
       SellStopByCorridor = sellStop;
-      CorridorFib = BuyStopByCorridor == 0 || SellStopByCorridor == 0 ? 0 : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+      CorridorFibInstant = BuyStopByCorridor == 0 || SellStopByCorridor == 0 ? 0 : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
     }
 
     int _currentLot;
