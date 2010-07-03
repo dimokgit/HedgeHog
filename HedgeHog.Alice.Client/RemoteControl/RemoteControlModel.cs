@@ -505,11 +505,15 @@ namespace HedgeHog.Alice.Client {
       };
       var rfh = new EventHandler<FXW.RequestEventArgs>(reqiesFailedAction);
       var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
+      var fibInstant = tm.CorridorFibInstant.Round(1);
       var fib = tm.CorridorFib.Round(1);
       var fibAvg = tm.CorridorFibAverage.Round(1);
       double fibMin = tm.FibMin, fibMax = tm.FibMax;
       //bool? buy = fib.Between(-fibMax, -fibMin) && fibAvg < -fibMax ? true : fib.Between(fibMin, fibMax) && fibAvg > fibMax ? false : (bool?)null;
-      bool? buy = fib > fibAvg && fibAvg < -fibMax ? true : fib < fibMax && fibAvg > fibMax ? false : (bool?)null;
+      bool? buy =
+        fib > fibAvg && fibAvg < -fibMax && fibInstant < -fibMax / 2 ? true :
+        fib < fibMax && fibAvg > +fibMax && fibInstant > +fibMax / 2 ? false :
+        (bool?)null;
       var trades = fw.GetTrades(pair);
       var maxPL = trades.Length == 0 ? 0 : trades.Max(t => t.PL);
       if (buy.HasValue 
@@ -742,7 +746,8 @@ namespace HedgeHog.Alice.Client {
     void LoadRates(string pair) {
       var error = false;
       var tm = GetTradingMacro(pair);
-      if (ratesByPair.ContainsKey(pair) && ratesByPair[pair].Count > 0 && !IsLoggedIn) {
+      var rates = GetRatesByPair(pair);
+      if (rates.Count > 0 && !IsLoggedIn) {
         MasterModel.CoreFX.LogOn();
       }
       if (tm == null || !IsLoggedIn || tm.TradingRatio == 0) error = true;
@@ -750,8 +755,8 @@ namespace HedgeHog.Alice.Client {
         try {
           var sw = Stopwatch.StartNew();
           var dateEnd = fw.ServerTime.Round();
-          var rates = ratesByPair[pair];// fw.GetBars(pair, tm.CorridorBarMinutes, DateTime.MinValue);
           var minutesBack = tm.CorridorBarMinutes * historyMinutesBack;
+          rates = rates.Take(rates.Count - 2).ToList();
           fw.GetBars(pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
           if (sw.Elapsed > TimeSpan.FromSeconds(5))
             Debug.WriteLine("GetRates[" + pair + "]:{0:n2} sec", sw.ElapsedMilliseconds / 1000.0);
@@ -1078,7 +1083,10 @@ namespace HedgeHog.Alice.Client {
       }
       if (tm.FreezeType != Models.Freezing.None) {
         var limitNew = GetLimitByFractal(trades, trade, ratesByPair[trade.Pair]).Round(round);
-        if (DoLimit(trade, tm, limitNew, round))
+        if (trade.IsBuy && limitNew <= GetCurrentPrice(trade.Pair).Bid ||
+           !trade.IsBuy && limitNew >= GetCurrentPrice(trade.Pair).Ask) 
+          fw.CloseTradeAsync(trade);
+        else if (DoLimit(trade, tm, limitNew, round))
           fw.FixCreateLimit(trade.Id, limitNew, "");
       }
       //if (trade.Lots >= tm.LotSize * 10 && tm.CurrentLoss < 0 && trade.LimitAmount >= tm.CurrentLoss.Abs() * tm.LimitBar) tm.FreezLimit = true;

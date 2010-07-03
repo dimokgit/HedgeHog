@@ -177,7 +177,10 @@
             <DataTemplate>
               <WrapPanel>
                 <TextBlock Text="{Binding FibMin,StringFormat=n1}"></TextBlock>
-                <TextBlock Text="{Binding CorridorFib,StringFormat=&lt;{0:n1}}" FontWeight="Black"
+                <TextBlock Text="{Binding CorridorFibInstant,StringFormat=&lt;[{0:n1}]}"
+                           Foreground="{Binding CorridorFib,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkGreen|DarkRed}"
+                           ></TextBlock>
+                <TextBlock Text="{Binding CorridorFib,StringFormat=n1}" FontWeight="Black"
                            Foreground="{Binding CorridorFib,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkGreen|DarkRed}"
                            ></TextBlock>
                 <TextBlock Text="{Binding CorridorFibAverage,StringFormat=[{0:n1}]&lt;}"></TextBlock>
