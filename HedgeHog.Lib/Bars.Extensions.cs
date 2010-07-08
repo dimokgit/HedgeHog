@@ -56,7 +56,7 @@ namespace HedgeHog.Bars {
   }
   public static class Extensions {
 
-    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, int periodsStart,int iterations, bool useStDev) {
+    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, int periodsStart,int iterations,double heightMinimum, bool useStDev) {
       if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
       var corridornesses = new Dictionary<int, CorridorStatistics>();
       for (var periods = periodsStart; periods < rates.Count(); periods++) {
@@ -74,13 +74,13 @@ namespace HedgeHog.Bars {
         } else break;
       }
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
-      if (rates.Count() / (double)corr.Value.Periods < 1.01) 
-        return rates.ScanCorridors(periodsStart, iterations + 1, useStDev);
       corr.Value.Iterations = iterations;
       var ratesForCorridor = rates.Take(corr.Value.Periods);
           //.Where(r => r.StartDate >= startDate).ToArray();
       corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
       corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
+      if (corr.Value.Heigth < heightMinimum && iterations > 1)
+        return rates.ScanCorridors(periodsStart, iterations - 1, heightMinimum, useStDev);
       return corr.Value;
     }
     static CorridorStatistics ScanCorridor(IEnumerable<Rate> rates,bool useStDev) {
@@ -713,9 +713,9 @@ namespace HedgeHog.Bars {
     }
 
 
-    public static IEnumerable<TBar> FillOverlaps<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+    public static IEnumerable<TBar> FillOverlaps<TBar>(this IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBase {
       foreach (var bar in bars)
-        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/);
+        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/,period);
       return bars;
     }
     public static void SetCMA<TBars>(this IEnumerable<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {

@@ -566,7 +566,23 @@ namespace Order2GoAddIn {
       }
       return ticks.OrderBars();
     }
-    public IEnumerable<Rate> New_GetBarsBase(string pair,int period, DateTime startDate, DateTime endDate) {
+    public IEnumerable<Rate> GetBarsBase(string pair, int period, int barsCount) {
+      var ticks = GetBars(pair, period, barsCount);
+      int timeoutCount = 1;
+      while (ticks.Count<barsCount) {
+        try {
+          var endDate = ticks.Min(t1 => t1.StartDate);
+          var t = GetBarsBase_(pair, period, DateTime.MinValue, endDate);
+          ticks = ticks.Union(t).ToList();
+        } catch (Exception exc) {
+          if (exc.Message.ToLower().Contains("timeout")) {
+            if (timeoutCount-- == 0) break;
+          }
+        }
+      }
+      return ticks.OrderBars().Skip(ticks.Count-barsCount);
+    }
+    public IEnumerable<Rate> New_GetBarsBase(string pair, int period, DateTime startDate, DateTime endDate) {
       var ed = endDate == FX_DATE_NOW ? DateTime.MaxValue : endDate;
       if (period >= 1) {
         startDate = startDate.Round().Round(period);
@@ -638,6 +654,16 @@ namespace Order2GoAddIn {
           ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
           .Cast<FXCore.MarketRateAut>().ToArray();
         return mr.Select((r) => RateFromMarketRate(pair,r)).ToList();
+        //);
+      }
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public List<Rate> GetBars(string pair, int period, int barsCount) {
+      lock (lockHistory) {
+        var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
+          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", DateTime.MinValue, FX_DATE_NOW, barsCount, true, true))
+          .Cast<FXCore.MarketRateAut>().ToArray();
+        return mr.Select((r) => RateFromMarketRate(pair, r)).ToList();
         //);
       }
     }
@@ -1368,6 +1394,18 @@ namespace Order2GoAddIn {
       object o1;
       try {
         Desk.CloseTradeAsync(trade.Id, trade.Lots, 0, "", 0, out o1);
+      } catch (Exception exc) {
+        RaiseError(exc);
+      }
+    }
+    public void CloseTrades(Trade[] trades) {
+      foreach (var trade in trades)
+        CloseTrade(trade);
+    }
+    public void CloseTrade(Trade trade) {
+      object o1,o2;
+      try {
+        Desk.CloseTrade(trade.Id, trade.Lots, 0, "", 0, out o1,out o2);
       } catch (Exception exc) {
         RaiseError(exc);
       }

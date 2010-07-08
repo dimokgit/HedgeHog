@@ -730,6 +730,7 @@ namespace HedgeHog.Alice.Client {
       fwMaster_PriceChanged(new Price() { Pair = pair });
     }
     void fwMaster_PriceChanged(Price Price) {
+      if (!ServerTrades.Any(t => t.Pair == Price.Pair)) return;
       PriceChangedSchedulers.Run(Price.Pair, () => RunPriceChanged(Price.Pair));
     }
 
@@ -754,7 +755,7 @@ namespace HedgeHog.Alice.Client {
       fwMaster_PriceChanged(trade.Pair);
     }
     void fwMaster_TradeChanged(object sender, FXW.TradeEventArgs e) {
-      fwMaster_PriceChanged(e.Trade.Pair);
+      //fwMaster_PriceChanged(e.Trade.Pair);
     }
 
     void fwMaster_OrderChanged(object sender, FXW.OrderEventArgs e) {

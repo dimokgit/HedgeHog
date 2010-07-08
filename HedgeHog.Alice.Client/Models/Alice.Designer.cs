@@ -362,7 +362,9 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="corridorIterations">Initial value of the CorridorIterations property.</param>
         /// <param name="corridorBarMinutes">Initial value of the CorridorBarMinutes property.</param>
         /// <param name="pairIndex">Initial value of the PairIndex property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex)
+        /// <param name="tradingGroup">Initial value of the TradingGroup property.</param>
+        /// <param name="maximumPositions">Initial value of the MaximumPositions property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -383,6 +385,8 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.CorridorIterations = corridorIterations;
             tradingMacro.CorridorBarMinutes = corridorBarMinutes;
             tradingMacro.PairIndex = pairIndex;
+            tradingMacro.TradingGroup = tradingGroup;
+            tradingMacro.MaximumPositions = maximumPositions;
             return tradingMacro;
         }
 
@@ -823,6 +827,54 @@ namespace HedgeHog.Alice.Client.Models
         private global::System.Int32 _PairIndex;
         partial void OnPairIndexChanging(global::System.Int32 value);
         partial void OnPairIndexChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 TradingGroup
+        {
+            get
+            {
+                return _TradingGroup;
+            }
+            set
+            {
+                OnTradingGroupChanging(value);
+                ReportPropertyChanging("TradingGroup");
+                _TradingGroup = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradingGroup");
+                OnTradingGroupChanged();
+            }
+        }
+        private global::System.Int32 _TradingGroup;
+        partial void OnTradingGroupChanging(global::System.Int32 value);
+        partial void OnTradingGroupChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 MaximumPositions
+        {
+            get
+            {
+                return _MaximumPositions;
+            }
+            set
+            {
+                OnMaximumPositionsChanging(value);
+                ReportPropertyChanging("MaximumPositions");
+                _MaximumPositions = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MaximumPositions");
+                OnMaximumPositionsChanged();
+            }
+        }
+        private global::System.Int32 _MaximumPositions;
+        partial void OnMaximumPositionsChanging(global::System.Int32 value);
+        partial void OnMaximumPositionsChanged();
 
         #endregion
     

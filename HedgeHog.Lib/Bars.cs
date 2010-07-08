@@ -188,9 +188,12 @@ namespace HedgeHog.Bars {
     }
     public TimeSpan Overlap { get; set; }
 
-    public void FillOverlap<TBar>(IEnumerable<TBar> bars) where TBar : BarBase {
+    public void FillOverlap<TBar>(IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBase {
+      TBar barPrev = null;
       foreach (var bar in bars) {
+        if (barPrev != null && (barPrev.StartDate - bar.StartDate).Duration() > period) return;
         if (FillOverlap(bar) == OverlapType.None) return;
+        barPrev = bar;
       }
     } 
     #endregion
@@ -209,6 +212,7 @@ namespace HedgeHog.Bars {
       StartDate = startDate;
       IsHistory = isHistory;
     }
+    public void AddTick(Price price) { AddTick(price.Time, price.Ask, price.Bid); }
     public void AddTick(DateTime startDate, double ask, double bid) {
       if (Count++ == 0) {
         SetAsk(ask);
@@ -286,6 +290,7 @@ namespace HedgeHog.Bars {
     public int BidChangeDirection { get; set; }
     public int AskChangeDirection { get; set; }
     public bool IsReal { get { return Time != DateTime.MinValue; } }
+    public int Digits { get; set; }
   }
 
   public enum BarsPeriodType { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24, W1 = 7 }
