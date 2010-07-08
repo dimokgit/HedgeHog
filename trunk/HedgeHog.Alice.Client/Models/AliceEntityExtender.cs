@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client.Models {
   public partial class AliceEntities {
@@ -35,6 +36,7 @@ namespace HedgeHog.Alice.Client.Models {
 
   public partial class TradingMacro {
 
+    #region LotSize
     int _lotSize;
     public int LotSize {
       get { return _lotSize; }
@@ -66,7 +68,16 @@ namespace HedgeHog.Alice.Client.Models {
         }
       }
     }
-
+    int _currentLot;
+    public int CurrentLot {
+      get { return _currentLot; }
+      set {
+        if (_currentLot == value) return;
+        _currentLot = value;
+        OnPropertyChanged("CurrentLot");
+      }
+    }
+    #endregion
 
     double _Limit;
     public double Limit {
@@ -78,31 +89,37 @@ namespace HedgeHog.Alice.Client.Models {
         OnPropertyChanged("TakeProfitPips");
       }
     }
+
+    //public double TakeProfitPips { get { return CorridorRatio == 0 ? 0 : Limit / CorridorRatio; } }
+    private double _TakeProfitPips;
     public double TakeProfitPips {
-      get { return CorridorRatio == 0 ? 0 : Limit / CorridorRatio; }
-    }
-
-
-    private double _buyStopByCorridor;
-    public double BuyStopByCorridor {
-      get { return _buyStopByCorridor; }
-      protected set {
-        if (_buyStopByCorridor != value) {
-          _buyStopByCorridor = value;
-          OnPropertyChanged("BuyStopByCorridor");
+      get { return _TakeProfitPips; }
+      set {
+        if (_TakeProfitPips != value) {
+          _TakeProfitPips = value;
+          OnPropertyChanged("TakeProfitPips");
         }
       }
     }
 
-    private double _sellStopByCorridor;
 
+
+    #region CorridorFib
+    private double _buyStopByCorridor;
+    public double BuyStopByCorridor {
+      get { return _buyStopByCorridor; }
+      protected set {
+        _buyStopByCorridor = value;
+        OnPropertyChanged("BuyStopByCorridor");
+      }
+    }
+
+    private double _sellStopByCorridor;
     public double SellStopByCorridor {
       get { return _sellStopByCorridor; }
       protected set {
-        if (_sellStopByCorridor != value) {
-          _sellStopByCorridor = value;
-          OnPropertyChanged("SellStopByCorridor");
-        }
+        _sellStopByCorridor = value;
+        OnPropertyChanged("SellStopByCorridor");
       }
     }
 
@@ -122,8 +139,9 @@ namespace HedgeHog.Alice.Client.Models {
     public double CorridorFib {
       get { return _CorridorFib; }
       set {
-        if (value!= 0 && _CorridorFib != value) {
-          _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, TicksPerMinuteAverage, Math.Min(99, value.Abs()) * Math.Sign(value));
+        if (value != 0 && _CorridorFib != value) {
+          //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
+          _CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMaximun, value);
           CorridorFibAverage = _CorridorFib;
           OnPropertyChanged("CorridorFib");
         }
@@ -135,39 +153,45 @@ namespace HedgeHog.Alice.Client.Models {
       get { return _CorridorFibAverage; }
       set {
         if (value != 0 && _CorridorFibAverage != value) {
-          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, TicksPerMinuteAverage, value);
+          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, 0, TicksPerMinuteMaximun, value);
           OnPropertyChanged("CorridorFibAverage");
         }
       }
     }
 
-
-
+    Queue<double> bigFibAverage = new Queue<double>(new[]{100.0});
     public void SetCorridorFib(double buyStop, double sellStop) {
       BuyStopByCorridor = buyStop;
       SellStopByCorridor = sellStop;
-      CorridorFibInstant = BuyStopByCorridor == 0 || SellStopByCorridor == 0 ? 0 : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
-    }
-
-    int _currentLot;
-    public int CurrentLot {
-      get { return _currentLot; }
-      set {
-        if (_currentLot == value) return;
-        _currentLot = value;
-        OnPropertyChanged("CurrentLot");
+      CorridorFibInstant = 
+        BuyStopByCorridor == 0 ? -bigFibAverage.Average() 
+        : SellStopByCorridor == 0 ? bigFibAverage.Average() 
+        : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+      if (CorridorFibInstant > 100 && CorridorFibInstant != bigFibAverage.Last()) {
+        if (bigFibAverage.Count > 20) bigFibAverage.Dequeue();
+        bigFibAverage.Enqueue(CorridorFibInstant);
       }
     }
+    #endregion
+
+    #region Corridor Stats
+    private CorridorStatistics _CorridorStatsForTradeDistance;
+    public CorridorStatistics CorridorStatsForTradeDistance {
+      get { return _CorridorStatsForTradeDistance; }
+      set {
+        _CorridorStatsForTradeDistance = value;
+        OnPropertyChanged("CorridorStatsForTradeDistance");
+      }
+    }
+
 
     private HedgeHog.Bars.CorridorStatistics _CorridorStats;
     public HedgeHog.Bars.CorridorStatistics CorridorStats {
       get { return _CorridorStats; }
       set {
-        if (_CorridorStats != value) {
-          _CorridorStats = value;
-          Corridornes = CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? _CorridorStats.Density : 1 / _CorridorStats.Density;
-          OnPropertyChanged("CorridorStats");
-        }
+        _CorridorStats = value;
+        Corridornes = CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? _CorridorStats.Density : 1 / _CorridorStats.Density;
+        OnPropertyChanged("CorridorStats");
       }
     }
 
@@ -187,6 +211,38 @@ namespace HedgeHog.Alice.Client.Models {
     public bool IsCorridornessOk {
       get { return Corridornes <= CorridornessMin; }
     }
+    #endregion
+
+    public void SetCorrelation(string currency, double correlation) {
+      if (Currency1 == currency) Correlation1 = correlation;
+      if (Currency2 == currency) Correlation2 = correlation;
+    }
+
+    public string Currency1 { get { return Pair.Split('/')[0]; } }
+    public string Currency2 { get { return Pair.Split('/')[1]; } }
+
+    private double _Correlation1;
+    public double Correlation1 {
+      get { return _Correlation1; }
+      set {
+        if (_Correlation1 != value) {
+          _Correlation1 = value;
+          OnPropertyChanged("Correlation1");
+        }
+      }
+    }
+
+    private double _Correlation2;
+    public double Correlation2 {
+      get { return _Correlation2; }
+      set {
+        if (_Correlation2 != value) {
+          _Correlation2 = value;
+          OnPropertyChanged("Correlation2");
+        }
+      }
+    }
+
 
     DateTime _lastRateTime;
     public DateTime LastRateTime {
@@ -233,15 +289,30 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    #region TicksPerMinute
+    public int TicksPerMinuteMaximun { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Max().ToInt(); } }
+    public int TicksPerMinuteMinimum { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Min().ToInt(); } }
+    private int _TicksPerMinuteInstant;
+    public int TicksPerMinuteInstant {
+      get { return _TicksPerMinuteInstant; }
+      set {
+        if (_TicksPerMinuteInstant != value) {
+          _TicksPerMinuteInstant = value;
+          OnPropertyChanged("TicksPerMinuteInstant");
+        }
+      }
+    }
+
     private double _TicksPerMinute;
     public double TicksPerMinute {
       get { return _TicksPerMinute; }
       set {
-        if (_TicksPerMinute != value) {
-          _TicksPerMinute = Lib.CMA(_TicksPerMinute, 0, Math.Max(1, TicksPerMinuteAverage.ToInt()), value);
-          TicksPerMinuteAverage = _TicksPerMinute;
-          OnPropertyChanged("TicksPerMinute");
-        }
+        TicksPerMinuteInstant = value.ToInt();
+        _TicksPerMinute = Lib.CMA(_TicksPerMinute, 0, Math.Max(1, TicksPerMinute.ToInt()), value);
+        TicksPerMinuteAverage = _TicksPerMinute;
+        OnPropertyChanged("TicksPerMinute");
+        OnPropertyChanged("TicksPerMinuteMaximun");
+        OnPropertyChanged("TicksPerMinuteMinimum");
       }
     }
 
@@ -249,11 +320,11 @@ namespace HedgeHog.Alice.Client.Models {
     public double TicksPerMinuteAverage {
       get { return _TicksPerMinuteAverage; }
       set {
-        _TicksPerMinuteAverage = Lib.CMA(_TicksPerMinuteAverage, 0, Math.Max(1, value.ToInt()), value);
+        _TicksPerMinuteAverage = Lib.CMA(_TicksPerMinuteAverage, 0, Math.Max(1, TicksPerMinuteAverage.ToInt()), value);
         OnPropertyChanged("TicksPerMinuteAverage");
       }
     }
-
+    #endregion
 
     bool _PendingSell;
     public bool PendingSell {
@@ -405,15 +476,64 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    private int _CorridorIterationsCalc;
-    public int CorridorIterationsCalc {
-      get { return _CorridorIterationsCalc; }
+    private int _CorridorIterationsTrade;
+    public int CorridorIterationsTrade {
+      get { return _CorridorIterationsTrade; }
       set {
-        if (_CorridorIterationsCalc != value) {
-          _CorridorIterationsCalc = value;
-          OnPropertyChanged("CorridorIterationsCalc");
+        if (_CorridorIterationsTrade != value) {
+          _CorridorIterationsTrade = value;
+          OnPropertyChanged("CorridorIterationsTrade");
         }
       }
+    }
+
+    private double _TradeDistance;
+    public double TradeDistance {
+      get { return _TradeDistance; }
+      set {
+        if (_TradeDistance != value) {
+          _TradeDistance = value;
+          OnPropertyChanged("TradeDistance");
+        }
+      }
+    }
+
+    private bool? _TradeSignal;
+    public bool? TradeSignal {
+      get { return _TradeSignal; }
+      set {
+        if (_TradeSignal != value) {
+          _TradeSignal = value;
+          OnPropertyChanged("TradeSignal");
+        }
+      }
+    }
+
+    class TradeHistory {
+      public DateTime Time { get; set; }
+      public Trade Trade { get; set; }
+      public TradeHistory() { }
+      public TradeHistory(DateTime time, Trade trade) {
+        this.Time = time;
+        this.Trade = trade;
+      }
+    }
+
+    Queue<TradeHistory> tradesQueue = new Queue<TradeHistory>();
+
+    public void TradesToHistory_Clear() {
+      tradesQueue.Clear();
+    }
+    public void TradesToHistory_Add(Trade[] trades) {
+      var now = DateTime.Now;
+      while (tradesQueue.Count() > 0 && (now - tradesQueue.Peek().Time).Duration() > TimeSpan.FromMinutes(Overlap))
+        tradesQueue.Dequeue();
+      foreach (var trade in trades)
+        tradesQueue.Enqueue(new TradeHistory(now, trade));
+    }
+
+    public Trade[] MaxPLTrade(bool isBuy) {
+      return tradesQueue.Where(t => t.Trade.IsBuy == isBuy && t.Trade.PL > 0).Select(th=>th.Trade).ToArray();
     }
 
     public int CorridorIterationsCalc_ { get { return Positions == 1 ? CorridorIterationsOut : CorridorIterationsIn; } }

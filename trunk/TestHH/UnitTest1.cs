@@ -240,7 +240,7 @@ namespace TestHH {
       var dateEnd = dateStart.AddHours(4);
       var ticks = o2g.GetBarsBase(o2g.Pair, 0, dateStart, dateEnd).Cast<Tick>().GroupTicksToRates().ToArray();
       var rates = ticks.GetMinuteTicks(1);
-      rates.OrderBarsDescending().FillOverlaps();
+      rates.OrderBarsDescending().FillOverlaps(TimeSpan.FromMinutes(1));
       int np = 4;
       var period = TimeSpan.FromMinutes(6);
       var tickToFill = ticks.SkipWhile(t => t.StartDate.Between(ticks.First().StartDate, ticks.First().StartDate + period.Multiply(np))).ToArray();
@@ -398,7 +398,7 @@ namespace TestHH {
       var rates = o2g.GetBarsBase(o2g.Pair, 1, DateTime.Now.AddHours(-1), DateTime.FromOADate(0)).ToArray();
       Debug.WriteLine("Get Ticks:" + timer.Elapsed.TotalSeconds+" sec.");
       timer.Reset(); timer.Start();
-      rates.OrderBarsDescending().FillOverlaps();
+      rates.OrderBarsDescending().FillOverlaps(TimeSpan.FromMinutes(1));
       Debug.WriteLine("Get Overlap:" + timer.Elapsed.TotalSeconds + " sec.");
       var stDevSeconds = rates.StdDev(r => r.Overlap.TotalSeconds);
       var avgSeconds = rates.Average(r => r.Overlap.TotalSeconds);

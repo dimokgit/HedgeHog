@@ -43,6 +43,8 @@
           <Property Name="CorridorIterations" Type="int" Nullable="false" />
           <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
           <Property Name="PairIndex" Type="int" Nullable="false" />
+          <Property Name="TradingGroup" Type="int" Nullable="false" />
+          <Property Name="MaximumPositions" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -86,6 +88,8 @@
           <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
           <Property Type="Int32" Name="CorridorBarMinutes" Nullable="false" />
           <Property Type="Int32" Name="PairIndex" Nullable="false" />
+          <Property Type="Int32" Name="TradingGroup" Nullable="false" />
+          <Property Type="Int32" Name="MaximumPositions" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -109,6 +113,8 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
+                <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
                 <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
                 <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
                 <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />

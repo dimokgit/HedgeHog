@@ -103,7 +103,7 @@ namespace Temp {
         AddLog("Rates.");
         fw.GetBars(fw.Pair, Period, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
         AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
-        var corridorStats = rates.ScanCorridors(CorridorIterations, CorridorIterations, UseStDev);
+        var corridorStats = rates.ScanCorridors(CorridorIterations, CorridorIterations,0, UseStDev);
         var corridorMinutes = corridorStats.Periods * Period;
         AddLog("Chart Corridor["+corridorStats.Periods+"] minutes.");
         new Scheduler(charter.Dispatcher).Command = () =>
