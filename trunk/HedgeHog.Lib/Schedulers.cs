@@ -209,7 +209,7 @@ namespace HedgeHog {
     }
     public void Run(string key, Action runner) {
       var ts = Get(key);
-      if (ts.IsRunning) ts.SetFinished((s, ea) => runner());
+      if (ts.IsRunning)return;// ts.SetFinished((s, ea) => runner());
       else ts.Command = () => runner();
     }
   }

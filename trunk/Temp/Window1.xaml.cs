@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Rsi;
+using HedgeHog.Alice.Client;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;

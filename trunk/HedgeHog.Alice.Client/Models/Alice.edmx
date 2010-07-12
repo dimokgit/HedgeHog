@@ -32,10 +32,9 @@
           <Property Name="CurrentLoss" Type="float" Nullable="false" />
           <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
           <Property Name="FreezLimit" Type="int" Nullable="false" />
-          <Property Name="CorridorRatio" Type="float" Nullable="false" />
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
           <Property Name="FreezeStop" Type="int" Nullable="false" />
-          <Property Name="FibMax" Type="float" Nullable="false" />
+          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="8" />
           <Property Name="FibMin" Type="float" Nullable="false" />
           <Property Name="CorridornessMin" Type="float" Nullable="false" />
           <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
@@ -77,10 +76,9 @@
           <Property Type="Double" Name="CurrentLoss" Nullable="false" />
           <Property Type="Boolean" Name="ReverseOnProfit" Nullable="false" />
           <Property Type="Int32" Name="FreezLimit" Nullable="false" />
-          <Property Type="Double" Name="CorridorRatio" Nullable="false" />
           <Property Type="Int32" Name="CorridorMethod" Nullable="false" />
           <Property Type="Int32" Name="FreezeStop" Nullable="false" />
-          <Property Type="Double" Name="FibMax" Nullable="false" />
+          <Property Type="String" Name="FibMax" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
           <Property Type="Double" Name="FibMin" Nullable="false" />
           <Property Type="Double" Name="CorridornessMin" Nullable="false" />
           <Property Type="Int32" Name="CorridorIterationsIn" Nullable="false" />
@@ -125,7 +123,6 @@
                 <ScalarProperty Name="FibMax" ColumnName="FibMax" />
                 <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
                 <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
-                <ScalarProperty Name="CorridorRatio" ColumnName="CorridorRatio" />
                 <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
                 <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
                 <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
@@ -158,7 +155,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="3.5644742838541656" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="4.0575162760416656" />
       </Diagram>
     </Diagrams>
   </Designer>

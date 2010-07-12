@@ -38,14 +38,24 @@
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">
-      <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
+      <StackPanel>
+        <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
             Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
-        <Button.ContentTemplate>
-          <DataTemplate>
-            <TextBlock Text="{Binding StringFormat=c0}"/>
-          </DataTemplate>
-        </Button.ContentTemplate>
-      </Button>
+          <Button.ContentTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding StringFormat=B:{0:c0}}"/>
+            </DataTemplate>
+          </Button.ContentTemplate>
+        </Button>
+        <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
+            Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+          <Button.ContentTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding StringFormat=S:{0:c0}}"/>
+            </DataTemplate>
+          </Button.ContentTemplate>
+        </Button>
+      </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="SellCellTemplate">
       <Button Content="{Binding LotSizeByLoss}" CommandParameter="{Binding BindsDirectlyToSource=True}"
@@ -125,6 +135,26 @@
       <Setter Property="Background" Value="PapayaWhip"></Setter>
       <Setter Property="Foreground" Value="Black"></Setter>
     </Style>
+    <DataTemplate x:Key="CorridornessTemplate">
+      <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
+        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" FontSize="10" ToolTipService.ShowDuration="300">
+        <TextBlock.ToolTip>
+          <ToolTip>
+            <TextBlock>
+              <TextBlock FontWeight="Black">Limit:</TextBlock>
+              <TextBlock Text="{Binding StartDate,StringFormat='d HH:mm'}"/>
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Corridorness Max:</TextBlock>
+              <TextBlock Text="{Binding CorridornessMin,StringFormat='&lt;{0:p0}'}" />
+            </TextBlock>
+          </ToolTip>
+        </TextBlock.ToolTip>
+                </TextBlock>
+              </WrapPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="CorridornessEditTemplate">
+      <TextBox Text="{Binding CorridornessMin}"/>
+    </DataTemplate>
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
@@ -145,72 +175,56 @@
         <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}" Visibility="Collapsed"></DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="Buy" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="Sell" CellTemplate="{StaticResource SellCellTemplate}"></DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="B/S" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
 
         <!--<DataGridTextColumn Header="LB" Binding="{Binding BalanceOnLimit,StringFormat=c0}" IsReadOnly="True"/>
         <DataGridTextColumn Header="S ∑" Binding="{Binding StopAmount,StringFormat=c1}" IsReadOnly="True"/>
         <DataGridTextColumn Header="SB" Binding="{Binding BalanceOnStop,StringFormat=c0}" IsReadOnly="True"/>-->
 
-        <DataGridTemplateColumn Header="Ŧ" Visibility="Collapsed">
+        <!--<DataGridTemplateColumn Header="Ŧ" CellTemplate="{StaticResource CorridornessTemplate}" CellEditingTemplate="{StaticResource CorridornessEditTemplate}"/>-->
+        <DataGridTemplateColumn Header="C*R" CellTemplate="{StaticResource TakeProfitPipsCellTemplate}" CellEditingTemplate="{StaticResource TakeProfitPipsEditCellTemplate}" Visibility="Collapsed" />
+        <DataGridTemplateColumn Header="Fib" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
-                <TextBlock Text="{Binding CorridorStats.StartDate,StringFormat='HH:mm'}">
+                <ItemsControl ItemsSource="{Binding CorridorStatsArray}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border CornerRadius="2" BorderThickness="{Binding IsCurrentInt}" BorderBrush="Black">
+              <TextBlock>
+                      <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
+        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" ToolTipService.ShowDuration="3000">
         <TextBlock.ToolTip>
           <ToolTip>
             <TextBlock>
               <TextBlock FontWeight="Black">Limit:</TextBlock>
-              <TextBlock Text="{Binding CorridorStats.StartDate,StringFormat='d HH:mm'}"/>
+              <TextBlock Text="{Binding StartDate,StringFormat='d HH:mm'}"/>
               <LineBreak/>
-              <TextBlock FontWeight="Black">Distance:</TextBlock>
-              <TextBlock Text="{Binding CorridorStatsForTradeDistance.StartDate,StringFormat='d HH:mm'}"/>
+              <TextBlock FontWeight="Black">Corridorness Max:</TextBlock>
+              <TextBlock Text="{Binding TradingMacro.CorridornessMin,StringFormat='&lt;{0:p0}'}" />
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Ask High:</TextBlock>
+              <TextBlock Text="{Binding AskHigh}" />
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Bid Low:</TextBlock>
+              <TextBlock Text="{Binding BidLow}" />
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
                 </TextBlock>
-                <TextBlock Text="{Binding Corridornes,StringFormat=[{0:p0}}" FontWeight="Black" />
-                <TextBlock Text="{Binding CorridornessMin,StringFormat='&gt;{0:p0}]'}" />
               </WrapPanel>
-            </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
-          <DataGridTemplateColumn.CellEditingTemplate>
-            <DataTemplate>
-              <TextBox Text="{Binding CorridornessMin}"/>
-            </DataTemplate>
-          </DataGridTemplateColumn.CellEditingTemplate>
-        </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="C*R" CellTemplate="{StaticResource TakeProfitPipsCellTemplate}" CellEditingTemplate="{StaticResource TakeProfitPipsEditCellTemplate}" Visibility="Collapsed" />
-        <DataGridTemplateColumn Header="L=" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
-          <DataGridTemplateColumn.CellTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding TradeDistance,StringFormat=n1}" ToolTip="Trade Distance"/>
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n1}}" ToolTip="Take Profit"/>
-              </WrapPanel>
-            </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
-          <DataGridTemplateColumn.CellEditingTemplate>
-            <DataTemplate>
-              <TextBox Text="{Binding CorridorRatio}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" ToolTip="Corridor to Corridor Ratio" />
-            </DataTemplate>
-          </DataGridTemplateColumn.CellEditingTemplate>
-        </DataGridTemplateColumn>
-        <DataGridTextColumn Header="BSŦ" Binding="{Binding BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTextColumn Header="SSŦ" Binding="{Binding SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
-        <DataGridTemplateColumn Header="Fib" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
-          <DataGridTemplateColumn.CellTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding FibMin,StringFormat=n1}"></TextBlock>
+                <TextBlock Text="{Binding HeightInPips,StringFormat=00}" ToolTip="Corridor Height"></TextBlock>
+                <TextBlock Text="{Binding FibMinimum,StringFormat=|{0:00}}"></TextBlock>
                 <TextBlock Text="{Binding CorridorFibInstant,StringFormat=&lt;[{0:n1}]}"></TextBlock>
                 <TextBlock Text="{Binding CorridorFib,StringFormat=n1}" FontWeight="Black"
                            Background="{Binding TradeSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Pink|LightGreen}"
                            Foreground="{Binding CorridorFib,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkGreen|DarkRed}"
                            ></TextBlock>
-                <TextBlock Text="{Binding CorridorFibAverage,StringFormat=[{0:n1}]&lt;}"></TextBlock>
-                <TextBlock Text="{Binding FibMax,StringFormat=n1}"></TextBlock>
-              </WrapPanel>
+                <TextBlock Text="{Binding CorridorFibAverage,StringFormat=[{0:n1}]}"></TextBlock>
+                </TextBlock>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
@@ -222,18 +236,13 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
-        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
-        <DataGridTemplateColumn>
-          <DataGridTemplateColumn.Header>
-            <TextBlock ToolTip="Ticks Per Minute">TPM</TextBlock>
-          </DataGridTemplateColumn.Header>
+        <DataGridTemplateColumn Header="L=" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
-                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=[{0:n0}]}"/>
-                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n0}"/>
-                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n0}]}"/>
+                <TextBlock Text="{Binding TradeDistance,StringFormat=n0}" ToolTip="Trade Distance"/>
+                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"/>
+                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}]}" ToolTip="Bar 60 Height in Pips"/>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
@@ -258,13 +267,32 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
+        <DataGridTextColumn Header="BSŦ" Binding="{Binding CorridorStats.BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="SSŦ" Binding="{Binding CorridorStats.SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
+        <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.Header>
+            <TextBlock ToolTip="Ticks Per Minute">TPM</TextBlock>
+          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=[{0:n1}]}"/>
+                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n1}"/>
+                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n1}]}"
+                           Foreground="{Binding IsTicksPerMinuteOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
+                           />
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="OL"  IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
                 <TextBlock Text="{Binding Overlap}"/>
                 <TextBlock Text="{Binding Overlap5,StringFormat=/{0:n0}}"/>
-                <TextBlock Text="{Binding SlackInPips,StringFormat=[{0:n1}]}"/>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>

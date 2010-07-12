@@ -351,7 +351,6 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="currentLoss">Initial value of the CurrentLoss property.</param>
         /// <param name="reverseOnProfit">Initial value of the ReverseOnProfit property.</param>
         /// <param name="freezLimit">Initial value of the FreezLimit property.</param>
-        /// <param name="corridorRatio">Initial value of the CorridorRatio property.</param>
         /// <param name="corridorMethod">Initial value of the CorridorMethod property.</param>
         /// <param name="freezeStop">Initial value of the FreezeStop property.</param>
         /// <param name="fibMax">Initial value of the FibMax property.</param>
@@ -364,7 +363,7 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="pairIndex">Initial value of the PairIndex property.</param>
         /// <param name="tradingGroup">Initial value of the TradingGroup property.</param>
         /// <param name="maximumPositions">Initial value of the MaximumPositions property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Double corridorRatio, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.Double fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -374,7 +373,6 @@ namespace HedgeHog.Alice.Client.Models
             tradingMacro.CurrentLoss = currentLoss;
             tradingMacro.ReverseOnProfit = reverseOnProfit;
             tradingMacro.FreezLimit = freezLimit;
-            tradingMacro.CorridorRatio = corridorRatio;
             tradingMacro.CorridorMethod = corridorMethod;
             tradingMacro.FreezeStop = freezeStop;
             tradingMacro.FibMax = fibMax;
@@ -569,30 +567,6 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Double CorridorRatio
-        {
-            get
-            {
-                return _CorridorRatio;
-            }
-            set
-            {
-                OnCorridorRatioChanging(value);
-                ReportPropertyChanging("CorridorRatio");
-                _CorridorRatio = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("CorridorRatio");
-                OnCorridorRatioChanged();
-            }
-        }
-        private global::System.Double _CorridorRatio;
-        partial void OnCorridorRatioChanging(global::System.Double value);
-        partial void OnCorridorRatioChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.Int32 CorridorMethod
         {
             get
@@ -641,7 +615,7 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Double FibMax
+        public global::System.String FibMax
         {
             get
             {
@@ -651,13 +625,13 @@ namespace HedgeHog.Alice.Client.Models
             {
                 OnFibMaxChanging(value);
                 ReportPropertyChanging("FibMax");
-                _FibMax = StructuralObject.SetValidValue(value);
+                _FibMax = StructuralObject.SetValidValue(value, false);
                 ReportPropertyChanged("FibMax");
                 OnFibMaxChanged();
             }
         }
-        private global::System.Double _FibMax;
-        partial void OnFibMaxChanging(global::System.Double value);
+        private global::System.String _FibMax;
+        partial void OnFibMaxChanging(global::System.String value);
         partial void OnFibMaxChanged();
     
         /// <summary>

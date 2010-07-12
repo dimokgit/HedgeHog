@@ -902,6 +902,9 @@ namespace Order2GoAddIn {
       }
     }
     public Summary GetSummary(string Pair) {
+      return GetSummary(Pair, GetTrades(Pair));
+    }
+    public Summary GetSummary(string Pair,Trade[] trades) {
       var rowsSumm = GetRows(TABLE_SUMMARY).Where(r => new[] { "", r.CellValue(FIELD_INSTRUMENT).ToString() }.Contains(Pair));
       var s = rowsSumm
         .Select(t => new Summary() {
@@ -917,7 +920,7 @@ namespace Order2GoAddIn {
           BuyAvgOpen = (double)t.CellValue(FIELD_BUYAVGOPEN),
         }).SingleOrDefault();
       if (s == null) return new Summary();
-      var rows = GetTrades(Pair, true).OrderByDescending(t => t.Open).ToArray();
+      var rows = trades.Where(t=>t.IsBuy).OrderByDescending(t => t.Open).ToArray();
       if (rows.Count() > 0) {
         var rowFirst = rows.First();
         s.BuyPriceFirst = rowFirst.Open;
@@ -931,7 +934,7 @@ namespace Order2GoAddIn {
 
         s.BuyPositions = rows.Count();
       }
-      rows = GetTrades(Pair, false).OrderBy(t => t.Open).ToArray();
+      rows = trades.Where(t => !t.IsBuy).OrderBy(t => t.Open).ToArray();
       if (rows.Count() > 0) {
         var rowFirst = rows.First();
         s.SellPriceFirst = rowFirst.Open;
@@ -991,11 +994,10 @@ namespace Order2GoAddIn {
     public Trade[] GetTrades(string Pair) {
       //      lock (getTradesLock) {
       try {
-        var ret = from t in GetRows(TABLE_TRADES)
-                  orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
-                  where new[] { "", (t.CellValue(FIELD_INSTRUMENT) + "").ToLower() }.Contains(Pair.ToLower())
-                  select InitTrade(t);
-        return ret.ToArray();
+        return (from t in GetRows(TABLE_TRADES)
+                   orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
+                   where new[] { "", (t.CellValue(FIELD_INSTRUMENT) + "").ToLower() }.Contains(Pair.ToLower())
+                   select InitTrade(t)).ToArray();
       } catch (Exception exc) {
         if (wasRowDeleted(exc)) return GetTrades(Pair);
         RaiseError(exc);
@@ -1590,15 +1592,17 @@ namespace Order2GoAddIn {
     Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>();
     public double GetPipSize(string pair) {
       pair = pair.ToUpper();
-      if (!pointSizeDictionary.ContainsKey(pair)) {
-        var offer = GetOffer(pair);
-        if (offer == null) {
-          Desk.SetOfferSubscription(pair, "Enabled");
-          offer = GetOffer(pair);
+      lock (pointSizeDictionary) {
+        if (!pointSizeDictionary.ContainsKey(pair)) {
+          var offer = GetOffer(pair);
+          if (offer == null) {
+            Desk.SetOfferSubscription(pair, "Enabled");
+            offer = GetOffer(pair);
+          }
+          pointSizeDictionary[pair] = offer.PointSize;
         }
-        pointSizeDictionary[pair] = offer.PointSize;
+        return pointSizeDictionary[pair];
       }
-      return pointSizeDictionary[pair];
     }
 
     Dictionary<string, double> pipCostDictionary = new Dictionary<string, double>();
