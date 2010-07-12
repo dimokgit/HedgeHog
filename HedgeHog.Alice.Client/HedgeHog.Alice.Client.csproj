@@ -109,6 +109,7 @@
     <Compile Include="Classes\AbsentTrade.cs" />
     <Compile Include="Classes\Config.cs" />
     <Compile Include="Classes\Converters.cs" />
+    <Compile Include="Classes\CorridorStatistics.cs" />
     <Compile Include="Classes\Events.cs" />
     <Compile Include="Classes\GlobalStorage.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />

@@ -44,9 +44,6 @@ namespace HedgeHog {
     HorizontalLine lineMaxAvg = new HorizontalLine() { StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.Brown) };
     public double LineMaxAvg { set { lineMaxAvg.Value = value; } }
 
-    VerticalLine lineTimeMax = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Brown) };
-    public DateTime LineTimeMax { set { lineTimeMax.Value = dateAxis.ConvertToDouble(value); } }
-
     HorizontalLine lineMin = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.Navy) };
     public double LineMin {      set { lineMin.Value = value; }    }
 
@@ -65,8 +62,14 @@ namespace HedgeHog {
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
+    VerticalLine lineTimeMax = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Brown) };
+    public DateTime LineTimeMax { set { lineTimeMax.Value = dateAxis.ConvertToDouble(value); } }
+
     VerticalLine lineTimeMin = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy) };
     public DateTime LineTimeMin { set { lineTimeMin.Value = dateAxis.ConvertToDouble(value); } }
+
+    VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
+    public DateTime LineTimeAvg { set { lineTimeAvg.Value = dateAxis.ConvertToDouble(value); } }
 
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine {
@@ -162,12 +165,13 @@ namespace HedgeHog {
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
       innerPlotter.Children.Add(lineMax);
-      innerPlotter.Children.Add(lineMaxAvg);
-      innerPlotter.Children.Add(lineMinAvg);
+      plotter.Children.Add(lineMaxAvg);
+      plotter.Children.Add(lineMinAvg);
       innerPlotter.Children.Add(lineMin);
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
       plotter.Children.Add(lineTimeMin);
+      plotter.Children.Add(lineTimeAvg);
       plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(trendLine);
     }
@@ -238,6 +242,12 @@ namespace HedgeHog {
     public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
+      return AddTicks(lastPrice, ticks, voltsByTick, voltageHigh, voltageCurr, priceMaxAvg, priceMinAvg,
+                      netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
+    }
+    public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
+  double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
+  double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr,DateTime timeLow, double[] priceAverageAskBid) {
       DateTime d = DateTime.Now;
       var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDate });
       var voltToTick = new Func<Volt, ChartTick>(t => new ChartTick() { Price = t.Volts, Time = t.StartDate });
@@ -297,16 +307,20 @@ namespace HedgeHog {
         Ticks = new ObservableCollection<Point>();
         CreateCurrencyDataSource();
       }
-      Ticks.Clear();
-      minuteTicks.ToList().ForEach(mt => Ticks.Add(mt));
+      //Ticks.Clear();
+      //minuteTicks.ToList().ForEach(mt => Ticks.Add(mt));
       UpdateTicks(Ticks, minuteTicks.OrderBy(t=>t.X).ToList());
+      plotter.FitToView();
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
       LineMax = voltageHigh;
       LineMaxAvg = priceMaxAvg;
+      lineMaxAvg.ToolTip = priceMaxAvg;
       LineMinAvg = priceMinAvg;
+      lineMinAvg.ToolTip = priceMinAvg;
       LineMin = voltageCurr;
       LineTimeMax = timeHigh;
       LineTimeMin = timeCurr;
+      LineTimeAvg = timeLow;
       LineNetSell = netSell;
       LineNetBuy = netBuy;
       return Ticks.ToArray();
