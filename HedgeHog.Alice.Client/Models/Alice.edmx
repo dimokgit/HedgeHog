@@ -39,7 +39,7 @@
           <Property Name="CorridornessMin" Type="float" Nullable="false" />
           <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
           <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
-          <Property Name="CorridorIterations" Type="int" Nullable="false" />
+          <Property Name="CorridorIterations" Type="nvarchar" Nullable="false" MaxLength="16" />
           <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
           <Property Name="PairIndex" Type="int" Nullable="false" />
           <Property Name="TradingGroup" Type="int" Nullable="false" />
@@ -83,7 +83,7 @@
           <Property Type="Double" Name="CorridornessMin" Nullable="false" />
           <Property Type="Int32" Name="CorridorIterationsIn" Nullable="false" />
           <Property Type="Int32" Name="CorridorIterationsOut" Nullable="false" />
-          <Property Type="Int32" Name="CorridorIterations" Nullable="false" />
+          <Property Type="String" Name="CorridorIterations" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
           <Property Type="Int32" Name="CorridorBarMinutes" Nullable="false" />
           <Property Type="Int32" Name="PairIndex" Nullable="false" />
           <Property Type="Int32" Name="TradingGroup" Nullable="false" />
@@ -155,7 +155,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="3.375" PointY="0.75" Height="4.0575162760416656" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.625" PointX="3.375" PointY="0.75" Height="4.0575162760416656" />
       </Diagram>
     </Diagrams>
   </Designer>

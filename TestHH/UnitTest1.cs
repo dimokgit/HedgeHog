@@ -65,7 +65,7 @@ namespace TestHH {
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      if (!core.LogOn("FX1179853001", "8041", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("MICR501860001", "8947", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -85,17 +85,34 @@ namespace TestHH {
     //
     #endregion
 
+    public void TicksPerMinute() {
+      var dateTo = DateTime.Today.AddHours(10);// DateTime.Parse("4/2/2010 10:33:27");
+      for (int i = 0; i < 10; i++) {
+        var dateFrom = dateTo.AddHours(-3);// DateTime.Parse("4/2/2010 10:13:16");
+        var ticks = o2g.GetBarsBase("EUR/JPY",0,dateFrom, dateTo);//.Where(dateFrom, dateTo).ToArray();
+        Debug.WriteLine("TicksPerMinute:{0:MM/dd HH:mm:ss} -{1:MM/dd HH:mm:ss}={2:n0}",
+          ticks.First().StartDate, ticks.Last().StartDate, ticks.TradesPerMinute());
+        dateTo = dateTo.AddDays(-7);
+      }
+    }
     [TestMethod]
     public void LoadTradeFromXml() {
-      var xmlString = File.ReadAllText(@"C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_03\ClosedTrades.txt");
+      var fileName = @"C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_03\ClosedTrades.";
+      var xmlString = File.ReadAllText(fileName+"txt");
       var x = XElement.Parse("<x>" + xmlString + "</x>");
-      var nodes = x.Nodes().ToArray();
-      foreach (XElement node in nodes.Reverse().Take(150)) {
+      var idPrev = "";
+      var tradesOut =new List<Trade>();
+      foreach (XElement node in x.Nodes().Reverse()) {
         var trade = new Trade();
         trade.FromString(node);
-        Debug.WriteLine(trade);
+        if (trade.Id != idPrev) {
+          trade.Time = trade.Time.AddHours(-4);
+          trade.TimeClose = trade.TimeClose.AddHours(-4); 
+          tradesOut.Add(new Trade().FromString(trade + ""));
+        }
+        idPrev = trade.Id;
       }
-
+      System.IO.File.WriteAllText(fileName + "xml", string.Join(Environment.NewLine, tradesOut.Select(t => t + "")));
     }
     public void MunuteRsi(){
       var minutesBack = 60*24*2;
@@ -264,16 +281,6 @@ namespace TestHH {
          r => o2g.InPips(1, r.PriceCMA[0]),
          r => o2g.InPips(1, r.PriceCMA[2]),
          "C:\\Speed.csv");
-    }
-    public void TicksPerMinute() {
-      var dateFrom = DateTime.Parse("4/2/2010 10:13:16");
-      var dateTo = DateTime.Parse("4/2/2010 10:33:27");
-      var ticks = o2g.GetTicks(o2g.Pair, 13000).Where(dateFrom, dateTo).ToArray();
-      //var ticks = new List<Rate>();
-      //o2g.GetBars(0,dateFrom,dateTo,ref ticks);
-      ticks.FillMass();
-      Debug.WriteLine("TicksPerMinute:{0: HH:mm:ss} -{1: HH:mm:ss}={2:n0}/{3}", ticks.First().StartDate, ticks.Last().StartDate,
-        ticks.TradesPerMinute(), ticks.SumMass());
     }
     public void LoadTicks() {
       var ticks = o2g.GetTicks(o2g.Pair, 1200000).OrderBarsDescending().ToArray();

@@ -94,6 +94,19 @@ namespace HedgeHog.Shared {
       GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(this, null) + "")));
       return x.ToString(saveOptions);
     }
+    public Trade FromString(string xmlString) {
+      var x = XElement.Parse(xmlString);
+      var nodes = x.Nodes().ToArray();
+      foreach (var property in GetType().GetProperties()) {
+        var element = x.Element(property.Name);
+        if (element != null && property.CanWrite && property.PropertyType!=typeof(UnKnownBase))
+          if (property.PropertyType == typeof(TradeRemark))
+            this.Remark = new TradeRemark(element.Value);
+          else
+            this.SetProperty(property.Name, element.Value);
+      }
+      return this;
+    }
     public void FromString(XElement xmlElement) {
       this.Buy = this.IsBuy = xmlElement.Attribute("BS").Value == "B";
       this.Close = double.Parse(xmlElement.Attribute("Close").Value);
