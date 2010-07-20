@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
+using System.Collections.ObjectModel;
 
 namespace HedgeHog.Alice.Client.Models {
   public partial class AliceEntities {
@@ -105,11 +106,34 @@ namespace HedgeHog.Alice.Client.Models {
 
 
     #region Corridor Stats
-    private CorridorStatistics[] _CorridorStatsArray;
-    public CorridorStatistics[] CorridorStatsArray {
+
+    private int[] _CorridorIterationsArray;
+    public int[] CorridorIterationsArray {
+      get { return CorridorIterations.Split(',').Select(s => int.Parse(s)).ToArray(); }
+      set {
+        OnPropertyChanged("CorridorIterationsArray");
+      }
+    }
+
+
+    public CorridorStatistics GetCorridorStats(int iterations) {
+      if (iterations <= 0) return CorridorStatsArray.OrderBy(c => c.Iterations).Take(-iterations+1).Last();
+      var cs = CorridorStatsArray.Where(c => c.Iterations == iterations).SingleOrDefault();
+      if (cs == null) {
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher
+          .Invoke(new Action(() => {
+            CorridorStatsArray.Add(new CorridorStatistics(this));
+          }));
+        CorridorStatsArray.Last().Iterations = iterations;
+        return CorridorStatsArray.Last();
+      }
+      return cs;
+    }
+    private ObservableCollection<CorridorStatistics> _CorridorStatsArray = new ObservableCollection<CorridorStatistics>();
+    public ObservableCollection<CorridorStatistics> CorridorStatsArray {
       get { 
-        if( _CorridorStatsArray == null)
-          _CorridorStatsArray = new CorridorStatistics[] { new CorridorStatistics(this), new CorridorStatistics(this), new CorridorStatistics(this) };
+        //if( _CorridorStatsArray == null)
+        //  _CorridorStatsArray = new CorridorStatistics[] { new CorridorStatistics(this), new CorridorStatistics(this), new CorridorStatistics(this) };
         return _CorridorStatsArray; }
       set {
         if (_CorridorStatsArray != value) {
@@ -118,17 +142,6 @@ namespace HedgeHog.Alice.Client.Models {
         }
       }
     }
-
-
-    private CorridorStatistics _CorridorStatsForTradeDistance;
-    public CorridorStatistics CorridorStatsForTradeDistance {
-      get { return _CorridorStatsForTradeDistance; }
-      set {
-        _CorridorStatsForTradeDistance = value;
-        OnPropertyChanged("CorridorStatsForTradeDistance");
-      }
-    }
-
 
     private CorridorStatistics _CorridorStats;
     public CorridorStatistics CorridorStats {
@@ -140,7 +153,12 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-
+    public bool? CloseTrades {
+      get {
+        var csTS = CorridorStatsArray.FirstOrDefault(cs => cs.Height > CorridorHeighMinimum && cs.TradeSignal.HasValue);
+        return csTS == null ? null : csTS.TradeSignal;
+      }
+    }
     #endregion
 
     public void SetCorrelation(string currency, double correlation) {
@@ -148,8 +166,8 @@ namespace HedgeHog.Alice.Client.Models {
       if (Currency2 == currency) Correlation2 = correlation;
     }
 
-    public string Currency1 { get { return Pair.Split('/')[0]; } }
-    public string Currency2 { get { return Pair.Split('/')[1]; } }
+    public string Currency1 { get { return (Pair+"").Split('/').DefaultIfEmpty("").ToArray()[0]; } }
+    public string Currency2 { get { return (Pair + "").Split('/').Skip(1).DefaultIfEmpty("").ToArray()[0]; } }
 
     private double _Correlation1;
     public double Correlation1 {
@@ -427,17 +445,6 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    private int _CorridorIterationsTrade;
-    public int CorridorIterationsTrade {
-      get { return _CorridorIterationsTrade; }
-      set {
-        if (_CorridorIterationsTrade != value) {
-          _CorridorIterationsTrade = value;
-          OnPropertyChanged("CorridorIterationsTrade");
-        }
-      }
-    }
-
     private double _TradeDistance;
     public double TradeDistance {
       get { return _TradeDistance; }
@@ -464,7 +471,7 @@ namespace HedgeHog.Alice.Client.Models {
     public string[] corridorFibMax {
       get {
         var ms = FibMax.Split(',');
-        return new[] { ms.Take(1).First(), ms.Take(2).Last(), ms.Take(3).Last() };
+        return new[] { ms.Take(1).First(), ms.Take(2).Last(), ms.Take(3).Last(), ms.Take(4).Last() };
       }
     }
 
@@ -483,9 +490,22 @@ namespace HedgeHog.Alice.Client.Models {
       return tradesQueue.Where(t => t.Trade.IsBuy == isBuy && t.Trade.PL > 0).Select(th=>th.Trade).ToArray();
     }
 
-    public int CorridorIterationsCalc_ { get { return Positions == 1 ? CorridorIterationsOut : CorridorIterationsIn; } }
-
     public double BarHeight60 { get; set; }
+
+
+    public double CorridorHeighMinimum { get; set; }
+
+    private int _HistoricalGrossPL;
+    public int HistoricalGrossPL {
+      get { return _HistoricalGrossPL; }
+      set {
+        if (_HistoricalGrossPL != value) {
+          _HistoricalGrossPL = value;
+          OnPropertyChanged("HistoricalGrossPL");
+        }
+      }
+    }
+
 
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }

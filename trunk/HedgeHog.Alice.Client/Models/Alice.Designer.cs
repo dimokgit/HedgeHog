@@ -363,7 +363,7 @@ namespace HedgeHog.Alice.Client.Models
         /// <param name="pairIndex">Initial value of the PairIndex property.</param>
         /// <param name="tradingGroup">Initial value of the TradingGroup property.</param>
         /// <param name="maximumPositions">Initial value of the MaximumPositions property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.Int32 corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -735,7 +735,7 @@ namespace HedgeHog.Alice.Client.Models
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int32 CorridorIterations
+        public global::System.String CorridorIterations
         {
             get
             {
@@ -745,13 +745,13 @@ namespace HedgeHog.Alice.Client.Models
             {
                 OnCorridorIterationsChanging(value);
                 ReportPropertyChanging("CorridorIterations");
-                _CorridorIterations = StructuralObject.SetValidValue(value);
+                _CorridorIterations = StructuralObject.SetValidValue(value, false);
                 ReportPropertyChanged("CorridorIterations");
                 OnCorridorIterationsChanged();
             }
         }
-        private global::System.Int32 _CorridorIterations;
-        partial void OnCorridorIterationsChanging(global::System.Int32 value);
+        private global::System.String _CorridorIterations;
+        partial void OnCorridorIterationsChanging(global::System.String value);
         partial void OnCorridorIterationsChanged();
     
         /// <summary>

@@ -20,6 +20,9 @@
             <TextBlock>
                 <TextBlock FontWeight="Black">Maximum Positions:</TextBlock>
                 <TextBlock Text="{Binding MaximumPositions}"></TextBlock>
+              <LineBreak/>
+                <TextBlock FontWeight="Black">Historical Gross:</TextBlock>
+                <TextBlock Text="{Binding HistoricalGrossPL}"></TextBlock>
               </TextBlock>
           </ToolTip>
         </WrapPanel.ToolTip>
@@ -137,7 +140,7 @@
     </Style>
     <DataTemplate x:Key="CorridornessTemplate">
       <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
-        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" FontSize="10" ToolTipService.ShowDuration="300">
+        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" FontSize="10" ToolTipService.ShowDuration="30000">
         <TextBlock.ToolTip>
           <ToolTip>
             <TextBlock>
@@ -192,7 +195,7 @@
                       <Border CornerRadius="2" BorderThickness="{Binding IsCurrentInt}" BorderBrush="Black">
               <TextBlock>
                       <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
-        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" ToolTipService.ShowDuration="3000">
+        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" ToolTipService.ShowDuration="30000">
         <TextBlock.ToolTip>
           <ToolTip>
             <TextBlock>
@@ -232,6 +235,9 @@
               <WrapPanel>
                 <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
                 <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
+                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum"/>
+                <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>
+                <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
@@ -250,24 +256,32 @@
         <DataGridTemplateColumn Header="CI">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding CorridorStats.Iterations}"/>
-                <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding CorridorStatsForTradeDistance.Iterations}"/>
-                <TextBlock Text="{Binding CorridorIterationsTrade,StringFormat=[{0}]}" ToolTip="Current Iterations"/>
-              </WrapPanel>
+              <TextBlock Text="{Binding CorridorStats.Iterations}"/>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
             <DataTemplate>
               <WrapPanel>
-                <TextBox Text="{Binding CorridorIterationsIn}"/>
-                <TextBox Text="{Binding CorridorIterationsOut}"/>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="BSŦ" Binding="{Binding CorridorStats.BuyStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
+        <DataGridTemplateColumn Header="[B/S]Ŧ" IsReadOnly="True">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ItemsControl ItemsSource="{Binding CorridorStatsArray}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock>
+                      <TextBlock Text="{Binding BuyStopByCorridor,StringFormat=n1}"/>
+                      <TextBlock Text="{Binding SellStopByCorridor,StringFormat=n1}"/>
+                    </TextBlock>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
         <DataGridTextColumn Header="SSŦ" Binding="{Binding CorridorStats.SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
@@ -278,9 +292,9 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
-                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=[{0:n1}]}"/>
-                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n1}"/>
-                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n1}]}"
+                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=[{0:n0}]}"/>
+                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n0}"/>
+                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n0}]}"
                            Foreground="{Binding IsTicksPerMinuteOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
                            />
               </WrapPanel>

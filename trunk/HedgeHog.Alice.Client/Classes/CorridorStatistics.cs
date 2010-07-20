@@ -9,8 +9,26 @@ namespace HedgeHog.Alice.Client {
     public double AverageHigh { get; set; }
     public double AverageLow { get; set; }
     public double Density { get; set; }
-    public double AskHigh { get; set; }
-    public double BidLow { get; set; }
+    double _AskHigh;
+
+    public double AskHigh {
+      get { return _AskHigh; }
+      set {
+        var h = Height;
+        _AskHigh = value;
+        //if (Height / h > 1.5) ClearCorridorFib();
+      }
+    }
+    double _BidLow;
+
+    public double BidLow {
+      get { return _BidLow; }
+      set {
+        var h = Height;
+        _BidLow = value;
+        //if (Height / h > 1.5) ClearCorridorFib();
+      }
+    }
     public double Height { get { return AskHigh - BidLow; } }
     public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
     public DateTime EndDate { get; set; }
@@ -23,14 +41,7 @@ namespace HedgeHog.Alice.Client {
       this.TradingMacro = tradingMacro;
     }
     public CorridorStatistics(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate) {
-      this.Density = density;
-      this.AverageHigh = averageHigh;
-      this.AverageLow = averageLow;
-      this.AskHigh = askHigh;
-      this.BidLow = bidLow;
-      this.EndDate = endDate;
-      this.StartDate = startDate;
-      this.Periods = periods;
+      Init(density, averageHigh, averageLow, askHigh, bidLow, periods, endDate, startDate, 0);
     }
 
     public void Init(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
@@ -43,7 +54,8 @@ namespace HedgeHog.Alice.Client {
       this.StartDate = startDate;
       this.Periods = periods;
       this.Iterations = iterations;
-      Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
+      //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
+      Corridornes = Density;
       OnPropertyChanged("Height");
       OnPropertyChanged("HeightInPips");
     }
@@ -118,6 +130,9 @@ namespace HedgeHog.Alice.Client {
         bigFibAverage.Enqueue(CorridorFibInstant);
       }
     }
+    void ClearCorridorFib() {
+      _CorridorFibInstant = _CorridorFibAverage = _CorridorFib = 0;
+    }
     public double CorridorFibCmaPeriod { get; set; }
 
     double _corridornes;
@@ -180,8 +195,8 @@ namespace HedgeHog.Alice.Client {
         #endregion
         Func<bool?> tradeSignal4 = () => {
           var isFibAvgOk = fibAvg.Abs() >= FibMinimum;
-          return fib > fibAvg && fibAvg < 0 && isFibAvgOk ? true :
-                 fib < fibAvg && fibAvg > 0 && isFibAvgOk ? false :
+          return fib > fibAvg && (fibInstant < 0 && fibAvg < 0) && isFibAvgOk ? true :
+                 fib < fibAvg && (fibInstant > 0 && fibAvg > 0) && isFibAvgOk ? false :
             (bool?)null;
         };
         return tradeSignal4();
@@ -208,18 +223,27 @@ namespace HedgeHog.Alice.Client {
   }
   public static class Extensions {
 
-    public static CorridorStatistics ScanCorridors(this IEnumerable<Rate> rates, int periodsStart, int iterations, double heightMinimum, bool useStDev) {
+    public static Dictionary<int, CorridorStatistics> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
       if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
       var corridornesses = new Dictionary<int, CorridorStatistics>();
-      for (var periods = periodsStart; periods < rates.Count(); periods++) {
-        corridornesses.Add(periods, ScanCorridor(rates.Take(periods), useStDev));
+      for (var periods = 1; periods < rates.Count(); periods++) {
+        var cs = ScanCorridor(rates.Take(periods), useStDev);
+        //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
+          corridornesses.Add(periods, cs);
       }
+      return corridornesses;
+    }
+
+    public static CorridorStatistics ScanCorridornesses(this IEnumerable<Rate> rates, int iterations, Dictionary<int, CorridorStatistics> corridornesses, double corridornessMinimum, double corridorHeightMinimum) {
+      if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
+      Func<CorridorStatistics, double, bool> filter = 
+        (cs, dm) => cs.Density > dm && cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum;
       var corrAverage = corridornesses.Values.Average(c => c.Density);
-      var corrAfterAverage = corridornesses.Where(c => c.Value.Density > corrAverage).ToArray();
+      var corrAfterAverage = corridornesses.Where(c => filter(c.Value, corrAverage)).ToArray();
 
       for (var i = iterations - 1; i > 0; i--) {
         var avg = corrAfterAverage.Average(c => c.Value.Density);
-        var corrAvg = corrAfterAverage.Where(c => c.Value.Density > avg).ToArray();
+        var corrAvg = corrAfterAverage.Where(c => filter(c.Value, avg)).ToArray();
         if (corrAvg.Length > 0) {
           corrAverage = avg;
           corrAfterAverage = corrAvg;
@@ -227,26 +251,26 @@ namespace HedgeHog.Alice.Client {
       }
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
       corr.Value.Iterations = iterations;
-      var ratesForCorridor = rates.Take(corr.Value.Periods);
-      //.Where(r => r.StartDate >= startDate).ToArray();
-      corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
-      corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
-      if (corr.Value.Height < heightMinimum && iterations > 1)
-        return rates.ScanCorridors(periodsStart, iterations - 1, heightMinimum, useStDev);
+      //var ratesForCorridor = rates.Take(corr.Value.Periods);
+      ////.Where(r => r.StartDate >= startDate).ToArray();
+      //corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
+      //corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
       return corr.Value;
     }
     static CorridorStatistics ScanCorridor(IEnumerable<Rate> rates, bool useStDev) {
       var averageHigh = rates.Average(r => r.PriceHigh);
       var averageLow = rates.Average(r => r.PriceLow);
+      var askHigh = rates.Max(r => r.AskHigh);
+      var bidLow = rates.Min(r => r.BidLow);
       if (useStDev) {
         var values = new List<double>();
         rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
-        return new CorridorStatistics(1 / values.StdDev(), averageHigh, averageLow, 0, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+        return new CorridorStatistics(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
       }
       var count = 0.0;
       foreach (var rate in rates)
         if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
-      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow, 0, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow,askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
     }
 
   }

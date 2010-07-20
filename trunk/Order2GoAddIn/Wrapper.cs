@@ -347,10 +347,19 @@ namespace Order2GoAddIn {
       if (TradeRemoved != null) TradeRemoved(trade);
     }
 
-    public event EventHandler<TradeEventArgs> TradeClosed;
+    event EventHandler<TradeEventArgs> TradeClosedEvent;
+    public event EventHandler<TradeEventArgs> TradeClosed {
+      add {
+        if (TradeClosedEvent == null || !TradeClosedEvent.GetInvocationList().Contains(value))
+          TradeClosedEvent += value;
+      }
+      remove {
+        TradeClosedEvent -= value;
+      }
+    }
     void RaiseTradeClosed(Trade trade) {
-      if (TradeClosed != null)
-        TradeClosed(this, new TradeEventArgs(trade));
+      if (TradeClosedEvent != null)
+        TradeClosedEvent(this, new TradeEventArgs(trade));
     }
 
     public class RequestEventArgs : EventArgs {
@@ -698,7 +707,9 @@ namespace Order2GoAddIn {
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public Account GetAccount() { return GetAccount(true); }
     public Account GetAccount(bool includeOtherInfo) {
+      var sw = Stopwatch.StartNew();
       var row = GetRows(TABLE_ACCOUNTS).First();
+      //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
       var trades = new Trade[]{};
       var account = new Account() {
         ID = row.CellValue(FIELD_ACCOUNTID) + "",
@@ -712,10 +723,12 @@ namespace Order2GoAddIn {
         LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
         ServerTime = ServerTime
       };
-      if( includeOtherInfo)
-        account.PipsToMC = (int)(account.UsableMargin * PipsToMarginCallPerUnitCurrency());
+      //Debug.WriteLine("GetAccount2:{0} ms", sw.Elapsed.TotalMilliseconds);
+      if (includeOtherInfo)
+        account.PipsToMC = (int)(account.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
       //account.PipsToMC = summary == null ? 0 :
       //  (int)(account.UsableMargin / Math.Max(.1, (Math.Abs(summary.BuyLots - summary.SellLots) / 10000)));
+      //Debug.WriteLine("GetAccount3:{0} ms", sw.Elapsed.TotalMilliseconds);
       return account;
     }
     public double CommisionPending { get { return GetTrades("").Sum(t => t.Lots) / 10000; } }
@@ -877,7 +890,7 @@ namespace Order2GoAddIn {
       ret.PointSize = GetPipSize(Pair);
       return ret;
     }
-    public Summary[] GetSummaries() {
+    public Summary[] GetSummaries(Trade[] trades) {
       try {
         var rowsSumm = GetRows(TABLE_SUMMARY);
         var s = rowsSumm
@@ -893,12 +906,12 @@ namespace Order2GoAddIn {
             NetPL = ((double)t.CellValue("NetPL")),
             SellAvgOpen = (double)t.CellValue(FIELD_SELLAVGOPEN),
             BuyAvgOpen = (double)t.CellValue(FIELD_BUYAVGOPEN),
-            StopAmount = GetTrades(t.CellValue(FIELD_INSTRUMENT) + "").Sum(trd => trd.StopAmount),
-            LimitAmount = GetTrades(t.CellValue(FIELD_INSTRUMENT) + "").Sum(trd => trd.LimitAmount)
+            StopAmount = trades.Where(tr=>tr.Pair == t.CellValue(FIELD_INSTRUMENT) + "").Sum(trd => trd.StopAmount),
+            LimitAmount = trades.Where(tr => tr.Pair == t.CellValue(FIELD_INSTRUMENT) + "").Sum(trd => trd.LimitAmount)
           }).ToArray();
         return s;
       } catch (System.Runtime.InteropServices.COMException) {
-        return GetSummaries();
+        return GetSummaries(trades);
       }
     }
     public Summary GetSummary(string Pair) {
@@ -1405,9 +1418,12 @@ namespace Order2GoAddIn {
         CloseTrade(trade);
     }
     public void CloseTrade(Trade trade) {
+      CloseTrade(trade, trade.Lots);
+    }
+    public void CloseTrade(Trade trade,int lot) {
       object o1,o2;
       try {
-        Desk.CloseTrade(trade.Id, trade.Lots, 0, "", 0, out o1,out o2);
+        Desk.CloseTrade(trade.Id, lot, trade.Close, "", 1, out o1,out o2);
       } catch (Exception exc) {
         RaiseError(exc);
       }
@@ -1622,8 +1638,13 @@ namespace Order2GoAddIn {
     }
     public int Digits() { return GetDigits(Pair); }
 
-    private double PipsToMarginCallPerUnitCurrency() {
-      var sm = (from s in GetSummaries()
+    private double PipsToMarginCallPerUnitCurrency(Trade[] trades) {
+      var summaries = (from t in trades
+                       group t by t.Pair into sms
+                       select new { Pair = sms.Key, AmountK = sms.Sum(t => t.Lots / 1000) }
+      ).ToArray();
+
+      var sm = (from s in summaries
                 join o in pipCostDictionary
                 on s.Pair equals o.Key
                 let pc = o.Value
@@ -1812,10 +1833,10 @@ namespace Order2GoAddIn {
           case "closed trades": {
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
               var trade = InitClosedTrade(row);
+              RaiseTradeClosed(trade);
               try {
                 if (ClosedTradeIDs.Contains(trade.Id)) break;
                 ClosedTradeIDs.Add(trade.Id);
-                System.IO.File.AppendAllText("ClosedTrades.txt", showTable(table, row) + Environment.NewLine);
               } catch { }
               var poTrade = PendingOrders.SingleOrDefault(po => po.TradeId == RowID);
               if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);

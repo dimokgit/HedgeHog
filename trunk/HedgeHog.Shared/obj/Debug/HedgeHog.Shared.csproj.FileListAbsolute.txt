@@ -3,3 +3,6 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Share
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Shared.pdb
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Shared.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Shared.pdb
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Lib.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\DynamicLinq.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Lib.pdb
