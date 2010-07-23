@@ -310,7 +310,7 @@ namespace HedgeHog.Alice.Client {
           MasterModel.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
           foreach (var tradeString in File.ReadAllLines("ClosedTrades.xml").Where(s => !string.IsNullOrWhiteSpace(s))) {
             var trade = new Trade().FromString(tradeString);
-            if (trade.TimeClose > DateTime.Now.AddDays(-14)) ClosedTrades.Add(trade);
+            if (trade.TimeClose > DateTime.Now.AddMonths(-1)) ClosedTrades.Add(trade);
           }
         }
       } catch (Exception exc) {
@@ -351,6 +351,8 @@ namespace HedgeHog.Alice.Client {
         //if (e.PropertyName == Lib.GetLambda(() => tm.OverlapToStop)) LoadRates(tm.Pair);
         if (e.PropertyName == Lib.GetLambda(() => tm.CorridorBarMinutes))
           ratesByPair[tm.Pair].Clear();
+        if (Lib.GetLambda(() => tm.LimitBar) == e.PropertyName)
+          GetBarHeight(tm);
         if (e.PropertyName == Lib.GetLambda(() => tm.CurrentLoss)) {
           System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => {
             try {
@@ -406,10 +408,12 @@ namespace HedgeHog.Alice.Client {
         var tm = GetTradingMacro(pair);
         var trades = accountCached.Trades.Where(t => t.Pair == pair).ToArray();// fw.GetTrades(pair).OrderBy(t => t.Id).ToArray();
         var maxPL = trades.Select(t => t.PL).OrderBy(pl => pl).LastOrDefault();
+        GetBarHeight(tm);
         tm.CorridorHeighMinimum = maxPL > 0 ? tm.BarHeight60 : tm.BarHeight60;
         var corridornesses = rates.GetCorridornesses( tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
         foreach (int i in tm.CorridorIterationsArray) {
           var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, tm.CorridorHeighMinimum);
+          if (csCurr == null) continue;
           var cs = tm.GetCorridorStats(csCurr.Iterations);
           cs.Init(csCurr.Density, csCurr.AverageHigh, csCurr.AverageLow, csCurr.AskHigh, csCurr.BidLow, csCurr.Periods, csCurr.EndDate, csCurr.StartDate, csCurr.Iterations);
           cs.FibMinimum = tm.CorridorFibMax(i-1);
@@ -842,11 +846,7 @@ namespace HedgeHog.Alice.Client {
               tmc.SetCorrelation(correlation.Key, correlation.Value);
           //Debug.WriteLine("Correlation:{0} - {1:n1}", correlation.Key, correlation.Value);
           //fw_PriceChanged(price);
-          var rates60 = rates.GetMinuteTicks(tm.LimitBar);
-          var hs = rates60.Select(r => r.AskHigh - r.BidLow).ToArray();
-          var hsAvg = hs.Average();
-          tm.BarHeight60 = hs.Where(h => h > hsAvg).Average();
-          tm.BarHeight60InPips = fw.InPips(pair, tm.BarHeight60);
+          GetBarHeight(tm);
           if (sw.Elapsed > TimeSpan.FromSeconds(2))
             Debug.WriteLine("LoadRates[" + pair + "]:{0:n2} sec", sw.ElapsedMilliseconds / 1000.0);
           //ScanCorridorSchedulers.Run(pair, () => { ScanCorridor(pair, GetRatesByPair(pair)); });
@@ -859,6 +859,27 @@ namespace HedgeHog.Alice.Client {
         timersByPair.Add(pair,new Timer((p) => LoadRates(p + ""), pair, dueTime, TimeSpan.FromMinutes(1)));
       }
       //new ThreadScheduler(TimeSpan.FromSeconds(error ? 5 : 60), ThreadScheduler.infinity, () => LoadRates(pair), (s, e) => Log = e.Exception);
+    }
+
+    private void GetBarHeight(Models.TradingMacro tm) {
+      //var sw = Stopwatch.StartNew();
+      string pair = tm.Pair;
+      var rates = GetRatesByPair(pair);
+      var bhList = new List<double>();
+      for (var i = 0; i < rates.Count - tm.LimitBar; i++)
+        bhList.Add(GetBarHeight(tm.LimitBar, rates.Skip(i).ToList()));
+      tm.BarHeight60 = bhList.Average();
+      tm.BarHeight60InPips = fw.InPips(pair, tm.BarHeight60);
+      //Debug.WriteLine("GetBarHeight:{0} - {1:n0} ms", tm.Pair, sw.Elapsed.TotalMilliseconds);
+    }
+
+    private static double GetBarHeight(int barPeriod, List<Rate> rates) {
+      var rates60 = rates.GetMinuteTicks(barPeriod);
+      var hs = rates60.Select(r => r.AskHigh - r.BidLow).ToArray();
+      var hsAvg = hs.Average();
+      hs = hs.Where(h => h >= hsAvg).ToArray();
+      hsAvg = hs.Average();
+      return hs.Where(h => h >= hsAvg).Average();
     }
 
     Dictionary<string, Timer> timersByPair = new Dictionary<string, Timer>();
@@ -1158,6 +1179,7 @@ namespace HedgeHog.Alice.Client {
       Trade[] trades = fw.GetTrades(pair).OrderByDescending(t=>t.Lots).ToArray();
       if( trades.Length == 0)return;
       var tm = GetTradingMacro(pair);
+      if (tm.CorridorStats == null) return;
       var lotSizeCalc = CalculateLot(tm);
       var lotSizeCurr = trades.Sum(t => t.Lots);
       if (lotSizeCurr / lotSizeCalc < 5) return;
@@ -1250,7 +1272,7 @@ namespace HedgeHog.Alice.Client {
     private void InitTradingMacro(Models.TradingMacro tm) {
       if (!ratesByPair.ContainsKey(tm.Pair)) {
         tm.PropertyChanged += TradingMacro_PropertyChanged;
-        tm.HistoricalGrossPL = ClosedTrades.Where(t => t.Pair == tm.Pair).Sum(t => t.GrossPL).ToInt();
+        tm.HistoricalGrossPL = ClosedTrades.Where(t => t.Pair == tm.Pair).Sum(t => t.GrossPL - t.Lots / 7000.0).ToInt();
         ratesByPair.Add(tm.Pair, new List<Rate>());
         foreach (var i in tm.CorridorIterationsArray)
           tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });
