@@ -194,7 +194,7 @@ namespace HedgeHog.Alice.Client {
         };
         #endregion
         Func<bool?> tradeSignal4 = () => {
-          var isFibAvgOk = fibAvg.Abs() >= FibMinimum;
+          var isFibAvgOk = fibAvg.Abs() >= FibMinimum && fib.Abs() <= FibMinimum;
           return fib > fibAvg && (fibInstant < 0 && fibAvg < 0) && isFibAvgOk ? true :
                  fib < fibAvg && (fibInstant > 0 && fibAvg > 0) && isFibAvgOk ? false :
             (bool?)null;
@@ -241,7 +241,7 @@ namespace HedgeHog.Alice.Client {
       var corrAverage = corridornesses.Values.Average(c => c.Density);
       var corrAfterAverage = corridornesses.Where(c => filter(c.Value, corrAverage)).ToArray();
 
-      for (var i = iterations - 1; i > 0; i--) {
+      for (var i = iterations - 1; i > 0 && corrAfterAverage.Count() > 0; i--) {
         var avg = corrAfterAverage.Average(c => c.Value.Density);
         var corrAvg = corrAfterAverage.Where(c => filter(c.Value, avg)).ToArray();
         if (corrAvg.Length > 0) {
@@ -249,6 +249,7 @@ namespace HedgeHog.Alice.Client {
           corrAfterAverage = corrAvg;
         } else break;
       }
+      if (corrAfterAverage.Count() == 0) return null;
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
       corr.Value.Iterations = iterations;
       //var ratesForCorridor = rates.Take(corr.Value.Periods);
