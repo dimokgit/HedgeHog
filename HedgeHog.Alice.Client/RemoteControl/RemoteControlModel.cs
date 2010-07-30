@@ -115,6 +115,7 @@ namespace HedgeHog.Alice.Client {
         _loadTicks.Add(pair, new ThreadScheduler(() => LoadTicks(pair), (s, e) => Log = e.Exception));
       return _loadTicks[pair];
     }
+    ThreadScheduler TickCheckerSheduler;
 
     #region PendingTrade
     class PendingTrade {
@@ -312,6 +313,7 @@ namespace HedgeHog.Alice.Client {
             var trade = new Trade().FromString(tradeString);
             if (trade.TimeClose > DateTime.Now.AddMonths(-1)) ClosedTrades.Add(trade);
           }
+          TickCheckerSheduler = new ThreadScheduler((s, e) => Log = e.Exception);
         }
       } catch (Exception exc) {
         Log = exc;
@@ -479,6 +481,14 @@ namespace HedgeHog.Alice.Client {
           if (queue.Count > maxCount) queue.Dequeue();
           queue.Enqueue(price);
         }
+        return TickPerMinute(queue);
+      }
+      public double TickPerMinute() {
+        return priceStackByPair.Values.Average(q => TickPerMinute(q));
+      }
+      public DateTime LastTickTime() { return priceStackByPair.Count == 0 ? DateTime.MaxValue: priceStackByPair.Values.Select(q => q.Max(a => a.Time)).Max(); }
+      private static double TickPerMinute(Queue<Price> queue) {
+        if (queue.Count < 10) return 10;
         var totalMinutes = (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes;
         return queue.Count / Math.Max(1, totalMinutes);
       }
@@ -493,6 +503,8 @@ namespace HedgeHog.Alice.Client {
       var pair = price.Pair;
       var tm = GetTradingMacro(pair);
       if (tm != null) {
+        if (tm.InPips == null) tm.InPips = (d) => fw.InPips(pair, d);
+        tm.SetPriceCma(price);
         tm.TicksPerMinuteSet(ticksInst.Add(price, fw.ServerTime), ticksFast.Add(price, fw.ServerTime), ticksSlow.Add(price, fw.ServerTime));
         AddCurrentTick(GetRatesByPair(pair), price);
         foreach (var cs in tm.CorridorStatsArray) {
@@ -500,8 +512,10 @@ namespace HedgeHog.Alice.Client {
           if (cs != null) {
             var ratesForStats = GetRatesForCorridor(rates, cs);
             cs.SetCorridorFib(
-              fw.InPips(pair, price.Bid - ratesForStats.Min(r => r.BidLow)),
-              fw.InPips(pair, ratesForStats.Max(r => r.AskHigh) - price.Ask),
+              //fw.InPips(pair, price.Bid - ratesForStats.Min(r => r.BidLow)),
+              fw.InPips(pair, price.Average - ratesForStats.Min(r => r.PriceAvg)),
+              //fw.InPips(pair, ratesForStats.Max(r => r.AskHigh) - price.Ask),
+              fw.InPips(pair, ratesForStats.Max(r => r.PriceAvg) - price.Average),
               tm.TicksPerMinuteMinimum);
           }
         }
@@ -512,7 +526,7 @@ namespace HedgeHog.Alice.Client {
         ScanCorridor(pair, GetRatesByPair(pair));
         OpenTradeByStop(pair);
       });
-      CheckTradesLotSizeScheduler.Run(pair, () => CheckTradesLotSize(pair));
+      //CheckTradesLotSizeScheduler.Run(pair, () => CheckTradesLotSize(pair));
       if (sw.Elapsed > TimeSpan.FromSeconds(1))
         Log = new Exception("fw_PriceChanged took " + sw.Elapsed.TotalSeconds + " secods");
     }
@@ -532,8 +546,6 @@ namespace HedgeHog.Alice.Client {
         var tm = GetTradingMacro(pair);
         if (tm == null) return;
         var account = accountCached = fw.GetAccount();
-        if (sw.Elapsed > TimeSpan.FromSeconds(1))
-          Log = new Exception("RunPrice2(" + pair + ") took " + Math.Round(sw.Elapsed.TotalSeconds, 1) + " secods");
         var trades = account.Trades.Where(t => t.Pair == tm.Pair).ToArray();
         tm.TradesToHistory_Add(trades);
         tm.Positions = trades.Length;
@@ -548,7 +560,7 @@ namespace HedgeHog.Alice.Client {
           CheckProfitScheduler.Command = () => CheckProfit(account);
         CheckTrades(trades);
       } catch (Exception exc) { Log = exc; }
-      if (sw.Elapsed > TimeSpan.FromSeconds(1))
+      if (sw.Elapsed > TimeSpan.FromSeconds(5))
         Log = new Exception("RunPrice(" + pair + ") took " + Math.Round(sw.Elapsed.TotalSeconds, 1) + " secods");
       //Debug.WriteLine("RunPrice[{1}]:{0} ms", sw.Elapsed.TotalMilliseconds, pair);
     }
@@ -582,9 +594,9 @@ namespace HedgeHog.Alice.Client {
           var tradesInSameDirection = trades.Where(t => t.IsBuy == buy).ToArray();
           var maxPL = tradesInSameDirection.Length == 0 ? 0 : tradesInSameDirection.Max(t => t.PL);
           if (tm.ReverseOnProfit
-              && tm.CorridorStats.IsCorridornessOk
+              //&& tm.CorridorStats.IsCorridornessOk
               && tradesInSameDirection.Length < tm.MaximumPositions
-              && (tradesInSameDirection.Length == 0 || maxPL < -tm.TradeDistance)
+              //&& (tradesInSameDirection.Length == 0 || maxPL < -tm.TradeDistance)
             ) {
             #region Pending Order Setup
             PendingOrder po = null; ;
@@ -808,12 +820,35 @@ namespace HedgeHog.Alice.Client {
       }
       return correlations.Count > 0 ? correlations.Average() : 0;
     }
+
+    Thread reLogin;
+    Scheduler loginScheduler = new Scheduler(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher);
     void AddCurrentTick(List<Rate> rates, Price price) {
       if (rates == null || rates.Count == 0) return;
       var priceTime = price.Time.Round();
       if (priceTime > rates.Last().StartDate)
         rates.Add(new Rate(priceTime, price.Ask, price.Bid, false));
       else rates.Last().AddTick(priceTime, price.Ask, price.Bid);
+      var deleay = (60 / ticksInst.TickPerMinute() * 10000).ToInt();
+      if( reLogin != null)
+        try{
+          reLogin.Abort();
+        }catch(Exception exc){
+          Log = exc;
+        }
+      reLogin = new Thread(() => {
+        try {
+          Thread.Sleep(deleay);
+          if (!loginScheduler.IsRunning) {
+            loginScheduler.Command = () => {
+              Log = new Exception("Forced re-login.");
+              MasterModel.CoreFX.Logout();
+              MasterModel.CoreFX.LogOn();
+            };
+          }
+        } catch (ThreadAbortException) { }
+      });
+      reLogin.Start();
     }
     void LoadRates(string pair) {
       var error = false;
@@ -821,6 +856,13 @@ namespace HedgeHog.Alice.Client {
       var rates = GetRatesByPair(pair);
       if (rates.Count > 0 && !IsLoggedIn) {
         MasterModel.CoreFX.LogOn();
+      }
+      if (ticksInst.LastTickTime() < DateTime.Now.AddMinutes(-1) && !loginScheduler.IsRunning) {
+        loginScheduler.Command = () => {
+          Log = new Exception("Forced re-login.");
+          MasterModel.CoreFX.Logout();
+          MasterModel.CoreFX.LogOn();
+        };
       }
       if (tm == null || !IsLoggedIn || tm.TradingRatio == 0) error = true;
       else
@@ -832,7 +874,8 @@ namespace HedgeHog.Alice.Client {
           rates = rates.Take(rates.Count - 2).ToList();
           if (rates.Count == 0)
             rates = fw.GetBarsBase(pair, 1, minutesBack).ToList();
-          fw.GetBars(pair, 1, fw.ServerTime.Round().AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+          var startDate = new[] { tm.CorridorStats == null ? DateTime.Now : tm.CorridorStats.StartDate.AddMinutes(-10), fw.ServerTime.Round().AddMinutes(-minutesBack) }.Min();
+          fw.GetBars(pair, 1, startDate, DateTime.FromOADate(0), ref rates);
           if (sw.Elapsed > TimeSpan.FromSeconds(5))
             Debug.WriteLine("GetRates[" + pair + "]:{0:n2} sec", sw.ElapsedMilliseconds / 1000.0);
           rates.RemoveRange(0, Math.Max(0, rates.Count - minutesBack));
@@ -1033,7 +1076,8 @@ namespace HedgeHog.Alice.Client {
     #region OpenTrade
     PendingOrder OpenChainTrade(Models.TradingMacro tm, bool isBuy) {
       var lot = CalculateLot(tm);
-      if (lot == 0) return null;
+      lot = lot - fw.GetTrades(tm.Pair).Sum(t => t.Lots);
+      if (lot <= 0) return null;
       var stop = tm.FreezeStopType == Models.Freezing.None ? 0 : GetStopByFractal(tm.Pair, isBuy, fw.ServerTime);
       return OpenTrade(isBuy, tm.Pair, lot, tm.TakeProfitPips, 0, stop, "");
     }

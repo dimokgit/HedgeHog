@@ -245,11 +245,20 @@
         <DataGridTemplateColumn Header="L=" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <WrapPanel>
+              <TextBlock>
                 <TextBlock Text="{Binding TradeDistance,StringFormat=n0}" ToolTip="Trade Distance"/>
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"/>
+                <!--<TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"/>-->
                 <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}]}" ToolTip="Bar 60 Height in Pips"/>
-              </WrapPanel>
+                <TextBlock Text="{Binding PriceCmaDiffernceInPips}" FontWeight="Black" ToolTip="Price CMA Differnce In Pips" 
+                  Foreground="{Binding PriceCmaDiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
+                />
+                <TextBlock Text="{Binding PriceCma1DiffernceInPips,StringFormat=/{0:n}}" FontWeight="Black" ToolTip="Price CMA1 Differnce In Pips" 
+                  Foreground="{Binding PriceCma1DiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
+                />
+                <TextBlock Text="{Binding PriceCma23DiffernceInPips,StringFormat=/{0:n}}" FontWeight="Black" ToolTip="Price CMA23 Differnce In Pips"
+                  Foreground="{Binding PriceCma23DiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
+                />
+              </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
@@ -282,7 +291,6 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTextColumn Header="SSŦ" Binding="{Binding CorridorStats.SellStopByCorridor,StringFormat=n1}" IsReadOnly="True"/>
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTemplateColumn>

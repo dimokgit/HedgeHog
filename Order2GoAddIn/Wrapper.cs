@@ -577,15 +577,17 @@ namespace Order2GoAddIn {
     }
     public IEnumerable<Rate> GetBarsBase(string pair, int period, int barsCount) {
       var ticks = GetBars(pair, period, barsCount);
-      int timeoutCount = 1;
-      while (ticks.Count<barsCount) {
-        try {
-          var endDate = ticks.Min(t1 => t1.StartDate);
-          var t = GetBarsBase_(pair, period, DateTime.MinValue, endDate);
-          ticks = ticks.Union(t).ToList();
-        } catch (Exception exc) {
-          if (exc.Message.ToLower().Contains("timeout")) {
-            if (timeoutCount-- == 0) break;
+      if (ticks.Count > 0) {
+        int timeoutCount = 1;
+        while (ticks.Count < barsCount) {
+          try {
+            var endDate = ticks.Min(t1 => t1.StartDate);
+            var t = GetBarsBase_(pair, period, DateTime.MinValue, endDate);
+            ticks = ticks.Union(t).ToList();
+          } catch (Exception exc) {
+            if (exc.Message.ToLower().Contains("timeout")) {
+              if (timeoutCount-- == 0) break;
+            }
           }
         }
       }
