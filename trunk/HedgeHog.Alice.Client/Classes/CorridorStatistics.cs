@@ -118,13 +118,14 @@ namespace HedgeHog.Alice.Client {
     }
 
     public void SetCorridorFib(double buyStop, double sellStop, double cmaPeriod) {
+      var cfiMax = 500;
       CorridorFibCmaPeriod = cmaPeriod;
-      BuyStopByCorridor = buyStop;
-      SellStopByCorridor = sellStop;
-      CorridorFibInstant =
-        BuyStopByCorridor == 0 ? -bigFibAverage.Average()
-        : SellStopByCorridor == 0 ? bigFibAverage.Average()
-        : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+      BuyStopByCorridor = Math.Max(0, buyStop);
+      SellStopByCorridor = Math.Max(0, sellStop);
+      var cf = BuyStopByCorridor == 0 ? -bigFibAverage.Average()
+                : SellStopByCorridor == 0 ? bigFibAverage.Average()
+                : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+      CorridorFibInstant = cf > 0 ? Math.Min(cfiMax, cf) : Math.Max(-cfiMax, cf);
       if (CorridorFibInstant > 100 && CorridorFibInstant != bigFibAverage.Last()) {
         if (bigFibAverage.Count > 20) bigFibAverage.Dequeue();
         bigFibAverage.Enqueue(CorridorFibInstant);
@@ -192,14 +193,21 @@ namespace HedgeHog.Alice.Client {
                  fib < fibAvg && fibInstant > fib && fibAvg > 0 && isFibAvgOk ? false :
             (bool?)null;
         };
-        #endregion
         Func<bool?> tradeSignal4 = () => {
           var isFibAvgOk = fibAvg.Abs() >= FibMinimum && fib.Abs() <= FibMinimum;
           return fib > fibAvg && (fibInstant < 0 && fibAvg < 0) && isFibAvgOk ? true :
                  fib < fibAvg && (fibInstant > 0 && fibAvg > 0) && isFibAvgOk ? false :
             (bool?)null;
         };
-        return tradeSignal4();
+        #endregion
+        Func<bool?> tradeSignal5 = () => {
+          if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
+          var pdp = TradingMacro.PriceCma23DiffernceInPips;
+          return TradingMacro.PriceCma3 > AverageHigh && pdp < 0 ? false :
+                 TradingMacro.PriceCma3 < AverageLow && pdp > 0 ? true :
+            (bool?)null;
+        };
+        return tradeSignal5();
       }
     }
 

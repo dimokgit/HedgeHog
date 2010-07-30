@@ -506,6 +506,76 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    private double _PriceCma;
+    public double PriceCma {
+      get { return _PriceCma; }
+      set {
+        _PriceCma = value;
+        OnPropertyChanged("PriceCma");
+      }
+    }
+    private double _PriceCma1;
+    public double PriceCma1 {
+      get { return _PriceCma1; }
+      set {
+        if (_PriceCma1 != value) {
+          _PriceCma1 = value;
+          OnPropertyChanged("PriceCma1");
+        }
+      }
+    }
+
+    private double _PriceCma2;
+    public double PriceCma2 {
+      get { return _PriceCma2; }
+      set {
+        _PriceCma2 = value;
+        OnPropertyChanged("PriceCma2");
+      }
+    }
+
+    private double _PriceCma3;
+    public double PriceCma3 {
+      get { return _PriceCma3; }
+      set {
+        if (_PriceCma3 != value) {
+          _PriceCma3 = value;
+          OnPropertyChanged("PriceCma3");
+          OnPropertyChanged("PriceCmaDiffernceInPips");
+          OnPropertyChanged("PriceCma1DiffernceInPips");
+          OnPropertyChanged("PriceCma23DiffernceInPips");
+        }
+      }
+    }
+
+
+    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma - PriceCma2), 2); } }
+    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
+    public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma2 - PriceCma3), 2); } }
+
+    int _priceCmaCounter;
+
+    public int PriceCmaCounter {
+      get { return _priceCmaCounter; }
+      protected set { _priceCmaCounter = value; }
+    }
+    public void SetPriceCma(Price price) {
+      PriceCmaCounter++;
+      if (PriceDigits == 0) PriceDigits = price.Digits;
+      PriceCma = Lib.CMA(PriceCma, 0, TicksPerMinuteMaximun, price.Average);
+      PriceCma1 = Lib.CMA(PriceCma1, 0, TicksPerMinuteMaximun, PriceCma);
+      PriceCma2 = Lib.CMA(PriceCma2, 0, TicksPerMinuteMaximun, PriceCma1);
+      PriceCma3 = Lib.CMA(PriceCma3, 0, TicksPerMinuteMaximun, PriceCma2);
+    }
+    public int PriceDigits { get; set; }
+    public string PriceDigitsFormat { get { return "n" + (PriceDigits-1); } }
+    public string PriceDigitsFormat2 { get { return "n" + PriceDigits; } }
+
+    Func<double, double> _InPips = null;
+    public Func<double, double> InPips {
+      get { return _InPips; }
+      set { _InPips = value; }
+    }
 
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
