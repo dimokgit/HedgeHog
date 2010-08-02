@@ -547,7 +547,6 @@ namespace HedgeHog.Alice.Client {
         if (tm == null) return;
         var account = accountCached = fw.GetAccount();
         var trades = account.Trades.Where(t => t.Pair == tm.Pair).ToArray();
-        tm.TradesToHistory_Add(trades);
         tm.Positions = trades.Length;
         tm.Net = trades.Length > 0 ? trades.Sum(t => t.GrossPL) : (double?)null;
         tm.CurrentLossPercent = (tm.CurrentLoss + tm.Net.GetValueOrDefault()) / account.Balance;
@@ -567,28 +566,24 @@ namespace HedgeHog.Alice.Client {
 
     void OpenTradeByStop(string pair) {
       var tm = GetTradingMacro(pair);
-      if (tm == null) return;
-      if (tm.CorridorStats.BuyStopByCorridor == 0 || tm.CorridorStats.SellStopByCorridor == 0) return;
+      if (tm == null || tm.CorridorStats == null) return;
+      //if (tm.CorridorStats.BuyStopByCorridor == 0 || tm.CorridorStats.SellStopByCorridor == 0) return;
       var buy = tm.CorridorStats.TradeSignal;
-      var close = tm.CloseTrades;
-      if (buy.HasValue && tm.CloseTrades.HasValue) {
-        var trades = fw.GetTrades(pair);
+      var trades = fw.GetTrades(pair);
+      var closeTrades = tm.CloseTrades(trades);
+      if (closeTrades.Length > 0) {
         #region Close Trades
-        if (close.HasValue) {
-          var tradesToClose = trades.Where(t => t.IsBuy != close).ToArray();
-          if (tradesToClose.Length > 0) {
-            try {
-              fw.CloseTrades(tradesToClose);
-              tm.TradesToHistory_Clear();
-            } catch (Exception exc) {
-              Log = exc;
-            } finally {
-              RunPrice(pair);
-            }
-            return;
+          try {
+            fw.CloseTrades(closeTrades);
+          } catch (Exception exc) {
+            Log = exc;
+          } finally {
+            RunPrice(pair);
           }
-        }
+          return;
         #endregion
+      }
+      if (buy.HasValue) {
         #region Open Trade
         if (buy.HasValue) {
           var tradesInSameDirection = trades.Where(t => t.IsBuy == buy).ToArray();
