@@ -647,7 +647,12 @@ namespace HedgeHog.Alice.Client {
       
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
-        AccountModel.Update(fwMaster.GetAccount(), 0, fwMaster.ServerTime);
+        try {
+          AccountModel.Update(fwMaster.GetAccount(), 0, fwMaster.ServerTime);
+        } catch (Exception exc) {
+          Log = exc;
+          MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
+        }
       };
       CoreFX.LoginError += exc => {
         IsInLogin = false;

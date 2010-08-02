@@ -153,7 +153,15 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    public bool? CloseTrades {
+    Trade[] emptyTrades = new Trade[] { };
+    public Trade[] CloseTrades(Trade[] trades) {
+      if (true || CorridorStats == null) return emptyTrades;
+      Func<bool, Trade[]> plTrades = buy => trades.Where(t => t.IsBuy == buy && t.PL > 0).ToArray();
+      var isBuy = PriceCma23DiffernceInPips < 0;
+      var ts = trades.Where(t => t.IsBuy == isBuy && t.PL > 0).ToArray();
+      return ts.Length > 2 ? ts : emptyTrades;
+    }
+    public bool? CloseTrades_ {
       get {
         var csTS = CorridorStatsArray.FirstOrDefault(cs => cs.Height > CorridorHeighMinimum && cs.TradeSignal.HasValue);
         return csTS == null ? null : csTS.TradeSignal;
@@ -456,38 +464,12 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    class TradeHistory {
-      public DateTime Time { get; set; }
-      public Trade Trade { get; set; }
-      public TradeHistory() { }
-      public TradeHistory(DateTime time, Trade trade) {
-        this.Time = time;
-        this.Trade = trade;
-      }
-    }
-
-    Queue<TradeHistory> tradesQueue = new Queue<TradeHistory>();
     public double CorridorFibMax(int index) { return double.Parse(corridorFibMax[index]); }
     public string[] corridorFibMax {
       get {
         var ms = FibMax.Split(',');
         return new[] { ms.Take(1).First(), ms.Take(2).Last(), ms.Take(3).Last(), ms.Take(4).Last() };
       }
-    }
-
-    public void TradesToHistory_Clear() {
-      tradesQueue.Clear();
-    }
-    public void TradesToHistory_Add(Trade[] trades) {
-      var now = DateTime.Now;
-      while (tradesQueue.Count() > 0 && (now - tradesQueue.Peek().Time).Duration() > TimeSpan.FromMinutes(Overlap))
-        tradesQueue.Dequeue();
-      foreach (var trade in trades)
-        tradesQueue.Enqueue(new TradeHistory(now, trade));
-    }
-
-    public Trade[] MaxPLTrade(bool isBuy) {
-      return tradesQueue.Where(t => t.Trade.IsBuy == isBuy && t.Trade.PL > 0).Select(th=>th.Trade).ToArray();
     }
 
     public double BarHeight60 { get; set; }
