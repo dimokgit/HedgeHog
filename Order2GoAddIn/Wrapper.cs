@@ -219,20 +219,60 @@ namespace Order2GoAddIn {
     const string FIELD_PIPCOST = "PipCost";
     #endregion
 
+    #region Exceptions
+    public class OrderExecutionException : Exception {
+      public OrderExecutionException(string Message, Exception inner) : base(Message, inner) { }
+    }
+    #endregion
+
     #region Events
 
-    public event EventHandler<PendingOrderEventArgs> PendingOrderCompleted;
+    #region PendingOrderCompletedEvent
+    event EventHandler<PendingOrderEventArgs> PendingOrderCompletedEvent;
+    public event EventHandler<PendingOrderEventArgs> PendingOrderCompleted {
+      add {
+        if (PendingOrderCompletedEvent == null || !PendingOrderCompletedEvent.GetInvocationList().Contains(value))
+          PendingOrderCompletedEvent += value;
+      }
+      remove {
+        PendingOrderCompletedEvent -= value;
+      }
+    }
     void RaisePendingOrderCompleted(PendingOrder po) {
-      if (PendingOrderCompleted != null) PendingOrderCompleted(this, new PendingOrderEventArgs(po));
+      if (PendingOrderCompletedEvent != null) PendingOrderCompletedEvent(this, new PendingOrderEventArgs(po));
+    }
+    #endregion
+
+    #region OrderErrorEvent
+    event EventHandler<OrderErrorEventArgs> OrderErrorEvent;
+    public event EventHandler<OrderErrorEventArgs> OrderError {
+      add {
+        if (OrderErrorEvent == null || !OrderErrorEvent.GetInvocationList().Contains(value))
+          OrderErrorEvent += value;
+      }
+      remove {
+        OrderErrorEvent -= value;
+      }
     }
 
-    public event EventHandler<OrderErrorEventArgs> OrderError;
     void RaiseOrderError(Exception exception) {
       try {
-        if (OrderError != null) OrderError(this, new OrderErrorEventArgs(exception));
+        if (OrderErrorEvent != null) OrderErrorEvent(this, new OrderErrorEventArgs(exception));
       } catch (Exception exc) { FileLogger.LogToFile(exc,ERROR_FILE_NAME); }
     }
-    public event EventHandler<ErrorEventArgs> Error;
+    #endregion
+
+    #region ErrorEvent
+    event EventHandler<ErrorEventArgs> ErrorEvent;
+    public event EventHandler<ErrorEventArgs> Error {
+      add {
+        if (ErrorEvent == null || !ErrorEvent.GetInvocationList().Contains(value))
+          ErrorEvent += value;
+      }
+      remove {
+        ErrorEvent -= value;
+      }
+    }
     void RaiseError(Exception exception,string pair,bool isBuy,int lot,double stop,double limit,string remark) {
       RaiseError(new ErrorEventArgs(exception,pair,isBuy,lot,stop,limit,remark));
     }
@@ -241,24 +281,30 @@ namespace Order2GoAddIn {
     }
     void RaiseError(ErrorEventArgs eventArgs) {
       try {
-        if (Error != null) Error(this, eventArgs);
-        else Debug.Fail(eventArgs.Error + "");
+        if (ErrorEvent != null) ErrorEvent(this, eventArgs);
+        //else Debug.Fail(eventArgs.Error + "");
       } catch (Exception exc) { FileLogger.LogToFile(exc,ERROR_FILE_NAME); }
     }
-    public class PairNotFoundException : NotSupportedException {
-      public PairNotFoundException(string Pair, string table) : base("Pair " + Pair + " not found in " + table + " table.") { }
-      public PairNotFoundException(string Pair) : base("Pair " + Pair + " not found.") { }
-    }
-    public class OrderExecutionException : Exception {
-      public OrderExecutionException(string Message, Exception inner) : base(Message, inner) { }
-    }
+    #endregion
 
+    #region RowChangedEvent
     public delegate void RowChangedEventHandler(string TableType, string RowID);
-    public event RowChangedEventHandler RowChanged;
-    void RaiseRowChanged(string tableType, string rowID) {
-      if (RowChanged != null) RowChanged(tableType, rowID);
+    event RowChangedEventHandler RowChangedEvent;
+    public event RowChangedEventHandler RowChanged {
+      add {
+        if (RowChangedEvent == null || !RowChangedEvent.GetInvocationList().Contains(value))
+          RowChangedEvent += value;
+      }
+      remove {
+        RowChangedEvent -= value;
+      }
     }
+    void RaiseRowChanged(string tableType, string rowID) {
+      if (RowChangedEvent != null) RowChangedEvent(tableType, rowID);
+    }
+    #endregion
 
+    #region PriceChangedEvent
     public delegate void PriceChangedEventHandler(Price Price);
     event PriceChangedEventHandler PriceChangedEvent;
     public event PriceChangedEventHandler PriceChanged {
@@ -270,10 +316,12 @@ namespace Order2GoAddIn {
         PriceChangedEvent -= value;
       }
     }
-    protected void OnPriceChanged(Price price) {
+    void OnPriceChanged(Price price) {
       if (PriceChangedEvent != null) PriceChangedEvent(price);
     }
+    #endregion
 
+    #region OrderRemovedEvent
     public delegate void OrderRemovedEventHandler(Order order);
     event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
@@ -288,14 +336,24 @@ namespace Order2GoAddIn {
     void RaiseOrderRemoved(Order order) {
       if (OrderRemovedEvent != null) OrderRemovedEvent(order);
     }
+    #endregion
 
+    #region TradeAddedEvent
     public delegate void TradeAddedEventHandler(Trade trade);
-    public event TradeAddedEventHandler TradeAdded;
-
-    void RaiseTradeAdded(Trade trade) {
-      if (TradeAdded != null) TradeAdded(trade);
+    event TradeAddedEventHandler TradeAddedEvent;
+    public event TradeAddedEventHandler TradeAdded {
+      add {
+        if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
+          TradeAddedEvent += value;
+      }
+      remove {
+        TradeAddedEvent -= value;
+      }
     }
-
+    void RaiseTradeAdded(Trade trade) {
+      if (TradeAddedEvent != null) TradeAddedEvent(trade);
+    }
+    #endregion
 
     public class TradeEventArgs : EventArgs {
       public Trade Trade { get; set; }
@@ -304,25 +362,49 @@ namespace Order2GoAddIn {
       }
     }
 
-    public event EventHandler<TradeEventArgs> TradeChanged;
-    void RaiseTradeChanged(Trade Trade) {
-      if (TradeChanged != null) TradeChanged(this, new TradeEventArgs(Trade));
+    #region TradeChangedEvent
+    event EventHandler<TradeEventArgs> TradeChangedEvent;
+    public event EventHandler<TradeEventArgs> TradeChanged {
+      add {
+        if (TradeChangedEvent == null || !TradeChangedEvent.GetInvocationList().Contains(value))
+          TradeChangedEvent += value;
+      }
+      remove {
+        TradeChangedEvent -= value;
+      }
     }
+    void RaiseTradeChanged(Trade Trade) {
+      if (TradeChangedEvent != null) TradeChangedEvent(this, new TradeEventArgs(Trade));
+    }
+    #endregion
 
+
+    #region SessionStatusChangedEvent
     public class SesstionStatusEventArgs : EventArgs {
       public string Status { get; set; }
       public SesstionStatusEventArgs(string status) {
         this.Status = status;
       }
     }
-    public event EventHandler<SesstionStatusEventArgs> SessionStatusChanged;
-    private void OnSessionStatusChanged(string status) {
-      if (SessionStatusChanged != null) 
-        SessionStatusChanged(this, new SesstionStatusEventArgs(status));
+
+    event EventHandler<SesstionStatusEventArgs> SessionStatusChangedEvent;
+    public event EventHandler<SesstionStatusEventArgs> SessionStatusChanged {
+      add {
+        if (SessionStatusChangedEvent == null || !SessionStatusChangedEvent.GetInvocationList().Contains(value))
+          SessionStatusChangedEvent += value;
+      }
+      remove {
+        SessionStatusChangedEvent -= value;
+      }
     }
+    private void OnSessionStatusChanged(string status) {
+      if (SessionStatusChangedEvent != null) 
+        SessionStatusChangedEvent(this, new SesstionStatusEventArgs(status));
+    }
+    #endregion
 
 
-
+    #region OrderAddedEvent
     public class OrderEventArgs : EventArgs {
       public Order Order { get; set; }
       public OrderEventArgs(Order newOrder) {
@@ -330,23 +412,57 @@ namespace Order2GoAddIn {
       }
     }
 
-    public event EventHandler<OrderEventArgs> OrderAdded;
+    event EventHandler<OrderEventArgs> OrderAddedEvent;
+    public event EventHandler<OrderEventArgs> OrderAdded {
+      add {
+        if (OrderAddedEvent == null || !OrderAddedEvent.GetInvocationList().Contains(value))
+          OrderAddedEvent += value;
+      }
+      remove {
+        OrderAddedEvent -= value;
+      }
+    }
+
     void RaiseOrderAdded(Order Order) {
-      if (OrderAdded != null) OrderAdded(this, new OrderEventArgs(Order));
+      if (OrderAddedEvent != null) OrderAddedEvent(this, new OrderEventArgs(Order));
     }
-    public event EventHandler<OrderEventArgs> OrderChanged;
+    #endregion
+
+    #region OrderChangedEvent
+    event EventHandler<OrderEventArgs> OrderChangedEvent;
+    public event EventHandler<OrderEventArgs> OrderChanged {
+      add {
+        if (OrderChangedEvent == null || !OrderChangedEvent.GetInvocationList().Contains(value))
+          OrderChangedEvent += value;
+      }
+      remove {
+        OrderChangedEvent -= value;
+      }
+    }
+
     void RaiseOrderChanged(Order Order) {
-      if (OrderChanged != null) OrderChanged(this, new OrderEventArgs(Order));
+      if (OrderChangedEvent != null) OrderChangedEvent(this, new OrderEventArgs(Order));
     }
+    #endregion
 
-
-
+    #region TradeRemovedEvent
     public delegate void TradeRemovedEventHandler(Trade trade);
-    public event TradeRemovedEventHandler TradeRemoved;
-    void RaiseTradeRemoved(Trade trade) {
-      if (TradeRemoved != null) TradeRemoved(trade);
+    event TradeRemovedEventHandler TradeRemovedEvent;
+    public event TradeRemovedEventHandler TradeRemoved {
+      add {
+        if (TradeRemovedEvent == null || !TradeRemovedEvent.GetInvocationList().Contains(value))
+          TradeRemovedEvent += value;
+      }
+      remove {
+        TradeRemovedEvent -= value;
+      }
     }
+    void RaiseTradeRemoved(Trade trade) {
+      if (TradeRemovedEvent != null) TradeRemovedEvent(trade);
+    }
+    #endregion
 
+    #region TradeClosedEvent
     event EventHandler<TradeEventArgs> TradeClosedEvent;
     public event EventHandler<TradeEventArgs> TradeClosed {
       add {
@@ -361,7 +477,9 @@ namespace Order2GoAddIn {
       if (TradeClosedEvent != null)
         TradeClosedEvent(this, new TradeEventArgs(trade));
     }
+    #endregion
 
+    #region RequestFailedEvent
     public class RequestEventArgs : EventArgs {
       public string ReqiestId { get; set; }
       public string Error { get; set; }
@@ -370,11 +488,22 @@ namespace Order2GoAddIn {
         this.Error = error;
       }
     }
-    public event EventHandler<RequestEventArgs> RequestFailed;
-    protected void OnRequestFailed(string requestId,string error) {
-      if (RequestFailed != null) RequestFailed(this, new RequestEventArgs(requestId, error));
+
+    event EventHandler<RequestEventArgs> RequestFailedEvent;
+    public event EventHandler<RequestEventArgs> RequestFailed {
+      add {
+        if (RequestFailedEvent == null || !RequestFailedEvent.GetInvocationList().Contains(value))
+          RequestFailedEvent += value;
+      }
+      remove {
+        RequestFailedEvent -= value;
+      }
     }
 
+    protected void OnRequestFailed(string requestId,string error) {
+      if (RequestFailedEvent != null) RequestFailedEvent(this, new RequestEventArgs(requestId, error));
+    }
+    #endregion
     #endregion
 
     #region Properties
@@ -709,29 +838,34 @@ namespace Order2GoAddIn {
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public Account GetAccount() { return GetAccount(true); }
     public Account GetAccount(bool includeOtherInfo) {
-      var sw = Stopwatch.StartNew();
-      var row = GetRows(TABLE_ACCOUNTS).First();
-      //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
-      var trades = new Trade[]{};
-      var account = new Account() {
-        ID = row.CellValue(FIELD_ACCOUNTID) + "",
-        Balance = (double)row.CellValue(FIELD_BALANCE),
-        UsableMargin = (double)row.CellValue(FIELD_USABLEMARGIN),
-        IsMarginCall = row.CellValue(FIELD_MARGINCALL)+"" == "W",
-        Equity = (double)row.CellValue(FIELD_EQUITY),
-        Hedging = row.CellValue("Hedging").ToString() == "Y",
-        Trades = includeOtherInfo ? trades = GetTrades("") : null,
-        StopAmount = includeOtherInfo ? trades.Sum(t=>t.StopAmount) : 0,
-        LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
-        ServerTime = ServerTime
-      };
-      //Debug.WriteLine("GetAccount2:{0} ms", sw.Elapsed.TotalMilliseconds);
-      if (includeOtherInfo)
-        account.PipsToMC = (int)(account.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
-      //account.PipsToMC = summary == null ? 0 :
-      //  (int)(account.UsableMargin / Math.Max(.1, (Math.Abs(summary.BuyLots - summary.SellLots) / 10000)));
-      //Debug.WriteLine("GetAccount3:{0} ms", sw.Elapsed.TotalMilliseconds);
-      return account;
+      try {
+        var sw = Stopwatch.StartNew();
+        var row = GetRows(TABLE_ACCOUNTS).First();
+        //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
+        var trades = new Trade[] { };
+        var account = new Account() {
+          ID = row.CellValue(FIELD_ACCOUNTID) + "",
+          Balance = (double)row.CellValue(FIELD_BALANCE),
+          UsableMargin = (double)row.CellValue(FIELD_USABLEMARGIN),
+          IsMarginCall = row.CellValue(FIELD_MARGINCALL) + "" == "W",
+          Equity = (double)row.CellValue(FIELD_EQUITY),
+          Hedging = row.CellValue("Hedging").ToString() == "Y",
+          Trades = includeOtherInfo ? trades = GetTrades("") : null,
+          StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
+          LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
+          ServerTime = ServerTime
+        };
+        //Debug.WriteLine("GetAccount2:{0} ms", sw.Elapsed.TotalMilliseconds);
+        if (includeOtherInfo)
+          account.PipsToMC = (int)(account.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
+        //account.PipsToMC = summary == null ? 0 :
+        //  (int)(account.UsableMargin / Math.Max(.1, (Math.Abs(summary.BuyLots - summary.SellLots) / 10000)));
+        //Debug.WriteLine("GetAccount3:{0} ms", sw.Elapsed.TotalMilliseconds);
+        return account;
+      } catch (Exception exc) {
+        RaiseError(exc);
+        return null;
+      }
     }
     public double CommisionPending { get { return GetTrades("").Sum(t => t.Lots) / 10000; } }
 
@@ -1425,7 +1559,7 @@ namespace Order2GoAddIn {
     public void CloseTrade(Trade trade,int lot) {
       object o1,o2;
       try {
-        Desk.CloseTrade(trade.Id, lot, trade.Close, "", 1, out o1,out o2);
+        Desk.CloseTrade(trade.Id, lot, trade.Close, "", 0, out o1,out o2);
       } catch (Exception exc) {
         RaiseError(exc);
       }
@@ -1492,14 +1626,18 @@ namespace Order2GoAddIn {
     static private object globalClosePending = new object();
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public object FixOrderClose(string tradeId, int mode, Price price) {
+      return FixOrderClose(tradeId, mode, price, 0);
+    }
+    public object FixOrderClose(string tradeId, int mode, Price price,int lot) {
       lock (globalClosePending) {
         object psOrderID = null, psDI;
         try {
           var row = GetTable(TABLE_TRADES).FindRow(FIELD_TRADEID, tradeId, 0) as FXCore.RowAut;
+          if (lot == 0) lot = (int)row.CellValue("Lot");
           var dRate = mode == coreFX.Desk.FIX_CLOSEMARKET || price == null ? 0 : IsBuy(row.CellValue("BS")) ? price.Bid : price.Ask;
           if (GetAccount(false).Hedging) {
             //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(5), () => {
-            coreFX.Desk.CreateFixOrder(mode, tradeId, dRate, 0, "", "", "", true, (int)row.CellValue("Lot"), "", out psOrderID, out psDI);
+            coreFX.Desk.CreateFixOrder(mode, tradeId, dRate, 0, "", "", "", true, lot, "", out psOrderID, out psDI);
             try {
               while (GetTrade(tradeId) != null)
                 Thread.Sleep(10);
@@ -1984,7 +2122,7 @@ namespace Order2GoAddIn {
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
-      return Math.Ceiling(amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
+      return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
     }
 
     dynamic _tradingSettingsProvider;

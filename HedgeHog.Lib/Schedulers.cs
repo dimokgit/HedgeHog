@@ -188,9 +188,10 @@ namespace HedgeHog {
       if (error != null) this.Error = error;
     }
 
+    object timerLocker = new object();
     public void Cancel() {
       if (_timer != null) {
-        lock (_timer) {
+        lock (timerLocker) {
           try {
             _timer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             _timer.Dispose(WaitHandler);
