@@ -99,6 +99,7 @@ namespace HedgeHog.Alice.Client.Models {
         if (_TakeProfitPips != value) {
           _TakeProfitPips = value;
           OnPropertyChanged("TakeProfitPips");
+          OnPropertyChanged("IsTakeProfitPipsMinimumOk");
         }
       }
     }
@@ -109,7 +110,11 @@ namespace HedgeHog.Alice.Client.Models {
 
     private int[] _CorridorIterationsArray;
     public int[] CorridorIterationsArray {
-      get { return CorridorIterations.Split(',').Select(s => int.Parse(s)).ToArray(); }
+      get {
+        try {
+          return CorridorIterations.Split(',').Select(s => int.Parse(s)).ToArray();
+        } catch (Exception exc) { return new int[] { }; }
+      }
       set {
         OnPropertyChanged("CorridorIterationsArray");
       }
@@ -155,15 +160,17 @@ namespace HedgeHog.Alice.Client.Models {
 
     Trade[] emptyTrades = new Trade[] { };
     public Trade[] CloseTrades(Trade[] trades) {
-      if (true || CorridorStats == null) return emptyTrades;
+      if (CorridorStats == null) return emptyTrades;
+      if (PriceCmaCounter < TicksPerMinuteMaximun * 2) return emptyTrades;
+
       Func<bool, Trade[]> plTrades = buy => trades.Where(t => t.IsBuy == buy && t.PL > 0).ToArray();
-      var isBuy = PriceCma23DiffernceInPips < 0;
+      var isBuy = PriceCmaDiffernceInPips < 0;
       var ts = trades.Where(t => t.IsBuy == isBuy && t.PL > 0).ToArray();
-      return ts.Length > 2 ? ts : emptyTrades;
+      return ts.Length > 1 ? ts : emptyTrades;
     }
     public bool? CloseTrades_ {
       get {
-        var csTS = CorridorStatsArray.FirstOrDefault(cs => cs.Height > CorridorHeighMinimum && cs.TradeSignal.HasValue);
+        var csTS = CorridorStatsArray.FirstOrDefault(cs => cs.Height > CorridorHeightMinimum && cs.TradeSignal.HasValue);
         return csTS == null ? null : csTS.TradeSignal;
       }
     }
@@ -253,43 +260,86 @@ namespace HedgeHog.Alice.Client.Models {
     }
     public int TicksPerMinuteMaximun { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Max().ToInt(); } }
     public int TicksPerMinuteMinimum { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Min().ToInt(); } }
-    private double _TicksPerMinuteInstant;
-    public double TicksPerMinuteInstant {
-      get { return _TicksPerMinuteInstant; }
-      set {
-        if (_TicksPerMinuteInstant != value) {
-          _TicksPerMinuteInstant = value;
-          OnPropertyChanged("TicksPerMinuteInstant");
+    public double TicksPerMinuteInstant { get { return PriceQueue.TickPerMinute(.25); } }
+    public double TicksPerMinute { get { return PriceQueue.TickPerMinute(.5); } }
+    public double TicksPerMinuteAverage { get { return PriceQueue.TickPerMinute(1); } }
+
+    int priceQueueCount = 600;
+    public class TicksPerPeriod {
+      Queue<Price> priceStackByPair = new Queue<Price>();
+      int maxCount;
+      public TicksPerPeriod(int maxCount) {
+        this.maxCount = maxCount;
+      }
+      private IEnumerable<Price> GetQueue(double period) {
+        if (period <= 1) period = (priceStackByPair.Count * period).ToInt();
+        return priceStackByPair.Take(period.ToInt());
+      }
+      public void Add(Price price, DateTime serverTime) {
+        var queue = priceStackByPair;
+        if ((price.Time - serverTime).Duration() < TimeSpan.FromMinutes(1)) {
+          if (queue.Count > maxCount) queue.Dequeue();
+          queue.Enqueue(price);
         }
       }
-    }
+      public double TickPerMinute(double period) {
+        return TickPerMinute(GetQueue(period));
+      }
 
-    private double _TicksPerMinute;
-    public double TicksPerMinute {
-      get { return _TicksPerMinute; }
-      protected set {
-        _TicksPerMinute = value;
-        OnPropertyChanged("TicksPerMinute");
+      public DateTime LastTickTime() { return priceStackByPair.Count == 0 ? DateTime.MaxValue : priceStackByPair.Max(p=>p.Time); }
+      private static double TickPerMinute(IEnumerable<Price> queue) {
+        if (queue.Count() < 10) return 10;
+        var totalMinutes = (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes;
+        return queue.Count() / Math.Max(1, totalMinutes);
+      }
+      public double Speed(double period) {
+        return Speed(GetQueue(period)); 
+      }
+      public static double Speed(IEnumerable<Price> queue) {
+        if (queue.Count() < 2) return 0;
+        var distance = 0.0;
+        for (var i = 1; i < queue.Count(); i++)
+          distance += (queue.ElementAt(i).Average - queue.ElementAt(i - 1).Average).Abs();
+        var totalMinutes = (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes;
+        return totalMinutes == 0 ? 0 : distance / totalMinutes;
       }
     }
 
-    private double _TicksPerMinuteAverage;
-    public double TicksPerMinuteAverage {
-      get { return _TicksPerMinuteAverage; }
-      protected set {
-        _TicksPerMinuteAverage = value;
-        OnPropertyChanged("TicksPerMinuteAverage");
+    TicksPerPeriod _PriceQueue;
+    public TicksPerPeriod PriceQueue {
+      get {
+        if (_PriceQueue == null) _PriceQueue = new TicksPerPeriod(priceQueueCount);
+        return _PriceQueue;
       }
     }
-    public void TicksPerMinuteSet(double ticksPerMinuteInst, double ticksPerMinuteFast, double ticksPerMinuteSlow) {
-      TicksPerMinuteInstant = ticksPerMinuteInst;
-      TicksPerMinute = ticksPerMinuteFast;
-      TicksPerMinuteAverage = ticksPerMinuteSlow;
+    public void TicksPerMinuteSet(Price price, DateTime serverTime, Func<double, double> inPips) {
+      if (_InPips == null) _InPips = inPips;
+      PriceQueue.Add(price, serverTime);
+      OnPropertyChanged("TicksPerMinuteInstant");
+      OnPropertyChanged("TicksPerMinute");
+      OnPropertyChanged("TicksPerMinuteAverage");
       OnPropertyChanged("TicksPerMinuteMaximun");
       OnPropertyChanged("TicksPerMinuteMinimum");
       OnPropertyChanged("IsTicksPerMinuteOk");
+      OnPropertyChanged("PipsPerMinute");
+      OnPropertyChanged("PipsPerMinuteCmaFirst");
+      OnPropertyChanged("PipsPerMinuteCmaLast");
+      OnPropertyChanged("IsSpeedOk");
+      OnPropertyChanged("PriceCmaDiffHighInPips");
+      OnPropertyChanged("PriceCmaDiffLowInPips");
     }
     #endregion
+
+    public double PipsPerMinute { get { return InPips == null?0: InPips(PriceQueue.Speed(.25)); } }
+    public double PipsPerMinuteCmaFirst { get { return InPips == null ? 0 : InPips(PriceQueue.Speed(.5)); } }
+    public double PipsPerMinuteCmaLast { get { return InPips == null ? 0 : InPips(PriceQueue.Speed(1)); } }
+
+    public bool IsSpeedOk { get { return PipsPerMinute < Math.Max(PipsPerMinuteCmaFirst, PipsPerMinuteCmaLast); } }
+
+    public double PriceCmaDiffHigh { get { return CorridorStats == null?0: CorridorStats.PriceCmaDiffHigh; } }
+    public double PriceCmaDiffHighInPips { get { return InPips(PriceCmaDiffHigh); } }
+    public double PriceCmaDiffLow { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffLow; } }
+    public double PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
 
     private double _BarHeight60InPips;
     public double BarHeight60InPips {
@@ -473,9 +523,10 @@ namespace HedgeHog.Alice.Client.Models {
     }
 
     public double BarHeight60 { get; set; }
+    public double TakeProfitPipsMinimum { get { return FibMin; } }
+    public bool IsTakeProfitPipsMinimumOk { get { return CorridorStats == null ? false : TakeProfitPips >= TakeProfitPipsMinimum; } }
 
-
-    public double CorridorHeighMinimum { get; set; }
+    public double CorridorHeightMinimum { get; set; }
 
     private int _HistoricalGrossPL;
     public int HistoricalGrossPL {
@@ -490,11 +541,7 @@ namespace HedgeHog.Alice.Client.Models {
 
     private double _PriceCma;
     public double PriceCma {
-      get { return _PriceCma; }
-      set {
-        _PriceCma = value;
-        OnPropertyChanged("PriceCma");
-      }
+      get { return PriceCmaWalker.CmaArray[0].Value; }
     }
     private double _PriceCma1;
     public double PriceCma1 {
@@ -531,31 +578,51 @@ namespace HedgeHog.Alice.Client.Models {
     }
 
 
-    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma - PriceCma2), 2); } }
-    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
-    public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma2 - PriceCma3), 2); } }
+    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().First()), 2); } }
+    //public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
+    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().Skip(1).DefaultIfEmpty(PriceCmaWalker.CmaDiff()[0]).First()), 2); } }
+    //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma2 - PriceCma3), 2); } }
+    //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.FromEnd(1) - PriceCmaWalker.FromEnd(0)), 2); } }
+    public double PriceCma23DiffernceInPips { get { return Math.Round(InPips(PriceCmaWalker.CmaDiff().Last()), 2); } }
 
     int _priceCmaCounter;
-
     public int PriceCmaCounter {
       get { return _priceCmaCounter; }
       protected set { _priceCmaCounter = value; }
     }
+
+    HedgeHog.Lib.CmaWalker _PriceCmaWalker;
+
+    public HedgeHog.Lib.CmaWalker PriceCmaWalker {
+      get {
+        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(4);
+        return _PriceCmaWalker;
+      }
+    }
+
+    public Price PriceCurrent { get; set; }
+
     public void SetPriceCma(Price price) {
+      PriceCurrent = price;
       PriceCmaCounter++;
       if (PriceDigits == 0) PriceDigits = price.Digits;
-      PriceCma = Lib.CMA(PriceCma, 0, TicksPerMinuteMaximun, price.Average);
-      PriceCma1 = Lib.CMA(PriceCma1, 0, TicksPerMinuteMaximun, PriceCma);
-      PriceCma2 = Lib.CMA(PriceCma2, 0, TicksPerMinuteMaximun, PriceCma1);
-      PriceCma3 = Lib.CMA(PriceCma3, 0, TicksPerMinuteMaximun, PriceCma2);
+      var cmaperiod = TicksPerMinuteInstant;
+      PriceCmaWalker.Add(price.Average, cmaperiod);
+      OnPropertyChanged("PriceCmaDiffernceInPips");
+      OnPropertyChanged("PriceCma1DiffernceInPips");
+      OnPropertyChanged("PriceCma23DiffernceInPips");
+      //PriceCma = Lib.CMA(PriceCma, 0, cmaperiod , price.Average);
+      //PriceCma1 = Lib.CMA(PriceCma1, 0, cmaperiod, PriceCma);
+      //PriceCma2 = Lib.CMA(PriceCma2, 0, cmaperiod, PriceCma1);
+      //PriceCma3 = Lib.CMA(PriceCma3, 0, cmaperiod, PriceCma2);
     }
     public int PriceDigits { get; set; }
     public string PriceDigitsFormat { get { return "n" + (PriceDigits-1); } }
     public string PriceDigitsFormat2 { get { return "n" + PriceDigits; } }
 
-    Func<double, double> _InPips = null;
+    Func<double, double> _InPips;
     public Func<double, double> InPips {
-      get { return _InPips; }
+      get { return _InPips == null ? d => 0 : _InPips; }
       set { _InPips = value; }
     }
 

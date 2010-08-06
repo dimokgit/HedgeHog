@@ -149,6 +149,30 @@ namespace HedgeHog {
       //Console.WriteLine("b = {0}, the intercept of the trend line.", Math.Round(b, 2));
 
     }
+
+    public class CmaWalker {
+      public double?[] CmaArray;
+      public CmaWalker(int cmaCount) {
+        this.CmaArray = new double?[cmaCount];
+      }
+      public void Add(double value, double cmaPeriod) {
+        for (var i = 0; i < CmaArray.Length; i++) {
+          CmaArray[i] = Lib.CMA(CmaArray[i], cmaPeriod, value);
+          value = CmaArray[i].Value;
+        }
+      }
+      public double[] CmaDiff() {
+        var diffs = new List<double>();
+        for (var i = 1; i < CmaArray.Length; i++)
+          diffs.Add((CmaArray[i-1].GetValueOrDefault() - CmaArray[i]).GetValueOrDefault());
+        return diffs.ToArray();
+      }
+      public double FromEnd(int position) {
+        return CmaArray.Reverse().Take(position+1).Last().Value;
+      }
+    }
+
+
     public static double CMA(double? MA, double Periods, double NewValue) {
       if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);

@@ -247,9 +247,21 @@
             <DataTemplate>
               <TextBlock>
                 <TextBlock Text="{Binding TradeDistance,StringFormat=n0}" ToolTip="Trade Distance"/>
-                <!--<TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"/>-->
+                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
+                  FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
                 <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}]}" ToolTip="Bar 60 Height in Pips"/>
-                <TextBlock Text="{Binding PriceCmaDiffernceInPips}" FontWeight="Black" ToolTip="Price CMA Differnce In Pips" 
+                <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}}" ToolTip="Price Cma Diff High In Pips" 
+                  FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                  Foreground="DarkRed"
+                           />
+                <TextBlock Text="{Binding PriceCmaDiffLowInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff Low In Pips"
+                  FontWeight="{Binding PriceCmaDiffLowInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
+                  Foreground="DarkGreen"
+                           />
+                
+                <LineBreak/>
+                <TextBlock Text="{Binding PriceCmaDiffernceInPips,StringFormat=n}" FontWeight="Black" ToolTip="Price CMA Differnce In Pips" 
                   Foreground="{Binding PriceCmaDiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
                 />
                 <TextBlock Text="{Binding PriceCma1DiffernceInPips,StringFormat=/{0:n}}" FontWeight="Black" ToolTip="Price CMA1 Differnce In Pips" 
@@ -278,7 +290,7 @@
         <DataGridTemplateColumn Header="[B/S]Ŧ" IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <ItemsControl ItemsSource="{Binding CorridorStatsArray}">
+              <ItemsControl ItemsSource="{Binding CorridorStatsArray}" VerticalAlignment="Center">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <TextBlock>
@@ -299,13 +311,18 @@
           </DataGridTemplateColumn.Header>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <WrapPanel>
-                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=[{0:n0}]}"/>
-                <TextBlock Text="{Binding TicksPerMinute,StringFormat=n0}"/>
-                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=[{0:n0}]}"
+              <TextBlock>
+                <TextBlock Text="{Binding TicksPerMinuteInstant,StringFormat=n0}"/>
+                <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=/{0:n0}}"
                            Foreground="{Binding IsTicksPerMinuteOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
                            />
-              </WrapPanel>
+                <LineBreak/>
+                <TextBlock Text="{Binding PipsPerMinute,StringFormat=n1}"
+                           FontWeight="{Binding IsSpeedOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
+                <TextBlock Text="{Binding PipsPerMinuteCmaFirst,StringFormat=/{0:n1}}"/>
+                <TextBlock Text="{Binding PipsPerMinuteCmaLast,StringFormat=/{0:n1}}"/>
+              </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>

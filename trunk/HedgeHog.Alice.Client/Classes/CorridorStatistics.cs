@@ -202,14 +202,21 @@ namespace HedgeHog.Alice.Client {
         #endregion
         Func<bool?> tradeSignal5 = () => {
           if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
-          var pdp = TradingMacro.PriceCma23DiffernceInPips;
-          return TradingMacro.PriceCma3 > AverageHigh && pdp < 0 ? false :
-                 TradingMacro.PriceCma3 < AverageLow && pdp > 0 ? true :
+          //if (!TradingMacro.IsSpeedOk) return null;
+          var pdp23 = TradingMacro.PriceCma23DiffernceInPips;
+          var pdp = TradingMacro.PriceCmaDiffernceInPips;
+          return PriceCmaDiffHigh > 0 && pdp < 0 && pdp23 < 0 ? false :
+                 PriceCmaDiffLow < 0 && pdp > 0 && pdp23 > 0 ? true :
             (bool?)null;
         };
         return tradeSignal5();
       }
     }
+
+    double priceCmaForAverage { get { return TradingMacro.PriceCurrent.Average; } }
+
+    public double PriceCmaDiffHigh { get { return priceCmaForAverage - AverageHigh; } }
+    public double PriceCmaDiffLow { get { return priceCmaForAverage - AverageLow; } }
 
     #endregion
 
@@ -257,7 +264,7 @@ namespace HedgeHog.Alice.Client {
           corrAfterAverage = corrAvg;
         } else break;
       }
-      if (corrAfterAverage.Count() == 0) return null;
+      if (corrAfterAverage.Count() == 0) corrAfterAverage = corridornesses.ToArray();
       var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
       corr.Value.Iterations = iterations;
       //var ratesForCorridor = rates.Take(corr.Value.Periods);

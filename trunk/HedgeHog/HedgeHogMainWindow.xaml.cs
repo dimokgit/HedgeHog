@@ -340,15 +340,9 @@ namespace HedgeHog {
 
     private void OnPairChanged(object sender, SelectionChangedEventArgs e) {
       if (fw != null && fw.IsLoggedIn) {
-        try {
           fw.Pair = pair;
           dataGrid1.ItemsSource = fw.GetTrades().ToList();
           Leverage = fw.Leverage();
-        } catch (Order2GoAddIn.FXCoreWrapper.PairNotFoundException exc) {
-          MessageBox.Show(exc.Message);
-          ((System.Windows.Controls.ListBoxItem)e.RemovedItems[0]).IsSelected = true;
-          return;
-        }
       }
       Log = "Pair was changed to " + pair;
     }

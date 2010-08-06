@@ -19,6 +19,7 @@ using System.Data.Objects;
 using HedgeHog.Bars;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.Threading;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -648,7 +649,13 @@ namespace HedgeHog.Alice.Client {
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
         try {
-          AccountModel.Update(fwMaster.GetAccount(), 0, fwMaster.ServerTime);
+          var account = fwMaster.GetAccount();
+          if (account == null) {
+            Thread.Sleep(1000);
+            account = fwMaster.GetAccount();
+          }
+          if( account!= null)
+            AccountModel.Update(account, 0, fwMaster.ServerTime);
         } catch (Exception exc) {
           Log = exc;
           MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
