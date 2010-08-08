@@ -283,10 +283,16 @@ namespace HedgeHog.Alice.Client {
         rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
         return new CorridorStatistics(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
       }
-      var count = 0.0;
+      var count = 0.0;// rates.Count(rate => rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow);
       foreach (var rate in rates)
         if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
-      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow,askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+      var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).ToArray();
+      var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).ToArray();
+      if (ratesForAverageHigh.Length > 0)
+        averageHigh = ratesForAverageHigh.Average(r => r.PriceLow);
+      if (ratesForAverageLow.Length > 0)
+        averageLow = ratesForAverageLow.Average(r => r.PriceHigh);
+      return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
     }
 
   }
