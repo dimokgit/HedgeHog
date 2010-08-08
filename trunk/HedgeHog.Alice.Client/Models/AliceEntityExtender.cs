@@ -595,7 +595,7 @@ namespace HedgeHog.Alice.Client.Models {
 
     public HedgeHog.Lib.CmaWalker PriceCmaWalker {
       get {
-        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(4);
+        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(2);
         return _PriceCmaWalker;
       }
     }

@@ -1187,9 +1187,9 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro(pair);
       if (tm.CorridorStats == null) return false;
       var lotSizeCalc = CalculateLot(tm);
-      double lotSizeCurr = trades.Sum(t => t.Lots);
-      if ((lotSizeCurr / lotSizeCalc).ToInt() < 2) return false;
-      var lotSizeRemove = lotSizeCurr.ToInt() - lotSizeCalc;
+      int lotSizeCurr = trades.Sum(t => t.Lots);
+      if (lotSizeCurr / lotSizeCalc < 2) return false;
+      var lotSizeRemove = lotSizeCurr - lotSizeCalc;
       CloseLooseTrades(pair, trades, lotSizeRemove);
       return true;
     }
