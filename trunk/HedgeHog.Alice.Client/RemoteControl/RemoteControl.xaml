@@ -186,7 +186,7 @@
 
         <!--<DataGridTemplateColumn Header="Ŧ" CellTemplate="{StaticResource CorridornessTemplate}" CellEditingTemplate="{StaticResource CorridornessEditTemplate}"/>-->
         <DataGridTemplateColumn Header="C*R" CellTemplate="{StaticResource TakeProfitPipsCellTemplate}" CellEditingTemplate="{StaticResource TakeProfitPipsEditCellTemplate}" Visibility="Collapsed" />
-        <DataGridTemplateColumn Header="Fib" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
+        <!--<DataGridTemplateColumn Header="Fib" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
                 <ItemsControl ItemsSource="{Binding CorridorStatsArray}">
@@ -195,24 +195,7 @@
                       <Border CornerRadius="2" BorderThickness="{Binding IsCurrentInt}" BorderBrush="Black">
               <TextBlock>
                       <WrapPanel Background="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Transparent|LightPink|LightGreen}">
-        <TextBlock Text="{Binding Corridornes,StringFormat=p0}" ToolTipService.ShowDuration="30000">
-        <TextBlock.ToolTip>
-          <ToolTip>
-            <TextBlock>
-              <TextBlock FontWeight="Black">Limit:</TextBlock>
-              <TextBlock Text="{Binding StartDate,StringFormat='d HH:mm'}"/>
-              <LineBreak/>
-              <TextBlock FontWeight="Black">Corridorness Max:</TextBlock>
-              <TextBlock Text="{Binding TradingMacro.CorridornessMin,StringFormat='&lt;{0:p0}'}" />
-              <LineBreak/>
-              <TextBlock FontWeight="Black">Ask High:</TextBlock>
-              <TextBlock Text="{Binding AskHigh}" />
-              <LineBreak/>
-              <TextBlock FontWeight="Black">Bid Low:</TextBlock>
-              <TextBlock Text="{Binding BidLow}" />
-            </TextBlock>
-          </ToolTip>
-        </TextBlock.ToolTip>
+        <TextBlock Text="{Binding Corridornes,StringFormat=p0}">
                 </TextBlock>
               </WrapPanel>
                 <TextBlock Text="{Binding HeightInPips,StringFormat=00}" ToolTip="Corridor Height"></TextBlock>
@@ -230,36 +213,60 @@
                 </ItemsControl>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
-          <DataGridTemplateColumn.CellEditingTemplate>
-            <DataTemplate>
-              <WrapPanel>
-                <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
-                <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
-                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum"/>
-                <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>
-                <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
-              </WrapPanel>
-            </DataTemplate>
-          </DataGridTemplateColumn.CellEditingTemplate>
-        </DataGridTemplateColumn>
+        </DataGridTemplateColumn>-->
         <DataGridTemplateColumn Header="L=" CellStyle="{StaticResource PapayaWhipBackgroundStyle}">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock>
+              <TextBlock ToolTipService.ShowDuration="30000">
+                <TextBlock.ToolTip>
+          <ToolTip>
+            <TextBlock>
+              <TextBlock FontWeight="Black">Limit:</TextBlock>
+              <TextBlock Text="{Binding StartDate,StringFormat='d HH:mm'}"/>
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Corridorness Max:</TextBlock>
+              <TextBlock Text="{Binding TradingMacro.CorridornessMin,StringFormat='&lt;{0:p0}'}" />
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Ask High:</TextBlock>
+              <TextBlock Text="{Binding AskHigh}" />
+              <LineBreak/>
+              <TextBlock FontWeight="Black">Bid Low:</TextBlock>
+              <TextBlock Text="{Binding BidLow}" />
+            </TextBlock>
+          </ToolTip>
+        </TextBlock.ToolTip>
                 <TextBlock Text="{Binding TradeDistance,StringFormat=n0}" ToolTip="Trade Distance"/>
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
-                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}]}" ToolTip="Bar 60 Height in Pips"/>
+                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}}" ToolTip="Bar 60 Height in Pips"/>
+                <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"/>
+                <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
                            />
-                <TextBlock Text="{Binding PriceCmaDiffLowInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff Low In Pips"
+                <TextBlock Text="{Binding PriceCmaDiffHighFirstInPips,StringFormat=/{0:n1}}" ToolTip="Price Cma Diff High First In Pips" 
+                  FontWeight="{Binding PriceCmaDiffHighFirstInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                  Foreground="DarkRed"
+                           />
+                <TextBlock Text="{Binding PriceCmaDiffHighLastInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff High Last In Pips" 
+                  FontWeight="{Binding PriceCmaDiffHighLastInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                  Foreground="DarkRed"
+                           />
+                <LineBreak/>
+                <TextBlock Text="{Binding PriceCmaDiffLowInPips,StringFormat=[{0:n1}}" ToolTip="Price Cma Diff Low In Pips"
                   FontWeight="{Binding PriceCmaDiffLowInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
                   Foreground="DarkGreen"
                            />
-                
+                <TextBlock Text="{Binding PriceCmaDiffLowFirstInPips,StringFormat=/{0:n1}}" ToolTip="Price Cma Diff Low First In Pips" 
+                  FontWeight="{Binding PriceCmaDiffLowFirstInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
+                  Foreground="DarkGreen"
+                           />
+                <TextBlock Text="{Binding PriceCmaDiffLowLastInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff Low Last In Pips" 
+                  FontWeight="{Binding PriceCmaDiffLowLastInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
+                  Foreground="DarkGreen"
+                           />
                 <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffernceInPips,StringFormat=n}" FontWeight="Black" ToolTip="Price CMA Differnce In Pips" 
                   Foreground="{Binding PriceCmaDiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
@@ -273,6 +280,18 @@
               </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
+                <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
+                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum"/>
+                <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>
+                <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
+                <TextBox Text="{Binding CorridorIterationsIn}" ToolTip="Price CMA Level"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="CI">
           <DataGridTemplateColumn.CellTemplate>

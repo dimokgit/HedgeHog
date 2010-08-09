@@ -8,6 +8,7 @@ namespace HedgeHog.Alice.Client {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
     public double AverageHigh { get; set; }
     public double AverageLow { get; set; }
+    public double AverageHeight { get { return AverageHigh - AverageLow; } }
     public double Density { get; set; }
     double _AskHigh;
 
@@ -209,11 +210,21 @@ namespace HedgeHog.Alice.Client {
                  PriceCmaDiffLow < 0 && pdp > 0 && pdp23 > 0 ? true :
             (bool?)null;
         };
-        return tradeSignal5();
+        Func<bool?> tradeSignal6 = () => {
+          if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
+          var pdhFirst = TradingMacro.PriceCmaDiffHighWalker.CmaArray.First();
+          var pdhLast = TradingMacro.PriceCmaDiffHighWalker.CmaArray.Last();
+          var pdlFirst = TradingMacro.PriceCmaDiffLowWalker.CmaArray.First();
+          var pdlLast = TradingMacro.PriceCmaDiffLowWalker.CmaArray.Last();
+          return (pdhFirst > 0 || pdhLast > 0) && pdlFirst <= pdhLast ? false :
+                 (pdhFirst < 0 || pdhLast < 0) && pdlFirst >= pdhLast ? true :
+            (bool?)null;
+        };
+        return tradeSignal6();
       }
     }
 
-    double priceCmaForAverage { get { return TradingMacro.PriceCurrent.Average; } }
+    double priceCmaForAverage { get { return TradingMacro.PriceCurrent == null?0: TradingMacro.PriceCurrent.Average; } }
 
     public double PriceCmaDiffHigh { get { return priceCmaForAverage - AverageHigh; } }
     public double PriceCmaDiffLow { get { return priceCmaForAverage - AverageLow; } }
@@ -265,7 +276,8 @@ namespace HedgeHog.Alice.Client {
         } else break;
       }
       if (corrAfterAverage.Count() == 0) corrAfterAverage = corridornesses.ToArray();
-      var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
+      //var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
+      var corr = corrAfterAverage.OrderBy(c => c.Value.AverageHeight).Last();
       corr.Value.Iterations = iterations;
       //var ratesForCorridor = rates.Take(corr.Value.Periods);
       ////.Where(r => r.StartDate >= startDate).ToArray();
