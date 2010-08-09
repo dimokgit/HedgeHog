@@ -1996,8 +1996,10 @@ namespace Order2GoAddIn {
           case "offers":
             parser.ParseEventRow(rowText, table.Type);
             var price = GetPrice(parser);
+            row = table.FindRow("OfferID", rowID, 0) as FXCore.RowAut;
+            price.AskChangeDirection = (int)row.CellValue(FIELD_ASKCHANGEDIRECTION);
+            price.BidChangeDirection = (int)row.CellValue(FIELD_BIDCHANGEDIRECTION);
             OnPriceChanged(price);
-            //row = table.FindRow("OfferID", rowID, 0) as FXCore.RowAut;
             //if ((DateTime)row.CellValue(FIELD_TIME) != _prevOfferDate
             //  && new[] { "", row.CellValue(FIELD_INSTRUMENT) + "" }.Contains(Pair.ToUpper())
             //  && PriceChanged != null) {

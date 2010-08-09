@@ -357,6 +357,8 @@ namespace HedgeHog.Alice.Client {
           GetBarHeight(tm);
         if (e.PropertyName == Lib.GetLambda(() => tm.CorridorIterations))
           tm.CorridorStatsArray.Clear();
+        if (e.PropertyName == Lib.GetLambda(() => tm.CorridorIterationsIn))
+          tm.PriceCmaWalker.Reset(tm.CorridorIterationsIn);
         if (e.PropertyName == Lib.GetLambda(() => tm.CurrentLoss)) {
           System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => {
             try {
@@ -554,6 +556,7 @@ namespace HedgeHog.Alice.Client {
             } finally {
               RunPrice(pair);
             }
+            return;
           }
           var tradesInSameDirection = trades.Where(t => t.IsBuy == buy).ToArray();
           var maxPL = tradesInSameDirection.Length == 0 ? 0 : tradesInSameDirection.Max(t => t.PL);

@@ -325,8 +325,16 @@ namespace HedgeHog.Alice.Client.Models {
       OnPropertyChanged("PipsPerMinuteCmaFirst");
       OnPropertyChanged("PipsPerMinuteCmaLast");
       OnPropertyChanged("IsSpeedOk");
+      
       OnPropertyChanged("PriceCmaDiffHighInPips");
+      OnPropertyChanged("PriceCmaDiffHighFirstInPips");
+      OnPropertyChanged("PriceCmaDiffHighLastInPips");
+
       OnPropertyChanged("PriceCmaDiffLowInPips");
+      OnPropertyChanged("PriceCmaDiffLowFirstInPips");
+      OnPropertyChanged("PriceCmaDiffLowLastInPips");
+
+      OnPropertyChanged("CorridorAverageHeightInPips");
     }
     #endregion
 
@@ -336,7 +344,9 @@ namespace HedgeHog.Alice.Client.Models {
 
     public bool IsSpeedOk { get { return PipsPerMinute < Math.Max(PipsPerMinuteCmaFirst, PipsPerMinuteCmaLast); } }
 
-    public double PriceCmaDiffHigh { get { return CorridorStats == null?0: CorridorStats.PriceCmaDiffHigh; } }
+    public double CorridorAverageHeightInPips { get { return CorridorStats == null?0: InPips(CorridorStats.AverageHeight); } }
+    public double CorridorAverageHeight { get { return CorridorStats == null ? 0 : CorridorStats.AverageHeight; } }
+    public double PriceCmaDiffHigh { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffHigh; } }
     public double PriceCmaDiffHighInPips { get { return InPips(PriceCmaDiffHigh); } }
     public double PriceCmaDiffLow { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffLow; } }
     public double PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
@@ -585,29 +595,65 @@ namespace HedgeHog.Alice.Client.Models {
     //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.FromEnd(1) - PriceCmaWalker.FromEnd(0)), 2); } }
     public double PriceCma23DiffernceInPips { get { return Math.Round(InPips(PriceCmaWalker.CmaDiff().Last()), 2); } }
 
+    public double PriceCmaDiffHighFirstInPips { get { return InPips(PriceCmaDiffHighFirst); } }
+    public double PriceCmaDiffHighLastInPips { get { return InPips(PriceCmaDiffHighLast); } }
+    public double PriceCmaDiffHighFirst { get { return PriceCmaDiffHighWalker.CmaArray.First().GetValueOrDefault(); } }
+    public double PriceCmaDiffHighLast { get { return PriceCmaDiffHighWalker.CmaArray.Last().GetValueOrDefault(); } }
+
+    public double PriceCmaDiffLowFirstInPips { get { return InPips(PriceCmaDiffLowFirst); } }
+    public double PriceCmaDiffLowLastInPips { get { return InPips(PriceCmaDiffLowLast); } }
+    public double PriceCmaDiffLowFirst { get { return PriceCmaDiffLowWalker.CmaArray.First().GetValueOrDefault(); } }
+    public double PriceCmaDiffLowLast { get { return PriceCmaDiffLowWalker.CmaArray.Last().GetValueOrDefault(); } }
+
     int _priceCmaCounter;
     public int PriceCmaCounter {
       get { return _priceCmaCounter; }
       protected set { _priceCmaCounter = value; }
     }
 
+    public int PriceCmaLevel { get { return CorridorIterationsIn; } }
     HedgeHog.Lib.CmaWalker _PriceCmaWalker;
-
     public HedgeHog.Lib.CmaWalker PriceCmaWalker {
       get {
-        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(2);
+        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
         return _PriceCmaWalker;
+      }
+    }
+
+    HedgeHog.Lib.CmaWalker _PriceCmaDiffHighWalker;
+    public HedgeHog.Lib.CmaWalker PriceCmaDiffHighWalker {
+      get {
+        if (_PriceCmaDiffHighWalker == null) _PriceCmaDiffHighWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
+        return _PriceCmaDiffHighWalker;
+      }
+    }
+    HedgeHog.Lib.CmaWalker _PriceCmaDiffLowWalker;
+    public HedgeHog.Lib.CmaWalker PriceCmaDiffLowWalker {
+      get {
+        if (_PriceCmaDiffLowWalker == null) _PriceCmaDiffLowWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
+        return _PriceCmaDiffLowWalker;
       }
     }
 
     public Price PriceCurrent { get; set; }
 
+    int _PriceCmaDirection;
+
+    public int PriceCmaDirection {
+      get { return _PriceCmaDirection; }
+      set { _PriceCmaDirection = value; }
+    }
     public void SetPriceCma(Price price) {
+      var dir = price.AskChangeDirection + price.BidChangeDirection;
+      if(dir == PriceCmaDirection ) return;
+      PriceCmaDirection = dir;
       PriceCurrent = price;
       PriceCmaCounter++;
       if (PriceDigits == 0) PriceDigits = price.Digits;
       var cmaperiod = TicksPerMinuteInstant;
       PriceCmaWalker.Add(price.Average, cmaperiod);
+      PriceCmaDiffHighWalker.Add(PriceCmaDiffHigh, cmaperiod);
+      PriceCmaDiffLowWalker.Add(PriceCmaDiffLow, cmaperiod);
       OnPropertyChanged("PriceCmaDiffernceInPips");
       OnPropertyChanged("PriceCma1DiffernceInPips");
       OnPropertyChanged("PriceCma23DiffernceInPips");
