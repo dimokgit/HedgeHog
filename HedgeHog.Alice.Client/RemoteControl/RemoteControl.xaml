@@ -239,18 +239,21 @@
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
-                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n0}}" ToolTip="Bar 60 Height in Pips"/>
-                <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"/>
+                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n1}}" ToolTip="Bar 60 Height in Pips"/>
+                <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"
+                           FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
                 <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
+                  Background="{Binding TradeSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Pink|Transparent}"
                            />
-                <TextBlock Text="{Binding PriceCmaDiffHighFirstInPips,StringFormat=/{0:n1}}" ToolTip="Price Cma Diff High First In Pips" 
+                <TextBlock Text="{Binding PriceCmaDiffHighFirstInPips,StringFormat=/{0:n2}}" ToolTip="Price Cma Diff High First In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighFirstInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
                            />
-                <TextBlock Text="{Binding PriceCmaDiffHighLastInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff High Last In Pips" 
+                <TextBlock Text="{Binding PriceCmaDiffHighLastInPips,StringFormat=/{0:n2}]}" ToolTip="Price Cma Diff High Last In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighLastInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
                            />
@@ -258,12 +261,13 @@
                 <TextBlock Text="{Binding PriceCmaDiffLowInPips,StringFormat=[{0:n1}}" ToolTip="Price Cma Diff Low In Pips"
                   FontWeight="{Binding PriceCmaDiffLowInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
                   Foreground="DarkGreen"
+                  Background="{Binding TradeSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}"
                            />
-                <TextBlock Text="{Binding PriceCmaDiffLowFirstInPips,StringFormat=/{0:n1}}" ToolTip="Price Cma Diff Low First In Pips" 
+                <TextBlock Text="{Binding PriceCmaDiffLowFirstInPips,StringFormat=/{0:n2}}" ToolTip="Price Cma Diff Low First In Pips" 
                   FontWeight="{Binding PriceCmaDiffLowFirstInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
                   Foreground="DarkGreen"
                            />
-                <TextBlock Text="{Binding PriceCmaDiffLowLastInPips,StringFormat=/{0:n1}]}" ToolTip="Price Cma Diff Low Last In Pips" 
+                <TextBlock Text="{Binding PriceCmaDiffLowLastInPips,StringFormat=/{0:n2}]}" ToolTip="Price Cma Diff Low Last In Pips" 
                   FontWeight="{Binding PriceCmaDiffLowLastInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
                   Foreground="DarkGreen"
                            />

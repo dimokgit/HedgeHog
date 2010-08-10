@@ -357,8 +357,11 @@ namespace HedgeHog.Alice.Client {
           GetBarHeight(tm);
         if (e.PropertyName == Lib.GetLambda(() => tm.CorridorIterations))
           tm.CorridorStatsArray.Clear();
-        if (e.PropertyName == Lib.GetLambda(() => tm.CorridorIterationsIn))
+        if (e.PropertyName == Lib.GetLambda(() => tm.CorridorIterationsIn)) {
           tm.PriceCmaWalker.Reset(tm.CorridorIterationsIn);
+          tm.PriceCmaDiffHighWalker.Reset(tm.CorridorIterationsIn);
+          tm.PriceCmaDiffLowWalker.Reset(tm.CorridorIterationsIn);
+        }
         if (e.PropertyName == Lib.GetLambda(() => tm.CurrentLoss)) {
           System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => {
             try {
@@ -542,7 +545,7 @@ namespace HedgeHog.Alice.Client {
       //if (tm.CorridorStats.BuyStopByCorridor == 0 || tm.CorridorStats.SellStopByCorridor == 0) return;
       var trades = fw.GetTrades(pair);
       CheckTradesLotSize(pair, trades);
-      var buy = tm.CorridorStats.TradeSignal;
+      var buy = tm.TradeSignal;
       if (buy.HasValue) {
         #region Open Trade
         if (buy.HasValue) {
@@ -563,6 +566,7 @@ namespace HedgeHog.Alice.Client {
           if (tm.ReverseOnProfit
               //&& tm.CorridorStats.IsCorridornessOk
               && tm.IsTakeProfitPipsMinimumOk
+              && tm.IsCorridorAvarageHeightOk
               && tradesInSameDirection.Length < tm.MaximumPositions
               && (tradesInSameDirection.Length == 0 || maxPL < -tm.TradeDistance)
             ) {
@@ -879,7 +883,6 @@ namespace HedgeHog.Alice.Client {
       for (var i = 0; i < rates.Count - tm.LimitBar; i++)
         bhList.Add(GetBarHeight(tm.LimitBar, rates.Skip(i).ToList()));
       tm.BarHeight60 = bhList.Average();
-      tm.BarHeight60InPips = fw.InPips(pair, tm.BarHeight60);
       //Debug.WriteLine("GetBarHeight:{0} - {1:n0} ms", tm.Pair, sw.Elapsed.TotalMilliseconds);
     }
 
