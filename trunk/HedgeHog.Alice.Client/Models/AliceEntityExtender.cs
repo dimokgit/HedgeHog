@@ -351,18 +351,6 @@ namespace HedgeHog.Alice.Client.Models {
     public double PriceCmaDiffLow { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffLow; } }
     public double PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
 
-    private double _BarHeight60InPips;
-    public double BarHeight60InPips {
-      get { return _BarHeight60InPips; }
-      set {
-        if (_BarHeight60InPips != value) {
-          _BarHeight60InPips = value;
-          OnPropertyChanged("BarHeight60InPips");
-        }
-      }
-    }
-
-
     bool _PendingSell;
     public bool PendingSell {
       get { return _PendingSell; }
@@ -532,9 +520,21 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    public double BarHeight60 { get; set; }
+    double _BarHeight60;
+    public double BarHeight60 {
+      get { return _BarHeight60; }
+      set { 
+        _BarHeight60 = value;
+        OnPropertyChanged("BarHeight60InPips");
+        OnPropertyChanged("IsCorridorAvarageHeightOk");
+      }
+    }
+    public double BarHeight60InPips { get { return InPips(BarHeight60); } }
+
     public double TakeProfitPipsMinimum { get { return FibMin; } }
     public bool IsTakeProfitPipsMinimumOk { get { return CorridorStats == null ? false : TakeProfitPips >= TakeProfitPipsMinimum; } }
+
+    public bool IsCorridorAvarageHeightOk { get { return CorridorStats == null ? false : CorridorAverageHeight / BarHeight60>.9; } }
 
     public double CorridorHeightMinimum { get; set; }
 
@@ -587,6 +587,13 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
+    bool? _TradeSignal;
+
+    public bool? TradeSignal {
+      get {
+        return CorridorStats == null?null: CorridorStats.TradeSignal;
+      }
+    }
 
     public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().First()), 2); } }
     //public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
@@ -654,6 +661,7 @@ namespace HedgeHog.Alice.Client.Models {
       PriceCmaWalker.Add(price.Average, cmaperiod);
       PriceCmaDiffHighWalker.Add(PriceCmaDiffHigh, cmaperiod);
       PriceCmaDiffLowWalker.Add(PriceCmaDiffLow, cmaperiod);
+      OnPropertyChanged("TradeSignal");
       OnPropertyChanged("PriceCmaDiffernceInPips");
       OnPropertyChanged("PriceCma1DiffernceInPips");
       OnPropertyChanged("PriceCma23DiffernceInPips");
