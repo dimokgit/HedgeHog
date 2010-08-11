@@ -501,13 +501,13 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    private double _TradeDistance;
-    public double TradeDistance {
-      get { return _TradeDistance; }
+    private double _TradeDistanceInPips;
+    public double TradeDistanceInPips {
+      get { return _TradeDistanceInPips; }
       set {
-        if (_TradeDistance != value) {
-          _TradeDistance = value;
-          OnPropertyChanged("TradeDistance");
+        if (_TradeDistanceInPips != value) {
+          _TradeDistanceInPips = value;
+          OnPropertyChanged("TradeDistanceInPips");
         }
       }
     }
@@ -534,7 +534,7 @@ namespace HedgeHog.Alice.Client.Models {
     public double TakeProfitPipsMinimum { get { return FibMin; } }
     public bool IsTakeProfitPipsMinimumOk { get { return CorridorStats == null ? false : TakeProfitPips >= TakeProfitPipsMinimum; } }
 
-    public bool IsCorridorAvarageHeightOk { get { return CorridorStats == null ? false : CorridorAverageHeight / BarHeight60>.9; } }
+    public bool IsCorridorAvarageHeightOk { get { return CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk; } }
 
     public double CorridorHeightMinimum { get; set; }
 

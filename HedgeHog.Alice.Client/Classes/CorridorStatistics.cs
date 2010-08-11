@@ -212,6 +212,7 @@ namespace HedgeHog.Alice.Client {
             (bool?)null;
         };
         Func<bool?> tradeSignal6 = () => {
+          if (!IsCorridorAvarageHeightOk) return null;
           //if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
           var pdhFirst = TradingMacro.PriceCmaDiffHighWalker.CmaArray.First();
           var pdhLast = TradingMacro.PriceCmaDiffHighWalker.CmaArray.Last();
@@ -222,6 +223,7 @@ namespace HedgeHog.Alice.Client {
             (bool?)null;
         };
         Func<bool?> tradeSignal7 = () => {
+          if (!IsCorridorAvarageHeightOk) return null;
           return PriceCmaDiffHigh > 0 ? false :
                  PriceCmaDiffLow < 0 ? true :
             (bool?)null;
@@ -234,11 +236,13 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    double priceCmaForAverage { get { return TradingMacro.PriceCurrent == null?0: TradingMacro.PriceCurrent.Average; } }
+    double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Ask; } }
+    double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Bid; } }
 
-    public double PriceCmaDiffHigh { get { return priceCmaForAverage - AverageHigh; } }
-    public double PriceCmaDiffLow { get { return priceCmaForAverage - AverageLow; } }
+    public double PriceCmaDiffHigh { get { return priceCmaForAverageHigh - AverageHigh; } }
+    public double PriceCmaDiffLow { get { return priceCmaForAverageLow - AverageLow; } }
 
+    public bool IsCorridorAvarageHeightOk { get { return AverageHeight / TradingMacro.BarHeight60 > 1; } }
     #endregion
 
 
@@ -311,9 +315,9 @@ namespace HedgeHog.Alice.Client {
       var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).ToArray();
       var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).ToArray();
       if (ratesForAverageHigh.Length > 0)
-        averageHigh = ratesForAverageHigh.Average(r => r.PriceAvg/*.PriceLow*/);
+        averageHigh = ratesForAverageHigh.Average(r => r.PriceHigh/*.PriceLow*/);
       if (ratesForAverageLow.Length > 0)
-        averageLow = ratesForAverageLow.Average(r => r.PriceAvg/*.PriceHigh*/);
+        averageLow = ratesForAverageLow.Average(r => r.PriceLow/*.PriceHigh*/);
       return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
     }
 
