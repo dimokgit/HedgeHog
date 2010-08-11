@@ -235,7 +235,7 @@
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
-                <TextBlock Text="{Binding TradeDistance,StringFormat=n0}" ToolTip="Trade Distance"/>
+                <TextBlock Text="{Binding TradeDistanceInPips,StringFormat=n0}" ToolTip="Trade Distance"/>
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />

@@ -419,7 +419,7 @@ namespace HedgeHog.Alice.Client {
         tm.CorridorHeightMinimum = maxPL > 0 ? tm.BarHeight60 : tm.BarHeight60;
         var corridornesses = rates.GetCorridornesses( tm.CorridorCalcMethod == Models.CorridorCalculationMethod.StDev);
         foreach (int i in tm.CorridorIterationsArray) {
-          var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, tm.CorridorHeightMinimum);
+          var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, 0/*tm.CorridorHeightMinimum*/);
           if (csCurr == null) continue;
           var cs = tm.GetCorridorStats(csCurr.Iterations);
           cs.Init(csCurr.Density, csCurr.AverageHigh, csCurr.AverageLow, csCurr.AskHigh, csCurr.BidLow, csCurr.Periods, csCurr.EndDate, csCurr.StartDate, csCurr.Iterations);
@@ -432,7 +432,7 @@ namespace HedgeHog.Alice.Client {
                             orderby cs.CorridorFibAverage.Abs() // cs.Iterations
                             select cs
                             ).DefaultIfEmpty(tm.GetCorridorStats(0)).Last();
-        tm.TradeDistance = fw.InPips(tm.Pair, tm.CorridorStats.Height);
+        tm.TradeDistanceInPips = fw.InPips(tm.Pair, tm.CorridorStats.Height);
         var takeProfitCS = tm.CorridorStatsArray.Where(cs => cs.Height * .9 > tm.CorridorStats.Height)
           .OrderBy(cs => cs.Height).DefaultIfEmpty(tm.GetCorridorStats(0)).First();
         tm.TakeProfitPips = Math.Ceiling(fw.InPips(tm.Pair, takeProfitCS.Height));
@@ -544,6 +544,11 @@ namespace HedgeHog.Alice.Client {
       if (tm == null || tm.CorridorStats == null) return;
       //if (tm.CorridorStats.BuyStopByCorridor == 0 || tm.CorridorStats.SellStopByCorridor == 0) return;
       var trades = fw.GetTrades(pair);
+      var tradesWithProfit = trades.Where(t => t.PL > 0).ToArray();
+      if (tradesWithProfit.Length > 1) {
+        fw.FixOrdersClose(tradesWithProfit.Select(t => t.Id).ToArray());
+        return;
+      }
       CheckTradesLotSize(pair, trades);
       var buy = tm.TradeSignal;
       if (buy.HasValue) {
@@ -568,7 +573,7 @@ namespace HedgeHog.Alice.Client {
               && tm.IsTakeProfitPipsMinimumOk
               && tm.IsCorridorAvarageHeightOk
               && tradesInSameDirection.Length < tm.MaximumPositions
-              && (tradesInSameDirection.Length == 0 || maxPL < -tm.TradeDistance)
+              && (tradesInSameDirection.Length == 0 || maxPL < -tm.TradeDistanceInPips)
             ) {
             #region Pending Order Setup
             PendingOrder po = null; ;
@@ -1194,9 +1199,13 @@ namespace HedgeHog.Alice.Client {
       if (tm.CorridorStats == null) return false;
       var lotSizeCalc = CalculateLot(tm);
       int lotSizeCurr = trades.Sum(t => t.Lots);
-      if (lotSizeCurr / lotSizeCalc < 2) return false;
+      //var isMinSize = lotSizeCalc == tm.LotSize && lotSizeCurr > lotSizeCalc;
+      if (lotSizeCurr / lotSizeCalc <= 2) return false;
       var lotSizeRemove = lotSizeCurr - lotSizeCalc;
-      CloseLooseTrades(pair, trades, lotSizeRemove);
+      if (lotSizeRemove <= 0) return false;
+      var tradesToClose = trades.Where(t => t.PL > 0).OrderByDescending(t => t.PL).ToArray();
+      if (tradesToClose.Length == 0) return false;
+      CloseLooseTrades(pair,tradesToClose , lotSizeRemove);
       return true;
     }
 
