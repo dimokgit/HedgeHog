@@ -67,6 +67,9 @@ namespace HedgeHog.Shared {
     public string OpenOrderID { get; set; }
     [DataMember]
     public string OpenOrderReqID { get; set; }
+    [DataMember]
+    public double Commission { get; set; }
+
 
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }

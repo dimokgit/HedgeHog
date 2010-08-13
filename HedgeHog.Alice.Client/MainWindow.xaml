@@ -45,6 +45,7 @@
           </StackPanel.Resources>
           <WrapPanel>
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
+            <Button Command="{Binding ShowReportCommand}" HorizontalAlignment="Left">Report</Button>
           </WrapPanel>
           <!--Server Trades-->
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}">
@@ -220,6 +221,7 @@
           <DataGridTextColumn Binding="{Binding Path=AccountId}" Header="Account" />
           <DataGridTextColumn Binding="{Binding Path=Password}" Header="Password" Foreground="Transparent" />
           <DataGridCheckBoxColumn Binding="{Binding Path=IsDemo}" Header="Demo" Width="SizeToHeader" />
+          <DataGridTextColumn Binding="{Binding Path=Commission}" Header="C$" />
           <DataGridTextColumn Binding="{Binding Path=TradeRatio}" Header="M:S" ToolTipService.ToolTip="Trade Ratio" />
           <DataGridCheckBoxColumn Binding="{Binding Path=IsMaster}" Header="Master" Width="SizeToHeader" />
           <DataGridTextColumn Binding="{Binding Path=EntityState}" Header="State" />

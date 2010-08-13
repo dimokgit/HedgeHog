@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   public interface IMainModel {
@@ -11,5 +12,7 @@ namespace HedgeHog.Alice.Client {
     Order2GoAddIn.CoreFX CoreFX { get; }
     Exception Log { set; }
     double CurrentLoss { set; }
+    void AddCosedTrade(Trade trade);
+    double CommissionByTrade(Trade trade);
   }
 }
