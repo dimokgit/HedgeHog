@@ -24,13 +24,12 @@ namespace Temp {
   /// Interaction logic for Window1.xaml
   /// </summary>
   public partial class Window1 : HedgeHog.Models.WindowModel {
-    ThreadScheduler statsScheduler;
-    FXW fw = new FXW(new Order2GoAddIn.CoreFX(),"EUR/USD");
+    FXW fw { get { return Temp.App.fw; } }
+  ThreadScheduler statsScheduler;
     List<Rate> rates = new List<Rate>();
     ObservableCollection<string> instruments { get; set; }
     public ListCollectionView Instruments { get; set; }
     bool resetRates;
-    bool resetRsi;
     Corridors charter;
     int _daysBack;
     public bool NoGaps { get; set; }
@@ -41,7 +40,7 @@ namespace Temp {
     double _rsiDays;
     public double RsiPeriods {
       get { return _rsiDays; }
-      set { _rsiDays = value;  resetRsi = true; }
+      set { _rsiDays = value;  }
     }
     int _period = 1;
     public int Period {
@@ -62,6 +61,7 @@ namespace Temp {
         charter = new Corridors();
         charter.Show();
       }
+      new HedgeHog.Statistics.StatisticsWindow().Show();
     }
 
     void Instruments_CurrentChanged(object sender, EventArgs e) {
@@ -124,7 +124,6 @@ namespace Temp {
         fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
         AddLog("RSI.");
         rates.ToArray().Rsi((Period * RsiPeriods).ToInt(),true);
-        resetRsi = false;
         var rsiStats = rates.RsiStats();
         var ratesToChart = rates.Where(t => t.PriceRsi.GetValueOrDefault(50) != 50).ToList();
         if (NoGaps) {

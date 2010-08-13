@@ -86,6 +86,7 @@ namespace HedgeHog.Alice.Client {
         return _remoteController;
       }
     }
+    public Models.TradingAccount MasterAccount { get { return TradingMaster; } }
     #endregion
 
     #region Events
@@ -507,6 +508,23 @@ namespace HedgeHog.Alice.Client {
         } catch (Exception exc) { Log = exc; }
     }
     #endregion
+
+
+    Report ReportWindow = new Report();
+    ICommand _ShowReportCommand;
+    public ICommand ShowReportCommand {
+      get {
+        if (_ShowReportCommand == null) {
+          _ShowReportCommand = new Gala.RelayCommand(ShowReport, () => true);
+        }
+
+        return _ShowReportCommand;
+      }
+    }
+    void ShowReport() {
+      ReportWindow.Show();
+    }
+
 
     #region Close All Server Trades Command
     ICommand _CloseAllServerTradesCommand;
@@ -931,6 +949,16 @@ namespace HedgeHog.Alice.Client {
       }
     }
     #endregion
+
+    public double CommissionByTrade(Trade trade) { return trade.Lots / 10000.0 * MasterAccount.Commission; }
+    public void AddCosedTrade(Trade trade) {
+      try {
+        if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
+        var ct = Models.ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
+        GlobalStorage.Context.ClosedTrades.AddObject(ct);
+        GlobalStorage.Context.SaveChanges();
+      } catch (Exception exc) { Log = exc; }
+    }
 
     #endregion
 

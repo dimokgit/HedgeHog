@@ -177,10 +177,16 @@ namespace Order2GoAddIn {
   }
   #endregion
 
+  public class FXWraper {
+    public FXWraper() {
+
+    }
+  }
+
   [ClassInterface(ClassInterfaceType.AutoDual), ComSourceInterfaces(typeof(IOrder2GoEvents))]
   [Guid("2EC43CB6-ED3D-465c-9AF3-C0BBC622663E")]
   [ComVisible(true)]
-  public sealed class FXCoreWrapper:IDisposable {
+  public class FXCoreWrapper:IDisposable {
     private readonly string ERROR_FILE_NAME = "FXCM.log";
 
     
@@ -557,6 +563,7 @@ namespace Order2GoAddIn {
       get { return coreFX; }
       set { coreFX = value; }
     }
+    public FXCoreWrapper() : this(new CoreFX(), null) { }
     public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null) { }
     public FXCoreWrapper(CoreFX coreFX,string pair) {
       this.coreFX = coreFX;
@@ -2114,6 +2121,13 @@ namespace Order2GoAddIn {
     #endregion
 
     #region FXCore Helpers
+
+    public string GetReport(DateTime dateFrom, DateTime dateTo) {
+      var url = Desk.GetReportURL(AccountID, dateFrom, dateTo, "XLS", "", "", 0);
+      var wc = new System.Net.WebClient();
+      var s = wc.DownloadString(url);
+      return s;
+    }
 
     public double PointSize() { return GetPipSize(Pair); }
 

@@ -93,8 +93,11 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls, Version=2010.1.422.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7" />
-    <Reference Include="Telerik.Windows.Controls.Input, Version=2010.1.422.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7" />
+    <Reference Include="Telerik.Windows.Controls, Version=2010.2.812.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL" />
+    <Reference Include="Telerik.Windows.Controls.Data, Version=2010.2.812.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL" />
+    <Reference Include="Telerik.Windows.Controls.GridView, Version=2010.2.812.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL" />
+    <Reference Include="Telerik.Windows.Controls.Input, Version=2010.2.812.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL" />
+    <Reference Include="Telerik.Windows.Data, Version=2010.2.812.35, Culture=neutral, PublicKeyToken=5803cfa389c90ce7" />
     <Reference Include="UIAutomationProvider" />
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
@@ -115,6 +118,7 @@
     <Compile Include="Classes\GlobalStorage.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\IMainModel.cs" />
+    <Compile Include="Classes\ReportModel.cs" />
     <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />
     <Compile Include="Classes\TradeRequestManager.cs" />
@@ -158,6 +162,9 @@
     </Compile>
     <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
     <Compile Include="UI\Overrides\DataGrid_D.cs" />
+    <Compile Include="UI\Report.xaml.cs">
+      <DependentUpon>Report.xaml</DependentUpon>
+    </Compile>
     <Page Include="Dictionary1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -196,6 +203,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="UI\Controls\Account\View\SlaveAccount.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Report.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

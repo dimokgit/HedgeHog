@@ -242,7 +242,15 @@ namespace HedgeHog.Alice.Client {
     public double PriceCmaDiffHigh { get { return priceCmaForAverageHigh - AverageHigh; } }
     public double PriceCmaDiffLow { get { return priceCmaForAverageLow - AverageLow; } }
 
-    public bool IsCorridorAvarageHeightOk { get { return AverageHeight / TradingMacro.BarHeight60 > 1; } }
+    public bool IsCorridorAvarageHeightOk {
+      get {
+        var addOn = PriceCmaDiffHigh > 0 
+          ? TradingMacro.PriceCmaDiffHighFirst + TradingMacro.PriceCmaDiffHighLast
+          : PriceCmaDiffLow < 0 ? -TradingMacro.PriceCmaDiffLowFirst - TradingMacro.PriceCmaDiffLowLast 
+          : 0;
+        return (AverageHeight + Math.Max(0,addOn)) / TradingMacro.BarHeight60 > 1;
+      }
+    }
     #endregion
 
 

@@ -35,6 +35,10 @@ namespace HedgeHog.Alice.Client.Models {
     }
   }
 
+  public partial class ClosedTrade {
+    public double NetPL { get { return GrossPL - Commission; } }
+  }
+
   public partial class TradingMacro {
 
     #region LotSize
@@ -121,6 +125,7 @@ namespace HedgeHog.Alice.Client.Models {
     }
 
 
+    public IEnumerable<CorridorStatistics> GetCorridorStats() { return CorridorStatsArray.OrderBy(cs => cs.Iterations); }
     public CorridorStatistics GetCorridorStats(int iterations) {
       if (iterations <= 0) return CorridorStatsArray.OrderBy(c => c.Iterations).Take(-iterations+1).Last();
       var cs = CorridorStatsArray.Where(c => c.Iterations == iterations).SingleOrDefault();
@@ -595,22 +600,22 @@ namespace HedgeHog.Alice.Client.Models {
       }
     }
 
-    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().First()), 2); } }
+    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().FirstOrDefault()), 2); } }
     //public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
-    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().Skip(1).DefaultIfEmpty(PriceCmaWalker.CmaDiff()[0]).First()), 2); } }
+    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().Skip(1).DefaultIfEmpty(PriceCmaWalker.CmaDiff().FirstOrDefault()).First()), 2); } }
     //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma2 - PriceCma3), 2); } }
     //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.FromEnd(1) - PriceCmaWalker.FromEnd(0)), 2); } }
-    public double PriceCma23DiffernceInPips { get { return Math.Round(InPips(PriceCmaWalker.CmaDiff().Last()), 2); } }
+    public double PriceCma23DiffernceInPips { get { return Math.Round(InPips(PriceCmaWalker.CmaDiff().LastOrDefault()), 2); } }
 
     public double PriceCmaDiffHighFirstInPips { get { return InPips(PriceCmaDiffHighFirst); } }
     public double PriceCmaDiffHighLastInPips { get { return InPips(PriceCmaDiffHighLast); } }
-    public double PriceCmaDiffHighFirst { get { return PriceCmaDiffHighWalker.CmaArray.First().GetValueOrDefault(); } }
-    public double PriceCmaDiffHighLast { get { return PriceCmaDiffHighWalker.CmaArray.Last().GetValueOrDefault(); } }
+    public double PriceCmaDiffHighFirst { get { return PriceCmaDiffHighWalker.CmaArray.FirstOrDefault().GetValueOrDefault(); } }
+    public double PriceCmaDiffHighLast { get { return PriceCmaDiffHighWalker.CmaArray.LastOrDefault().GetValueOrDefault(); } }
 
     public double PriceCmaDiffLowFirstInPips { get { return InPips(PriceCmaDiffLowFirst); } }
     public double PriceCmaDiffLowLastInPips { get { return InPips(PriceCmaDiffLowLast); } }
-    public double PriceCmaDiffLowFirst { get { return PriceCmaDiffLowWalker.CmaArray.First().GetValueOrDefault(); } }
-    public double PriceCmaDiffLowLast { get { return PriceCmaDiffLowWalker.CmaArray.Last().GetValueOrDefault(); } }
+    public double PriceCmaDiffLowFirst { get { return PriceCmaDiffLowWalker.CmaArray.FirstOrDefault().GetValueOrDefault(); } }
+    public double PriceCmaDiffLowLast { get { return PriceCmaDiffLowWalker.CmaArray.LastOrDefault().GetValueOrDefault(); } }
 
     int _priceCmaCounter;
     public int PriceCmaCounter {
