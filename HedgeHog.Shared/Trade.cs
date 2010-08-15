@@ -13,10 +13,8 @@ namespace HedgeHog.Shared {
   [DataContract]
   public class Trade : PositioBase {
     [DataMember]
-    [DisplayName("")]
     public string Id { get; set; }
     [DataMember]
-    [DisplayName("")]
     public string Pair { get; set; }
     [DataMember]
     [DisplayName("BS")]
@@ -58,10 +56,13 @@ namespace HedgeHog.Shared {
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
     [DataMember]
-    [DisplayName("")]
+    [DisplayName("Time Close")]
     public DateTime TimeClose { get; set; }
+    public DateTime DateClose { get { return TimeClose.Date; } }
+    public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
     public int Lots { get; set; }
+    public int AmountK { get { return Lots / 1000; } }
 
     [DataMember]
     public string OpenOrderID { get; set; }
@@ -71,6 +72,7 @@ namespace HedgeHog.Shared {
     public double Commission { get; set; }
 
 
+    public double NetPL { get { return GrossPL + Commission; } }
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }
 

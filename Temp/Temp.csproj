@@ -164,6 +164,7 @@
     <None Include="Properties\DataSources\AliceEntities.datasource" />
     <None Include="Properties\DataSources\ForexEntities.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.TradingAccountModel.datasource" />
+    <None Include="Properties\DataSources\HedgeHog.Shared.Trade.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -171,10 +172,6 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\HedgeHog.Alice.Client\HedgeHog.Alice.Client.csproj">
-      <Project>{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}</Project>
-      <Name>HedgeHog.Alice.Client</Name>
-    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
@@ -202,6 +199,10 @@
     <ProjectReference Include="..\Persistancy\Persistance.csproj">
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
       <Name>Persistance</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Telerik\Telerik.csproj">
+      <Project>{B005825C-7051-4E72-A39A-A0BD3DE7994F}</Project>
+      <Name>Telerik</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

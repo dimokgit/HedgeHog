@@ -130,6 +130,16 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 }
             }
 
+            public void Reload(string fileName) {
+              if (System.IO.File.Exists(fileName))
+                try {
+                  using (var file = System.IO.File.OpenRead(fileName)) {
+                    ReloadFromStream(file);
+                  }
+                } catch (Exception exc) {
+                  System.Diagnostics.Debug.Fail(exc + "");
+                }
+            }
             public void Reload()
             {
                 try
@@ -138,36 +148,7 @@ namespace Telerik.Windows.Controls.GridView.Settings
                     {
                         using (IsolatedStorageFileStream stream = new IsolatedStorageFileStream(PersistID, FileMode.Open, file))
                         {
-                            if (stream.Length > 0)
-                            {
-                                RadGridViewApplicationSettings loaded = (RadGridViewApplicationSettings) serializer.ReadObject(stream);
-
-                                FrozenColumnCount = loaded.FrozenColumnCount;
-
-                                ColumnSettings.Clear();
-                                foreach (ColumnSetting cs in loaded.ColumnSettings)
-                                {
-                                    ColumnSettings.Add(cs);
-                                }
-
-                                FilterSettings.Clear();
-                                foreach (FilterSetting fs in loaded.FilterSettings)
-                                {
-                                    FilterSettings.Add(fs);
-                                }
-
-                                GroupSettings.Clear();
-                                foreach (GroupSetting gs in loaded.GroupSettings)
-                                {
-                                    GroupSettings.Add(gs);
-                                }
-
-                                SortSettings.Clear();
-                                foreach (SortSetting ss in loaded.SortSettings)
-                                {
-                                    SortSettings.Add(ss);
-                                }
-                            }
+                          ReloadFromStream(stream);
                         }
                     }
                 }
@@ -175,6 +156,34 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 {
 
                 }
+            }
+
+            public void ReloadFromStream(Stream stream) {
+              if (stream.Length > 0) {
+                RadGridViewApplicationSettings loaded = (RadGridViewApplicationSettings)serializer.ReadObject(stream);
+
+                FrozenColumnCount = loaded.FrozenColumnCount;
+
+                ColumnSettings.Clear();
+                foreach (ColumnSetting cs in loaded.ColumnSettings) {
+                  ColumnSettings.Add(cs);
+                }
+
+                FilterSettings.Clear();
+                foreach (FilterSetting fs in loaded.FilterSettings) {
+                  FilterSettings.Add(fs);
+                }
+
+                GroupSettings.Clear();
+                foreach (GroupSetting gs in loaded.GroupSettings) {
+                  GroupSettings.Add(gs);
+                }
+
+                SortSettings.Clear();
+                foreach (SortSetting ss in loaded.SortSettings) {
+                  SortSettings.Add(ss);
+                }
+              }
             }
 
             public void Reset()
@@ -192,6 +201,18 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 }
             }
 
+            public void Save(string fileName) {
+              if (string.IsNullOrWhiteSpace(fileName)) Save();
+              else
+                try {
+                  using (var file = System.IO.File.Create(fileName)) {
+                    SaveToStream(file);
+                  }
+                } catch (Exception exc) {
+                  System.Diagnostics.Debug.Fail(exc.ToString());
+                }
+            }
+
             public void Save()
             {
                 try
@@ -200,14 +221,18 @@ namespace Telerik.Windows.Controls.GridView.Settings
                     {
                         using (IsolatedStorageFileStream stream = new IsolatedStorageFileStream(PersistID, FileMode.Create, file))
                         {
-                            serializer.WriteObject(stream, this);
+                          SaveToStream(stream);
                         }
                     }
                 }
-                catch
+                catch(Exception exc)
                 {
-                    //
+                  System.Diagnostics.Debug.Fail(exc.ToString());
                 }
+            }
+
+            public void SaveToStream(Stream stream) {
+              serializer.WriteObject(stream, this);
             }
         }
 
@@ -245,6 +270,10 @@ namespace Telerik.Windows.Controls.GridView.Settings
             }
         }
 
+        public virtual void LoadState(string fileName) {
+          Settings.Reload(fileName);
+          LoadStateCore();
+        }
         public virtual void LoadState()
         {
             try
@@ -256,99 +285,88 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 Settings.Reset();
             }
 
-            if (this.grid != null)
-            {
-                grid.FrozenColumnCount = Settings.FrozenColumnCount;
+            LoadStateCore();
+        }
 
-                if (Settings.ColumnSettings.Count > 0)
-                {
-                    foreach (ColumnSetting setting in Settings.ColumnSettings)
-                    {
-                        ColumnSetting currentSetting = setting;
+        public void LoadStateCore() {
+          if (this.grid != null) {
+            grid.FrozenColumnCount = Settings.FrozenColumnCount;
 
-                        GridViewDataColumn column = (from c in grid.Columns.OfType<GridViewDataColumn>()
-                                                     where c.UniqueName == currentSetting.UniqueName
-                                                     select c).FirstOrDefault();
+            if (Settings.ColumnSettings.Count > 0) {
+              foreach (ColumnSetting setting in Settings.ColumnSettings) {
+                ColumnSetting currentSetting = setting;
 
-                        if (column != null)
-                        {
-                            if (currentSetting.DisplayIndex != null)
-                            {
-                                column.DisplayIndex = currentSetting.DisplayIndex.Value;
-                            }
+                GridViewDataColumn column = (from c in grid.Columns.OfType<GridViewDataColumn>()
+                                             where c.UniqueName == currentSetting.UniqueName
+                                             select c).FirstOrDefault();
 
-                            if (setting.Width != null)
-                            {
-                                column.Width = new GridViewLength(setting.Width.Value);
-                            }
-                        }
-                    }
+                if (column != null) {
+                  if (currentSetting.DisplayIndex != null) {
+                    column.DisplayIndex = currentSetting.DisplayIndex.Value;
+                  }
+
+                  if (setting.Width != null) {
+                    column.Width = new GridViewLength(setting.Width.Value);
+                  }
                 }
-                using (grid.DeferRefresh())
-                {
-                    if (Settings.SortSettings.Count > 0)
-                    {
-                        grid.SortDescriptors.Clear();
-
-                        foreach (SortSetting setting in Settings.SortSettings)
-                        {
-                            Telerik.Windows.Data.SortDescriptor d = new Telerik.Windows.Data.SortDescriptor();
-                            d.Member = setting.PropertyName;
-                            d.SortDirection = setting.SortDirection;
-
-                            grid.SortDescriptors.Add(d);
-                        }
-                    }
-
-                    if (Settings.GroupSettings.Count > 0)
-                    {
-                        grid.GroupDescriptors.Clear();
-
-                        foreach (GroupSetting setting in Settings.GroupSettings)
-                        {
-                            Telerik.Windows.Data.GroupDescriptor d = new Telerik.Windows.Data.GroupDescriptor();
-                            d.Member = setting.PropertyName;
-                            d.SortDirection = setting.SortDirection;
-                            d.DisplayContent = setting.DisplayContent;
-
-                            grid.GroupDescriptors.Add(d);
-                        }
-                    }
-
-                    if (Settings.FilterSettings.Count > 0)
-                    {
-                        foreach (FilterSetting setting in Settings.FilterSettings)
-                        {
-                            FilterSetting currentSetting = setting;
-
-                            GridViewDataColumn matchingColumn =
-                            (from column in grid.Columns.OfType<GridViewDataColumn>()
-                             where column.DataMemberBinding.Path.Path == currentSetting.PropertyName
-                             select column).FirstOrDefault();
-
-                            if (matchingColumn != null)
-                            {
-                                ColumnFilterDescriptor cfd = new ColumnFilterDescriptor(matchingColumn);
-
-                                cfd.FieldFilter.Filter1.Member = setting.Filter1.Member;
-                                cfd.FieldFilter.Filter1.Operator = setting.Filter1.Operator;
-                                cfd.FieldFilter.Filter1.Value = setting.Filter1.Value;
-
-                                cfd.FieldFilter.Filter2.Member = setting.Filter2.Member;
-                                cfd.FieldFilter.Filter2.Operator = setting.Filter2.Operator;
-                                cfd.FieldFilter.Filter2.Value = setting.Filter2.Value;
-
-                                foreach (Telerik.Windows.Data.FilterDescriptor descriptor in setting.SelectedDistinctValues)
-                                {
-                                    cfd.DistinctFilter.FilterDescriptors.Add(descriptor);
-                                }
-
-                                this.grid.FilterDescriptors.Add(cfd);
-                            }
-                        }
-                    }
-                }
+              }
             }
+            using (grid.DeferRefresh()) {
+              if (Settings.SortSettings.Count > 0) {
+                grid.SortDescriptors.Clear();
+
+                foreach (SortSetting setting in Settings.SortSettings) {
+                  Telerik.Windows.Data.SortDescriptor d = new Telerik.Windows.Data.SortDescriptor();
+                  d.Member = setting.PropertyName;
+                  d.SortDirection = setting.SortDirection;
+
+                  grid.SortDescriptors.Add(d);
+                }
+              }
+
+              if (Settings.GroupSettings.Count > 0) {
+                grid.GroupDescriptors.Clear();
+
+                foreach (GroupSetting setting in Settings.GroupSettings) {
+                  Telerik.Windows.Data.GroupDescriptor d = new Telerik.Windows.Data.GroupDescriptor();
+                  d.Member = setting.PropertyName;
+                  d.SortDirection = setting.SortDirection;
+                  d.DisplayContent = setting.DisplayContent;
+
+                  grid.GroupDescriptors.Add(d);
+                }
+              }
+
+              if (Settings.FilterSettings.Count > 0) {
+                foreach (FilterSetting setting in Settings.FilterSettings) {
+                  FilterSetting currentSetting = setting;
+
+                  GridViewDataColumn matchingColumn =
+                  (from column in grid.Columns.OfType<GridViewDataColumn>()
+                   where column.DataMemberBinding.Path.Path == currentSetting.PropertyName
+                   select column).FirstOrDefault();
+
+                  if (matchingColumn != null) {
+                    ColumnFilterDescriptor cfd = new ColumnFilterDescriptor(matchingColumn);
+
+                    cfd.FieldFilter.Filter1.Member = setting.Filter1.Member;
+                    cfd.FieldFilter.Filter1.Operator = setting.Filter1.Operator;
+                    cfd.FieldFilter.Filter1.Value = setting.Filter1.Value;
+
+                    cfd.FieldFilter.Filter2.Member = setting.Filter2.Member;
+                    cfd.FieldFilter.Filter2.Operator = setting.Filter2.Operator;
+                    cfd.FieldFilter.Filter2.Value = setting.Filter2.Value;
+
+                    foreach (Telerik.Windows.Data.FilterDescriptor descriptor in setting.SelectedDistinctValues) {
+                      cfd.DistinctFilter.FilterDescriptors.Add(descriptor);
+                    }
+
+                    this.grid.FilterDescriptors.Add(cfd);
+                  }
+                }
+              }
+            }
+          }
         }
 
         public virtual void ResetState()
@@ -356,7 +374,10 @@ namespace Telerik.Windows.Controls.GridView.Settings
             Settings.Reset();
         }
 
-        public virtual void SaveState()
+        public virtual void SaveState() {
+          SaveState("");
+        }
+        public virtual void SaveState(string fileName)
         {
             Settings.Reset();
 
@@ -454,7 +475,7 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 Settings.FrozenColumnCount = grid.FrozenColumnCount;
             }
 
-            Settings.Save();
+            Settings.Save(fileName);
         }
 
         private void Attach()
