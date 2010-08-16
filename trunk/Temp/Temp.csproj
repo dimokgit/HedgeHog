@@ -54,6 +54,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -90,10 +91,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Report.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="StatisticsWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -121,9 +118,6 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Forex.edmx</DependentUpon>
-    </Compile>
-    <Compile Include="Report.xaml.cs">
-      <DependentUpon>Report.xaml</DependentUpon>
     </Compile>
     <Compile Include="StatisticsWindow.xaml.cs">
       <DependentUpon>StatisticsWindow.xaml</DependentUpon>
@@ -183,6 +177,10 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
+      <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>
+      <Name>HedgeHog.Reports</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>

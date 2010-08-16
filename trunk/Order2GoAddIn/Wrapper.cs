@@ -2122,12 +2122,41 @@ namespace Order2GoAddIn {
 
     #region FXCore Helpers
 
+    #region Report
     public string GetReport(DateTime dateFrom, DateTime dateTo) {
       var url = Desk.GetReportURL(AccountID, dateFrom, dateTo, "XLS", "", "", 0);
       var wc = new System.Net.WebClient();
       var s = wc.DownloadString(url);
       return s;
     }
+    public List<Trade> GetTradesFromReport(DateTime dateFrom, DateTime dateTo) {
+      var xml = GetReport(dateFrom, dateTo);
+      var xDoc = XElement.Parse(xml);
+      var ss = xDoc.GetNamespaceOfPrefix("ss").NamespaceName;
+      var worksheet = xDoc.Element(XName.Get("Worksheet", ss));
+      var ticketNode = worksheet.Descendants(XName.Get("Data", ss)).Where(x => x.Value == "Ticket #");
+      var ticketRow = ticketNode.First().Ancestors(XName.Get("Row", ss)).First();
+      var row = ticketRow.NextNode as XElement;
+      var trades = new List<Trade>();
+      Func<int, XElement> getData = i => row.Descendants(XName.Get("Data", ss)).ElementAt(i);
+      while (row.Elements().Count() == 13) {
+        var ticket = getData(0);
+        if (ticket == null) new Exception("Can't find [Ticket #] column");
+        var pair = getData(1).Value;
+        var volume = (int)double.Parse(getData(2).Value.Replace(",", ""));
+        var timeOpen = DateTime.Parse(getData(3).Value);
+        var isBuy = getData(4).Value == "";
+        row = row.NextNode as XElement;
+        var timeClose = DateTime.Parse(getData(3).Value);
+        var grossPL = double.Parse(getData(6).Value);
+        var commission = double.Parse(getData(7).Value);
+        var rollover = double.Parse(getData(8).Value);
+        trades.Add(new Trade() { Pair = pair, Buy = isBuy, Commission = commission + rollover, GrossPL = grossPL, Id = ticket.Value, IsBuy = isBuy, Lots = volume, Time = timeOpen, TimeClose = timeClose, OpenOrderID = "", OpenOrderReqID = "" });
+        row = row.NextNode as XElement;
+      }
+      return trades;
+    }
+    #endregion
 
     public double PointSize() { return GetPipSize(Pair); }
 
