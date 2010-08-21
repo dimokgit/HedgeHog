@@ -65,7 +65,7 @@ namespace TestHH {
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      if (!core.LogOn("MICR501860001", "8947", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -95,7 +95,10 @@ namespace TestHH {
         dateTo = dateTo.AddDays(-7);
       }
     }
-    [TestMethod]
+    public void ClosedTrades() {
+      var trades = o2g.GetClosedTrades("EUR/JPY");
+      o2g.LogOff();
+    }
     public void LoadTradeFromXml() {
       var fileName = @"C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_03\ClosedTrades.";
       var xmlString = File.ReadAllText(fileName+"txt");
@@ -282,9 +285,34 @@ namespace TestHH {
          r => o2g.InPips(1, r.PriceCMA[2]),
          "C:\\Speed.csv");
     }
+    [TestMethod]
+    public void LoadBars() {
+      var ticks = o2g.GetBarsBase("EUR/USD", 1, DateTime.Now.AddDays(-360));
+      using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
+        var lastDate = ticks.Min(t => t.StartDate);
+        var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
+        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE StartDate>={0}", lastDate);
+        ticks.ToList().ForEach(t => {
+          var bar = context.CreateObject<t_Bar>();
+          bar.Pair = o2g.Pair;
+          bar.Period = 1;
+          bar.StartDate = t.StartDate;
+          bar.AskHigh = t.AskHigh;
+          bar.AskLow = t.AskLow;
+          bar.AskOpen = t.AskOpen;
+          bar.AskClose = t.AskClose;
+          bar.BidHigh = t.BidHigh;
+          bar.BidLow = t.BidLow;
+          bar.BidOpen = t.BidOpen;
+          bar.BidClose = t.BidClose;
+          context.AddTot_Bar(bar);
+        });
+        context.SaveChanges(System.Data.Objects.SaveOptions.DetectChangesBeforeSave);
+      }
+    }
     public void LoadTicks() {
-      var ticks = o2g.GetTicks(o2g.Pair, 1200000).OrderBarsDescending().ToArray();
-      using (var context = new ForexEntities() { CommandTimeout = 600 }) {
+      var ticks = o2g.GetBarsBase("EUR/USD",1, DateTime.Now.AddMonths(-4));
+      using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Tick).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
         context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE StartDate>={0}", lastDate);

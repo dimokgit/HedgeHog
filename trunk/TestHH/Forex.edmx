@@ -6,6 +6,7 @@
     <edmx:StorageModels>
     <Schema Namespace="ForexModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="ForexModelStoreContainer">
+          <EntitySet Name="t_Bar" EntityType="ForexModel.Store.t_Bar" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.Store.t_Stat" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Tick" EntityType="ForexModel.Store.t_Tick" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Tick_Mew" EntityType="ForexModel.Store.t_Tick_Mew" store:Type="Tables" Schema="dbo" />
@@ -19,6 +20,24 @@
       FROM [dbo].[v_Tick] AS [v_Tick]</DefiningQuery>
           </EntitySet>
         </EntityContainer>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="StartDate" />
+          </Key>
+          <Property Name="Pair" Type="nchar" Nullable="false" MaxLength="10" />
+          <Property Name="Period" Type="int" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" Nullable="false" />
+          <Property Name="AskHigh" Type="float" Nullable="false" />
+          <Property Name="AskLow" Type="float" Nullable="false" />
+          <Property Name="AskOpen" Type="float" Nullable="false" />
+          <Property Name="AskClose" Type="float" Nullable="false" />
+          <Property Name="BidHigh" Type="float" Nullable="false" />
+          <Property Name="BidLow" Type="float" Nullable="false" />
+          <Property Name="BidOpen" Type="float" Nullable="false" />
+          <Property Name="BidClose" Type="float" Nullable="false" />
+        </EntityType>
         <EntityType Name="t_Stat">
           <Key>
             <PropertyRef Name="Id" />
@@ -87,6 +106,7 @@
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
           <EntitySet Name="t_Tick" EntityType="ForexModel.t_Tick" />
           <EntitySet Name="t_Tick_Mew" EntityType="ForexModel.t_Tick_Mew" />
+          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
         </EntityContainer>
         <ComplexType Name="Bars_Result">
           <Property Type="DateTime" Name="Date" Nullable="true" Precision="23" />
@@ -142,6 +162,24 @@
           <Property Type="DateTime" Name="Time" Nullable="false" />
           <Property Type="Double" Name="Ask" Nullable="false" />
           <Property Type="Double" Name="Bid" Nullable="false" />
+        </EntityType>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="StartDate" />
+          </Key>
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="10" FixedLength="true" Unicode="true" />
+          <Property Type="Int32" Name="Period" Nullable="false" />
+          <Property Type="DateTime" Name="StartDate" Nullable="false" />
+          <Property Type="Double" Name="AskHigh" Nullable="false" />
+          <Property Type="Double" Name="AskLow" Nullable="false" />
+          <Property Type="Double" Name="AskOpen" Nullable="false" />
+          <Property Type="Double" Name="AskClose" Nullable="false" />
+          <Property Type="Double" Name="BidHigh" Nullable="false" />
+          <Property Type="Double" Name="BidLow" Nullable="false" />
+          <Property Type="Double" Name="BidOpen" Nullable="false" />
+          <Property Type="Double" Name="BidClose" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -209,6 +247,23 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_Bar">
+            <EntityTypeMapping TypeName="ForexModel.t_Bar">
+              <MappingFragment StoreEntitySet="t_Bar">
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -234,6 +289,7 @@
         <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="3.75" Height="2.0853483072916656" />
         <EntityTypeShape EntityType="ForexModel.t_Tick" Width="1.5" PointX="0.75" PointY="0.75" Height="1.7566536458333331" />
         <EntityTypeShape EntityType="ForexModel.t_Tick_Mew" Width="1.5" PointX="3.375" PointY="3.75" Height="1.7566536458333335" />
+        <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.7427376302083317" />
       </Diagram>
     </Diagrams>
   </Designer>

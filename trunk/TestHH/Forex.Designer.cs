@@ -128,6 +128,22 @@ namespace TestHH
             }
         }
         private ObjectSet<t_Tick_Mew> _t_Tick_Mew;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Bar> t_Bar
+        {
+            get
+            {
+                if ((_t_Bar == null))
+                {
+                    _t_Bar = base.CreateObjectSet<t_Bar>("t_Bar");
+                }
+                return _t_Bar;
+            }
+        }
+        private ObjectSet<t_Bar> _t_Bar;
 
         #endregion
         #region AddTo Methods
@@ -162,6 +178,14 @@ namespace TestHH
         public void AddTot_Tick_Mew(t_Tick_Mew t_Tick_Mew)
         {
             base.AddObject("t_Tick_Mew", t_Tick_Mew);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Bar(t_Bar t_Bar)
+        {
+            base.AddObject("t_Bar", t_Bar);
         }
 
         #endregion
@@ -204,6 +228,327 @@ namespace TestHH
     #endregion
     
     #region Entities
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Bar")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_Bar : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_Bar object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="period">Initial value of the Period property.</param>
+        /// <param name="startDate">Initial value of the StartDate property.</param>
+        /// <param name="askHigh">Initial value of the AskHigh property.</param>
+        /// <param name="askLow">Initial value of the AskLow property.</param>
+        /// <param name="askOpen">Initial value of the AskOpen property.</param>
+        /// <param name="askClose">Initial value of the AskClose property.</param>
+        /// <param name="bidHigh">Initial value of the BidHigh property.</param>
+        /// <param name="bidLow">Initial value of the BidLow property.</param>
+        /// <param name="bidOpen">Initial value of the BidOpen property.</param>
+        /// <param name="bidClose">Initial value of the BidClose property.</param>
+        public static t_Bar Createt_Bar(global::System.String pair, global::System.Int32 period, global::System.DateTime startDate, global::System.Double askHigh, global::System.Double askLow, global::System.Double askOpen, global::System.Double askClose, global::System.Double bidHigh, global::System.Double bidLow, global::System.Double bidOpen, global::System.Double bidClose)
+        {
+            t_Bar t_Bar = new t_Bar();
+            t_Bar.Pair = pair;
+            t_Bar.Period = period;
+            t_Bar.StartDate = startDate;
+            t_Bar.AskHigh = askHigh;
+            t_Bar.AskLow = askLow;
+            t_Bar.AskOpen = askOpen;
+            t_Bar.AskClose = askClose;
+            t_Bar.BidHigh = bidHigh;
+            t_Bar.BidLow = bidLow;
+            t_Bar.BidOpen = bidOpen;
+            t_Bar.BidClose = bidClose;
+            return t_Bar;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Period
+        {
+            get
+            {
+                return _Period;
+            }
+            set
+            {
+                if (_Period != value)
+                {
+                    OnPeriodChanging(value);
+                    ReportPropertyChanging("Period");
+                    _Period = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Period");
+                    OnPeriodChanged();
+                }
+            }
+        }
+        private global::System.Int32 _Period;
+        partial void OnPeriodChanging(global::System.Int32 value);
+        partial void OnPeriodChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime StartDate
+        {
+            get
+            {
+                return _StartDate;
+            }
+            set
+            {
+                if (_StartDate != value)
+                {
+                    OnStartDateChanging(value);
+                    ReportPropertyChanging("StartDate");
+                    _StartDate = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("StartDate");
+                    OnStartDateChanged();
+                }
+            }
+        }
+        private global::System.DateTime _StartDate;
+        partial void OnStartDateChanging(global::System.DateTime value);
+        partial void OnStartDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double AskHigh
+        {
+            get
+            {
+                return _AskHigh;
+            }
+            set
+            {
+                OnAskHighChanging(value);
+                ReportPropertyChanging("AskHigh");
+                _AskHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskHigh");
+                OnAskHighChanged();
+            }
+        }
+        private global::System.Double _AskHigh;
+        partial void OnAskHighChanging(global::System.Double value);
+        partial void OnAskHighChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double AskLow
+        {
+            get
+            {
+                return _AskLow;
+            }
+            set
+            {
+                OnAskLowChanging(value);
+                ReportPropertyChanging("AskLow");
+                _AskLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskLow");
+                OnAskLowChanged();
+            }
+        }
+        private global::System.Double _AskLow;
+        partial void OnAskLowChanging(global::System.Double value);
+        partial void OnAskLowChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double AskOpen
+        {
+            get
+            {
+                return _AskOpen;
+            }
+            set
+            {
+                OnAskOpenChanging(value);
+                ReportPropertyChanging("AskOpen");
+                _AskOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskOpen");
+                OnAskOpenChanged();
+            }
+        }
+        private global::System.Double _AskOpen;
+        partial void OnAskOpenChanging(global::System.Double value);
+        partial void OnAskOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double AskClose
+        {
+            get
+            {
+                return _AskClose;
+            }
+            set
+            {
+                OnAskCloseChanging(value);
+                ReportPropertyChanging("AskClose");
+                _AskClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskClose");
+                OnAskCloseChanged();
+            }
+        }
+        private global::System.Double _AskClose;
+        partial void OnAskCloseChanging(global::System.Double value);
+        partial void OnAskCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double BidHigh
+        {
+            get
+            {
+                return _BidHigh;
+            }
+            set
+            {
+                OnBidHighChanging(value);
+                ReportPropertyChanging("BidHigh");
+                _BidHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidHigh");
+                OnBidHighChanged();
+            }
+        }
+        private global::System.Double _BidHigh;
+        partial void OnBidHighChanging(global::System.Double value);
+        partial void OnBidHighChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double BidLow
+        {
+            get
+            {
+                return _BidLow;
+            }
+            set
+            {
+                OnBidLowChanging(value);
+                ReportPropertyChanging("BidLow");
+                _BidLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidLow");
+                OnBidLowChanged();
+            }
+        }
+        private global::System.Double _BidLow;
+        partial void OnBidLowChanging(global::System.Double value);
+        partial void OnBidLowChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double BidOpen
+        {
+            get
+            {
+                return _BidOpen;
+            }
+            set
+            {
+                OnBidOpenChanging(value);
+                ReportPropertyChanging("BidOpen");
+                _BidOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidOpen");
+                OnBidOpenChanged();
+            }
+        }
+        private global::System.Double _BidOpen;
+        partial void OnBidOpenChanging(global::System.Double value);
+        partial void OnBidOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double BidClose
+        {
+            get
+            {
+                return _BidClose;
+            }
+            set
+            {
+                OnBidCloseChanging(value);
+                ReportPropertyChanging("BidClose");
+                _BidClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidClose");
+                OnBidCloseChanged();
+            }
+        }
+        private global::System.Double _BidClose;
+        partial void OnBidCloseChanging(global::System.Double value);
+        partial void OnBidCloseChanged();
+
+        #endregion
+    
+    }
     
     /// <summary>
     /// No Metadata Documentation available.

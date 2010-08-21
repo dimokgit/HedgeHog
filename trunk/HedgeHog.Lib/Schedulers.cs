@@ -51,9 +51,11 @@ namespace HedgeHog {
     }
     public Scheduler(Dispatcher dispatcher)
       : this(dispatcher, new TimeSpan(0, 0, 0, 0, 100)) {
+      if(dispatcher!=null)
       _time = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 100), DispatcherPriority.Background, _time_Tick, dispatcher);
     }
     public Scheduler(Dispatcher dispatcher, TimeSpan delay) {
+      if( dispatcher !=null)
       _time = new DispatcherTimer(delay, DispatcherPriority.Background, _time_Tick, dispatcher);
     }
 

@@ -1,0 +1,260 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="AliceModelStoreContainer">
+          <EntitySet Name="ClosedTrades" EntityType="AliceModel.Store.ClosedTrades" store:Type="Tables" />
+          <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
+          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
+        </EntityContainer>
+        <EntityType Name="ClosedTrades">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Buy" Type="bit" Nullable="false" />
+          <Property Name="Close" Type="float" Nullable="false" />
+          <Property Name="CloseInPips" Type="float" Nullable="false" />
+          <Property Name="GrossPL" Type="float" Nullable="false" />
+          <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="10" />
+          <Property Name="IsBuy" Type="bit" Nullable="false" />
+          <Property Name="IsParsed" Type="bit" Nullable="false" />
+          <Property Name="Limit" Type="float" Nullable="false" />
+          <Property Name="LimitAmount" Type="float" Nullable="false" />
+          <Property Name="LimitInPips" Type="float" Nullable="false" />
+          <Property Name="Lots" Type="int" Nullable="false" />
+          <Property Name="Open" Type="float" Nullable="false" />
+          <Property Name="OpenInPips" Type="float" Nullable="false" />
+          <Property Name="OpenOrderID" Type="nvarchar" Nullable="false" MaxLength="255" />
+          <Property Name="OpenOrderReqID" Type="nvarchar" Nullable="false" MaxLength="255" />
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="10" />
+          <Property Name="PipValue" Type="int" Nullable="false" />
+          <Property Name="PL" Type="float" Nullable="false" />
+          <Property Name="PointSize" Type="int" Nullable="false" />
+          <Property Name="PointSizeFormat" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="Remark" Type="nvarchar" Nullable="false" MaxLength="255" />
+          <Property Name="Stop" Type="float" Nullable="false" />
+          <Property Name="StopAmount" Type="float" Nullable="false" />
+          <Property Name="StopInPips" Type="float" Nullable="false" />
+          <Property Name="Time" Type="datetime" Nullable="false" />
+          <Property Name="TimeClose" Type="datetime" Nullable="false" />
+          <Property Name="UnKnown" Type="nvarchar" Nullable="false" MaxLength="255" />
+          <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="Commission" Type="float" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TradingAccount">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Password" Type="nvarchar" Nullable="false" MaxLength="50" />
+          <Property Name="MasterId" Type="nvarchar" MaxLength="50" />
+          <Property Name="IsDemo" Type="bit" Nullable="false" />
+          <Property Name="AccountId" Type="nvarchar" MaxLength="50" />
+          <Property Name="Id" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="IsMaster" Type="bit" Nullable="false" />
+          <Property Name="TradeRatio" Type="nvarchar" Nullable="false" MaxLength="6" />
+          <Property Name="Commission" Type="float" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="TradingRatio" Type="float" Nullable="false" />
+          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="LimitBar" Type="int" Nullable="false" />
+          <Property Name="CurrentLoss" Type="float" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="FreezLimit" Type="int" Nullable="false" />
+          <Property Name="CorridorMethod" Type="int" Nullable="false" />
+          <Property Name="FreezeStop" Type="int" Nullable="false" />
+          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="8" />
+          <Property Name="FibMin" Type="float" Nullable="false" />
+          <Property Name="CorridornessMin" Type="float" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
+          <Property Name="CorridorIterations" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
+          <Property Name="PairIndex" Type="int" Nullable="false" />
+          <Property Name="TradingGroup" Type="int" Nullable="false" />
+          <Property Name="MaximumPositions" Type="int" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="AliceModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="ClosedTrades" EntityType="AliceModel.ClosedTrade" />
+          <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
+          <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
+        </EntityContainer>
+        <EntityType Name="ClosedTrade">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Buy" Type="Boolean" Nullable="false" />
+          <Property Name="Close" Type="Double" Nullable="false" />
+          <Property Name="CloseInPips" Type="Double" Nullable="false" />
+          <Property Name="GrossPL" Type="Double" Nullable="false" />
+          <Property Name="Id" Type="String" Nullable="false" MaxLength="10" Unicode="true" FixedLength="false" />
+          <Property Name="IsBuy" Type="Boolean" Nullable="false" />
+          <Property Name="IsParsed" Type="Boolean" Nullable="false" />
+          <Property Name="Limit" Type="Double" Nullable="false" />
+          <Property Name="LimitAmount" Type="Double" Nullable="false" />
+          <Property Name="LimitInPips" Type="Double" Nullable="false" />
+          <Property Name="Lots" Type="Int32" Nullable="false" />
+          <Property Name="Open" Type="Double" Nullable="false" />
+          <Property Name="OpenInPips" Type="Double" Nullable="false" />
+          <Property Name="OpenOrderID" Type="String" Nullable="false" MaxLength="255" Unicode="true" FixedLength="false" />
+          <Property Name="OpenOrderReqID" Type="String" Nullable="false" MaxLength="255" Unicode="true" FixedLength="false" />
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="10" Unicode="true" FixedLength="false" />
+          <Property Name="PipValue" Type="Int32" Nullable="false" />
+          <Property Name="PL" Type="Double" Nullable="false" />
+          <Property Name="PointSize" Type="Int32" Nullable="false" />
+          <Property Name="PointSizeFormat" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
+          <Property Name="Remark" Type="String" Nullable="false" MaxLength="255" Unicode="true" FixedLength="false" />
+          <Property Name="Stop" Type="Double" Nullable="false" />
+          <Property Name="StopAmount" Type="Double" Nullable="false" />
+          <Property Name="StopInPips" Type="Double" Nullable="false" />
+          <Property Name="Time" Type="DateTime" Nullable="false" />
+          <Property Name="TimeClose" Type="DateTime" Nullable="false" />
+          <Property Name="UnKnown" Type="String" Nullable="false" MaxLength="255" Unicode="true" FixedLength="false" />
+          <Property Name="AccountId" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
+          <Property Name="Commission" Type="Double" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TradingAccount">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Password" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="MasterId" Type="String" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="IsDemo" Type="Boolean" Nullable="false" />
+          <Property Name="AccountId" Type="String" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="Id" Type="Guid" Nullable="false" />
+          <Property Name="IsMaster" Type="Boolean" Nullable="false" />
+          <Property Name="TradeRatio" Type="String" Nullable="false" MaxLength="6" Unicode="true" FixedLength="false" />
+          <Property Name="Commission" Type="Double" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="7" Unicode="true" FixedLength="false" />
+          <Property Name="TradingRatio" Type="Double" Nullable="false" />
+          <Property Name="UID" Type="Guid" Nullable="false" />
+          <Property Name="LimitBar" Type="Int32" Nullable="false" />
+          <Property Name="CurrentLoss" Type="Double" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="Boolean" Nullable="false" />
+          <Property Name="FreezLimit" Type="Int32" Nullable="false" />
+          <Property Name="CorridorMethod" Type="Int32" Nullable="false" />
+          <Property Name="FreezeStop" Type="Int32" Nullable="false" />
+          <Property Name="FibMax" Type="String" Nullable="false" MaxLength="8" Unicode="true" FixedLength="false" />
+          <Property Name="FibMin" Type="Double" Nullable="false" />
+          <Property Name="CorridornessMin" Type="Double" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterations" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
+          <Property Name="CorridorBarMinutes" Type="Int32" Nullable="false" />
+          <Property Name="PairIndex" Type="Int32" Nullable="false" />
+          <Property Name="TradingGroup" Type="Int32" Nullable="false" />
+          <Property Name="MaximumPositions" Type="Int32" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
+          <EntitySetMapping Name="ClosedTrades"><EntityTypeMapping TypeName="AliceModel.ClosedTrade"><MappingFragment StoreEntitySet="ClosedTrades">
+            <ScalarProperty Name="Buy" ColumnName="Buy" />
+            <ScalarProperty Name="Close" ColumnName="Close" />
+            <ScalarProperty Name="CloseInPips" ColumnName="CloseInPips" />
+            <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+            <ScalarProperty Name="Id" ColumnName="Id" />
+            <ScalarProperty Name="IsBuy" ColumnName="IsBuy" />
+            <ScalarProperty Name="IsParsed" ColumnName="IsParsed" />
+            <ScalarProperty Name="Limit" ColumnName="Limit" />
+            <ScalarProperty Name="LimitAmount" ColumnName="LimitAmount" />
+            <ScalarProperty Name="LimitInPips" ColumnName="LimitInPips" />
+            <ScalarProperty Name="Lots" ColumnName="Lots" />
+            <ScalarProperty Name="Open" ColumnName="Open" />
+            <ScalarProperty Name="OpenInPips" ColumnName="OpenInPips" />
+            <ScalarProperty Name="OpenOrderID" ColumnName="OpenOrderID" />
+            <ScalarProperty Name="OpenOrderReqID" ColumnName="OpenOrderReqID" />
+            <ScalarProperty Name="Pair" ColumnName="Pair" />
+            <ScalarProperty Name="PipValue" ColumnName="PipValue" />
+            <ScalarProperty Name="PL" ColumnName="PL" />
+            <ScalarProperty Name="PointSize" ColumnName="PointSize" />
+            <ScalarProperty Name="PointSizeFormat" ColumnName="PointSizeFormat" />
+            <ScalarProperty Name="Remark" ColumnName="Remark" />
+            <ScalarProperty Name="Stop" ColumnName="Stop" />
+            <ScalarProperty Name="StopAmount" ColumnName="StopAmount" />
+            <ScalarProperty Name="StopInPips" ColumnName="StopInPips" />
+            <ScalarProperty Name="Time" ColumnName="Time" />
+            <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
+            <ScalarProperty Name="UnKnown" ColumnName="UnKnown" />
+            <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+            <ScalarProperty Name="Commission" ColumnName="Commission" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="TradingAccounts"><EntityTypeMapping TypeName="AliceModel.TradingAccount"><MappingFragment StoreEntitySet="TradingAccount">
+            <ScalarProperty Name="Password" ColumnName="Password" />
+            <ScalarProperty Name="MasterId" ColumnName="MasterId" />
+            <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
+            <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+            <ScalarProperty Name="Id" ColumnName="Id" />
+            <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
+            <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
+            <ScalarProperty Name="Commission" ColumnName="Commission" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
+            <ScalarProperty Name="Pair" ColumnName="Pair" />
+            <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+            <ScalarProperty Name="UID" ColumnName="UID" />
+            <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
+            <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
+            <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
+            <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+            <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
+            <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
+            <ScalarProperty Name="FibMax" ColumnName="FibMax" />
+            <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+            <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+            <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
+            <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+            <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+            <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
+            <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
+            <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
+            <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="Alice">
+        <EntityTypeShape EntityType="AliceModel.ClosedTrade" Width="1.5" PointX="0.75" PointY="0.75" Height="5.7009895833333326" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="2.75" PointY="3.75" Height="4.0575162760416656" IsExpanded="true" />
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>

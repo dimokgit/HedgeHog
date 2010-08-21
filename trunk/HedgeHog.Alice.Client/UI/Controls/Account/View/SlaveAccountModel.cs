@@ -16,6 +16,7 @@ using System.Threading;
 using HedgeHog.Bars;
 using System.Diagnostics;
 using Order2GoAddIn;
+using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client.UI.Controls {
   public class SlaveAccountModel : HedgeHog.Models.ModelBase,IAccountHolder {
@@ -411,8 +412,8 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       Log = new Exception("Order removed");
     }
 
-    public Models.TradingAccount TradingAccountModel { get; set; }
-    public SlaveAccountModel(TraderModel masterModel, Models.TradingAccount tradingAccountModel)
+    public TradingAccount TradingAccountModel { get; set; }
+    public SlaveAccountModel(TraderModel masterModel, TradingAccount tradingAccountModel)
       : this() {
       //Dimok: Use WeakReference
         this.MasterModel = masterModel;

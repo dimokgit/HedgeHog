@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:localModels="clr-namespace:HedgeHog.Alice.Client.Models"             
+             xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"             
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
@@ -221,7 +221,7 @@
                 <TextBlock.ToolTip>
           <ToolTip>
             <TextBlock>
-              <TextBlock FontWeight="Black">Limit:</TextBlock>
+              <!--<TextBlock FontWeight="Black">Limit:</TextBlock>
               <TextBlock Text="{Binding StartDate,StringFormat='d HH:mm'}"/>
               <LineBreak/>
               <TextBlock FontWeight="Black">Corridorness Max:</TextBlock>
@@ -231,11 +231,11 @@
               <TextBlock Text="{Binding AskHigh}" />
               <LineBreak/>
               <TextBlock FontWeight="Black">Bid Low:</TextBlock>
-              <TextBlock Text="{Binding BidLow}" />
+              <TextBlock Text="{Binding BidLow}" />-->
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
-                <TextBlock Text="{Binding TradeDistanceInPips,StringFormat=n0}" ToolTip="Trade Distance"/>
+                <TextBlock Text="{Binding HeightFib,StringFormat=n2}" ToolTip="Height Fib Ratio (First/Last)"/>
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
@@ -271,7 +271,7 @@
                   FontWeight="{Binding PriceCmaDiffLowLastInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
                   Foreground="DarkGreen"
                            />
-                <LineBreak/>
+                <!--<LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffernceInPips,StringFormat=n}" FontWeight="Black" ToolTip="Price CMA Differnce In Pips" 
                   Foreground="{Binding PriceCmaDiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
                 />
@@ -280,7 +280,7 @@
                 />
                 <TextBlock Text="{Binding PriceCma23DiffernceInPips,StringFormat=/{0:n}}" FontWeight="Black" ToolTip="Price CMA23 Differnce In Pips"
                   Foreground="{Binding PriceCma23DiffernceInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
-                />
+                />-->
               </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
@@ -310,7 +310,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="[B/S]Ŧ" IsReadOnly="True">
+        <!--<DataGridTemplateColumn Header="[B/S]Ŧ" IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <ItemsControl ItemsSource="{Binding CorridorStatsArray}" VerticalAlignment="Center">
@@ -325,7 +325,7 @@
               </ItemsControl>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
+        </DataGridTemplateColumn>-->
         <!--<DataGridTextColumn Header="OL#" Binding="{Binding OverlapToStop}" />
         <DataGridTemplateColumn Header="&lt;&gt;" IsReadOnly="True" CellTemplate="{StaticResource OverlapCellTemplate}"/>-->
         <DataGridTemplateColumn>
@@ -339,17 +339,17 @@
                 <TextBlock Text="{Binding TicksPerMinuteAverage,StringFormat=/{0:n0}}"
                            Foreground="{Binding IsTicksPerMinuteOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Black|DarkRed|DarkGreen}"
                            />
-                <LineBreak/>
+                <!--<LineBreak/>
                 <TextBlock Text="{Binding PipsPerMinute,StringFormat=n1}"
                            FontWeight="{Binding IsSpeedOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <TextBlock Text="{Binding PipsPerMinuteCmaFirst,StringFormat=/{0:n1}}"/>
-                <TextBlock Text="{Binding PipsPerMinuteCmaLast,StringFormat=/{0:n1}}"/>
+                <TextBlock Text="{Binding PipsPerMinuteCmaLast,StringFormat=/{0:n1}}"/>-->
               </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="OL"  IsReadOnly="True">
+        <!--<DataGridTemplateColumn Header="OL"  IsReadOnly="True">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>
@@ -358,18 +358,24 @@
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="$/Lot" IsReadOnly="True">
+        </DataGridTemplateColumn>-->
+        <DataGridTemplateColumn Header="$/Lot">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <Label Margin="0">
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="{Binding LotSize,StringFormat=c0}"></TextBlock>
                   <TextBlock Text="{Binding LotSizePercent,StringFormat=/{0:p2}}"></TextBlock>
+                  <TextBlock Text="{Binding LastLotSize,StringFormat=/{0:n0}}"></TextBlock>
                 </StackPanel>
               </Label>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate>
+              <TextBox Text="{Binding LastLotSize}" ToolTip="Last Lot Size"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
         <DataGridComboBoxColumn SelectedValueBinding="{Binding CorridorCalcMethod}" ItemsSource="{Binding Source={StaticResource CorridorCalculationValues}}" />
 

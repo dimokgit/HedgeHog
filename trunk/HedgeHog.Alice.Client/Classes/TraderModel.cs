@@ -20,6 +20,8 @@ using HedgeHog.Bars;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.Threading;
+using HedgeHog.Reports;
+using HedgeHog.Alice.Store;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -86,7 +88,7 @@ namespace HedgeHog.Alice.Client {
         return _remoteController;
       }
     }
-    public Models.TradingAccount MasterAccount { get { return TradingMaster; } }
+    public TradingAccount MasterAccount { get { return TradingMaster; } }
     #endregion
 
     #region Events
@@ -118,9 +120,9 @@ namespace HedgeHog.Alice.Client {
 
     #region Trade Lists
 
-    ObservableCollection<Models.TradingAccount> slaveAccounts = new ObservableCollection<Models.TradingAccount>();
+    ObservableCollection<TradingAccount> slaveAccounts = new ObservableCollection<TradingAccount>();
 
-    public ObservableCollection<Models.TradingAccount> SlaveAccounts {
+    public ObservableCollection<TradingAccount> SlaveAccounts {
       get {
         if (slaveAccounts.Count == 0)
           GlobalStorage.GetTradingAccounts().ToList().ForEach(ta => slaveAccounts.Add(ta));
@@ -129,7 +131,7 @@ namespace HedgeHog.Alice.Client {
       set { slaveAccounts = value; }
     }
 
-    public ObjectSet<Models.TradingAccount> TradingAccountsSet {
+    public ObjectSet<TradingAccount> TradingAccountsSet {
       get {
         try {
           return GlobalStorage.Context.TradingAccounts;
@@ -139,9 +141,9 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
-    public Models.TradingAccount TradingMaster { get { return TradingMasters.FirstOrDefault(); } }
-    public IQueryable<Models.TradingAccount> TradingMasters { get { return TradingAccountsSet.Where(ta => ta.IsMaster); } }
-    public Models.TradingAccount[] TradingSlaves { get { return TradingAccountsSet.Where(ta=>!ta.IsMaster).ToArray(); } }
+    public TradingAccount TradingMaster { get { return TradingMasters.FirstOrDefault(); } }
+    public IQueryable<TradingAccount> TradingMasters { get { return TradingAccountsSet.Where(ta => ta.IsMaster); } }
+    public TradingAccount[] TradingSlaves { get { return TradingAccountsSet.Where(ta=>!ta.IsMaster).ToArray(); } }
 
     SlaveAccountModel[] _slaveModels;
     public SlaveAccountModel[] SlaveModels {
@@ -365,7 +367,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DeleteTradingAccount(object ta) {
-      TradingAccountsSet.DeleteObject(ta as Models.TradingAccount);
+      TradingAccountsSet.DeleteObject(ta as TradingAccount);
       SaveTradingSlaves();
     }
 
@@ -419,7 +421,7 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
-
+    #region AddNewSlaveAccountCommand
     ICommand _AddNewSlaveAccountCommand;
     public ICommand AddNewSlaveAccountCommand {
       get {
@@ -434,10 +436,10 @@ namespace HedgeHog.Alice.Client {
       string account, password;
       FXCM.Lib.GetNewAccount(out account, out password);
       TradingAccountsSet.AddObject(
-        new Models.TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" });
+        new TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" });
       SaveTradingSlaves();
     }
-
+    #endregion
 
     #region OpenNewServerAccountCommand
 
@@ -510,21 +512,18 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
 
-    Report ReportWindow = new Report();
-    ICommand _ShowReportCommand;
-    public ICommand ShowReportCommand {
+    ICommand _ReportCommand;
+    public ICommand ReportCommand {
       get {
-        if (_ShowReportCommand == null) {
-          _ShowReportCommand = new Gala.RelayCommand(ShowReport, () => true);
+        if (_ReportCommand == null) {
+          _ReportCommand = new Gala.RelayCommand(Report, () => true);
         }
-
-        return _ShowReportCommand;
+        return _ReportCommand;
       }
     }
-    void ShowReport() {
-      ReportWindow.Show();
+    void Report() {
+      new Reports.Report(fwMaster).Show();
     }
-
 
     #region Close All Server Trades Command
     ICommand _CloseAllServerTradesCommand;
@@ -954,7 +953,7 @@ namespace HedgeHog.Alice.Client {
     public void AddCosedTrade(Trade trade) {
       try {
         if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
-        var ct = Models.ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
+        var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
         GlobalStorage.Context.ClosedTrades.AddObject(ct);
         GlobalStorage.Context.SaveChanges();
       } catch (Exception exc) { Log = exc; }

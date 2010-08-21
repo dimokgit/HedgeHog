@@ -1,0 +1,33 @@
+﻿<hhm:WindowModel x:Class="Temp.Waver"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:hhm="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+        Title="Waver" 
+        Height="{s:UserSettings}" Width="{s:UserSettings}"
+        Top="{s:UserSettings}" Left="{s:UserSettings}"
+        xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        >
+    <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+    <WrapPanel IsEnabled="{Binding IsNotBusy}" VerticalAlignment="Center">
+      <ComboBox ItemsSource="{Binding Pairs}" SelectedIndex="0" SelectedValue="{Binding Pair,Mode=OneWayToSource}" />
+      <TextBox Text="{Binding MinutesBack}" MinWidth="30"/>
+      <Button Click="LoadRatios_Click">Load</Button>
+      <TextBlock Text="Bar Height:" VerticalAlignment="Center" />
+      <Border CornerRadius="5" BorderThickness="1" BorderBrush="LightBlue" VerticalAlignment="Stretch">
+        <WrapPanel>
+          <TextBlock Text="{Binding BarHeightInPips}" MinWidth="20" VerticalAlignment="Center"/>
+          <TextBlock Text=" in "/>
+          <TextBlock Text="{Binding BarHeightSpeed,StringFormat=n2}" MinWidth="20" VerticalAlignment="Center"/>
+        </WrapPanel>
+      </Border>
+    </WrapPanel>
+      <telerik:RadChart Grid.Row="1" Name="radChart1">
+    </telerik:RadChart>
+  </Grid>
+</hhm:WindowModel>

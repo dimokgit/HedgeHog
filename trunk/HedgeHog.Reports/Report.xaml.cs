@@ -28,6 +28,24 @@ namespace HedgeHog.Reports {
   public partial class Report : Window {
 
     #region Properties
+    #region Container
+    private static CompositionContainer Container {
+      get {
+        AggregateCatalog catalog = new AggregateCatalog();
+        // Add the EmailClient.Presentation assembly into the catalog
+        catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetExecutingAssembly()));
+        catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetEntryAssembly()));
+        // Add the EmailClient.Applications assembly into the catalog
+        //catalog.Catalogs.Add(new AssemblyCatalog(typeof(IMainModel).Assembly));
+
+        var container = new CompositionContainer(catalog);
+        CompositionBatch batch = new CompositionBatch();
+        batch.AddExportedValue(container);
+        container.Compose(batch);
+        return container;
+      }
+    }
+    #endregion
     FXCoreWrapper _fw;
     [Import]
     FXCoreWrapper fw {
@@ -40,24 +58,18 @@ namespace HedgeHog.Reports {
     #endregion
 
     #region Ctor
+    public Report(FXCoreWrapper fw) {
+      this.fw = fw;
+      InitializeComponent();
+    }
     public Report() {
-      AggregateCatalog catalog = new AggregateCatalog();
-      // Add the EmailClient.Presentation assembly into the catalog
-      catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetExecutingAssembly()));
-      catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetEntryAssembly()));
-      // Add the EmailClient.Applications assembly into the catalog
-      //catalog.Catalogs.Add(new AssemblyCatalog(typeof(IMainModel).Assembly));
+      Container.SatisfyImportsOnce(this);
 
-      var container = new CompositionContainer(catalog);
-      CompositionBatch batch = new CompositionBatch();
-      batch.AddExportedValue(container);
-      container.Compose(batch);
-      //fw = new ComposablePartExportProvider().GetExport<FXCoreWrapper>().Value;
-      container.SatisfyImportsOnce(this);
       InitializeComponent();
       if (fw != null)
         fw.CoreFX.LoginError += CoreFX_LoginError;
     }
+
     ~Report() {
       try {
         if (fw != null)

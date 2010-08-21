@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
 namespace HedgeHog.Bars {
   public class RsiStatistics {
@@ -212,7 +213,40 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    public static double GetWaveHeight(this Rate[] rates, int barFrom, int barTo) {
+      var barPrev = rates.GetBarHeight(barFrom);
+      var bars = new List<double>(new[] { barPrev });
+      for (var i = barFrom + 1; i <= barTo; i++) {
+        var bar = rates.GetBarHeight(i);
+        if (bar / barPrev < 1) return barPrev;
+        barPrev = bar;
+        bars.Add(bar);
+      }
+      return bars.Max();
+    }
 
+
+    public static double GetBarHeight(this Rate[] rates,int period) {
+      //var sw = Stopwatch.StartNew();
+      var bhList = new List<double>();
+      var dateStart = rates[0].StartDate;
+      var minutes = (rates.Last().StartDate - rates.First().StartDate).TotalMinutes.ToInt();
+      for (var i = 0; i < minutes - period; i++)
+        bhList.Add(rates.SkipWhile(r=>r.StartDate< dateStart.AddMinutes(i)).ToArray().GetBarHeightBase(period));
+      return bhList.Average();
+      //Debug.WriteLine("GetBarHeight:{0} - {1:n0} ms", tm.Pair, sw.Elapsed.TotalMilliseconds);
+    }
+
+    static double GetBarHeightBase(this Rate[] rates, int barPeriod) {
+      var rates60 = rates.GetMinuteTicks(barPeriod);
+      if (rates60.Count() == 0)
+        Debugger.Break();
+      var hs = rates60.Select(r => r.Spread).ToArray();
+      var hsAvg = hs.Average();
+      hs = hs.Where(h => h >= hsAvg).ToArray();
+      hsAvg = hs.Average();
+      return hs.Where(h => h >= hsAvg).Average();
+    }
 
 
       public static Dictionary<int, CorridorStatisticsBase> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
@@ -254,8 +288,8 @@ namespace HedgeHog.Bars {
       static CorridorStatisticsBase ScanCorridor(IEnumerable<Rate> rates, bool useStDev) {
         var averageHigh = rates.Average(r => r.PriceHigh);
         var averageLow = rates.Average(r => r.PriceLow);
-        var askHigh = rates.Max(r => r.AskHigh);
-        var bidLow = rates.Min(r => r.BidLow);
+        var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
+        var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
         if (useStDev) {
           var values = new List<double>();
           rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
