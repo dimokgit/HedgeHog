@@ -6,8 +6,9 @@ using System.Text;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
 using System.Collections.ObjectModel;
+using HedgeHog.Alice.Client;
 
-namespace HedgeHog.Alice.Client.Models {
+namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
     //~AliceEntities() {
     //  if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return;
@@ -22,8 +23,8 @@ namespace HedgeHog.Alice.Client.Models {
   public partial class AliceEntities {
     public override int SaveChanges(System.Data.Objects.SaveOptions options) {
       try {
-        InitGuidField<Models.TradingAccount>(ta => ta.Id, (ta, g) => ta.Id = g);
-        InitGuidField<Models.TradingMacro>(ta => ta.UID, (ta, g) => ta.UID = g);
+        InitGuidField<TradingAccount>(ta => ta.Id, (ta, g) => ta.Id = g);
+        InitGuidField<TradingMacro>(ta => ta.UID, (ta, g) => ta.UID = g);
       } catch { }
       return base.SaveChanges(options);
     }

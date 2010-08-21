@@ -47,6 +47,7 @@
       <RequiredTargetFramework>3.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -72,6 +73,7 @@
     <Compile Include="Converters.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
+    <Compile Include="MEF.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />

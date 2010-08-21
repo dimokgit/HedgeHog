@@ -113,9 +113,7 @@
     <Compile Include="Classes\AbsentTrade.cs" />
     <Compile Include="Classes\Config.cs" />
     <Compile Include="Classes\Converters.cs" />
-    <Compile Include="Classes\CorridorStatistics.cs" />
     <Compile Include="Classes\Events.cs" />
-    <Compile Include="Classes\GlobalStorage.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\IMainModel.cs" />
     <Compile Include="Classes\ReportModel.cs" />
@@ -130,12 +128,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Models\AccountLogin.Model.cs" />
-    <Compile Include="Models\Alice.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Alice.edmx</DependentUpon>
-    </Compile>
-    <Compile Include="Models\AliceEntityExtender.cs" />
     <Compile Include="RemoteControl\ButtonImage.xaml.cs">
       <DependentUpon>ButtonImage.xaml</DependentUpon>
     </Compile>
@@ -162,9 +154,6 @@
     </Compile>
     <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
     <Compile Include="UI\Overrides\DataGrid_D.cs" />
-    <Compile Include="UI\Report.xaml.cs">
-      <DependentUpon>Report.xaml</DependentUpon>
-    </Compile>
     <Page Include="Dictionary1.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -206,10 +195,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UI\Report.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="UI\TradesOnServer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -238,10 +223,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
-    <EntityDeploy Include="Models\Alice.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>Alice.Designer.cs</LastGenOutput>
-    </EntityDeploy>
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.AccountInfo.datasource" />
@@ -282,6 +263,10 @@
     <Folder Include="Data\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
+      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Name>HedgeHog.Alice.Store</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
@@ -293,6 +278,10 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
+      <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>
+      <Name>HedgeHog.Reports</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>

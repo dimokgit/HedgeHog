@@ -82,6 +82,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telerik", "Telerik\Telerik.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Reports", "HedgeHog.Reports\HedgeHog.Reports.csproj", "{2CE09483-D616-4AF8-8581-998A368F39B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Alice.Server", "HedgeHog.Alice.Server\HedgeHog.Alice.Server.csproj", "{965F1CA4-7787-4CAB-94A4-67217615B855}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Alice.Store", "HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj", "{C8766AE8-E649-4D05-A206-7D2FAB63F14A}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = HedgeHog.vsmdi
@@ -281,6 +285,7 @@ Global
 		{674056FB-B429-4491-92C4-36BB001751C7}.Release|x86.ActiveCfg = Release|Any CPU
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|Mixed Platforms.Build.0 = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|x86.ActiveCfg = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Debug|x86.Build.0 = Debug|x86
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}.Release|Any CPU.ActiveCfg = Release|x86
@@ -378,6 +383,26 @@ Global
 		{2CE09483-D616-4AF8-8581-998A368F39B4}.Release|Mixed Platforms.Build.0 = Release|x86
 		{2CE09483-D616-4AF8-8581-998A368F39B4}.Release|x86.ActiveCfg = Release|x86
 		{2CE09483-D616-4AF8-8581-998A368F39B4}.Release|x86.Build.0 = Release|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Debug|x86.ActiveCfg = Debug|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Debug|x86.Build.0 = Debug|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Release|Any CPU.ActiveCfg = Release|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Release|Mixed Platforms.Build.0 = Release|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Release|x86.ActiveCfg = Release|x86
+		{965F1CA4-7787-4CAB-94A4-67217615B855}.Release|x86.Build.0 = Release|x86
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -401,6 +426,8 @@ Global
 		{2CE09483-D616-4AF8-8581-998A368F39B4} = {C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}
 		{674056FB-B429-4491-92C4-36BB001751C7} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
 		{8412BC60-FB5C-4996-A7E5-BBD0D53733AA} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
+		{965F1CA4-7787-4CAB-94A4-67217615B855} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
+		{C8766AE8-E649-4D05-A206-7D2FAB63F14A} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
 		{0AACD464-22B9-4509-8486-0D14858BCF28} = {F9B967B4-B910-47AD-AED9-171F694DDE76}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

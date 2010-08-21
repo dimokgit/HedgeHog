@@ -8,6 +8,7 @@ using System.IO;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
+using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>

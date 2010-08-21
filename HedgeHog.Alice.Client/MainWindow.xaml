@@ -45,7 +45,6 @@
           </StackPanel.Resources>
           <WrapPanel>
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
-            <Button Command="{Binding ShowReportCommand}" HorizontalAlignment="Left">Report</Button>
           </WrapPanel>
           <!--Server Trades-->
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}">
@@ -205,6 +204,7 @@
         
         <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
         <Button Command="{Binding AddNewSlaveAccountCommand}">Add Alice</Button>
+        <Button Command="{Binding ReportCommand}">Report</Button>
         <TextBlock>Status:</TextBlock>
         <TextBlock Text="{Binding SessionStatus}"/>
       </WrapPanel>

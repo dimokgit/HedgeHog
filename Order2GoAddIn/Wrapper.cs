@@ -199,6 +199,7 @@ namespace Order2GoAddIn {
     public const string TABLE_CLOSED = "closed";
     public const string TABLE_SUMMARY = "summary";
     public const string TABLE_TRADES = "trades";
+    public const string TABLE_CLOSED_TRADES = "closed trades";
     const string FIELD_ACCOUNTID = "AccountID";
     const string FIELD_POINTSIZE = "PointSize";
     const string FIELD_DIGITS = "Digits";
@@ -1184,6 +1185,20 @@ namespace Order2GoAddIn {
       trade.LimitAmount = LimitAmount(trade);
       return trade;
     }
+
+    public Trade[] GetClosedTrades(string Pair) {
+      //      lock (getTradesLock) {
+      try {
+        return (from t in GetRows(TABLE_CLOSED_TRADES)
+                orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
+                where new[] { "", (t.CellValue(FIELD_INSTRUMENT) + "").ToLower() }.Contains(Pair.ToLower())
+                select InitClosedTrade(t)).ToArray();
+      } catch (Exception exc) {
+        RaiseError(exc);
+        return new Trade[0];
+      }
+      //    }
+    }
     Trade InitClosedTrade(FXCore.RowAut t) {
       var trade = new Trade() {
         Id = t.CellValue("TradeID") + "",
@@ -1630,6 +1645,16 @@ namespace Order2GoAddIn {
       return ordersList.ToArray();
     }
     public object FixOrderClose(string tradeId) { return FixOrderClose(tradeId, coreFX.Desk.FIX_CLOSEMARKET, null as Price); }
+    public bool ClosePair(string pair, bool buy) {
+      try {
+        object o1, o2;
+        Desk.CloseTradesByInstrument(pair, AccountID, buy, 0, "", 0, out o1, out o2);
+      } catch (Exception exc) { 
+        RaiseError(new ErrorEventArgs(exc));
+        return false;
+      }
+      return true;
+    }
     static private object globalClosePending = new object();
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public object FixOrderClose(string tradeId, int mode, Price price) {
@@ -2155,6 +2180,12 @@ namespace Order2GoAddIn {
         row = row.NextNode as XElement;
       }
       return trades;
+    }
+    public Trade GetLastTrade(string pair) {
+      var trades = GetClosedTrades(pair);
+      if (trades.Length == 0)
+        trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
+      return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();
     }
     #endregion
 
