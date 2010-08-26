@@ -1989,7 +1989,7 @@ namespace Order2GoAddIn {
                   complete = false;
                 }
                 if (order.Limit != poOrder.Limit) {
-                  FixCreateLimit(poOrder.TradeId, poOrder.Limit, poOrder.Remark);
+                  //FixCreateLimit(poOrder.TradeId, poOrder.Limit, poOrder.Remark);
                   complete = false;
                 }
               } catch (TradeNotFoundException) {
@@ -2182,7 +2182,9 @@ namespace Order2GoAddIn {
       return trades;
     }
     public Trade GetLastTrade(string pair) {
-      var trades = GetClosedTrades(pair);
+      var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
+      if (trades.Length == 0)
+        trades = GetClosedTrades(pair);
       if (trades.Length == 0)
         trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
       return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();

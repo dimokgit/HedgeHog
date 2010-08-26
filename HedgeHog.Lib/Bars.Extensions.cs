@@ -215,18 +215,25 @@ namespace HedgeHog.Bars {
 
     public static double GetWaveHeight(this Rate[] rates, int barFrom, int barTo) {
       var barPrev = rates.GetBarHeight(barFrom);
+      var barPrev1 = barPrev;
       var bars = new List<double>(new[] { barPrev });
+      var barsForAverage = new List<double>();
       for (var i = barFrom + 1; i <= barTo; i++) {
         var bar = rates.GetBarHeight(i);
-        if (bar / barPrev < 1) return barPrev;
+        //if (bar / barPrev < 1) 
+          barsForAverage.Add(barPrev);// return new[] { barPrev, barPrev1, bar }.Min();
+        barPrev1 = barPrev;
         barPrev = bar;
         bars.Add(bar);
       }
-      return bars.Max();
+      barsForAverage =  barsForAverage.DefaultIfEmpty(bars.Max()).ToList();
+      var barsAverage = barsForAverage.Average();
+      return barsForAverage.Where(b => b >= barsAverage).Average();
     }
 
 
     public static double GetBarHeight(this Rate[] rates,int period) {
+      if (rates.Count() == 0) return 0;
       //var sw = Stopwatch.StartNew();
       var bhList = new List<double>();
       var dateStart = rates[0].StartDate;
@@ -249,16 +256,32 @@ namespace HedgeHog.Bars {
     }
 
 
-      public static Dictionary<int, CorridorStatisticsBase> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
+    public static Dictionary<int, CorridorStatisticsBase> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
+      try {
         if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
         var corridornesses = new Dictionary<int, CorridorStatisticsBase>();
-        for (var periods = 1; periods < rates.Count(); periods++) {
-          var cs = ScanCorridor(rates.Take(periods), useStDev);
-          //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
-          corridornesses.Add(periods, cs);
-        }
+        if (rates.Count() == 0) {
+          var source = Enumerable.Range(1, rates.Count() - 1);
+          source.AsParallel().ForAll(i => {
+            try {
+              var cs = ScanCorridor(rates.Take(i), useStDev);
+              corridornesses.Add(i, cs);
+            } catch (Exception) {
+//              Debug.Fail(exc + "");
+            }
+          });
+        } else
+          for (var periods = 1; periods < rates.Count(); periods++) {
+            var cs = ScanCorridor(rates.Take(periods), useStDev);
+            //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
+            corridornesses.Add(periods, cs);
+          }
         return corridornesses;
+      } catch (Exception exc) {
+        Debug.Fail(exc+"");
+        throw;
       }
+    }
 
       public static CorridorStatisticsBase ScanCorridornesses(this IEnumerable<Rate> rates, int iterations, Dictionary<int, CorridorStatisticsBase> corridornesses, double corridornessMinimum, double corridorHeightMinimum) {
         if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
@@ -286,25 +309,36 @@ namespace HedgeHog.Bars {
         return corr.Value;
       }
       static CorridorStatisticsBase ScanCorridor(IEnumerable<Rate> rates, bool useStDev) {
-        var averageHigh = rates.Average(r => r.PriceHigh);
-        var averageLow = rates.Average(r => r.PriceLow);
-        var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
-        var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
-        if (useStDev) {
-          var values = new List<double>();
-          rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
-          return new CorridorStatisticsBase(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+        try {
+          var averageHigh = rates.Average(r => r.PriceHigh);
+          var averageLow = rates.Average(r => r.PriceLow);
+          var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
+          var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
+          if (useStDev) {
+            var values = new List<double>();
+            rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
+            return new CorridorStatisticsBase(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+          }
+          var count = 0.0;// rates.Count(rate => rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow);
+          foreach (var rate in rates)
+            if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
+          var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).ToArray();
+          var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).ToArray();
+          if (ratesForAverageHigh.Length > 0) {
+            var prices = ratesForAverageHigh.Select(r => r.PriceHigh/*.PriceLow*/).ToArray();
+            averageHigh = prices.Average();
+            averageHigh = prices.Where(p => p >= averageHigh).Average();
+          }
+          if (ratesForAverageLow.Length > 0) {
+            var prices = ratesForAverageLow.Select(r => r.PriceLow/*.PriceHigh*/).ToArray();
+            averageLow = prices.Average();
+            averageLow = prices.Where(p => p <= averageLow).Average();
+          }
+          return new CorridorStatisticsBase(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+        } catch (Exception exc) {
+          Debug.Fail(exc + "");
+          throw;
         }
-        var count = 0.0;// rates.Count(rate => rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow);
-        foreach (var rate in rates)
-          if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
-        var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).ToArray();
-        var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).ToArray();
-        if (ratesForAverageHigh.Length > 0)
-          averageHigh = ratesForAverageHigh.Average(r => r.PriceHigh/*.PriceLow*/);
-        if (ratesForAverageLow.Length > 0)
-          averageLow = ratesForAverageLow.Average(r => r.PriceLow/*.PriceHigh*/);
-        return new CorridorStatisticsBase(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
       }
 
 

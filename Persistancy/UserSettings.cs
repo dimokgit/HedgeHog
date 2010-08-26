@@ -82,7 +82,7 @@ namespace WpfPersist {
       Save();
     }
 
-    private static Settings settings;
+    public static Settings settings;
 
     public static StringDictionary Dictionary {
       get {
@@ -96,7 +96,7 @@ namespace WpfPersist {
     #region private types
 
     [SettingsGroupName("AppPersist")]
-    private sealed class Settings {
+    public sealed class Settings {
       StringDictionary _dictionary;
       public StringDictionary Dictionary {
         get {

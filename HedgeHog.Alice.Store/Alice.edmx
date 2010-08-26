@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+    <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="AliceModelStoreContainer">
           <EntitySet Name="ClosedTrades" EntityType="AliceModel.Store.ClosedTrades" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
@@ -56,6 +56,8 @@
           <Property Name="IsMaster" Type="bit" Nullable="false" />
           <Property Name="TradeRatio" Type="nvarchar" Nullable="false" MaxLength="6" />
           <Property Name="Commission" Type="float" Nullable="false" />
+          <Property Name="IsActive" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -80,9 +82,11 @@
           <Property Name="PairIndex" Type="int" Nullable="false" />
           <Property Name="TradingGroup" Type="int" Nullable="false" />
           <Property Name="MaximumPositions" Type="int" Nullable="false" />
+          <Property Name="IsActive" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="LimitCorridorByBarHeight" Type="bit" Nullable="false" />
         </EntityType>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="AliceModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
@@ -137,6 +141,8 @@
           <Property Name="IsMaster" Type="Boolean" Nullable="false" />
           <Property Name="TradeRatio" Type="String" Nullable="false" MaxLength="6" Unicode="true" FixedLength="false" />
           <Property Name="Commission" Type="Double" Nullable="false" />
+          <Property Type="Boolean" Name="IsActive" Nullable="false" />
+          <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -161,6 +167,9 @@
           <Property Name="PairIndex" Type="Int32" Nullable="false" />
           <Property Name="TradingGroup" Type="Int32" Nullable="false" />
           <Property Name="MaximumPositions" Type="Int32" Nullable="false" />
+          <Property Type="Boolean" Name="IsActive" Nullable="false" />
+          <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="LimitCorridorByBarHeight" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -200,7 +209,9 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingAccounts"><EntityTypeMapping TypeName="AliceModel.TradingAccount"><MappingFragment StoreEntitySet="TradingAccount">
-            <ScalarProperty Name="Password" ColumnName="Password" />
+            <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+                <ScalarProperty Name="IsActive" ColumnName="IsActive" />
+                <ScalarProperty Name="Password" ColumnName="Password" />
             <ScalarProperty Name="MasterId" ColumnName="MasterId" />
             <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
             <ScalarProperty Name="AccountId" ColumnName="AccountId" />
@@ -210,7 +221,10 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="Pair" ColumnName="Pair" />
+            <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
+                <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+                <ScalarProperty Name="IsActive" ColumnName="IsActive" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
             <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
             <ScalarProperty Name="UID" ColumnName="UID" />
             <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
@@ -253,7 +267,7 @@
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.ClosedTrade" Width="1.5" PointX="0.75" PointY="0.75" Height="5.7009895833333326" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.5" PointX="2.75" PointY="3.75" Height="4.0575162760416656" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="4.5505582682291656" IsExpanded="true" />
       </Diagram>
     </Diagrams>
   </Designer>

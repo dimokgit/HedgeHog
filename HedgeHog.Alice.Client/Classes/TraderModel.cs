@@ -22,6 +22,8 @@ using System.ComponentModel.Composition;
 using System.Threading;
 using HedgeHog.Reports;
 using HedgeHog.Alice.Store;
+using System.Collections;
+using System.Collections.Specialized;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -120,6 +122,18 @@ namespace HedgeHog.Alice.Client {
 
     #region Trade Lists
 
+    public string[] TradingMacrosCases {
+      get {
+        try {
+          return GlobalStorage.Context.TradingMacroes.Select(tm=>tm.TradingMacroName).Distinct().ToArray();
+        } catch (Exception exc) {
+          Log = exc;
+          return null;
+        }
+      }
+    }
+
+
     ObservableCollection<TradingAccount> slaveAccounts = new ObservableCollection<TradingAccount>();
 
     public ObservableCollection<TradingAccount> SlaveAccounts {
@@ -131,18 +145,60 @@ namespace HedgeHog.Alice.Client {
       set { slaveAccounts = value; }
     }
 
-    public ObjectSet<TradingAccount> TradingAccountsSet {
+    bool _ShowAllAccountsFilter = false;
+    public bool ShowAllAccountsFilter {
+      get { return _ShowAllAccountsFilter; }
+      set { 
+        _ShowAllAccountsFilter = value; 
+        RaisePropertyChangedCore();
+        TradingAccountsList.Refresh();
+      }
+    }
+
+    ListCollectionView _tradingAccountsList;
+    public ListCollectionView TradingAccountsList {
+      get {
+        if (_tradingAccountsList == null) {
+          _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.Context.TradingAccounts);
+          _TradingAccountsSet.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(_TradingAccountsSet_CollectionChanged);
+          _tradingAccountsList = new ListCollectionView(_TradingAccountsSet);
+          _tradingAccountsList.Filter = FilterTradingAccounts;
+          
+            //new Predicate<TradingAccount>(ta => new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter) as Predicate<object>;
+        }
+        return _tradingAccountsList; 
+      }
+    }
+
+    private bool FilterTradingAccounts(object o) {
+      var ta = o as TradingAccount;
+      return new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter;
+    }
+
+    ObservableCollection<TradingAccount> _TradingAccountsSet;
+    public IEnumerable<TradingAccount> TradingAccountsSet {
       get {
         try {
-          return GlobalStorage.Context.TradingAccounts;
+          return TradingAccountsList.SourceCollection.OfType<TradingAccount>().Where(FilterTradingAccounts);
         } catch (Exception exc) {
           Log = exc;
           return null;
         }
       }
     }
+
+    void _TradingAccountsSet_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
+      var ta = e.NewItems[0] as TradingAccount;
+      switch (e.Action) {
+        case NotifyCollectionChangedAction.Add:
+          GlobalStorage.Context.TradingAccounts.AddObject(ta); break;
+        case NotifyCollectionChangedAction.Remove:
+          GlobalStorage.Context.TradingAccounts.DeleteObject(ta); break;
+      }
+    }
+    
     public TradingAccount TradingMaster { get { return TradingMasters.FirstOrDefault(); } }
-    public IQueryable<TradingAccount> TradingMasters { get { return TradingAccountsSet.Where(ta => ta.IsMaster); } }
+    public IEnumerable<TradingAccount> TradingMasters { get { return TradingAccountsSet.Where(ta => ta.IsMaster); } }
     public TradingAccount[] TradingSlaves { get { return TradingAccountsSet.Where(ta=>!ta.IsMaster).ToArray(); } }
 
     SlaveAccountModel[] _slaveModels;
@@ -154,7 +210,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public CollectionViewSource TradingAccountsView { get; set; }
 
     public ObservableCollection<Order> orders { get; set; }
     public ListCollectionView OrdersList { get; set; }
@@ -260,7 +315,43 @@ namespace HedgeHog.Alice.Client {
 
     #region Commanding
 
+    #region LoginCommand
 
+    ICommand _LoginCommand;
+    public ICommand LoginCommand {
+      get {
+        if (_LoginCommand == null) {
+          _LoginCommand = new Gala.RelayCommand<object>(Login, (o) => o is TradingAccount);
+        }
+
+        return _LoginCommand;
+      }
+    }
+    void Login(object tradingAccount) {
+      var ta = tradingAccount as TradingAccount;
+      LoginAsync(ta.AccountId, ta.Password, ta.IsDemo);
+    }
+
+    #endregion
+
+    #region ToggleShowAllAccountsCommand
+    ICommand _ToggleShowAllAccountsCommand;
+    public ICommand ToggleShowAllAccountsCommand {
+      get {
+        if (_ToggleShowAllAccountsCommand == null) {
+          _ToggleShowAllAccountsCommand = new Gala.RelayCommand(ToggleShowAllAccounts, () => true);
+        }
+
+        return _ToggleShowAllAccountsCommand;
+      }
+    }
+    void ToggleShowAllAccounts() {
+      ShowAllAccountsFilter = !ShowAllAccountsFilter;
+    }
+
+    #endregion
+
+    #region SetOrderToNoLossCommand
     ICommand _SetOrderToNoLossCommand;
     public ICommand SetOrderToNoLossCommand {
       get {
@@ -274,7 +365,7 @@ namespace HedgeHog.Alice.Client {
     void SetOrderToNoLoss(Order order) {
       OnOrderToNoLoss(order);
     }
-
+    #endregion
 
     #region IncreaseLimitCommand
     ICommand _IncreaseLimitCommand;
@@ -367,7 +458,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DeleteTradingAccount(object ta) {
-      TradingAccountsSet.DeleteObject(ta as TradingAccount);
+      GlobalStorage.Context.TradingAccounts.DeleteObject(ta as TradingAccount);
       SaveTradingSlaves();
     }
 
@@ -389,7 +480,10 @@ namespace HedgeHog.Alice.Client {
       try {
         GlobalStorage.Context.SaveChanges();
         Log = new Exception("Slave accounts were saved");
-      } catch (Exception exc) { Log = exc; }
+      } catch (Exception exc) { 
+        Log = exc;
+        MessageBox.Show(exc + "");
+      }
     }
 
     #endregion
@@ -435,7 +529,7 @@ namespace HedgeHog.Alice.Client {
     void AddNewSlaveAccount() {
       string account, password;
       FXCM.Lib.GetNewAccount(out account, out password);
-      TradingAccountsSet.AddObject(
+      GlobalStorage.Context.TradingAccounts.AddObject(
         new TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" });
       SaveTradingSlaves();
     }
@@ -511,7 +605,7 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-
+    #region ReportCommand
     ICommand _ReportCommand;
     public ICommand ReportCommand {
       get {
@@ -524,6 +618,7 @@ namespace HedgeHog.Alice.Client {
     void Report() {
       new Reports.Report(fwMaster).Show();
     }
+    #endregion
 
     #region Close All Server Trades Command
     ICommand _CloseAllServerTradesCommand;
@@ -569,11 +664,44 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AccountLogin(LoginInfo li) {
-      new ThreadScheduler((s, e) => Log = e.Exception).Command = () => Login(li.Account, li.Password, li.IsDemo);
+      LoginAsync(li.Account, li.Password, li.IsDemo);
+    }
+
+    private void LoginAsync(string account, string password, bool isDemo) {
+      new ThreadScheduler((s, e) => Log = e.Exception).Command = () => Login(account, password, isDemo);
     }
 
     #endregion
 
+    #region OpenDataBaseCommand
+    private string _DatabasePath;
+    public string DatabasePath {
+      get { return _DatabasePath; }
+      set {
+        if (_DatabasePath != value) {
+          _DatabasePath = value;
+          OnPropertyChanged("DatabasePath");
+        }
+      }
+    }
+
+    ICommand _OpenDataBaseCommand;
+    public ICommand OpenDataBaseCommand {
+      get {
+        if (_OpenDataBaseCommand == null) {
+          _OpenDataBaseCommand = new Gala.RelayCommand(OpenDataBase, () => true);
+        }
+        return _OpenDataBaseCommand;
+      }
+    }
+    void OpenDataBase() {
+      var dbPath = GlobalStorage.OpenDataBasePath();
+      if (string.IsNullOrWhiteSpace(dbPath)) return;
+      DatabasePath = dbPath;
+      MessageBox.Show("Mast re-start program to re-load database.");
+    }
+
+    #endregion
     //#region ReverseAliceModeCommand
     //ICommand _ReverseAliceModeCommand;
     //public ICommand ReverseAliceModeCommand {
@@ -612,10 +740,17 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Trading Info
+
+    public string[] TradingAccounts { get { return GlobalStorage.Context.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct().ToArray(); } }
+
     string _tradingAccount;
     public string TradingAccount {
       get { return _tradingAccount; }
-      set { _tradingAccount = value; RaisePropertyChangedCore(); }
+      set { 
+        _tradingAccount = value; 
+        RaisePropertyChangedCore();
+        ShowAllAccountsFilter = false;
+      }
     }
 
     string _tradingPassword;
@@ -644,12 +779,7 @@ namespace HedgeHog.Alice.Client {
     ThreadScheduler.CommandDelegate Using_FetchServerTrades;
 
     public TraderModel() {
-      ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
-      OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
-      AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
-
+      Initialize();
       #region FXCM
       fwMaster = new FXW(this.CoreFX);
       CoreFX.LoggedInEvent += (s, e) => {
@@ -662,7 +792,7 @@ namespace HedgeHog.Alice.Client {
         fwMaster.OrderChanged += fwMaster_OrderChanged;
         fwMaster.OrderAdded += fwMaster_OrderAdded;
         fwMaster.SessionStatusChanged += fwMaster_SessionStatusChanged;
-      
+
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
         try {
@@ -671,7 +801,7 @@ namespace HedgeHog.Alice.Client {
             Thread.Sleep(1000);
             account = fwMaster.GetAccount();
           }
-          if( account!= null)
+          if (account != null)
             AccountModel.Update(account, 0, fwMaster.ServerTime);
         } catch (Exception exc) {
           Log = exc;
@@ -697,7 +827,7 @@ namespace HedgeHog.Alice.Client {
       };
       #endregion
 
-      Using_FetchServerTrades = () => { 
+      Using_FetchServerTrades = () => {
         Using(FetchServerTrades);
       };
       if (!isInDesign) {
@@ -705,6 +835,18 @@ namespace HedgeHog.Alice.Client {
         Using_FetchServerTrades,
         (s, e) => { Log = e.Exception; });
       }
+    }
+    private void Initialize(){
+      var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
+      DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
+      if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
+      else DatabasePath = GlobalStorage.DatabasePath;
+      ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
+      OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
+      AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
+
     }
 
     void fwMaster_SessionStatusChanged(object sender, FXW.SesstionStatusEventArgs e) {
@@ -743,7 +885,10 @@ namespace HedgeHog.Alice.Client {
           RaiseSlaveLoginRequestEvent();
           InvokeSyncronize(fwMaster.GetAccount());
           return true;
-        } else return false;
+        } else {
+          MessageBox.Show("Login failed. See Log.");
+          return false;
+        }
       } catch (Exception exc) {
         Log = exc;
         MessageBox.Show(exc + "");
@@ -949,13 +1094,17 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    public double CommissionByTrade(Trade trade) { return trade.Lots / 10000.0 * MasterAccount.Commission; }
+    public string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
+    public double CommissionByTrade(Trade trade) { return MasterAccount == null ? 0 : trade.Lots / 10000.0 * MasterAccount.Commission; }
     public void AddCosedTrade(Trade trade) {
       try {
-        if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
-        var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
-        GlobalStorage.Context.ClosedTrades.AddObject(ct);
-        GlobalStorage.Context.SaveChanges();
+        if (TradingMaster == null) MessageBox.Show("Trading Master account is not found.");
+        else {
+          if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
+          var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
+          GlobalStorage.Context.ClosedTrades.AddObject(ct);
+          GlobalStorage.Context.SaveChanges();
+        }
       } catch (Exception exc) { Log = exc; }
     }
 

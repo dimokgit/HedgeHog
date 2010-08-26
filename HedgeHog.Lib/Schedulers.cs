@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using System.Threading.Tasks;
+using System.ComponentModel;
 
 namespace HedgeHog {
   #region Schedulers
@@ -214,6 +216,53 @@ namespace HedgeHog {
       var ts = Get(key);
       if (ts.IsRunning)return;// ts.SetFinished((s, ea) => runner());
       else ts.Command = () => runner();
+    }
+  }
+  public class BackgroundWorkerDispenser : Dictionary<string, BackgroundWorker> {
+    TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created, TaskStatus.Faulted };
+    bool IsDone(BackgroundWorker task) { return !task.IsBusy; }
+    BackgroundWorker Get(string key, Action runner) {
+      if (!this.ContainsKey(key)) {
+        var bw = new BackgroundWorker();
+        bw.DoWork += new DoWorkEventHandler(DoWork);
+        this.Add(key, bw);
+      }
+      return this[key];
+    }
+    delegate void Command();
+    void DoWork(object sender, DoWorkEventArgs e) {
+      var task = e.Argument as Action;
+      task();
+    }
+    public void Run(string key, Action runner) {
+      Run(key, runner, e => { });
+    }
+    public void Run(string key, Action runner, Action<Exception> log) {
+      var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
+      if (!IsDone(ts)) return;// ts.SetFinished((s, ea) => runner());
+      else ts.RunWorkerAsync(runner);
+    }
+  }
+
+  public class TasksDispenser : Dictionary<string, Task> {
+    TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created,TaskStatus.Faulted };
+    bool IsDone(Task task) { return done.Contains(task.Status); }
+    Task Get(string key,Action runner) {
+      if (!this.ContainsKey(key)) {
+        this.Add(key, new Task(runner));
+        return this[key];
+      }
+      if (!IsDone(this[key])) return this[key];
+      this.Remove(key);
+      return Get(key, runner);
+    }
+    public void Run(string key, Action runner) {
+      Run(key, runner, e => { });
+    }
+    public void Run(string key, Action runner,Action<Exception> log) {
+      var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
+      if (!IsDone( ts)) return;// ts.SetFinished((s, ea) => runner());
+      else ts.Start();
     }
   }
 }
