@@ -278,21 +278,29 @@ namespace HedgeHog.Alice.Store {
         this.maxCount = maxCount;
       }
       private IEnumerable<Price> GetQueue(double period) {
-        if (period <= 1) period = (priceStackByPair.Count * period).ToInt();
-        return priceStackByPair.Take(period.ToInt());
+        lock (priceStackByPair) {
+          if (period <= 1) period = (priceStackByPair.Count * period).ToInt();
+          return priceStackByPair.Take(period.ToInt());
+        }
       }
       public void Add(Price price, DateTime serverTime) {
-        var queue = priceStackByPair;
-        if ((price.Time - serverTime).Duration() < TimeSpan.FromMinutes(1)) {
-          if (queue.Count > maxCount) queue.Dequeue();
-          queue.Enqueue(price);
+        lock (priceStackByPair) {
+          var queue = priceStackByPair;
+          if ((price.Time - serverTime).Duration() < TimeSpan.FromMinutes(1)) {
+            if (queue.Count > maxCount) queue.Dequeue();
+            queue.Enqueue(price);
+          }
         }
       }
       public double TickPerMinute(double period) {
         return TickPerMinute(GetQueue(period));
       }
 
-      public DateTime LastTickTime() { return priceStackByPair.Count == 0 ? DateTime.MaxValue : priceStackByPair.Max(p=>p.Time); }
+      public DateTime LastTickTime() {
+        lock (priceStackByPair) {
+          return priceStackByPair.Count == 0 ? DateTime.MaxValue : priceStackByPair.Max(p => p.Time);
+        }
+      }
       private static double TickPerMinute(IEnumerable<Price> queue) {
         if (queue.Count() < 10) return 10;
         var totalMinutes = (queue.Max(p => p.Time) - queue.Min(p => p.Time)).TotalMinutes;
@@ -671,6 +679,7 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged("PriceCmaDiffernceInPips");
       OnPropertyChanged("PriceCma1DiffernceInPips");
       OnPropertyChanged("PriceCma23DiffernceInPips");
+      OnPropertyChanged("MaxLotSize");
       //PriceCma = Lib.CMA(PriceCma, 0, cmaperiod , price.Average);
       //PriceCma1 = Lib.CMA(PriceCma1, 0, cmaperiod, PriceCma);
       //PriceCma2 = Lib.CMA(PriceCma2, 0, cmaperiod, PriceCma1);
@@ -698,13 +707,24 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    int _LastLotSize;
-    public int LastLotSize {
-      get { return _LastLotSize; }
+    Trade _lastTrade = new Trade();
+
+    public Trade LastTrade {
+      get { return _lastTrade; }
       set {
-        if (_LastLotSize == value) return;
-        _LastLotSize = value;
+        if (value == null) return;
+        _lastTrade = value;
         OnPropertyChanged("LastLotSize");
+        OnPropertyChanged("MaxLotSize");
+      }
+    }
+
+    public int LastLotSize {
+      get { return Math.Max(LotSize, LastTrade.Lots); }
+    }
+    public int MaxLotSize {
+      get {
+        return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL > 0 || LastTrade.PL < -TakeProfitPips) ? LotSize : 0));
       }
     }
   }

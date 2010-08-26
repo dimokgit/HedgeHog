@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
+using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client {
   public class CorridorStatistics:CorridorStatisticsBase{
@@ -65,8 +66,8 @@ namespace HedgeHog.Alice.Client {
         #endregion
         Func<bool?> tradeSignal7 = () => {
           if (!IsCorridorAvarageHeightOk) return null;
-          var doSell = PriceCmaDiffHigh > 0;// || TradingMacro.BarHeight60 > 0 && PriceCmaDiffLow >= TradingMacro.BarHeight60;
-          var doBuy = PriceCmaDiffLow < 0;// || TradingMacro.BarHeight60 > 0 && (-PriceCmaDiffHigh) >= TradingMacro.BarHeight60;
+          var doSell = InPips(PriceCmaDiffHigh).Round(1) >= 0;// || TradingMacro.BarHeight60 > 0 && PriceCmaDiffLow >= TradingMacro.BarHeight60;
+          var doBuy = InPips(PriceCmaDiffLow).Round(1) <= 0;// || TradingMacro.BarHeight60 > 0 && (-PriceCmaDiffHigh) >= TradingMacro.BarHeight60;
           return doSell == doBuy ? (bool?)null : doBuy;
         };
         var ts = tradeSignal7();
@@ -85,12 +86,21 @@ namespace HedgeHog.Alice.Client {
 
     public bool IsCorridorAvarageHeightOk {
       get {
-        var addOn = PriceCmaDiffHigh > 0
-          ? TradingMacro.PriceCmaDiffHighFirst + TradingMacro.PriceCmaDiffHighLast
-          : PriceCmaDiffLow < 0 ? -TradingMacro.PriceCmaDiffLowFirst - TradingMacro.PriceCmaDiffLowLast
-          : 0;
-        return (AverageHeight + Math.Max(0, addOn)) / TradingMacro.BarHeight60 > 1;
+        var addOn = 0;
+        //TradingMacro.LimitCorridorByBarHeight ? 0 :
+        //  PriceCmaDiffHigh > 0
+        //  ? /*TradingMacro.PriceCmaDiffHighFirst*/ +TradingMacro.PriceCmaDiffHighLast
+        //  : PriceCmaDiffLow < 0 ? /*-TradingMacro.PriceCmaDiffLowFirst*/ -TradingMacro.PriceCmaDiffLowLast
+        //  : 0;
+        return GetCorridorAverageHeightOk(TradingMacro,AverageHeight + Math.Max(0, addOn));
       }
     }
+    public static bool GetCorridorAverageHeightOk(TradingMacro tm, double AverageHeight) {
+      return AverageHeight > 0 && tm.BarHeight60 > 0
+        && AverageHeight / tm.BarHeight60 >= (tm.LimitCorridorByBarHeight ? .9 : 1);
+    }
+
+  }
+  public static class CorridorStaticBaseExtentions {
   }
 }

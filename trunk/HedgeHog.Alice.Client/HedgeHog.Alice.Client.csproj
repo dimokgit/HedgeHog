@@ -72,6 +72,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.Composition.Initialization">
+      <HintPath>..\..\..\..\..\..\Program Files\Microsoft SDKs\Silverlight\v4.0\Libraries\Client\System.ComponentModel.Composition.Initialization.dll</HintPath>
+    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
@@ -113,9 +116,7 @@
     <Compile Include="Classes\AbsentTrade.cs" />
     <Compile Include="Classes\Config.cs" />
     <Compile Include="Classes\Converters.cs" />
-    <Compile Include="Classes\Events.cs" />
     <Compile Include="Classes\IAccountHolder.cs" />
-    <Compile Include="Classes\IMainModel.cs" />
     <Compile Include="Classes\ReportModel.cs" />
     <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />

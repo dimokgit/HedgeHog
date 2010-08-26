@@ -10,8 +10,12 @@
 >
   <UserControl.Resources>
     <DataTemplate x:Key="DeleteAccountCellTemplate">
-      <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+      <StackPanel>
+        <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" 
             Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+        <Button Content="C" CommandParameter="{Binding BindsDirectlyToSource=True}" 
+            Command="{Binding DataContext.CopyTradingMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+      </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentTemplate">
       <WrapPanel>
@@ -20,25 +24,30 @@
             <TextBlock>
                 <TextBlock FontWeight="Black">Maximum Positions:</TextBlock>
                 <TextBlock Text="{Binding MaximumPositions}"></TextBlock>
-              <LineBreak/>
-                <TextBlock FontWeight="Black">Historical Gross:</TextBlock>
-                <TextBlock Text="{Binding HistoricalGrossPL}"></TextBlock>
-              </TextBlock>
+            </TextBlock>
           </ToolTip>
         </WrapPanel.ToolTip>
+        <TextBlock>
         <TextBlock Text="{Binding Currency1}"/>
         <TextBlock Text="{Binding Correlation1,StringFormat=',{0:n1}'}" ToolTip="Correlation 1"/>
         <TextBlock>/</TextBlock>
         <TextBlock Text="{Binding Currency2}"/>
         <TextBlock Text="{Binding Correlation2,StringFormat=',{0:n1}'}" ToolTip="Correlation 2"/>
+          <LineBreak/>
+        <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
+          <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
+        </TextBlock>
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentEditTemplate">
-      <WrapPanel>
+      <TextBlock>
         <TextBox Text="{Binding PairIndex}" ToolTip="Pair Index"/>
         <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
         <TextBox Text="{Binding MaximumPositions}" ToolTip="Maximum Positions"/>
-      </WrapPanel>
+        <LineBreak/>
+        <TextBox Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
+          <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>
+      </TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">
       <StackPanel>
@@ -160,11 +169,18 @@
     </DataTemplate>
   </UserControl.Resources>
     <Grid>
-    <DataGrid ItemsSource="{Binding TradingMacros}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
+    <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTextColumn Header="G" Binding="{Binding TradingGroup}"/>
-        <DataGridTemplateColumn Header="Pair" CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}"/>
+        <DataGridTemplateColumn CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}">
+          <DataGridTemplateColumn.Header>
+            <WrapPanel>
+              <TextBlock>Pair</TextBlock>
+              <Button Content="x" Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+            </WrapPanel>
+          </DataGridTemplateColumn.Header>
+        </DataGridTemplateColumn>
         <DataGridTextColumn Header="R" Binding="{Binding TradingRatio,Mode=TwoWay}" />
         <DataGridTemplateColumn CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}">
           <DataGridTemplateColumn.Header>
@@ -289,7 +305,8 @@
               <WrapPanel>
                 <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
                 <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
-                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum"/>
+                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum" Visibility="Collapsed"/>
+                <CheckBox IsChecked="{Binding LimitCorridorByBarHeight}" ToolTip="Limit Corridor By Bar Height"/>
                 <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>
                 <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
                 <TextBox Text="{Binding CorridorIterationsIn}" ToolTip="Price CMA Level"/>
@@ -366,7 +383,7 @@
                 <StackPanel Orientation="Horizontal">
                   <TextBlock Text="{Binding LotSize,StringFormat=c0}"></TextBlock>
                   <TextBlock Text="{Binding LotSizePercent,StringFormat=/{0:p2}}"></TextBlock>
-                  <TextBlock Text="{Binding LastLotSize,StringFormat=/{0:n0}}"></TextBlock>
+                  <TextBlock Text="{Binding MaxLotSize,StringFormat=/{0:n0}}"></TextBlock>
                 </StackPanel>
               </Label>
             </DataTemplate>

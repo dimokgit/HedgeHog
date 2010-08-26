@@ -52,6 +52,13 @@ namespace Temp {
       set { _MinutesBack = value; }
     }
 
+    int _BarMinutesMax;
+
+    public int BarMinutesMax {
+      get { return _BarMinutesMax; }
+      set { _BarMinutesMax = value; }
+    }
+
     private bool _IsBusy;
     public bool IsBusy {
       get { return _IsBusy; }
@@ -117,12 +124,12 @@ namespace Temp {
         var rates = fw.GetBarsBase(Pair, 1, DateTime.Now.AddMinutes(-MinutesBack), DateTime.FromOADate(0)).ToArray();
         var barHeights = new List<double>();
         List<double> ratios;
-        var bars1 = GetBarsAndRatios(rates,30, out ratios);
+        var bars1 = GetBarsAndRatios(rates,BarMinutesMax, out ratios);
         var ratios1 = ratios.Select((r, i) => new { Index = i, Value = r }).ToList();
         var index = ratios1.Where(r => r.Value < 1).OrderBy(r => r.Index).First().Index;
         var barHeight = bars1[index];
         var sw = Stopwatch.StartNew();
-        BarHeightInPips = fw.InPips(Pair, rates.GetWaveHeight(4, 15));
+        BarHeightInPips = fw.InPips(Pair, rates.GetWaveHeight(4, BarMinutesMax));
         BarHeightSpeed = sw.Elapsed.TotalMilliseconds.Round(0);
 
         var chA = radChart1.DefaultView.ChartArea;

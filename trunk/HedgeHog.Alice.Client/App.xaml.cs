@@ -24,8 +24,12 @@ namespace HedgeHog.Alice.Client {
     }
 
     void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
-      var mm = container.GetExportedValue<IMainModel>();
-      if (mm != null) mm.Log = e.Exception;
+      try {
+        var mm = container.GetExportedValue<IMainModel>();
+        if (mm != null) mm.Log = e.Exception;
+      } catch (ObjectDisposedException) {
+        MessageBox.Show(e.Exception + "");
+      }
       if (!(e.Exception is System.Windows.Markup.XamlParseException))
         e.Handled = true;
     }

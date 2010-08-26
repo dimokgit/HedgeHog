@@ -950,7 +950,9 @@ namespace HedgeHog.Alice.Store
         /// <param name="isMaster">Initial value of the IsMaster property.</param>
         /// <param name="tradeRatio">Initial value of the TradeRatio property.</param>
         /// <param name="commission">Initial value of the Commission property.</param>
-        public static TradingAccount CreateTradingAccount(global::System.String password, global::System.Boolean isDemo, global::System.Guid id, global::System.Boolean isMaster, global::System.String tradeRatio, global::System.Double commission)
+        /// <param name="isActive">Initial value of the IsActive property.</param>
+        /// <param name="tradingMacroName">Initial value of the TradingMacroName property.</param>
+        public static TradingAccount CreateTradingAccount(global::System.String password, global::System.Boolean isDemo, global::System.Guid id, global::System.Boolean isMaster, global::System.String tradeRatio, global::System.Double commission, global::System.Boolean isActive, global::System.String tradingMacroName)
         {
             TradingAccount tradingAccount = new TradingAccount();
             tradingAccount.Password = password;
@@ -959,6 +961,8 @@ namespace HedgeHog.Alice.Store
             tradingAccount.IsMaster = isMaster;
             tradingAccount.TradeRatio = tradeRatio;
             tradingAccount.Commission = commission;
+            tradingAccount.IsActive = isActive;
+            tradingAccount.TradingMacroName = tradingMacroName;
             return tradingAccount;
         }
 
@@ -1159,6 +1163,54 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _Commission;
         partial void OnCommissionChanging(global::System.Double value);
         partial void OnCommissionChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean IsActive
+        {
+            get
+            {
+                return _IsActive;
+            }
+            set
+            {
+                OnIsActiveChanging(value);
+                ReportPropertyChanging("IsActive");
+                _IsActive = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IsActive");
+                OnIsActiveChanged();
+            }
+        }
+        private global::System.Boolean _IsActive;
+        partial void OnIsActiveChanging(global::System.Boolean value);
+        partial void OnIsActiveChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String TradingMacroName
+        {
+            get
+            {
+                return _TradingMacroName;
+            }
+            set
+            {
+                OnTradingMacroNameChanging(value);
+                ReportPropertyChanging("TradingMacroName");
+                _TradingMacroName = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("TradingMacroName");
+                OnTradingMacroNameChanged();
+            }
+        }
+        private global::System.String _TradingMacroName;
+        partial void OnTradingMacroNameChanging(global::System.String value);
+        partial void OnTradingMacroNameChanged();
 
         #endregion
     
@@ -1196,7 +1248,10 @@ namespace HedgeHog.Alice.Store
         /// <param name="pairIndex">Initial value of the PairIndex property.</param>
         /// <param name="tradingGroup">Initial value of the TradingGroup property.</param>
         /// <param name="maximumPositions">Initial value of the MaximumPositions property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions)
+        /// <param name="isActive">Initial value of the IsActive property.</param>
+        /// <param name="tradingMacroName">Initial value of the TradingMacroName property.</param>
+        /// <param name="limitCorridorByBarHeight">Initial value of the LimitCorridorByBarHeight property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1218,6 +1273,9 @@ namespace HedgeHog.Alice.Store
             tradingMacro.PairIndex = pairIndex;
             tradingMacro.TradingGroup = tradingGroup;
             tradingMacro.MaximumPositions = maximumPositions;
+            tradingMacro.IsActive = isActive;
+            tradingMacro.TradingMacroName = tradingMacroName;
+            tradingMacro.LimitCorridorByBarHeight = limitCorridorByBarHeight;
             return tradingMacro;
         }
 
@@ -1682,6 +1740,78 @@ namespace HedgeHog.Alice.Store
         private global::System.Int32 _MaximumPositions;
         partial void OnMaximumPositionsChanging(global::System.Int32 value);
         partial void OnMaximumPositionsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean IsActive
+        {
+            get
+            {
+                return _IsActive;
+            }
+            set
+            {
+                OnIsActiveChanging(value);
+                ReportPropertyChanging("IsActive");
+                _IsActive = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IsActive");
+                OnIsActiveChanged();
+            }
+        }
+        private global::System.Boolean _IsActive;
+        partial void OnIsActiveChanging(global::System.Boolean value);
+        partial void OnIsActiveChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String TradingMacroName
+        {
+            get
+            {
+                return _TradingMacroName;
+            }
+            set
+            {
+                OnTradingMacroNameChanging(value);
+                ReportPropertyChanging("TradingMacroName");
+                _TradingMacroName = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("TradingMacroName");
+                OnTradingMacroNameChanged();
+            }
+        }
+        private global::System.String _TradingMacroName;
+        partial void OnTradingMacroNameChanging(global::System.String value);
+        partial void OnTradingMacroNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean LimitCorridorByBarHeight
+        {
+            get
+            {
+                return _LimitCorridorByBarHeight;
+            }
+            set
+            {
+                OnLimitCorridorByBarHeightChanging(value);
+                ReportPropertyChanging("LimitCorridorByBarHeight");
+                _LimitCorridorByBarHeight = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LimitCorridorByBarHeight");
+                OnLimitCorridorByBarHeightChanged();
+            }
+        }
+        private global::System.Boolean _LimitCorridorByBarHeight;
+        partial void OnLimitCorridorByBarHeightChanging(global::System.Boolean value);
+        partial void OnLimitCorridorByBarHeightChanged();
 
         #endregion
     
