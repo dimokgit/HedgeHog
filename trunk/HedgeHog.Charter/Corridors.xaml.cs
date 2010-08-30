@@ -23,6 +23,7 @@ using HedgeHog.Bars;
 using HB = HedgeHog.Bars;
 using Order2GoAddIn;
 using FXW = Order2GoAddIn.FXCoreWrapper;
+using HedgeHog.Shared;
 
 namespace HedgeHog {
   /// <summary>
@@ -310,7 +311,7 @@ namespace HedgeHog {
       //Ticks.Clear();
       //minuteTicks.ToList().ForEach(mt => Ticks.Add(mt));
       UpdateTicks(Ticks, minuteTicks.OrderBy(t=>t.X).ToList());
-      plotter.FitToView();
+      //plotter.FitToView();
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
       LineMax = voltageHigh;
       LineMaxAvg = priceMaxAvg;

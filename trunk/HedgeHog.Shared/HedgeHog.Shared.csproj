@@ -44,20 +44,24 @@
   <ItemGroup>
     <Compile Include="Account.cs" />
     <Compile Include="AccountInfo.cs" />
+    <Compile Include="Bars.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
+    <Compile Include="ITradesManager.cs" />
     <Compile Include="Offer.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="PendingOrder.cs" />
+    <Compile Include="Price.cs" />
     <Compile Include="SummaryRow.cs" />
     <Compile Include="Trade.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnKnown.cs" />
+    <Compile Include="VirtualTradesManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
-      <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
-      <Name>HedgeHog.Lib</Name>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

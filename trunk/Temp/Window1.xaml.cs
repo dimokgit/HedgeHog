@@ -17,6 +17,7 @@ using HedgeHog.Rsi;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;
+using Temp.Models;
 
 namespace Temp {
   /// <summary>

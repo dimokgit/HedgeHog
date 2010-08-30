@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage {
+    static ForexEntities _forexContext;
     static AliceEntities _context;
     static object contextLocker = new object();
     static string _databasePath;
@@ -21,6 +22,13 @@ namespace HedgeHog.Alice.Store {
       }
       set { _databasePath = value; }
     }
+    public static ForexEntities ForexContext {
+      get {
+        if (_forexContext == null) _forexContext = new ForexEntities();
+        return _forexContext;
+      }
+    }
+
     public static AliceEntities Context {
       get {
         lock (contextLocker) {

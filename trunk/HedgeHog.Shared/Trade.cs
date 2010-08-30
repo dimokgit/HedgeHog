@@ -9,6 +9,8 @@ using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
+  public delegate void TradeAddedEventHandler(Trade trade);
+  public delegate void TradeRemovedEventHandler(Trade trade);
   [Serializable]
   [DataContract]
   public class Trade : PositioBase {
@@ -71,6 +73,30 @@ namespace HedgeHog.Shared {
     [DataMember]
     public double Commission { get; set; }
 
+    [DataMember]
+    public bool IsVirtual { get; set; }
+
+    private ITradesManager _tradesManager;
+
+    public ITradesManager TradesManager {
+      get { return _tradesManager; }
+      set {
+        if (_tradesManager != null)
+          _tradesManager.PriceChanged -= TradesManager_PriceChanged;
+        _tradesManager = value;
+        if (_tradesManager != null)
+          _tradesManager.PriceChanged += TradesManager_PriceChanged;
+      }
+    }
+
+    void TradesManager_PriceChanged(Price Price) {
+      if (Price.PipSize == 0) throw new Exception("Price.PipSize property must not be Zero.");
+      Close = Buy ? Price.Bid : Price.Ask;
+      var gross = Buy ? Close - Open : Open - Close;
+      PL = gross / Price.PipSize;
+      GrossPL = gross * Lots;
+      TimeClose = Price.Time;
+    }
 
     public double NetPL { get { return GrossPL + Commission; } }
     public double OpenInPips { get { return InPips(this.Open); } }
@@ -104,7 +130,7 @@ namespace HedgeHog.Shared {
       var nodes = x.Nodes().ToArray();
       foreach (var property in GetType().GetProperties()) {
         var element = x.Element(property.Name);
-        if (element != null && property.CanWrite && property.PropertyType!=typeof(UnKnownBase))
+        if (element != null && property.CanWrite && property.PropertyType != typeof(UnKnownBase))
           if (property.PropertyType == typeof(TradeRemark))
             this.Remark = new TradeRemark(element.Value);
           else
@@ -116,7 +142,7 @@ namespace HedgeHog.Shared {
       this.Buy = this.IsBuy = xmlElement.Attribute("BS").Value == "B";
       this.Close = double.Parse(xmlElement.Attribute("Close").Value);
       this.GrossPL = double.Parse(xmlElement.Attribute("GrossPL").Value);
-      this.Id= xmlElement.Attribute("TradeID").Value;
+      this.Id = xmlElement.Attribute("TradeID").Value;
       this.Lots = int.Parse(xmlElement.Attribute("Lot").Value);
       this.Pair = xmlElement.Attribute("Instrument").Value;
       this.PL = double.Parse(xmlElement.Attribute("PL").Value);
@@ -168,7 +194,7 @@ namespace HedgeHog.Shared {
       if (info.Length > 2) double.TryParse(info[2], out _angle);
     }
     public override string ToString() {
-      return !(Remark ?? "").Contains('|')?Remark: string.Join(PIPE + "",
+      return !(Remark ?? "").Contains('|') ? Remark : string.Join(PIPE + "",
         new object[] {
           TradeWaveInMinutes.ToString("000"),
           TradeWaveHeight ,

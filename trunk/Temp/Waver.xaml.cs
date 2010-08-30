@@ -43,7 +43,12 @@ namespace Temp {
 
     public string Pair {
       get { return _pair; }
-      set { _pair = value; }
+      set { 
+        _pair = value;
+        if (string.IsNullOrWhiteSpace(value)) return; 
+        ticks.Clear();
+        FillRatios();
+      }
     }
 
     int _MinutesBack = 60 * 3;
@@ -118,19 +123,22 @@ namespace Temp {
       //radChart1.ItemsSource = barRatios;
     }
 
+    List<Rate> ticks = new List<Rate>();
     void FillRatios() {
       try {
         IsBusy = true;
-        var rates = fw.GetBarsBase(Pair, 1, DateTime.Now.AddMinutes(-MinutesBack), DateTime.FromOADate(0)).ToArray();
+        var barMin = 5;
+        fw.GetBars(Pair, 0, DateTime.Now.AddMinutes(-MinutesBack), DateTime.FromOADate(0),ref ticks);
+        var sw = Stopwatch.StartNew();
+        var rates = ticks.GetMinuteTicks(1);
+        BarHeightInPips = fw.InPips(Pair, rates.GetWaveHeight(barMin, BarMinutesMax));
+        BarHeightSpeed = sw.Elapsed.TotalMilliseconds.Round(0);
         var barHeights = new List<double>();
         List<double> ratios;
         var bars1 = GetBarsAndRatios(rates,BarMinutesMax, out ratios);
         var ratios1 = ratios.Select((r, i) => new { Index = i, Value = r }).ToList();
         var index = ratios1.Where(r => r.Value < 1).OrderBy(r => r.Index).First().Index;
         var barHeight = bars1[index];
-        var sw = Stopwatch.StartNew();
-        BarHeightInPips = fw.InPips(Pair, rates.GetWaveHeight(4, BarMinutesMax));
-        BarHeightSpeed = sw.Elapsed.TotalMilliseconds.Round(0);
 
         var chA = radChart1.DefaultView.ChartArea;
         DataSeries ds = new DataSeries();
@@ -158,7 +166,7 @@ namespace Temp {
       var bars = new List<double>();
       ratios = new List<double>();
       for (var i = 1; i <= barMax; i++)
-        bars.Add(rates.GetBarHeight(i));
+        bars.Add(rates.GetBarHeightBase(i));
       var b = 1;
       for (; b < bars.Count; b++)
         ratios.Add(bars[b] / bars[b - 1]);

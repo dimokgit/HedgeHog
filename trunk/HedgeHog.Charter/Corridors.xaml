@@ -11,7 +11,7 @@
         >
     <Grid>
     <d3:ChartPlotter Name="plotter">
-      <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="False" IsDefaultAxis="True" ShowMinorTicks="True" Visibility="Visible" />
+      <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="True" IsDefaultAxis="True" ShowMinorTicks="True" Visibility="Visible" />
       <d3:InjectedPlotter Name="innerPlotter" Background="Aqua">
         <d3:VerticalAxis Placement="Right"/>
       </d3:InjectedPlotter>

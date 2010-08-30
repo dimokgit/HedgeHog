@@ -8,8 +8,8 @@ namespace HedgeHog.Bars {
   public class RsiStatistics {
     public double Buy { get { return BuyAverage - BuyStd; } }
     public double Sell { get { return SellAverage + SellStd; } }
-    public double Buy1 { get { return BuyMin + BuyStd*2; } }
-    public double Sell1 { get { return SellMax - SellStd*2; } }
+    public double Buy1 { get { return BuyMin + BuyStd * 2; } }
+    public double Sell1 { get { return SellMax - SellStd * 2; } }
     public double BuyAverage { get; set; }
     public double SellAverage { get; set; }
     public double BuyStd { get; set; }
@@ -17,7 +17,7 @@ namespace HedgeHog.Bars {
     public double BuyMin { get; set; }
     public double SellMax { get; set; }
 
-    public RsiStatistics(double? BuyAverage,double? BuyStd,double? BuyMin,double? SellAverage,double? SellStd,double? SellMax ) {
+    public RsiStatistics(double? BuyAverage, double? BuyStd, double? BuyMin, double? SellAverage, double? SellStd, double? SellMax) {
       this.BuyAverage = BuyAverage.GetValueOrDefault();
       this.BuyStd = BuyStd.GetValueOrDefault();
       this.BuyMin = BuyMin.GetValueOrDefault();
@@ -213,41 +213,41 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    #region Wave
     public static double GetWaveHeight(this Rate[] rates, int barFrom, int barTo) {
-      var barPrev = rates.GetBarHeight(barFrom);
+      var barPrev = rates.GetBarHeightBase(barFrom);
       var barPrev1 = barPrev;
       var bars = new List<double>(new[] { barPrev });
       var barsForAverage = new List<double>();
       for (var i = barFrom + 1; i <= barTo; i++) {
-        var bar = rates.GetBarHeight(i);
+        var bar = rates.GetBarHeightBase(i);
         //if (bar / barPrev < 1) 
-          barsForAverage.Add(barPrev);// return new[] { barPrev, barPrev1, bar }.Min();
+        barsForAverage.Add(barPrev);// return new[] { barPrev, barPrev1, bar }.Min();
         barPrev1 = barPrev;
         barPrev = bar;
         bars.Add(bar);
       }
-      barsForAverage =  barsForAverage.DefaultIfEmpty(bars.Max()).ToList();
+      barsForAverage = barsForAverage.DefaultIfEmpty(bars.Max()).ToList();
       var barsAverage = barsForAverage.Average();
       return barsForAverage.Where(b => b >= barsAverage).Average();
     }
 
 
-    public static double GetBarHeight(this Rate[] rates,int period) {
+    public static double GetBarHeight(this Rate[] rates, int period) {
       if (rates.Count() == 0) return 0;
       //var sw = Stopwatch.StartNew();
       var bhList = new List<double>();
       var dateStart = rates[0].StartDate;
       var minutes = (rates.Last().StartDate - rates.First().StartDate).TotalMinutes.ToInt();
       for (var i = 0; i < minutes - period; i++)
-        bhList.Add(rates.SkipWhile(r=>r.StartDate< dateStart.AddMinutes(i)).ToArray().GetBarHeightBase(period));
+        bhList.Add(rates.SkipWhile(r => r.StartDate < dateStart.AddMinutes(i)).ToArray().GetBarHeightBase(period));
       return bhList.Average();
       //Debug.WriteLine("GetBarHeight:{0} - {1:n0} ms", tm.Pair, sw.Elapsed.TotalMilliseconds);
     }
 
-    static double GetBarHeightBase(this Rate[] rates, int barPeriod) {
+    public static double GetBarHeightBase(this Rate[] rates, int barPeriod) {
       var rates60 = rates.GetMinuteTicks(barPeriod);
-      if (rates60.Count() == 0)
-        Debugger.Break();
+      if (rates60.Count() == 0) return 0;
       var hs = rates60.Select(r => r.Spread).ToArray();
       var hsAvg = hs.Average();
       hs = hs.Where(h => h >= hsAvg).ToArray();
@@ -259,90 +259,110 @@ namespace HedgeHog.Bars {
     public static Dictionary<int, CorridorStatisticsBase> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
       try {
         if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
+        else rates = rates.ToArray();
         var corridornesses = new Dictionary<int, CorridorStatisticsBase>();
-        if (rates.Count() == 0) {
+        if (rates.Count() > 10) {
           var source = Enumerable.Range(1, rates.Count() - 1);
           source.AsParallel().ForAll(i => {
             try {
-              var cs = ScanCorridor(rates.Take(i), useStDev);
-              corridornesses.Add(i, cs);
+              var cs = ScanCorridor(rates.Take(i).ToArray(), useStDev);
+              lock (corridornesses) {
+                corridornesses.Add(i, cs);
+              }
             } catch (Exception) {
-//              Debug.Fail(exc + "");
+              //              Debug.Fail(exc + "");
             }
           });
         } else
           for (var periods = 1; periods < rates.Count(); periods++) {
-            var cs = ScanCorridor(rates.Take(periods), useStDev);
+            var cs = ScanCorridor(rates.Take(periods).ToArray(), useStDev);
             //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
             corridornesses.Add(periods, cs);
           }
         return corridornesses;
       } catch (Exception exc) {
-        Debug.Fail(exc+"");
+        Debug.Fail(exc + "");
         throw;
       }
     }
 
-      public static CorridorStatisticsBase ScanCorridornesses(this IEnumerable<Rate> rates, int iterations, Dictionary<int, CorridorStatisticsBase> corridornesses, double corridornessMinimum, double corridorHeightMinimum) {
-        if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
-        Func<CorridorStatisticsBase, double, bool> filter =
-          (cs, dm) => cs.Density > dm && cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum;
-        var corrAverage = corridornesses.Values.Average(c => c.Density);
-        var corrAfterAverage = corridornesses.Where(c => filter(c.Value, corrAverage)).ToArray();
+    public static CorridorStatisticsBase ScanCorridornesses(this IEnumerable<Rate> rates, int iterations, Dictionary<int, CorridorStatisticsBase> corridornesses, double corridornessMinimum, double corridorHeightMinimum) {
+      if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
+      Func<CorridorStatisticsBase, double, bool> filter =
+        (cs, dm) => cs.Density > dm && cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum;
+      var values = corridornesses.Values;
+      var corrAverage = values.Average(c => c.Density);
+      var corrAfterAverage = corridornesses.Where(c => filter(c.Value, corrAverage)).ToArray();
 
-        for (var i = iterations - 1; i > 0 && corrAfterAverage.Count() > 0; i--) {
-          var avg = corrAfterAverage.Average(c => c.Value.Density);
-          var corrAvg = corrAfterAverage.Where(c => filter(c.Value, avg)).ToArray();
-          if (corrAvg.Length > 0) {
-            corrAverage = avg;
-            corrAfterAverage = corrAvg;
-          } else break;
-        }
-        if (corrAfterAverage.Count() == 0) corrAfterAverage = corridornesses.ToArray();
-        //var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
-        var corr = corrAfterAverage.OrderBy(c => c.Value.AverageHeight).Last();
-        corr.Value.Iterations = iterations;
-        //var ratesForCorridor = rates.Take(corr.Value.Periods);
-        ////.Where(r => r.StartDate >= startDate).ToArray();
-        //corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
-        //corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
-        return corr.Value;
+      for (var i = iterations - 1; i > 0 && corrAfterAverage.Count() > 0; i--) {
+        var avg = corrAfterAverage.Average(c => c.Value.Density);
+        var corrAvg = corrAfterAverage.Where(c => filter(c.Value, avg)).ToArray();
+        if (corrAvg.Length > 0) {
+          corrAverage = avg;
+          corrAfterAverage = corrAvg;
+        } else break;
       }
-      static CorridorStatisticsBase ScanCorridor(IEnumerable<Rate> rates, bool useStDev) {
-        try {
-          var averageHigh = rates.Average(r => r.PriceHigh);
-          var averageLow = rates.Average(r => r.PriceLow);
-          var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
-          var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
-          if (useStDev) {
-            var values = new List<double>();
-            rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
-            return new CorridorStatisticsBase(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
-          }
-          var count = 0.0;// rates.Count(rate => rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow);
-          foreach (var rate in rates)
-            if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
-          var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).ToArray();
-          var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).ToArray();
-          if (ratesForAverageHigh.Length > 0) {
-            var prices = ratesForAverageHigh.Select(r => r.PriceHigh/*.PriceLow*/).ToArray();
-            averageHigh = prices.Average();
-            averageHigh = prices.Where(p => p >= averageHigh).Average();
-          }
-          if (ratesForAverageLow.Length > 0) {
-            var prices = ratesForAverageLow.Select(r => r.PriceLow/*.PriceHigh*/).ToArray();
-            averageLow = prices.Average();
-            averageLow = prices.Where(p => p <= averageLow).Average();
-          }
-          return new CorridorStatisticsBase(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
-        } catch (Exception exc) {
-          Debug.Fail(exc + "");
-          throw;
+      if (corrAfterAverage.Count() == 0) corrAfterAverage = corridornesses.ToArray();
+      //var corr = corrAfterAverage.OrderBy(c => c.Key).Last();
+      var corr = corrAfterAverage.OrderBy(c => c.Value.AverageHeight).Last();
+      corr.Value.Iterations = iterations;
+      //var ratesForCorridor = rates.Take(corr.Value.Periods);
+      ////.Where(r => r.StartDate >= startDate).ToArray();
+      //corr.Value.AskHigh = ratesForCorridor.Max(r => r.AskHigh);
+      //corr.Value.BidLow = ratesForCorridor.Min(r => r.BidLow);
+      return corr.Value;
+    }
+    static CorridorStatisticsBase ScanCorridor(IEnumerable<Rate> rates, bool useStDev) {
+      try {
+        var averageHigh = rates.Average(r => r.PriceHigh);
+        var averageLow = rates.Average(r => r.PriceLow);
+        var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
+        var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
+        if (useStDev) {
+          var values = new List<double>();
+          rates.ToList().ForEach(r => values.AddRange(new[] { r.PriceHigh, r.PriceLow, r.PriceOpen, r.PriceClose }));
+          return new CorridorStatisticsBase(1 / values.StdDev(), averageHigh, averageLow, askHigh, 0, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
         }
+        var count = 0.0;// rates.Count(rate => rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow);
+        //foreach (var rate in rates)
+        rates.AsParallel().ForAll(rate => {
+          if (rate.PriceLow <= averageHigh && rate.PriceHigh >= averageLow) count++;
+        });
+        var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).AsParallel().ToArray();
+        var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).AsParallel().ToArray();
+        if (ratesForAverageHigh.Length > 0) {
+          var prices = ratesForAverageHigh.Select(r => r.PriceAvg/*.PriceLow*/).ToArray();
+          averageHigh = prices.Average();
+          averageHigh = prices.Where(p => p >= averageHigh).Average();
+        }
+        if (ratesForAverageLow.Length > 0) {
+          var prices = ratesForAverageLow.Select(r => r.PriceAvg/*.PriceHigh*/).ToArray();
+          averageLow = prices.Average();
+          averageLow = prices.Where(p => p <= averageLow).Average();
+        }
+        return new CorridorStatisticsBase(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+      } catch (Exception exc) {
+        Debug.Fail(exc + "");
+        throw;
       }
+    }
+    #endregion
 
-
-
+    public static TimeSpan Duration(this IEnumerable<Rate> rates,TimeSpan durationMax) {
+      var sw = Stopwatch.StartNew();
+      Rate prev = null; ;
+      TimeSpan duration = TimeSpan.Zero;
+      foreach (var rate in rates)
+        if (prev == null) prev = rate;
+        else {
+          var d = (rate.StartDate - prev.StartDate).Duration();
+          if (d <= durationMax)
+            duration = duration.Add(d);
+          prev = rate;
+        }
+      Debug.WriteLine("Duration:{0:n}", sw.ElapsedMilliseconds);
+      return duration;
+    }
 
     public static RsiStatistics RsiStats(this List<Rate> ratesByMinute) { return ratesByMinute.RsiStatsCore(); }
     public static RsiStatistics RsiStats(this Rate[] ratesByMinute) { return ratesByMinute.RsiStatsCore(); }
@@ -388,9 +408,9 @@ namespace HedgeHog.Bars {
       var wave = new List<TBar>() { barPrev };
       var average = bars.Average(Sort).GetValueOrDefault();
       var stDev = bars.StdDev(Sort);
-      Func<TBar, double, double,bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
+      Func<TBar, double, double, bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
       Sign = (r) => Math.Sign(Sort(r).Value - average);
-      bars = bars.Where(b=>where(b,average,stDev)).Skip(1);
+      bars = bars.Where(b => where(b, average, stDev)).Skip(1);
       foreach (var bar in bars) {
         if (Sign(barPrev) == Sign(bar))
           wave.Add(bar);
@@ -432,7 +452,7 @@ namespace HedgeHog.Bars {
       foreach (var rate in rsiHigh.Skip(1)) {
         if ((prev.StartDate - rate.StartDate) <= TimeSpan.FromMinutes(1))
           rateMax.Add(rate);
-        else  {
+        else {
           if (rateMax.Count > 4) {
             var ro = rateMax.OrderBy(r => r.PriceAvg);
             var fractal = (sell ? ro.Last() : ro.First()).Clone() as TBar;
@@ -466,7 +486,7 @@ namespace HedgeHog.Bars {
           var wd = (WaveDirection)Math.Sign(coeffs[1]);
           if (waveDirection != WaveDirection.None) {
             if (wd != waveDirection && wd != WaveDirection.None) {
-              var ticksForPeak = ticks.Where(ticksToRegress.Last(), TimeSpan.FromSeconds(period.TotalSeconds/2)).ToArray();
+              var ticksForPeak = ticks.Where(ticksToRegress.Last(), TimeSpan.FromSeconds(period.TotalSeconds / 2)).ToArray();
               waves.Add(wd == WaveDirection.Up
                 ? ticksForPeak.OrderBy(t => t.PriceLow).First()
                 : ticksForPeak.OrderBy(t => t.PriceHigh).Last());
@@ -480,13 +500,13 @@ namespace HedgeHog.Bars {
       return waves.ToArray();
     }
 
-    public static void FillFlatness(this Rate[] bars,int BarsMin) {
+    public static void FillFlatness(this Rate[] bars, int BarsMin) {
       bars = bars.OrderBarsDescending().ToArray();
       foreach (var bar in bars)
         if (!bar.Flatness.HasValue)
           bar.Flatness = bars.Where(TimeSpan.FromMinutes(120), bar).ToArray().GetFlatness(BarsMin);
     }
-    public static TimeSpan GetFlatness(this Rate[] ticks,int barsMin) {
+    public static TimeSpan GetFlatness(this Rate[] ticks, int barsMin) {
       var ticksByMinute = ticks.GetMinuteTicks(1);
       var tickLast = ticksByMinute.First();
       var flats = new List<Rate>(new[] { tickLast });
@@ -499,7 +519,7 @@ namespace HedgeHog.Bars {
           i++;
         }
       }
-      return new []{TimeSpan.FromMinutes(3), (flats.First().StartDate - flats.Last().StartDate).Add(TimeSpan.FromMinutes(1))}.Max();
+      return new[] { TimeSpan.FromMinutes(3), (flats.First().StartDate - flats.Last().StartDate).Add(TimeSpan.FromMinutes(1)) }.Max();
 
       //var ol = ticksByMinute.Skip(1).Where(t => t.OverlapsWith(tickLast) != OverlapType.None)
       //  .Concat(new[] { tickLast }).OrderBars().ToArray();
@@ -537,7 +557,7 @@ namespace HedgeHog.Bars {
     /// <param name="bars"></param>
     /// <param name="bar">bar to fill with speed</param>
     /// <param name="pricer">lambda with price source</param>
-    private static void FillSpeed<TBar>(this IEnumerable<TBar> bars,TBar bar,Func<TBar,double> price) where TBar:BarBase{
+    private static void FillSpeed<TBar>(this IEnumerable<TBar> bars, TBar bar, Func<TBar, double> price) where TBar : BarBase {
       double a, b;
       Lib.LinearRegression(bars.Select(price).ToArray(), out b, out a);
       bar.PriceSpeed = b;
@@ -584,7 +604,7 @@ namespace HedgeHog.Bars {
       return bars.TradesPerMinute(barFrom.StartDate, barFrom.StartDate + intervalTo);
     }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, TimeSpan intervalFrom, TBar barTo) where TBar : BarBase {
-      return bars.TradesPerMinute(barTo.StartDate-intervalFrom, barTo.StartDate);
+      return bars.TradesPerMinute(barTo.StartDate - intervalFrom, barTo.StartDate);
     }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, DateTime DaterFrom, DateTime DateTo) where TBar : BarBase {
       return bars.Where(b => b.StartDate.Between(DaterFrom, DateTo)).TradesPerMinute();
@@ -599,7 +619,7 @@ namespace HedgeHog.Bars {
       return fxTicks.GetMinuteTicksCore(period, round);
     }
     public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period,false);
+      return fxTicks.GetMinuteTicksCore(period, false);
     }
     public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period, bool round) where TBar : BarBase {
       return fxTicks.GetMinuteTicksCore(period, round);
@@ -610,7 +630,7 @@ namespace HedgeHog.Bars {
     //  return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period,false);
     //}
     public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period,false);
+      return fxTicks.GetMinuteTicksCore(period, false);
     }
     static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
       if (fxTicks.Count() == 0) return new Rate[] { };
@@ -680,7 +700,7 @@ namespace HedgeHog.Bars {
         }
 
     }
-    public static void FillHeight<TBar>(this TBar[] bars,Func<TBar,double?> Price) where TBar : BarBase {
+    public static void FillHeight<TBar>(this TBar[] bars, Func<TBar, double?> Price) where TBar : BarBase {
       var i = 0;
       bars.Take(bars.Length - 1).ToList()
         .ForEach(b => {
@@ -690,8 +710,8 @@ namespace HedgeHog.Bars {
     public static void FillFractalHeight<TBar>(this TBar[] bars) where TBar : BarBase {
       bars.FillFractalHeight(b => b.FractalPrice);
     }
-    public static void FillFractalHeight<TBar>(this TBar[] bars,Func<TBar,double?> getPrice) where TBar : BarBase {
-      var i=0;
+    public static void FillFractalHeight<TBar>(this TBar[] bars, Func<TBar, double?> getPrice) where TBar : BarBase {
+      var i = 0;
       bars.Take(bars.Length - 1).ToList()
         .ForEach(b => {
           b.Ph.Height = (getPrice(b) - getPrice(bars[++i])).Abs();
@@ -731,11 +751,11 @@ namespace HedgeHog.Bars {
     public static List<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals) where TBar : BarBase {
       return fractals.FixFractals(b => b.FractalPrice);
     }
-    public static List<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals,Func<TBar,double?>Price) where TBar : BarBase {
+    public static List<TBar> FixFractals<TBar>(this IEnumerable<TBar> fractals, Func<TBar, double?> Price) where TBar : BarBase {
       var fractalsNew = new List<TBar>();
       foreach (var f in fractals)
         if (fractalsNew.Count > 0 && fractalsNew.Last().Fractal == f.Fractal)
-          fractalsNew[fractalsNew.Count - 1] = BarBase.BiggerFractal(fractalsNew.Last(), f,Price);
+          fractalsNew[fractalsNew.Count - 1] = BarBase.BiggerFractal(fractalsNew.Last(), f, Price);
         else fractalsNew.Add(f);
       return fractalsNew;
     }
@@ -769,7 +789,7 @@ namespace HedgeHog.Bars {
 
     public static TBar[] FillRsi<TBar>(this TBar[] rates, Func<TBar, double> getPrice) where TBar : BarBase {
       //var period = Math.Floor((rates.Last().StartDate - rates.First().StartDate).TotalMinutes).ToInt();
-      var period = rates.Length-2;
+      var period = rates.Length - 2;
       return rates.FillRsi(period, getPrice);
     }
     public static TBar[] FillRsi<TBar>(this TBar[] rates, int period, Func<TBar, double> getPrice) where TBar : BarBase {
@@ -816,8 +836,8 @@ namespace HedgeHog.Bars {
       double rsiPrev = 0;
       foreach (var rate in bars.Where(t => !t.PriceRsi.HasValue)) {
         var ts = bars.TakeWhile(t => t <= rate).ToArray();
-        if ((ts.Last().StartDate-ts.First().StartDate) > RsiPeriod) {
-          ts = ts.Where(RsiPeriod,rate).ToArray();
+        if ((ts.Last().StartDate - ts.First().StartDate) > RsiPeriod) {
+          ts = ts.Where(RsiPeriod, rate).ToArray();
           rate.PriceRsi = ts.FillRsi(t => t.PriceAvg).Last().PriceRsi;
           if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value))
             rate.PriceRsi = rsiPrev;
@@ -832,7 +852,7 @@ namespace HedgeHog.Bars {
         if (ts.Length > RsiTicks) {
           ts = ts.Skip(ts.Count() - RsiTicks).ToArray();
           rate.PriceRsi = ts./*GetMinuteTicks(1).*/OrderBars().ToArray().FillRsi(t => t.PriceAvg).Last().PriceRsi;
-          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value) )
+          if (!rate.PriceRsi.HasValue || double.IsNaN(rate.PriceRsi.Value))
             rate.PriceRsi = rsiPrev;
           rsiPrev = rate.PriceRsi.Value;
         } else rate.PriceRsi = 50;
@@ -959,9 +979,9 @@ namespace HedgeHog.Bars {
     }
 
 
-    public static IEnumerable<TBar> FillOverlaps<TBar>(this IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBase {
+    public static IEnumerable<TBar> FillOverlaps<TBar>(this IEnumerable<TBar> bars, TimeSpan period) where TBar : BarBase {
       foreach (var bar in bars)
-        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/,period);
+        bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/, period);
       return bars;
     }
     public static void SetCMA<TBars>(this IEnumerable<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {

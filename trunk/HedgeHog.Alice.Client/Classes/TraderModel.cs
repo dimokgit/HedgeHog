@@ -80,6 +80,40 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Properties
+    private bool _IsInVirtualTrading;
+    public bool IsInVirtualTrading {
+      get { return _IsInVirtualTrading; }
+      set {
+        if (_IsInVirtualTrading != value) {
+          _IsInVirtualTrading = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    private DateTime _VitrualDateStart;
+    public DateTime VitrualDateStart {
+      get { return _VitrualDateStart; }
+      set {
+        if (_VitrualDateStart != value) {
+          _VitrualDateStart = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    private string _VirtualPair;
+    public string VirtualPair {
+      get { return _VirtualPair; }
+      set {
+        if (_VirtualPair != value) {
+          _VirtualPair = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+
     RemoteControlModel _remoteController;
     public RemoteControlModel RemoteController1 {
       get {
@@ -605,6 +639,25 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+    #region BackTestCommand
+    public event EventHandler<BackTestEventArgs> StartBackTesting;
+
+    ICommand _BackTestCommand;
+    public ICommand BackTestCommand {
+      get {
+        if (_BackTestCommand == null) {
+          _BackTestCommand = new Gala.RelayCommand(BackTest, () => true);
+        }
+
+        return _BackTestCommand;
+      }
+    }
+    void BackTest() {
+      if (StartBackTesting != null) StartBackTesting(this, new BackTestEventArgs(VirtualPair,  VitrualDateStart));
+    }
+
+    #endregion
+
     #region ReportCommand
     ICommand _ReportCommand;
     public ICommand ReportCommand {
@@ -827,13 +880,13 @@ namespace HedgeHog.Alice.Client {
       };
       #endregion
 
-      Using_FetchServerTrades = () => {
-        Using(FetchServerTrades);
-      };
-      if (!isInDesign) {
-        GetTradesScheduler = new ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
-        Using_FetchServerTrades,
-        (s, e) => { Log = e.Exception; });
+      if (false) {
+        Using_FetchServerTrades = () => Using(FetchServerTrades);
+        if (!isInDesign) {
+          GetTradesScheduler = new ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+          Using_FetchServerTrades,
+          (s, e) => { Log = e.Exception; });
+        }
       }
     }
     private void Initialize(){
@@ -1101,7 +1154,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMaster == null) MessageBox.Show("Trading Master account is not found.");
         else {
           if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
-          var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id, trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID, trade.OpenOrderReqID, trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId, CommissionByTrade(trade));
+          var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id+"", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID+"", trade.OpenOrderReqID+"", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId+"", CommissionByTrade(trade), trade.IsVirtual);
           GlobalStorage.Context.ClosedTrades.AddObject(ct);
           GlobalStorage.Context.SaveChanges();
         }

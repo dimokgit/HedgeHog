@@ -66,6 +66,11 @@
     <Compile Include="AliceEntityExtender.cs" />
     <Compile Include="CorridorStatistics.cs" />
     <Compile Include="Events.cs" />
+    <Compile Include="Forex.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Forex.edmx</DependentUpon>
+    </Compile>
     <Compile Include="GlobalStorage.cs" />
     <Compile Include="IMainModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -75,6 +80,10 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
@@ -92,8 +101,15 @@
     </EntityDeploy>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.Config" />
+    <None Include="App.Config">
+      <SubType>Designer</SubType>
+    </None>
+    <EntityDeploy Include="Forex.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>Forex.Designer.cs</LastGenOutput>
+    </EntityDeploy>
     <None Include="Properties\DataSources\AliceEntities.datasource" />
+    <None Include="Properties\DataSources\ForexEntities.datasource" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

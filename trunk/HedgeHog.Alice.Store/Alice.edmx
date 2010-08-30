@@ -6,10 +6,28 @@
     <edmx:StorageModels>
     <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="AliceModelStoreContainer">
+          <EntitySet Name="Bar" EntityType="AliceModel.Store.Bar" store:Type="Tables" />
           <EntitySet Name="ClosedTrades" EntityType="AliceModel.Store.ClosedTrades" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
           <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
         </EntityContainer>
+        <EntityType Name="Bar">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Pair" Type="nchar" MaxLength="10" />
+          <Property Name="Period" Type="int" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="AskHigh" Type="float" Nullable="false" />
+          <Property Name="AskLow" Type="float" Nullable="false" />
+          <Property Name="AskOpen" Type="float" Nullable="false" />
+          <Property Name="AskClose" Type="float" Nullable="false" />
+          <Property Name="BidHigh" Type="float" Nullable="false" />
+          <Property Name="BidLow" Type="float" Nullable="false" />
+          <Property Name="BidOpen" Type="float" Nullable="false" />
+          <Property Name="BidClose" Type="float" Nullable="false" />
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+        </EntityType>
         <EntityType Name="ClosedTrades">
           <Key>
             <PropertyRef Name="Id" />
@@ -43,6 +61,7 @@
           <Property Name="UnKnown" Type="nvarchar" Nullable="false" MaxLength="255" />
           <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
           <Property Name="Commission" Type="float" Nullable="false" />
+          <Property Name="IsVirtual" Type="bit" Nullable="false" />
         </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
@@ -94,6 +113,7 @@
           <EntitySet Name="ClosedTrades" EntityType="AliceModel.ClosedTrade" />
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
+          <EntitySet Name="Bars" EntityType="AliceModel.Bar" />
         </EntityContainer>
         <EntityType Name="ClosedTrade">
           <Key>
@@ -128,6 +148,7 @@
           <Property Name="UnKnown" Type="String" Nullable="false" MaxLength="255" Unicode="true" FixedLength="false" />
           <Property Name="AccountId" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
           <Property Name="Commission" Type="Double" Nullable="false" />
+          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
         </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
@@ -171,6 +192,23 @@
           <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
           <Property Type="Boolean" Name="LimitCorridorByBarHeight" Nullable="false" />
         </EntityType>
+        <EntityType Name="Bar">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Pair" MaxLength="10" FixedLength="true" Unicode="true" />
+          <Property Type="Int32" Name="Period" />
+          <Property Type="DateTime" Name="StartDate" />
+          <Property Type="Double" Name="AskHigh" Nullable="false" />
+          <Property Type="Double" Name="AskLow" Nullable="false" />
+          <Property Type="Double" Name="AskOpen" Nullable="false" />
+          <Property Type="Double" Name="AskClose" Nullable="false" />
+          <Property Type="Double" Name="BidHigh" Nullable="false" />
+          <Property Type="Double" Name="BidLow" Nullable="false" />
+          <Property Type="Double" Name="BidOpen" Nullable="false" />
+          <Property Type="Double" Name="BidClose" Nullable="false" />
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -178,7 +216,8 @@
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
           <EntitySetMapping Name="ClosedTrades"><EntityTypeMapping TypeName="AliceModel.ClosedTrade"><MappingFragment StoreEntitySet="ClosedTrades">
-            <ScalarProperty Name="Buy" ColumnName="Buy" />
+            <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
+                <ScalarProperty Name="Buy" ColumnName="Buy" />
             <ScalarProperty Name="Close" ColumnName="Close" />
             <ScalarProperty Name="CloseInPips" ColumnName="CloseInPips" />
             <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
@@ -244,6 +283,24 @@
             <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
             <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="Bars">
+            <EntityTypeMapping TypeName="AliceModel.Bar">
+              <MappingFragment StoreEntitySet="Bar">
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -268,6 +325,7 @@
         <EntityTypeShape EntityType="AliceModel.ClosedTrade" Width="1.5" PointX="0.75" PointY="0.75" Height="5.7009895833333326" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="4.5505582682291656" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
       </Diagram>
     </Diagrams>
   </Designer>
