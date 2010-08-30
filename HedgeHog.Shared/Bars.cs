@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using HedgeHog.Shared;
 [assembly:CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
@@ -285,6 +286,21 @@ namespace HedgeHog.Bars {
     public Rate(bool isHistory) : base(isHistory) { }
     public Rate(DateTime Time, double Ask, double Bid, bool isHistory) : base(Time, Ask, Bid, isHistory) { }
     public Rate(Price price, bool isHistory) : this(price.Time, price.Ask, price.Bid, isHistory) { }
+    public Rate(double AskHigh, double AskLow, double AskOpen, double AskClose,
+                    double BidHigh, double BidLow, double BidOpen, double BidClose,
+                    DateTime StartDate) {
+      this.AskHigh = AskHigh;
+      this.AskLow = AskLow;
+      this.AskOpen = AskOpen;
+      this.AskClose = AskClose;
+
+      this.BidHigh = BidHigh;
+      this.BidLow = BidLow;
+      this.BidOpen = BidOpen;
+      this.BidClose = BidClose;
+
+      this.StartDate = StartDate;
+    }
   }
   public class Tick : Rate {
     public int Row { get; set; }

@@ -107,12 +107,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="Alice.Designer.cs">
+    <Compile Include="Models\Alice.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
-    <Compile Include="AliceEntityExtentions.cs" />
+    <Compile Include="Models\AliceEntityExtentions.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -120,7 +120,7 @@
     <Compile Include="Chart.xaml.cs">
       <DependentUpon>Chart.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Forex.Designer.cs">
+    <Compile Include="Models\Forex.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Forex.edmx</DependentUpon>
@@ -155,12 +155,12 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EntityDeploy Include="Alice.edmx">
+    <EntityDeploy Include="Models\Alice.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>Alice.Designer.cs</LastGenOutput>
     </EntityDeploy>
     <None Include="app.config" />
-    <EntityDeploy Include="Forex.edmx">
+    <EntityDeploy Include="Models\Forex.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>Forex.Designer.cs</LastGenOutput>
     </EntityDeploy>
@@ -186,6 +186,10 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
       <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>

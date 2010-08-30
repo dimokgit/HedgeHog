@@ -23,8 +23,8 @@ namespace HedgeHog.Alice.Client {
   /// </summary>
   public partial class MainWindow : Window {
     public MainWindow() {
-      InitializeComponent();
       App.container.SatisfyImportsOnce(this);
+      InitializeComponent();
     }
 
     [Import("MainWindowModel")]

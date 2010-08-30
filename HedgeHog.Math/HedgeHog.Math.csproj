@@ -3,20 +3,15 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</ProjectGuid>
+    <ProjectGuid>{21C4A910-0C04-436D-B797-4D564DB29627}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>HedgeHog.Signaler</RootNamespace>
-    <AssemblyName>HedgeHog.Signaler</AssemblyName>
+    <RootNamespace>HedgeHog.Math</RootNamespace>
+    <AssemblyName>HedgeHog.Math</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <UpgradeBackupLocation />
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -37,42 +32,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Xml.Linq">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data.DataSetExtensions">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MathExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Signaler.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
-      <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
-      <Name>HedgeHog.Lib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
-      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
-      <Name>HedgeHog.Math</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
-      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
-      <Name>HedgeHog.Shared</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
-      <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
-      <Name>Order2GoAddIn</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -28,11 +28,7 @@
           </ToolTip>
         </WrapPanel.ToolTip>
         <TextBlock>
-        <TextBlock Text="{Binding Currency1}"/>
-        <TextBlock Text="{Binding Correlation1,StringFormat=',{0:n1}'}" ToolTip="Correlation 1"/>
-        <TextBlock>/</TextBlock>
-        <TextBlock Text="{Binding Currency2}"/>
-        <TextBlock Text="{Binding Correlation2,StringFormat=',{0:n1}'}" ToolTip="Correlation 2"/>
+        <TextBlock Text="{Binding Pair}"/>
           <LineBreak/>
         <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
           <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
@@ -99,15 +95,28 @@
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
-      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalContentAlignment="Stretch" Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" >
-        <WrapPanel>
-          <TextBlock Text="{Binding CurrentLoss,StringFormat=c1}"  />
-          <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
-        </WrapPanel>
+      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalContentAlignment="Stretch" >
+        <TextBlock>
+          <TextBlock Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}">
+            <TextBlock Text="{Binding CurrentLoss,StringFormat=c1}"  />
+            <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
+          </TextBlock>
+          <LineBreak/>
+          <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
+            Text="{Binding RunningBalance,StringFormat=c2}"  />
+          <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}"  />
+          <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
+        </TextBlock>
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossEditCellTemplate">
+      <TextBlock>
       <TextBox Text="{Binding CurrentLoss}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
+        <LineBreak/>
+      <TextBox Text="{Binding RunningBalance}"  ToolTip="Running Balance" />
+      <TextBox Text="{Binding MinimumGross}"  ToolTip="Minimum Gross" />
+      <TextBox Text="{Binding HistoryMaximumLot}"  ToolTip="History Maximum Lot" />
+      </TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
       <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" 
@@ -177,7 +186,8 @@
           <DataGridTemplateColumn.Header>
             <WrapPanel>
               <TextBlock>Pair</TextBlock>
-              <Button Content="x" Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+              <Button Content="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource AncestorType=DataGrid},Converter={StaticResource BoolToSrtingConverter},ConverterParameter=x|x|-}" 
+                      Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
             </WrapPanel>
           </DataGridTemplateColumn.Header>
         </DataGridTemplateColumn>
@@ -186,7 +196,7 @@
           <DataGridTemplateColumn.Header>
             <WrapPanel>
               <TextBlock>Loss</TextBlock>
-              <Button Content="x" Command="{Binding DataContext.ClearCurrentLossCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+              <Button Content="x" Command="{Binding DataContext.ClearCurrentLossCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4" Visibility="Collapsed"/>
             </WrapPanel>
           </DataGridTemplateColumn.Header>
         </DataGridTemplateColumn>

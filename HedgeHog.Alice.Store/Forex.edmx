@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="ForexModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="ForexModelStoreContainer">
+          <EntitySet Name="t_Bar" EntityType="ForexModel.Store.t_Bar" store:Type="Tables" Schema="dbo" />
+        </EntityContainer>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="StartDate" />
+          </Key>
+          <Property Name="Pair" Type="nchar" Nullable="false" MaxLength="10" />
+          <Property Name="Period" Type="int" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" Nullable="false" />
+          <Property Name="AskHigh" Type="float" Nullable="false" />
+          <Property Name="AskLow" Type="float" Nullable="false" />
+          <Property Name="AskOpen" Type="float" Nullable="false" />
+          <Property Name="AskClose" Type="float" Nullable="false" />
+          <Property Name="BidHigh" Type="float" Nullable="false" />
+          <Property Name="BidLow" Type="float" Nullable="false" />
+          <Property Name="BidOpen" Type="float" Nullable="false" />
+          <Property Name="BidClose" Type="float" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="ForexModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="ForexEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
+        </EntityContainer>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="StartDate" />
+          </Key>
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="10" Unicode="true" FixedLength="true" />
+          <Property Name="Period" Type="Int32" Nullable="false" />
+          <Property Name="StartDate" Type="DateTime" Nullable="false" />
+          <Property Name="AskHigh" Type="Double" Nullable="false" />
+          <Property Name="AskLow" Type="Double" Nullable="false" />
+          <Property Name="AskOpen" Type="Double" Nullable="false" />
+          <Property Name="AskClose" Type="Double" Nullable="false" />
+          <Property Name="BidHigh" Type="Double" Nullable="false" />
+          <Property Name="BidLow" Type="Double" Nullable="false" />
+          <Property Name="BidOpen" Type="Double" Nullable="false" />
+          <Property Name="BidClose" Type="Double" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="ForexModelStoreContainer" CdmEntityContainer="ForexEntities">
+          <EntitySetMapping Name="t_Bar"><EntityTypeMapping TypeName="ForexModel.t_Bar"><MappingFragment StoreEntitySet="t_Bar">
+            <ScalarProperty Name="Pair" ColumnName="Pair" />
+            <ScalarProperty Name="Period" ColumnName="Period" />
+            <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+            <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+            <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+            <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+            <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+            <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+            <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+            <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+            <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="Forex">
+        <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" Height="2.7427376302083335" IsExpanded="true" />
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>

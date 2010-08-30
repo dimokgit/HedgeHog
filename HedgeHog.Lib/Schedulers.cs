@@ -238,9 +238,15 @@ namespace HedgeHog {
       Run(key, runner, e => { });
     }
     public void Run(string key, Action runner, Action<Exception> log) {
-      var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
-      if (!IsDone(ts)) return;// ts.SetFinished((s, ea) => runner());
-      else ts.RunWorkerAsync(runner);
+      Run(key, false, runner, log);
+    }
+    public void Run(string key,bool runSync, Action runner, Action<Exception> log) {
+      if (runSync) runner();
+      else {
+        var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
+        if (!IsDone(ts)) return;// ts.SetFinished((s, ea) => runner());
+        else ts.RunWorkerAsync(runner);
+      }
     }
   }
 

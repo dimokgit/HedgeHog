@@ -161,6 +161,9 @@ namespace HedgeHog.Alice.Store {
         _CorridorStats = value;
         CorridorStatsArray.ToList().ForEach(cs => cs.IsCurrent = cs == value);
         OnPropertyChanged("CorridorStats");
+        OnPropertyChanged("CorridorAverageHeightInPips");
+        OnPropertyChanged("PriceCmaDiffHighInPips");
+        OnPropertyChanged("PriceCmaDiffLowInPips");
       }
     }
 
@@ -664,10 +667,21 @@ namespace HedgeHog.Alice.Store {
       get { return _PriceCmaDirection; }
       set { _PriceCmaDirection = value; }
     }
-    public void SetPriceCma(Price price) {
+    public List<Rate> Rates;
+    public Rate[] RatesLast {get{return Rates.Skip(Rates.Count-5).ToArray();}}
+    public double RateLastAsk { get { return RatesLast.Max(r => r.AskHigh); } }
+    public double RateLastBid { get { return RatesLast.Min(r => r.BidLow); } }
+    public int RateDirection {
+      get {
+        var rs = Rates.Skip(Rates.Count - 2).ToArray();
+        return Math.Sign(rs[1].PriceAvg - rs[0].PriceAvg);
+      }
+    }
+    public void SetPriceCma(Price price,List<Rate> rates) {
       //var dir = price.AskChangeDirection + price.BidChangeDirection;
       //if(dir == PriceCmaDirection ) return;
       //PriceCmaDirection = dir;
+      Rates = rates;
       PriceCurrent = price;
       PriceCmaCounter++;
       if (PriceDigits == 0) PriceDigits = price.Digits;
@@ -724,9 +738,42 @@ namespace HedgeHog.Alice.Store {
     }
     public int MaxLotSize {
       get {
-        return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL > 0 || LastTrade.PL < -TakeProfitPips) ? LotSize : 0));
+        return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL.Abs() > TakeProfitPips) ? LotSize : 0));
       }
     }
+    private double _RunningBalance;
+    public double RunningBalance {
+      get { return _RunningBalance; }
+      set {
+        if (_RunningBalance != value) {
+          _RunningBalance = value;
+          OnPropertyChanged("RunningBalance");
+        }
+      }
+    }
+    private double _MinimumGross;
+    public double MinimumGross {
+      get { return _MinimumGross; }
+      set {
+        if (_MinimumGross != value) {
+          _MinimumGross = value;
+          OnPropertyChanged("MinimumGross");
+        }
+      }
+    }
+
+    private int _HistoryMaximumLot;
+    public int HistoryMaximumLot {
+      get { return _HistoryMaximumLot; }
+      set {
+        if (_HistoryMaximumLot != value) {
+          _HistoryMaximumLot = value;
+          OnPropertyChanged("HistoryMaximumLot");
+        }
+      }
+    }
+
+
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }

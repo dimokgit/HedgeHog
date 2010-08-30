@@ -1,6 +1,7 @@
 ﻿<Window x:Class="HedgeHog.Alice.Client.MainWindow"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
       xmlns:tlrkInput="clr-namespace:Telerik.Windows.Controls;assembly=Telerik.Windows.Controls.Input"
       xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -203,13 +204,8 @@
     </Grid.RowDefinitions>
     <StackPanel Background="{Binding IsLoggedIn,Converter={StaticResource ProfitToColorConverter}}">
       <WrapPanel>
-        <TextBlock>Server:</TextBlock>
-        <u:TextBox2 MinWidth="50" Text2="{Binding ServerAddress,Mode=TwoWay}" Text="{state:UserSettings Default=localhost:9200/}" x:Name="ServerAddress"/>
-        <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" ToolTip="Server Time" VerticalContentAlignment="Center" VerticalAlignment="Center" BorderBrush="Gray" BorderThickness="1"/>
-        <ComboBox SelectedValue="{Binding AliceMode,Mode=TwoWay}" SelectedIndex="{state:UserSettings Default=0}" ItemsSource="{hhmu:EnumValues l:AliceModes}" Name="AliceMode"/>
-
         <!---->
-            <u:TextBox2 Text2="{Binding DatabasePath,Mode=TwoWay}" Text="{state:UserSettings}" Name="DatabasePath" MinWidth="30" MaxWidth="100" />
+        <u:TextBox2 Text2="{Binding DatabasePath,Mode=TwoWay}" Text="{state:UserSettings}" Name="DatabasePath" MinWidth="30" MaxWidth="100" />
         <Button Command="{Binding OpenDataBaseCommand}" Content="Database">
           <Button.ToolTip>
             <ToolTip>
@@ -218,11 +214,29 @@
           </Button.ToolTip>
         </Button>
         <ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
-        <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
-        <Button Command="{Binding AddNewSlaveAccountCommand}">Add Alice</Button>
+        <Label ToolTip="Virtual Trading">VT:</Label>
+        <u:CheckBox2 IsChecked2="{Binding IsInVirtualTrading,Mode=TwoWay}" IsChecked="{state:UserSettings}" Name="chkVT"/>
+        <u:TextBox2 Text2="{Binding VitrualDateStart,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualDateStart" MinWidth="30" />
+        <ComboBox SelectedValue="{Binding VirtualPair}" SelectedIndex="{state:UserSettings}">
+          <sys:String>EUR/USD</sys:String>
+          <sys:String>EUR/JPY</sys:String>
+          <sys:String>USD/CHF</sys:String>
+          <sys:String>USD/JPY</sys:String>
+        </ComboBox>
+        <Button Command="{Binding BackTestCommand}">Test</Button>
         <Button Command="{Binding ReportCommand}">Report</Button>
         <TextBlock>Status:</TextBlock>
         <TextBlock Text="{Binding SessionStatus}"/>
+        
+        <TextBlock Visibility="Collapsed">
+        <TextBlock>Server:</TextBlock>
+        <u:TextBox2 MinWidth="50" Text2="{Binding ServerAddress,Mode=TwoWay}" Text="{state:UserSettings Default=localhost:9200/}" x:Name="ServerAddress"/>
+        <Label Content="{Binding ServerTime}" ContentStringFormat="HH:mm:ss" ToolTip="Server Time" VerticalContentAlignment="Center" VerticalAlignment="Center" BorderBrush="Gray" BorderThickness="1"/>
+        <ComboBox SelectedValue="{Binding AliceMode,Mode=TwoWay}" SelectedIndex="{state:UserSettings Default=0}" ItemsSource="{hhmu:EnumValues l:AliceModes}" Name="AliceMode"/>
+        <Button Command="{Binding OpenNewServerAccountCommand}">New Rabbit</Button>
+        <Button Command="{Binding AddNewSlaveAccountCommand}">Add Alice</Button>
+        </TextBlock>
+        
       </WrapPanel>
       <ui:AccountLoginView AccountLoginCommand="{Binding AccountLoginCommand}" OpenNewAccountCommand="{Binding OpenNewLocalAccountCommand}"
                            IsEnabled="{Binding IsNotInLogin}"

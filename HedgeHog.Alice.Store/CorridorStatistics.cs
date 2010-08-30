@@ -70,7 +70,13 @@ namespace HedgeHog.Alice.Client {
           var doBuy = InPips(PriceCmaDiffLow).Round(1) <= 0;// || TradingMacro.BarHeight60 > 0 && (-PriceCmaDiffHigh) >= TradingMacro.BarHeight60;
           return doSell == doBuy ? (bool?)null : doBuy;
         };
-        var ts = tradeSignal7();
+        Func<bool?> tradeSignal8 = () => {
+          if (!IsCorridorAvarageHeightOk) return null;
+          var doSell = InPips(PriceCmaDiffHigh).Round(1) >= 0 && TradingMacro.RateDirection < 0;// || TradingMacro.BarHeight60 > 0 && PriceCmaDiffLow >= TradingMacro.BarHeight60;
+          var doBuy = InPips(PriceCmaDiffLow).Round(1) <= 0 && TradingMacro.RateDirection > 0;// || TradingMacro.BarHeight60 > 0 && (-PriceCmaDiffHigh) >= TradingMacro.BarHeight60;
+          return doSell == doBuy ? (bool?)null : doBuy;
+        };
+        var ts = tradeSignal8();
         if (ts != _TradeSignal)
           OnPropertyChanged("TradeSignal");
         _TradeSignal = ts;
@@ -78,8 +84,10 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Ask; } }
-    double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Bid; } }
+    //double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Ask; } }
+    double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.RateLastAsk; } }
+    //double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Bid; } }
+    double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.RateLastBid; } }
 
     public double PriceCmaDiffHigh { get { return priceCmaForAverageHigh - AverageHigh; } }
     public double PriceCmaDiffLow { get { return priceCmaForAverageLow - AverageLow; } }

@@ -299,7 +299,7 @@ namespace HedgeHog {
     }
 
 
-    [CLSCompliant(false)]
+    //[CLSCompliant(false)]
     public static implicit operator MatrixNumeric(double[,] dLeft) {
 
       return FromDoubleArray(dLeft);
