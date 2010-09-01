@@ -54,10 +54,11 @@ namespace HedgeHog.Alice.Store {
       var ct = cancellationForBackTesting.Token;
       VirtualPair = e.Pair;
       VirtualStartDate = e.StartDate;
+      var virtualDateEnd = VirtualStartDate.AddMonths(e.MonthToTest);
       var tm = GetTradingMacro(e.Pair);
       var bufferSize = tm.CorridorBarMinutes;
       var ratesBuffer = GetRateFromDBBackward(VirtualPair, VirtualStartDate, bufferSize*2);
-      Func<Rate, DateTime, bool> dateFilter = (r, d) => r.StartDate >= d;
+      Func<Rate, DateTime, bool> dateFilter = (r, d) => r.StartDate >= d && r.StartDate < virtualDateEnd;
       Func<DateTime, Rate> getRateBuffer = d => {
         var rate = ratesBuffer.Where(r => dateFilter(r, d)).FirstOrDefault();
         if (rate == null) {
@@ -73,9 +74,14 @@ namespace HedgeHog.Alice.Store {
           rates.Clear();
           rates.AddRange(ratesBuffer.Take(tm.CorridorBarMinutes));
           tradesManager.ClosePair(VirtualPair);
+          tm.CurrentLoss = 0;
+          tm.MinimumGross = 0;
+          tm.HistoryMaximumLot=0;
+          tm.RunningBalance = 0;
           while (rates.Count() > 0) {
             ct.ThrowIfCancellationRequested();
             if (Application.Current == null) break;
+            Thread.Yield();
             virtualTrader.RaisePriceChanged(VirtualPair, rates.Last());
             Thread.Yield();
             var startDate = rates.Last().StartDate;
@@ -251,12 +257,9 @@ namespace HedgeHog.Alice.Store {
         var swi = 0;
         var price = GetCurrentPrice(pair);
         var tm = GetTradingMacro(pair);
-        tm.CorridorHeightMinimum = tm.BarHeight60;
-        Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds,swi++); sw.Restart();
         var corridornesses = rates.ToArray().GetCorridornesses(tm.CorridorCalcMethod == CorridorCalculationMethod.StDev);
-        Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds, swi++); sw.Restart();
         foreach (int i in tm.CorridorIterationsArray) {
-          var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, tm.LimitCorridorByBarHeight ? tm.BarHeight60 : 0);
+          var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, tm.LimitCorridorByBarHeight ? tm.CorridorHeightMinimum : 0);
           //if (/*!tm.LimitCorridorByBarHeight &&*/ !CorridorStatistics.GetCorridorAverageHeightOk(tm, csCurr.AverageHeight))
           //  csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, tm.BarHeight60);
           if (csCurr == null) continue;
@@ -265,11 +268,9 @@ namespace HedgeHog.Alice.Store {
           cs.FibMinimum = tm.CorridorFibMax(i - 1);
           cs.InPips = d => fw.InPips(pair, d);
         }
-        Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds, swi++); sw.Restart();
         tm.HeightFib = Fibonacci.FibRatio(tm.GetCorridorStats().First().AverageHeight, tm.GetCorridorStats().Last().AverageHeight);
         tm.CorridorStats = tm.GetCorridorStats().Where(cs => cs.IsCorridorAvarageHeightOk)
           .DefaultIfEmpty(tm.GetCorridorStats().First()).Last();
-        Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds, swi++); sw.Restart();
         // tm.HeightFib <= 1 ? tm.GetCorridorStats().Last() : tm.GetCorridorStats().First();
         //(from cs in tm.CorridorStatsArray
         //                  where cs.Height >= tm.CorridorHeightMinimum
@@ -279,8 +280,8 @@ namespace HedgeHog.Alice.Store {
         //tm.TradeDistanceInPips = fw.InPips(tm.Pair, tm.CorridorStats.Height);
         //var takeProfitCS = tm.CorridorStatsArray.Where(cs => cs.Height * .9 > tm.CorridorStats.Height)
         //  .OrderBy(cs => cs.Height).DefaultIfEmpty(tm.GetCorridorStats(0)).First();
-        tm.TakeProfitPips = fw.InPips(tm.Pair, Math.Max(tm.BarHeight60, tm.CorridorStats.AverageHeight));
-        Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds, swi++); sw.Restart();
+        tm.TakeProfitPips = fw.InPips(tm.Pair, Math.Max(tm.CorridorHeightMinimum, tm.CorridorStats.AverageHeight));
+        //Debug.WriteLine("ScanCorridor[{1:n0}]:{0:n0}", sw.ElapsedMilliseconds, swi++); sw.Restart();
         #region Run Charter
         #endregion
       } catch (Exception exc) {

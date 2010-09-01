@@ -249,13 +249,18 @@ namespace HedgeHog {
     public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr,DateTime timeLow, double[] priceAverageAskBid) {
+    try {
+      ticks = ticks.ToList();
+    } catch {
+      ticks = ticks.ToList();
+    }
       DateTime d = DateTime.Now;
       var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDate });
       var voltToTick = new Func<Volt, ChartTick>(t => new ChartTick() { Price = t.Volts, Time = t.StartDate });
       var tickToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDate });
       var rateToPoint = new Func<Rate, Point>(t => new Point(dateAxis.ConvertToDouble(t.StartDate), t.PriceAvg.Round(lastPrice.Digits-1)));  
       IEnumerable<Point> minuteTicks = null;
-      if (ticks.Any(t => t.PriceAvg1 != 0)) {
+      if (ticks.Any(t => t!= null && t.PriceAvg1 != 0)) {
         TrendLine = new[] { ticks.First(), ticks.Last() };
         //TicksAvg1.Clear();
         //var avg = ticks.Count > maxTicks ? FXW.GetMinuteTicks(ticks.Select(t => new FXW.Tick(t.StartDate, t.PriceAvg1, t.PriceAvg1, false)), 1).Select(rateToTick) :

@@ -88,11 +88,12 @@ namespace TestHH {
     [TestMethod]
     public void LoadBars() {
       var period = 1;
-      var ticks = o2g.GetBarsBase("EUR/USD", period, DateTime.Now.AddDays(-2));
+      var pair = "EUR/JPY";// "EUR/USD";
+      var ticks = o2g.GetBarsBase(pair, period, DateTime.Now.AddYears(-3));
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
-        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Period = {1} AND StartDate>={0}", lastDate, period);
+        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Pair = {2} AND Period = {1} AND StartDate>={0}", lastDate, period,pair);
         var i = 0;
         ticks.ToList().ForEach(t => {
           var bar = context.CreateObject<t_Bar>();

@@ -71,6 +71,7 @@ namespace HedgeHog.Alice.Store {
         if (_LotSizeByLoss != value) {
           _LotSizeByLoss = value;
           OnPropertyChanged("LotSizeByLoss");
+          OnPropertyChanged("TakeProfitPipsMinimum");
         }
       }
     }
@@ -81,6 +82,7 @@ namespace HedgeHog.Alice.Store {
         if (_currentLot == value) return;
         _currentLot = value;
         OnPropertyChanged("CurrentLot");
+        OnPropertyChanged("TakeProfitPipsMinimum");
       }
     }
     #endregion
@@ -529,13 +531,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public double CorridorFibMax(int index) { return double.Parse(corridorFibMax[index]); }
-    public string[] corridorFibMax {
-      get {
-        var ms = FibMax.Split(',');
-        return new[] { ms.Take(1).First(), ms.Take(2).Last(), ms.Take(3).Last(), ms.Take(4).Last() };
-      }
-    }
+    public double CorridorFibMax(int index) { return 1; }
+
+    public double CommonMinimumRatio { get { return 1; } }// (LotSize == 0 || LotSizeByLoss == 0 ? 1 : Math.Max(1, Math.Log((double)LotSizeByLoss / LotSize, 2.5))); } }
 
     double _BarHeight60;
     public double BarHeight60 {
@@ -543,17 +541,18 @@ namespace HedgeHog.Alice.Store {
       set { 
         _BarHeight60 = value;
         OnPropertyChanged("BarHeight60InPips");
+        OnPropertyChanged("CorridorHeightMinimum");
         OnPropertyChanged("IsCorridorAvarageHeightOk");
       }
     }
     public double BarHeight60InPips { get { return InPips(BarHeight60); } }
 
-    public double TakeProfitPipsMinimum { get { return FibMin; } }
+    public double TakeProfitPipsMinimum { get { return FibMin * CommonMinimumRatio; } }
     public bool IsTakeProfitPipsMinimumOk { get { return CorridorStats == null ? false : TakeProfitPips >= TakeProfitPipsMinimum; } }
 
     public bool IsCorridorAvarageHeightOk { get { return CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk; } }
 
-    public double CorridorHeightMinimum { get; set; }
+    public double CorridorHeightMinimum { get { return BarHeight60; } }
 
     private int _HistoricalGrossPL;
     public int HistoricalGrossPL {
@@ -667,16 +666,21 @@ namespace HedgeHog.Alice.Store {
       get { return _PriceCmaDirection; }
       set { _PriceCmaDirection = value; }
     }
-    public List<Rate> Rates;
-    public Rate[] RatesLast {get{return Rates.Skip(Rates.Count-5).ToArray();}}
-    public double RateLastAsk { get { return RatesLast.Max(r => r.AskHigh); } }
-    public double RateLastBid { get { return RatesLast.Min(r => r.BidLow); } }
-    public int RateDirection {
-      get {
-        var rs = Rates.Skip(Rates.Count - 2).ToArray();
-        return Math.Sign(rs[1].PriceAvg - rs[0].PriceAvg);
+    List<Rate> _Rates;
+    public List<Rate> Rates {
+      get { return _Rates; }
+      set { 
+        _Rates = value;
+        RatesLast = value.ToArray().Skip(Rates.Count - 5).ToArray();
+        _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
     }
+    public Rate[] RatesLast { get; protected set; }
+    public Rate[] RatesDirection { get; protected set; }
+    public double RateLastAsk { get { return RatesLast.Max(r => r.AskHigh); } }
+    public double RateLastBid { get { return RatesLast.Min(r => r.BidLow); } }
+    Rate[] _RateDirection;
+    public int RateDirection { get { return Math.Sign(_RateDirection[1].PriceAvg - _RateDirection[0].PriceAvg); } }
     public void SetPriceCma(Price price,List<Rate> rates) {
       //var dir = price.AskChangeDirection + price.BidChangeDirection;
       //if(dir == PriceCmaDirection ) return;
@@ -738,9 +742,14 @@ namespace HedgeHog.Alice.Store {
     }
     public int MaxLotSize {
       get {
-        return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL.Abs() > TakeProfitPips) ? LotSize : 0));
+        //return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL.Abs().Between(TakeProfitPipsMinimum, TakeProfitPipsMinimum * MaxLotByTakeProfitRatio)) ? LotSize : -LotSize));
+        return Math.Max(LotSize, LastTrade.Lots +
+          (LastTrade.PL > 0 ? 0 :
+          (LastTrade.PL.Abs().Between(0, TakeProfitPipsMinimum * MaxLotByTakeProfitRatio)) ? LotSize : -LotSize * 2));
+        //return Math.Max(LotSize, LastTrade.Lots + (LastTrade.PL > 0 ? +LotSize : -LotSize*2));
       }
     }
+
     private double _RunningBalance;
     public double RunningBalance {
       get { return _RunningBalance; }
