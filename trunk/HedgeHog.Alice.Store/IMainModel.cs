@@ -17,6 +17,6 @@ namespace HedgeHog.Alice.Store {
     void AddCosedTrade(Trade trade);
     double CommissionByTrade(Trade trade);
     bool IsInVirtualTrading { get; set; }
-    DateTime VitrualDateStart { get; set; }
+    DateTime VirtualDateStart { get; set; }
   }
 }

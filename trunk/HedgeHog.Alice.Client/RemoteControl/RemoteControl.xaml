@@ -262,9 +262,18 @@
           </ToolTip>
         </TextBlock.ToolTip>
                 <TextBlock Text="{Binding HeightFib,StringFormat=n2}" ToolTip="Height Fib Ratio (First/Last)"/>
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}" ToolTip="Take Profit"
+                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           />
+                           >
+                  <TextBlock.ToolTip>
+                    <ToolTip>
+                      <TextBlock>
+                        <TextBlock>Take Profit &gt;</TextBlock>
+                        <TextBlock Text="{Binding TakeProfitPipsMinimum,StringFormat=n0}"/>
+                      </TextBlock>
+                    </ToolTip>
+                  </TextBlock.ToolTip>
+                  </TextBlock>
                 <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n1}}" ToolTip="Bar 60 Height in Pips"/>
                 <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"
                            FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
@@ -313,8 +322,8 @@
           <DataGridTemplateColumn.CellEditingTemplate>
             <DataTemplate>
               <WrapPanel>
-                <TextBox Text="{Binding FibMin}" ToolTip="Fibonacci Minimum"/>
-                <TextBox Text="{Binding FibMax}" ToolTip="Fibonacci Maximum"/>
+                <TextBox Text="{Binding FibMin}" ToolTip="Corridor Minimum"/>
+                <TextBox Text="{Binding MaxLotByTakeProfitRatio}" ToolTip="MaxLot By Take Profit Ratio"/>
                 <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum" Visibility="Collapsed"/>
                 <CheckBox IsChecked="{Binding LimitCorridorByBarHeight}" ToolTip="Limit Corridor By Bar Height"/>
                 <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>

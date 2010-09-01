@@ -62,6 +62,7 @@
           <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
           <Property Name="Commission" Type="float" Nullable="false" />
           <Property Name="IsVirtual" Type="bit" Nullable="false" />
+          <Property Name="TimeStamp" Type="datetime" Nullable="false" />
         </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
@@ -104,6 +105,7 @@
           <Property Name="IsActive" Type="bit" Nullable="false" />
           <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
           <Property Name="LimitCorridorByBarHeight" Type="bit" Nullable="false" />
+          <Property Name="MaxLotByTakeProfitRatio" Type="float" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -149,6 +151,7 @@
           <Property Name="AccountId" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
           <Property Name="Commission" Type="Double" Nullable="false" />
           <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
+          <Property Type="DateTime" Name="TimeStamp" Nullable="false" />
         </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
@@ -191,6 +194,7 @@
           <Property Type="Boolean" Name="IsActive" Nullable="false" />
           <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
           <Property Type="Boolean" Name="LimitCorridorByBarHeight" Nullable="false" />
+          <Property Type="Double" Name="MaxLotByTakeProfitRatio" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -216,7 +220,8 @@
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
           <EntitySetMapping Name="ClosedTrades"><EntityTypeMapping TypeName="AliceModel.ClosedTrade"><MappingFragment StoreEntitySet="ClosedTrades">
-            <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
+            <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
                 <ScalarProperty Name="Buy" ColumnName="Buy" />
             <ScalarProperty Name="Close" ColumnName="Close" />
             <ScalarProperty Name="CloseInPips" ColumnName="CloseInPips" />
@@ -260,7 +265,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
+            <ScalarProperty Name="MaxLotByTakeProfitRatio" ColumnName="MaxLotByTakeProfitRatio" />
+                <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
                 <ScalarProperty Name="Pair" ColumnName="Pair" />

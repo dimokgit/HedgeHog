@@ -91,12 +91,12 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private DateTime _VitrualDateStart;
-    public DateTime VitrualDateStart {
-      get { return _VitrualDateStart; }
+    private DateTime _VirtualDateStart;
+    public DateTime VirtualDateStart {
+      get { return _VirtualDateStart; }
       set {
-        if (_VitrualDateStart != value) {
-          _VitrualDateStart = value;
+        if (_VirtualDateStart != value) {
+          _VirtualDateStart = value;
           RaisePropertyChanged();
         }
       }
@@ -108,6 +108,17 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_VirtualPair != value) {
           _VirtualPair = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    private int _VirtualMonthsToTest;
+    public int VirtualMonthsToTest {
+      get { return _VirtualMonthsToTest; }
+      set {
+        if (_VirtualMonthsToTest != value) {
+          _VirtualMonthsToTest = value;
           RaisePropertyChanged();
         }
       }
@@ -653,7 +664,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void BackTest() {
-      if (StartBackTesting != null) StartBackTesting(this, new BackTestEventArgs(VirtualPair,  VitrualDateStart));
+      if (StartBackTesting != null) StartBackTesting(this, new BackTestEventArgs(VirtualPair,  VirtualDateStart,VirtualMonthsToTest));
     }
 
     #endregion
@@ -1154,7 +1165,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMaster == null) MessageBox.Show("Trading Master account is not found.");
         else {
           if (GlobalStorage.Context.ClosedTrades.Count(t => t.Id == trade.Id) > 0) return;
-          var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id+"", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID+"", trade.OpenOrderReqID+"", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId+"", CommissionByTrade(trade), trade.IsVirtual);
+          var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id+"", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID+"", trade.OpenOrderReqID+"", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId+"", CommissionByTrade(trade), trade.IsVirtual,DateTime.Now);
           GlobalStorage.Context.ClosedTrades.AddObject(ct);
           GlobalStorage.Context.SaveChanges();
         }

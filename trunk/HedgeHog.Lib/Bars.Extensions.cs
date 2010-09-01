@@ -333,12 +333,12 @@ namespace HedgeHog.Bars {
         if (ratesForAverageHigh.Length > 0) {
           var prices = ratesForAverageHigh.Select(r => r.PriceAvg/*.PriceLow*/).ToArray();
           averageHigh = prices.Average();
-          averageHigh = prices.Where(p => p >= averageHigh).Average();
+          averageHigh = prices.Where(p => p >= averageHigh).DefaultIfEmpty(averageHigh).Average();
         }
         if (ratesForAverageLow.Length > 0) {
           var prices = ratesForAverageLow.Select(r => r.PriceAvg/*.PriceHigh*/).ToArray();
           averageLow = prices.Average();
-          averageLow = prices.Where(p => p <= averageLow).Average();
+          averageLow = prices.Where(p => p <= averageLow).DefaultIfEmpty(averageLow).Average();
         }
         return new CorridorStatisticsBase(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
       } catch (Exception exc) {
@@ -633,12 +633,13 @@ namespace HedgeHog.Bars {
       return fxTicks.GetMinuteTicksCore(period, false);
     }
     static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
+      fxTicks = fxTicks.OrderBarsDescending().ToArray();
       if (fxTicks.Count() == 0) return new Rate[] { };
-      var startDate = fxTicks.Max(t => t.StartDate);
+      var startDate = fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate);
       if (Round) startDate = startDate.Round().AddMinutes(1);
       double? tempRsi;
       var rsiAverage = fxTicks.Average(t => t.PriceRsi.GetValueOrDefault());
-      return (from t in fxTicks.OrderBarsDescending().ToArray()
+      return (from t in fxTicks
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
               orderby tg.Key
@@ -1026,7 +1027,7 @@ namespace HedgeHog.Bars {
     }
     public static IEnumerable<T> OrderBarsDescending<T>(this IEnumerable<T> rates) where T : BarBase {
       return typeof(T) == typeof(Tick) ?
-        rates.OfType<Tick>().OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Row).OfType<T>() : rates.OrderByDescending(r => r.StartDate);
+        rates.OfType<Tick>().OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Row).OfType<T>() : rates.ToArray().OrderByDescending(r => r.StartDate);
     }
   }
 }

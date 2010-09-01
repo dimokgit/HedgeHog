@@ -8,9 +8,11 @@ namespace HedgeHog.Alice.Store {
   public class BackTestEventArgs : EventArgs {
     public string Pair { get; set; }
     public DateTime StartDate { get; set; }
-    public BackTestEventArgs(string pair, DateTime startDate) {
+    public int MonthToTest { get; set; }
+    public BackTestEventArgs(string pair, DateTime startDate,int monthsToTest) {
       this.Pair = pair;
       this.StartDate = startDate;
+      this.MonthToTest = monthsToTest;
     }
   }
   public class MasterTradeEventArgs : EventArgs {

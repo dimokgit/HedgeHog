@@ -216,7 +216,8 @@
         <ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
         <Label ToolTip="Virtual Trading">VT:</Label>
         <u:CheckBox2 IsChecked2="{Binding IsInVirtualTrading,Mode=TwoWay}" IsChecked="{state:UserSettings}" Name="chkVT"/>
-        <u:TextBox2 Text2="{Binding VitrualDateStart,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualDateStart" MinWidth="30" />
+        <u:TextBox2 Text2="{Binding VirtualDateStart,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualDateStart" MinWidth="30" />
+        <u:TextBox2 Text2="{Binding VirtualMonthsToTest,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualMonthsToTest" MinWidth="20" />
         <ComboBox SelectedValue="{Binding VirtualPair}" SelectedIndex="{state:UserSettings}">
           <sys:String>EUR/USD</sys:String>
           <sys:String>EUR/JPY</sys:String>

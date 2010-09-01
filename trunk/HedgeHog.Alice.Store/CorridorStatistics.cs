@@ -94,6 +94,7 @@ namespace HedgeHog.Alice.Client {
 
     public bool IsCorridorAvarageHeightOk {
       get {
+        return true;
         var addOn = 0;
         //TradingMacro.LimitCorridorByBarHeight ? 0 :
         //  PriceCmaDiffHigh > 0
@@ -105,7 +106,7 @@ namespace HedgeHog.Alice.Client {
     }
     public static bool GetCorridorAverageHeightOk(TradingMacro tm, double AverageHeight) {
       return AverageHeight > 0 && tm.BarHeight60 > 0
-        && AverageHeight / tm.BarHeight60 >= (tm.LimitCorridorByBarHeight ? .9 : 1);
+        && AverageHeight / tm.CorridorHeightMinimum >= (tm.LimitCorridorByBarHeight ? .9 : 1);
     }
 
   }

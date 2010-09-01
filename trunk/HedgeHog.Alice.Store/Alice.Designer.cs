@@ -550,7 +550,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="accountId">Initial value of the AccountId property.</param>
         /// <param name="commission">Initial value of the Commission property.</param>
         /// <param name="isVirtual">Initial value of the IsVirtual property.</param>
-        public static ClosedTrade CreateClosedTrade(global::System.Boolean buy, global::System.Double close, global::System.Double closeInPips, global::System.Double grossPL, global::System.String id, global::System.Boolean isBuy, global::System.Boolean isParsed, global::System.Double limit, global::System.Double limitAmount, global::System.Double limitInPips, global::System.Int32 lots, global::System.Double open, global::System.Double openInPips, global::System.String openOrderID, global::System.String openOrderReqID, global::System.String pair, global::System.Int32 pipValue, global::System.Double pL, global::System.Int32 pointSize, global::System.String pointSizeFormat, global::System.String remark, global::System.Double stop, global::System.Double stopAmount, global::System.Double stopInPips, global::System.DateTime time, global::System.DateTime timeClose, global::System.String unKnown, global::System.String accountId, global::System.Double commission, global::System.Boolean isVirtual)
+        /// <param name="timeStamp">Initial value of the TimeStamp property.</param>
+        public static ClosedTrade CreateClosedTrade(global::System.Boolean buy, global::System.Double close, global::System.Double closeInPips, global::System.Double grossPL, global::System.String id, global::System.Boolean isBuy, global::System.Boolean isParsed, global::System.Double limit, global::System.Double limitAmount, global::System.Double limitInPips, global::System.Int32 lots, global::System.Double open, global::System.Double openInPips, global::System.String openOrderID, global::System.String openOrderReqID, global::System.String pair, global::System.Int32 pipValue, global::System.Double pL, global::System.Int32 pointSize, global::System.String pointSizeFormat, global::System.String remark, global::System.Double stop, global::System.Double stopAmount, global::System.Double stopInPips, global::System.DateTime time, global::System.DateTime timeClose, global::System.String unKnown, global::System.String accountId, global::System.Double commission, global::System.Boolean isVirtual, global::System.DateTime timeStamp)
         {
             ClosedTrade closedTrade = new ClosedTrade();
             closedTrade.Buy = buy;
@@ -583,6 +584,7 @@ namespace HedgeHog.Alice.Store
             closedTrade.AccountId = accountId;
             closedTrade.Commission = commission;
             closedTrade.IsVirtual = isVirtual;
+            closedTrade.TimeStamp = timeStamp;
             return closedTrade;
         }
 
@@ -1311,6 +1313,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _IsVirtual;
         partial void OnIsVirtualChanging(global::System.Boolean value);
         partial void OnIsVirtualChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime TimeStamp
+        {
+            get
+            {
+                return _TimeStamp;
+            }
+            set
+            {
+                OnTimeStampChanging(value);
+                ReportPropertyChanging("TimeStamp");
+                _TimeStamp = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeStamp");
+                OnTimeStampChanged();
+            }
+        }
+        private global::System.DateTime _TimeStamp;
+        partial void OnTimeStampChanging(global::System.DateTime value);
+        partial void OnTimeStampChanged();
 
         #endregion
     
@@ -1636,7 +1662,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="isActive">Initial value of the IsActive property.</param>
         /// <param name="tradingMacroName">Initial value of the TradingMacroName property.</param>
         /// <param name="limitCorridorByBarHeight">Initial value of the LimitCorridorByBarHeight property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight)
+        /// <param name="maxLotByTakeProfitRatio">Initial value of the MaxLotByTakeProfitRatio property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1661,6 +1688,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.IsActive = isActive;
             tradingMacro.TradingMacroName = tradingMacroName;
             tradingMacro.LimitCorridorByBarHeight = limitCorridorByBarHeight;
+            tradingMacro.MaxLotByTakeProfitRatio = maxLotByTakeProfitRatio;
             return tradingMacro;
         }
 
@@ -2197,6 +2225,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _LimitCorridorByBarHeight;
         partial void OnLimitCorridorByBarHeightChanging(global::System.Boolean value);
         partial void OnLimitCorridorByBarHeightChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double MaxLotByTakeProfitRatio
+        {
+            get
+            {
+                return _MaxLotByTakeProfitRatio;
+            }
+            set
+            {
+                OnMaxLotByTakeProfitRatioChanging(value);
+                ReportPropertyChanging("MaxLotByTakeProfitRatio");
+                _MaxLotByTakeProfitRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MaxLotByTakeProfitRatio");
+                OnMaxLotByTakeProfitRatioChanged();
+            }
+        }
+        private global::System.Double _MaxLotByTakeProfitRatio;
+        partial void OnMaxLotByTakeProfitRatioChanging(global::System.Double value);
+        partial void OnMaxLotByTakeProfitRatioChanged();
 
         #endregion
     

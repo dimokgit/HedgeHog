@@ -118,7 +118,8 @@ namespace HedgeHog.Alice.Client {
         tm.Pair, tm.TradingRatio, Guid.NewGuid(), tm.LimitBar, tm.CurrentLoss, tm.ReverseOnProfit,
         tm.FreezLimit, tm.CorridorMethod, tm.FreezeStop, tm.FibMax, tm.FibMin, tm.CorridornessMin, tm.CorridorIterationsIn,
         tm.CorridorIterationsOut, tm.CorridorIterations,
-        tm.CorridorBarMinutes, tm.PairIndex, tm.TradingGroup, tm.MaximumPositions, tm.IsActive, "", tm.LimitCorridorByBarHeight);
+        tm.CorridorBarMinutes, tm.PairIndex, tm.TradingGroup, tm.MaximumPositions,
+        tm.IsActive, "", tm.LimitCorridorByBarHeight,tm.MaxLotByTakeProfitRatio);
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
       //    .DefaultIfEmpty(new EdmScalarPropertyAttribute()).First() as EdmScalarPropertyAttribute).EntityKeyProperty
@@ -450,7 +451,7 @@ namespace HedgeHog.Alice.Client {
             () => {
               //Thread.CurrentThread.Priority = ThreadPriority.Lowest;
               //var swl = Stopwatch.StartNew();
-              tm.BarHeight60 = rates.ToArray().GetWaveHeight(4, tm.LimitBar);
+              tm.BarHeight60 = rates.ToArray().GetWaveHeight(4, (tm.LimitBar * tm.CommonMinimumRatio).ToInt());
               //Debug.WriteLine("BarHeight:{0:n1}", swl.ElapsedMilliseconds);
             }, e => Log = e);
           ScanCorridorSchedulers.Run(pair,IsInVirtualTrading, () => {
@@ -497,7 +498,7 @@ namespace HedgeHog.Alice.Client {
         var timeHigh = tm.GetCorridorStats(0).StartDate;
         var timeCurr = tm.CorridorStatsArray.Count() > 1 ? tm.GetCorridorStats(-1).StartDate : DateTime.MinValue;
         var timeLow = tm.LastTrade.Time;
-        charter.AddTicks(price, GetRatesByPair(pair).ToList(), null,
+        charter.AddTicks(price,rates , null,
           0, 0,
           csFirst.AskHigh, csFirst.BidLow,
           csFirst.AverageHigh, csFirst.AverageLow,
@@ -517,7 +518,7 @@ namespace HedgeHog.Alice.Client {
         var account = accountCached = IsInVirtualTrading ? fw.GetAccount(false) : fw.GetAccount();
         if (IsInVirtualTrading) account.Trades = tradesManager.GetTrades(pair);
         var trades = account.Trades.Where(t => t.Pair == tm.Pair).ToArray();
-        var minGross = trades.Select(t => t.GrossPL).DefaultIfEmpty().Min();
+        var minGross = tm.CurrentLoss + trades.Sum(t => t.GrossPL);
         if (tm.MinimumGross > minGross) tm.MinimumGross = minGross;
         tm.Positions = trades.Length;
         tm.Net = trades.Length > 0 ? trades.Sum(t => t.GrossPL) : (double?)null;
@@ -568,7 +569,8 @@ namespace HedgeHog.Alice.Client {
           var isTradeConditionsOk =
                tm.IsTakeProfitPipsMinimumOk
             //&& calcLotSize <= maxLotSize
-               && tm.IsCorridorAvarageHeightOk;
+               && tm.IsCorridorAvarageHeightOk
+            ;
           #endregion
           #region Open Trade
           if (isTradeConditionsOk) {
@@ -921,6 +923,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void LoadRates(string pair) {
+      if (IsInVirtualTrading) return;
       try {
         var tm = GetTradingMacro(pair);
         if (tm == null || !IsLoggedIn || tm.TradingRatio == 0) return;
