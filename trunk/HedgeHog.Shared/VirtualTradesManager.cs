@@ -8,38 +8,62 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
   public class VirtualTradesManager : ITradesManager {
+    const string TRADE_ID_FORMAT = "yyMMddhhmmssffff";
     ObservableCollection<Trade> tradesOpened = new ObservableCollection<Trade>();
     ObservableCollection<Trade> tradesClosed = new ObservableCollection<Trade>();
     Dictionary<string, List<Rate>> ratesByPair;
     Func<string,double> GetPipSize;
     Func<string,int> GetDigits;
+    static long tradeId = 0;
     public VirtualTradesManager(Func<string,double>getPipSize,Func<string,int> getDigits,  Dictionary<string, List<Rate>> ratesByPair) {
       this.GetPipSize = getPipSize;
       this.GetDigits = getDigits;
       this.ratesByPair = ratesByPair;
       this.tradesOpened.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(_virualPortfolio_CollectionChanged);
     }
-    void AddTrade(bool isBuy,int lot, Price price) {
-      if (!tradesOpened.Any(t => t.Buy == isBuy))
-        tradesOpened.Add(new Trade() {
-          Id = price.Time.Ticks / 100000000 + "",
-          Pair = price.Pair,
-          Buy = isBuy,
-          IsBuy = isBuy,
-          Lots = lot,
-          Open = isBuy ? price.Ask : price.Bid,
-          Close = isBuy ? price.Bid : price.Ask,
-          Time = price.Time,
-          TimeClose = price.Time,
-          IsVirtual = true
-        });
+    static long NewTradeId() {
+      if( tradeId == 0)
+        tradeId = DateTime.Now.Ticks/10000;
+      return ++tradeId;
+    }
+    void AddTrade(bool isBuy, int lot, Price price) {
+      tradesOpened.Add(new Trade() {
+        Id = NewTradeId() + "",
+        Pair = price.Pair,
+        Buy = isBuy,
+        IsBuy = isBuy,
+        Lots = lot,
+        Open = isBuy ? price.Ask : price.Bid,
+        Close = isBuy ? price.Bid : price.Ask,
+        Time = price.Time,
+        TimeClose = price.Time,
+        IsVirtual = true
+      });
     }
     public bool ClosePair(string pair) {
       tradesOpened.Where(t => t.Pair == pair).ToList().ForEach(t => tradesOpened.Remove(t));
       return true;
     }
     public bool ClosePair(string pair, bool isBuy) {
-      tradesOpened.Where(t => t.Pair == pair && t.Buy == isBuy).ToList().ForEach(t => tradesOpened.Remove(t));
+      tradesOpened.Where(t => t.Pair == pair && t.Buy == isBuy).ToList().ForEach(t => CloseTrade(t));
+      return true;
+    }
+
+    private bool CloseTrade(Trade t) {
+      return tradesOpened.Remove(t);
+    }
+    public bool CloseTrade(Trade trade,int lot,Price price) {
+      if (trade.Lots <= lot) CloseTrade(trade);
+      else {
+        var newTrade = trade.Clone();
+        newTrade.Lots = trade.Lots - lot;
+        newTrade.Id = NewTradeId() + "";
+        newTrade.UpdateByPrice(price);
+        tradesOpened.Add(trade);
+        trade.Lots = lot;
+        trade.UpdateByPrice(price);
+        CloseTrade(trade);
+      }
       return true;
     }
     void _virualPortfolio_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {

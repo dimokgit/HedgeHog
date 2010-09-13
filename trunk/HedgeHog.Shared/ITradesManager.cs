@@ -9,6 +9,7 @@ namespace HedgeHog.Shared {
     Trade[] GetTrades();
     Price GetPrice(string pair);
     PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark,Price price);
+    bool CloseTrade(Trade trade,int lot,Price price);
     bool ClosePair(string pair, bool isBuy);
     bool ClosePair(string pair);
     event PriceChangedEventHandler PriceChanged;

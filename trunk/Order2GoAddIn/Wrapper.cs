@@ -1592,12 +1592,16 @@ namespace Order2GoAddIn {
     public void CloseTrade(Trade trade) {
       CloseTrade(trade, trade.Lots);
     }
-    public void CloseTrade(Trade trade,int lot) {
+    public bool CloseTrade(Trade trade, int lot) {return CloseTrade(trade, lot, null); }
+
+    public bool CloseTrade(Trade trade, int lot, Price price) {
       object o1,o2;
       try {
         Desk.CloseTrade(trade.Id, lot, trade.Close, "", 0, out o1,out o2);
+        return true;
       } catch (Exception exc) {
         RaiseError(exc);
+        return false;
       }
     }
     public void CloseAllTrades() {
@@ -2329,6 +2333,12 @@ namespace Order2GoAddIn {
         fields.Add(tokens[i], tokens[i + 1]);
       return fields;
     }
+    #endregion
+
+    #region ITradesManager Members
+
+
+
     #endregion
   }
 

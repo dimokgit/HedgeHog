@@ -7,7 +7,6 @@ using System.Windows.Input;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using Gala = GalaSoft.MvvmLight.Command;
 using HedgeHog.Shared;
-using HedgeHog.Alice.Client.TradeExtenssions;
 using System.Collections.ObjectModel;
 using System.Windows.Data;
 using System.Windows.Controls;

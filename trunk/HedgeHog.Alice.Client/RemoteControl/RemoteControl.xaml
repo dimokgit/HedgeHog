@@ -87,11 +87,14 @@
     </DataTemplate>
     <DataTemplate x:Key="NetCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
-        <WrapPanel>
+        <TextBlock>
           <TextBlock Text="{Binding Net,StringFormat=c1}"/>
           <TextBlock Text="{Binding Positions,StringFormat=/{0}}"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
-        </WrapPanel>
+          <LineBreak/>
+          <TextBlock Text="{Binding LastTrade.Time,StringFormat='MMM/dd HH'}"/>
+          <TextBlock Text="{Binding Profitability,StringFormat=[{0:c0}]}" ToolTip="Profitability Per Month"/>
+        </TextBlock>
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
@@ -99,7 +102,10 @@
         <TextBlock>
           <TextBlock Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}">
             <TextBlock Text="{Binding CurrentLoss,StringFormat=c1}"  />
+            <TextBlock Text="{Binding AvarageLossInPips,StringFormat=/{0:n0}}" ToolTip="Avarage Loss In Pips"  />
+            
             <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
+            <TextBlock Text="{Binding ProfitCounter,StringFormat=/{0:n1}}" ToolTip="Profit Counter" />
           </TextBlock>
           <LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
@@ -261,7 +267,9 @@
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
-                <TextBlock Text="{Binding HeightFib,StringFormat=n2}" ToolTip="Height Fib Ratio (First/Last)"/>
+                <TextBlock Text="{Binding BarPeriodsLowHighRatioValue,StringFormat=p0}" ToolTip="Bar Periods Low/High Ratio Value"
+                           FontWeight="{Binding IsBarLowHighRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}"
                   FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            >
@@ -274,7 +282,10 @@
                     </ToolTip>
                   </TextBlock.ToolTip>
                   </TextBlock>
-                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n1}}" ToolTip="Bar 60 Height in Pips"/>
+                  <TextBlock Text="{Binding TakeProfitPipsMinimum,StringFormat=&gt;{0:n0}}"/>
+                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n1}}" ToolTip="Bar 60 Height in Pips"
+                           FontWeight="{Binding IsBarLowHighRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
                 <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"
                            FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
@@ -321,7 +332,7 @@
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
             <DataTemplate>
-              <WrapPanel>
+              <TextBlock>
                 <TextBox Text="{Binding FibMin}" ToolTip="Corridor Minimum"/>
                 <TextBox Text="{Binding MaxLotByTakeProfitRatio}" ToolTip="MaxLot By Take Profit Ratio"/>
                 <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum" Visibility="Collapsed"/>
@@ -329,7 +340,12 @@
                 <TextBox Text="{Binding LimitBar}" ToolTip="Limit Bar in Minutes"/>
                 <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
                 <TextBox Text="{Binding CorridorIterationsIn}" ToolTip="Price CMA Level"/>
-              </WrapPanel>
+                <LineBreak/>
+                <TextBox Text="{Binding BarPeriodsLow}" ToolTip="Bar Height Low"/>
+                <TextBox Text="{Binding BarPeriodsHigh}" ToolTip="Bar Height High"/>
+                <TextBox Text="{Binding BarPeriodsLowHighRatio}" ToolTip="Bar Periods LowHigh Ratio"/>
+                <CheckBox IsChecked="{Binding StrictTradeClose}" ToolTip="Strict Trade Close"/>
+              </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>

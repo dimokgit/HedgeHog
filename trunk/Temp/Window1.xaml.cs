@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using HedgeHog;
 using HedgeHog.Bars;
 using HedgeHog.Rsi;
+using HedgeHog.Alice.Store;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;
@@ -138,7 +139,7 @@ namespace Temp {
         AddLog("Done.");
         return;
         var statName = "MinuteRsi";
-        var context = new ForexEntities();
+        var context = new Temp.Models.ForexEntities();
         var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
         context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
         var stats = context.t_Stat;

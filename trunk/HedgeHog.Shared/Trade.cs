@@ -90,6 +90,10 @@ namespace HedgeHog.Shared {
     }
 
     void TradesManager_PriceChanged(Price Price) {
+      UpdateByPrice(Price);
+    }
+
+    public void UpdateByPrice(Price Price) {
       if (Price.PipSize == 0) throw new Exception("Price.PipSize property must not be Zero.");
       Close = Buy ? Price.Bid : Price.Ask;
       var gross = Buy ? Close - Open : Open - Close;
