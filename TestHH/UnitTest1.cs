@@ -63,9 +63,9 @@ namespace TestHH {
       o2g = new FXCoreWrapper(core, "EUR/USD");
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
-      //if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
+      if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -89,11 +89,16 @@ namespace TestHH {
     public void LoadBars() {
       var period = 1;
       var pair = "EUR/JPY";// "EUR/USD";
+      SavePair(period, "EUR/USD");
+      SavePair(period, "EUR/JPY");
+    }
+
+    private void SavePair(int period, string pair) {
       var ticks = o2g.GetBarsBase(pair, period, DateTime.Now.AddYears(-3));
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
-        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Pair = {2} AND Period = {1} AND StartDate>={0}", lastDate, period,pair);
+        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Pair = {2} AND Period = {1} AND StartDate>={0}", lastDate, period, pair);
         var i = 0;
         ticks.ToList().ForEach(t => {
           var bar = context.CreateObject<t_Bar>();

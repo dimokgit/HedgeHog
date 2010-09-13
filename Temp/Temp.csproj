@@ -175,6 +175,10 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
+      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Name>HedgeHog.Alice.Store</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>

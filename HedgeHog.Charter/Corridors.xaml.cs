@@ -272,7 +272,7 @@ namespace HedgeHog {
       var aw = plotter.ActualWidth;
       var period = Math.Max(1, Math.Ceiling(ticks.Count / aw).ToInt());
       if (ticks != null && ticks.Count > 0) {
-        minuteTicks = ticks.GetMinuteTicks(period, true).OrderBars().Select(rateToPoint).ToList();
+        minuteTicks = ticks./*GetMinuteTicks(period, true).OrderBars().*/Select(rateToPoint).ToList();
         //minuteTicks.ToList().ForEach(t => t.Price = t.Price.Round(lastPrice.Digits - 1));
         TicksAvg2.Clear();
         if (ticks.Any(t => t.PriceAvg2 != 0)) {
