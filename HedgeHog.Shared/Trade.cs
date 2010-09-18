@@ -9,8 +9,15 @@ using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
+  public class TradeEventArgs : EventArgs {
+    public Trade Trade { get; set; }
+    public TradeEventArgs(Trade newTrade) {
+      this.Trade = newTrade;
+    }
+  }
   public delegate void TradeAddedEventHandler(Trade trade);
   public delegate void TradeRemovedEventHandler(Trade trade);
+  public delegate void OrderRemovedEventHandler(Order order);
   [Serializable]
   [DataContract]
   public class Trade : PositioBase {

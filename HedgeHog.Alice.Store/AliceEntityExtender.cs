@@ -35,6 +35,18 @@ namespace HedgeHog.Alice.Store {
     }
   }
 
+  public partial class ForexEntities{
+    public TradeDirections GetTradeDirection(DateTime today,string pair,int maPeriod) {
+      today = today.Date.AddHours(23);
+      var bars = this.t_Bar.Where(b => b.Pair == pair && b.Period == 24 && b.StartDate <= today).OrderByDescending(b=>b.StartDate).Take(maPeriod).ToArray();
+      int outBegIdx, outNBElement;
+      double[] outReal = new double[20];
+      TicTacTec.TA.Library.Core.Trima(0, bars.Count()-1, bars.Select(b => (b.AskClose + b.BidClose) / 2).ToArray(),
+        bars.Count(), out outBegIdx, out outNBElement, outReal);
+      var lastBar = bars.OrderBy(b=>b.StartDate).Last();
+      return (lastBar.AskClose + lastBar.BidClose) / 2 > outReal[0] ? TradeDirections.Up : TradeDirections.Down;
+    }
+  }
   public partial class TradeHistory {
     public double NetPL { get { return GrossPL - Commission; } }
   }
@@ -513,17 +525,35 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private int _Positions;
-    public int Positions {
-      get { return _Positions; }
+    private int _PositionsBuy;
+    public int PositionsBuy {
+      get { return _PositionsBuy; }
       set {
-        if (_Positions != value) {
-          _Positions = value;
-          OnPropertyChanged("Positions");
-          OnPropertyChanged("CorridorIterationsCalc");
+        if (_PositionsBuy != value) {
+          _PositionsBuy = value;
+          OnPropertyChanged("PositionsBuy");
+          OnPropertyChanged("PipsPerPosition");
         }
       }
     }
+
+    private int _PositionsSell;
+    public int PositionsSell {
+      get { return _PositionsSell; }
+      set {
+        if (_PositionsSell != value) {
+          _PositionsSell = value;
+          OnPropertyChanged("PositionsSell");
+          OnPropertyChanged("PipsPerPosition");
+        }
+      }
+    }
+
+    private double _PipsPerPosition;
+    public double PipsPerPosition {
+      get { return Trades.Length < 2 ? 0 : InPips(Trades.Max(t => t.Open) - Trades.Min(t => t.Open)) / (Trades.Length - 1); }
+    }
+
 
     private double _TradeDistanceInPips;
     double TradeDistanceInPips {
@@ -613,7 +643,7 @@ namespace HedgeHog.Alice.Store {
     public double BarHeight60InPips { get { return InPips(BarHeight60); } }
     public bool IsBarLowHighRatioOk {
       get {
-        return BarPeriodsLowHighRatioValue > BarPeriodsLowHighRatio && _BarPeriodsLowHighRatioValueCma.CmaDiff()[0]<0/*BarPeriodsLowHighRatio*/;
+        return BarPeriodsLowHighRatioValue >= BarPeriodsLowHighRatio && _BarPeriodsLowHighRatioValueCma.CmaDiff()[0].Round(2)<=0/*BarPeriodsLowHighRatio*/;
       }
     }
 
@@ -621,12 +651,26 @@ namespace HedgeHog.Alice.Store {
     Lib.CmaWalker _BarPeriodsLowHighRatioValueCma = new Lib.CmaWalker(2);
     public double BarPeriodsLowHighRatioValue { get { return BarHeightLow == 0 || BarHeightHigh == 0 ? 0 : BarHeightLow / BarHeightHigh; } }
 
-    public double TakeProfitPipsMinimum { get { return FibMin * CommonMinimumRatio; } }
-    public bool IsTakeProfitPipsMinimumOk { get { return CorridorStats == null ? false : TakeProfitPips.ToInt() >= TakeProfitPipsMinimum; } }
+    public double TakeProfitPipsMinimum {
+      get { return FibMin * CommonMinimumRatio; }
+      set { FibMin = value; }
+    }
 
-    public bool IsCorridorAvarageHeightOk { get { return true || (CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
+    public bool IsCorridorAvarageHeightOk { get { return true ||(CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
 
-    public double CorridorHeightMinimum { get { return BarHeight60; } }
+    private double _CorridorHeightMinimum;
+    public double CorridorHeightMinimum {
+      get { return _CorridorHeightMinimum; }
+      set {
+        if (_CorridorHeightMinimum != value) {
+          _CorridorHeightMinimum = value;
+          OnPropertyChanged("CorridorHeightMinimum");
+          OnPropertyChanged("CorridorHeightMinimumInPips");
+        }
+      }
+    }
+
+    public double CorridorHeightMinimumInPips { get { return InPips(CorridorHeightMinimum); } }
 
     private int _HistoricalGrossPL;
     public int HistoricalGrossPL {
@@ -746,9 +790,21 @@ namespace HedgeHog.Alice.Store {
       set {
         _Rates = value;
         RatesLast = value.ToArray().Skip(Rates.Count - 3).ToArray();
+        RateLast = RatesLast.Last();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
     }
+    private Rate _RateLast;
+    public Rate RateLast {
+      get { return _RateLast; }
+      set {
+        if (_RateLast != value) {
+          _RateLast = value;
+          OnPropertyChanged("RateLast");
+        }
+      }
+    }
+
     public Rate[] RatesLast { get; protected set; }
     public Rate[] RatesDirection { get; protected set; }
     public double RateLastAsk { get { return RatesLast.Max(r => r.AskHigh); } }
@@ -822,8 +878,8 @@ namespace HedgeHog.Alice.Store {
         if (_AvarageLossInPips != value) {
           _AvarageLossInPips = value;
           OnPropertyChanged("AvarageLossInPips");
-          if (_fibMin == 0) _fibMin = FibMin.ToInt();
-          FibMin = Math.Max(_fibMin, _AvarageLossInPips);
+          //if (_fibMin == 0) _fibMin = FibMin.ToInt();
+          //FibMin = Math.Max(_fibMin, _AvarageLossInPips);
         }
       }
     }
@@ -834,7 +890,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (value == null) return;
         if (value.Id == LastTrade.Id) return;
-        if (-LastTrade.PL > AvarageLossInPips / 4) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
+        if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
 
         ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
         _lastTrade = value;
@@ -930,12 +986,27 @@ namespace HedgeHog.Alice.Store {
 
     Trade[] _trades = new Trade[0];
 
+    TradeDirections _TradeDirection = TradeDirections.None;
+    public TradeDirections TradeDirection {
+      get { return _TradeDirection; }
+      set { 
+        _TradeDirection = value;
+        OnPropertyChanged("TradeDirection");
+      }
+    }
+
     public Trade[] Trades {
       get { return _trades; }
-      set { _trades = value; }
+      set { 
+        _trades = value;
+        PositionsBuy = value.Count(t => t.Buy);
+        PositionsSell = value.Count(t => !t.Buy);
+
+      }
     }
 
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
+  public enum TradeDirections { None,Up, Down }
 }

@@ -55,6 +55,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="TA-Lib-Core">
+      <HintPath>..\..\..\..\..\Install\ta-lib-0.4.0-msvc\ta-lib\dotnet\src\Debug\TA-Lib-Core.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>

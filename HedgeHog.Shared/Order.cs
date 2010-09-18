@@ -7,6 +7,14 @@ using System.Xml.Linq;
 using System.ComponentModel;
 
 namespace HedgeHog.Shared {
+  public class OrderEventArgs : EventArgs {
+    public Order Order { get; set; }
+    public OrderEventArgs(Order newOrder) {
+      this.Order = newOrder;
+    }
+  }
+
+
   [DataContract]
   public class Order : PositioBase {
     [DataMember]

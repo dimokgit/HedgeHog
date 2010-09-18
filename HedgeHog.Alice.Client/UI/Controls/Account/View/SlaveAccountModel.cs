@@ -315,7 +315,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         if (masterTradesPending.Contains(serverTradeID) || masterTradesSynced.Contains(serverTradeID)) return;
         masterTradesPending.Add(serverTradeID);
         PendingOrder po = null;
-        Action<object, FXW.RequestEventArgs> reqiesFailedAction = (s, e) => {
+        Action<object, RequestEventArgs> reqiesFailedAction = (s, e) => {
           if (po != null && e.ReqiestId == po.RequestId) {
             masterTradesPending.Remove(serverTradeID);
             po = null;
@@ -332,9 +332,9 @@ namespace HedgeHog.Alice.Client.UI.Controls {
             Log = e.Error;
           }
         };
-        var rfh = new EventHandler<FXW.RequestEventArgs>(reqiesFailedAction);
-        var orh = new FXW.OrderRemovedEventHandler(orderRemovedAvtion);
-        var erh = new EventHandler<Order2GoAddIn.ErrorEventArgs>(errorAction);
+        var rfh = new EventHandler<RequestEventArgs>(reqiesFailedAction);
+        var orh = new OrderRemovedEventHandler(orderRemovedAvtion);
+        var erh = new EventHandler<ErrorEventArgs>(errorAction);
         try {
           fw.RequestFailed += rfh;
           fw.OrderRemoved += orh;
@@ -359,7 +359,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       OpenTradeSchedulers.Remove(serverTradeID);
     }
 
-    void fwLocal_Error(object sender, Order2GoAddIn.ErrorEventArgs e) {
+    void fwLocal_Error(object sender, ErrorEventArgs e) {
       Log = e.Error;
     }
 

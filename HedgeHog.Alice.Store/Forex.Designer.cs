@@ -170,6 +170,69 @@ namespace HedgeHog.Alice.Store
     
             return base.ExecuteFunction<Nullable<global::System.Single>>("GetCorridor", pairParameter, periodParameter, dateParameter, spreadPeriodParameter);
         }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        /// <param name="pair">No Metadata Documentation available.</param>
+        /// <param name="period">No Metadata Documentation available.</param>
+        /// <param name="corridorDate">No Metadata Documentation available.</param>
+        /// <param name="corridorPeriods">No Metadata Documentation available.</param>
+        /// <param name="barMinutes">No Metadata Documentation available.</param>
+        public ObjectResult<GetCorridorAverage_Result> GetCorridorAverage(global::System.String pair, Nullable<global::System.Byte> period, Nullable<global::System.DateTime> corridorDate, Nullable<global::System.Int32> corridorPeriods, Nullable<global::System.Int32> barMinutes)
+        {
+            ObjectParameter pairParameter;
+            if (pair != null)
+            {
+                pairParameter = new ObjectParameter("Pair", pair);
+            }
+            else
+            {
+                pairParameter = new ObjectParameter("Pair", typeof(global::System.String));
+            }
+    
+            ObjectParameter periodParameter;
+            if (period.HasValue)
+            {
+                periodParameter = new ObjectParameter("Period", period);
+            }
+            else
+            {
+                periodParameter = new ObjectParameter("Period", typeof(global::System.Byte));
+            }
+    
+            ObjectParameter corridorDateParameter;
+            if (corridorDate.HasValue)
+            {
+                corridorDateParameter = new ObjectParameter("CorridorDate", corridorDate);
+            }
+            else
+            {
+                corridorDateParameter = new ObjectParameter("CorridorDate", typeof(global::System.DateTime));
+            }
+    
+            ObjectParameter corridorPeriodsParameter;
+            if (corridorPeriods.HasValue)
+            {
+                corridorPeriodsParameter = new ObjectParameter("CorridorPeriods", corridorPeriods);
+            }
+            else
+            {
+                corridorPeriodsParameter = new ObjectParameter("CorridorPeriods", typeof(global::System.Int32));
+            }
+    
+            ObjectParameter barMinutesParameter;
+            if (barMinutes.HasValue)
+            {
+                barMinutesParameter = new ObjectParameter("BarMinutes", barMinutes);
+            }
+            else
+            {
+                barMinutesParameter = new ObjectParameter("BarMinutes", typeof(global::System.Int32));
+            }
+    
+            return base.ExecuteFunction<GetCorridorAverage_Result>("GetCorridorAverage", pairParameter, periodParameter, corridorDateParameter, corridorPeriodsParameter, barMinutesParameter);
+        }
 
         #endregion
     }
@@ -915,6 +978,70 @@ namespace HedgeHog.Alice.Store
 
         #endregion
     
+    }
+
+    #endregion
+    #region ComplexTypes
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmComplexTypeAttribute(NamespaceName="ForexModel", Name="GetCorridorAverage_Result")]
+    [DataContractAttribute(IsReference=true)]
+    [Serializable()]
+    public partial class GetCorridorAverage_Result : ComplexObject
+    {
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> Avg
+        {
+            get
+            {
+                return _Avg;
+            }
+            set
+            {
+                OnAvgChanging(value);
+                ReportPropertyChanging("Avg");
+                _Avg = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Avg");
+                OnAvgChanged();
+            }
+        }
+        private Nullable<global::System.Double> _Avg;
+        partial void OnAvgChanging(Nullable<global::System.Double> value);
+        partial void OnAvgChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> StDev
+        {
+            get
+            {
+                return _StDev;
+            }
+            set
+            {
+                OnStDevChanging(value);
+                ReportPropertyChanging("StDev");
+                _StDev = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StDev");
+                OnStDevChanged();
+            }
+        }
+        private Nullable<global::System.Double> _StDev;
+        partial void OnStDevChanging(Nullable<global::System.Double> value);
+        partial void OnStDevChanged();
+
+        #endregion
     }
 
     #endregion

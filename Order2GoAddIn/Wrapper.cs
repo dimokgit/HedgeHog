@@ -140,26 +140,6 @@ namespace Order2GoAddIn {
   #endregion
 
   #region EventArgs classes
-  public class ErrorEventArgs : EventArgs {
-    public string Pair { get; set; }
-    public bool IsBuy { get; set; }
-    public int Lot { get; set; }
-    public double Stop { get; set; }
-    public double Limit { get; set; }
-    public string Remark { get; set; }
-    public Exception Error { get; set; }
-    public ErrorEventArgs(Exception error) {
-      this.Error = error;
-    }
-    public ErrorEventArgs(Exception error,string pair,bool isBuy,int lot,double stop,double limit,string remark) :this(error){
-      this.Pair = pair;
-      this.IsBuy = isBuy;
-      this.Lot = lot;
-      this.Stop = stop;
-      this.Limit = limit;
-      this.Remark = remark;
-    }
-  }
   public class OrderErrorEventArgs : ErrorEventArgs {
     public OrderErrorEventArgs(Exception exception) : base(exception) { }
   }
@@ -167,12 +147,6 @@ namespace Order2GoAddIn {
     public PendingOrder Order;
     public PendingOrderEventArgs(PendingOrder po) {
       this.Order = po;
-    }
-  }
-  public class TradeEventArgs : EventArgs {
-    public Trade Trade;
-    public TradeEventArgs(Trade trade) {
-      this.Trade = trade;
     }
   }
   #endregion
@@ -328,7 +302,6 @@ namespace Order2GoAddIn {
     #endregion
 
     #region OrderRemovedEvent
-    public delegate void OrderRemovedEventHandler(Order order);
     event OrderRemovedEventHandler OrderRemovedEvent;
     public event OrderRemovedEventHandler OrderRemoved {
       add {
@@ -359,13 +332,6 @@ namespace Order2GoAddIn {
       if (TradeAddedEvent != null) TradeAddedEvent(trade);
     }
     #endregion
-
-    public class TradeEventArgs : EventArgs {
-      public Trade Trade { get; set; }
-      public TradeEventArgs(Trade newTrade) {
-        this.Trade = newTrade;
-      }
-    }
 
     #region TradeChangedEvent
     event EventHandler<TradeEventArgs> TradeChangedEvent;
@@ -410,13 +376,6 @@ namespace Order2GoAddIn {
 
 
     #region OrderAddedEvent
-    public class OrderEventArgs : EventArgs {
-      public Order Order { get; set; }
-      public OrderEventArgs(Order newOrder) {
-        this.Order = newOrder;
-      }
-    }
-
     event EventHandler<OrderEventArgs> OrderAddedEvent;
     public event EventHandler<OrderEventArgs> OrderAdded {
       add {
@@ -484,15 +443,6 @@ namespace Order2GoAddIn {
     #endregion
 
     #region RequestFailedEvent
-    public class RequestEventArgs : EventArgs {
-      public string ReqiestId { get; set; }
-      public string Error { get; set; }
-      public RequestEventArgs(string requestId,string error) {
-        this.ReqiestId = requestId;
-        this.Error = error;
-      }
-    }
-
     event EventHandler<RequestEventArgs> RequestFailedEvent;
     public event EventHandler<RequestEventArgs> RequestFailed {
       add {
@@ -1796,7 +1746,7 @@ namespace Order2GoAddIn {
     public double InPips(string pair, double? price) { return (price / GetPipSize(pair)).GetValueOrDefault(); }
 
     public double InPoints(double? price) { return (price * GetPipSize(Pair)).GetValueOrDefault(); }
-    public double InPoints(string pair, double? price) { return (price * GetPipSize(pair)).GetValueOrDefault(); }
+    public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this,pair, price); }
 
     Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>();
     public double GetPipSize(string pair) {
@@ -1857,19 +1807,8 @@ namespace Order2GoAddIn {
       return PipsAndLotToMoney(pips, lot, GetPipCost(pair), MinimumQuantity);
     }
 
-    public double MoneyAndLotToPips(double money, double lots, string pair) {
-      return MoneyAndLotToPips(money, lots, GetPipCost(pair), MinimumQuantity);
-    }
-    public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
-      return money / lots / pipCost * baseUnitSize;
-    }
-
-
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
-    }
-    public int MoneyAndPipsToLot(double Money, double pips, double PipCost, int BaseUnitSize) {
-      return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
+      return TradesManagedStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
     }
 
     #endregion
@@ -2213,16 +2152,6 @@ namespace Order2GoAddIn {
     #endregion
 
     public double PointSize() { return GetPipSize(Pair); }
-
-
-
-    public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
-      var amountToTrade = balance * leverage * tradeRatio;
-      return GetLotSize(amountToTrade, baseUnitSize);
-    }
-    public static int GetLotSize(double amountToTrade, int baseUnitSize) {
-      return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
-    }
 
     dynamic _tradingSettingsProvider;
     dynamic TradingSettingsProvider{
