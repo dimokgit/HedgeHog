@@ -138,11 +138,11 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Events
-    public event EventHandler<FXW.OrderEventArgs> OrderToNoLoss;
+    public event EventHandler<OrderEventArgs> OrderToNoLoss;
     protected void OnOrderToNoLoss(Order order) {
       if (OrderToNoLoss != null) {
         try {
-          OrderToNoLoss(this, new FXW.OrderEventArgs(order));
+          OrderToNoLoss(this, new OrderEventArgs(order));
         } catch (Exception exc) { Log = exc; }
       }
     }
@@ -803,6 +803,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Trading Info
+    public TradingLogin LoginInfo { get { return new TradingLogin(TradingAccount, TradingPassword, TradingDemo); } }
 
     public string[] TradingAccounts { get { return GlobalStorage.Context.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct().ToArray(); } }
 
@@ -823,7 +824,6 @@ namespace HedgeHog.Alice.Client {
     }
 
     bool _tradingDemo;
-
     public bool TradingDemo {
       get { return _tradingDemo; }
       set { _tradingDemo = value; RaisePropertyChangedCore(); }
@@ -928,7 +928,7 @@ namespace HedgeHog.Alice.Client {
       OnMasterTradeRemoved(trade);
     }
 
-    void fwMaster_Error(object sender, O2G.ErrorEventArgs e) {
+    void fwMaster_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
     }
 
@@ -995,14 +995,14 @@ namespace HedgeHog.Alice.Client {
       OnMasterTradeAdded(trade);
       RunPrice(trade.Pair);
     }
-    void fwMaster_TradeChanged(object sender, FXW.TradeEventArgs e) {
+    void fwMaster_TradeChanged(object sender, TradeEventArgs e) {
       //fwMaster_PriceChanged(e.Trade.Pair);
     }
 
-    void fwMaster_OrderChanged(object sender, FXW.OrderEventArgs e) {
+    void fwMaster_OrderChanged(object sender, OrderEventArgs e) {
       fwMaster_PriceChanged(e.Order.Pair);
     }
-    void fwMaster_OrderAdded(object sender, FXW.OrderEventArgs e) {
+    void fwMaster_OrderAdded(object sender, OrderEventArgs e) {
       fwMaster_PriceChanged(e.Order.Pair);
     }
 

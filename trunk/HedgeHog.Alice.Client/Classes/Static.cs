@@ -7,7 +7,7 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   public class Static {
-    public static double GetEntryOrderLimit(FXW fw, Trade[] trades,int lot, bool addProfit, double currentLoss) {
+    public static double GetEntryOrderLimit(ITradesManager tm, Trade[] trades,int lot, bool addProfit, double currentLoss) {
       if (trades.Length == 0) return 0;
       var lotOld = trades.Sum(t => t.Lots);
       currentLoss = currentLoss.Abs();
@@ -22,7 +22,7 @@ namespace HedgeHog.Alice.Client {
             ) * lotOld / lot;
       }
       var stopLoss = currentLoss - trades.Sum(t => t.StopAmount);
-      return fw.MoneyAndLotToPips(stopLoss, lot, trades[0].Pair).Abs() + profitInPips;// +curentlimit;
+      return TradesManagedStatic.MoneyAndLotToPips(tm, stopLoss, lot, trades[0].Pair).Abs() + profitInPips;// +curentlimit;
     }
   }
 }

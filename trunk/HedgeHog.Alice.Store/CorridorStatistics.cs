@@ -270,6 +270,14 @@ namespace HedgeHog.Alice.Store {
           var doBuy = buy;
           return doSell == doBuy ? (bool?)null : doBuy;
         };
+        Func<bool?> tradeSignal10 = () => {
+          var sell = InPips(PriceCmaDiffHigh).Round(1) >= 0;
+          var buy = InPips(PriceCmaDiffLow).Round(1) <= 0;
+          if (buy && sell) return null;
+          var doSell = buy;
+          var doBuy = sell;
+          return doSell == doBuy ? (bool?)null : doBuy;
+        };
         var ts = tradeSignal8();
         if (ts != _TradeSignal)
           OnPropertyChanged("TradeSignal");
@@ -298,7 +306,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public static bool GetCorridorAverageHeightOk(TradingMacro tm, double AverageHeight) {
-      return AverageHeight > 0 && tm.BarHeight60 > 0
+      return AverageHeight > 0 && tm.CorridorHeightMinimum > 0
         && AverageHeight / tm.CorridorHeightMinimum >= (tm.LimitCorridorByBarHeight ? .9 : 1);
     }
 

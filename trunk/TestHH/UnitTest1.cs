@@ -60,13 +60,14 @@ namespace TestHH {
     [TestInitialize()]
     public void MyTestInitialize() {
       core.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(core_LoginError);
-      o2g = new FXCoreWrapper(core, "EUR/USD");
+      o2g = new FXCoreWrapper(core);
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("65245768", "1962", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
       //if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
-      o2g.OrderRemoved += new FXW.OrderRemovedEventHandler(o2g_OrderRemovedEvent);
+      o2g.OrderRemoved += new OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
     void o2g_OrderRemovedEvent(Order order) {
@@ -87,14 +88,13 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
-      var period = 1;
+      var period = 24;
       var pair = "EUR/JPY";// "EUR/USD";
-      SavePair(period, "EUR/USD");
-      SavePair(period, "EUR/JPY");
+      //SavePair(period, "EUR/USD");
     }
 
     private void SavePair(int period, string pair) {
-      var ticks = o2g.GetBarsBase(pair, period, DateTime.Now.AddYears(-3));
+      var ticks = o2g.GetBarsBase(pair, period, DateTime.Now.AddYears(-4));
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
@@ -102,7 +102,7 @@ namespace TestHH {
         var i = 0;
         ticks.ToList().ForEach(t => {
           var bar = context.CreateObject<t_Bar>();
-          bar.Pair = o2g.Pair;
+          bar.Pair = pair;
           bar.Period = period;
           bar.StartDate = t.StartDate;
           bar.AskHigh = t.AskHigh;

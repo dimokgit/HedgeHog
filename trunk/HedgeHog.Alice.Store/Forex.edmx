@@ -59,6 +59,13 @@
           <Parameter Name="Date" Type="datetime" Mode="In" />
           <Parameter Name="SpreadPeriod" Type="int" Mode="In" />
         </Function>
+        <Function Name="GetCorridorAverage" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="Pair" Type="varchar" Mode="In" />
+          <Parameter Name="Period" Type="tinyint" Mode="In" />
+          <Parameter Name="CorridorDate" Type="datetime" Mode="In" />
+          <Parameter Name="CorridorPeriods" Type="int" Mode="In" />
+          <Parameter Name="BarMinutes" Type="int" Mode="In" />
+        </Function>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -71,6 +78,13 @@
             <Parameter Name="Period" Mode="In" Type="Byte" />
             <Parameter Name="Date" Mode="In" Type="DateTime" />
             <Parameter Name="SpreadPeriod" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="GetCorridorAverage" ReturnType="Collection(ForexModel.GetCorridorAverage_Result)">
+            <Parameter Name="Pair" Mode="In" Type="String" />
+            <Parameter Name="Period" Mode="In" Type="Byte" />
+            <Parameter Name="CorridorDate" Mode="In" Type="DateTime" />
+            <Parameter Name="CorridorPeriods" Mode="In" Type="Int32" />
+            <Parameter Name="BarMinutes" Mode="In" Type="Int32" />
           </FunctionImport>
         </EntityContainer>
         <EntityType Name="t_Bar">
@@ -111,6 +125,10 @@
           <Property Type="Double" Name="CorridorMinutesBack" Nullable="false" />
           <Property Type="Guid" Name="SessionId" Nullable="false" />
         </EntityType>
+        <ComplexType Name="GetCorridorAverage_Result">
+          <Property Type="Double" Name="Avg" Nullable="true" />
+          <Property Type="Double" Name="StDev" Nullable="true" />
+        </ComplexType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -156,6 +174,14 @@
             </EntityTypeMapping>
           </EntitySetMapping>
           <FunctionImportMapping FunctionImportName="GetCorridor" FunctionName="ForexModel.Store.GetCorridor" />
+          <FunctionImportMapping FunctionImportName="GetCorridorAverage" FunctionName="ForexModel.Store.GetCorridorAverage">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ForexModel.GetCorridorAverage_Result">
+                <ScalarProperty Name="Avg" ColumnName="Avg" />
+                <ScalarProperty Name="StDev" ColumnName="StDev" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>

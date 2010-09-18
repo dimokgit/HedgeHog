@@ -89,7 +89,9 @@
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
         <TextBlock>
           <TextBlock Text="{Binding Net,StringFormat=c1}"/>
-          <TextBlock Text="{Binding Positions,StringFormat=/{0}}"/>
+          <TextBlock Text="{Binding PositionsBuy,StringFormat=/{0}}" ToolTip="Positions Buy"/>
+          <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
+          <TextBlock Text="{Binding PipsPerPosition,StringFormat=|{0:n0}}" ToolTip="Pips Per Position"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
           <LineBreak/>
           <TextBlock Text="{Binding LastTrade.Time,StringFormat='MMM/dd HH'}"/>
@@ -119,8 +121,8 @@
       <TextBlock>
       <TextBox Text="{Binding CurrentLoss}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
         <LineBreak/>
-      <TextBox Text="{Binding RunningBalance}"  ToolTip="Running Balance" />
-      <TextBox Text="{Binding MinimumGross}"  ToolTip="Minimum Gross" />
+      <TextBox Text="{Binding RunningBalance,StringFormat=n0}"  ToolTip="Running Balance" />
+      <TextBox Text="{Binding MinimumGross,StringFormat=n0}"  ToolTip="Minimum Gross" />
       <TextBox Text="{Binding HistoryMaximumLot}"  ToolTip="History Maximum Lot" />
       </TextBlock>
     </DataTemplate>
@@ -207,7 +209,7 @@
           </DataGridTemplateColumn.Header>
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
-        <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c1}" IsReadOnly="True"/>
+        <DataGridTextColumn Header="L ∑" Binding="{Binding TradeDirection}" IsReadOnly="True"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn CellTemplate="{StaticResource ReverseCellTemplate}" Visibility="Collapsed"></DataGridTemplateColumn>
         <DataGridTemplateColumn Header="B/S" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
@@ -283,7 +285,7 @@
                   </TextBlock.ToolTip>
                   </TextBlock>
                   <TextBlock Text="{Binding TakeProfitPipsMinimum,StringFormat=&gt;{0:n0}}"/>
-                <TextBlock Text="{Binding BarHeight60InPips,StringFormat=[{0:n1}}" ToolTip="Bar 60 Height in Pips"
+                <TextBlock Text="{Binding CorridorHeightMinimumInPips,StringFormat=[{0:n1}}" ToolTip="Corridor Height Minimum In Pips"
                            FontWeight="{Binding IsBarLowHighRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"
