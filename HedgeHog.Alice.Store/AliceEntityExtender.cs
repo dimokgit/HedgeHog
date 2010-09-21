@@ -36,16 +36,43 @@ namespace HedgeHog.Alice.Store {
   }
 
   public partial class ForexEntities{
-    public TradeDirections GetTradeDirection(DateTime today,string pair,int maPeriod) {
-      today = today.Date.AddHours(23);
-      var bars = this.t_Bar.Where(b => b.Pair == pair && b.Period == 24 && b.StartDate <= today).OrderByDescending(b=>b.StartDate).Take(maPeriod).ToArray();
+    public TradeDirections GetTradeDirection_(DateTime today,string pair,int maPeriod,out DateTime dateClose) {
+      today = today.AddDays(-1);
+      var bars = this.t_Bar.Where(b => b.Pair == pair && b.Period == 24 && b.StartDate <= today).OrderByDescending(b=>b.StartDate).Take(maPeriod+1).ToArray();
       int outBegIdx, outNBElement;
-      double[] outReal = new double[20];
-      TicTacTec.TA.Library.Core.Trima(0, bars.Count()-1, bars.Select(b => (b.AskClose + b.BidClose) / 2).ToArray(),
-        bars.Count(), out outBegIdx, out outNBElement, outReal);
-      var lastBar = bars.OrderBy(b=>b.StartDate).Last();
-      return (lastBar.AskClose + lastBar.BidClose) / 2 > outReal[0] ? TradeDirections.Up : TradeDirections.Down;
+      double[] outRealBig = new double[20];
+      double[] outRealSmall = new double[20];
+      Func<t_Bar, double> value = b => new[] { b.AskOpen + b.BidOpen + b.AskClose + b.BidClose }.Average();
+      var barValues = bars.OrderBy(b => b.StartDate).Select(b => value(b)).ToArray();
+      TicTacTec.TA.Library.Core.Trima(0, barValues.Count() - 1, barValues, barValues.Count(), out outBegIdx, out outNBElement, outRealBig);
+      barValues = barValues.Skip((barValues.Length * .75).ToInt()).ToArray();
+      TicTacTec.TA.Library.Core.Trima(0, barValues.Count() - 1, barValues, barValues.Count(), out outBegIdx, out outNBElement, outRealSmall);
+      var lastBar = bars.OrderBy(b => b.StartDate).Last();
+      dateClose = lastBar.StartDate.AddDays(1);
+      return value(lastBar) > outRealBig[0] && value(lastBar) > outRealSmall[0]
+        ? TradeDirections.Up
+        : value(lastBar) < outRealBig[0] && value(lastBar) < outRealSmall[0]
+        ? TradeDirections.Down : TradeDirections.None;
     }
+    public TradeDirections GetTradeDirection(DateTime today, string pair, int maPeriod, out DateTime dateClose) {
+      var period = 60;
+      var bars = this.BarsByMinutes(pair, (byte)period, today, 24, maPeriod).ToArray();
+      int outBegIdx, outNBElement;
+      double[] outRealBig = new double[20];
+      double[] outRealSmall = new double[20];
+      Func<BarsByMinutes_Result, double> value = b => new[] { b.AskOpen + b.BidOpen + b.AskClose + b.BidClose }.Average().Value;
+      var barValues = bars.OrderBy(b => b.DateOpen).Select(b => value(b)).ToArray();
+      TicTacTec.TA.Library.Core.Trima(0, barValues.Count() - 1, barValues, barValues.Count(), out outBegIdx, out outNBElement, outRealBig);
+      barValues = barValues.Skip((barValues.Length * .75).ToInt()).ToArray();
+      TicTacTec.TA.Library.Core.Trima(0, barValues.Count() - 1, barValues, barValues.Count(), out outBegIdx, out outNBElement, outRealSmall);
+      var lastBar = bars.OrderBy(b => b.DateOpen).Last();
+      dateClose = lastBar.DateClose.Value.AddMinutes(period);
+      return value(lastBar) > outRealBig[0] && value(lastBar) > outRealSmall[0]
+        ? TradeDirections.Up
+        : value(lastBar) < outRealBig[0] && value(lastBar) < outRealSmall[0]
+        ? TradeDirections.Down : TradeDirections.None;
+    }
+
   }
   public partial class TradeHistory {
     public double NetPL { get { return GrossPL - Commission; } }
@@ -183,7 +210,13 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("CorridorAverageHeightInPips");
         OnPropertyChanged("PriceCmaDiffHighInPips");
         OnPropertyChanged("PriceCmaDiffLowInPips");
+        OnPropertyChanged("IsCorridorAvarageHeightOk");
+        OnPropertyChanged("IsCorridornessOk");
       }
+    }
+
+    public bool IsCorridornessOk {
+      get { return CorridorStats.IsCorridornessOk; }
     }
 
     Trade[] emptyTrades = new Trade[] { };
@@ -551,7 +584,7 @@ namespace HedgeHog.Alice.Store {
 
     private double _PipsPerPosition;
     public double PipsPerPosition {
-      get { return Trades.Length < 2 ? 0 : InPips(Trades.Max(t => t.Open) - Trades.Min(t => t.Open)) / (Trades.Length - 1); }
+      get { return Trades.Length<2?0: InPips(Trades.Max(t => t.Open) - Trades.Min(t => t.Open))/(Trades.Length-1); }
     }
 
 
@@ -656,7 +689,7 @@ namespace HedgeHog.Alice.Store {
       set { FibMin = value; }
     }
 
-    public bool IsCorridorAvarageHeightOk { get { return true ||(CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
+    public bool IsCorridorAvarageHeightOk { get { return (CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
 
     private double _CorridorHeightMinimum;
     public double CorridorHeightMinimum {
@@ -895,7 +928,11 @@ namespace HedgeHog.Alice.Store {
         ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
         _lastTrade = value;
         var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
-        tu.TradeStats = new TradeStatistics() { TakeProfitInPipsMinimum = TakeProfitPips.ToInt(), MinutesBack = CorridorBarMinutesEx,SessionId = SessionId };
+        tu.TradeStats = new TradeStatistics() { 
+          TakeProfitInPipsMinimum = TakeProfitPips.ToInt(),
+          MinutesBack = (CorridorStats.Corridornes*100).ToInt(),
+          SessionId = SessionId 
+        };
         OnPropertyChanged("LastTrade");
         OnPropertyChanged("LastLotSize");
         OnPropertyChanged("MaxLotSize");

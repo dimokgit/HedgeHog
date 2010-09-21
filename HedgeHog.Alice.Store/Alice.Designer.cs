@@ -1249,7 +1249,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="barPeriodsHigh">Initial value of the BarPeriodsHigh property.</param>
         /// <param name="strictTradeClose">Initial value of the StrictTradeClose property.</param>
         /// <param name="barPeriodsLowHighRatio">Initial value of the BarPeriodsLowHighRatio property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio)
+        /// <param name="longMAPeriod">Initial value of the LongMAPeriod property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1279,6 +1280,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.BarPeriodsHigh = barPeriodsHigh;
             tradingMacro.StrictTradeClose = strictTradeClose;
             tradingMacro.BarPeriodsLowHighRatio = barPeriodsLowHighRatio;
+            tradingMacro.LongMAPeriod = longMAPeriod;
             return tradingMacro;
         }
 
@@ -1935,6 +1937,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _BarPeriodsLowHighRatio;
         partial void OnBarPeriodsLowHighRatioChanging(global::System.Double value);
         partial void OnBarPeriodsLowHighRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 LongMAPeriod
+        {
+            get
+            {
+                return _LongMAPeriod;
+            }
+            set
+            {
+                OnLongMAPeriodChanging(value);
+                ReportPropertyChanging("LongMAPeriod");
+                _LongMAPeriod = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LongMAPeriod");
+                OnLongMAPeriodChanged();
+            }
+        }
+        private global::System.Int32 _LongMAPeriod;
+        partial void OnLongMAPeriodChanging(global::System.Int32 value);
+        partial void OnLongMAPeriodChanged();
 
         #endregion
     

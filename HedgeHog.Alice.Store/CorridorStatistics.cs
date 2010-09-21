@@ -194,7 +194,7 @@ namespace HedgeHog.Alice.Store {
       this.TradingMacro = tradingMacro;
     }
     public bool IsCorridornessOk {
-      get { return Corridornes <= TradingMacro.CorridornessMin; }
+      get { return Corridornes >= TradingMacro.CorridornessMin; }
     }
     bool? _TradeSignal;
     public bool? TradeSignal {

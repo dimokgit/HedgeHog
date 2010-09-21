@@ -88,9 +88,9 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
-      var period = 24;
+      var period = 60;
       var pair = "EUR/JPY";// "EUR/USD";
-      //SavePair(period, "EUR/USD");
+      SavePair(period, "EUR/USD");
     }
 
     private void SavePair(int period, string pair) {
