@@ -94,7 +94,7 @@
           <TextBlock Text="{Binding PipsPerPosition,StringFormat=|{0:n0}}" ToolTip="Pips Per Position"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
           <LineBreak/>
-          <TextBlock Text="{Binding LastTrade.Time,StringFormat='MMM/dd HH'}"/>
+          <TextBlock Text="{Binding RateLast.StartDate,StringFormat='MM/dd/yy'}"/>
           <TextBlock Text="{Binding Profitability,StringFormat=[{0:c0}]}" ToolTip="Profitability Per Month"/>
         </TextBlock>
       </Label>
@@ -269,11 +269,11 @@
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
-                <TextBlock Text="{Binding BarPeriodsLowHighRatioValue,StringFormat=p0}" ToolTip="Bar Periods Low/High Ratio Value"
-                           FontWeight="{Binding IsBarLowHighRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                <TextBlock Text="{Binding CorridorStats.Corridornes,StringFormat=p0}" ToolTip="Corridornes"
+                           FontWeight="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}"
-                  FontWeight="{Binding IsTakeProfitPipsMinimumOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                  FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            >
                   <TextBlock.ToolTip>
                     <ToolTip>
@@ -335,7 +335,7 @@
           <DataGridTemplateColumn.CellEditingTemplate>
             <DataTemplate>
               <TextBlock>
-                <TextBox Text="{Binding FibMin}" ToolTip="Corridor Minimum"/>
+                <TextBox Text="{Binding FibMin,StringFormat=n1}" ToolTip="Corridor Minimum"/>
                 <TextBox Text="{Binding MaxLotByTakeProfitRatio}" ToolTip="MaxLot By Take Profit Ratio"/>
                 <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Minimum" Visibility="Collapsed"/>
                 <CheckBox IsChecked="{Binding LimitCorridorByBarHeight}" ToolTip="Limit Corridor By Bar Height"/>
@@ -347,6 +347,8 @@
                 <TextBox Text="{Binding BarPeriodsHigh}" ToolTip="Bar Height High"/>
                 <TextBox Text="{Binding BarPeriodsLowHighRatio}" ToolTip="Bar Periods LowHigh Ratio"/>
                 <CheckBox IsChecked="{Binding StrictTradeClose}" ToolTip="Strict Trade Close"/>
+                <TextBox Text="{Binding LongMAPeriod}" ToolTip="Long MA Period"/>
+                <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Min"/>
               </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>

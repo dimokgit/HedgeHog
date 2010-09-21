@@ -75,8 +75,8 @@ namespace HedgeHog.Alice.Store {
           ratesBuffer = GetRateFromDB(VirtualPair, d, tm.CorridorBarMinutesEx, minutesPerPeriod);
           if (ratesBuffer.Length == 0) return null;
           var res = GlobalStorage.ForexContext.GetCorridorAverage(VirtualPair, (byte)minutesPerPeriod, d, 60 * 24 * 5,tm.LimitBar).FirstOrDefault();
-          tm.CorridorHeightMinimum = (res.Avg+res.StDev).Value;
-          tm.TakeProfitPipsMinimum = tradesManager.InPips(VirtualPair, (res.Avg).Value);
+          tm.CorridorHeightMinimum = (res.Avg).Value;
+          tm.TakeProfitPipsMinimum = tradesManager.InPips(VirtualPair, res.Avg);
           if (tm.FibMin == 0) throw new Exception("FibMin cannot be zero.");
         }
         return ratesBuffer.Where(r => dateFilter(r, d)).FirstOrDefault();
@@ -92,9 +92,9 @@ namespace HedgeHog.Alice.Store {
           tm.MinimumGross = 0;
           tm.HistoryMaximumLot=0;
           tm.RunningBalance = 0;
-          var maPeriod = 14;
-          var maDate = rates.Last().StartDate.Date;
-          tm.TradeDirection = GlobalStorage.ForexContext.GetTradeDirection(maDate, VirtualPair, maPeriod);
+          var maPeriod = tm.LongMAPeriod;
+          DateTime maDate;
+          tm.TradeDirection = GlobalStorage.ForexContext.GetTradeDirection(rates.Last().StartDate, VirtualPair, maPeriod,out maDate);
           while (rates.Count() > 0) {
             ct.ThrowIfCancellationRequested();
             if (Application.Current == null) break;
@@ -117,9 +117,9 @@ namespace HedgeHog.Alice.Store {
 
               //rates.RemoveAll(r=>r.StartDate< lastDate);
             }
-            if (rate.StartDate.Date > maDate) {
-              maDate = rate.StartDate.Date;
-              tm.TradeDirection = GlobalStorage.ForexContext.GetTradeDirection(maDate, VirtualPair, maPeriod);
+            if ( rate.StartDate >= maDate) {
+              tm.TradeDirection = GlobalStorage.ForexContext.GetTradeDirection(rate.StartDate, VirtualPair, maPeriod, out maDate);
+              if (rate.StartDate - maDate > TimeSpan.FromDays(1)) maDate = maDate.AddDays(2);
             }
           }
           if (fw.IsLoggedIn) {

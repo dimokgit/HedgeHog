@@ -47,6 +47,13 @@
           <Property Name="CorridorMinutesBack" Type="float" Nullable="false" />
           <Property Name="SessionId" Type="uniqueidentifier" Nullable="false" />
         </EntityType>
+        <Function Name="BarsByMinutes" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="Pair" Type="varchar" Mode="In" />
+          <Parameter Name="Period" Type="tinyint" Mode="In" />
+          <Parameter Name="DateEnd" Type="datetime" Mode="In" />
+          <Parameter Name="BarMinutes" Type="int" Mode="In" />
+          <Parameter Name="BarsCount" Type="int" Mode="In" />
+        </Function>
         <Function Name="Corridor" ReturnType="real" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="true" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
           <Parameter Name="Pair" Type="varchar" Mode="In" />
           <Parameter Name="Period" Type="tinyint" Mode="In" />
@@ -85,6 +92,13 @@
             <Parameter Name="CorridorDate" Mode="In" Type="DateTime" />
             <Parameter Name="CorridorPeriods" Mode="In" Type="Int32" />
             <Parameter Name="BarMinutes" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="BarsByMinutes" ReturnType="Collection(ForexModel.BarsByMinutes_Result)">
+            <Parameter Name="Pair" Mode="In" Type="String" />
+            <Parameter Name="Period" Mode="In" Type="Byte" />
+            <Parameter Name="DateEnd" Mode="In" Type="DateTime" />
+            <Parameter Name="BarMinutes" Mode="In" Type="Int32" />
+            <Parameter Name="BarsCount" Mode="In" Type="Int32" />
           </FunctionImport>
         </EntityContainer>
         <EntityType Name="t_Bar">
@@ -128,6 +142,18 @@
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
           <Property Type="Double" Name="StDev" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="BarsByMinutes_Result">
+          <Property Type="Single" Name="AskHigh" Nullable="true" />
+          <Property Type="Single" Name="AskLow" Nullable="true" />
+          <Property Type="Single" Name="BidHigh" Nullable="true" />
+          <Property Type="Single" Name="BidLow" Nullable="true" />
+          <Property Type="Single" Name="AskOpen" Nullable="true" />
+          <Property Type="Single" Name="AskClose" Nullable="true" />
+          <Property Type="Single" Name="BidOpen" Nullable="true" />
+          <Property Type="Single" Name="BidClose" Nullable="true" />
+          <Property Type="DateTime" Name="DateClose" Nullable="true" Precision="23" />
+          <Property Type="DateTime" Name="DateOpen" Nullable="true" Precision="23" />
         </ComplexType>
       </Schema>
     </edmx:ConceptualModels>
@@ -179,6 +205,22 @@
               <ComplexTypeMapping TypeName="ForexModel.GetCorridorAverage_Result">
                 <ScalarProperty Name="Avg" ColumnName="Avg" />
                 <ScalarProperty Name="StDev" ColumnName="StDev" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="BarsByMinutes" FunctionName="ForexModel.Store.BarsByMinutes">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ForexModel.BarsByMinutes_Result">
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="DateClose" ColumnName="DateClose" />
+                <ScalarProperty Name="DateOpen" ColumnName="DateOpen" />
               </ComplexTypeMapping>
             </ResultMapping>
           </FunctionImportMapping>

@@ -233,6 +233,69 @@ namespace HedgeHog.Alice.Store
     
             return base.ExecuteFunction<GetCorridorAverage_Result>("GetCorridorAverage", pairParameter, periodParameter, corridorDateParameter, corridorPeriodsParameter, barMinutesParameter);
         }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        /// <param name="pair">No Metadata Documentation available.</param>
+        /// <param name="period">No Metadata Documentation available.</param>
+        /// <param name="dateEnd">No Metadata Documentation available.</param>
+        /// <param name="barMinutes">No Metadata Documentation available.</param>
+        /// <param name="barsCount">No Metadata Documentation available.</param>
+        public ObjectResult<BarsByMinutes_Result> BarsByMinutes(global::System.String pair, Nullable<global::System.Byte> period, Nullable<global::System.DateTime> dateEnd, Nullable<global::System.Int32> barMinutes, Nullable<global::System.Int32> barsCount)
+        {
+            ObjectParameter pairParameter;
+            if (pair != null)
+            {
+                pairParameter = new ObjectParameter("Pair", pair);
+            }
+            else
+            {
+                pairParameter = new ObjectParameter("Pair", typeof(global::System.String));
+            }
+    
+            ObjectParameter periodParameter;
+            if (period.HasValue)
+            {
+                periodParameter = new ObjectParameter("Period", period);
+            }
+            else
+            {
+                periodParameter = new ObjectParameter("Period", typeof(global::System.Byte));
+            }
+    
+            ObjectParameter dateEndParameter;
+            if (dateEnd.HasValue)
+            {
+                dateEndParameter = new ObjectParameter("DateEnd", dateEnd);
+            }
+            else
+            {
+                dateEndParameter = new ObjectParameter("DateEnd", typeof(global::System.DateTime));
+            }
+    
+            ObjectParameter barMinutesParameter;
+            if (barMinutes.HasValue)
+            {
+                barMinutesParameter = new ObjectParameter("BarMinutes", barMinutes);
+            }
+            else
+            {
+                barMinutesParameter = new ObjectParameter("BarMinutes", typeof(global::System.Int32));
+            }
+    
+            ObjectParameter barsCountParameter;
+            if (barsCount.HasValue)
+            {
+                barsCountParameter = new ObjectParameter("BarsCount", barsCount);
+            }
+            else
+            {
+                barsCountParameter = new ObjectParameter("BarsCount", typeof(global::System.Int32));
+            }
+    
+            return base.ExecuteFunction<BarsByMinutes_Result>("BarsByMinutes", pairParameter, periodParameter, dateEndParameter, barMinutesParameter, barsCountParameter);
+        }
 
         #endregion
     }
@@ -982,6 +1045,259 @@ namespace HedgeHog.Alice.Store
 
     #endregion
     #region ComplexTypes
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmComplexTypeAttribute(NamespaceName="ForexModel", Name="BarsByMinutes_Result")]
+    [DataContractAttribute(IsReference=true)]
+    [Serializable()]
+    public partial class BarsByMinutes_Result : ComplexObject
+    {
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> AskHigh
+        {
+            get
+            {
+                return _AskHigh;
+            }
+            set
+            {
+                OnAskHighChanging(value);
+                ReportPropertyChanging("AskHigh");
+                _AskHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskHigh");
+                OnAskHighChanged();
+            }
+        }
+        private Nullable<global::System.Single> _AskHigh;
+        partial void OnAskHighChanging(Nullable<global::System.Single> value);
+        partial void OnAskHighChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> AskLow
+        {
+            get
+            {
+                return _AskLow;
+            }
+            set
+            {
+                OnAskLowChanging(value);
+                ReportPropertyChanging("AskLow");
+                _AskLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskLow");
+                OnAskLowChanged();
+            }
+        }
+        private Nullable<global::System.Single> _AskLow;
+        partial void OnAskLowChanging(Nullable<global::System.Single> value);
+        partial void OnAskLowChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> BidHigh
+        {
+            get
+            {
+                return _BidHigh;
+            }
+            set
+            {
+                OnBidHighChanging(value);
+                ReportPropertyChanging("BidHigh");
+                _BidHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidHigh");
+                OnBidHighChanged();
+            }
+        }
+        private Nullable<global::System.Single> _BidHigh;
+        partial void OnBidHighChanging(Nullable<global::System.Single> value);
+        partial void OnBidHighChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> BidLow
+        {
+            get
+            {
+                return _BidLow;
+            }
+            set
+            {
+                OnBidLowChanging(value);
+                ReportPropertyChanging("BidLow");
+                _BidLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidLow");
+                OnBidLowChanged();
+            }
+        }
+        private Nullable<global::System.Single> _BidLow;
+        partial void OnBidLowChanging(Nullable<global::System.Single> value);
+        partial void OnBidLowChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> AskOpen
+        {
+            get
+            {
+                return _AskOpen;
+            }
+            set
+            {
+                OnAskOpenChanging(value);
+                ReportPropertyChanging("AskOpen");
+                _AskOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskOpen");
+                OnAskOpenChanged();
+            }
+        }
+        private Nullable<global::System.Single> _AskOpen;
+        partial void OnAskOpenChanging(Nullable<global::System.Single> value);
+        partial void OnAskOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> AskClose
+        {
+            get
+            {
+                return _AskClose;
+            }
+            set
+            {
+                OnAskCloseChanging(value);
+                ReportPropertyChanging("AskClose");
+                _AskClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskClose");
+                OnAskCloseChanged();
+            }
+        }
+        private Nullable<global::System.Single> _AskClose;
+        partial void OnAskCloseChanging(Nullable<global::System.Single> value);
+        partial void OnAskCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> BidOpen
+        {
+            get
+            {
+                return _BidOpen;
+            }
+            set
+            {
+                OnBidOpenChanging(value);
+                ReportPropertyChanging("BidOpen");
+                _BidOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidOpen");
+                OnBidOpenChanged();
+            }
+        }
+        private Nullable<global::System.Single> _BidOpen;
+        partial void OnBidOpenChanging(Nullable<global::System.Single> value);
+        partial void OnBidOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Single> BidClose
+        {
+            get
+            {
+                return _BidClose;
+            }
+            set
+            {
+                OnBidCloseChanging(value);
+                ReportPropertyChanging("BidClose");
+                _BidClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidClose");
+                OnBidCloseChanged();
+            }
+        }
+        private Nullable<global::System.Single> _BidClose;
+        partial void OnBidCloseChanging(Nullable<global::System.Single> value);
+        partial void OnBidCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> DateClose
+        {
+            get
+            {
+                return _DateClose;
+            }
+            set
+            {
+                OnDateCloseChanging(value);
+                ReportPropertyChanging("DateClose");
+                _DateClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateClose");
+                OnDateCloseChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _DateClose;
+        partial void OnDateCloseChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> DateOpen
+        {
+            get
+            {
+                return _DateOpen;
+            }
+            set
+            {
+                OnDateOpenChanging(value);
+                ReportPropertyChanging("DateOpen");
+                _DateOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateOpen");
+                OnDateOpenChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _DateOpen;
+        partial void OnDateOpenChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateOpenChanged();
+
+        #endregion
+    }
     
     /// <summary>
     /// No Metadata Documentation available.
