@@ -217,7 +217,7 @@ namespace System.Linq.Dynamic {
     ModuleBuilder module;
     Dictionary<Signature, Type> classes;
     int classCount;
-    ReaderWriterLock rwLock;
+    SilverlightControlState.ControlState.ReaderWriterLock rwLock;
 
     private ClassFactory() {
       AssemblyName name = new AssemblyName("DynamicClasses");
@@ -233,7 +233,7 @@ namespace System.Linq.Dynamic {
 #endif
       }
       classes = new Dictionary<Signature, Type>();
-      rwLock = new ReaderWriterLock();
+      rwLock = new SilverlightControlState.ControlState.ReaderWriterLock();
     }
 
     public Type GetDynamicClass(IEnumerable<DynamicProperty> properties) {

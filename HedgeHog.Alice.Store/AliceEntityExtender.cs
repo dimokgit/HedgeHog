@@ -381,8 +381,9 @@ namespace HedgeHog.Alice.Store {
         return _PriceQueue;
       }
     }
-    public void TicksPerMinuteSet(Price price, DateTime serverTime, Func<double, double> inPips) {
+    public void TicksPerMinuteSet(Price price, DateTime serverTime, Func<double, double> inPips,double pointSize) {
       if (_InPips == null) _InPips = inPips;
+      if (PointSize == 0) PointSize = pointSize;
       PriceQueue.Add(price, serverTime);
       OnPropertyChanged("TicksPerMinuteInstant");
       OnPropertyChanged("TicksPerMinute");
@@ -689,6 +690,21 @@ namespace HedgeHog.Alice.Store {
       set { FibMin = value; }
     }
 
+    private double _Volatility;
+    public double Volatility {
+      get { return _Volatility; }
+      set {
+        if (_Volatility != value) {
+          _Volatility = value;
+          OnPropertyChanged("Volatility");
+        }
+      }
+    }
+
+    public void ResetCorridor() {
+      //CorridorStats.AverageHeightCurrentMinimum = 0;
+    }
+
     public bool IsCorridorAvarageHeightOk { get { return (CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
 
     private double _CorridorHeightMinimum;
@@ -704,6 +720,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double CorridorHeightMinimumInPips { get { return InPips(CorridorHeightMinimum); } }
+
+    public double CorridorHeightByRegression { get { return CorridorStats == null ? 0 : CorridorStats.HeightByRegression; } }
+    public double CorridorHeightByRegressionInPips { get { return InPips(CorridorHeightByRegression); } }
 
     private int _HistoricalGrossPL;
     public int HistoricalGrossPL {
@@ -754,13 +773,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    bool? _TradeSignal;
 
-    public bool? TradeSignal {
-      get {
-        return CorridorStats == null ? null : CorridorStats.TradeSignal;
-      }
-    }
+    public bool? TradeSignal { get { return CorridorStats == null ? null : CorridorStats.TradeSignal; } }
+    public bool? OpenSignal { get { return CorridorStats == null ? null : CorridorStats.OpenSignal; } }
+    public bool? CloseSignal { get { return CorridorStats == null ? null : CorridorStats.CloseSignal; } }
 
     public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().FirstOrDefault()), 2); } }
     //public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
@@ -817,12 +833,33 @@ namespace HedgeHog.Alice.Store {
       get { return _PriceCmaDirection; }
       set { _PriceCmaDirection = value; }
     }
+
+    public double HeightsRatio { get { return CorridorStats == null ? 0 : CorridorStats.HeightsRatio; } }
+    private double _CorridorAngle;
+    public double CorridorAngle {
+      get { return _CorridorAngle; }
+      set {
+        if (PointSize!= 0) {
+          _CorridorAngle = value.Angle() / PointSize;
+          OnPropertyChanged("CorridorAngle");
+        }
+      }
+    }
+
+
     List<Rate> _Rates;
     public List<Rate> Rates {
       get { return _Rates; }
       set {
         _Rates = value;
-        RatesLast = value.ToArray().Skip(Rates.Count - 3).ToArray();
+        if (CorridorStats != null) {
+          var coeffs = Rates.SetCorridorPrices(CorridorStats.StartDate);
+          CorridorAngle = coeffs[1];
+          OnPropertyChanged("HeightsRatio");
+          OnPropertyChanged("CorridorHeightByRegressionInPips");
+        }
+        var dateLast = value.Last().StartDate.AddMinutes(-3);
+        RatesLast = value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
         RateLast = RatesLast.Last();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
@@ -876,7 +913,7 @@ namespace HedgeHog.Alice.Store {
       get { return _InPips == null ? d => 0 : _InPips; }
       set { _InPips = value; }
     }
-
+    public double PointSize { get; set; }
 
     double _HeightFib;
 
@@ -928,8 +965,8 @@ namespace HedgeHog.Alice.Store {
         ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
         _lastTrade = value;
         var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
-        tu.TradeStats = new TradeStatistics() { 
-          TakeProfitInPipsMinimum = TakeProfitPips.ToInt(),
+        tu.TradeStats = new TradeStatistics() {
+          TakeProfitInPipsMinimum = (Volatility * 100).ToInt(),
           MinutesBack = (CorridorStats.Corridornes*100).ToInt(),
           SessionId = SessionId 
         };
@@ -944,6 +981,7 @@ namespace HedgeHog.Alice.Store {
     }
     public int MaxLotSize {
       get {
+        return MaxLotByTakeProfitRatio.ToInt() * LotSize;
         //return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL.Abs().Between(TakeProfitPipsMinimum, TakeProfitPipsMinimum * MaxLotByTakeProfitRatio)) ? LotSize : -LotSize));
         //return Math.Max(LotSize, LastTrade.Lots +
         //  (LastTrade.PL > 0 ? 0 :

@@ -10,6 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "HedgeHogs", "HedgeHogs", "{C4B3E0D6-F3FE-4111-A2B4-E92AC7123CAC}"
+	ProjectSection(SolutionItems) = preProject
+		DynamicDataDisplay v0.3 Source.zip = DynamicDataDisplay v0.3 Source.zip
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Alice", "Alice", "{86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}"
 EndProject
@@ -87,6 +90,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Alice.Store", "HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj", "{C8766AE8-E649-4D05-A206-7D2FAB63F14A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Math", "HedgeHog.Math\HedgeHog.Math.csproj", "{21C4A910-0C04-436D-B797-4D564DB29627}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicLinq_SL", "DynamicLinq_SL\DynamicLinq_SL.csproj", "{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineSample", "DynamicDataDisplay v0.3 Source\src\Samples\v0.2\LineSample\LineSample.csproj", "{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}"
 EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
@@ -415,6 +422,26 @@ Global
 		{21C4A910-0C04-436D-B797-4D564DB29627}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{21C4A910-0C04-436D-B797-4D564DB29627}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{21C4A910-0C04-436D-B797-4D564DB29627}.Release|x86.ActiveCfg = Release|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{ED74F999-1985-44BB-B0EE-8EA37FA0D7CC}.Release|x86.ActiveCfg = Release|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

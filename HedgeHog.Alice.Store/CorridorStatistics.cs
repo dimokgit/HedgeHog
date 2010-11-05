@@ -6,187 +6,196 @@ using HedgeHog.Bars;
 using System.Diagnostics;
 
 namespace HedgeHog.Alice.Store {
-  public class CorridorStatistics:HedgeHog.Models.ModelBase {
+  public class CorridorStatistics : HedgeHog.Models.ModelBase {
 
-      public double AverageHigh { get; set; }
-      public double AverageLow { get; set; }
-      public double AverageHeight { get { return AverageHigh - AverageLow; } }
-      public double Density { get; set; }
-      double _AskHigh;
+    public double AverageHigh { get; set; }
+    public double AverageLow { get; set; }
+    public double AverageHeight { get { return AverageHigh - AverageLow; } }
+    public double Density { get; set; }
+    double _AskHigh;
 
-      public double AskHigh {
-        get { return _AskHigh; }
-        set {
-          var h = Height;
-          _AskHigh = value;
-          //if (Height / h > 1.5) ClearCorridorFib();
+    public double AskHigh {
+      get { return _AskHigh; }
+      set {
+        var h = Height;
+        _AskHigh = value;
+        //if (Height / h > 1.5) ClearCorridorFib();
+      }
+    }
+    double _BidLow;
+
+    public double BidLow {
+      get { return _BidLow; }
+      set {
+        var h = Height;
+        _BidLow = value;
+        //if (Height / h > 1.5) ClearCorridorFib();
+      }
+    }
+    public double Height { get { return AskHigh - BidLow; } }
+    public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
+    public DateTime EndDate { get; set; }
+    public DateTime StartDate { get; set; }
+    public int Periods { get; set; }
+    public int Iterations { get; set; }
+    public double HeightByRegression {
+      get { return TradingMacro.RatesLast.Where(r => r.PriceAvg1 != 0).Select(r => r.PriceAvg2 - r.PriceAvg3).FirstOrDefault(); }
+    }
+
+    public CorridorStatistics() {
+
+    }
+    public CorridorStatistics(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(density, averageHigh, averageLow, askHigh, bidLow, periods, endDate, startDate, 0);
+    }
+
+    public void Init(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
+      this.Density = density;
+      this.AverageHigh = averageHigh;
+      this.AverageLow = averageLow;
+      if (TradingMacro != null) {
+        var n = 2;
+        if (this.AverageHeight > TradingMacro.CorridorHeightMinimum * n) AverageHeightCurrentMinimum = this.AverageHeight;
+        else if (this.AverageHeightCurrentMinimum > this.AverageHeight)
+          this.AverageHeightCurrentMinimum = this.AverageHeight;
+      }
+      this.AskHigh = askHigh;
+      this.BidLow = bidLow;
+      this.EndDate = endDate;
+      this.StartDate = startDate;
+      this.Periods = periods;
+      this.Iterations = iterations;
+      //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
+      Corridornes = Density;
+      OnPropertyChanged("Height");
+      OnPropertyChanged("HeightInPips");
+    }
+
+
+    #region CorridorFib
+    private double _buyStopByCorridor;
+    public double BuyStopByCorridor {
+      get { return _buyStopByCorridor; }
+      protected set {
+        _buyStopByCorridor = value;
+        OnPropertyChanged("BuyStopByCorridor");
+      }
+    }
+
+    private double _sellStopByCorridor;
+    public double SellStopByCorridor {
+      get { return _sellStopByCorridor; }
+      protected set {
+        _sellStopByCorridor = value;
+        OnPropertyChanged("SellStopByCorridor");
+      }
+    }
+
+    private double _CorridorFibInstant;
+    public double CorridorFibInstant {
+      get { return _CorridorFibInstant; }
+      set {
+        if (_CorridorFibInstant != value) {
+          _CorridorFibInstant = value;
+          CorridorFib = value;
+          OnPropertyChanged("CorridorFibInstant");
+          OnPropertyChanged("TradeSignal");
         }
       }
-      double _BidLow;
+    }
 
-      public double BidLow {
-        get { return _BidLow; }
-        set {
-          var h = Height;
-          _BidLow = value;
-          //if (Height / h > 1.5) ClearCorridorFib();
+    private double _CorridorFib;
+    public double CorridorFib {
+      get { return _CorridorFib; }
+      set {
+        if (value != 0 && _CorridorFib != value) {
+          //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
+          _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, CorridorFibCmaPeriod, value);
+          CorridorFibAverage = _CorridorFib;
+          OnPropertyChanged("CorridorFib");
         }
       }
-      public double Height { get { return AskHigh - BidLow; } }
-      public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
-      public DateTime EndDate { get; set; }
-      public DateTime StartDate { get; set; }
-      public int Periods { get; set; }
-      public int Iterations { get; set; }
+    }
 
-      public CorridorStatistics() {
-
-      }
-      public CorridorStatistics(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate) {
-        Init(density, averageHigh, averageLow, askHigh, bidLow, periods, endDate, startDate, 0);
-      }
-
-      public void Init(double density, double averageHigh, double averageLow, double askHigh, double bidLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
-        this.Density = density;
-        this.AverageHigh = averageHigh;
-        this.AverageLow = averageLow;
-        this.AskHigh = askHigh;
-        this.BidLow = bidLow;
-        this.EndDate = endDate;
-        this.StartDate = startDate;
-        this.Periods = periods;
-        this.Iterations = iterations;
-        //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
-        Corridornes = Density;
-        OnPropertyChanged("Height");
-        OnPropertyChanged("HeightInPips");
-      }
-
-
-      #region CorridorFib
-      private double _buyStopByCorridor;
-      public double BuyStopByCorridor {
-        get { return _buyStopByCorridor; }
-        protected set {
-          _buyStopByCorridor = value;
-          OnPropertyChanged("BuyStopByCorridor");
+    private double _CorridorFibAverage;
+    public double CorridorFibAverage {
+      get { return _CorridorFibAverage; }
+      set {
+        if (value != 0 && _CorridorFibAverage != value) {
+          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, CorridorFibCmaPeriod, value);
+          OnPropertyChanged("CorridorFibAverage");
         }
       }
+    }
 
-      private double _sellStopByCorridor;
-      public double SellStopByCorridor {
-        get { return _sellStopByCorridor; }
-        protected set {
-          _sellStopByCorridor = value;
-          OnPropertyChanged("SellStopByCorridor");
+    public void SetCorridorFib(double buyStop, double sellStop, double cmaPeriod) {
+      var cfiMax = 500;
+      CorridorFibCmaPeriod = cmaPeriod;
+      BuyStopByCorridor = Math.Max(0, buyStop);
+      SellStopByCorridor = Math.Max(0, sellStop);
+      var cf = BuyStopByCorridor == 0 ? -bigFibAverage.Average()
+                : SellStopByCorridor == 0 ? bigFibAverage.Average()
+                : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
+      CorridorFibInstant = cf > 0 ? Math.Min(cfiMax, cf) : Math.Max(-cfiMax, cf);
+      if (CorridorFibInstant > 100 && CorridorFibInstant != bigFibAverage.Last()) {
+        if (bigFibAverage.Count > 20) bigFibAverage.Dequeue();
+        bigFibAverage.Enqueue(CorridorFibInstant);
+      }
+    }
+    void ClearCorridorFib() {
+      _CorridorFibInstant = _CorridorFibAverage = _CorridorFib = 0;
+    }
+    public double CorridorFibCmaPeriod { get; set; }
+
+    double _corridornes;
+    public double Corridornes {
+      get { return _corridornes; }
+      set {
+        if (_corridornes == value) return;
+        _corridornes = value;
+        OnPropertyChanged("Corridornes");
+        OnPropertyChanged("MinutesBack");
+        OnPropertyChanged("IsCorridornessOk");
+      }
+    }
+
+    Func<double, double> _InPips = null;
+
+    public Func<double, double> InPips {
+      get { return _InPips; }
+      set { _InPips = value; }
+    }
+
+    private double _FibMinimum;
+    public double FibMinimum {
+      get { return _FibMinimum; }
+      set {
+        if (_FibMinimum != value) {
+          _FibMinimum = value;
+          OnPropertyChanged("FibMinimum");
+          OnPropertyChanged("TradeSignal");
         }
       }
+    }
 
-      private double _CorridorFibInstant;
-      public double CorridorFibInstant {
-        get { return _CorridorFibInstant; }
-        set {
-          if (_CorridorFibInstant != value) {
-            _CorridorFibInstant = value;
-            CorridorFib = value;
-            OnPropertyChanged("CorridorFibInstant");
-            OnPropertyChanged("TradeSignal");
-          }
+    #endregion
+
+
+    Queue<double> bigFibAverage = new Queue<double>(new[] { 100.0 });
+
+    public int IsCurrentInt { get { return Convert.ToInt32(IsCurrent); } }
+    bool _IsCurrent;
+    public bool IsCurrent {
+      get { return _IsCurrent; }
+      set {
+        if (_IsCurrent != value) {
+          _IsCurrent = value;
+          OnPropertyChanged("IsCurrent");
+          OnPropertyChanged("IsCurrentInt");
         }
       }
+    }
 
-      private double _CorridorFib;
-      public double CorridorFib {
-        get { return _CorridorFib; }
-        set {
-          if (value != 0 && _CorridorFib != value) {
-            //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
-            _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, CorridorFibCmaPeriod, value);
-            CorridorFibAverage = _CorridorFib;
-            OnPropertyChanged("CorridorFib");
-          }
-        }
-      }
-
-      private double _CorridorFibAverage;
-      public double CorridorFibAverage {
-        get { return _CorridorFibAverage; }
-        set {
-          if (value != 0 && _CorridorFibAverage != value) {
-            _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, CorridorFibCmaPeriod, value);
-            OnPropertyChanged("CorridorFibAverage");
-          }
-        }
-      }
-
-      public void SetCorridorFib(double buyStop, double sellStop, double cmaPeriod) {
-        var cfiMax = 500;
-        CorridorFibCmaPeriod = cmaPeriod;
-        BuyStopByCorridor = Math.Max(0, buyStop);
-        SellStopByCorridor = Math.Max(0, sellStop);
-        var cf = BuyStopByCorridor == 0 ? -bigFibAverage.Average()
-                  : SellStopByCorridor == 0 ? bigFibAverage.Average()
-                  : Fibonacci.FibRatioSign(BuyStopByCorridor, SellStopByCorridor);
-        CorridorFibInstant = cf > 0 ? Math.Min(cfiMax, cf) : Math.Max(-cfiMax, cf);
-        if (CorridorFibInstant > 100 && CorridorFibInstant != bigFibAverage.Last()) {
-          if (bigFibAverage.Count > 20) bigFibAverage.Dequeue();
-          bigFibAverage.Enqueue(CorridorFibInstant);
-        }
-      }
-      void ClearCorridorFib() {
-        _CorridorFibInstant = _CorridorFibAverage = _CorridorFib = 0;
-      }
-      public double CorridorFibCmaPeriod { get; set; }
-
-      double _corridornes;
-      public double Corridornes {
-        get { return _corridornes; }
-        set {
-          if (_corridornes == value) return;
-          _corridornes = value;
-          OnPropertyChanged("Corridornes");
-          OnPropertyChanged("MinutesBack");
-          OnPropertyChanged("IsCorridornessOk");
-        }
-      }
-
-      Func<double, double> _InPips = null;
-
-      public Func<double, double> InPips {
-        get { return _InPips; }
-        set { _InPips = value; }
-      }
-
-      private double _FibMinimum;
-      public double FibMinimum {
-        get { return _FibMinimum; }
-        set {
-          if (_FibMinimum != value) {
-            _FibMinimum = value;
-            OnPropertyChanged("FibMinimum");
-            OnPropertyChanged("TradeSignal");
-          }
-        }
-      }
-
-      #endregion
-
-
-      Queue<double> bigFibAverage = new Queue<double>(new[] { 100.0 });
-
-      public int IsCurrentInt { get { return Convert.ToInt32(IsCurrent); } }
-      bool _IsCurrent;
-      public bool IsCurrent {
-        get { return _IsCurrent; }
-        set {
-          if (_IsCurrent != value) {
-            _IsCurrent = value;
-            OnPropertyChanged("IsCurrent");
-            OnPropertyChanged("IsCurrentInt");
-          }
-        }
-      }
-    
 
 
     public Store.TradingMacro TradingMacro { get; set; }
@@ -194,64 +203,11 @@ namespace HedgeHog.Alice.Store {
       this.TradingMacro = tradingMacro;
     }
     public bool IsCorridornessOk {
-      get { return Corridornes >= TradingMacro.CorridornessMin; }
+      get { return Corridornes <= TradingMacro.CorridornessMin; }
     }
     bool? _TradeSignal;
     public bool? TradeSignal {
       get {
-        var fibInstant = CorridorFibInstant.Round(1);
-        var fib = CorridorFib.Round(1);
-        var fibAvg = CorridorFibAverage.Round(1);
-        #region Trade Signals
-        //Func<bool?> tradeSignal1 = () => {
-        //  return fibAvg < -FibMinimum && fib > fibAvg /*&& fibInstant < fib*/ ? true :
-        //    fibAvg > +FibMinimum && fib < fibAvg /*&& fibInstant > fib*/ ? false :
-        //    (bool?)null;
-        //};
-        //Func<bool?> tradeSignal2 = () => {
-        //  return fibInstant < -FibMinimum && fib > fibAvg && fibInstant < fib && fib < 0 ? true :
-        //         fibInstant > +FibMinimum && fib < fibAvg && fibInstant > fib && fib > 0 ? false :
-        //    (bool?)null;
-        //};
-        //Func<bool?> tradeSignal3 = () => {
-        //  var isFibAvgOk = fibAvg.Abs() > FibMinimum / 2;
-        //  return fib > fibAvg && fibInstant < fib && fibAvg < 0 && isFibAvgOk ? true :
-        //         fib < fibAvg && fibInstant > fib && fibAvg > 0 && isFibAvgOk ? false :
-        //    (bool?)null;
-        //};
-        //Func<bool?> tradeSignal4 = () => {
-        //  var isFibAvgOk = fibAvg.Abs() >= FibMinimum && fib.Abs() <= FibMinimum;
-        //  return fib > fibAvg && (fibInstant < 0 && fibAvg < 0) && isFibAvgOk ? true :
-        //         fib < fibAvg && (fibInstant > 0 && fibAvg > 0) && isFibAvgOk ? false :
-        //    (bool?)null;
-        //};
-        //Func<bool?> tradeSignal5 = () => {
-        //  if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
-        //  //if (!TradingMacro.IsSpeedOk) return null;
-        //  var pdp23 = TradingMacro.PriceCma23DiffernceInPips;
-        //  var pdp = TradingMacro.PriceCmaDiffernceInPips;
-        //  return PriceCmaDiffHigh > 0 && pdp < 0 && pdp23 < 0 ? false :
-        //         PriceCmaDiffLow < 0 && pdp > 0 && pdp23 > 0 ? true :
-        //    (bool?)null;
-        //};
-        //Func<bool?> tradeSignal6 = () => {
-        //  if (!IsCorridorAvarageHeightOk) return null;
-        //  //if (TradingMacro.PriceCmaCounter < TradingMacro.TicksPerMinuteMaximun * 2) return null;
-        //  var pdhFirst = TradingMacro.PriceCmaDiffHighWalker.CmaArray.First();
-        //  var pdhLast = TradingMacro.PriceCmaDiffHighWalker.CmaArray.Last();
-        //  var pdlFirst = TradingMacro.PriceCmaDiffLowWalker.CmaArray.First();
-        //  var pdlLast = TradingMacro.PriceCmaDiffLowWalker.CmaArray.Last();
-        //  return (pdhFirst > 0 || pdhLast > 0) && pdhFirst <= pdhLast ? false :
-        //         (pdlFirst < 0 || pdlLast < 0) && pdlFirst >= pdlLast ? true :
-        //    (bool?)null;
-        //};
-        #endregion
-        Func<bool?> tradeSignal7 = () => {
-          if (!IsCorridorAvarageHeightOk) return null;
-          var doSell = InPips(PriceCmaDiffHigh).Round(1) >= 0;// || TradingMacro.BarHeight60 > 0 && PriceCmaDiffLow >= TradingMacro.BarHeight60;
-          var doBuy = InPips(PriceCmaDiffLow).Round(1) <= 0;// || TradingMacro.BarHeight60 > 0 && (-PriceCmaDiffHigh) >= TradingMacro.BarHeight60;
-          return doSell == doBuy ? (bool?)null : doBuy;
-        };
         Func<bool?> tradeSignal8 = () => {
           //if (!IsCorridorAvarageHeightOk) return null;
           var sell = InPips(PriceCmaDiffHigh).Round(1) >= 0;
@@ -262,15 +218,15 @@ namespace HedgeHog.Alice.Store {
           return doSell == doBuy ? (bool?)null : doBuy;
         };
         Func<bool?> tradeSignal9 = () => {
-          //if (!IsCorridorAvarageHeightOk) return null;
-          var sell = InPips(PriceCmaDiffHigh).Round(1) >= 0;
-          var buy = InPips(PriceCmaDiffLow).Round(1) <= 0;
-          if (buy && sell) return null;
-          var doSell = sell;
-          var doBuy = buy;
-          return doSell == doBuy ? (bool?)null : doBuy;
+          var ret = tradeSignal8();
+          if (ret.HasValue) return ret;
+          var sell = PriceCmaDiffHigh.Abs();
+          var buy = PriceCmaDiffLow.Abs();
+          return sell == buy ? (bool?)null
+            : sell / buy < .1 && TradingMacro.RateDirection < 0 ? false : buy / sell < .1 && TradingMacro.RateDirection > 0 ? true : (bool?)null;
         };
         Func<bool?> tradeSignal10 = () => {
+          if (AverageHeight / AverageHeightCurrentMinimum < 1.1) return null;
           var sell = InPips(PriceCmaDiffHigh).Round(1) >= 0;
           var buy = InPips(PriceCmaDiffLow).Round(1) <= 0;
           if (buy && sell) return null;
@@ -278,6 +234,7 @@ namespace HedgeHog.Alice.Store {
           var doBuy = sell;
           return doSell == doBuy ? (bool?)null : doBuy;
         };
+        //var ts = tradeSignal10();
         var ts = tradeSignal8();
         if (ts != _TradeSignal)
           OnPropertyChanged("TradeSignal");
@@ -285,14 +242,74 @@ namespace HedgeHog.Alice.Store {
         return _TradeSignal;
       }
     }
+    public bool? OpenSignal {
+      get {
+        var ratioTreshold = 1;
+        if (!TradeSignal.HasValue) return null;
+        if (TradeSignal.Value) return (TradingMacro.CorridorAngle < -2 /*|| HeightsRatio >= ratioTreshold*/) ? TradeSignal : null;
+        if (!TradeSignal.Value) return (TradingMacro.CorridorAngle > 2 /*|| HeightsRatio >= ratioTreshold*/) ? TradeSignal : null;
+        return null;
+      }
+    }
+
+    public bool? CloseSignal {
+      get {
+        if (TradeSignal.HasValue) {
+          return !TradeSignal;
+          if (TradeSignal.Value) return (TradingMacro.CorridorAngle < 3 /*|| HeightsRatio >= ratioTreshold*/) ? false : (bool?)null;
+          if (!TradeSignal.Value) return (TradingMacro.CorridorAngle > -3 /*|| HeightsRatio >= ratioTreshold*/) ? true : (bool?)null;
+        }
+        //if (TradingMacro.CorridorAngle < 0) return false;
+        //if (TradingMacro.CorridorAngle > 0) return true;
+        return null;
+      }
+    }
+
 
     //double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Ask; } }
-    double priceCmaForAverageHigh { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.RateLastAsk; } }
+    double priceCmaForAverageHigh {
+      get {
+        var rl = RateForDiffHigh;
+        return rl == null ? 0 : rl.PriceHigh;
+      }
+    }
     //double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.PriceCurrent.Bid; } }
-    double priceCmaForAverageLow { get { return TradingMacro.PriceCurrent == null ? 0 : TradingMacro.RateLastBid; } }
+    double priceCmaForAverageLow { 
+      get {
+        var rl = RateForDiffLow;
+        return rl == null ? 0 : rl.PriceLow;
+      }
+    }
 
-    public double PriceCmaDiffHigh { get { return priceCmaForAverageHigh - AverageHigh; } }
-    public double PriceCmaDiffLow { get { return priceCmaForAverageLow - AverageLow; } }
+    //public double PriceCmaDiffHigh { get { return priceCmaForAverageHigh - AverageHigh; } }
+    //public double PriceCmaDiffLow { get { return priceCmaForAverageLow - AverageLow; } }
+    public double PriceCmaDiffHigh {
+      get {
+        var rl = RateForDiffHigh;
+        return rl == null ? 0 : rl.PriceHigh - rl.PriceAvg2;
+      }
+    }
+
+    private Rate RateForDiffHigh {
+      get {
+        return TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).OrderBy(r => r.PriceHigh).LastOrDefault();
+      }
+    }
+    public double PriceCmaDiffLow {
+      get {
+        var rl = RateForDiffLow;
+        var res = rl == null ? 0 : rl.PriceLow - rl.PriceAvg3;
+        return res;
+      }
+    }
+
+    private Rate RateForDiffLow {
+      get {
+        return TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).OrderBy(r => r.PriceLow).FirstOrDefault();
+      }
+    }
+
+    public double HeightsRatio { get { return HeightByRegression / AverageHeight; } }
 
     public bool IsCorridorAvarageHeightOk {
       get {
@@ -302,14 +319,30 @@ namespace HedgeHog.Alice.Store {
         //  ? /*TradingMacro.PriceCmaDiffHighFirst*/ +TradingMacro.PriceCmaDiffHighLast
         //  : PriceCmaDiffLow < 0 ? /*-TradingMacro.PriceCmaDiffLowFirst*/ -TradingMacro.PriceCmaDiffLowLast
         //  : 0;
-        return GetCorridorAverageHeightOk(TradingMacro,AverageHeight + Math.Max(0, addOn));
+        return TradingMacro.CorridorHeightMinimum > 0
+               && AverageHeight >= TradingMacro.CorridorHeightMinimum
+               //&& HeightByRegression >= TradingMacro.CorridorHeightMinimum
+               //&& TradingMacro.CorridorAngle.Abs() < 2
+               //&& HeightsRatio >= .7
+               ;
+        return GetCorridorAverageHeightOk(TradingMacro, AverageHeight + Math.Max(0, addOn), AverageHeightCurrentMinimum);
       }
     }
-    public static bool GetCorridorAverageHeightOk(TradingMacro tm, double AverageHeight) {
-      return AverageHeight > 0 && tm.CorridorHeightMinimum > 0
-        && AverageHeight / tm.CorridorHeightMinimum >= (tm.LimitCorridorByBarHeight ? .9 : 1);
+    public static bool GetCorridorAverageHeightOk(TradingMacro tm, double averageHeight, double averageHeightCurrentMinimum) {
+      return averageHeight > 0 && tm.CorridorHeightMinimum > 0 && averageHeightCurrentMinimum > 0
+        //&& AverageHeight / tm.CorridorHeightMinimum >= .9;
+        && averageHeightCurrentMinimum <= tm.CorridorHeightMinimum;
     }
-
+    private double _AverageHeightCurrentMinimum;
+    public double AverageHeightCurrentMinimum {
+      get { return _AverageHeightCurrentMinimum; }
+      set {
+        if (_AverageHeightCurrentMinimum != value) {
+          _AverageHeightCurrentMinimum = value;
+          OnPropertyChanged("AverageHeightCurrentMinimum");
+        }
+      }
+    }
   }
   public static class CorridorStaticBaseExtentions {
     public static Dictionary<int, CorridorStatistics> GetCorridornesses(this IEnumerable<Rate> rates, bool useStDev) {
@@ -317,7 +350,7 @@ namespace HedgeHog.Alice.Store {
         if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
         else rates = rates.ToArray();
         var corridornesses = new Dictionary<int, CorridorStatistics>();
-        if (rates.Count() > 10) {
+        if (rates.Count() < 0) {
           var source = Enumerable.Range(1, rates.Count() - 1);
           source.AsParallel().ForAll(i => {
             try {
@@ -330,8 +363,8 @@ namespace HedgeHog.Alice.Store {
             }
           });
         } else
-          for (var periods = 1; periods < rates.Count(); periods++) {
-            var cs = ScanCorridor(rates.Take(periods).ToArray(), useStDev);
+          for (var periods = (rates.Count()*.1).ToInt(); periods < rates.Count(); periods++) {
+            var cs = ScanCorridorWithAngle(rates.Take(periods).ToArray(), useStDev);
             //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
             corridornesses.Add(periods, cs);
           }
@@ -387,16 +420,38 @@ namespace HedgeHog.Alice.Store {
         var ratesForAverageHigh = rates.Where(rate => rate.PriceLow >= averageHigh).AsParallel().ToArray();
         var ratesForAverageLow = rates.Where(rate => rate.PriceHigh <= averageLow).AsParallel().ToArray();
         if (ratesForAverageHigh.Length > 0) {
-          var prices = ratesForAverageHigh.Select(r => r.PriceAvg/*.PriceLow*/).ToArray();
+          var prices = ratesForAverageHigh.Select(r => r.PriceHigh/*.PriceLow*/).ToArray();
           averageHigh = prices.Average();
           averageHigh = prices.Where(p => p >= averageHigh).DefaultIfEmpty(averageHigh).Average();
         }
         if (ratesForAverageLow.Length > 0) {
-          var prices = ratesForAverageLow.Select(r => r.PriceAvg/*.PriceHigh*/).ToArray();
+          var prices = ratesForAverageLow.Select(r => r.PriceLow/*.PriceHigh*/).ToArray();
           averageLow = prices.Average();
           averageLow = prices.Where(p => p <= averageLow).DefaultIfEmpty(averageLow).Average();
         }
         return new CorridorStatistics(count / rates.Count(), averageHigh, averageLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
+      } catch (Exception exc) {
+        Debug.Fail(exc + "");
+        throw;
+      }
+    }
+    static CorridorStatistics ScanCorridorWithAngle(IEnumerable<Rate> rates, bool useStDev) {
+      try {
+        Func<Rate, double> priceGet = rate => rate.PriceAvg4;
+        Action<Rate, double> priceSet = (rate,d) => rate.PriceAvg4 = d;
+        rates.SetRegressionPrice(1, rate => rate.PriceAvg, priceSet);
+        Func<Rate, double> priceHigh = rate => rate.PriceHigh - priceGet(rate);
+        Func<Rate, double> priceLow = rate => priceGet(rate) - rate.PriceLow;
+        var averageHigh = rates.Select(r => priceHigh(r)).Where(p => p > 0).Average();
+        var averageLow = rates.Select(r => priceLow(r)).Where(p => p > 0).Average();
+        var count = 0.0;
+        rates.AsParallel().ForAll(rate => {
+          if (priceLow(rate) >= averageLow || priceHigh(rate) >= averageHigh) count++;
+        });
+        var askHigh = rates.Max(r => r.PriceAvg/*.AskHigh*/);
+        var bidLow = rates.Min(r => r.PriceAvg/*.BidLow*/);
+        rates.ToList().ForEach(r => priceSet(r, 0));
+        return new CorridorStatistics(count / rates.Count(), askHigh, bidLow, askHigh, bidLow, rates.Count(), rates.First().StartDate, rates.Last().StartDate);
       } catch (Exception exc) {
         Debug.Fail(exc + "");
         throw;

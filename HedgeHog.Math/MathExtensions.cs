@@ -24,6 +24,13 @@ namespace HedgeHog {
       }
     }
 
+    public static double Angle(this double tangent) { return Math.Atan(tangent) * (180 / Math.PI); }
+
+    public static double RegressionValue(this double[] coeffs, int i) {
+      double y = 0; int j = 0;
+      coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
+      return y;
+    }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }
     public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
