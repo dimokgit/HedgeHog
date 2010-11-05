@@ -363,7 +363,7 @@ namespace HedgeHog.Alice.Store {
             }
           });
         } else
-          for (var periods = (rates.Count()*.1).ToInt(); periods < rates.Count(); periods++) {
+          for (var periods = (rates.Count()*.01).ToInt(); periods < rates.Count(); periods++) {
             var cs = ScanCorridorWithAngle(rates.Take(periods).ToArray(), useStDev);
             //if (cs.Corridornes < corridornessMinimum && cs.Height >= corridorHeightMinimum)
             corridornesses.Add(periods, cs);
@@ -440,8 +440,8 @@ namespace HedgeHog.Alice.Store {
         Func<Rate, double> priceGet = rate => rate.PriceAvg4;
         Action<Rate, double> priceSet = (rate,d) => rate.PriceAvg4 = d;
         rates.SetRegressionPrice(1, rate => rate.PriceAvg, priceSet);
-        Func<Rate, double> priceHigh = rate => rate.PriceHigh - priceGet(rate);
-        Func<Rate, double> priceLow = rate => priceGet(rate) - rate.PriceLow;
+        Func<Rate, double> priceHigh = rate => rate.PriceLow - priceGet(rate);
+        Func<Rate, double> priceLow = rate => priceGet(rate) - rate.PriceHigh;
         var averageHigh = rates.Select(r => priceHigh(r)).Where(p => p > 0).Average();
         var averageLow = rates.Select(r => priceLow(r)).Where(p => p > 0).Average();
         var count = 0.0;
