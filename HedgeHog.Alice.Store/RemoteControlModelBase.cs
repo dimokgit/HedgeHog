@@ -319,7 +319,7 @@ namespace HedgeHog.Alice.Store {
         var corridornesses = rates.ToArray().GetCorridornesses(tm.CorridorCalcMethod == CorridorCalculationMethod.StDev);
         foreach (int i in tm.CorridorIterationsArray) {
           var minCorr = corridornesses.Values.Max(c => c.Corridornes) * .95;
-          var a = corridornesses.Values.Where(c=>c.Corridornes>=minCorr).OrderBy(c => c.StartDate).Select(c => new { c.StartDate, c.Corridornes }).ToArray();
+          var a = corridornesses.Values.Select(c => new { c.StartDate, c.Corridornes }).OrderByDescending(c=>c.Corridornes).ToArray();
           var csCurr = corridornesses.Values.Where(c => c.Corridornes >= minCorr).OrderBy(c => c.StartDate).First();
             //rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, 
             ///*tm.Trades.Length == 0 && */tm.LimitCorridorByBarHeight ? tm.CorridorHeightMinimum : 0);
