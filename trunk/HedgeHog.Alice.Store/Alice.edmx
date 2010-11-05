@@ -95,6 +95,7 @@
           <Property Name="StrictTradeClose" Type="bit" Nullable="false" />
           <Property Name="BarPeriodsLowHighRatio" Type="float" Nullable="false" />
           <Property Name="LongMAPeriod" Type="int" Nullable="false" />
+          <Property Name="CorridorAverageDaysBack" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -153,6 +154,7 @@
           <Property Type="Boolean" Name="StrictTradeClose" Nullable="false" />
           <Property Type="Double" Name="BarPeriodsLowHighRatio" Nullable="false" />
           <Property Type="Int32" Name="LongMAPeriod" Nullable="false" />
+          <Property Type="Int32" Name="CorridorAverageDaysBack" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -210,7 +212,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="LongMAPeriod" ColumnName="LongMAPeriod" />
+            <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />
+                <ScalarProperty Name="LongMAPeriod" ColumnName="LongMAPeriod" />
                 <ScalarProperty Name="BarPeriodsLowHighRatio" ColumnName="BarPeriodsLowHighRatio" />
                 <ScalarProperty Name="StrictTradeClose" ColumnName="StrictTradeClose" />
                 <ScalarProperty Name="BarPeriodsHigh" ColumnName="BarPeriodsHigh" />

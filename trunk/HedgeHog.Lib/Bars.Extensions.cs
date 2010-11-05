@@ -32,6 +32,49 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
+      double[] yy = new double[ticks.Count()];
+      int i1 = 0;
+      foreach (var tick in ticks) {
+        double y1 = coeffs.RegressionValue(i1);
+        a(tick, y1);// *poly2Wieght + y2 * (1 - poly2Wieght);
+        yy[i1++] = y1;
+      }
+    }
+    public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
+      var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      ticks.SetRegressionPrice(coeffs, writeTo);
+      return coeffs;
+    }
+
+    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates) {
+      return rates.SetCorridorPrices(DateTime.MinValue);
+    }
+    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, DateTime startDate) {
+      rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
+      var ratesForRegression = (startDate == DateTime.MinValue ? rates : rates.Where(r => r.StartDate >= startDate)).ToList();
+      var coeffs = ratesForRegression.SetRegressionPrice(1, rate => rate.PriceAvg, (rate, d) => rate.PriceAvg1 = d);
+      var heightAvg = 0.0;
+      var stDev = ratesForRegression.Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray().StdDev();
+      heightAvg = stDev * 3;// *0.9;
+      if (heightAvg == 0) {
+        var heightsUp = ratesForRegression.Where(r => (r.PriceAvg - r.PriceAvg1) > 0).Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray();
+        var heightAvgUp = heightsUp.Average();
+        heightAvgUp = heightsUp.Where(h => h >= heightAvgUp).Average();
+        var heightsDown = ratesForRegression.Where(r => (r.PriceAvg - r.PriceAvg1) < 0).Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray();
+        var heightAvgDown = heightsDown.Average();
+        heightAvgDown = heightsDown.Where(h => h >= heightAvgDown).Average();
+        heightAvg = Math.Min(heightAvgUp, heightAvgDown);
+      }
+      ratesForRegression.ForEach(r => {
+        r.PriceAvg2 = r.PriceAvg1 + heightAvg;
+        r.PriceAvg3 = r.PriceAvg1 - heightAvg;
+      });
+      return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
+    }
+ 
+
+
     #region Wave
     public static double GetWaveHeight(this Rate[] rates, int barFrom, int barTo) {
       var barPrev = rates.GetBarHeightBase(barFrom);
@@ -130,6 +173,7 @@ namespace HedgeHog.Bars {
 
       return new RsiStatistics(RsiAverageLow, RsiStdLow, rsiBuyLow, RsiAverageHigh, RsiStdHigh, rsiSellHigh);
     }
+
     public static TBar[] FindWaves<TBar>(
       this IEnumerable<TBar> bars, Func<TBar, int> Sign, Func<TBar, double?> Sort) where TBar : BarBase {
       bars = bars.Where(b => Sort(b).GetValueOrDefault(50) != 50).OrderBars().ToArray();

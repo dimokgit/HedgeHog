@@ -327,10 +327,10 @@ namespace HedgeHog {
     #endregion
 
     public double VoltPriceHigh {
-      get { return Math.Round(PeakVolt.AverageBid, fw.Digits); }
+      get { return PeakVolt.AverageBid.Round( fw.Digits()); }
     }
     public double VoltPriceLow {
-      get { return Math.Round(ValleyVolt.AverageAsk, fw.Digits); }
+      get { return Math.Round(ValleyVolt.AverageAsk, fw.Digits()); }
     }
 
     public double SpreadByBarPeriod(int period, bool shortOnly) {
@@ -356,8 +356,8 @@ namespace HedgeHog {
     bool AreAnglesBuy { get { return A1 >= 0; } }
     bool AreAnglesSell { get { return A1 <= 0; } }
 
-    public double Angle1 { get { return Math.Atan(A1) * (180 / Math.PI); } }
-    public double Angle { get { return Math.Atan(A) * (180 / Math.PI); } }
+    public double Angle1 { get { return A1.Angle(); } }
+    public double Angle { get { return A.Angle(); } }
     
     public double AngleRounded { get { return Math.Round(Angle / fw.PointSize, 2); } }
     public double Angle1Rounded { get { return Math.Round(Angle1 / fw.PointSize, 2); } }
@@ -758,12 +758,12 @@ namespace HedgeHog {
           var priceHeightDown = tickLast.PriceAvg4 - priceHeightMin;
           ////corridorHeightMin = fooCorrHeightMinimum(tickHigh.PriceHigh, tickLow.PriceLow);
           ////if (Math.Min(vd, vu) < corridorHeightMin) break;
-          var upDownRatio = Lib.FibRatio(vu, vd);
+          var upDownRatio = Fibonacci.FibRatio(vu, vd);
           var posBuy = /*Math.Abs(*/priceHeightDown / vd - 1/*)*/;
           var posSell = /*Math.Abs(*/priceHeightUp / vu - 1/*)*/;
           var poss = new[] { posBuy, posSell };
           //var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Math.Min(posSell, posBuy) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
-          var posTrade = Lib.FibRatio(posBuy, posSell);
+          var posTrade = Fibonacci.FibRatio(posBuy, posSell);
           var stDev = ticksCopy.StdDev(t => readFrom(t) - t.PriceAvg4);
           var waveRatio = stDev / (vd + vu);// Math.Min(vd, vh) / (tickHigh.PriceClose - tickLow.PriceClose);
           wi.Add(new WaveInfo(tickLocal.StartDate, Math.Round(waveRatio, 3), Math.Round(posTrade, 2), upDownRatio, /*Math.Abs(vu / vd - vd / vu)*/ vu, vd, coeffs, TimeSpan.Zero/*interval*/));
@@ -1313,12 +1313,12 @@ namespace HedgeHog {
                   var priceHeightDown = tickLast.PriceAvg4 - priceHeightMin;
                   ////corridorHeightMin = fooCorrHeightMinimum(tickHigh.PriceHigh, tickLow.PriceLow);
                   ////if (Math.Min(vd, vu) < corridorHeightMin) break;
-                  var upDownRatio = Lib.FibRatio(vu, vd);
+                  var upDownRatio = Fibonacci.FibRatio(vu, vd);
                   var posBuy = /*Math.Abs(*/priceHeightDown / vd - 1/*)*/;
                   var posSell = /*Math.Abs(*/priceHeightUp / vu - 1/*)*/;
                   var poss = new[] { posBuy, posSell };
                   //var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Math.Min(posSell, posBuy) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
-                  var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Lib.FibRatio(posBuy, posSell) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
+                  var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Fibonacci.FibRatio(posBuy, posSell) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
                   var stDev = ticksCopy.StdDev(t => readFrom(t) - t.PriceAvg4);
                   var waveRatio = stDev / (vd + vu);// Math.Min(vd, vh) / (tickHigh.PriceClose - tickLow.PriceClose);
                   lock (wi) {

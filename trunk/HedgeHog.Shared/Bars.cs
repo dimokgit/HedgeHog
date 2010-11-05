@@ -50,7 +50,9 @@ namespace HedgeHog.Bars {
     #region PriceAvgs
     public double PriceAvg1 { get; set; }
     public double PriceAvg2 { get; set; }
+    public double PriceHeight2 { get { return PriceAvg1 != 0 && PriceAvg2 != 0 ? PriceAvg2 - PriceAvg : 0; } }
     public double PriceAvg3 { get; set; }
+    public double PriceHeight3 { get { return PriceAvg1 != 0 && PriceAvg3 != 0 ? PriceAvg3 - PriceAvg : 0; } }
     public double PriceAvg4 { get; set; }
     #endregion
 

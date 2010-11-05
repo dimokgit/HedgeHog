@@ -1250,7 +1250,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="strictTradeClose">Initial value of the StrictTradeClose property.</param>
         /// <param name="barPeriodsLowHighRatio">Initial value of the BarPeriodsLowHighRatio property.</param>
         /// <param name="longMAPeriod">Initial value of the LongMAPeriod property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod)
+        /// <param name="corridorAverageDaysBack">Initial value of the CorridorAverageDaysBack property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1281,6 +1282,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.StrictTradeClose = strictTradeClose;
             tradingMacro.BarPeriodsLowHighRatio = barPeriodsLowHighRatio;
             tradingMacro.LongMAPeriod = longMAPeriod;
+            tradingMacro.CorridorAverageDaysBack = corridorAverageDaysBack;
             return tradingMacro;
         }
 
@@ -1961,6 +1963,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Int32 _LongMAPeriod;
         partial void OnLongMAPeriodChanging(global::System.Int32 value);
         partial void OnLongMAPeriodChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorAverageDaysBack
+        {
+            get
+            {
+                return _CorridorAverageDaysBack;
+            }
+            set
+            {
+                OnCorridorAverageDaysBackChanging(value);
+                ReportPropertyChanging("CorridorAverageDaysBack");
+                _CorridorAverageDaysBack = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorAverageDaysBack");
+                OnCorridorAverageDaysBackChanged();
+            }
+        }
+        private global::System.Int32 _CorridorAverageDaysBack;
+        partial void OnCorridorAverageDaysBackChanging(global::System.Int32 value);
+        partial void OnCorridorAverageDaysBackChanged();
 
         #endregion
     

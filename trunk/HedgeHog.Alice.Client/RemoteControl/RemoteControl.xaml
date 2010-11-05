@@ -269,26 +269,14 @@
             </TextBlock>
           </ToolTip>
         </TextBlock.ToolTip>
-                <TextBlock Text="{Binding CorridorStats.Corridornes,StringFormat=p0}" ToolTip="Corridornes"
-                           FontWeight="{Binding IsCorridornessOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           />
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=/{0:n0}}"
-                  FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           >
-                  <TextBlock.ToolTip>
-                    <ToolTip>
-                      <TextBlock>
-                        <TextBlock>Take Profit &gt;</TextBlock>
-                        <TextBlock Text="{Binding TakeProfitPipsMinimum,StringFormat=n0}"/>
-                      </TextBlock>
-                    </ToolTip>
-                  </TextBlock.ToolTip>
-                  </TextBlock>
-                  <TextBlock Text="{Binding TakeProfitPipsMinimum,StringFormat=&gt;{0:n0}}"/>
-                <TextBlock Text="{Binding CorridorHeightMinimumInPips,StringFormat=[{0:n1}}" ToolTip="Corridor Height Minimum In Pips"
+                <TextBlock Text="{Binding HeightsRatio,StringFormat=p0}" ToolTip="Heights Ratio"
+                           FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"/>
+                <TextBlock Text="{Binding CorridorAngle,StringFormat=/{0:n2}}" ToolTip="Corridor Angle"
+                           FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"/>
+                <TextBlock Text="{Binding CorridorHeightMinimumInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height Minimum In Pips"
                            FontWeight="{Binding IsBarLowHighRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
-                <TextBlock Text="{Binding CorridorAverageHeightInPips,StringFormat=/{0:n1}]}" ToolTip="Corridor Average Height in Pips"
+                <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=/{0:n0}]}" ToolTip="Corridor Height By Regression In Pips"
                            FontWeight="{Binding IsCorridorAvarageHeightOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <LineBreak/>
@@ -343,9 +331,12 @@
                 <TextBox Text="{Binding CorridorIterations}" ToolTip="Corridor Iterations: 1,2,3,4"/>
                 <TextBox Text="{Binding CorridorIterationsIn}" ToolTip="Price CMA Level"/>
                 <LineBreak/>
-                <TextBox Text="{Binding BarPeriodsLow}" ToolTip="Bar Height Low"/>
-                <TextBox Text="{Binding BarPeriodsHigh}" ToolTip="Bar Height High"/>
-                <TextBox Text="{Binding BarPeriodsLowHighRatio}" ToolTip="Bar Periods LowHigh Ratio"/>
+                <TextBlock Visibility="Collapsed">
+                  <TextBox Text="{Binding BarPeriodsLow}" ToolTip="Bar Height Low"/>
+                  <TextBox Text="{Binding BarPeriodsHigh}" ToolTip="Bar Height High"/>
+                  <TextBox Text="{Binding BarPeriodsLowHighRatio}" ToolTip="Bar Periods LowHigh Ratio"/>
+                </TextBlock>
+                <TextBox Text="{Binding CorridorAverageDaysBack}" ToolTip="Corridor Average Days Back"/>
                 <CheckBox IsChecked="{Binding StrictTradeClose}" ToolTip="Strict Trade Close"/>
                 <TextBox Text="{Binding LongMAPeriod}" ToolTip="Long MA Period"/>
                 <TextBox Text="{Binding CorridornessMin}" ToolTip="Corridorness Min"/>

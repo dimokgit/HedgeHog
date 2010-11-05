@@ -66,6 +66,7 @@ namespace HedgeHog.Alice.Store {
 
       var virtualDateEnd = VirtualStartDate.AddMonths(e.MonthToTest);
       var tm = GetTradingMacro(e.Pair);
+      double corridorHeightMinimumHistory = 0;
       tm.ResetSessionId();
       var ratesBuffer = GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.CorridorBarMinutesEx, minutesPerPeriod);
       Func<Rate, DateTime, bool> dateFilter = (r, d) => r.StartDate >= d && r.StartDate < virtualDateEnd;
@@ -74,11 +75,11 @@ namespace HedgeHog.Alice.Store {
         if (rate == null) {
           ratesBuffer = GetRateFromDB(VirtualPair, d, tm.CorridorBarMinutesEx, minutesPerPeriod);
           if (ratesBuffer.Length == 0) return null;
-          var res = GlobalStorage.ForexContext.GetCorridorAverage(VirtualPair, (byte)minutesPerPeriod, d, 60 * 24 * 5,tm.LimitBar).FirstOrDefault();
-          tm.CorridorHeightMinimum = (res.Avg).Value;
-          tm.TakeProfitPipsMinimum = tradesManager.InPips(VirtualPair, res.Avg);
-          if (tm.FibMin == 0) throw new Exception("FibMin cannot be zero.");
+          var res = GlobalStorage.ForexContext.GetCorridorAverage(VirtualPair, (byte)minutesPerPeriod, d, 60 * tm.CorridorAverageDaysBack,tm.LimitBar).FirstOrDefault();
+          corridorHeightMinimumHistory = (res.Avg).Value;
         }
+        tm.CorridorHeightMinimum = Math.Max(corridorHeightMinimumHistory, GetBarHeight(tm.LimitBar, GetRatesByPair(VirtualPair))); ;
+        tm.TakeProfitPipsMinimum = tm.CorridorHeightMinimumInPips;
         return ratesBuffer.Where(r => dateFilter(r, d)).FirstOrDefault();
       };
       backTestThread = Task.Factory.StartNew(() => {
@@ -121,6 +122,7 @@ namespace HedgeHog.Alice.Store {
               tm.TradeDirection = GlobalStorage.ForexContext.GetTradeDirection(rate.StartDate, VirtualPair, maPeriod, out maDate);
               if (rate.StartDate - maDate > TimeSpan.FromDays(1)) maDate = maDate.AddDays(2);
             }
+            tm.Volatility = rates.GetMinuteTicks(5).Average(r => r.Spread) / rates.Average(r => r.Spread);
           }
           if (fw.IsLoggedIn) {
             var ratesFx = new List<Rate>();
@@ -290,14 +292,37 @@ namespace HedgeHog.Alice.Store {
     protected ITradesManager tradesManager = null;
     protected bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
 
+    protected void GetBarHeight(TradingMacro tm) {
+      //var sw = Stopwatch.StartNew();
+      string pair = tm.Pair;
+      var rates = GetRatesByPair(pair);
+      var bhList = new List<double>();
+      for (var i = 0; i < rates.Count - tm.LimitBar; i++)
+        bhList.Add(GetBarHeight(tm.LimitBar, rates.Skip(i).ToList()));
+      tm.BarHeight60 = bhList.Average();
+      //Debug.WriteLine("GetBarHeight:{0} - {1:n0} ms", tm.Pair, sw.Elapsed.TotalMilliseconds);
+    }
+
+    protected static double GetBarHeight(int barPeriod, List<Rate> rates) {
+      var rates60 = rates.GetMinuteTicks(barPeriod);
+      var hs = rates60.Select(r => r.PriceHigh - r.PriceLow).ToArray();
+      var hsAvg = hs.Average();
+      hs = hs.Where(h => h >= hsAvg).ToArray();
+      //hsAvg = hs.Average();
+      return hs.Where(h => h >= hsAvg).Average();
+    }
+
     protected void ScanCorridor(string pair, List<Rate> rates) {
       try {
         var tm = GetTradingMacro(pair);
-        if (rates.Count == 0 || !IsTradingHours(tm.Trades, rates.Last().StartDate)) return;
+        if (rates.Count == 0 /*|| !IsTradingHours(tm.Trades, rates.Last().StartDate)*/) return;
         var corridornesses = rates.ToArray().GetCorridornesses(tm.CorridorCalcMethod == CorridorCalculationMethod.StDev);
         foreach (int i in tm.CorridorIterationsArray) {
-          var csCurr = rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, 
-            /*tm.Trades.Length == 0 && */tm.LimitCorridorByBarHeight ? tm.CorridorHeightMinimum : 0);
+          var minCorr = corridornesses.Values.Max(c => c.Corridornes) * .95;
+          var a = corridornesses.Values.Where(c=>c.Corridornes>=minCorr).OrderBy(c => c.StartDate).Select(c => new { c.StartDate, c.Corridornes }).ToArray();
+          var csCurr = corridornesses.Values.Where(c => c.Corridornes >= minCorr).OrderBy(c => c.StartDate).First();
+            //rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, 
+            ///*tm.Trades.Length == 0 && */tm.LimitCorridorByBarHeight ? tm.CorridorHeightMinimum : 0);
           if (csCurr == null /*|| csCurr.AverageHeight < pricesByPair[pair].Spread * tm.CurrentLot/tm.LotSize*/) continue;
           var cs = tm.GetCorridorStats(csCurr.Iterations);
           cs.Init(csCurr.Density, csCurr.AverageHigh, csCurr.AverageLow, csCurr.AskHigh, csCurr.BidLow, csCurr.Periods, csCurr.EndDate, csCurr.StartDate, csCurr.Iterations);
@@ -315,7 +340,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static bool IsTradingHours(Trade[] trades, DateTime date) {
-      return trades.Length > 0 || date.TimeOfDay.Hours.Between(8, 14) || true;
+      return trades.Length > 0 || date.TimeOfDay.Hours.Between(5, 14);
     }
 
   }
