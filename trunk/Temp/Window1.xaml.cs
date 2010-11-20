@@ -105,11 +105,11 @@ namespace Temp {
         AddLog("Rates.");
         fw.GetBars(fw.Pair, Period, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
         AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
-        var corridorStats = rates.ScanCorridornesses(CorridorIterations, rates.GetCorridornesses(UseStDev), CorridorIterations, 0);
+        CorridorStatistics corridorStats = null;// rates.ScanCorridornesses(CorridorIterations, rates.GetCorridornesses(UseStDev, 30, 180), CorridorIterations, 0);
         var corridorMinutes = corridorStats.Periods * Period;
         AddLog("Chart Corridor["+corridorStats.Periods+"] minutes.");
         new Scheduler(charter.Dispatcher).Command = () =>
-          charter.AddTicks(null, rates, null, 0, 0, 0, 0, corridorStats.AskHigh, corridorStats.BidLow, rates.Last().StartDate.AddMinutes(-corridorStats.Periods*Period), DateTime.MinValue, new double[0]);
+          charter.AddTicks(null, rates, null, 0, 0, 0, 0, 0, 0, rates.Last().StartDate.AddMinutes(-corridorStats.Periods*Period), DateTime.MinValue, new double[0]);
       }
     }
     public void MinuteRsi() {

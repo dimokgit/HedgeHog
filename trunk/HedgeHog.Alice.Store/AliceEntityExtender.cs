@@ -78,6 +78,9 @@ namespace HedgeHog.Alice.Store {
     public double NetPL { get { return GrossPL - Commission; } }
   }
 
+  public partial class OrderTemplate {
+  }
+
   public partial class TradingMacro {
     static Guid _sessionId = Guid.NewGuid();
     public static Guid SessionId { get { return _sessionId; } }
@@ -130,18 +133,6 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    double _Limit;
-    double Limit {
-      get { return _Limit; }
-      set {
-        if (_Limit == value) return;
-        _Limit = value;
-        OnPropertyChanged("Limit");
-        OnPropertyChanged("TakeProfitPips");
-      }
-    }
-
-    //public double TakeProfitPips { get { return CorridorRatio == 0 ? 0 : Limit / CorridorRatio; } }
     private double _TakeProfitPips;
     public double TakeProfitPips {
       get { return _TakeProfitPips; }
@@ -149,7 +140,6 @@ namespace HedgeHog.Alice.Store {
         if (_TakeProfitPips != value) {
           _TakeProfitPips = value;
           OnPropertyChanged("TakeProfitPips");
-          OnPropertyChanged("IsTakeProfitPipsMinimumOk");
         }
       }
     }
@@ -158,7 +148,6 @@ namespace HedgeHog.Alice.Store {
 
     #region Corridor Stats
 
-    private int[] _CorridorIterationsArray;
     public int[] CorridorIterationsArray {
       get {
         try {
@@ -207,32 +196,8 @@ namespace HedgeHog.Alice.Store {
         _CorridorStats = value;
         CorridorStatsArray.ToList().ForEach(cs => cs.IsCurrent = cs == value);
         OnPropertyChanged("CorridorStats");
-        OnPropertyChanged("CorridorAverageHeightInPips");
         OnPropertyChanged("PriceCmaDiffHighInPips");
         OnPropertyChanged("PriceCmaDiffLowInPips");
-        OnPropertyChanged("IsCorridorAvarageHeightOk");
-        OnPropertyChanged("IsCorridornessOk");
-      }
-    }
-
-    public bool IsCorridornessOk {
-      get { return CorridorStats.IsCorridornessOk; }
-    }
-
-    Trade[] emptyTrades = new Trade[] { };
-    public Trade[] CloseTrades(Trade[] trades) {
-      if (CorridorStats == null) return emptyTrades;
-      if (PriceCmaCounter < TicksPerMinuteMaximun * 2) return emptyTrades;
-
-      Func<bool, Trade[]> plTrades = buy => trades.Where(t => t.IsBuy == buy && t.PL > 0).ToArray();
-      var isBuy = PriceCmaDiffernceInPips < 0;
-      var ts = trades.Where(t => t.IsBuy == isBuy && t.PL > 0).ToArray();
-      return ts.Length > 1 ? ts : emptyTrades;
-    }
-    public bool? CloseTrades_ {
-      get {
-        var csTS = CorridorStatsArray.FirstOrDefault(cs => cs.Height > CorridorHeightMinimum && cs.TradeSignal.HasValue);
-        return csTS == null ? null : csTS.TradeSignal;
       }
     }
     #endregion
@@ -381,7 +346,7 @@ namespace HedgeHog.Alice.Store {
         return _PriceQueue;
       }
     }
-    public void TicksPerMinuteSet(Price price, DateTime serverTime, Func<double, double> inPips,double pointSize) {
+    public void TicksPerMinuteSet(Price price, DateTime serverTime, Func<double?, double> inPips, double pointSize) {
       if (_InPips == null) _InPips = inPips;
       if (PointSize == 0) PointSize = pointSize;
       PriceQueue.Add(price, serverTime);
@@ -397,14 +362,7 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged("IsSpeedOk");
 
       OnPropertyChanged("PriceCmaDiffHighInPips");
-      OnPropertyChanged("PriceCmaDiffHighFirstInPips");
-      OnPropertyChanged("PriceCmaDiffHighLastInPips");
-
       OnPropertyChanged("PriceCmaDiffLowInPips");
-      OnPropertyChanged("PriceCmaDiffLowFirstInPips");
-      OnPropertyChanged("PriceCmaDiffLowLastInPips");
-
-      OnPropertyChanged("CorridorAverageHeightInPips");
     }
     #endregion
 
@@ -414,12 +372,10 @@ namespace HedgeHog.Alice.Store {
 
     public bool IsSpeedOk { get { return PipsPerMinute < Math.Max(PipsPerMinuteCmaFirst, PipsPerMinuteCmaLast); } }
 
-    public double CorridorAverageHeightInPips { get { return CorridorStats == null ? 0 : InPips(CorridorStats.AverageHeight); } }
-    public double CorridorAverageHeight { get { return CorridorStats == null ? 0 : CorridorStats.AverageHeight; } }
-    public double PriceCmaDiffHigh { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffHigh; } }
-    public double PriceCmaDiffHighInPips { get { return InPips(PriceCmaDiffHigh); } }
-    public double PriceCmaDiffLow { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffLow; } }
-    public double PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
+    public double? PriceCmaDiffHigh { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffHigh; } }
+    public double? PriceCmaDiffHighInPips { get { return InPips(PriceCmaDiffHigh); } }
+    public double? PriceCmaDiffLow { get { return CorridorStats == null ? 0 : CorridorStats.PriceCmaDiffLow; } }
+    public double? PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
 
     bool _PendingSell;
     public bool PendingSell {
@@ -585,7 +541,7 @@ namespace HedgeHog.Alice.Store {
 
     private double _PipsPerPosition;
     public double PipsPerPosition {
-      get { return Trades.Length<2?0: InPips(Trades.Max(t => t.Open) - Trades.Min(t => t.Open))/(Trades.Length-1); }
+      get { return Trades.Length < 2 ? 0 : InPips(Trades.Max(t => t.Open) - Trades.Min(t => t.Open)) / (Trades.Length - 1); }
     }
 
 
@@ -614,21 +570,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     string lastTradeId = "";
-    double _commonMinimumRatio = 1;
-    public double CommonMinimumRatio {
-      get {
-        return 1;
-        return CalculatedLotSize == 0 ? 1: Math.Min(MaxLotByTakeProfitRatio, (double)CalculatedLotSize / LotSize);
-        if (LastTrade.Id == lastTradeId) return _commonMinimumRatio;
-        lastTradeId = LastTrade.Id;
-        return _commonMinimumRatio = new Random().NextDouble() * 2 + 1;
-        var i = LastTrade.Time.Ticks % 2;
-        return LotSize == 0 || i == 0? 1 : Math.Sqrt((double)LastLotSize / LotSize);// LotSize == 0 ? 1 : Math.Pow((2.0 * CalculatedLotSize / (double)LotSize), .3);
-      }
-    }// (LotSize == 0 || LotSizeByLoss == 0 ? 1 : Math.Max(1, Math.Log((double)LotSizeByLoss / LotSize, 2.5))); } }
 
-    public int CorridorBarMinutesEx {
-      get { return (CorridorBarMinutes * CommonMinimumRatio).ToInt(); }
+    public int BarsCount {
+      get { return CorridorBarMinutes; }
     }
 
 
@@ -639,89 +583,11 @@ namespace HedgeHog.Alice.Store {
         if (_BarHeightHigh != value) {
           _BarHeightHigh = value;
           OnPropertyChanged("BarHeightHigh");
-          OnPropertyChanged("IsBarLowHighRatioOk");
         }
       }
     }
 
-    private double _BarHeightLow;
-    public double BarHeightLow {
-      get { return _BarHeightLow; }
-      set {
-        if (_BarHeightLow != value) {
-          _BarHeightLow = value;
-          OnPropertyChanged("BarHeightLow");
-          OnPropertyChanged("IsBarLowHighRatioOk");
-          OnPropertyChanged("BarPeriodsLowHighRatioValue");
-        }
-      }
-    }
-
-
-    double _BarHeight60;
-    public double BarHeight60 {
-      get { return _BarHeight60; }
-      set {
-        _BarHeight60 = value;
-        OnPropertyChanged("BarHeight60InPips");
-        OnPropertyChanged("CorridorHeightMinimum");
-        OnPropertyChanged("IsCorridorAvarageHeightOk");
-        OnPropertyChanged("BarPeriodsLowHighRatioValue");
-        _BarPeriodsLowHighRatioValueCma.Add(BarPeriodsLowHighRatioValue,15);
-        if (BarPeriodsLowHighRatioValue > BarPeriodsLowHighRatio) {
-            _BarPeriodsLowHighRatioValueMax = Math.Max(_BarPeriodsLowHighRatioValueMax, BarPeriodsLowHighRatioValue);
-        } else
-          _BarPeriodsLowHighRatioValueMax = 0;
-      }
-    }
-    public double BarHeight60InPips { get { return InPips(BarHeight60); } }
-    public bool IsBarLowHighRatioOk {
-      get {
-        return BarPeriodsLowHighRatioValue >= BarPeriodsLowHighRatio && _BarPeriodsLowHighRatioValueCma.CmaDiff()[0].Round(2)<=0/*BarPeriodsLowHighRatio*/;
-      }
-    }
-
-    double _BarPeriodsLowHighRatioValueMax;
-    Lib.CmaWalker _BarPeriodsLowHighRatioValueCma = new Lib.CmaWalker(2);
-    public double BarPeriodsLowHighRatioValue { get { return BarHeightLow == 0 || BarHeightHigh == 0 ? 0 : BarHeightLow / BarHeightHigh; } }
-
-    public double TakeProfitPipsMinimum {
-      get { return FibMin * CommonMinimumRatio; }
-      set { FibMin = value; }
-    }
-
-    private double _Volatility;
-    public double Volatility {
-      get { return _Volatility; }
-      set {
-        if (_Volatility != value) {
-          _Volatility = value;
-          OnPropertyChanged("Volatility");
-        }
-      }
-    }
-
-    public void ResetCorridor() {
-      //CorridorStats.AverageHeightCurrentMinimum = 0;
-    }
-
-    public bool IsCorridorAvarageHeightOk { get { return (CorridorStats == null ? false : CorridorStats.IsCorridorAvarageHeightOk); } }
-
-    private double _CorridorHeightMinimum;
-    public double CorridorHeightMinimum {
-      get { return _CorridorHeightMinimum; }
-      set {
-        if (_CorridorHeightMinimum != value) {
-          _CorridorHeightMinimum = value;
-          OnPropertyChanged("CorridorHeightMinimum");
-          OnPropertyChanged("CorridorHeightMinimumInPips");
-        }
-      }
-    }
-
-    public double CorridorHeightMinimumInPips { get { return InPips(CorridorHeightMinimum); } }
-
-    public double CorridorHeightByRegression { get { return CorridorStats == null ? 0 : CorridorStats.HeightByRegression; } }
+    public double CorridorHeightByRegression { get { return CorridorStats == null ? 0 : CorridorStats.HeightUp; } }
     public double CorridorHeightByRegressionInPips { get { return InPips(CorridorHeightByRegression); } }
 
     private int _HistoricalGrossPL;
@@ -735,95 +601,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private double _PriceCma;
-    public double PriceCma {
-      get { return PriceCmaWalker.CmaArray[0].Value; }
-    }
-    private double _PriceCma1;
-    public double PriceCma1 {
-      get { return _PriceCma1; }
-      set {
-        if (_PriceCma1 != value) {
-          _PriceCma1 = value;
-          OnPropertyChanged("PriceCma1");
-        }
-      }
-    }
-
-    private double _PriceCma2;
-    public double PriceCma2 {
-      get { return _PriceCma2; }
-      set {
-        _PriceCma2 = value;
-        OnPropertyChanged("PriceCma2");
-      }
-    }
-
-    private double _PriceCma3;
-    public double PriceCma3 {
-      get { return _PriceCma3; }
-      set {
-        if (_PriceCma3 != value) {
-          _PriceCma3 = value;
-          OnPropertyChanged("PriceCma3");
-          OnPropertyChanged("PriceCmaDiffernceInPips");
-          OnPropertyChanged("PriceCma1DiffernceInPips");
-          OnPropertyChanged("PriceCma23DiffernceInPips");
-        }
+    public bool IsTradingHours {
+      get {
+        return true ||/*Trades.Length > 0 ||*/ RateLast.StartDate.TimeOfDay.Hours.Between(0, 16);
       }
     }
 
 
-    public bool? TradeSignal { get { return CorridorStats == null ? null : CorridorStats.TradeSignal; } }
     public bool? OpenSignal { get { return CorridorStats == null ? null : CorridorStats.OpenSignal; } }
     public bool? CloseSignal { get { return CorridorStats == null ? null : CorridorStats.CloseSignal; } }
-
-    public double PriceCmaDiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().FirstOrDefault()), 2); } }
-    //public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma1 - PriceCma2), 2); } }
-    public double PriceCma1DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.CmaDiff().Skip(1).DefaultIfEmpty(PriceCmaWalker.CmaDiff().FirstOrDefault()).First()), 2); } }
-    //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCma2 - PriceCma3), 2); } }
-    //public double PriceCma23DiffernceInPips { get { return InPips == null ? 0 : Math.Round(InPips(PriceCmaWalker.FromEnd(1) - PriceCmaWalker.FromEnd(0)), 2); } }
-    public double PriceCma23DiffernceInPips { get { return Math.Round(InPips(PriceCmaWalker.CmaDiff().LastOrDefault()), 2); } }
-
-    public double PriceCmaDiffHighFirstInPips { get { return InPips(PriceCmaDiffHighFirst); } }
-    public double PriceCmaDiffHighLastInPips { get { return InPips(PriceCmaDiffHighLast); } }
-    public double PriceCmaDiffHighFirst { get { return PriceCmaDiffHighWalker.CmaArray.FirstOrDefault().GetValueOrDefault(); } }
-    public double PriceCmaDiffHighLast { get { return PriceCmaDiffHighWalker.CmaArray.LastOrDefault().GetValueOrDefault(); } }
-
-    public double PriceCmaDiffLowFirstInPips { get { return InPips(PriceCmaDiffLowFirst); } }
-    public double PriceCmaDiffLowLastInPips { get { return InPips(PriceCmaDiffLowLast); } }
-    public double PriceCmaDiffLowFirst { get { return PriceCmaDiffLowWalker.CmaArray.FirstOrDefault().GetValueOrDefault(); } }
-    public double PriceCmaDiffLowLast { get { return PriceCmaDiffLowWalker.CmaArray.LastOrDefault().GetValueOrDefault(); } }
-
-    int _priceCmaCounter;
-    public int PriceCmaCounter {
-      get { return _priceCmaCounter; }
-      protected set { _priceCmaCounter = value; }
-    }
-
-    public int PriceCmaLevel { get { return CorridorIterationsIn; } }
-    HedgeHog.Lib.CmaWalker _PriceCmaWalker;
-    public HedgeHog.Lib.CmaWalker PriceCmaWalker {
-      get {
-        if (_PriceCmaWalker == null) _PriceCmaWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
-        return _PriceCmaWalker;
-      }
-    }
-
-    HedgeHog.Lib.CmaWalker _PriceCmaDiffHighWalker;
-    public HedgeHog.Lib.CmaWalker PriceCmaDiffHighWalker {
-      get {
-        if (_PriceCmaDiffHighWalker == null) _PriceCmaDiffHighWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
-        return _PriceCmaDiffHighWalker;
-      }
-    }
-    HedgeHog.Lib.CmaWalker _PriceCmaDiffLowWalker;
-    public HedgeHog.Lib.CmaWalker PriceCmaDiffLowWalker {
-      get {
-        if (_PriceCmaDiffLowWalker == null) _PriceCmaDiffLowWalker = new HedgeHog.Lib.CmaWalker(PriceCmaLevel);
-        return _PriceCmaDiffLowWalker;
-      }
-    }
 
     public Price PriceCurrent { get; set; }
 
@@ -834,18 +620,26 @@ namespace HedgeHog.Alice.Store {
       set { _PriceCmaDirection = value; }
     }
 
-    public double HeightsRatio { get { return CorridorStats == null ? 0 : CorridorStats.HeightsRatio; } }
     private double _CorridorAngle;
     public double CorridorAngle {
       get { return _CorridorAngle; }
       set {
-        if (PointSize!= 0) {
+        if (PointSize != 0) {
           _CorridorAngle = value.Angle() / PointSize;
           OnPropertyChanged("CorridorAngle");
         }
       }
     }
 
+    public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
+
+    public double StDevRatio { get { return CorridorIterationsIn / 10.0; } }
+    public double CorridorThinness { get { return CorridorStats == null ? 4 : CorridorStats.Thinness; } }
+
+    private static Func<Rate, double> _GetPriceLow = r => r.PriceAvg;
+    public static Func<Rate, double> GetPriceLow { get { return _GetPriceLow; } }
+    private static Func<Rate, double> _GetPriceHigh = r => r.PriceAvg;
+    public static Func<Rate, double> GetPriceHigh { get { return _GetPriceHigh; } }
 
     List<Rate> _Rates;
     public List<Rate> Rates {
@@ -853,13 +647,16 @@ namespace HedgeHog.Alice.Store {
       set {
         _Rates = value;
         if (CorridorStats != null) {
-          var coeffs = Rates.SetCorridorPrices(CorridorStats.StartDate);
-          CorridorAngle = coeffs[1];
-          OnPropertyChanged("HeightsRatio");
+          Rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
+          var stDevRatio = Math.Max(StDevRatio, Math.Log(CorridorThinness, 1.414213562));
+          CorridorAngle = Rates.Skip(Rates.Count - CorridorStats.Periods).SetCorridorPrices(GetPriceHigh, GetPriceLow, CorridorStats.LineHigh.Line, CorridorStats.LineLow.Line, stDevRatio)[1];
+          OnPropertyChanged("CorridorThinness");
+          OnPropertyChanged("CorridorHeightsRatio");
           OnPropertyChanged("CorridorHeightByRegressionInPips");
+          OnPropertyChanged("CorridorToRangeRatio");
         }
-        var dateLast = value.Last().StartDate.AddMinutes(-3);
-        RatesLast = value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
+        //var dateLast = value.Last().StartDate.AddMinutes(-4);
+        RatesLast = value.Skip(value.Count - 3).ToArray();// value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
         RateLast = RatesLast.Last();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
@@ -888,16 +685,9 @@ namespace HedgeHog.Alice.Store {
       CalculatedLotSize = calculatedLotSize;
       Rates = rates;
       PriceCurrent = price;
-      PriceCmaCounter++;
       if (PriceDigits == 0) PriceDigits = price.Digits;
       var cmaperiod = TicksPerMinuteInstant;
-      PriceCmaWalker.Add(price.Average, cmaperiod);
-      PriceCmaDiffHighWalker.Add(PriceCmaDiffHigh, cmaperiod);
-      PriceCmaDiffLowWalker.Add(PriceCmaDiffLow, cmaperiod);
-      OnPropertyChanged("TradeSignal");
-      OnPropertyChanged("PriceCmaDiffernceInPips");
-      OnPropertyChanged("PriceCma1DiffernceInPips");
-      OnPropertyChanged("PriceCma23DiffernceInPips");
+      OnPropertyChanged("OpenSignal");
       OnPropertyChanged("MaxLotSize");
       //PriceCma = Lib.CMA(PriceCma, 0, cmaperiod , price.Average);
       //PriceCma1 = Lib.CMA(PriceCma1, 0, cmaperiod, PriceCma);
@@ -908,8 +698,8 @@ namespace HedgeHog.Alice.Store {
     public string PriceDigitsFormat { get { return "n" + (PriceDigits - 1); } }
     public string PriceDigitsFormat2 { get { return "n" + PriceDigits; } }
 
-    Func<double, double> _InPips;
-    public Func<double, double> InPips {
+    Func<double?, double> _InPips;
+    public Func<double?, double> InPips {
       get { return _InPips == null ? d => 0 : _InPips; }
       set { _InPips = value; }
     }
@@ -954,25 +744,39 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
+    Dictionary<string, Strategies> tradeStrategies = new Dictionary<string, Strategies>();
+    Dictionary<Strategies, int> strategyScores = new Dictionary<Strategies, int>() { { Strategies.Breakout, 0 }, { Strategies.Range, 0 } };
+    public string StrategyScoresText { get { return string.Join(",", strategyScores.Select(sc => sc.Key + ":" + sc.Value).ToArray()); } }
     public Trade LastTrade {
       get { return _lastTrade; }
       set {
         if (value == null) return;
-        if (value.Id == LastTrade.Id) return;
-        if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
+        if (value.Id == LastTrade.Id) {
+          var id = LastTrade.Id + "";
+          if (!string.IsNullOrWhiteSpace(id)) {
+            Strategies tradeStrategy = tradeStrategies[id];
+            if (strategyScores.ContainsKey(tradeStrategy))
+              strategyScores[tradeStrategy] = strategyScores[tradeStrategy] + (LastTrade.PL > 0 ? 1 : -1);
+          }
+        } else {
+          var strategy = Strategy & (Strategies.Breakout | Strategies.Range);
+          tradeStrategies[value.Id + ""] = strategy;
+          if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
 
-        ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
-        _lastTrade = value;
-        var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
-        tu.TradeStats = new TradeStatistics() {
-          TakeProfitInPipsMinimum = (Volatility * 100).ToInt(),
-          MinutesBack = (CorridorStats.Corridornes*100).ToInt(),
-          SessionId = SessionId 
-        };
+          ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
+
+          _lastTrade = value;
+          if (CorridorStats != null) {
+            var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
+            tu.TradeStats = new TradeStatistics() {
+              SessionId = SessionId
+            };
+          }
+        }
         OnPropertyChanged("LastTrade");
         OnPropertyChanged("LastLotSize");
         OnPropertyChanged("MaxLotSize");
+        OnPropertyChanged("StrategyScoresText");
       }
     }
 
@@ -982,23 +786,6 @@ namespace HedgeHog.Alice.Store {
     public int MaxLotSize {
       get {
         return MaxLotByTakeProfitRatio.ToInt() * LotSize;
-        //return Math.Max(LotSize, LastTrade.Lots + ((LastTrade.PL.Abs().Between(TakeProfitPipsMinimum, TakeProfitPipsMinimum * MaxLotByTakeProfitRatio)) ? LotSize : -LotSize));
-        //return Math.Max(LotSize, LastTrade.Lots +
-        //  (LastTrade.PL > 0 ? 0 :
-        //  (LastTrade.PL.Abs().Between(0, TakeProfitPips * MaxLotByTakeProfitRatio)) ? LotSize : -LotSize * 2));
-        //return Math.Max(LotSize, LastTrade.Lots + (LastTrade.PL > 0 ? +LotSize : -LotSize * 2));
-        //return Math.Max(LotSize, LastTrade.Lots + LotSize);
-
-        //return Math.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize, Math.Max(LotSize, (LastTrade.PL > TakeProfitPips / 10 ? LastTrade.Lots + (LastTrade.PL > TakeProfitPips / 2 ? LotSize : 0) : 0)));
-        var corridor = Math.Max(TakeProfitPips, TakeProfitPipsMinimum);// InPips(Math.Max(BarHeight60, CorridorStats == null?0: CorridorStats.AverageHeight));
-        var lot = LastLotSize;
-        if (LastTrade.PL < -corridor *2) lot = LastLotSize + LotSize;//LotSize * 2;
-        //else if (LastTrade.PL < -corridor*2 ) lot = LastLotSize + LotSize;
-        return Math.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize, ProfitCounter < 0 ? LotSize : lot);
-        return LastTrade.PL > 0
-          ? LastLotSize
-          : Math.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize, LastLotSize + (LastTrade.PL < -100 ? LotSize : 0));
-        //return LastTrade.PL > 0 ? LastLotSize : Math.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize, LastLotSize + LotSize);
       }
     }
 
@@ -1064,7 +851,7 @@ namespace HedgeHog.Alice.Store {
     TradeDirections _TradeDirection = TradeDirections.None;
     public TradeDirections TradeDirection {
       get { return _TradeDirection; }
-      set { 
+      set {
         _TradeDirection = value;
         OnPropertyChanged("TradeDirection");
       }
@@ -1072,11 +859,73 @@ namespace HedgeHog.Alice.Store {
 
     public Trade[] Trades {
       get { return _trades; }
-      set { 
+      set {
         _trades = value;
         PositionsBuy = value.Count(t => t.Buy);
         PositionsSell = value.Count(t => !t.Buy);
+        if (value.Length > 0) CorridorStats.ResetLock();
+      }
+    }
+    public double CorridornessMinByPerformance {
+      get { return CorridornessMin + (strategyScores[Strategies.Breakout] - strategyScores[Strategies.Range]) / 100.0; }
+    }
+    public double CorridorToRangeRatio {
+      get { try { return CorridorHeightByRegression / Rates.Height(); } catch { return 0; } }
+    }
 
+    private Strategies _Strategy;
+    public Strategies Strategy {
+      get {
+        {
+          if (Trades.Length > 0) return _Strategy;
+          if ((_Strategy & Strategies.Auto) == Strategies.None) return _Strategy;
+          var s = IsTradingHours ? Strategies.Breakout_A : Strategies.Range_A;
+          if (s == _Strategy) return _Strategy;
+          _Strategy = s;
+          OnPropertyChanged("Strategy");
+          return _Strategy;
+        }
+        {
+          var ch = CorridorHeightByRegressionInPips;
+          //var s = ch > 40 ? Strategies.Range : ch < 20 ? Strategies.None : Strategies.Breakout;
+          var s = Strategies.Auto;
+          if (ch > 10) {
+            s = CorridorToRangeRatio < CorridornessMinByPerformance ? Strategies.Breakout_A : Strategies.Range_A;
+            //if (CorridorStats.IsSellLock || CorridorStats.IsBuyLock) s = Strategies.Breakout;          else 
+            //s = strategyScores.OrderBy(sc => sc.Value).Last().Key;
+          }
+          if (_Strategy != s) {
+            _Strategy = s;
+            if (_Strategy == Strategies.None) CorridorStats.ResetLock();
+            OnPropertyChanged("Strategy");
+          }
+        }
+        return _Strategy;
+      }
+      set {
+        if (_Strategy != value) {
+          _Strategy = value;
+          OnPropertyChanged("Strategy");
+        }
+      }
+    }
+    private bool _ShowPopup;
+    public bool ShowPopup {
+      get { return _ShowPopup; }
+      set {
+        _ShowPopup = value;
+        OnPropertyChanged("ShowPopup");
+      }
+    }
+    private string _PopupText;
+    public string PopupText {
+      get { return _PopupText; }
+      set {
+        if (_PopupText != value) {
+          _PopupText = value;
+          ShowPopup = value != "";
+          OnPropertyChanged("PopupText");
+        }
       }
     }
 
@@ -1084,4 +933,9 @@ namespace HedgeHog.Alice.Store {
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
   public enum TradeDirections { None,Up, Down }
+  [Flags]
+  public enum Strategies {
+    None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
+    Breakout_A = 1 + 8, Range_A = 2 + 8
+  }
 }

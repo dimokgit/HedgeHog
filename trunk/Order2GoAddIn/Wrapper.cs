@@ -166,7 +166,7 @@ namespace Order2GoAddIn {
     
 
     #region Constants
-    public readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
+    public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public const string TABLE_ACCOUNTS = "accounts";
     public const string TABLE_OFFERS = "offers";
     public const string TABLE_ORDERS = "orders";
@@ -517,8 +517,8 @@ namespace Order2GoAddIn {
     public FXCoreWrapper(CoreFX coreFX,string pair) {
       this.coreFX = coreFX;
       if (pair != null) this.Pair = pair;
-      coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
-      coreFX.LoggedOffEvent += new EventHandler<EventArgs>(coreFX_LoggedOffEvent);
+      coreFX.LoggedInEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedInEvent);
+      coreFX.LoggedOffEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedOffEvent);
       isWiredUp = true;
       PendingOrders.CollectionChanged += PendingOrders_CollectionChanged;
     }
@@ -547,8 +547,8 @@ namespace Order2GoAddIn {
         throw new NotSupportedException(GetType().Name + ".LogOn is not supported when " + GetType().Name + ".coreFx is pre-set in cobstructor.");
       coreFX = core;
       if (!isWiredUp) {
-        core.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
-        core.LoggedOffEvent += new EventHandler<EventArgs>(coreFX_LoggedOffEvent);
+        core.LoggedInEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedInEvent);
+        core.LoggedOffEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedOffEvent);
         isWiredUp = true;
       }
       this.Pair = pair;
@@ -561,12 +561,14 @@ namespace Order2GoAddIn {
       return true;
     }
 
-    void coreFX_LoggedOffEvent(object sender, EventArgs e) {
+    void coreFX_LoggedOffEvent(object sender, LoggedInEventArgs e) {
+      if (e.IsInVirtualTrading) return;
       _accountID = "";
       Unsubscribe();
     }
 
-    void coreFX_LoggedInEvent(object sender, EventArgs e) {
+    void coreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
+      if (e.IsInVirtualTrading) return;
       Subscribe();
     }
     public void LogOn() {
@@ -674,22 +676,20 @@ namespace Order2GoAddIn {
       }
       GetBarsBase(pair, period, minutesBack, ref ticks);
     }
-    private void GetBarsBase(string pair, int period, int minutesBack, ref Rate[] ticks) {
+    private void GetBarsBase(string pair, int period, int periodsBack, ref Rate[] rates) {
       int timeoutCount = 1;
-      var duration = TimeSpan.FromMinutes(minutesBack);
-      var durationMax = TimeSpan.FromMinutes(Math.Max(1, period));
-      while (ticks.Duration(durationMax) < duration) {
+      while (rates.Count()< periodsBack) {
         try {
-          var endDate = ticks.Select(t1 => t1.StartDate).DefaultIfEmpty(FX_DATE_NOW).Min();
+          var endDate = rates.Select(t1 => t1.StartDate).DefaultIfEmpty(FX_DATE_NOW).Min();
           var t = GetBarsBase_(pair, period, DateTime.MinValue, endDate);
-          ticks = ticks.Union(t).ToArray();
+          rates = rates.Union(t).ToArray();
         } catch (Exception exc) {
           if (exc.Message.ToLower().Contains("timeout")) {
             if (timeoutCount-- == 0) break;
           }
         }
       }
-      ticks = ticks.OrderBars().Skip(ticks.Count() - minutesBack).ToArray();
+      rates = rates.OrderBars().Skip(rates.Count() - periodsBack).ToArray();
     }
     public Rate[] New_GetBarsBase(string pair, int period, DateTime startDate, DateTime endDate) {
       var ed = endDate == FX_DATE_NOW ? DateTime.MaxValue : endDate;
@@ -935,7 +935,7 @@ namespace Order2GoAddIn {
         Ask = (double)Row.GetValue(FIELD_ASK), Bid = (double)Row.GetValue(FIELD_BID),
         AskChangeDirection = (int)Row.GetValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.GetValue(FIELD_BIDCHANGEDIRECTION),
-        Time = ((DateTime)Row.GetValue(FIELD_TIME)).AddHours(coreFX.ServerTimeOffset),
+        Time = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Row.GetValue(FIELD_TIME),TimeZoneInfo.Local ),
         Pair = Row.GetValue(FIELD_INSTRUMENT) + ""
       };
     }
@@ -1279,6 +1279,9 @@ namespace Order2GoAddIn {
       order.TypeStop = (int)row.CellValue("TypeStop");
       order.TypeLimit = (int)row.CellValue("TypeLimit");
       order.OCOBulkID = (int)row.CellValue("OCOBulkID");
+      order.PipCost = GetPipCost(order.Pair);
+      order.PointSize = GetPipSize(order.Pair);
+      order.PipsTillRate = InPips(order.Pair, (order.Rate - GetCurrentPrice(order.Pair, order.IsBuy)).Abs());
       if (order.Stop != 0) {
         order.StopInPips = order.GetStopInPips((p, s) => InPips(p, s));
         order.StopInPoints = order.GetStopInPoints((p, s) => InPoints(p, s));
@@ -1399,6 +1402,11 @@ namespace Order2GoAddIn {
         RaiseError(new Exception(string.Format("TradeId:{0},Stop:{1},Remark:{2}", tradeId, rate, remark), exc));
         return null;
       }
+    }
+    public string CreateEntryOrder(string pair, bool isBuy, int amount, double rate, double stop, double limit) {
+      object psOrderId, psDI;
+      Desk.CreateEntryOrder2(AccountID, pair, isBuy, amount, rate, Desk.SL_PEGLIMITOPEN + Desk.SL_PEGSTOPOPEN, stop, limit, 0, out psOrderId, out psDI);
+      return psOrderId + "";
     }
     public void ChangeEntryOrderStopLimit(string orderId, double rate, bool isStop) {
       Desk.ChangeEntryOrderStopLimit(orderId, rate, isStop, 0);
@@ -1692,6 +1700,9 @@ namespace Order2GoAddIn {
         Desk.DeleteTradeStopLimit(tradeId, false);
       else {
         object a, b;
+        var trade = GetTrade(tradeId);
+        if (trade.Limit == 0 && InPips(trade.Pair, takeProfit) < 500)
+          takeProfit = trade.Close + takeProfit;
         Desk.CreateFixOrder(Desk.FIX_LIMIT, tradeId, takeProfit, 0, "", "", "", true, 0, remark, out a, out b);
       }
     }
@@ -1700,6 +1711,9 @@ namespace Order2GoAddIn {
         Desk.DeleteTradeStopLimit(tradeId, true);
       else {
         object a, b;
+        var trade = GetTrade(tradeId);
+        if (trade.Stop == 0 && InPips(trade.Pair, stopLoss) < 500)
+          stopLoss = trade.Close + stopLoss;
         Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopLoss, 0, "", "", "", true, 0, remark, out a, out b);
       }
     }
@@ -1748,7 +1762,7 @@ namespace Order2GoAddIn {
     public double InPoints(double? price) { return (price * GetPipSize(Pair)).GetValueOrDefault(); }
     public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this,pair, price); }
 
-    Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>();
+    Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>() { { "EUR/USD", .0001 } };
     public double GetPipSize(string pair) {
       pair = pair.ToUpper();
       lock (pointSizeDictionary) {
@@ -1764,15 +1778,16 @@ namespace Order2GoAddIn {
       }
     }
 
-    Dictionary<string, double> pipCostDictionary = new Dictionary<string, double>();
+    Dictionary<string, double> pipCostDictionary = new Dictionary<string, double>() { { "EUR/USD", 1 } };
     public double GetPipCost(string pair) {
       pair = pair.ToUpper();
+      if (!coreFX.IsInVirtualTrading && pipCostDictionary.Count == 1) pipCostDictionary.Clear();
       if (!pipCostDictionary.ContainsKey(pair))
         GetOffers().ToList().ForEach(o => pipCostDictionary[o.Pair] = o.PipCost);
       return pipCostDictionary[pair];
     }
 
-    Dictionary<string, int> digitDictionary = new Dictionary<string,int>();
+    Dictionary<string, int> digitDictionary = new Dictionary<string, int>() { { "EUR/USD", 5 } };
     public int GetDigits(string pair){
       pair = pair.ToUpper();
       if (!digitDictionary.ContainsKey(pair))
@@ -1978,6 +1993,15 @@ namespace Order2GoAddIn {
       } catch (Exception exc) { RaiseError(exc); }
     }
 
+    Dictionary<string, Price> currentPrices = new Dictionary<string, Price>();
+
+    public double GetCurrentPrice(string pair, bool isBuy) {
+      var p = GetCurrentPrice(pair);
+      return isBuy ? p.Ask : p.Bid;
+    }
+    public Price GetCurrentPrice(string pair) { return !currentPrices.ContainsKey(pair) ? new Price() : currentPrices[pair]; }
+    void SetCurrentPrice( Price price) { currentPrices[price.Pair] = price; }
+
     void FxCore_RowChanged(object _table, string rowID, string rowText) {
       try {
         FXCore.TableAut table = _table as FXCore.TableAut;
@@ -1991,6 +2015,7 @@ namespace Order2GoAddIn {
             row = table.FindRow("OfferID", rowID, 0) as FXCore.RowAut;
             price.AskChangeDirection = (int)row.CellValue(FIELD_ASKCHANGEDIRECTION);
             price.BidChangeDirection = (int)row.CellValue(FIELD_BIDCHANGEDIRECTION);
+            SetCurrentPrice(price);
             OnPriceChanged(price);
             //if ((DateTime)row.CellValue(FIELD_TIME) != _prevOfferDate
             //  && new[] { "", row.CellValue(FIELD_INSTRUMENT) + "" }.Contains(Pair.ToUpper())

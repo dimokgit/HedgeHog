@@ -9,11 +9,30 @@ using System.Linq.Expressions;
 namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
-  public abstract class PositioBase : INotifyPropertyChanged {
+  public abstract class PositionBase : INotifyPropertyChanged {
 
+    [DataMember]
+    [UpdateOnUpdate]
+    public double PipCost { get; set; }
+
+    [DataMember]
+    [UpdateOnUpdate]
+    public double PointSize { get; set; }
+    public string PointSizeFormat { get { return "n" + PointSize; } }
+
+    private double _StopAmount;
     [UpdateOnUpdate]
     [DataMember]
-    public double StopAmount { get; set; }
+    public double StopAmount {
+      get { return _StopAmount; }
+      set {
+        if (_StopAmount != value) {
+          _StopAmount = value;
+          OnPropertyChanged("StopAmount");
+        }
+      }
+    }
+
     [UpdateOnUpdate]
     [DataMember]
     public double LimitAmount { get; set; }
@@ -25,7 +44,7 @@ namespace HedgeHog.Shared {
       return UnKnown as TU;
     }
 
-    public void Update(PositioBase trade,params Action<object>[] setUnKnown) {
+    public void Update(PositionBase trade,params Action<object>[] setUnKnown) {
       var props = new List<string>();
       var propsToUpdate = GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(UpdateOnUpdateAttribute), true).Count()>0).ToArray();
       foreach (var prop in propsToUpdate) {

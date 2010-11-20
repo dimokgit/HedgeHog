@@ -108,7 +108,7 @@ namespace HedgeHog.Shared {
   }
 
 
-  public class TradesManagedStatic {
+  public static class TradesManagedStatic {
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
       return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
     }
@@ -129,5 +129,6 @@ namespace HedgeHog.Shared {
       return (price * tm.GetPipSize(pair)).GetValueOrDefault();
     }
     public static double InPips(double? price, double pipSize) { return price.GetValueOrDefault() / pipSize; }
+    public static bool IsInPips(this double value, double curentPrice) { return value / curentPrice < .5; }
   }
 }

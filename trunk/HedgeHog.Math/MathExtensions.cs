@@ -6,6 +6,21 @@ using System.Text;
 namespace HedgeHog {
   public static class MathExtensions {
 
+    public static double[] Linear(double[] x, double[] y) {
+      double [,] m = new double[x.Length,2];
+      for (int i = 0; i < x.Length; i++) {
+        m[i, 0] = x[i];
+        m[i, 1] = y[i];
+      }
+      int info,nvars;
+      double[] c;
+      alglib.linearmodel lm;
+      alglib.lrreport lr;
+      alglib.lrbuild(m,x.Length,1, out info, out lm,out lr);
+      alglib.lrunpack(lm, out c, out nvars);
+      return new[] { c[1], -c[0] };
+    }
+
     public static void SetProperty(this object o, string p, object v) {
       var convert = new Func<object, Type, object>((valie, type) => {
         if (valie != null) {
@@ -30,6 +45,15 @@ namespace HedgeHog {
       double y = 0; int j = 0;
       coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
+    }
+
+    public static double[] AverageByIterations(this double[] values,Func<double,double,bool> compare, double iterations)  {
+      var avg = values.Average();
+      for (int i = 1; i < iterations; i++) {
+        values = values.Where(r => compare(r, avg)).ToArray();
+        avg = values.Average();
+      }
+      return values;
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }
@@ -62,8 +86,7 @@ namespace HedgeHog {
     public static DateTime Round_(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
     public static DateTime Round(this DateTime dt, int period) {
       dt = dt.Round();
-      var evenMinutes = dt.Minute / period * period;
-      return dt.AddMinutes(-dt.Minute).AddMinutes(evenMinutes);
+      return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
     }
 
     #region Between

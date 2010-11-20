@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using HedgeHog.Bars;
+using System.Diagnostics;
 
 namespace HedgeHog.Shared {
   public class VirtualTradesManager : ITradesManager {
@@ -23,7 +24,8 @@ namespace HedgeHog.Shared {
     int minimumQuantity;
     public int MinimumQuantity { get { return minimumQuantity; } }
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
-    public DateTime ServerTime { get { return DateTime.Now; } }
+    DateTime _serverTime;
+    public DateTime ServerTime { get { return _serverTime; } }
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
@@ -80,6 +82,7 @@ namespace HedgeHog.Shared {
       return ++tradeId;
     }
     void AddTrade(bool isBuy, int lot, Price price) {
+      if (tradesOpened.Count > 0) Debugger.Break();
       tradesOpened.Add(new Trade() {
         Id = NewTradeId() + "",
         Pair = price.Pair,
@@ -225,6 +228,7 @@ namespace HedgeHog.Shared {
       RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair)));
     }
     public void RaisePriceChanged(Price price) {
+      _serverTime = price.Time;
       if (PriceChanged != null) PriceChanged(price);
     }
 

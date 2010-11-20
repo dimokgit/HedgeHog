@@ -7,6 +7,7 @@
     <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="AliceModelStoreContainer">
           <EntitySet Name="Bar" EntityType="AliceModel.Store.Bar" store:Type="Tables" />
+          <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" />
           <EntitySet Name="TradeHistory" EntityType="AliceModel.Store.TradeHistory" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
           <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
@@ -27,6 +28,18 @@
           <Property Name="BidOpen" Type="float" Nullable="false" />
           <Property Name="BidClose" Type="float" Nullable="false" />
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+        </EntityType>
+        <EntityType Name="OrderTemplate">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" Nullable="false" />
+          <Property Name="Stop" Type="int" Nullable="false" />
+          <Property Name="Limit" Type="int" Nullable="false" />
+          <Property Name="Price" Type="float" Nullable="false" />
+          <Property Name="Lot" Type="int" Nullable="false" />
+          <Property Name="StopOrderID" Type="int" Nullable="false" />
+          <Property Name="Pair" Type="nvarchar" MaxLength="7" />
         </EntityType>
         <EntityType Name="TradeHistory">
           <Key>
@@ -96,6 +109,9 @@
           <Property Name="BarPeriodsLowHighRatio" Type="float" Nullable="false" />
           <Property Name="LongMAPeriod" Type="int" Nullable="false" />
           <Property Name="CorridorAverageDaysBack" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsStart" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsLength" Type="int" Nullable="false" />
+          <Property Name="CorridorStartDate" Type="datetime" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -106,6 +122,7 @@
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
           <EntitySet Name="Bars" EntityType="AliceModel.Bar" />
           <EntitySet Name="TradeHistories" EntityType="AliceModel.TradeHistory" />
+          <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -155,6 +172,9 @@
           <Property Type="Double" Name="BarPeriodsLowHighRatio" Nullable="false" />
           <Property Type="Int32" Name="LongMAPeriod" Nullable="false" />
           <Property Type="Int32" Name="CorridorAverageDaysBack" Nullable="false" />
+          <Property Type="Int32" Name="CorridorPeriodsStart" Nullable="false" />
+          <Property Type="Int32" Name="CorridorPeriodsLength" Nullable="false" />
+          <Property Type="DateTime" Name="CorridorStartDate" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -193,6 +213,18 @@
           <Property Type="Int32" Name="CorridorMinutesBack" Nullable="false" />
           <Property Type="Guid" Name="SessionId" Nullable="false" />
         </EntityType>
+        <EntityType Name="OrderTemplate">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" />
+          <Property Type="Int32" Name="Stop" Nullable="false" />
+          <Property Type="Int32" Name="Limit" Nullable="false" />
+          <Property Type="Double" Name="Price" Nullable="false" />
+          <Property Type="Int32" Name="Lot" Nullable="false" />
+          <Property Type="Int32" Name="StopOrderID" Nullable="false" />
+          <Property Type="String" Name="Pair" MaxLength="7" FixedLength="false" Unicode="true" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -212,7 +244,10 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />
+            <ScalarProperty Name="CorridorStartDate" ColumnName="CorridorStartDate" />
+                <ScalarProperty Name="CorridorPeriodsLength" ColumnName="CorridorPeriodsLength" />
+                <ScalarProperty Name="CorridorPeriodsStart" ColumnName="CorridorPeriodsStart" />
+                <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />
                 <ScalarProperty Name="LongMAPeriod" ColumnName="LongMAPeriod" />
                 <ScalarProperty Name="BarPeriodsLowHighRatio" ColumnName="BarPeriodsLowHighRatio" />
                 <ScalarProperty Name="StrictTradeClose" ColumnName="StrictTradeClose" />
@@ -281,6 +316,19 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="OrderTemplates">
+            <EntityTypeMapping TypeName="AliceModel.OrderTemplate">
+              <MappingFragment StoreEntitySet="OrderTemplate">
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="StopOrderID" ColumnName="StopOrderID" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
+                <ScalarProperty Name="Limit" ColumnName="Limit" />
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -306,6 +354,7 @@
         <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="4.5505582682291656" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="5.375" PointY="4.75" Height="3.2357796223958317" />
+        <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
       </Diagram>
     </Diagrams>
   </Designer>

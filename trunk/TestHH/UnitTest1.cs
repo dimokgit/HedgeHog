@@ -88,14 +88,17 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
-      var period = 60;
-      var pair = "EUR/JPY";// "EUR/USD";
-      SavePair(period, "EUR/USD");
+      SavePair(1, "EUR/USD");
+      SavePair(5, "EUR/USD");
+      SavePair(15, "EUR/USD");
+      SavePair(60, "EUR/USD");
     }
 
     private void SavePair(int period, string pair) {
-      var ticks = o2g.GetBarsBase(pair, period, DateTime.Now.AddYears(-4));
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
+        var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddYears(-4)).Max().AddMinutes(period);
+        var ticks = o2g.GetBarsBase(pair, period, dateStart);
+        if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
         context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Pair = {2} AND Period = {1} AND StartDate>={0}", lastDate, period, pair);
@@ -114,8 +117,12 @@ namespace TestHH {
           bar.BidOpen = t.BidOpen;
           bar.BidClose = t.BidClose;
           context.t_Bar.AddObject(bar);
-          if (i++ % 1000 == 0)
+//          if (i++ % 1000 == 0)
+          try {
             context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          } catch (Exception exc) {
+            Debugger.Break();
+          }
         });
         context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
       }

@@ -469,6 +469,111 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+
+    #region Entry Order Commands
+    ICommand _IncreaseEntryStopCommand;
+    public ICommand IncreaseEntryStopCommand {
+      get {
+        if (_IncreaseEntryStopCommand == null) {
+          _IncreaseEntryStopCommand = new Gala.RelayCommand<Order>(IncreaseEntryStop, (o) => true);
+        }
+
+        return _IncreaseEntryStopCommand;
+      }
+    }
+    void IncreaseEntryStop(Order order) {
+      fwMaster.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips + 1);
+    }
+
+    ICommand _DecreaseEntryStopCommandCommand;
+    public ICommand DecreaseEntryStopCommandCommand {
+      get {
+        if (_DecreaseEntryStopCommandCommand == null) {
+          _DecreaseEntryStopCommandCommand = new Gala.RelayCommand<Order>(DecreaseEntryStopCommand, (o) => true);
+        }
+
+        return _DecreaseEntryStopCommandCommand;
+      }
+    }
+    void DecreaseEntryStopCommand(object o) { 
+      var order = o as Order;
+      fwMaster.ChangeEntryOrderPeggedStop(order.OrderID, order.StopInPips - 1);
+    }
+
+
+    ICommand _IncreaseEntryLimitCommand;
+    public ICommand IncreaseEntryLimitCommand {
+      get {
+        if (_IncreaseEntryLimitCommand == null) {
+          _IncreaseEntryLimitCommand = new Gala.RelayCommand<Order>(IncreaseEntryLimit, (o) => true);
+        }
+
+        return _IncreaseEntryLimitCommand;
+      }
+    }
+    void IncreaseEntryLimit(Order order) {
+      fwMaster.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips + 1);
+    }
+
+    ICommand _DecreaseEntryLimitCommand;
+    public ICommand DecreaseEntryLimitCommand {
+      get {
+        if (_DecreaseEntryLimitCommand == null) {
+          _DecreaseEntryLimitCommand = new Gala.RelayCommand<Order>(DecreaseEntryLimit, (o) => true);
+        }
+
+        return _DecreaseEntryLimitCommand;
+      }
+    }
+    void DecreaseEntryLimit(Order order) {
+      fwMaster.ChangeEntryOrderPeggedLimit(order.OrderID, order.LimitInPips - 1);
+    }
+
+
+    ICommand _IncreaseEntryRateCommand;
+    public ICommand IncreaseEntryRateCommand {
+      get {
+        if (_IncreaseEntryRateCommand == null) {
+          _IncreaseEntryRateCommand = new Gala.RelayCommand<Order>(IncreaseEntryRate, (o) => true);
+        }
+
+        return _IncreaseEntryRateCommand;
+      }
+    }
+    void IncreaseEntryRate(Order order) {
+      fwMaster.ChangeOrderRate(order.OrderID, order.Rate + order.PointSize);
+    }
+
+    ICommand _DecreaseEntryRateCommand;
+    public ICommand DecreaseEntryRateCommand {
+      get {
+        if (_DecreaseEntryRateCommand == null) {
+          _DecreaseEntryRateCommand = new Gala.RelayCommand<Order>(DecreaseEntryRate, (o) => true);
+        }
+
+        return _DecreaseEntryRateCommand;
+      }
+    }
+    void DecreaseEntryRate(Order order) {
+      fwMaster.ChangeOrderRate(order.OrderID, order.Rate - order.PointSize);
+    }
+
+    ICommand _CancelEntryOrderCommand;
+    public ICommand CancelEntryOrderCommand {
+      get {
+        if (_CancelEntryOrderCommand == null) {
+          _CancelEntryOrderCommand = new Gala.RelayCommand<Order>(CancelEntryOrder, (o) => true);
+        }
+
+        return _CancelEntryOrderCommand;
+      }
+    }
+    void CancelEntryOrder(Order order) {
+      fwMaster.DeleteOrder(order.OrderID);
+    }
+
+    #endregion
+
     #region EncreaseStopCommand
     ICommand _EncreaseStopCommand;
     public ICommand EncreaseStopCommand {
@@ -944,6 +1049,7 @@ namespace HedgeHog.Alice.Client {
       try {
         if (CoreFX.IsLoggedIn) CoreFX.Logout();
         IsInLogin = true;
+        CoreFX.IsInVirtualTrading = IsInVirtualTrading;
         if (CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
           RaiseSlaveLoginRequestEvent();
           InvokeSyncronize(fwMaster.GetAccount());
@@ -967,7 +1073,7 @@ namespace HedgeHog.Alice.Client {
       fwMaster_PriceChanged(new Price() { Pair = pair });
     }
     void fwMaster_PriceChanged(Price Price) {
-      if (!ServerTrades.Any(t => t.Pair == Price.Pair)) return;
+      //if (!ServerTrades.Any(t => t.Pair == Price.Pair)) return;
       RunPrice(Price.Pair);
     }
 
@@ -1014,6 +1120,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void InvokeSyncronize(Account account) {
+      if (account == null) return;
       if (account.Error!= null)
         Log = account.Error;
       else {
@@ -1131,8 +1238,8 @@ namespace HedgeHog.Alice.Client {
     private bool CanExecuteStopLimitChange(Trade trade, Func<Trade, bool> predicate) {
       return trade != null && predicate(trade);
     }
-    private bool CanExecuteStopChange(Trade trade) { return CanExecuteStopLimitChange(trade, t => t.Stop != 0); }
-    private bool CanExecuteLimitChange(Trade trade) { return CanExecuteStopLimitChange(trade, t => t.Limit != 0); }
+    private bool CanExecuteStopChange(Trade trade) { return true || CanExecuteStopLimitChange(trade, t => t.Stop != 0); }
+    private bool CanExecuteLimitChange(Trade trade) { return true || CanExecuteStopLimitChange(trade, t => t.Limit != 0); }
     Dictionary<string, double> stopDeltas = new Dictionary<string, double>();
     Dictionary<string, double> limitDeltas = new Dictionary<string, double>();
     void AddtDelta(string pair, double limitDelta, Dictionary<string, double> deltas) {
@@ -1166,7 +1273,7 @@ namespace HedgeHog.Alice.Client {
         else {
           if (tradeIdLast == trade.Id) return;
           tradeIdLast = trade.Id;
-          TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats;
+          TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
           //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
           ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
           var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
