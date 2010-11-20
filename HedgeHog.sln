@@ -95,6 +95,37 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicLinq_SL", "DynamicLi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineSample", "DynamicDataDisplay v0.3 Source\src\Samples\v0.2\LineSample\LineSample.csproj", "{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items (2)", "Solution Items (2)", "{B1E1F2CD-D999-4223-8F7F-80469E0B3875}"
+	ProjectSection(SolutionItems) = preProject
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.vsmdi = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.vsmdi
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight1.vsmdi = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight1.vsmdi
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\LocalTestRun.testrunconfig = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\LocalTestRun.testrunconfig
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Externals", "Externals", "{CE22CBE5-A263-463E-8BCD-A77A60995C0C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Silverlight", "Silverlight", "{97B7C3DB-C0FB-4D7D-BA33-14E3F4E86BF6}"
+	ProjectSection(SolutionItems) = preProject
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\Microsoft.Silverlight.Testing.dll = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\Microsoft.Silverlight.Testing.dll
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\Microsoft.VisualStudio.QualityTools.UnitTesting.Silverlight.dll = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\Microsoft.VisualStudio.QualityTools.UnitTesting.Silverlight.dll
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\System.Windows.Interactivity.dll = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\Silverlight\System.Windows.Interactivity.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WPF", "WPF", "{30B76B96-22B6-46F7-9D74-5EB2A954452A}"
+	ProjectSection(SolutionItems) = preProject
+		..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\WPF\System.Windows.Interactivity.dll = ..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\External\WPF\System.Windows.Interactivity.dll
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaSoft.MvvmLight", "..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight\GalaSoft.MvvmLight.csproj", "{ADB28C09-8DE9-4006-80D5-74856EB4A48B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaSoft.MvvmLight.Test", "..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Test\GalaSoft.MvvmLight.Test.csproj", "{BD7821F7-C24B-4445-B612-8F18CE16ACF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaSoft.MvvmLight.Extras", "..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras\GalaSoft.MvvmLight.Extras.csproj", "{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaSoft.MvvmLight (WP7)", "..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight (WP7)\GalaSoft.MvvmLight (WP7).csproj", "{CD51F6FA-CD5B-4405-B5F1-B65CCAE8845B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalaSoft.MvvmLight.Extras (WP7)", "..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras (WP7)\GalaSoft.MvvmLight.Extras (WP7).csproj", "{54CA67DF-6987-4855-A45E-5CB7C1677E9A}"
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = HedgeHog.vsmdi
@@ -442,6 +473,36 @@ Global
 		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{C5B7BC05-21C7-4D94-939B-BC79C5A5D915}.Release|x86.ActiveCfg = Release|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{ADB28C09-8DE9-4006-80D5-74856EB4A48B}.Release|x86.ActiveCfg = Release|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{BD7821F7-C24B-4445-B612-8F18CE16ACF9}.Release|x86.ActiveCfg = Release|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -469,6 +530,8 @@ Global
 		{965F1CA4-7787-4CAB-94A4-67217615B855} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
 		{C8766AE8-E649-4D05-A206-7D2FAB63F14A} = {86FEDE76-A0D4-411F-8963-2DEDA0FFACD6}
 		{0AACD464-22B9-4509-8486-0D14858BCF28} = {F9B967B4-B910-47AD-AED9-171F694DDE76}
+		{97B7C3DB-C0FB-4D7D-BA33-14E3F4E86BF6} = {CE22CBE5-A263-463E-8BCD-A77A60995C0C}
+		{30B76B96-22B6-46F7-9D74-5EB2A954452A} = {CE22CBE5-A263-463E-8BCD-A77A60995C0C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

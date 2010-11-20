@@ -290,6 +290,10 @@
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Remoter\HedgeHog.Remoter.csproj">
       <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
       <Name>HedgeHog.Remoter</Name>

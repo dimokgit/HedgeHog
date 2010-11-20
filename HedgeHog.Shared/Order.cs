@@ -16,7 +16,7 @@ namespace HedgeHog.Shared {
 
 
   [DataContract]
-  public class Order : PositioBase {
+  public class Order : PositionBase {
     [DataMember]
     public String OrderID { get; set; }
     [DataMember]
@@ -131,6 +131,9 @@ namespace HedgeHog.Shared {
     [UpdateOnUpdate]
     public double LimitInPoints { get; set; }
 
+    [DataMember]
+    [UpdateOnUpdate]
+    public double PipsTillRate { get; set; }
 
     public double GetStopInPips(Func<string, double, double> inPips) { return TypeStop > 1 ? -Math.Abs(Stop) : inPips(Pair, Stop - Rate); }
     public double GetStopInPoints(Func<string, double, double> inPoints) {

@@ -8,7 +8,9 @@ namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
   public enum OverlapType { None = 0, Up = 1, Down = -1 };
   public abstract class BarBase : IEquatable<BarBase>,ICloneable {
+    public int Index { get; set; }
     public DateTime StartDate { get; set; }
+    public DateTime StartDateContinuous { get; set; }
     public readonly bool IsHistory;
 
     #region Bid/Ask

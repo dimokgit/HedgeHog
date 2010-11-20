@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Collections;
+using System.Windows;
 
 namespace HedgeHog.Bars {
   public class RsiStatistics {
@@ -32,6 +34,23 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+      var period = bars.GetPeriod();
+      var rateLast = bars.OrderBars().Last();
+      rateLast.StartDateContinuous = rateLast.StartDate;
+      bars.OrderBarsDescending().Aggregate((bp, bn) => {
+        bn.StartDateContinuous = bp.StartDateContinuous - period;
+        return bn;
+      });
+    }
+
+    public static TimeSpan GetPeriod<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+      var periods = new List<double>();
+      bars.Aggregate((bp, bn) => { periods.Add((bp.StartDate - bn.StartDate).Duration().TotalMinutes); return bn; });
+      var period = TimeSpan.FromMinutes(periods.ToArray().AverageByIterations((d,a)=>d<=a, 3).Average().ToInt());
+      return period;
+    }
+
     static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
       double[] yy = new double[ticks.Count()];
       int i1 = 0;
@@ -43,36 +62,115 @@ namespace HedgeHog.Bars {
     }
     public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
       var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      //var c = MathExtensions.Linear(Enumerable.Range(1000, ticks.Count()).Select(i=>(double)i).ToArray(), ticks.Select(readFrom).ToArray());
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
 
-    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates) {
-      return rates.SetCorridorPrices(DateTime.MinValue);
-    }
-    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, DateTime startDate) {
+    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, Rate[] lineHigh, Rate[] lineLow, double stDevRatio) {
+      Func<Rate,double> getHeightHigh = r => priceHigh(r) - r.PriceAvg1;
+      Func<Rate,double> getHeightLow = r => r.PriceAvg1 - priceLow(r);
       rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
-      var ratesForRegression = (startDate == DateTime.MinValue ? rates : rates.Where(r => r.StartDate >= startDate)).ToList();
-      var coeffs = ratesForRegression.SetRegressionPrice(1, rate => rate.PriceAvg, (rate, d) => rate.PriceAvg1 = d);
+      var coeffs = rates.SetRegressionPrice(1, rate => rate.PriceAvg, (rate, d) => rate.PriceAvg1 = d);
       var heightAvg = 0.0;
-      var stDev = ratesForRegression.Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray().StdDev();
-      heightAvg = stDev * 3;// *0.9;
+      var minimumCount = 2;
+      var stDev = rates.Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray().StdDev();
+      heightAvg = 0;// stDev* stDevRatio;// *0.9;
       if (heightAvg == 0) {
-        var heightsUp = ratesForRegression.Where(r => (r.PriceAvg - r.PriceAvg1) > 0).Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray();
-        var heightAvgUp = heightsUp.Average();
-        heightAvgUp = heightsUp.Where(h => h >= heightAvgUp).Average();
-        var heightsDown = ratesForRegression.Where(r => (r.PriceAvg - r.PriceAvg1) < 0).Select(r => (r.PriceAvg - r.PriceAvg1).Abs()).ToArray();
-        var heightAvgDown = heightsDown.Average();
-        heightAvgDown = heightsDown.Where(h => h >= heightAvgDown).Average();
+        var treshold = .1;
+        var heightsUp = lineHigh.Length > 0 ? lineHigh 
+          : rates.Where(r => getHeightHigh(r) > 0).ToArray().AverageByPercantage(getHeightHigh, treshold, minimumCount);
+        var heightAvgUp = heightsUp.Average(getHeightHigh);
+        //heightAvgUp = heightsUp.Min();
+
+        var heightsDown = lineLow.Length > 0 ? lineLow : rates.Where(r => getHeightLow(r) > 0).ToArray().AverageByPercantage(getHeightLow, treshold, minimumCount);
+        var heightAvgDown = heightsDown.Average(getHeightLow);
+        //heightAvgDown = heightsDown.Min();
+
         heightAvg = Math.Min(heightAvgUp, heightAvgDown);
       }
-      ratesForRegression.ForEach(r => {
+      rates.ToList().ForEach(r => {
         r.PriceAvg2 = r.PriceAvg1 + heightAvg;
         r.PriceAvg3 = r.PriceAvg1 - heightAvg;
       });
       return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
     }
- 
+    public static double[] FindLine<TBar>(this TBar[] bars,Func<TBar,double>getPtice,double[] defaultCoefs) where TBar : BarBase {
+      if (bars.Count() < 2) return defaultCoefs;
+      if (bars.Count() == 2) {
+        Func<Point, Point, double> slope = (p1, p2) => (p1.Y - p2.Y) / (p2.X - p1.X);
+        Func<TBar, TBar, double> rateSlope = (r1, r2) => slope(new Point(r1.PriceAvg, r1.Index), new Point(r2.PriceAvg, r2.Index));
+        return new[] { bars.First().PriceAvg, rateSlope(bars.First(), bars.Last()) };
+      }
+      return MathExtensions.Linear(bars.Select(r => (double)r.Index).ToArray(), bars.Select(getPtice).ToArray());
+    }
+    public static TBar[] FindExtreams<TBar>(this TBar[] bars, Func<TBar, TBar, TBar> aggregate, int margin = 2) where TBar : BarBase {
+      if (bars.Length == 0) return new TBar[0];
+      var count = bars.Length - margin * 2;
+      var extreams = new List<TBar>();
+      for (var i = 0; i < count; i++) {
+        var a = bars.Skip(i).Take(margin * 2 + 1).ToArray();
+        if (a.Aggregate(aggregate) == a[margin]) extreams.Add(a[margin]);
+      }
+      return extreams.ToArray();
+    }
+
+    private static int[] GetIntervals<TBar>(TBar[] bars, int margin) where TBar : BarBase {
+      var intervals = new List<int>();
+      var period = (bars[1].StartDate - bars[0].StartDate).Duration();
+      intervals = new List<int>();
+      int interval = 0;
+      Func<TBar, TBar, TBar> getInterval = (rp, rn) => {
+        var i = (rp.StartDate - rn.StartDate).Duration() == period ? 1 : 0;
+        if (i == 0) {
+          if (interval > margin * 2) intervals.Add(interval);
+          interval = 0;
+        } else interval++;
+        return rn;
+      };
+      bars.Aggregate(getInterval);
+      if (interval > margin * 2) intervals.Add(interval);
+      return intervals.ToArray();
+    }
+
+    #region AverageBy
+    public static TBar[] AverageByPercantage<TBar>(this TBar[] values, Func<TBar, double> getPrice, double percentage, int minimumCount) where TBar : BarBase {
+      double timeSpanRatio;
+      return values.AverageByPercantage(getPrice, percentage, minimumCount, out timeSpanRatio);
+    }
+    public static TBar[] AverageByPercantage<TBar>(this TBar[] values, Func<TBar, double> getPrice, double percentage, int minimumCount, out double timeSpanRatio) where TBar : BarBase {
+      if (values.Length == 0) { timeSpanRatio = 0; return values; }
+      var average = 0.0;
+      var countOriginal = values.Count();
+      var countCurrent = countOriginal + 1.0;
+      var timeSpanOriginal = values.Max(v => v.StartDate) - values.Min(v => v.StartDate);
+      var minutesToSkip = timeSpanOriginal.TotalMinutes / 10;
+      do {
+        average = values.Where(v => getPrice(v) >= average).Average(getPrice);
+        var vs = values.Where(v => getPrice(v) >= average).ToArray();
+        if (vs.Length < minimumCount) break;
+        values = vs;
+        if (countCurrent == values.Count()) break;
+        countCurrent = values.Length;
+      } while (countCurrent / countOriginal > percentage);
+      var timeSpanCurrent = values.Max(v => v.StartDate) - values.Min(v => v.StartDate);
+      timeSpanRatio = timeSpanCurrent.TotalMinutes / timeSpanOriginal.TotalMinutes;
+      return values;
+    }
+    public static TBar[] AverageByIterations<TBar>(this TBar[] values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations) where TBar : BarBase {
+      double average;
+      return AverageByIterations<TBar>(values, getPrice, compare, iterations, out average);
+    }
+    public static TBar[] AverageByIterations<TBar>(this TBar[] values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations, out double average) where TBar : BarBase {
+      var avg = values.Length == 0?0: values.Average(getPrice);
+      for (int i = 1; i < iterations && values.Length > 0; i++) {
+        values = values.Where(r => compare(getPrice(r), avg)).ToArray();
+        avg = values.Average(getPrice);
+      }
+      average = avg;
+      return values;
+    }
+    #endregion
 
 
     #region Wave

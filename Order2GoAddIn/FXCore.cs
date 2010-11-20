@@ -6,6 +6,7 @@ using System.Text;
 
 namespace Order2GoAddIn {
   public class CoreFX :IDisposable{
+    public bool IsInVirtualTrading { get; set; }
     FXCore.CoreAut mCore = new FXCore.CoreAut();
     public FXCore.TradeDeskAut mDesk = null;
     public delegate void LoginErrorHandler(Exception exc);
@@ -13,13 +14,13 @@ namespace Order2GoAddIn {
     private void RaiseLoginError(Exception exc) {
       if (LoginError != null) LoginError(exc);
     }
-    public event EventHandler<EventArgs> LoggedInEvent;
+    public event EventHandler<LoggedInEventArgs> LoggedInEvent;
     private void RaiseLoggedIn() {
-      if (LoggedInEvent != null) LoggedInEvent(this, new EventArgs());
+      if (LoggedInEvent != null) LoggedInEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
     }
-    public event EventHandler<EventArgs> LoggedOffEvent;
+    public event EventHandler<LoggedInEventArgs> LoggedOffEvent;
     private void RaiseLoggedOff() {
-      if (LoggedOffEvent != null) LoggedOffEvent(this, new EventArgs());
+      if (LoggedOffEvent != null) LoggedOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
     }
     System.Threading.Timer timer;
     public FXCore.TradeDeskAut Desk { get { return mDesk; } }
@@ -54,8 +55,10 @@ namespace Order2GoAddIn {
     }
     #endregion
 
+    string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK" };
     public string[] Instruments { 
       get {
+        if (Desk == null) return defaultInstruments;
         var instruments = Desk.GetInstruments() as FXCore.StringEnumAut;
         List<string> l = new List<string>();
         foreach (var i in instruments)
@@ -116,7 +119,7 @@ namespace Order2GoAddIn {
         }
       } catch { }
     }
-    public bool IsLoggedIn { get { try { return Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
+    public bool IsLoggedIn { get { try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
 
     #region IDisposable Members
 
@@ -125,5 +128,11 @@ namespace Order2GoAddIn {
     }
 
     #endregion
+  }
+  public class LoggedInEventArgs : EventArgs {
+    public bool IsInVirtualTrading { get; set; }
+    public LoggedInEventArgs(bool isInVirtualTrading) {
+      this.IsInVirtualTrading = isInVirtualTrading;
+    }
   }
 }

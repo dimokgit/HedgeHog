@@ -1212,8 +1212,8 @@ namespace HedgeHog {
       var ts = ticksRsi.Where(r => GetRsiValue(r).GetValueOrDefault(50) != 50 ).ToArray();
       var x = ts.Select(r => r.PriceClose).ToArray();
       var y = ts.Select(r=>GetRsiValue(r).Value).ToArray();
-      corr1 = alglib.correlation.pearsoncorrelation(ref x, ref y, x.Length);
-      corr2 = alglib.correlation.spearmanrankcorrelation(x, y, x.Length);
+      corr1 = HedgeHog.correlation.pearsoncorrelation(ref x, ref y, x.Length);
+      corr2 = HedgeHog.correlation.spearmanrankcorrelation(x, y, x.Length);
     }
 
     void GetMinutesBack_() {

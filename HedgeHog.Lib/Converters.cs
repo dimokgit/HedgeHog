@@ -4,8 +4,28 @@ using System.Linq;
 using System.Text;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows;
 
 namespace HedgeHog {
+
+  [ValueConversion(typeof(string), typeof(DateTime?))]
+  public class DateTimeConverter : IValueConverter {
+    #region IValueConverter Members
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      if( (value+"") == "" )return null;
+      DateTime d;
+      if (!DateTime.TryParse(value + "", out d)) return value;
+      if (d.Date == DateTime.MinValue) return DateTime.Today + d.TimeOfDay;
+      return value;
+    }
+
+    #endregion
+  }
+
   [ValueConversion(typeof(bool?), typeof(Color))]
   public class BoolToColorConverter : IValueConverter {
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {

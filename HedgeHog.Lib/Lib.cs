@@ -127,6 +127,29 @@ namespace HedgeHog {
       return Math.Sqrt(sumOfDerivationAverage - Math.Pow(average, 2));
     }
 
+    public static void LinearRegression(double[] valuesX, double[] valuesY, out double a, out double b) {
+      double xAvg = 0;
+      double yAvg = 0;
+      for (int x = 0; x < valuesY.Length; x++) {
+        xAvg += valuesX[x];
+        yAvg += valuesY[x];
+      }
+      xAvg = xAvg / valuesY.Length;
+      yAvg = yAvg / valuesY.Length;
+      double v1 = 0;
+      double v2 = 0;
+      for (int x = 0; x < valuesY.Length; x++) {
+        v1 += (x - xAvg) * (valuesY[x] - yAvg);
+        v2 += Math.Pow(x - xAvg, 2);
+      }
+      a = v1 / v2;
+      b = yAvg - a * xAvg;
+      //Console.WriteLine("y = ax + b");
+      //Console.WriteLine("a = {0}, the slope of the trend line.", Math.Round(a, 2));
+      //Console.WriteLine("b = {0}, the intercept of the trend line.", Math.Round(b, 2));
+
+    }
+
     public static void LinearRegression(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;

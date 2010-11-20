@@ -128,6 +128,22 @@ namespace HedgeHog.Alice.Store
             }
         }
         private ObjectSet<TradeHistory> _TradeHistories;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<OrderTemplate> OrderTemplates
+        {
+            get
+            {
+                if ((_OrderTemplates == null))
+                {
+                    _OrderTemplates = base.CreateObjectSet<OrderTemplate>("OrderTemplates");
+                }
+                return _OrderTemplates;
+            }
+        }
+        private ObjectSet<OrderTemplate> _OrderTemplates;
 
         #endregion
         #region AddTo Methods
@@ -162,6 +178,14 @@ namespace HedgeHog.Alice.Store
         public void AddToTradeHistories(TradeHistory tradeHistory)
         {
             base.AddObject("TradeHistories", tradeHistory);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the OrderTemplates EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToOrderTemplates(OrderTemplate orderTemplate)
+        {
+            base.AddObject("OrderTemplates", orderTemplate);
         }
 
         #endregion
@@ -502,6 +526,215 @@ namespace HedgeHog.Alice.Store
         private global::System.Int32 _Id;
         partial void OnIdChanging(global::System.Int32 value);
         partial void OnIdChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="AliceModel", Name="OrderTemplate")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class OrderTemplate : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new OrderTemplate object.
+        /// </summary>
+        /// <param name="id">Initial value of the ID property.</param>
+        /// <param name="stop">Initial value of the Stop property.</param>
+        /// <param name="limit">Initial value of the Limit property.</param>
+        /// <param name="price">Initial value of the Price property.</param>
+        /// <param name="lot">Initial value of the Lot property.</param>
+        /// <param name="stopOrderID">Initial value of the StopOrderID property.</param>
+        public static OrderTemplate CreateOrderTemplate(global::System.Int32 id, global::System.Int32 stop, global::System.Int32 limit, global::System.Double price, global::System.Int32 lot, global::System.Int32 stopOrderID)
+        {
+            OrderTemplate orderTemplate = new OrderTemplate();
+            orderTemplate.ID = id;
+            orderTemplate.Stop = stop;
+            orderTemplate.Limit = limit;
+            orderTemplate.Price = price;
+            orderTemplate.Lot = lot;
+            orderTemplate.StopOrderID = stopOrderID;
+            return orderTemplate;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 ID
+        {
+            get
+            {
+                return _ID;
+            }
+            set
+            {
+                if (_ID != value)
+                {
+                    OnIDChanging(value);
+                    ReportPropertyChanging("ID");
+                    _ID = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("ID");
+                    OnIDChanged();
+                }
+            }
+        }
+        private global::System.Int32 _ID;
+        partial void OnIDChanging(global::System.Int32 value);
+        partial void OnIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Stop
+        {
+            get
+            {
+                return _Stop;
+            }
+            set
+            {
+                OnStopChanging(value);
+                ReportPropertyChanging("Stop");
+                _Stop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Stop");
+                OnStopChanged();
+            }
+        }
+        private global::System.Int32 _Stop;
+        partial void OnStopChanging(global::System.Int32 value);
+        partial void OnStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Limit
+        {
+            get
+            {
+                return _Limit;
+            }
+            set
+            {
+                OnLimitChanging(value);
+                ReportPropertyChanging("Limit");
+                _Limit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Limit");
+                OnLimitChanged();
+            }
+        }
+        private global::System.Int32 _Limit;
+        partial void OnLimitChanging(global::System.Int32 value);
+        partial void OnLimitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Price
+        {
+            get
+            {
+                return _Price;
+            }
+            set
+            {
+                OnPriceChanging(value);
+                ReportPropertyChanging("Price");
+                _Price = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Price");
+                OnPriceChanged();
+            }
+        }
+        private global::System.Double _Price;
+        partial void OnPriceChanging(global::System.Double value);
+        partial void OnPriceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Lot
+        {
+            get
+            {
+                return _Lot;
+            }
+            set
+            {
+                OnLotChanging(value);
+                ReportPropertyChanging("Lot");
+                _Lot = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Lot");
+                OnLotChanged();
+            }
+        }
+        private global::System.Int32 _Lot;
+        partial void OnLotChanging(global::System.Int32 value);
+        partial void OnLotChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 StopOrderID
+        {
+            get
+            {
+                return _StopOrderID;
+            }
+            set
+            {
+                OnStopOrderIDChanging(value);
+                ReportPropertyChanging("StopOrderID");
+                _StopOrderID = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StopOrderID");
+                OnStopOrderIDChanged();
+            }
+        }
+        private global::System.Int32 _StopOrderID;
+        partial void OnStopOrderIDChanging(global::System.Int32 value);
+        partial void OnStopOrderIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                OnPairChanging(value);
+                ReportPropertyChanging("Pair");
+                _Pair = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("Pair");
+                OnPairChanged();
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
 
         #endregion
     
@@ -1251,7 +1484,9 @@ namespace HedgeHog.Alice.Store
         /// <param name="barPeriodsLowHighRatio">Initial value of the BarPeriodsLowHighRatio property.</param>
         /// <param name="longMAPeriod">Initial value of the LongMAPeriod property.</param>
         /// <param name="corridorAverageDaysBack">Initial value of the CorridorAverageDaysBack property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack)
+        /// <param name="corridorPeriodsStart">Initial value of the CorridorPeriodsStart property.</param>
+        /// <param name="corridorPeriodsLength">Initial value of the CorridorPeriodsLength property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1283,6 +1518,8 @@ namespace HedgeHog.Alice.Store
             tradingMacro.BarPeriodsLowHighRatio = barPeriodsLowHighRatio;
             tradingMacro.LongMAPeriod = longMAPeriod;
             tradingMacro.CorridorAverageDaysBack = corridorAverageDaysBack;
+            tradingMacro.CorridorPeriodsStart = corridorPeriodsStart;
+            tradingMacro.CorridorPeriodsLength = corridorPeriodsLength;
             return tradingMacro;
         }
 
@@ -1987,6 +2224,78 @@ namespace HedgeHog.Alice.Store
         private global::System.Int32 _CorridorAverageDaysBack;
         partial void OnCorridorAverageDaysBackChanging(global::System.Int32 value);
         partial void OnCorridorAverageDaysBackChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorPeriodsStart
+        {
+            get
+            {
+                return _CorridorPeriodsStart;
+            }
+            set
+            {
+                OnCorridorPeriodsStartChanging(value);
+                ReportPropertyChanging("CorridorPeriodsStart");
+                _CorridorPeriodsStart = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorPeriodsStart");
+                OnCorridorPeriodsStartChanged();
+            }
+        }
+        private global::System.Int32 _CorridorPeriodsStart;
+        partial void OnCorridorPeriodsStartChanging(global::System.Int32 value);
+        partial void OnCorridorPeriodsStartChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 CorridorPeriodsLength
+        {
+            get
+            {
+                return _CorridorPeriodsLength;
+            }
+            set
+            {
+                OnCorridorPeriodsLengthChanging(value);
+                ReportPropertyChanging("CorridorPeriodsLength");
+                _CorridorPeriodsLength = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorPeriodsLength");
+                OnCorridorPeriodsLengthChanged();
+            }
+        }
+        private global::System.Int32 _CorridorPeriodsLength;
+        partial void OnCorridorPeriodsLengthChanging(global::System.Int32 value);
+        partial void OnCorridorPeriodsLengthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> CorridorStartDate
+        {
+            get
+            {
+                return _CorridorStartDate;
+            }
+            set
+            {
+                OnCorridorStartDateChanging(value);
+                ReportPropertyChanging("CorridorStartDate");
+                _CorridorStartDate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorStartDate");
+                OnCorridorStartDateChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _CorridorStartDate;
+        partial void OnCorridorStartDateChanging(Nullable<global::System.DateTime> value);
+        partial void OnCorridorStartDateChanged();
 
         #endregion
     

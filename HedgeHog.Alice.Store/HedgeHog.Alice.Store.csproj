@@ -68,7 +68,8 @@
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
     <Compile Include="AliceEntityExtender.cs" />
-    <Compile Include="CorridorStatistics.cs" />
+    <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
+    <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
     <Compile Include="Events.cs" />
     <Compile Include="Forex.Designer.cs">
       <AutoGen>True</AutoGen>

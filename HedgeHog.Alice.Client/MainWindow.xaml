@@ -16,8 +16,8 @@
         xmlns:uiAccounts="clr-namespace:HedgeHog.Alice.Client.UI.Controls"
         xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
-        xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.WPF4"
-        xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
+        xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight"
+        xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras"
         Left="{state:UserSettings Default=100}"
     Top="{state:UserSettings Default=100}"
   Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
@@ -81,6 +81,7 @@
                         </Image>
                       </Button>
                       <TextBlock Text="{Binding StopInPips,StringFormat=n1}" HorizontalAlignment="Stretch"/>
+                      <TextBlock Text="{Binding StopToCloseInPips,StringFormat=/{0:n1}}" HorizontalAlignment="Stretch"/>
                       <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
                         Command="{Binding DataContext.EncreaseStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
                         <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
@@ -108,6 +109,7 @@
                         </Image>
                       </Button>
                       <TextBlock Text="{Binding LimitInPips,StringFormat=n1}" HorizontalAlignment="Stretch" />
+                      <TextBlock Text="{Binding LimitToCloseInPips,StringFormat=/{0:n1}}" HorizontalAlignment="Stretch" />
                       <Button CommandParameter="{Binding BindsDirectlyToSource=True}" 
                         Command="{Binding DataContext.IncreaseLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
                         <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
@@ -130,19 +132,67 @@
           <Label Content="Orders"/>
           <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding OrdersList}" >
             <DataGrid.Columns>
+              <DataGridTemplateColumn>
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Cancel Order" Content="X"
+                        Command="{Binding DataContext.CancelEntryOrderCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
               <DataGridTextColumn Header="BS" Binding="{Binding BS}"/>
-              <DataGridTextColumn Header="Rate" Binding="{Binding Rate}"/>
+              <DataGridTemplateColumn Header="Rate">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <WrapPanel>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
+                        Command="{Binding DataContext.DecreaseEntryRateCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
+                      <ContentControl Content="{Binding PipsTillRate}" ContentStringFormat="n1"/>
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
+                        Command="{Binding DataContext.IncreaseEntryRateCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
+                    </WrapPanel>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
               <DataGridTextColumn Header="Lot" Binding="{Binding Lot}"/>
-
               <DataGridTemplateColumn Header="Stop">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <WrapPanel Background="LightSalmon">
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
+                        Command="{Binding DataContext.DecreaseEntryStopCommandCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
+
                       <TextBlock Text="{Binding StopInPips,StringFormat=n1}"/>
                       <TextBlock Text="{Binding StopAmount,StringFormat=[{0:c1}}"/>
-                      <TextBlock Text="{Binding UnKnown.PercentOnStop,StringFormat=/{0:p1}}"/>
-                      <TextBlock Text="{Binding UnKnown.BalanceOnStop,StringFormat=/{0:c0}]}"/>
+                      <!--<TextBlock Text="{Binding UnKnown.PercentOnStop,StringFormat=/{0:p1}}"/>
+                      <TextBlock Text="{Binding UnKnown.BalanceOnStop,StringFormat=/{0:c0}]}"/>-->
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
+                        Command="{Binding DataContext.IncreaseEntryStopCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                     </WrapPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -165,10 +215,26 @@
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <WrapPanel Background="LightGreen">
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Down"
+                        Command="{Binding DataContext.DecreaseEntryLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                       <TextBlock Text="{Binding LimitInPips,StringFormat=n1}"/>
                       <TextBlock Text="{Binding LimitAmount,StringFormat=[{0:c1}}"/>
-                      <TextBlock Text="{Binding UnKnown.PercentOnLimit,StringFormat=/{0:p1}}"/>
-                      <TextBlock Text="{Binding UnKnown.BalanceOnLimit,StringFormat=/{0:c0}]}"/>
+                      <!--<TextBlock Text="{Binding UnKnown.PercentOnLimit,StringFormat=/{0:p1}}"/>
+                      <TextBlock Text="{Binding UnKnown.BalanceOnLimit,StringFormat=/{0:c0}]}"/>-->
+                      <Button CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Up"
+                        Command="{Binding DataContext.IncreaseEntryLimitCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                        <Image Source="/HedgeHog.Alice.Client;component/Images/DownArrow-32.png">
+                          <Image.LayoutTransform>
+                            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                          </Image.LayoutTransform>
+                        </Image>
+                      </Button>
                     </WrapPanel>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -299,6 +365,9 @@
         </Expander>
         <!--<DataGrid AutoGenerateColumns="False" EnableRowVirtualization="True" ItemsSource="{Binding Source={StaticResource tradingAccountsViewSource}}" Name="tradingAccountsDataGrid" RowDetailsVisibilityMode="VisibleWhenSelected"><DataGrid.Columns><DataGridTextColumn x:Name="idColumn" Binding="{Binding Path=Id}" Header="Id" /><DataGridTextColumn x:Name="passwordColumn" Binding="{Binding Path=Password}" Header="Password" /><DataGridTextColumn x:Name="masterIdColumn" Binding="{Binding Path=MasterId}" Header="Master Id" /><DataGridCheckBoxColumn x:Name="isDemoColumn" Binding="{Binding Path=IsDemo}" Header="Is Demo" Width="SizeToHeader" /></DataGrid.Columns></DataGrid></Expander>-->
         <l:RemoteControlView />
+        <Expander Header="Order Templates" IsExpanded="False">
+          <l:OrderTemplatesView />
+        </Expander>
     </StackPanel>
 
     <!--Master Account-->

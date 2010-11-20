@@ -20,7 +20,7 @@ namespace HedgeHog.Shared {
   public delegate void OrderRemovedEventHandler(Order order);
   [Serializable]
   [DataContract]
-  public class Trade : PositioBase {
+  public class Trade : PositionBase {
     [DataMember]
     public string Id { get; set; }
     [DataMember]
@@ -44,16 +44,20 @@ namespace HedgeHog.Shared {
     public double Close { get; set; }
     [DataMember]
     [DisplayName("")]
-    [UpdateOnUpdate("LimitInPips")]
+    [UpdateOnUpdate("LimitInPips","LimitToCloseInPips")]
     public double Limit { get; set; }
     [DisplayName("")]
     public double LimitInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Open : Open - Limit); } }
     [DisplayName("")]
+    public double LimitToCloseInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Close : Close - Limit); } }
+    [DisplayName("")]
     [DataMember]
-    [UpdateOnUpdate("StopInPips")]
+    [UpdateOnUpdate("StopInPips","StopToCloseInPips")]
     public double Stop { get; set; }
     [DisplayName("")]
     public double StopInPips { get { return Stop == 0 ? 0 : InPips(IsBuy ? Stop - Open : Open - Stop); } }
+    [DisplayName("")]
+    public double StopToCloseInPips { get { return Stop == 0 ? 0 : InPips(IsBuy ? Stop - Close : Close - Stop); } }
     [DataMember]
     [UpdateOnUpdate]
     public double PL { get; set; }
@@ -106,7 +110,7 @@ namespace HedgeHog.Shared {
       var gross = Buy ? Close - Open : Open - Close;
       PL = gross / Price.PipSize;
       GrossPL = gross * Lots;
-      TimeClose = Price.Time;
+      if (false) TimeClose = Price.Time;
     }
 
     public double NetPL { get { return GrossPL + Commission; } }

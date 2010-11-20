@@ -31,13 +31,20 @@ namespace HedgeHog {
   /// Interaction logic for Corridors.xaml
   /// </summary>
   public partial class Corridors : Window {
+    List<double> animatedTimeX = new List<double>();
+    List<double> animatedPriceY = new List<double>();
+    EnumerableDataSource<double> animatedDataSource = null;
+    TextBlock infoBox = new TextBlock();
+    ViewportUIContainer viewPortContainer = new ViewportUIContainer();
+
+    #region Collections
     public ObservableCollection<Point> Ticks = null;
     public ObservableCollection<ChartTick> TicksAvg1 = new ObservableCollection<ChartTick>();
     public ObservableCollection<ChartTick> TicksAvg2 = new ObservableCollection<ChartTick>();
     public ObservableCollection<ChartTick> TicksAvg3 = new ObservableCollection<ChartTick>();
     public ObservableCollection<ChartTick> Volts = null;
     public ObservableCollection<Volt> VoltsPoly = new ObservableCollection<Volt>();
-    private DateTime tickerTime = DateTime.MinValue;
+    #endregion
 
     #region Lines
     HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.Brown) };
@@ -73,27 +80,27 @@ namespace HedgeHog {
     VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
     public DateTime LineTimeAvg { set { lineTimeAvg.Value = dateAxis.ConvertToDouble(value); } }
 
-    Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
+    Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
     Rate[] TrendLine {
       set {
-        trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDate), value[0].PriceAvg1);
-        trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDate), value[1].PriceAvg1);
+        trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg1);
+        trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg1);
       }
     }
 
     Segment trendLine1 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine1 {
       set {
-        trendLine1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDate), value[0].PriceAvg2);
-        trendLine1.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDate), value[1].PriceAvg2);
+        trendLine1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
+        trendLine1.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg2);
       }
     }
 
     Segment trendLine2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine2 {
       set {
-        trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDate), value[0].PriceAvg3);
-        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDate), value[1].PriceAvg3);
+        trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
+        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg3);
       }
     }
 
@@ -127,17 +134,17 @@ namespace HedgeHog {
     }
     #endregion
 
+    #region DataSources
     EnumerableDataSource<Point> ds = null;
     EnumerableDataSource<ChartTick> dsAvg1 = null;
     EnumerableDataSource<ChartTick> dsAvg2 = null;
     EnumerableDataSource<ChartTick> dsAvg3 = null;
     EnumerableDataSource<ChartTick> dsVolts = null;
     EnumerableDataSource<Volt> dsVoltsPoly = null;
+    #endregion
+
     private void CreateCurrencyDataSource() {
-      //var ticks = new Data.ForexDBDataContext().t_Ticks;
-      //ds = new EnumerableDataSource<Point>(Ticks);
-      //ds.SetXMapping(ci => ci.X);//dateAxis.ConvertToDouble(
-      //ds.SetYMapping(ci => ci.Y);
+      #region Init DataSources
       if (TicksAvg1.Count > 0) {
         dsAvg1 = new EnumerableDataSource<ChartTick>(TicksAvg1);
         dsAvg1.SetXMapping(ci => dateAxis.ConvertToDouble(ci.Time));
@@ -151,6 +158,9 @@ namespace HedgeHog {
         dsAvg3.SetXMapping(ci => dateAxis.ConvertToDouble(ci.Time));
         dsAvg3.SetYMapping(ci => ci.Price);
       }
+      #endregion
+
+      #region Init Volts
       if (Volts != null) {
         innerPlotter.Viewport.Restrictions.Add(new InjectionDelegateRestriction(
           plotter.Viewport,
@@ -167,20 +177,42 @@ namespace HedgeHog {
         innerPlotter.Children.Remove(innerPlotter.Children.OfType<VerticalAxis>().Single());
         //plotter.Children.Remove(innerPlotter);
       }
+      #endregion
+      
       plotter.Children.RemoveAt(0);
-      var ticksLineGraph = plotter.AddLineGraph(Ticks.AsDataSource(), Colors.Black, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
+
+      #region Add Main Graph
+      {
+        EnumerableDataSource<double> xSrc = new EnumerableDataSource<double>(animatedTimeX);
+        xSrc.SetXMapping(x => x);
+        animatedDataSource = new EnumerableDataSource<double>(animatedPriceY);
+        animatedDataSource.SetYMapping(y => y);
+        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), Colors.Maroon, 1, "").Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
+        Border infoBorder = new Border() { 
+          BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3) };
+        infoBorder.Child = infoBox;
+        viewPortContainer.Content = infoBorder;
+        plotter.Children.Add(viewPortContainer);
+      }
+      //var ticksLineGraph = plotter.AddLineGraph(Ticks.AsDataSource(), Colors.Black, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
+      #endregion
+
+      #region Add Other Graphs
       if (dsAvg1 != null)
         plotter.AddLineGraph(dsAvg1, Colors.DarkRed, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
       if (dsAvg2 != null)
         plotter.AddLineGraph(dsAvg2, Colors.IndianRed, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
       if (dsAvg3 != null)
         plotter.AddLineGraph(dsAvg3, Colors.DarkOliveGreen, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
-      if (Volts!=null)
+      if (Volts != null)
         innerPlotter.AddLineGraph(dsVolts, Colors.DarkOrange, 1, "1M").Description.LegendItem.Visibility = Visibility.Collapsed;
       else {
         //new VerticalAxis() { Placement = AxisPlacement.Right }.AddToPlotter(plotter);
         plotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Right;
       }
+      #endregion
+
+      #region Add Lines
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
       innerPlotter.Children.Add(lineMax);
@@ -195,8 +227,10 @@ namespace HedgeHog {
       plotter.Children.Add(trendLine);
       plotter.Children.Add(trendLine1);
       plotter.Children.Add(trendLine2);
+      #endregion
     }
 
+    #region Update Ticks
     void UpdateTicks(ObservableCollection<ChartTick> dest, List<ChartTick> src) {
       var srcDict = new Dictionary<DateTime, ChartTick>();
       src.ForEach(s => srcDict.Add(s.Time, s));
@@ -233,13 +267,28 @@ namespace HedgeHog {
         dest.AddMany(src.OrderBy(t=>t.Time));
       }
     }
-    void UpdateTicks(ObservableCollection<Point> dest, List<Point> src) {
+    void UpdateTicks(ObservableCollection<Point> dest, List<Point> src,TimeSpan periodSpan) {
+      if (true) {
+        if (dest.Count() == 0)
+          dest.AddMany(src);
+        else {
+          var lastPeriod = (dateAxis.ConvertFromDouble(dest.Last().X) - dateAxis.ConvertFromDouble(src.Last().X)).Duration();
+          if (lastPeriod > periodSpan.Multiply(5)) {
+            dest.Clear();
+            UpdateTicks(dest, src, periodSpan);
+          } else {
+            dest.RemoveAt(0);
+            dest.Add(src.Last());
+          }
+        }
+        return;
+      }
       //var srcDict = new Dictionary<double, Point>();
       //src.ForEach(s => srcDict.Add(s.X, s));
       //dest.ToList().ForEach(d => {
       //  if (srcDict.ContainsKey(d.X)) d.Y = srcDict[d.X].Y;
       //});
-      if (((double)dest.Count / src.Count).Between(0.5, 1.5)) {
+      if (((double)dest.Count / src.Count).Between(0.95, 1.05)) {
         var delete = dest.Except(src).ToList();
         delete.ForEach(d => dest.Remove(d));
         if (dest.Count > 0) {
@@ -259,69 +308,71 @@ namespace HedgeHog {
         dest.AddMany(src.OrderBy(t => t.X));
       }
     }
+    #endregion
 
     DateTime lastDate = DateTime.MinValue;
     public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
-      return AddTicks(lastPrice, ticks, voltsByTick, voltageHigh, voltageCurr, priceMaxAvg, priceMinAvg,
+      return AddTicks(lastPrice, ticks, voltsByTick,new string[0], voltageHigh, voltageCurr, priceMaxAvg, priceMinAvg,
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
-    public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
+    public Point[] AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,string[] info,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
-  double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr,DateTime timeLow, double[] priceAverageAskBid) {
-    //if (lastDate.AddMilliseconds(100) > DateTime.Now) return null;
-    //lastDate = DateTime.Now;
-    try {
-      ticks = ticks.ToList();
-    } catch {
-      ticks = ticks.ToList();
-    }
-      DateTime d = DateTime.Now;
-      var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDate });
+  double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
+      try {
+        ticks = ticks.ToList();
+      } catch {
+        ticks = ticks.ToList();
+      }
+      #region Conversion Functions
+      var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDateContinuous });
       var voltToTick = new Func<Volt, ChartTick>(t => new ChartTick() { Price = t.Volts, Time = t.StartDate });
-      var tickToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDate });
+      var tickToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDateContinuous });
       var roundTo = lastPrice.Digits - 1;
       var rateToPoint = new Func<Rate, Point>(t =>
-        new Point(dateAxis.ConvertToDouble(t.StartDate),
-          (t.PriceAvg > t.PriceAvg1 ? t.PriceHigh : t.PriceAvg < t.PriceAvg1 ? t.PriceLow : t.PriceAvg).Round(roundTo)));  
+        new Point(dateAxis.ConvertToDouble(t.StartDateContinuous), t.PriceAvg.Round(roundTo)));
+      //(t.PriceAvg > t.PriceAvg1 ? t.PriceHigh : t.PriceAvg < t.PriceAvg1 ? t.PriceLow : t.PriceAvg).Round(roundTo)));  
+      #endregion
       List<Point> minuteTicks = null;
-      if (ticks.Any(t => t!= null && t.PriceAvg1 != 0)) {
+      #region Set DataSources
+      if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {
         var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
         var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
-        var ratesForTrend = new[] {rateFirst , rateLast };
+        var ratesForTrend = new[] { rateFirst, rateLast };
         TrendLine = TrendLine1 = TrendLine2 = ratesForTrend;
         //TicksAvg1.Clear();
-        //var avg = ticks.Count > maxTicks ? FXW.GetMinuteTicks(ticks.Select(t => new FXW.Tick(t.StartDate, t.PriceAvg1, t.PriceAvg1, false)), 1).Select(rateToTick) :
-        //  ticks.Select(t => new FXW.Tick(t.StartDate, t.PriceAvg1, t.PriceAvg1, false)).Select(tickToTick);
+        //var avg = ticks.Count > maxTicks ? FXW.GetMinuteTicks(ticks.Select(t => new FXW.Tick(t.StartDateContinuous, t.PriceAvg1, t.PriceAvg1, false)), 1).Select(rateToTick) :
+        //  ticks.Select(t => new FXW.Tick(t.StartDateContinuous, t.PriceAvg1, t.PriceAvg1, false)).Select(tickToTick);
         //UpdateTicks(TicksAvg1, avg);
       }
-      if ((ticks[1].StartDate - ticks[0].StartDate).TotalSeconds < 59)
+      if ((ticks[1].StartDateContinuous - ticks[0].StartDateContinuous).TotalSeconds < 59)
         ticks = ticks.GetMinuteTicks(1, true).OrderBars().ToList();
       var aw = plotter.ActualWidth;
+      var periodSpan = ticks.GetPeriod();
       var period = Math.Max(1, Math.Ceiling(ticks.Count / aw).ToInt());
       if (ticks != null && ticks.Count > 0) {
         minuteTicks = ticks./*GetMinuteTicks(period, true).OrderBars().*/Select(rateToPoint).ToList();
         //minuteTicks.ToList().ForEach(t => t.Price = t.Price.Round(lastPrice.Digits - 1));
         TicksAvg2.Clear();
         if (false && ticks.Any(t => t.PriceAvg2 != 0)) {
-          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg2, t.PriceAvg2, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
+          var avg = ticks.Select(t => new Rate(t.StartDateContinuous, t.PriceAvg2, t.PriceAvg2, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
           TicksAvg2.AddMany(avg);
         }
         TicksAvg3.Clear();
         if (false && ticks.Any(t => t.PriceAvg3 != 0)) {
-          var avg = ticks.Select(t => new Rate(t.StartDate, t.PriceAvg3, t.PriceAvg3, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
+          var avg = ticks.Select(t => new Rate(t.StartDateContinuous, t.PriceAvg3, t.PriceAvg3, t.IsHistory)).ToArray().GetMinuteTicks(period, true).Select(rateToTick);
           TicksAvg3.AddMany(avg);
         }
       } else {
-        minuteTicks = voltsByTick.Select(v => new Rate(v.StartDate, v.AskMax, v.BidMin,false)).ToArray().GetMinuteTicks( period, true).Select(rateToPoint).ToList();
+        minuteTicks = voltsByTick.Select(v => new Rate(v.StartDate, v.AskMax, v.BidMin, false)).ToArray().GetMinuteTicks(period, true).Select(rateToPoint).ToList();
       }
       if (voltsByTick != null && voltsByTick.Count > 0) {
         var minuteVolts =
           voltsByTick.Select(v => new Rate(v.StartDate, v.Volts, v.Volts, false)).ToArray().GetMinuteTicks(period, true)
-          .Select(t=>new ChartTick() { Price = Math.Round(t.PriceAvg,2), Time = t.StartDate }).OrderBy(t => t.Time).ToList();
+          .Select(t => new ChartTick() { Price = Math.Round(t.PriceAvg, 2), Time = t.StartDateContinuous }).OrderBy(t => t.Time).ToList();
         if (Volts == null) Volts = new ObservableCollection<ChartTick>();
-        UpdateTicks( Volts,minuteVolts);
+        UpdateTicks(Volts, minuteVolts);
 
         if (voltsByTick.Any(v => v.VoltsPoly != 0)) {
           if (dsVoltsPoly == null) {
@@ -332,22 +383,48 @@ namespace HedgeHog {
           }
           var minuteVoltsPoly =
             voltsByTick.Select(v => new Rate(v.StartDate, v.VoltsPoly, v.VoltsPoly, false)).ToArray().GetMinuteTicks(period, true)
-            .Select(t => new Volt() { StartDate = t.StartDate, VoltsPoly = t.PriceAvg });
+            .Select(t => new Volt() { StartDate = t.StartDateContinuous, VoltsPoly = t.PriceAvg });
           VoltsPoly.Clear();
           VoltsPoly.AddMany(minuteVoltsPoly);
         }
       }
-
+      #endregion
       if (Ticks == null) {
         Ticks = new ObservableCollection<Point>();
         CreateCurrencyDataSource();
       }
-      //Ticks.Clear();
-      //minuteTicks.ToList().ForEach(mt => Ticks.Add(mt));
-      minuteTicks.Add(new Point(dateAxis.ConvertToDouble(lastPrice.Time),lastPrice.Average));
-      UpdateTicks(Ticks, minuteTicks.OrderBy(t=>t.X).ToList());
+      #region Update Chart
+      if (false) {
+        minuteTicks.Add(new Point(dateAxis.ConvertToDouble(lastPrice.Time), lastPrice.Average));
+        UpdateTicks(Ticks, minuteTicks.OrderBy(t => t.X).ToList(), periodSpan);
+      } else {
+        while (animatedPriceY.Count > ticks.Count()) {
+          animatedTimeX.RemoveAt(0);
+          animatedPriceY.Remove(0);
+        }
+        while (animatedPriceY.Count < ticks.Count()) {
+          animatedTimeX.Add(0);
+          animatedPriceY.Add(0);
+        }
+        for (var i = 0; i < ticks.Count(); i++) {
+          animatedPriceY[i] = ticks[i].PriceAvg;
+          animatedTimeX[i] = dateAxis.ConvertToDouble(ticks[i].StartDateContinuous);
+        }
+        var up = animatedPriceY[0] < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
+        var yHeight = animatedPriceY.Max() - animatedPriceY.Min();
+        var xWidth = animatedTimeX.Max() - animatedTimeX.Min();
+        var yOffset = yHeight * infoBox.ActualHeight / plotter.ActualHeight / 2;
+        var xOffset = xWidth * infoBox.ActualWidth / plotter.ActualWidth / 2;
+        var y = (up ? animatedPriceY.Max() - yOffset : animatedPriceY.Min() + yOffset);
+        infoBox.Text = string.Join(Environment.NewLine, info);
+        viewPortContainer.Position = new Point(animatedTimeX.Min() + xOffset, y);
+      }
+      animatedDataSource.RaiseDataChanged();
+      #endregion
+
       //plotter.FitToView();
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
+      #region Set Lines
       LineMax = voltageHigh;
       LineMaxAvg = priceMaxAvg;
       lineMaxAvg.ToolTip = priceMaxAvg;
@@ -355,14 +432,16 @@ namespace HedgeHog {
       lineMinAvg.ToolTip = priceMinAvg;
       LineMin = voltageCurr;
       LineTimeMax = timeHigh;
+      lineTimeMax.ToolTip = ticks.First(r => r.StartDateContinuous == timeHigh).StartDate; ;
       LineTimeMin = timeCurr;
       LineTimeAvg = timeLow;
       LineNetSell = netSell;
       LineNetBuy = netBuy;
+      #endregion
       return Ticks.ToArray();
+      #region Oter Stuff
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle,
-        (DispatcherOperationCallback)delegate(object o)
-      {
+        (DispatcherOperationCallback)delegate(object o) {
         LineAvgAsk = priceAverageAskBid.OrderBy(p => p).Last();
         LineAvgBid = priceAverageAskBid.OrderBy(p => p).First();
 
@@ -382,25 +461,7 @@ namespace HedgeHog {
       //    plotter.Children.Add(v);
       //  });
       //}
-    }
-
-    ChartTick[] minuteTicks = null;
-    public ChartTick[] MinuteTicks {
-      get { return minuteTicks; }
-      set { minuteTicks = value; }
-    }
-    ChartTick[] GetMinuteTicks(HB.Tick[] fxTicks) {
-      return (from t in fxTicks
-                     group t by t.StartDate.Round() into tg
-                     orderby tg.Key
-                     select new ChartTick() { Price = tg.Average(t => (t.AskOpen + t.BidOpen) / 2), Time = tg.Key }).ToArray();
-    }
-
-    Volt[] GetMinuteVolts(IEnumerable<Volt> fxVolts) {
-      return (from t in fxVolts
-              group t by t.StartDate.AddSeconds(-t.StartDate.Second) into tg
-              orderby tg.Key
-              select new Volt() { Volts = tg.Average(t => t.Volts), StartDate = tg.Key }).ToArray();
+      #endregion
     }
   }
 
