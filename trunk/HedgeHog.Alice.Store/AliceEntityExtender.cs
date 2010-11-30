@@ -6,6 +6,7 @@ using System.Text;
 using HedgeHog.Bars;
 using HedgeHog.Shared;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -587,7 +588,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public double CorridorHeightByRegression { get { return CorridorStats == null ? 0 : CorridorStats.HeightUp; } }
+    public double CorridorHeightByRegression0 { get { return CorridorStats == null ? 0 : CorridorStats.HeightUpDown0; } }
+    public double CorridorHeightByRegression { get { return CorridorStats == null ? 0 : CorridorStats.HeightUpDown; } }
+    public double CorridorHeightByRegressionInPips0 { get { return InPips(CorridorHeightByRegression0); } }
     public double CorridorHeightByRegressionInPips { get { return InPips(CorridorHeightByRegression); } }
 
     private int _HistoricalGrossPL;
@@ -608,8 +611,41 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public bool? OpenSignal { get { return CorridorStats == null ? null : CorridorStats.OpenSignal; } }
-    public bool? CloseSignal { get { return CorridorStats == null ? null : CorridorStats.CloseSignal; } }
+    public bool? OpenSignal {
+      get {
+        if (CorridorStats == null) return null;
+        if (Strategy == Strategies.Correlation) {
+          if (CorridorAngle > 0) return false;
+          if (CorridorAngle < 0) return true;
+          return null;
+          if (Correlation > +CorrelationTreshold) TradeDirection = TradeDirections.Down;
+          if (Correlation < -CorrelationTreshold) TradeDirection = TradeDirections.Up;
+        }
+
+        if (Strategy == Strategies.Momentum)
+          if (IsPowerVolatilityOk)
+            return CorridorStats.PriceCmaDiffHigh > RateLast.PriceAvg1 ? false 
+              : CorridorStats.PriceCmaDiffLow < RateLast.PriceAvg1 ? true : (bool?)null;
+          else return null;
+        if (Strategy == Strategies.OverPower)
+          if (IsPowerAverageOk) return CorridorAngle < 0;
+          else return null;
+        var os = CorridorStats.OpenSignal;
+        if( !os.HasValue )return null;
+        if (Strategy == Strategies.Range) {
+          if (os.Value && RateDirection < 0) return null;
+          if (!os.Value && RateDirection > 0) return null;
+        }
+        return os;
+      }
+    }
+    Strategies[] noCloseSignalStrategies = new[] { Strategies.Momentum, Strategies.OverPower,Strategies.Correlation,Strategies.Range };
+    public bool? CloseSignal {
+      get {
+        if (noCloseSignalStrategies.Contains(Strategy)) return null;
+        return CorridorStats == null ? null : CorridorStats.CloseSignal;
+      }
+    }
 
     public Price PriceCurrent { get; set; }
 
@@ -633,12 +669,37 @@ namespace HedgeHog.Alice.Store {
 
     public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
 
-    public double StDevRatio { get { return CorridorIterationsIn / 10.0; } }
+    [DisplayName("Iterations For Power")]
+    [Description("Number of Iterations to calculate power for wave")]
+    [Category(categoryCorridor)]
+    public int IterationsForPower {
+      get { return CorridorIterationsIn; } 
+      set { CorridorIterationsIn = value; } 
+    }
+
+    [DisplayName("Iterations For Corridor Heights")]
+    [Description("Ex: highs.AverageByIteration(N)")]
+    [Category(categoryCorridor)]
+    public int IterationsForCorridorHeights {
+      get { return CorridorIterationsOut; }
+      set { CorridorIterationsOut = value; }
+    }
+
+
+    [DisplayName("Power Row Offset")]
+    [Description("Ex: Speed = Spread / (row + X)")]
+    [Category(categoryCorridor)]
+    public int PowerRowOffset_ {
+      get { return PowerRowOffset; }
+      set { PowerRowOffset = value; }
+    }
+
+
     public double CorridorThinness { get { return CorridorStats == null ? 4 : CorridorStats.Thinness; } }
 
-    private static Func<Rate, double> _GetPriceLow = r => r.PriceAvg;
+    private static Func<Rate, double> _GetPriceLow = r => r.AskLow;
     public static Func<Rate, double> GetPriceLow { get { return _GetPriceLow; } }
-    private static Func<Rate, double> _GetPriceHigh = r => r.PriceAvg;
+    private static Func<Rate, double> _GetPriceHigh = r => r.BidHigh;
     public static Func<Rate, double> GetPriceHigh { get { return _GetPriceHigh; } }
 
     List<Rate> _Rates;
@@ -646,18 +707,20 @@ namespace HedgeHog.Alice.Store {
       get { return _Rates; }
       set {
         _Rates = value;
-        if (CorridorStats != null) {
+        if (CorridorStats != null && CorridorStats.Periods > 0) {
           Rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
-          var stDevRatio = Math.Max(StDevRatio, Math.Log(CorridorThinness, 1.414213562));
-          CorridorAngle = Rates.Skip(Rates.Count - CorridorStats.Periods).SetCorridorPrices(GetPriceHigh, GetPriceLow, CorridorStats.LineHigh.Line, CorridorStats.LineLow.Line, stDevRatio)[1];
+          CorridorAngle = Rates.Skip(Rates.Count - CorridorStats.Periods)
+            .SetCorridorPrices(CorridorStats.HeightUp, CorridorStats.HeightDown, 
+            r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d, (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d)[1];
           OnPropertyChanged("CorridorThinness");
           OnPropertyChanged("CorridorHeightsRatio");
           OnPropertyChanged("CorridorHeightByRegressionInPips");
+          OnPropertyChanged("CorridorHeightByRegressionInPips0");
           OnPropertyChanged("CorridorToRangeRatio");
         }
         //var dateLast = value.Last().StartDate.AddMinutes(-4);
         RatesLast = value.Skip(value.Count - 3).ToArray();// value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
-        RateLast = RatesLast.Last();
+        RateLast = RatesLast.DefaultIfEmpty(new Rate()).Last();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
     }
@@ -745,8 +808,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     Dictionary<string, Strategies> tradeStrategies = new Dictionary<string, Strategies>();
-    Dictionary<Strategies, int> strategyScores = new Dictionary<Strategies, int>() { { Strategies.Breakout, 0 }, { Strategies.Range, 0 } };
-    public string StrategyScoresText { get { return string.Join(",", strategyScores.Select(sc => sc.Key + ":" + sc.Value).ToArray()); } }
+    Dictionary<Strategies, int[]> strategyScores = new Dictionary<Strategies, int[]>() { 
+      { Strategies.Breakout, new int[2] }, { Strategies.Range, new int[2] }, { Strategies.Brange, new int[2] } , { Strategies.Correlation, new int[2] } };
+    public string StrategyScoresText {
+      get {
+        return string.Join(",", strategyScores.Where(sc=>sc.Value.Sum()>0).Select(sc => sc.Key + ":" +
+          sc.Value[0] + "/" + sc.Value[1] + "=" + ((double)sc.Value[0] / (sc.Value[0] + sc.Value[1])).ToString("n2")).ToArray());
+      }
+    }
+    public void StrategyScoresReset() { strategyScores.Values.ToList().ForEach(ss => { ss[0] = ss[1] = 0; }); }
     public Trade LastTrade {
       get { return _lastTrade; }
       set {
@@ -755,11 +825,13 @@ namespace HedgeHog.Alice.Store {
           var id = LastTrade.Id + "";
           if (!string.IsNullOrWhiteSpace(id)) {
             Strategies tradeStrategy = tradeStrategies[id];
-            if (strategyScores.ContainsKey(tradeStrategy))
-              strategyScores[tradeStrategy] = strategyScores[tradeStrategy] + (LastTrade.PL > 0 ? 1 : -1);
+            if (strategyScores.ContainsKey(tradeStrategy)) {
+              strategyScores[tradeStrategy][0] = strategyScores[tradeStrategy][0] + (LastTrade.PL > 0 ? 1 : 0);
+              strategyScores[tradeStrategy][1] = strategyScores[tradeStrategy][1] + (LastTrade.PL > 0 ? 0 : 1);
+            }
           }
         } else {
-          var strategy = Strategy & (Strategies.Breakout | Strategies.Range);
+          var strategy = Strategy & (Strategies.Breakout | Strategies.Range | Strategies.Brange | Strategies.Correlation);
           tradeStrategies[value.Id + ""] = strategy;
           if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
 
@@ -785,7 +857,7 @@ namespace HedgeHog.Alice.Store {
     }
     public int MaxLotSize {
       get {
-        return MaxLotByTakeProfitRatio.ToInt() * LotSize;
+        return Math.Min(LastLotSize + LotSize, MaxLotByTakeProfitRatio.ToInt() * LotSize);
       }
     }
 
@@ -844,10 +916,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
-
     Trade[] _trades = new Trade[0];
-
     TradeDirections _TradeDirection = TradeDirections.None;
     public TradeDirections TradeDirection {
       get { return _TradeDirection; }
@@ -866,40 +935,107 @@ namespace HedgeHog.Alice.Store {
         if (value.Length > 0) CorridorStats.ResetLock();
       }
     }
-    public double CorridornessMinByPerformance {
-      get { return CorridornessMin + (strategyScores[Strategies.Breakout] - strategyScores[Strategies.Range]) / 100.0; }
-    }
+    [ReadOnly(true)]
+    [DesignOnly(true)]
     public double CorridorToRangeRatio {
-      get { try { return CorridorHeightByRegression / Rates.Height(); } catch { return 0; } }
+      get { try { return CorridorHeightByRegression / BigCorridorHeight; } catch { return 0; } }
     }
 
+    [DisplayName("Corridor To Range Minimum Ratio")]
+    [Category("Corridor")]
+    public double CorridorToRangeMinimumRatio {
+      get { return CorridornessMin; }
+      set { CorridornessMin = value; }
+    }
+
+    [ReadOnly(true)]
+    public bool IsCorridorToRangeRatioOk { get { return CorridorToRangeRatio > CorridorToRangeMinimumRatio; } }
+
+    const string categoryCorridor = "Corridor";
+    const string categoryTrading = "Trading";
+
+    [Category(categoryCorridor)]
+    [DisplayName("Ratio For Breakout")]
+    public double CorridorRatioForBreakout_ {
+      get { return CorridorRatioForBreakout; }
+      set { CorridorRatioForBreakout = value; }
+    }
+    [Category(categoryCorridor)]
+    [DisplayName("Ratio For Range")]
+    [Description("Minimum Ratio to use Range strategy.")]
+    public double CorridorRatioForRange_ {
+      get { return CorridorRatioForRange; }
+      set { CorridorRatioForRange = value; }
+    }
+
+    [Category(categoryCorridor)]
+    [DisplayName("Reverse Power")]
+    [Description("Calc power from rates.OrderBarsDescending().")]
+    public bool ReversePower_ {
+      get { return ReversePower; }
+      set { ReversePower = value; }
+    }
+
+
+    [Category(categoryTrading)]
+    [DisplayName("Correlation Treshold")]
+    [Description("Ex: if(Corr >  X) return sell")]
+    public double CorrelationTreshold_ {
+      get { return CorrelationTreshold; }
+      set { CorrelationTreshold = value; }
+    }
+
+    [Category(categoryTrading)]
+    [DisplayName("Range Ratio For TradeLimit")]
+    [Description("Ex:Exit when PL > Range * X")]
+    public double RangeRatioForTradeLimit_ {
+      get { return RangeRatioForTradeLimit; }
+      set { RangeRatioForTradeLimit = value; }
+    }
+
+    [Category(categoryTrading)]
+    [DisplayName("Range Ratio For TradeStop")]
+    [Description("Ex:Exit when PL < -Range * X")]
+    public double RangeRatioForTradeStop_ {
+      get { return RangeRatioForTradeStop; }
+      set { RangeRatioForTradeStop = value; }
+    }
+
+    [Category(categoryTrading)]
+    [DisplayName("Trade By Angle")]
+    public bool TradeByAngle_ {
+      get { return TradeByAngle; }
+      set { TradeByAngle = value; }
+    }
+
+    [Category(categoryTrading)]
+    [DisplayName("Trade By First Wave")]
+    [Description("If not - will trade by last wave")]
+    public bool? TradeByFirstWave_ {
+      get { return TradeByFirstWave; }
+      set { TradeByFirstWave = value; }
+    }
+
+
+
+    [Category(categoryCorridor)]
+    [DisplayName("Corridor Height By Spread Ratio")]
+    [Description("Ex: Height > Spread * X")]
+    public double CorridorHeightBySpreadRatio_ {
+      get { return CorridorHeightBySpreadRatio; }
+      set { CorridorHeightBySpreadRatio = value; }
+    }
+
+    public static Strategies[] StrategiesToClose = new Strategies[] { Strategies.Breakout, Strategies.Brange };
     private Strategies _Strategy;
     public Strategies Strategy {
       get {
-        {
-          if (Trades.Length > 0) return _Strategy;
-          if ((_Strategy & Strategies.Auto) == Strategies.None) return _Strategy;
-          var s = IsTradingHours ? Strategies.Breakout_A : Strategies.Range_A;
-          if (s == _Strategy) return _Strategy;
-          _Strategy = s;
-          OnPropertyChanged("Strategy");
-          return _Strategy;
-        }
-        {
-          var ch = CorridorHeightByRegressionInPips;
-          //var s = ch > 40 ? Strategies.Range : ch < 20 ? Strategies.None : Strategies.Breakout;
-          var s = Strategies.Auto;
-          if (ch > 10) {
-            s = CorridorToRangeRatio < CorridornessMinByPerformance ? Strategies.Breakout_A : Strategies.Range_A;
-            //if (CorridorStats.IsSellLock || CorridorStats.IsBuyLock) s = Strategies.Breakout;          else 
-            //s = strategyScores.OrderBy(sc => sc.Value).Last().Key;
-          }
-          if (_Strategy != s) {
-            _Strategy = s;
-            if (_Strategy == Strategies.None) CorridorStats.ResetLock();
-            OnPropertyChanged("Strategy");
-          }
-        }
+        //if (Trades.Length > 0) return _Strategy;
+        if ((_Strategy & Strategies.Auto) == Strategies.None) return _Strategy;
+        var s = CorridorToRangeRatio <= CorridorRatioForBreakout ? Strategies.Breakout_A : CorridorToRangeRatio >= CorridorRatioForRange ? Strategies.Range_A : _Strategy;
+        if (s == _Strategy) return _Strategy;
+        _Strategy = s;
+        OnPropertyChanged("Strategy");
         return _Strategy;
       }
       set {
@@ -929,6 +1065,76 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public bool IsPowerAverageOk { get { return PowerCurrent > PowerAverage; } }
+
+    private double _PowerAverage;
+    public double PowerAverage {
+      get { return _PowerAverage; }
+      set {
+        if (_PowerAverage != value) {
+          _PowerAverage = value;
+          OnPropertyChanged("PowerAverage");
+          OnPropertyChanged("IsPowerAverageOk");
+        }
+      }
+    }
+
+    private double _PowerCurrent;
+    public double PowerCurrent {
+      get { return _PowerCurrent; }
+      set {
+        if (_PowerCurrent != value) {
+          _PowerCurrent = value;
+          OnPropertyChanged("PowerCurrent");
+          OnPropertyChanged("IsPowerAverageOk");
+        }
+      }
+    }
+
+
+
+
+    public bool IsPowerVolatilityOk { get { return PowerVolatility > PowerVolatilityMinimum; } }
+    double _PowerVolatility;
+    public double PowerVolatility {
+      get { return _PowerVolatility; }
+      set { 
+        _PowerVolatility = value;
+        //if (IsPowerVolatilityOk && TradeDirection != TradeDirections.None) TradeDirection = CorridorAngle > 0 ? TradeDirections.Up : TradeDirections.Down;
+        OnPropertyChanged("PowerVolatility");
+        OnPropertyChanged("IsPowerVolatilityOk");
+      }
+    }
+
+    [DisplayName("Power Volatility Minimum")]
+    [Category(categoryTrading)]
+    [Description("Ex: CanTrade = Power > (Power-Avg)/StDev")]
+    public double PowerVolatilityMinimum_ {
+      get { return PowerVolatilityMinimum; }
+      set { PowerVolatilityMinimum = value; }
+    }
+
+    double _RangeCorridorHeight;
+    public double Correlation_P;
+    public double Correlation_R;
+
+    public double Correlation {
+      get {
+        return (Correlation_P + Correlation_R) / 2;
+        return new double[] { Correlation_P, Correlation_R }.OrderBy(c => c.Abs()).First();
+      }
+    }
+
+    public double RangeCorridorHeight {
+      get { return _RangeCorridorHeight; }
+      set {
+        _RangeCorridorHeight = value;
+        OnPropertyChanged("RangeCorridorHeight");
+      }
+    }
+
+
+    public double BigCorridorHeight { get; set; }
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
@@ -936,6 +1142,7 @@ namespace HedgeHog.Alice.Store {
   [Flags]
   public enum Strategies {
     None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
-    Breakout_A = 1 + 8, Range_A = 2 + 8
+    Breakout_A = Breakout + Auto, Range_A = Range + Auto, Momentum = 16, Reverse = 32, Momentum_R = Momentum + Reverse,
+    OverPower = 64, Brange = 128,Correlation = 256
   }
 }

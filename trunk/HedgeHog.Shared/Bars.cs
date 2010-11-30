@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog.Shared;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 [assembly:CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
@@ -328,5 +330,53 @@ namespace HedgeHog.Bars {
     #endregion
   }
 
+  public class RateDistance {
+    // Methods
+    public RateDistance(double averageAsk, double averageBid, double MA, DateTime startDate) {
+      this.AverageAsk = averageAsk;
+      this.AverageBid = averageBid;
+      this.MA = MA;
+      this.StartDate = startDate;
+    }
+    // Properties
+    public double AverageAsk { get; set; }
+    public double AverageBid { get; set; }
+    public double MA { get; set; }
+    public DateTime StartDate { get; set; }
+  }
 
+  public class PriceBar {
+    // Properties
+    [DisplayName("")]
+    public double AskHigh { get; set; }
+
+    [DisplayName("")]
+    public double AskLow { get; set; }
+
+    [DisplayName("")]
+    public double BidHigh { get; set; }
+
+    [DisplayName("")]
+    public double BidLow { get; set; }
+
+    [DisplayFormat(DataFormatString = "{0:n1}"), DisplayName("")]
+    public double Power {
+      get {
+        return (this.Spread * this.Speed);
+      }
+    }
+
+    [DisplayName("Row"), DisplayFormat(DataFormatString = "{0:n1}")]
+    public double Row { get; set; }
+
+    [DisplayFormat(DataFormatString = "{0:n1}"), DisplayName("")]
+    public double Speed { get; set; }
+
+    [DisplayFormat(DataFormatString = "{0:n0}"), DisplayName("")]
+    public double Spread { get; set; }
+
+    [DisplayFormat(DataFormatString = "{0:dd HH:mm}"), DisplayName("Date")]
+    public DateTime StartDate { get; set; }
+
+  }
 }

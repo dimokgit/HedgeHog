@@ -88,6 +88,8 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
+      SavePair(0, "EUR/USD");
+      return;
       SavePair(1, "EUR/USD");
       SavePair(5, "EUR/USD");
       SavePair(15, "EUR/USD");
@@ -96,7 +98,7 @@ namespace TestHH {
 
     private void SavePair(int period, string pair) {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
-        var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddYears(-4)).Max().AddMinutes(period);
+        var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddDays(-14)).Max().AddMinutes(period);
         var ticks = o2g.GetBarsBase(pair, period, dateStart);
         if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
@@ -117,7 +119,7 @@ namespace TestHH {
           bar.BidOpen = t.BidOpen;
           bar.BidClose = t.BidClose;
           context.t_Bar.AddObject(bar);
-//          if (i++ % 1000 == 0)
+          if (i++ % 1000 == 0)
           try {
             context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
           } catch (Exception exc) {

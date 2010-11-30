@@ -534,6 +534,9 @@ public partial class alglib
       -- ALGLIB --
          Copyright 09.04.2007 by Bochkanov Sergey
     *************************************************************************/
+    public static double pearsoncorrelation(double[] x, double[] y) {
+      return pearsoncorrelation(x, y, Math.Min(x.Length, y.Length));
+    }
     public static double pearsoncorrelation(double[] x, double[] y, int n)
     {
 
