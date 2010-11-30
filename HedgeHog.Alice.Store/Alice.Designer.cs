@@ -1486,7 +1486,18 @@ namespace HedgeHog.Alice.Store
         /// <param name="corridorAverageDaysBack">Initial value of the CorridorAverageDaysBack property.</param>
         /// <param name="corridorPeriodsStart">Initial value of the CorridorPeriodsStart property.</param>
         /// <param name="corridorPeriodsLength">Initial value of the CorridorPeriodsLength property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength)
+        /// <param name="corridorRatioForRange">Initial value of the CorridorRatioForRange property.</param>
+        /// <param name="corridorRatioForBreakout">Initial value of the CorridorRatioForBreakout property.</param>
+        /// <param name="rangeRatioForTradeLimit">Initial value of the RangeRatioForTradeLimit property.</param>
+        /// <param name="tradeByAngle">Initial value of the TradeByAngle property.</param>
+        /// <param name="profitToLossExitRatio">Initial value of the ProfitToLossExitRatio property.</param>
+        /// <param name="corridorHeightBySpreadRatio">Initial value of the CorridorHeightBySpreadRatio property.</param>
+        /// <param name="powerRowOffset">Initial value of the PowerRowOffset property.</param>
+        /// <param name="powerVolatilityMinimum">Initial value of the PowerVolatilityMinimum property.</param>
+        /// <param name="rangeRatioForTradeStop">Initial value of the RangeRatioForTradeStop property.</param>
+        /// <param name="reversePower">Initial value of the ReversePower property.</param>
+        /// <param name="correlationTreshold">Initial value of the CorrelationTreshold property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1520,6 +1531,17 @@ namespace HedgeHog.Alice.Store
             tradingMacro.CorridorAverageDaysBack = corridorAverageDaysBack;
             tradingMacro.CorridorPeriodsStart = corridorPeriodsStart;
             tradingMacro.CorridorPeriodsLength = corridorPeriodsLength;
+            tradingMacro.CorridorRatioForRange = corridorRatioForRange;
+            tradingMacro.CorridorRatioForBreakout = corridorRatioForBreakout;
+            tradingMacro.RangeRatioForTradeLimit = rangeRatioForTradeLimit;
+            tradingMacro.TradeByAngle = tradeByAngle;
+            tradingMacro.ProfitToLossExitRatio = profitToLossExitRatio;
+            tradingMacro.CorridorHeightBySpreadRatio = corridorHeightBySpreadRatio;
+            tradingMacro.PowerRowOffset = powerRowOffset;
+            tradingMacro.PowerVolatilityMinimum = powerVolatilityMinimum;
+            tradingMacro.RangeRatioForTradeStop = rangeRatioForTradeStop;
+            tradingMacro.ReversePower = reversePower;
+            tradingMacro.CorrelationTreshold = correlationTreshold;
             return tradingMacro;
         }
 
@@ -2296,6 +2318,294 @@ namespace HedgeHog.Alice.Store
         private Nullable<global::System.DateTime> _CorridorStartDate;
         partial void OnCorridorStartDateChanging(Nullable<global::System.DateTime> value);
         partial void OnCorridorStartDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorridorRatioForRange
+        {
+            get
+            {
+                return _CorridorRatioForRange;
+            }
+            set
+            {
+                OnCorridorRatioForRangeChanging(value);
+                ReportPropertyChanging("CorridorRatioForRange");
+                _CorridorRatioForRange = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorRatioForRange");
+                OnCorridorRatioForRangeChanged();
+            }
+        }
+        private global::System.Double _CorridorRatioForRange;
+        partial void OnCorridorRatioForRangeChanging(global::System.Double value);
+        partial void OnCorridorRatioForRangeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorridorRatioForBreakout
+        {
+            get
+            {
+                return _CorridorRatioForBreakout;
+            }
+            set
+            {
+                OnCorridorRatioForBreakoutChanging(value);
+                ReportPropertyChanging("CorridorRatioForBreakout");
+                _CorridorRatioForBreakout = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorRatioForBreakout");
+                OnCorridorRatioForBreakoutChanged();
+            }
+        }
+        private global::System.Double _CorridorRatioForBreakout;
+        partial void OnCorridorRatioForBreakoutChanging(global::System.Double value);
+        partial void OnCorridorRatioForBreakoutChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double RangeRatioForTradeLimit
+        {
+            get
+            {
+                return _RangeRatioForTradeLimit;
+            }
+            set
+            {
+                OnRangeRatioForTradeLimitChanging(value);
+                ReportPropertyChanging("RangeRatioForTradeLimit");
+                _RangeRatioForTradeLimit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("RangeRatioForTradeLimit");
+                OnRangeRatioForTradeLimitChanged();
+            }
+        }
+        private global::System.Double _RangeRatioForTradeLimit;
+        partial void OnRangeRatioForTradeLimitChanging(global::System.Double value);
+        partial void OnRangeRatioForTradeLimitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean TradeByAngle
+        {
+            get
+            {
+                return _TradeByAngle;
+            }
+            set
+            {
+                OnTradeByAngleChanging(value);
+                ReportPropertyChanging("TradeByAngle");
+                _TradeByAngle = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradeByAngle");
+                OnTradeByAngleChanged();
+            }
+        }
+        private global::System.Boolean _TradeByAngle;
+        partial void OnTradeByAngleChanging(global::System.Boolean value);
+        partial void OnTradeByAngleChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double ProfitToLossExitRatio
+        {
+            get
+            {
+                return _ProfitToLossExitRatio;
+            }
+            set
+            {
+                OnProfitToLossExitRatioChanging(value);
+                ReportPropertyChanging("ProfitToLossExitRatio");
+                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ProfitToLossExitRatio");
+                OnProfitToLossExitRatioChanged();
+            }
+        }
+        private global::System.Double _ProfitToLossExitRatio;
+        partial void OnProfitToLossExitRatioChanging(global::System.Double value);
+        partial void OnProfitToLossExitRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorridorHeightBySpreadRatio
+        {
+            get
+            {
+                return _CorridorHeightBySpreadRatio;
+            }
+            set
+            {
+                OnCorridorHeightBySpreadRatioChanging(value);
+                ReportPropertyChanging("CorridorHeightBySpreadRatio");
+                _CorridorHeightBySpreadRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorHeightBySpreadRatio");
+                OnCorridorHeightBySpreadRatioChanged();
+            }
+        }
+        private global::System.Double _CorridorHeightBySpreadRatio;
+        partial void OnCorridorHeightBySpreadRatioChanging(global::System.Double value);
+        partial void OnCorridorHeightBySpreadRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Boolean> TradeByFirstWave
+        {
+            get
+            {
+                return _TradeByFirstWave;
+            }
+            set
+            {
+                OnTradeByFirstWaveChanging(value);
+                ReportPropertyChanging("TradeByFirstWave");
+                _TradeByFirstWave = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradeByFirstWave");
+                OnTradeByFirstWaveChanged();
+            }
+        }
+        private Nullable<global::System.Boolean> _TradeByFirstWave;
+        partial void OnTradeByFirstWaveChanging(Nullable<global::System.Boolean> value);
+        partial void OnTradeByFirstWaveChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 PowerRowOffset
+        {
+            get
+            {
+                return _PowerRowOffset;
+            }
+            set
+            {
+                OnPowerRowOffsetChanging(value);
+                ReportPropertyChanging("PowerRowOffset");
+                _PowerRowOffset = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PowerRowOffset");
+                OnPowerRowOffsetChanged();
+            }
+        }
+        private global::System.Int32 _PowerRowOffset;
+        partial void OnPowerRowOffsetChanging(global::System.Int32 value);
+        partial void OnPowerRowOffsetChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double PowerVolatilityMinimum
+        {
+            get
+            {
+                return _PowerVolatilityMinimum;
+            }
+            set
+            {
+                OnPowerVolatilityMinimumChanging(value);
+                ReportPropertyChanging("PowerVolatilityMinimum");
+                _PowerVolatilityMinimum = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PowerVolatilityMinimum");
+                OnPowerVolatilityMinimumChanged();
+            }
+        }
+        private global::System.Double _PowerVolatilityMinimum;
+        partial void OnPowerVolatilityMinimumChanging(global::System.Double value);
+        partial void OnPowerVolatilityMinimumChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double RangeRatioForTradeStop
+        {
+            get
+            {
+                return _RangeRatioForTradeStop;
+            }
+            set
+            {
+                OnRangeRatioForTradeStopChanging(value);
+                ReportPropertyChanging("RangeRatioForTradeStop");
+                _RangeRatioForTradeStop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("RangeRatioForTradeStop");
+                OnRangeRatioForTradeStopChanged();
+            }
+        }
+        private global::System.Double _RangeRatioForTradeStop;
+        partial void OnRangeRatioForTradeStopChanging(global::System.Double value);
+        partial void OnRangeRatioForTradeStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean ReversePower
+        {
+            get
+            {
+                return _ReversePower;
+            }
+            set
+            {
+                OnReversePowerChanging(value);
+                ReportPropertyChanging("ReversePower");
+                _ReversePower = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ReversePower");
+                OnReversePowerChanged();
+            }
+        }
+        private global::System.Boolean _ReversePower;
+        partial void OnReversePowerChanging(global::System.Boolean value);
+        partial void OnReversePowerChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CorrelationTreshold
+        {
+            get
+            {
+                return _CorrelationTreshold;
+            }
+            set
+            {
+                OnCorrelationTresholdChanging(value);
+                ReportPropertyChanging("CorrelationTreshold");
+                _CorrelationTreshold = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorrelationTreshold");
+                OnCorrelationTresholdChanged();
+            }
+        }
+        private global::System.Double _CorrelationTreshold;
+        partial void OnCorrelationTresholdChanging(global::System.Double value);
+        partial void OnCorrelationTresholdChanged();
 
         #endregion
     

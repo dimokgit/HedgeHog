@@ -242,6 +242,11 @@ namespace HedgeHog {
     public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }
     public static double? Round(this double? v,int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
 
+    public static double Error(this double experimantal, double original) {
+      return ((experimantal - original).Abs() / original).Abs();
+    }
+
+
     public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
     static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
     public static int GetTextBoxTextInt(TextBox TextBox) {

@@ -112,6 +112,18 @@
           <Property Name="CorridorPeriodsStart" Type="int" Nullable="false" />
           <Property Name="CorridorPeriodsLength" Type="int" Nullable="false" />
           <Property Name="CorridorStartDate" Type="datetime" />
+          <Property Name="CorridorRatioForRange" Type="float" Nullable="false" />
+          <Property Name="CorridorRatioForBreakout" Type="float" Nullable="false" />
+          <Property Name="RangeRatioForTradeLimit" Type="float" Nullable="false" />
+          <Property Name="TradeByAngle" Type="bit" Nullable="false" />
+          <Property Name="ProfitToLossExitRatio" Type="float" Nullable="false" />
+          <Property Name="CorridorHeightBySpreadRatio" Type="float" Nullable="false" />
+          <Property Name="TradeByFirstWave" Type="bit" />
+          <Property Name="PowerRowOffset" Type="int" Nullable="false" />
+          <Property Name="PowerVolatilityMinimum" Type="float" Nullable="false" />
+          <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
+          <Property Name="ReversePower" Type="bit" Nullable="false" />
+          <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -175,6 +187,18 @@
           <Property Type="Int32" Name="CorridorPeriodsStart" Nullable="false" />
           <Property Type="Int32" Name="CorridorPeriodsLength" Nullable="false" />
           <Property Type="DateTime" Name="CorridorStartDate" />
+          <Property Type="Double" Name="CorridorRatioForRange" Nullable="false" />
+          <Property Type="Double" Name="CorridorRatioForBreakout" Nullable="false" />
+          <Property Type="Double" Name="RangeRatioForTradeLimit" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByAngle" Nullable="false" />
+          <Property Type="Double" Name="ProfitToLossExitRatio" Nullable="false" />
+          <Property Type="Double" Name="CorridorHeightBySpreadRatio" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByFirstWave" Nullable="true" />
+          <Property Type="Int32" Name="PowerRowOffset" Nullable="false" />
+          <Property Type="Double" Name="PowerVolatilityMinimum" Nullable="false" />
+          <Property Type="Double" Name="RangeRatioForTradeStop" Nullable="false" />
+          <Property Type="Boolean" Name="ReversePower" Nullable="false" />
+          <Property Type="Double" Name="CorrelationTreshold" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -244,7 +268,19 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="CorridorStartDate" ColumnName="CorridorStartDate" />
+            <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
+                <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
+                <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
+                <ScalarProperty Name="PowerVolatilityMinimum" ColumnName="PowerVolatilityMinimum" />
+                <ScalarProperty Name="PowerRowOffset" ColumnName="PowerRowOffset" />
+                <ScalarProperty Name="TradeByFirstWave" ColumnName="TradeByFirstWave" />
+                <ScalarProperty Name="CorridorHeightBySpreadRatio" ColumnName="CorridorHeightBySpreadRatio" />
+                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
+                <ScalarProperty Name="TradeByAngle" ColumnName="TradeByAngle" />
+                <ScalarProperty Name="RangeRatioForTradeLimit" ColumnName="RangeRatioForTradeLimit" />
+                <ScalarProperty Name="CorridorRatioForBreakout" ColumnName="CorridorRatioForBreakout" />
+                <ScalarProperty Name="CorridorRatioForRange" ColumnName="CorridorRatioForRange" />
+                <ScalarProperty Name="CorridorStartDate" ColumnName="CorridorStartDate" />
                 <ScalarProperty Name="CorridorPeriodsLength" ColumnName="CorridorPeriodsLength" />
                 <ScalarProperty Name="CorridorPeriodsStart" ColumnName="CorridorPeriodsStart" />
                 <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />

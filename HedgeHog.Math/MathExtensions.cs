@@ -18,7 +18,7 @@ namespace HedgeHog {
       alglib.lrreport lr;
       alglib.lrbuild(m,x.Length,1, out info, out lm,out lr);
       alglib.lrunpack(lm, out c, out nvars);
-      return new[] { c[1], -c[0] };
+      return new[] { c[1], c[0] };
     }
 
     public static void SetProperty(this object o, string p, object v) {
@@ -48,9 +48,12 @@ namespace HedgeHog {
     }
 
     public static double[] AverageByIterations(this double[] values,Func<double,double,bool> compare, double iterations)  {
-      var avg = values.Average();
+      var avg = values.DefaultIfEmpty().Average();
+      if (values.Length == 0) return values;
       for (int i = 1; i < iterations; i++) {
-        values = values.Where(r => compare(r, avg)).ToArray();
+        var vs = values.Where(r => compare(r, avg)).ToArray();
+        if (vs.Length == 0) break;
+        values = vs;
         avg = values.Average();
       }
       return values;

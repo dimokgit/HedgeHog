@@ -82,7 +82,7 @@ namespace HedgeHog.Shared {
       return ++tradeId;
     }
     void AddTrade(bool isBuy, int lot, Price price) {
-      if (tradesOpened.Count > 0) Debugger.Break();
+      //if (tradesOpened.Count > 0) Debugger.Break();
       tradesOpened.Add(new Trade() {
         Id = NewTradeId() + "",
         Pair = price.Pair,

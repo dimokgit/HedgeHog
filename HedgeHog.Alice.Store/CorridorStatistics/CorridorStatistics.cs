@@ -8,12 +8,57 @@ using System.Diagnostics;
 namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
 
-    public double Density { get; set; }
-    public double Slop { get; set; }
+    public Func<Rate,double> priceLine { get; set; }
+    public Func<Rate,double> priceHigh { get; set; }
+    public Func<Rate,double> priceLow { get; set; }
 
-    public double HeightUp { get; set; }
-    public double HeightDown { get; set; }
+    public double Density { get; set; }
+    public double Slope { get; set; }
+    public LineInfo LineLow { get; set; }
+    public LineInfo LineHigh { get; set; }
+
+    public TrendLevel TrendLevel {
+      get {
+        if (LineLow == null) return Store.TrendLevel.None;
+        return  LineLow.Slope.Error(Slope) < LineHigh.Slope.Error(Slope) ? TrendLevel.Support : TrendLevel.Resistance;
+      }
+    }
+
+    public Rate[] GetRates(IEnumerable<Rate> rates) { return rates.Skip(rates.Count() - Periods).ToArray(); }
+
+    public bool AdjustHeight(IEnumerable<Rate> rates, Func<CorridorStatistics, bool> filter, int iterationsStart, int iterationsEnd = 10) {
+      while (!filter(this)) {
+        GetRates(rates).GetCorridorHeights(
+          priceLine, priceHigh, priceLow, CorridorStaticBaseExtentions.priceHeightComparer, 1, ++iterationsStart, out _HeightUp, out _HeightDown);
+        if (iterationsStart > iterationsEnd) break;
+      }
+      return filter(this);
+    }
+
+    double _HeightUp0;
+    public double HeightUp0 {
+      get { return _HeightUp0; }
+      set { _HeightUp0 = value; }
+    }
+    double _HeightUp;
+    public double HeightUp {
+      get { return _HeightUp; }
+      set { _HeightUp = value; }
+    }
+
+    double _HeightDown0;
+    public double HeightDown0 {
+      get { return _HeightDown0; }
+      set { _HeightDown0 = value; }
+    }
+    double _HeightDown;
+    public double HeightDown {
+      get { return _HeightDown; }
+      set { _HeightDown = value; }
+    }
+    public double HeightUpDown0 { get { return HeightUp0 + HeightDown0; } }
     public double HeightUpDown { get { return HeightUp + HeightDown; } }
+    public double HeightUpDownInPips0 { get { return InPips == null ? 0 : InPips(HeightUpDown0); } }
     public double HeightUpDownInPips { get { return InPips == null ? 0 : InPips(HeightUpDown); } }
 
     public double HeightHigh {
@@ -42,11 +87,11 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(double density, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(density, heightUp, heightDown,lineHigh,lineLow, periods, endDate, startDate, 0);
+    public CorridorStatistics(double density,double slope, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(density,slope, heightUp, heightDown,lineHigh,lineLow, periods, endDate, startDate, 0);
     }
 
-    public void Init(double density, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
+    public void Init(double density,double slope, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
       this.Density = density;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
@@ -54,10 +99,11 @@ namespace HedgeHog.Alice.Store {
       this.StartDate = startDate;
       this.Periods = periods;
       this.Iterations = iterations;
-      this.HeightUp = heightUp;
-      this.HeightDown = heightDown;
+      this.HeightUp = this.HeightUp0 = heightUp;
+      this.HeightDown = this.HeightDown0 = heightDown;
       //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
       Corridornes = Density;
+      Slope = slope;
       OnPropertyChanged("Height");
       OnPropertyChanged("HeightInPips");
     }
@@ -233,46 +279,65 @@ namespace HedgeHog.Alice.Store {
       get {
         bool? b;
         var m = Math.Max(1, HeightUpDownInPips * .1);
-        switch (TradingMacro.Strategy & (Strategies.Range | Strategies.Breakout)) {
+        switch (TradingMacro.Strategy & (Strategies.Range | Strategies.Breakout | Strategies.Brange)) {
           case Strategies.Breakout:
-            b = OpenBreakout(0,m);
+            b = OpenBreakout(0,100);
             break;
           case Strategies.Range:
-            b = OpenRange(2,0);
+            b = OpenRange(0,100);
+            break;
+          case Strategies.Brange:
+            b = OpenBrange(0, 100);
             break;
           default: return null;
         }
         if (b.HasValue) {
+          if (b.Value && !canBuy) return null;
+          if (!b.Value && !canSell) return null;
           return lastSignal = b;
         }
         return null;
       }
     }
-    bool canBuy { get { return TradeDirection != TradeDirections.Down && TradingMacro.CorridorAngle > 0; } }
-    bool canSell { get { return TradeDirection != TradeDirections.Up && TradingMacro.CorridorAngle < 0; } }
+    bool canBuy { get { return TradeDirection != TradeDirections.Down && (!TradingMacro.TradeByAngle || TradingMacro.CorridorAngle < 0); } }
+    bool canSell { get { return TradeDirection != TradeDirections.Up && (!TradingMacro.TradeByAngle || TradingMacro.CorridorAngle > 0); } }
     public bool? CloseSignal {
       get {
-        return null;
         switch (TradingMacro.Strategy) {
           case Strategies.Range:
-            var r = OpenRange(0,0);
+            var r = OpenRange(0,100);
             return r.HasValue ? !r : null;
           case Strategies.Breakout:
-            var b = OpenBreakout(0,0);
+            var b = OpenBreakout(0, 100);
             return b.HasValue ? !b : null;
+          case Strategies.Brange:
+            var br = OpenBrange(0, 100);
+            return br.HasValue ? !br : null;
         }
         return null;
       }
     }
 
-    private bool? OpenRange(int level,double m) {
-      if (canSell && PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level,m)) return false;
-      if (canBuy && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level) ) return true;
+    private bool? OpenBrange(int level, double m) {
+      var or = OpenRange(level,m);
+      var ob = OpenBreakout(level,m);
+      //var rangeAngle = 3; if (TradingMacro.CorridorAngle.Abs() <= rangeAngle) return or;
+      var breakeAngle = 8;
+      if (TradingMacro.CorridorAngle > breakeAngle && (ob == false || or == false)) return false;
+      if (TradingMacro.CorridorAngle < -breakeAngle && (ob == true || or == true)) return true;
+      return null;
+      bool? buy = new bool?(TradingMacro.CorridorAngle<0);
+      return (or == buy || ob == buy) ? buy : null;
+    }
+    private bool? OpenRange(int level, double m) {
+      if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return false;
+      if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return true;
       return null;
     }
-    private bool? OpenBreakout(int level,double m) {
+    private bool? OpenBreakout(int level, double m) {
       if (canBuy && PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level,m) && !IsSellLock) return true;
       if (canSell && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m,level) && !IsBuyLock) return false;
+      return null;
       return OpenRange(level,m);
       if (true && lastSignal.HasValue) {
         if (lastSignal.Value && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value) < m ) return true;
@@ -281,12 +346,14 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
+    static Func<Rate, double> diffPriceHigh = r => r.PriceAvg;
+    static Func<Rate, double> diffPriceLow = r => r.PriceAvg;
     public double? PriceCmaDiffHigh {
       get {
         //var extreamHigh = LineHigh == null?null:  LineHigh.Line.OrderBars().LastOrDefault();
         //if (extreamHigh != null) return extreamHigh.PriceHigh - extreamHigh.PriceAvg2;
         var rl = RateForDiffHigh;
-        return rl == null ? (double?)null : TradingMacro.GetPriceHigh(rl) - rl.PriceAvg2;
+        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg2;
       }
     }
     Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceHigh).Last();
@@ -308,7 +375,7 @@ namespace HedgeHog.Alice.Store {
         //var extreamLow = LineLow == null?null: LineLow.Line.OrderBars().LastOrDefault();
         //if (extreamLow != null) return extreamLow.PriceLow - extreamLow.PriceAvg3;
         var rl = RateForDiffLow;
-        var res = rl == null ? (double?)null : TradingMacro.GetPriceLow(rl) - rl.PriceAvg3;
+        var res = rl == null ? (double?)null : diffPriceLow(rl) - rl.PriceAvg3;
         return res;
       }
     }
@@ -321,9 +388,7 @@ namespace HedgeHog.Alice.Store {
         return rh;
       }
     }
-
-    public LineInfo LineLow { get; set; }
-
-    public LineInfo LineHigh { get; set; }
   }
+
+  public enum TrendLevel { None, Resistance, Support }
 }

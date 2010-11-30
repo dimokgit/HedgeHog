@@ -101,12 +101,36 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    private double _VirtualDelay = 0;
+    public double VirtualDelay {
+      get { return _VirtualDelay; }
+      set {
+        if (_VirtualDelay != value) {
+          _VirtualDelay = value;
+          this.BackTestEventArgs.Delay = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
     private string _VirtualPair;
     public string VirtualPair {
       get { return _VirtualPair; }
       set {
         if (_VirtualPair != value) {
           _VirtualPair = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    private bool _VirtualPause;
+    public bool VirtualPause {
+      get { return _VirtualPause; }
+      set {
+        if (_VirtualPause != value) {
+          _VirtualPause = value;
+          this.BackTestEventArgs.Pause = value;
           RaisePropertyChanged();
         }
       }
@@ -767,8 +791,28 @@ namespace HedgeHog.Alice.Client {
         return _BackTestCommand;
       }
     }
+    BackTestEventArgs BackTestEventArgs;
     void BackTest() {
-      if (StartBackTesting != null) StartBackTesting(this, new BackTestEventArgs(VirtualPair,  VirtualDateStart,VirtualMonthsToTest));
+      if (StartBackTesting != null)
+        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualPair, VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause));
+    }
+
+    #endregion
+
+    #region BackTestStepBackCommand
+
+    ICommand _BackTestStepBackCommand;
+    public ICommand BackTestStepBackCommand {
+      get {
+        if (_BackTestStepBackCommand == null) {
+          _BackTestStepBackCommand = new Gala.RelayCommand(BackTestStepBack, () => true);
+        }
+
+        return _BackTestStepBackCommand;
+      }
+    }
+    void BackTestStepBack() {
+      BackTestEventArgs.StepBack = true;
     }
 
     #endregion
