@@ -1,0 +1,1 @@
+﻿This example demonstrates how to load and save varios grid settings using <b>IsolatedStorageFile</b> and <b>DataContractSerializer</b>.

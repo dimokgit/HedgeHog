@@ -1,0 +1,9 @@
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\bin\Release\Regression.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\bin\Release\Regression.pdb
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\bin\Release\Regression.xml
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\ResolveAssemblyReference.cache
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\Regression.Resources.resources
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\Regression.vbproj.GenerateResource.Cache
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\Regression.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\Regression.xml
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\obj\Release\Regression.pdb

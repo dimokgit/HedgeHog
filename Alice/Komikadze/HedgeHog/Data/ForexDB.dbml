@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Database Name="Forex" Class="ForexDBDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=.\SQLEXPRESS2008;Initial Catalog=Forex;Integrated Security=True" SettingsObjectName="HedgeHog.Properties.Settings" SettingsPropertyName="ForexConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.t_Price" Member="t_Prices">
+    <Type Name="t_Price">
+      <Column Name="ID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="Account" Type="System.String" DbType="VarChar(16) NOT NULL" CanBeNull="false" />
+      <Column Name="Pair" Type="System.String" DbType="VarChar(7) NOT NULL" CanBeNull="false" />
+      <Column Name="Date" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="Ask" Type="System.Decimal" DbType="Decimal(9,5) NOT NULL" CanBeNull="false" />
+      <Column Name="Bid" Type="System.Decimal" DbType="Decimal(9,5) NOT NULL" CanBeNull="false" />
+      <Column Name="Speed" Type="System.Decimal" DbType="Decimal(5,1) NOT NULL" CanBeNull="false" />
+      <Column Name="Spread" Type="System.Decimal" DbType="Decimal(5,1) NOT NULL" CanBeNull="false" />
+      <Column Name="Power" Type="System.Decimal" DbType="Decimal(5,1) NOT NULL" CanBeNull="false" />
+      <Column Name="Row" Type="System.Decimal" DbType="Decimal(5,1) NOT NULL" CanBeNull="false" />
+      <Column Name="IsBuySell" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </Type>
+  </Table>
+  <Table Name="dbo.t_Tick" Member="t_Ticks">
+    <Type Name="t_Tick">
+      <Column Name="Pair" Type="System.String" DbType="VarChar(7) NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="StartDate" Type="System.DateTime" DbType="DateTime NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Ask" Type="System.Double" DbType="Float NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="Bid" Type="System.Double" DbType="Float NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+    </Type>
+  </Table>
+</Database>
