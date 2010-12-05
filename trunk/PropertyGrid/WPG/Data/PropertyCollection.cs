@@ -49,7 +49,7 @@ namespace WPG.Data
             {
                 foreach (Property property in propertyCollection)
                 {
-                    if (filter == "" || property.Name.ToLower().Contains(filter))
+                    if (property.Category != "Misc" &&( filter == "" || property.Name.ToLower().Contains(filter)))
                     {
                         PropertyCategory propertyCategory;
                         if (groups.ContainsKey(property.Category))

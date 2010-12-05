@@ -40,17 +40,21 @@ namespace HedgeHog {
     List<double> animatedVoltValueY = new List<double>();
     EnumerableDataSource<double> animatedVoltDataSource = null;
 
+    List<DateTime> animatedVolt1TimeX = new List<DateTime>();
+    List<double> animatedVolt1ValueY = new List<double>();
+    EnumerableDataSource<double> animatedVolt1DataSource = null;
+
     TextBlock infoBox = new TextBlock() { FontFamily = new FontFamily("Courier New") };
     ViewportUIContainer viewPortContainer = new ViewportUIContainer();
 
     #region Lines
-    HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange),StrokeThickness = 2 };
+    HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange),StrokeThickness = 1 };
     public double LineMax { set { lineMax.Value = value; } }
 
     HorizontalLine lineMaxAvg = new HorizontalLine() { StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.Brown) };
     public double LineMaxAvg { set { lineMaxAvg.Value = value; } }
 
-    HorizontalLine lineMin = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange) };
+    HorizontalLine lineMin = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.LimeGreen),StrokeThickness = 1,StrokeDashArray={1} };
     public double LineMin {      set { lineMin.Value = value; }    }
 
     HorizontalLine lineMinAvg = new HorizontalLine() { StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.Navy) };
@@ -174,6 +178,14 @@ namespace HedgeHog {
         animatedVoltDataSource.SetYMapping(y => y);
         innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.DarkOrange, 1, "")
           .Description.LegendItem.Visibility = Visibility.Collapsed;
+
+        xSrc = new EnumerableDataSource<DateTime>(animatedVolt1TimeX);
+        xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
+        animatedVolt1DataSource = new EnumerableDataSource<double>(animatedVolt1ValueY);
+        animatedVolt1DataSource.SetYMapping(y => y);
+        innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVolt1DataSource), Colors.LimeGreen, 1, "")
+          .Description.LegendItem.Visibility = Visibility.Collapsed;
+
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
       } else {
         innerPlotter.Children.Remove(innerPlotter.Children.OfType<VerticalAxis>().Single());
@@ -288,9 +300,10 @@ namespace HedgeHog {
       AddTicks(lastPrice, ticks, null,new string[0],null, voltageHigh, voltageCurr, priceMaxAvg, priceMinAvg,
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
-    public void AddTicks(Price lastPrice, List<Rate> ticks, PriceBar[] voltsByTick,string[] info,bool? trendHighlight,
+    public void AddTicks(Price lastPrice, List<Rate> ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
+    var voltsByTick = voltsByTicks[0];
       try {
         ticks = ticks.ToList();
       } catch {
@@ -333,31 +346,24 @@ namespace HedgeHog {
       {
         var correlation = global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) {
-          while (animatedPriceY.Count > ticks.Count()) {
-            animatedTimeX.RemoveAt(0);
-            animatedPriceY.RemoveAt(0);
-          }
-          while (animatedPriceY.Count < ticks.Count()) {
-            animatedTimeX.Add(DateTime.MinValue);
-            animatedPriceY.Add(0);
-          }
+          ReAdjustXY(animatedTimeX, animatedPriceY, ticks.Count);
           for (var i = 0; i < ticks.Count(); i++) {
             animatedPriceY[i] = ticks[i].PriceAvg;
             animatedTimeX[i] = ticks[i].StartDateContinuous;
           }
 
           if (voltsByTick != null) {
-            while (animatedVoltValueY.Count > voltsByTick.Count()) {
-              animatedVoltTimeX.RemoveAt(0);
-              animatedVoltValueY.RemoveAt(0);
-            }
-            while (animatedVoltValueY.Count < voltsByTick.Count()) {
-              animatedVoltTimeX.Add(DateTime.MinValue);
-              animatedVoltValueY.Add(0);
-            }
+            ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
             for (var i = 0; i < voltsByTick.Count(); i++) {
               animatedVoltValueY[i] = voltsByTick[i].Power;
               animatedVoltTimeX[i] = voltsByTick[i].StartDate;
+            }
+          }
+          if (voltsByTicks!= null && voltsByTicks.Length >1) {
+            ReAdjustXY(animatedVolt1TimeX, animatedVolt1ValueY, voltsByTicks[1].Length);
+            for (var i = 0; i < voltsByTicks[1].Count(); i++) {
+              animatedVolt1ValueY[i] = voltsByTicks[1][i].Power;
+              animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDate;
             }
           }
 
@@ -384,6 +390,7 @@ namespace HedgeHog {
       }
       animatedDataSource.RaiseDataChanged();
       animatedVoltDataSource.RaiseDataChanged();
+      animatedVolt1DataSource.RaiseDataChanged();
       #endregion
 
       //plotter.FitToView();
@@ -402,6 +409,17 @@ namespace HedgeHog {
       LineNetSell = netSell;
       LineNetBuy = netBuy;
       #endregion
+    }
+
+    private void ReAdjustXY(List<DateTime> X, List<double> Y, int count) {
+      while (Y.Count > count) {
+        X.RemoveAt(0);
+        Y.RemoveAt(0);
+      }
+      while (Y.Count < count) {
+        X.Add(DateTime.MinValue);
+        Y.Add(0);
+      }
     }
   }
 

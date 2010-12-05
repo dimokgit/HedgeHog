@@ -68,22 +68,6 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        public ObjectSet<t_Bar> t_Bar
-        {
-            get
-            {
-                if ((_t_Bar == null))
-                {
-                    _t_Bar = base.CreateObjectSet<t_Bar>("t_Bar");
-                }
-                return _t_Bar;
-            }
-        }
-        private ObjectSet<t_Bar> _t_Bar;
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
         public ObjectSet<t_Trade> t_Trade
         {
             get
@@ -96,17 +80,25 @@ namespace HedgeHog.Alice.Store
             }
         }
         private ObjectSet<t_Trade> _t_Trade;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Bar> t_Bar
+        {
+            get
+            {
+                if ((_t_Bar == null))
+                {
+                    _t_Bar = base.CreateObjectSet<t_Bar>("t_Bar");
+                }
+                return _t_Bar;
+            }
+        }
+        private ObjectSet<t_Bar> _t_Bar;
 
         #endregion
         #region AddTo Methods
-    
-        /// <summary>
-        /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
-        /// </summary>
-        public void AddTot_Bar(t_Bar t_Bar)
-        {
-            base.AddObject("t_Bar", t_Bar);
-        }
     
         /// <summary>
         /// Deprecated Method for adding a new object to the t_Trade EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
@@ -114,6 +106,14 @@ namespace HedgeHog.Alice.Store
         public void AddTot_Trade(t_Trade t_Trade)
         {
             base.AddObject("t_Trade", t_Trade);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Bar(t_Bar t_Bar)
+        {
+            base.AddObject("t_Bar", t_Bar);
         }
 
         #endregion
@@ -329,7 +329,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="bidLow">Initial value of the BidLow property.</param>
         /// <param name="bidOpen">Initial value of the BidOpen property.</param>
         /// <param name="bidClose">Initial value of the BidClose property.</param>
-        public static t_Bar Createt_Bar(global::System.String pair, global::System.Int32 period, global::System.DateTime startDate, global::System.Single askHigh, global::System.Single askLow, global::System.Single askOpen, global::System.Single askClose, global::System.Single bidHigh, global::System.Single bidLow, global::System.Single bidOpen, global::System.Single bidClose)
+        /// <param name="id">Initial value of the ID property.</param>
+        public static t_Bar Createt_Bar(global::System.String pair, global::System.Int32 period, global::System.DateTime startDate, global::System.Single askHigh, global::System.Single askLow, global::System.Single askOpen, global::System.Single askClose, global::System.Single bidHigh, global::System.Single bidLow, global::System.Single bidOpen, global::System.Single bidClose, global::System.Int32 id)
         {
             t_Bar t_Bar = new t_Bar();
             t_Bar.Pair = pair;
@@ -343,6 +344,7 @@ namespace HedgeHog.Alice.Store
             t_Bar.BidLow = bidLow;
             t_Bar.BidOpen = bidOpen;
             t_Bar.BidClose = bidClose;
+            t_Bar.ID = id;
             return t_Bar;
         }
 
@@ -433,7 +435,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskHigh
         {
@@ -443,11 +445,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnAskHighChanging(value);
-                ReportPropertyChanging("AskHigh");
-                _AskHigh = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("AskHigh");
-                OnAskHighChanged();
+                if (_AskHigh != value)
+                {
+                    OnAskHighChanging(value);
+                    ReportPropertyChanging("AskHigh");
+                    _AskHigh = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("AskHigh");
+                    OnAskHighChanged();
+                }
             }
         }
         private global::System.Single _AskHigh;
@@ -457,7 +462,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskLow
         {
@@ -467,11 +472,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnAskLowChanging(value);
-                ReportPropertyChanging("AskLow");
-                _AskLow = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("AskLow");
-                OnAskLowChanged();
+                if (_AskLow != value)
+                {
+                    OnAskLowChanging(value);
+                    ReportPropertyChanging("AskLow");
+                    _AskLow = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("AskLow");
+                    OnAskLowChanged();
+                }
             }
         }
         private global::System.Single _AskLow;
@@ -481,7 +489,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskOpen
         {
@@ -491,11 +499,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnAskOpenChanging(value);
-                ReportPropertyChanging("AskOpen");
-                _AskOpen = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("AskOpen");
-                OnAskOpenChanged();
+                if (_AskOpen != value)
+                {
+                    OnAskOpenChanging(value);
+                    ReportPropertyChanging("AskOpen");
+                    _AskOpen = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("AskOpen");
+                    OnAskOpenChanged();
+                }
             }
         }
         private global::System.Single _AskOpen;
@@ -505,7 +516,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskClose
         {
@@ -515,11 +526,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnAskCloseChanging(value);
-                ReportPropertyChanging("AskClose");
-                _AskClose = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("AskClose");
-                OnAskCloseChanged();
+                if (_AskClose != value)
+                {
+                    OnAskCloseChanging(value);
+                    ReportPropertyChanging("AskClose");
+                    _AskClose = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("AskClose");
+                    OnAskCloseChanged();
+                }
             }
         }
         private global::System.Single _AskClose;
@@ -529,7 +543,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidHigh
         {
@@ -539,11 +553,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnBidHighChanging(value);
-                ReportPropertyChanging("BidHigh");
-                _BidHigh = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("BidHigh");
-                OnBidHighChanged();
+                if (_BidHigh != value)
+                {
+                    OnBidHighChanging(value);
+                    ReportPropertyChanging("BidHigh");
+                    _BidHigh = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("BidHigh");
+                    OnBidHighChanged();
+                }
             }
         }
         private global::System.Single _BidHigh;
@@ -553,7 +570,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidLow
         {
@@ -563,11 +580,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnBidLowChanging(value);
-                ReportPropertyChanging("BidLow");
-                _BidLow = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("BidLow");
-                OnBidLowChanged();
+                if (_BidLow != value)
+                {
+                    OnBidLowChanging(value);
+                    ReportPropertyChanging("BidLow");
+                    _BidLow = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("BidLow");
+                    OnBidLowChanged();
+                }
             }
         }
         private global::System.Single _BidLow;
@@ -577,7 +597,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidOpen
         {
@@ -587,11 +607,14 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnBidOpenChanging(value);
-                ReportPropertyChanging("BidOpen");
-                _BidOpen = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("BidOpen");
-                OnBidOpenChanged();
+                if (_BidOpen != value)
+                {
+                    OnBidOpenChanging(value);
+                    ReportPropertyChanging("BidOpen");
+                    _BidOpen = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("BidOpen");
+                    OnBidOpenChanged();
+                }
             }
         }
         private global::System.Single _BidOpen;
@@ -601,7 +624,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidClose
         {
@@ -611,16 +634,46 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                OnBidCloseChanging(value);
-                ReportPropertyChanging("BidClose");
-                _BidClose = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("BidClose");
-                OnBidCloseChanged();
+                if (_BidClose != value)
+                {
+                    OnBidCloseChanging(value);
+                    ReportPropertyChanging("BidClose");
+                    _BidClose = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("BidClose");
+                    OnBidCloseChanged();
+                }
             }
         }
         private global::System.Single _BidClose;
         partial void OnBidCloseChanging(global::System.Single value);
         partial void OnBidCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 ID
+        {
+            get
+            {
+                return _ID;
+            }
+            set
+            {
+                if (_ID != value)
+                {
+                    OnIDChanging(value);
+                    ReportPropertyChanging("ID");
+                    _ID = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("ID");
+                    OnIDChanged();
+                }
+            }
+        }
+        private global::System.Int32 _ID;
+        partial void OnIDChanging(global::System.Int32 value);
+        partial void OnIDChanged();
 
         #endregion
     

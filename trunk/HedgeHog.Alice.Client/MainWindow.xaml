@@ -293,6 +293,7 @@
           <sys:String>USD/JPY</sys:String>
         </ComboBox>
         <Button Command="{Binding BackTestStepBackCommand}">Back</Button>
+        <CheckBox IsChecked="{Binding VirtualClearTest,Mode=TwoWay}" Name="chkClearTest" ToolTip="Clear Previouse Test Results"/>
         <Button Command="{Binding BackTestCommand}">Test</Button>
         <Button Command="{Binding ReportCommand}">Report</Button>
         <TextBlock>Status:</TextBlock>

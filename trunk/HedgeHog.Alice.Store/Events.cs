@@ -12,13 +12,15 @@ namespace HedgeHog.Alice.Store {
     public double Delay { get; set; }
     public bool Pause { get; set; }
     public bool StepBack { get; set; }
+    public bool ClearTest { get; set; }
     public BackTestEventArgs() { }
-    public BackTestEventArgs(string pair, DateTime startDate, int monthsToTest, double delay,bool pause) {
+    public BackTestEventArgs(string pair, DateTime startDate, int monthsToTest, double delay, bool pause, bool clearTest) {
       this.Pair = pair;
       this.StartDate = startDate;
       this.MonthToTest = monthsToTest;
       this.Delay = delay;
       this.Pause = pause;
+      this.ClearTest = clearTest;
     }
   }
   public class MasterTradeEventArgs : EventArgs {

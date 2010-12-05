@@ -191,7 +191,8 @@ namespace HedgeHog {
           CmaArray = CmaArray.Concat(new double?[newPeriod - CmaArray.Length]).ToArray();
         else CmaArray = CmaArray.Take(newPeriod).ToArray();
       }
-      public double[] CmaDiff() {
+      public double Diff(double current) { return current - CmaArray[0].Value; }
+      public double[] Diffs() {
         var diffs = new List<double>();
         for (var i = 1; i < CmaArray.Length; i++)
           diffs.Add((CmaArray[i-1].GetValueOrDefault() - CmaArray[i]).GetValueOrDefault());

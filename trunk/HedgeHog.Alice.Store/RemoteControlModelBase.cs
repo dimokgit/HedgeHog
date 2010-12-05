@@ -72,18 +72,22 @@ namespace HedgeHog.Alice.Store {
       VirtualPair = e.Pair;
 
       var tm = GetTradingMacro(e.Pair);
+      if (tm.Strategy == Strategies.None) { MessageBox.Show("No strategy, dude!"); return; }
       tm.ResetSessionId();
       VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * tm.LimitBar); ;
       var minutesPerPeriod = tm.LimitBar;
-      var ratesBuffer = GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod);
+      var ratesBuffer = GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod).ToList();
       Func<Rate, DateTime, bool> dateFilter = (r, d) => r.StartDate >= d && r.StartDate < VirtualStartDate.AddMonths(e.MonthToTest);
       Func<DateTime, Rate> getRateBuffer = d => {
-        var rate = ratesBuffer.Where(r => dateFilter(r, d)).FirstOrDefault();
-        if (rate == null) {
+        if (ratesBuffer.Count == 0) {
           ratesBuffer = GetRateFromDB(VirtualPair, d, tm.BarsCount, minutesPerPeriod);
-          if (ratesBuffer.Length == 0) return null;
+          if (ratesBuffer.Count() == 0) return null;
         }
-        return ratesBuffer.Where(r => dateFilter(r, d)).FirstOrDefault();
+        try {
+          return ratesBuffer[0];
+        } finally {
+          ratesBuffer.RemoveAt(0);
+        }
       };
       backTestThread = Task.Factory.StartNew(() => {
         try {
@@ -91,12 +95,15 @@ namespace HedgeHog.Alice.Store {
           var rates = GetRatesByPairRaw(VirtualPair);
           rates.Clear();
           rates.AddRange(ratesBuffer.Take(tm.BarsCount));
+          ratesBuffer.RemoveRange(0, tm.BarsCount);
           tradesManager.ClosePair(VirtualPair);
-          tm.CurrentLoss = 0;
-          tm.MinimumGross = 0;
-          tm.HistoryMaximumLot = 0;
-          tm.RunningBalance = 0;
-          tm.StrategyScoresReset();
+          if (e.ClearTest) {
+            tm.CurrentLoss = 0;
+            tm.MinimumGross = 0;
+            tm.HistoryMaximumLot = 0;
+            tm.RunningBalance = 0;
+            tm.StrategyScoresReset();
+          }
           var maPeriod = tm.LongMAPeriod;
           ManualResetEvent suspendEvent = new ManualResetEvent(false);
           while (rates.Count() > 0) {
@@ -108,6 +115,7 @@ namespace HedgeHog.Alice.Store {
               rates.Clear();
               ratesBuffer = GetRateFromDBBackward(e.Pair, dateStart, tm.BarsCount, tm.LimitBar);
               rates.AddRange(ratesBuffer.Take(tm.BarsCount));
+              ratesBuffer.RemoveRange(0, tm.BarsCount);
               e.StepBack = false;
             }
             if (e.Delay != 0)
@@ -145,14 +153,14 @@ namespace HedgeHog.Alice.Store {
       }, ct);
     }
 
-    private static Rate[] GetRateFromDB(string pair, DateTime startDate, int barsCount, int minutesPerBar) {
+    private static List<Rate> GetRateFromDB(string pair, DateTime startDate, int barsCount, int minutesPerBar) {
       var bars = GlobalStorage.ForexContext.t_Bar.
         Where(b => b.Pair == pair && b.Period == minutesPerBar && b.StartDate >= startDate)
         .OrderBy(b => b.StartDate).Take(barsCount);
       return GetRatesFromDBBars(bars);
     }
 
-    private static Rate[] GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {
+    private static List<Rate> GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {
       IQueryable<Store.t_Bar> bars;
       if (minutesPerPriod == 0) {
         bars = GlobalStorage.ForexContext.t_Bar
@@ -167,7 +175,7 @@ namespace HedgeHog.Alice.Store {
       return GetRatesFromDBBars(bars);
     }
 
-    private static Rate[] GetRatesFromDBBars(IQueryable<t_Bar> bars) {
+    private static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {
       var ratesList = new List<Rate>();
       bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDate)));
       //var rates = from b in bars
@@ -177,7 +185,7 @@ namespace HedgeHog.Alice.Store {
       //                //StartDate = b.StartDate
       //              };
       //return rates.OrderBars().ToArray();
-      return ratesList.OrderBars().ToArray();
+      return ratesList.OrderBars().ToList();
     }
     void OrderToNoLossHandler(object sender, OrderEventArgs e) {
       tradesManager.DeleteEntryOrderLimit(e.Order.OrderID);
@@ -323,7 +331,7 @@ namespace HedgeHog.Alice.Store {
     }
     protected PriceBar[] FetchPriceBars(string pair, int rowOffset, bool reversePower, DateTime dateStart) {
       var isLong = dateStart == DateTime.MinValue;
-      var rs = GetRatesByPair(pair).GroupTicksToRates();
+      var rs = GetRatesByPair(pair).Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
       ratesForDensity.Index();
       SetPriceBars(pair,isLong, ratesForDensity.GetPriceBars(tradesManager.GetPipSize(pair), rowOffset));
@@ -341,34 +349,32 @@ namespace HedgeHog.Alice.Store {
         if (rates.Count == 0 /*|| !IsTradingHours(tm.Trades, rates.Last().StartDate)*/) return;
         if (false && !tm.IsTradingHours) return;
         #region Prepare Corridor
-        var spreadShort = rates.Skip(rates.Count() - 10).ToArray().AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
-        var spreadLong = rates.AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
+        var ratesForSpread = tm.LimitBar == 0?rates.GetMinuteTicks(1).OrderBars().ToArray() :rates.ToArray();
+        var spreadShort = ratesForSpread.Skip(ratesForSpread.Count() - 10).ToArray().AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
+        var spreadLong = ratesForSpread.AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
         var spread = tradesManager.InPips(pair, Math.Max(spreadLong, spreadShort));
-        var corridorMinimum = tm.CorridorHeightBySpreadRatio * (spread + MasterModel.CommissionByTrade(new Trade() { Lots = 10000 }));
-        Func<CorridorStatistics, double> heightToMinimum = cs => corridorMinimum / tradesManager.InPips(pair, cs.HeightUpDown);
-        Func<CorridorStatistics, bool> filter = cs => heightToMinimum(cs) < 1;
         var priceBars = FetchPriceBars(pair, tm.PowerRowOffset, tm.ReversePower).OrderByDescending(pb => pb.StartDate).ToArray();
         var powerBars = priceBars.Select(pb => pb.Power).ToArray();
-        var stAvgPower = powerBars.Average();
-        var stDevPower = powerBars.StdDev();
         var powerBarShort = priceBars.Take((priceBars.Count() / 10.0).ToInt()).OrderBy(pb => pb.Power).Last();
-        var powerCurrent = powerBarShort.Power;
-        tm.PowerVolatility = (powerCurrent - stAvgPower) / stDevPower;
         tm.PowerAverage = powerBars.AverageByIterations((v, a) => v >= a, tm.IterationsForPower).Average();//stAvgPower + stDevPower * tm.PowerVolatilityMinimum
-        var powerMin = tm.PowerAverage;
-        var priceBarsForCorridor = priceBars.Skip((rates.Count() / 4.0).ToInt()).ToArray();
+        var corridorMinimum = tm.CorridorHeightBySpreadRatio * tm.PowerAverage * (spread + MasterModel.CommissionByTrade(new Trade() { Lots = 10000 }));
+        Func<CorridorStatistics, double> heightToMinimum = cs => corridorMinimum / tradesManager.InPips(pair, cs.HeightUpDown);
+        Func<CorridorStatistics, bool> filter = cs => heightToMinimum(cs) < 1;
+        var powerMinimum = tm.PowerAverage;
+        var powerAverage = priceBars.Average(pb => pb.Power);
+        var priceBarsForCorridor = priceBars.SkipWhile(pb => pb.Power > powerAverage).ToArray();
         var priceBarDates = priceBarsForCorridor
-          .Where(pb => pb.Spread > corridorMinimum && pb.Power > powerMin)
+          .Where(pb => pb.Spread > corridorMinimum && pb.Power > powerMinimum)
           .Select(pb => pb.StartDate).DefaultIfEmpty(DateTime.MaxValue);
         var powerStart = tm.TradeByFirstWave.HasValue ? !tm.TradeByFirstWave.Value ? priceBarDates.Min() : priceBarDates.Max() : DateTime.MinValue;
         var powerBar = !tm.TradeByFirstWave.HasValue ? priceBarsForCorridor.OrderBy(pb => pb.Power).Last() :
           !tm.TradeByFirstWave.Value
-          ? priceBarsForCorridor.OrderBy(pb => pb.StartDate).SkipWhile(pb => pb.StartDate < powerStart).TakeWhile(pb => pb.Power > powerMin).OrderBy(pb => pb.Power).Last()
-          : priceBarsForCorridor.OrderByDescending(pb => pb.StartDate).SkipWhile(pb => pb.StartDate > powerStart).TakeWhile(pb => pb.Power > powerMin).OrderBy(pb => pb.Power).Last();
+          ? priceBarsForCorridor.OrderBy(pb => pb.StartDate).SkipWhile(pb => pb.StartDate < powerStart).TakeWhile(pb => pb.Power > powerMinimum).OrderBy(pb => pb.Power).Last()
+          : priceBarsForCorridor.OrderByDescending(pb => pb.StartDate).SkipWhile(pb => pb.StartDate > powerStart).TakeWhile(pb => pb.Power > powerMinimum).OrderBy(pb => pb.Power).Last();
         var startDate = tm.CorridorStartDate ?? powerBar.StartDate;
         var periodsLength = startDate == null ? tm.CorridorPeriodsLength : 1;
         var periodsStart = Math.Min(rates.Count - 1, startDate == null ? tm.CorridorPeriodsStart : rates.Count(r => r.StartDate >= startDate));
-        var corridornesses = rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, tm.IterationsForCorridorHeights, tm.CorridorPeriodsLength > rates.Count)
+        var corridornesses = rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, tm.IterationsForCorridorHeights, false)
           //.Where(c => tradesManager.InPips(tm.Pair, c.Value.HeightUpDown) > 0)
           .Select(c => c.Value).ToArray();
         var corridorBig = rates.ScanCorridorWithAngle(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, tm.IterationsForCorridorHeights, false);
@@ -395,6 +401,13 @@ namespace HedgeHog.Alice.Store {
           tm.CorridorStats = tm.GetCorridorStats().Last();
           tm.TakeProfitPips = tm.CorridorHeightByRegressionInPips;
           tm.RangeCorridorHeight = corridornesses.Last().HeightUpDown;
+          var priceBarsShort = FetchPriceBars(pair,tm.PowerRowOffset,tm.ReversePower,tm.CorridorStats.StartDate)
+            .OrderByDescending(pb=>pb.StartDate).ToArray();
+          var stAvgPower = priceBarsShort.Average(pb=>pb.Power);
+          var stDevPower = priceBarsShort.StdDev(pb => pb.Power);
+          tm.PowerCurrent = priceBarsShort[0].Power;
+          tm.PowerVolatility = stAvgPower + stDevPower * tm.PowerVolatilityMinimum;
+
         } else {
           throw new Exception("No corridors found for current range.");
         }

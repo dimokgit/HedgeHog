@@ -219,10 +219,10 @@
                   FontWeight="{Binding IsCorridorToRangeRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <TextBlock Text="{Binding CorridorAngle,StringFormat={}{0:n2}/}" ToolTip="Corridor Angle" />
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips" />
+                <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=:{0:n0}]}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <TextBlock Text="{Binding PowerVolatility,StringFormat=/{0:n1}}" ToolTip="Power Volatility" 
-                  FontWeight="{Binding IsPowerVolatilityOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                  FontWeight="{Binding IsPowerOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
                 />
                 <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
@@ -267,13 +267,25 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridComboBoxColumn Header="Str" SelectedValueBinding="{Binding Strategy}" ItemsSource="{Binding Source={StaticResource StrategyValues}}" />
-        <DataGridTemplateColumn Header="Strategy" IsReadOnly="True">
+        <DataGridTemplateColumn Header="Strategy">
           <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <StackPanel>
+                <TextBlock Text="{Binding Strategy}"></TextBlock>
+                <TextBlock ToolTip="Close On Profit">
+                  CP: <CheckBox IsChecked="{Binding CloseOnProfit}"/>
+                </TextBlock>
+                <TextBlock ToolTip="Close On Profit Only">
+                  CPO: <CheckBox IsChecked="{Binding CloseOnProfitOnly}"/>
+                </TextBlock>
+              </StackPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
             <DataTemplate>
               <ComboBox SelectedValue="{Binding Strategy,Mode=TwoWay}" ItemsSource="{Binding Source={StaticResource StrategyValues}}"/>
             </DataTemplate>
-          </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
         <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTemplateColumn Header="RateTime">

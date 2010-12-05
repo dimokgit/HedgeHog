@@ -88,12 +88,46 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
+      //AddTicks(0, "EUR/USD");
       SavePair(0, "EUR/USD");
-      return;
       SavePair(1, "EUR/USD");
       SavePair(5, "EUR/USD");
       SavePair(15, "EUR/USD");
       SavePair(60, "EUR/USD");
+    }
+
+    private void AddTicks(int period, string pair) {
+      using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
+        var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
+        var ticks = o2g.GetBarsBase(pair, period,dateStart.AddHours(-1), dateStart);
+        while (ticks.Count() > 0) {
+          var i = 0;
+          foreach (var t in ticks) {
+            var bar = context.CreateObject<t_Bar>();
+            bar.Pair = pair;
+            bar.Period = period;
+            bar.StartDate = t.StartDate;
+            bar.AskHigh = t.AskHigh;
+            bar.AskLow = t.AskLow;
+            bar.AskOpen = t.AskOpen;
+            bar.AskClose = t.AskClose;
+            bar.BidHigh = t.BidHigh;
+            bar.BidLow = t.BidLow;
+            bar.BidOpen = t.BidOpen;
+            bar.BidClose = t.BidClose;
+            context.t_Bar.AddObject(bar);
+            if (i++ % 1000 == 0)
+              try {
+                context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+              } catch (Exception exc) {
+                Debug.WriteLine(exc);
+              }
+          }
+          dateStart = dateStart.AddHours(-1);
+          ticks = o2g.GetBarsBase(pair, period, dateStart.AddHours(-1), dateStart);
+          context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+        }
+      }
     }
 
     private void SavePair(int period, string pair) {

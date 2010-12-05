@@ -587,27 +587,31 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Get (Ticks/Bars)
+    private static object lockHistory = new object();
+
     public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate) {
       return GetTicks(pair, startDate, endDate, maxTicks);
     }
-    private static object lockHistory = new object();
     public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate, int barsMax) {
       lock (lockHistory) {
+        if (endDate != FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
+        startDate = ConvertDateToUTC(startDate);
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
-         ((FXCore.MarketRateEnumAut)Desk.GetPriceHistory(pair, "t1", startDate, endDate, barsMax, true, true))
+         ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, "t1", startDate, endDate, barsMax, true, true))
          .Cast<FXCore.MarketRateAut>().ToArray();
         //);
-        return mr.Select((r, i) => new Tick(r.StartDate, r.AskOpen, r.BidOpen, i, true)).ToArray();
+        return mr.Select((r, i) => new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true)).ToArray();
       }
     }
 
     public Tick[] GetTicks(string pair, int tickCount) {
       DateTime startDate = DateTime.MinValue;
-      var ticks = GetTicks(pair, startDate, FX_DATE_NOW,tickCount);
+      var endDate = ServerTime;
+      var ticks = GetTicks(pair, startDate, endDate);
       int timeoutCount = 2;
       if (ticks.Count() > 0) {
         var dateMin = ticks.Min(b => b.StartDate);
-        var endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
+        endDate = ticks.SkipWhile(ts => ts.StartDate == dateMin).First().StartDate;
         while (ticks.Count() < tickCount) {
           try {
             var t = GetTicks(pair, startDate, endDate);
