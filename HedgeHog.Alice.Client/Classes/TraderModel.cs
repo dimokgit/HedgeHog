@@ -136,6 +136,18 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    private bool _VirtualClearTest = true;
+    public bool VirtualClearTest {
+      get { return _VirtualClearTest; }
+      set {
+        if (_VirtualClearTest != value) {
+          _VirtualClearTest = value;
+          this.BackTestEventArgs.Pause = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
     private int _VirtualMonthsToTest = 12;
     public int VirtualMonthsToTest {
       get { return _VirtualMonthsToTest; }
@@ -794,7 +806,7 @@ namespace HedgeHog.Alice.Client {
     BackTestEventArgs BackTestEventArgs;
     void BackTest() {
       if (StartBackTesting != null)
-        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualPair, VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause));
+        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualPair, VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause, VirtualClearTest));
     }
 
     #endregion

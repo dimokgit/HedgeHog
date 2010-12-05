@@ -124,6 +124,11 @@
           <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
           <Property Name="ReversePower" Type="bit" Nullable="false" />
           <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
+          <Property Name="TradeByPowerVolatilty" Type="bit" Nullable="false" />
+          <Property Name="TradeByPowerAverage" Type="bit" Nullable="false" />
+          <Property Name="CloseOnProfitOnly" Type="bit" Nullable="false" />
+          <Property Name="CloseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="CloseOnOpen" Type="bit" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -199,6 +204,11 @@
           <Property Type="Double" Name="RangeRatioForTradeStop" Nullable="false" />
           <Property Type="Boolean" Name="ReversePower" Nullable="false" />
           <Property Type="Double" Name="CorrelationTreshold" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByPowerVolatilty" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByPowerAverage" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnProfitOnly" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnProfit" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnOpen" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -268,7 +278,12 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
+            <ScalarProperty Name="CloseOnOpen" ColumnName="CloseOnOpen" />
+                <ScalarProperty Name="CloseOnProfit" ColumnName="CloseOnProfit" />
+                <ScalarProperty Name="CloseOnProfitOnly" ColumnName="CloseOnProfitOnly" />
+                <ScalarProperty Name="TradeByPowerAverage" ColumnName="TradeByPowerAverage" />
+                <ScalarProperty Name="TradeByPowerVolatilty" ColumnName="TradeByPowerVolatilty" />
+                <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
                 <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
                 <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
                 <ScalarProperty Name="PowerVolatilityMinimum" ColumnName="PowerVolatilityMinimum" />

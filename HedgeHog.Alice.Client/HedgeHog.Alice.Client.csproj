@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_03\</OutputPath>
+    <OutputPath>bin\Debug_02\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -55,9 +55,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Interop.FXCore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>obj\x86\Debug\Interop.FXCore.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <SpecificVersion>False</SpecificVersion>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -348,6 +345,10 @@
     <ProjectReference Include="..\PropertyGrid\WPG\WPG.csproj">
       <Project>{022EDA6A-0B76-44C3-A530-8312C1B40030}</Project>
       <Name>WPG</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RunWithTimeout\RunWithTimeout.csproj">
+      <Project>{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}</Project>
+      <Name>RunWithTimeout</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

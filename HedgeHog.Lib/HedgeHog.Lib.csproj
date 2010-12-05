@@ -38,7 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DynamicLinq">
-      <HintPath>Z:\Data\Install\MicroSoft\DynamicLinq.dll</HintPath>
+      <HintPath>..\..\DynamicLinq.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore">
       <RequiredTargetFramework>3.0</RequiredTargetFramework>

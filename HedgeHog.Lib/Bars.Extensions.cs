@@ -245,10 +245,13 @@ namespace HedgeHog.Bars {
     }
     #endregion
 
-    public static double Height(this IEnumerable<Rate> rates) {
+    public static double Height(this ICollection<Rate> rates) {
       return rates.Max(r => r.PriceAvg) - rates.Min(r => r.PriceAvg);
     }
-    public static TimeSpan Duration(this IEnumerable<Rate> rates, TimeSpan durationMax) {
+    public static TimeSpan Duration(this ICollection<Rate> rates) {
+      return rates.Max(r => r.StartDate) - rates.Min(r => r.StartDate);
+    }
+    public static TimeSpan Duration(this ICollection<Rate> rates, TimeSpan durationMax) {
       var sw = Stopwatch.StartNew();
       Rate prev = null; ;
       TimeSpan duration = TimeSpan.Zero;
@@ -516,24 +519,15 @@ namespace HedgeHog.Bars {
       return count / (bo.Last().StartDate - bo.First().StartDate).TotalMinutes;
     }
 
-    public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period, bool round) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period, round);
-    }
-    public static Rate[] GetMinuteTicks<TBar>(this List<TBar> fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period, false);
-    }
-    public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period, bool round) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period, round);
+    public static Rate[] GetMinuteTicks<TBar>(this ICollection<TBar> fxTicks, int period) where TBar : BarBase {
+      return fxTicks.GetMinuteTicks(period, false);
     }
     //static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool round) where TBar : BarBase {
     //  if (!round) return GetMinuteTicksCore(fxTicks, period,false);
     //  var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
     //  return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period,false);
     //}
-    public static Rate[] GetMinuteTicks<TBar>(this TBar[] fxTicks, int period) where TBar : BarBase {
-      return fxTicks.GetMinuteTicksCore(period, false);
-    }
-    static Rate[] GetMinuteTicksCore<TBar>(this IEnumerable<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
+    static Rate[] GetMinuteTicks<TBar>(this ICollection<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
       fxTicks = fxTicks.OrderBarsDescending().ToArray();
       if (fxTicks.Count() == 0) return new Rate[] { };
       var startDate = fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate);
@@ -1000,20 +994,22 @@ namespace HedgeHog.Bars {
       DateTime firstBarDate = DateTime.MaxValue;
       int digits = 4;
       Func<int, double> calcRowOffest = i => Math.Pow(rowCountOffset, 1 / Math.Pow(i, 1 / 4.0));
-      var rates_01 = Rates.Select(((r, i) =>
+      var rates_01 = Rates.Select(((r, i) =>{
+        return
 new {
   AskHigh = askMax = Math.Max(askMax, r.AskHigh).Round(digits),
   AskLow = askMin = Math.Min(askMin, r.AskLow).Round(digits),
   BidLow = bidMin = Math.Round(Math.Min(bidMin, r.BidLow), digits),
   BidHigh = bidMax = Math.Round(Math.Max(bidMax, r.BidHigh), digits),
-  SpreadAsk = spreadAsk = Math.Max((double)(r.AskHigh - Rates.Take((i + 1)).Min((al => al.AskLow))),
-               Rates.Take(i + 1).Max((al => al.AskHigh)) - r.AskLow),
-  SpreadBid = spreadBid = Math.Max((r.BidHigh - Rates.Take(i + 1).Min(al => al.BidLow)),
-               Rates.Take(i + 1).Max(((al => al.BidHigh))) - r.BidLow),
+  SpreadAsk = spreadAsk = Math.Max(r.AskHigh - askMin/* Rates.Take((i + 1)).Min((al => al.AskLow))*/,
+               /*Rates.Take(i + 1).Max((al => al.AskHigh))*/askMax - r.AskLow),
+  SpreadBid = spreadBid = Math.Max(r.BidHigh - bidMin/*Rates.Take(i + 1).Min(al => al.BidLow)*/,
+               /*Rates.Take(i + 1).Max(((al => al.BidHigh)))*/bidMax - r.BidLow),
   StartDate = (i == 0) ? (firstBarDate = r.StartDate) : r.StartDate,
   Row = rowCurr = Math.Min(/*(serverTime - firstBarDate).TotalMinutes / (periodMin)*/0, 0.0) + i,
   SpeedAsk = spreadAsk / ((rowCurr + calcRowOffest(i + 1)) * periodMin),
   SpeedBid = spreadBid / ((rowCurr + calcRowOffest(i + 1)) * periodMin)
+};
 })).ToArray();
       return rates_01
         .Select(((r, i) => new PriceBar { AskHigh = r.AskHigh, AskLow = r.AskLow, BidLow = r.BidLow, BidHigh = r.BidHigh, 

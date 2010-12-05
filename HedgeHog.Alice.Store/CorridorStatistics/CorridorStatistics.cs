@@ -303,9 +303,10 @@ namespace HedgeHog.Alice.Store {
     bool canSell { get { return TradeDirection != TradeDirections.Up && (!TradingMacro.TradeByAngle || TradingMacro.CorridorAngle > 0); } }
     public bool? CloseSignal {
       get {
+        if (TradingMacro.CloseOnOpen) return null;
         switch (TradingMacro.Strategy) {
           case Strategies.Range:
-            var r = OpenRange(0,100);
+            var r = OpenRange(0, 100);
             return r.HasValue ? !r : null;
           case Strategies.Breakout:
             var b = OpenBreakout(0, 100);
@@ -332,6 +333,13 @@ namespace HedgeHog.Alice.Store {
     private bool? OpenRange(int level, double m) {
       if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return false;
       if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return true;
+      return null;
+    }
+    private bool? CloseRange() {
+      var rl = RateForDiffHigh;
+      if (rl != null && diffPriceHigh(rl) - rl.PriceAvg1 < 0) return false;
+      rl = RateForDiffLow;
+      if (rl != null && diffPriceLow(rl) - rl.PriceAvg1 > 0) return true;
       return null;
     }
     private bool? OpenBreakout(int level, double m) {
