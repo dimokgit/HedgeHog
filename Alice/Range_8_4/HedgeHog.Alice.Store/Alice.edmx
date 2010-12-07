@@ -1,0 +1,427 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="AliceModelStoreContainer">
+          <EntitySet Name="Bar" EntityType="AliceModel.Store.Bar" store:Type="Tables" />
+          <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" />
+          <EntitySet Name="TradeHistory" EntityType="AliceModel.Store.TradeHistory" store:Type="Tables" />
+          <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
+          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
+        </EntityContainer>
+        <EntityType Name="Bar">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Pair" Type="nchar" MaxLength="10" />
+          <Property Name="Period" Type="int" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="AskHigh" Type="float" Nullable="false" />
+          <Property Name="AskLow" Type="float" Nullable="false" />
+          <Property Name="AskOpen" Type="float" Nullable="false" />
+          <Property Name="AskClose" Type="float" Nullable="false" />
+          <Property Name="BidHigh" Type="float" Nullable="false" />
+          <Property Name="BidLow" Type="float" Nullable="false" />
+          <Property Name="BidOpen" Type="float" Nullable="false" />
+          <Property Name="BidClose" Type="float" Nullable="false" />
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+        </EntityType>
+        <EntityType Name="OrderTemplate">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" Nullable="false" />
+          <Property Name="Stop" Type="int" Nullable="false" />
+          <Property Name="Limit" Type="int" Nullable="false" />
+          <Property Name="Price" Type="float" Nullable="false" />
+          <Property Name="Lot" Type="int" Nullable="false" />
+          <Property Name="StopOrderID" Type="int" Nullable="false" />
+          <Property Name="Pair" Type="nvarchar" MaxLength="7" />
+        </EntityType>
+        <EntityType Name="TradeHistory">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="Buy" Type="bit" Nullable="false" />
+          <Property Name="PL" Type="real" Nullable="false" />
+          <Property Name="GrossPL" Type="real" Nullable="false" />
+          <Property Name="Lot" Type="int" Nullable="false" />
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="TimeOpen" Type="datetime" Nullable="false" />
+          <Property Name="TimeClose" Type="datetime" Nullable="false" />
+          <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="Commission" Type="real" Nullable="false" />
+          <Property Name="IsVirtual" Type="bit" Nullable="false" />
+          <Property Name="TimeStamp" Type="datetime" />
+          <Property Name="CorridorHeightInPips" Type="int" Nullable="false" />
+          <Property Name="CorridorMinutesBack" Type="int" Nullable="false" />
+          <Property Name="SessionId" Type="uniqueidentifier" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TradingAccount">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Password" Type="nvarchar" Nullable="false" MaxLength="50" />
+          <Property Name="MasterId" Type="nvarchar" MaxLength="50" />
+          <Property Name="IsDemo" Type="bit" Nullable="false" />
+          <Property Name="AccountId" Type="nvarchar" MaxLength="50" />
+          <Property Name="Id" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="IsMaster" Type="bit" Nullable="false" />
+          <Property Name="TradeRatio" Type="nvarchar" Nullable="false" MaxLength="6" />
+          <Property Name="Commission" Type="float" Nullable="false" />
+          <Property Name="IsActive" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+        </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="TradingRatio" Type="float" Nullable="false" />
+          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="LimitBar" Type="int" Nullable="false" />
+          <Property Name="CurrentLoss" Type="float" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="FreezLimit" Type="int" Nullable="false" />
+          <Property Name="CorridorMethod" Type="int" Nullable="false" />
+          <Property Name="FreezeStop" Type="int" Nullable="false" />
+          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="8" />
+          <Property Name="FibMin" Type="float" Nullable="false" />
+          <Property Name="CorridornessMin" Type="float" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
+          <Property Name="CorridorIterations" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
+          <Property Name="PairIndex" Type="int" Nullable="false" />
+          <Property Name="TradingGroup" Type="int" Nullable="false" />
+          <Property Name="MaximumPositions" Type="int" Nullable="false" />
+          <Property Name="IsActive" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="LimitCorridorByBarHeight" Type="bit" Nullable="false" />
+          <Property Name="MaxLotByTakeProfitRatio" Type="float" Nullable="false" />
+          <Property Name="BarPeriodsLow" Type="int" Nullable="false" />
+          <Property Name="BarPeriodsHigh" Type="int" Nullable="false" />
+          <Property Name="StrictTradeClose" Type="bit" Nullable="false" />
+          <Property Name="BarPeriodsLowHighRatio" Type="float" Nullable="false" />
+          <Property Name="LongMAPeriod" Type="int" Nullable="false" />
+          <Property Name="CorridorAverageDaysBack" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsStart" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsLength" Type="int" Nullable="false" />
+          <Property Name="CorridorStartDate" Type="datetime" />
+          <Property Name="CorridorRatioForRange" Type="float" Nullable="false" />
+          <Property Name="CorridorRatioForBreakout" Type="float" Nullable="false" />
+          <Property Name="RangeRatioForTradeLimit" Type="float" Nullable="false" />
+          <Property Name="TradeByAngle" Type="bit" Nullable="false" />
+          <Property Name="ProfitToLossExitRatio" Type="float" Nullable="false" />
+          <Property Name="CorridorHeightBySpreadRatio" Type="float" Nullable="false" />
+          <Property Name="TradeByFirstWave" Type="bit" />
+          <Property Name="PowerRowOffset" Type="int" Nullable="false" />
+          <Property Name="PowerVolatilityMinimum" Type="float" Nullable="false" />
+          <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
+          <Property Name="ReversePower" Type="bit" Nullable="false" />
+          <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
+          <Property Name="TradeByPowerVolatilty" Type="bit" Nullable="false" />
+          <Property Name="TradeByPowerAverage" Type="bit" Nullable="false" />
+          <Property Name="CloseOnProfitOnly" Type="bit" Nullable="false" />
+          <Property Name="CloseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="CloseOnOpen" Type="bit" Nullable="false" />
+          <Property Name="StreachTradingDistance" Type="bit" Nullable="false" />
+          <Property Name="CloseAllOnProfit" Type="bit" Nullable="false" />
+          <Property Name="ReverseStrategy" Type="bit" Nullable="false" />
+          <Property Name="TradeAndAngleSynced" Type="bit" Nullable="false" />
+          <Property Name="TradingAngleRange" Type="float" Nullable="false" />
+        </EntityType>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="AliceModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
+          <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
+          <EntitySet Name="Bars" EntityType="AliceModel.Bar" />
+          <EntitySet Name="TradeHistories" EntityType="AliceModel.TradeHistory" />
+          <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
+        </EntityContainer>
+        <EntityType Name="TradingAccount">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Password" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="MasterId" Type="String" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="IsDemo" Type="Boolean" Nullable="false" />
+          <Property Name="AccountId" Type="String" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="Id" Type="Guid" Nullable="false" />
+          <Property Name="IsMaster" Type="Boolean" Nullable="false" />
+          <Property Name="TradeRatio" Type="String" Nullable="false" MaxLength="6" Unicode="true" FixedLength="false" />
+          <Property Name="Commission" Type="Double" Nullable="false" />
+          <Property Type="Boolean" Name="IsActive" Nullable="false" />
+          <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="7" Unicode="true" FixedLength="false" />
+          <Property Name="TradingRatio" Type="Double" Nullable="false" />
+          <Property Name="UID" Type="Guid" Nullable="false" />
+          <Property Name="LimitBar" Type="Int32" Nullable="false" />
+          <Property Name="CurrentLoss" Type="Double" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="Boolean" Nullable="false" />
+          <Property Name="FreezLimit" Type="Int32" Nullable="false" />
+          <Property Name="CorridorMethod" Type="Int32" Nullable="false" />
+          <Property Name="FreezeStop" Type="Int32" Nullable="false" />
+          <Property Name="FibMax" Type="String" Nullable="false" MaxLength="8" Unicode="true" FixedLength="false" />
+          <Property Name="FibMin" Type="Double" Nullable="false" />
+          <Property Name="CorridornessMin" Type="Double" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterations" Type="String" Nullable="false" MaxLength="16" Unicode="true" FixedLength="false" />
+          <Property Name="CorridorBarMinutes" Type="Int32" Nullable="false" />
+          <Property Name="PairIndex" Type="Int32" Nullable="false" />
+          <Property Name="TradingGroup" Type="Int32" Nullable="false" />
+          <Property Name="MaximumPositions" Type="Int32" Nullable="false" />
+          <Property Type="Boolean" Name="IsActive" Nullable="false" />
+          <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="LimitCorridorByBarHeight" Nullable="false" />
+          <Property Type="Double" Name="MaxLotByTakeProfitRatio" Nullable="false" />
+          <Property Type="Int32" Name="BarPeriodsLow" Nullable="false" />
+          <Property Type="Int32" Name="BarPeriodsHigh" Nullable="false" />
+          <Property Type="Boolean" Name="StrictTradeClose" Nullable="false" />
+          <Property Type="Double" Name="BarPeriodsLowHighRatio" Nullable="false" />
+          <Property Type="Int32" Name="LongMAPeriod" Nullable="false" />
+          <Property Type="Int32" Name="CorridorAverageDaysBack" Nullable="false" />
+          <Property Type="Int32" Name="CorridorPeriodsStart" Nullable="false" />
+          <Property Type="Int32" Name="CorridorPeriodsLength" Nullable="false" />
+          <Property Type="DateTime" Name="CorridorStartDate" />
+          <Property Type="Double" Name="CorridorRatioForRange" Nullable="false" />
+          <Property Type="Double" Name="CorridorRatioForBreakout" Nullable="false" />
+          <Property Type="Double" Name="RangeRatioForTradeLimit" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByAngle" Nullable="false" />
+          <Property Type="Double" Name="ProfitToLossExitRatio" Nullable="false" />
+          <Property Type="Double" Name="CorridorHeightBySpreadRatio" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByFirstWave" Nullable="true" />
+          <Property Type="Int32" Name="PowerRowOffset" Nullable="false" />
+          <Property Type="Double" Name="PowerVolatilityMinimum" Nullable="false" />
+          <Property Type="Double" Name="RangeRatioForTradeStop" Nullable="false" />
+          <Property Type="Boolean" Name="ReversePower" Nullable="false" />
+          <Property Type="Double" Name="CorrelationTreshold" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByPowerVolatilty" Nullable="false" />
+          <Property Type="Boolean" Name="TradeByPowerAverage" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnProfitOnly" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnProfit" Nullable="false" />
+          <Property Type="Boolean" Name="CloseOnOpen" Nullable="false" />
+          <Property Type="Boolean" Name="StreachTradingDistance" Nullable="false" />
+          <Property Type="Boolean" Name="CloseAllOnProfit" Nullable="false" />
+          <Property Type="Boolean" Name="ReverseStrategy" Nullable="false" />
+          <Property Type="Boolean" Name="TradeAndAngleSynced" Nullable="false" />
+          <Property Type="Double" Name="TradingAngleRange" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Bar">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Pair" MaxLength="10" FixedLength="true" Unicode="true" />
+          <Property Type="Int32" Name="Period" />
+          <Property Type="DateTime" Name="StartDate" />
+          <Property Type="Double" Name="AskHigh" Nullable="false" />
+          <Property Type="Double" Name="AskLow" Nullable="false" />
+          <Property Type="Double" Name="AskOpen" Nullable="false" />
+          <Property Type="Double" Name="AskClose" Nullable="false" />
+          <Property Type="Double" Name="BidHigh" Nullable="false" />
+          <Property Type="Double" Name="BidLow" Nullable="false" />
+          <Property Type="Double" Name="BidOpen" Nullable="false" />
+          <Property Type="Double" Name="BidClose" Nullable="false" />
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+        </EntityType>
+        <EntityType Name="TradeHistory">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Id" Nullable="false" MaxLength="10" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="Buy" Nullable="false" />
+          <Property Type="Single" Name="PL" Nullable="false" />
+          <Property Type="Single" Name="GrossPL" Nullable="false" />
+          <Property Type="Int32" Name="Lot" Nullable="false" />
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="TimeOpen" Nullable="false" />
+          <Property Type="DateTime" Name="TimeClose" Nullable="false" />
+          <Property Type="String" Name="AccountId" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Type="Single" Name="Commission" Nullable="false" />
+          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
+          <Property Type="DateTime" Name="TimeStamp" />
+          <Property Type="Int32" Name="CorridorHeightInPips" Nullable="false" />
+          <Property Type="Int32" Name="CorridorMinutesBack" Nullable="false" />
+          <Property Type="Guid" Name="SessionId" Nullable="false" />
+        </EntityType>
+        <EntityType Name="OrderTemplate">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" />
+          <Property Type="Int32" Name="Stop" Nullable="false" />
+          <Property Type="Int32" Name="Limit" Nullable="false" />
+          <Property Type="Double" Name="Price" Nullable="false" />
+          <Property Type="Int32" Name="Lot" Nullable="false" />
+          <Property Type="Int32" Name="StopOrderID" Nullable="false" />
+          <Property Type="String" Name="Pair" MaxLength="7" FixedLength="false" Unicode="true" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
+          <EntitySetMapping Name="TradingAccounts"><EntityTypeMapping TypeName="AliceModel.TradingAccount"><MappingFragment StoreEntitySet="TradingAccount">
+            <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+                <ScalarProperty Name="IsActive" ColumnName="IsActive" />
+                <ScalarProperty Name="Password" ColumnName="Password" />
+            <ScalarProperty Name="MasterId" ColumnName="MasterId" />
+            <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
+            <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+            <ScalarProperty Name="Id" ColumnName="Id" />
+            <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
+            <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
+            <ScalarProperty Name="Commission" ColumnName="Commission" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
+            <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
+                <ScalarProperty Name="TradeAndAngleSynced" ColumnName="TradeAndAngleSynced" />
+                <ScalarProperty Name="ReverseStrategy" ColumnName="ReverseStrategy" />
+                <ScalarProperty Name="CloseAllOnProfit" ColumnName="CloseAllOnProfit" />
+                <ScalarProperty Name="StreachTradingDistance" ColumnName="StreachTradingDistance" />
+                <ScalarProperty Name="CloseOnOpen" ColumnName="CloseOnOpen" />
+                <ScalarProperty Name="CloseOnProfit" ColumnName="CloseOnProfit" />
+                <ScalarProperty Name="CloseOnProfitOnly" ColumnName="CloseOnProfitOnly" />
+                <ScalarProperty Name="TradeByPowerAverage" ColumnName="TradeByPowerAverage" />
+                <ScalarProperty Name="TradeByPowerVolatilty" ColumnName="TradeByPowerVolatilty" />
+                <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
+                <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
+                <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
+                <ScalarProperty Name="PowerVolatilityMinimum" ColumnName="PowerVolatilityMinimum" />
+                <ScalarProperty Name="PowerRowOffset" ColumnName="PowerRowOffset" />
+                <ScalarProperty Name="TradeByFirstWave" ColumnName="TradeByFirstWave" />
+                <ScalarProperty Name="CorridorHeightBySpreadRatio" ColumnName="CorridorHeightBySpreadRatio" />
+                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
+                <ScalarProperty Name="TradeByAngle" ColumnName="TradeByAngle" />
+                <ScalarProperty Name="RangeRatioForTradeLimit" ColumnName="RangeRatioForTradeLimit" />
+                <ScalarProperty Name="CorridorRatioForBreakout" ColumnName="CorridorRatioForBreakout" />
+                <ScalarProperty Name="CorridorRatioForRange" ColumnName="CorridorRatioForRange" />
+                <ScalarProperty Name="CorridorStartDate" ColumnName="CorridorStartDate" />
+                <ScalarProperty Name="CorridorPeriodsLength" ColumnName="CorridorPeriodsLength" />
+                <ScalarProperty Name="CorridorPeriodsStart" ColumnName="CorridorPeriodsStart" />
+                <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />
+                <ScalarProperty Name="LongMAPeriod" ColumnName="LongMAPeriod" />
+                <ScalarProperty Name="BarPeriodsLowHighRatio" ColumnName="BarPeriodsLowHighRatio" />
+                <ScalarProperty Name="StrictTradeClose" ColumnName="StrictTradeClose" />
+                <ScalarProperty Name="BarPeriodsHigh" ColumnName="BarPeriodsHigh" />
+                <ScalarProperty Name="BarPeriodsLow" ColumnName="BarPeriodsLow" />
+                <ScalarProperty Name="MaxLotByTakeProfitRatio" ColumnName="MaxLotByTakeProfitRatio" />
+                <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
+                <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+                <ScalarProperty Name="IsActive" ColumnName="IsActive" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+            <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+            <ScalarProperty Name="UID" ColumnName="UID" />
+            <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
+            <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
+            <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
+            <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+            <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
+            <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
+            <ScalarProperty Name="FibMax" ColumnName="FibMax" />
+            <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+            <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+            <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
+            <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+            <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+            <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
+            <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
+            <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
+            <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="Bars">
+            <EntityTypeMapping TypeName="AliceModel.Bar">
+              <MappingFragment StoreEntitySet="Bar">
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TradeHistories">
+            <EntityTypeMapping TypeName="AliceModel.TradeHistory">
+              <MappingFragment StoreEntitySet="TradeHistory">
+                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
+                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
+                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
+                <ScalarProperty Name="Commission" ColumnName="Commission" />
+                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
+                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+                <ScalarProperty Name="PL" ColumnName="PL" />
+                <ScalarProperty Name="Buy" ColumnName="Buy" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="OrderTemplates">
+            <EntityTypeMapping TypeName="AliceModel.OrderTemplate">
+              <MappingFragment StoreEntitySet="OrderTemplate">
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="StopOrderID" ColumnName="StopOrderID" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
+                <ScalarProperty Name="Limit" ColumnName="Limit" />
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="Alice">
+        <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="4.5505582682291656" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
+        <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="5.375" PointY="4.75" Height="3.2357796223958317" />
+        <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>
