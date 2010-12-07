@@ -142,12 +142,12 @@ namespace HedgeHog.Shared {
         case NotifyCollectionChangedAction.Add:
           trade.TradesManager = this;
           OnTradeAdded(trade);
-          OnTradeClosed(trade);
           break;
         case NotifyCollectionChangedAction.Reset:
         case NotifyCollectionChangedAction.Remove:
           trade.TradesManager = null;
           tradesClosed.Add(trade);
+          OnTradeClosed(trade);
           TradeRemoved(trade);
           break;
       }

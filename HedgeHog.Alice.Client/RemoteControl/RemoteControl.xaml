@@ -235,6 +235,8 @@
                   Foreground="DarkGreen"
                   Background="{Binding OpenSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}"
                            />
+                <TextBlock Text="{Binding TradingDistance,StringFormat=[{0:n0}]}" ToolTip="Trading Distance"/>
+                  
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">

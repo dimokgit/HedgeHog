@@ -89,6 +89,14 @@ namespace HedgeHog.Alice.Store {
           ratesBuffer.RemoveAt(0);
         }
       };
+      var hourlyDate = DateTime.MinValue;
+      var hourlyAverage = 0.0;
+      Func<Rate, double> getHourlyAverage = r => {
+        if (r.StartDate - hourlyDate < TimeSpan.FromMinutes(15)) return hourlyAverage;
+        var bars = GetRateFromDBBackward(VirtualPair, r.StartDate.AddDays(-1), 24*4, 15);
+        hourlyDate = r.StartDate;
+        return hourlyAverage = bars.GetMinuteTicks(60).Select(b => b.Spread).ToArray().AverageByIterations((v, a) => v >= a, 4).Average();
+      };
       backTestThread = Task.Factory.StartNew(() => {
         try {
           tradesManager.IsInTest = true;
@@ -125,6 +133,7 @@ namespace HedgeHog.Alice.Store {
               Thread.Sleep(100);
               continue;
             }
+            tm.TradingDistance = tradesManager.InPips(VirtualPair, getHourlyAverage(rates.Last()));
             virtualTrader.RaisePriceChanged(VirtualPair, rates.Last());
             tm.Profitability = tm.RunningBalance / (rates.Last().StartDate - VirtualStartDate).TotalDays * 30;
             Thread.Yield();
@@ -357,7 +366,7 @@ namespace HedgeHog.Alice.Store {
         var powerBars = priceBars.Select(pb => pb.Power).ToArray();
         var powerBarShort = priceBars.Take((priceBars.Count() / 10.0).ToInt()).OrderBy(pb => pb.Power).Last();
         tm.PowerAverage = powerBars.AverageByIterations((v, a) => v >= a, tm.IterationsForPower).Average();//stAvgPower + stDevPower * tm.PowerVolatilityMinimum
-        var corridorMinimum = tm.CorridorHeightBySpreadRatio * tm.PowerAverage * (spread + MasterModel.CommissionByTrade(new Trade() { Lots = 10000 }));
+        var corridorMinimum = tm.CorridorHeightBySpreadRatio * (spread + MasterModel.CommissionByTrade(new Trade() { Lots = 10000 }));
         Func<CorridorStatistics, double> heightToMinimum = cs => corridorMinimum / tradesManager.InPips(pair, cs.HeightUpDown);
         Func<CorridorStatistics, bool> filter = cs => heightToMinimum(cs) < 1;
         var powerMinimum = tm.PowerAverage;
@@ -406,7 +415,7 @@ namespace HedgeHog.Alice.Store {
           var stAvgPower = priceBarsShort.Average(pb=>pb.Power);
           var stDevPower = priceBarsShort.StdDev(pb => pb.Power);
           tm.PowerCurrent = priceBarsShort[0].Power;
-          tm.PowerVolatility = stAvgPower + stDevPower * tm.PowerVolatilityMinimum;
+          tm.PowerVolatility = stDevPower / stAvgPower;
 
         } else {
           throw new Exception("No corridors found for current range.");
@@ -416,6 +425,10 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         tm.PopupText = exc.Message;
       }
+    }
+
+    protected static double TradesMultiplier(TradingMacro tm) {
+      return Math.Pow(tm.Trades.Select(t => t.Lots).DefaultIfEmpty(tm.LotSize).Max() / tm.LotSize, 0.6);
     }
     private static void SetCorrelations(TradingMacro tm, List<Rate> rates, CorridorStatistics csFirst, PriceBar[] priceBars) {
       var pbs = priceBars/*.Where(pb => pb.StartDate > csFirst.StartDate)*/.OrderBy(pb => pb.StartDate).Select(pb => pb.Power).ToArray();
