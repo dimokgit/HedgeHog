@@ -89,10 +89,10 @@ namespace TestHH {
     [TestMethod]
     public void LoadBars() {
       //AddTicks(0, "EUR/USD");
-      SavePair(0, "EUR/USD");
-      SavePair(1, "EUR/USD");
-      SavePair(5, "EUR/USD");
-      SavePair(15, "EUR/USD");
+      //SavePair(0, "EUR/USD");
+      //SavePair(1, "EUR/USD");
+      //SavePair(5, "EUR/USD");
+      //SavePair(15, "EUR/USD");
       SavePair(60, "EUR/USD");
     }
 

@@ -278,16 +278,16 @@ namespace HedgeHog.Alice.Store {
     public bool? OpenSignal {
       get {
         bool? b;
-        var m = Math.Max(1, HeightUpDownInPips * .1);
+        var m = GetTradingHeight(TradingMacro.CorridorHeightMultiplier);
         switch (TradingMacro.Strategy & (Strategies.Range | Strategies.Breakout | Strategies.Brange)) {
           case Strategies.Breakout:
-            b = OpenBreakout(0,100);
+            b = OpenBreakout(-m,1000);
             break;
           case Strategies.Range:
-            b = OpenRange(0,100);
+            b = OpenRange(-m,1000);
             break;
           case Strategies.Brange:
-            b = OpenBrange(0, 100);
+            b = OpenBrange(0, 1000);
             break;
           default: return null;
         }
@@ -299,16 +299,30 @@ namespace HedgeHog.Alice.Store {
         return null;
       }
     }
-    bool canBuy { get { return TradeDirection != TradeDirections.Down && (!TradingMacro.TradeByAngle || TradingMacro.CorridorAngle < 0); } }
-    bool canSell { get { return TradeDirection != TradeDirections.Up && (!TradingMacro.TradeByAngle || TradingMacro.CorridorAngle > 0); } }
+
+    private double GetTradingHeight(double multiplier) {
+      var m = Math.Max(1, HeightUpDownInPips) * multiplier;
+      return m;
+    }
+    bool IsAngleOk(bool buy) {
+      var tm = TradingMacro;
+      var a = TradingMacro.TradingAngleRange;
+      if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() < a;
+      return (tm.TradeAndAngleSynced? buy:!buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
+    }
+
+    bool canBuy { get { return TradeDirection != TradeDirections.Down && IsAngleOk(true); } }
+    bool canSell { get { return TradeDirection != TradeDirections.Up && IsAngleOk(false); } }
     public bool? CloseSignal {
       get {
         if (TradingMacro.CloseOnOpen) return null;
         switch (TradingMacro.Strategy) {
           case Strategies.Range:
-            var r = OpenRange(0, 100);
+            var m = Math.Max(1, HeightUpDownInPips);
+            var r = OpenRange(m/10, 100);
             return r.HasValue ? !r : null;
           case Strategies.Breakout:
+            return CloseBreakout();
             var b = OpenBreakout(0, 100);
             return b.HasValue ? !b : null;
           case Strategies.Brange:
@@ -330,30 +344,56 @@ namespace HedgeHog.Alice.Store {
       bool? buy = new bool?(TradingMacro.CorridorAngle<0);
       return (or == buy || ob == buy) ? buy : null;
     }
-    private bool? OpenRange(int level, double m) {
-      if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return false;
-      if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return true;
+    private bool? OpenRange(double level, double m) {
+      if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return GetSignal(false);
+      if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return GetSignal(true);
       return null;
     }
     private bool? CloseRange() {
       var rl = RateForDiffHigh;
-      if (rl != null && diffPriceHigh(rl) - rl.PriceAvg1 < 0) return false;
+      if (rl != null && diffPriceHigh(rl) - rl.PriceAvg1 < 0) return GetSignal(false);
       rl = RateForDiffLow;
-      if (rl != null && diffPriceLow(rl) - rl.PriceAvg1 > 0) return true;
+      if (rl != null && diffPriceLow(rl) - rl.PriceAvg1 > 0) return GetSignal(true);
       return null;
     }
-    private bool? OpenBreakout(int level, double m) {
-      if (canBuy && PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level,m) && !IsSellLock) return true;
-      if (canSell && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m,level) && !IsBuyLock) return false;
+    bool GetSignal(bool signal) { return TradingMacro.ReverseStrategy ? !signal : signal; }
+    private bool? OpenBreakout(double level, double m) {
+      if (OpenRange(0, 100).HasValue) return null;
+      var rates = TradingMacro.RatesLast;
+      var rateLast = rates.Last();
+      var ratePrev = rates[rates.Length-2];
+      if( InPips(diffPriceHigh(rateLast) - rateLast.PriceAvg2).Between(-level,m) &&
+         !InPips(diffPriceHigh(ratePrev) - ratePrev.PriceAvg2).Between(-level,m)&& 
+         !IsSellLock) return GetSignal(true);
+      //if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level,m) && !IsSellLock) return GetSignal(true);
+      if (InPips(diffPriceLow(rateLast) - rateLast.PriceAvg3).Between(-m,level) &&
+         !InPips(diffPriceLow(ratePrev) - ratePrev.PriceAvg3).Between(-m,level) &&
+         !IsBuyLock) return GetSignal(false);
+
+      //if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level) && !IsBuyLock) return GetSignal(false);
       return null;
       return OpenRange(level,m);
       if (true && lastSignal.HasValue) {
-        if (lastSignal.Value && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value) < m ) return true;
-        if (!lastSignal.Value && PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value) > -m ) return false;
+        if (lastSignal.Value && PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value) < m ) return GetSignal(true);
+        if (!lastSignal.Value && PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value) > -m) return GetSignal(false);
       }
       return null;
     }
-
+    private bool? CloseBreakout() {
+      var or = OpenRange(0, 100);
+      if (or.HasValue) return !or;
+      if (PriceDiffHigh > 0) {
+        if (!TradingMacro.ReverseStrategy)
+          IsBuyLock = false;
+        return GetSignal(false);
+      }
+      if (PriceDiffLow < 0) {
+        if (!TradingMacro.ReverseStrategy)
+          IsSellLock = false;
+        return GetSignal(true);
+      }
+      return null;
+    }
     static Func<Rate, double> diffPriceHigh = r => r.PriceAvg;
     static Func<Rate, double> diffPriceLow = r => r.PriceAvg;
     public double? PriceCmaDiffHigh {
@@ -364,6 +404,19 @@ namespace HedgeHog.Alice.Store {
         return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg2;
       }
     }
+    public double? PriceDiffHigh {
+      get {
+        var rl = RateForDiffHigh;
+        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg1;
+      }
+    }
+    public double? PriceDiffLow {
+      get {
+        var rl = RateForDiffLow;
+        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg1;
+      }
+    }
+
     Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceHigh).Last();
     Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceLow).First();
     private bool? lastSignal;

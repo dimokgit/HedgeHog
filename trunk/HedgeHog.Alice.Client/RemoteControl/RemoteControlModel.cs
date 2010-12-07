@@ -38,12 +38,18 @@ namespace HedgeHog.Alice.Client {
       if (!charters.ContainsKey(pair)) {
         Application.Current.Dispatcher.Invoke(new Action(() => {
           var charter = new Corridors(pair);
+          charter.StateChanged += new EventHandler(charter_StateChanged);
           charters.Add(pair, charter);
           App.ChildWindows.Add(charter);
           charter.Show();
       }), System.Windows.Threading.DispatcherPriority.Send);
       }
       return charters[pair];
+    }
+
+    bool charterMinimized = false;
+    void charter_StateChanged(object sender, EventArgs e) {
+      charterMinimized = (sender as Window).WindowState == WindowState.Minimized;
     }
 
 
@@ -118,7 +124,8 @@ namespace HedgeHog.Alice.Client {
         tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
         tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.CorridorHeightBySpreadRatio, tm.PowerRowOffset,tm.PowerVolatilityMinimum,
         tm.RangeRatioForTradeStop,tm.ReversePower,tm.CorrelationTreshold,tm.TradeByPowerVolatilty,tm.TradeByPowerAverage,
-        tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen);
+        tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen,tm.StreachTradingDistance,tm.CloseAllOnProfit,tm.ReverseStrategy,
+        tm.TradeAndAngleSynced,tm.TradingAngleRange);
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
       //    .DefaultIfEmpty(new EdmScalarPropertyAttribute()).First() as EdmScalarPropertyAttribute).EntityKeyProperty
@@ -404,7 +411,6 @@ namespace HedgeHog.Alice.Client {
         tradesManager.PriceChanged -= fw_PriceChanged;
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.TradeRemoved -= fw_TradeRemoved;
-        tradesManager.TradeClosed -= fw_TradeClosed;
         tradesManager.OrderAdded -= fw_OrderAdded;
 
         tradesManager.Error -= fw_Error;
@@ -446,7 +452,7 @@ namespace HedgeHog.Alice.Client {
           ScanCorridorSchedulers.Run(pair,IsInVirtualTrading, () => {
             var swl = Stopwatch.StartNew();
             ScanCorridor(pair, GetRatesByPair(pair));
-            Debug.WriteLine("ScanCorridor:{0:n1}", swl.ElapsedMilliseconds);
+            //Debug.WriteLine("ScanCorridor:{0:n1}", swl.ElapsedMilliseconds);
             OpenTradeByStop(pair);
             ShowChartScheduler.Run(pair, IsInVirtualTrading, () => ShowChart(pair), e => Log = e);
           }, e => Log = e);
@@ -464,9 +470,7 @@ namespace HedgeHog.Alice.Client {
       try {
         //      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         var charter = GetCharter(pair);
-        try {
-          if ((bool)charter.Dispatcher.Invoke(new Func<bool>(() => charter.WindowState == WindowState.Minimized))) return;
-        } catch (Exception exc) { Log = exc; return; }
+        if (charterMinimized) return;
         var tm = GetTradingMacro(pair);
         if (tm == null) return;
         var rates = GetRatesByPair(pair);
@@ -483,21 +487,21 @@ namespace HedgeHog.Alice.Client {
         bool? trendHighlight = csFirst.TrendLevel == TrendLevel.None ? (bool?)null : csFirst.TrendLevel == TrendLevel.Resistance;
         var priceBars = GetPriceBars(pair,true);
         var powerBars = priceBars.Select(pb => pb.Power).ToArray();
-        var priceBarsShort = GetPriceBars(pair, false);
-        var stDevPower = priceBarsShort.Average(pb=>pb.Power);
-        var stAvgPower = priceBarsShort.StdDev(pb => pb.Power);
+        var stDevPower = priceBars.Average(pb=>pb.Power);
+        var stAvgPower = priceBars.StdDev(pb => pb.Power);
         //var averagePowerLow = powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average();
         string[] info = new string[] { 
           "Range:" + tradesManager.InPips(pair, rates.Max(r=>r.PriceAvg) - rates.Min(r=>r.PriceAvg)).ToString("n0"),
           "RngCr:" + tradesManager.InPips(pair, tm.BigCorridorHeight).ToString("n1")+"/"+tm.CorridorHeightByRegressionInPips.ToString("n1"),
-          "PwVol:" + tm.PowerVolatility.ToString("n1"),
-          "Tks/M:" + (rates.Count()/rates.Duration().TotalMinutes).ToString("n1")
+          "PwVol:" + tm.PowerVolatility.ToString("n1")
         };
         RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
           charter.Dispatcher.Invoke(new Action(() => {
             try {
-              charter.AddTicks(price, rates, new PriceBar[2][] { priceBars, priceBarsShort }, info, trendHighlight,
-                tm.PowerAverage, tm.PowerVolatility,
+              charter.CorridorHeightMultiplier = tm.CorridorHeightMultiplier;
+              charter.PriceBarValue = pb => pb.Power;
+              charter.AddTicks(price, rates, new PriceBar[1][] { priceBars}, info, trendHighlight,
+                tm.PowerAverage,  powerBars.AverageByIterations((v,a)=>v<=a,tm.IterationsForPower).Average(),// tm.PowerVolatility,
                 0, 0,
                 0/*csFirst.AverageHigh*/, 0/*csFirst.AverageLow*/,
                 timeHigh, timeCurr, timeLow,
@@ -549,111 +553,120 @@ namespace HedgeHog.Alice.Client {
       var trades = tradesManager.GetTrades(pair).OrderBy(t => t.Time).ToArray();
 
       var buy = tm.OpenSignal;
-      if (trades.Length > 0 && tm.CloseOnProfit) {
-        //if (!((tm.Strategy & Strategies.Stop) == Strategies.None && tm.OpenSignal.HasValue)) {
-        var rates = GetRatesByPair(pair);
-        var trade = trades.OrderBy(t=>t.Time).First();
-        if (buy.HasValue && CanOpenTrade(pair, buy.Value, trades) && trade.Buy == buy.Value) { } else {
-          var tradeBuy = trade.Buy;
-          var openDate = trade.Time;
-          var ratesSinceOpen = rates.SkipWhile(r => r.StartDate < openDate);
-          //var peakSinceOpen = tradeBuy ? ratesSinceOpen.Min(r => r.AskLow) : ratesSinceOpen.Max(r => r.BidHigh);
-          var heightSinceOpen = -10000;// tradesManager.InPips(pair, tradeBuy ? trade.Close - peakSinceOpen : peakSinceOpen - trade.Close);
-          var corridorHeight = tm.CorridorHeightByRegressionInPips0;
-          var closeProfit = corridorHeight * tm.RangeRatioForTradeLimit;
-          var closeLoss = -tradesManager.InPips(pair, GetRatesByPair(pair).Height()) * tm.RangeRatioForTradeStop;
-          var pl = trades/*.Where(t => new bool?(t.Buy) != buy)*/.GrossInPips();
-          var gross = trades/*.Where(t => new bool?(t.Buy) != buy)*/.Sum(t => t.GrossPL);
-          //if ((tm.CurrentLoss<0 && gross > -tm.CurrentLoss) || (tm.CurrentLoss>=0 && pl > closeProfit) || pl < closeLoss) {
-          var tradesWithProfit = trades.Where(t=>t.PL > closeProfit).ToArray();
-          if (tm.CloseOnProfitOnly && tradesWithProfit.Length > 0)
-            tradesManager.CloseTrade(tradesWithProfit[0]);
-          else {
-            if (pl > closeProfit || (!tm.CloseOnProfitOnly && pl < closeLoss) || heightSinceOpen > corridorHeight) {
-              trades.ToList().ForEach(t => {
-                tradesManager.CloseTrade(t, t.Lots, GetCurrentPrice(pair));
-                if (pl > 0 && (tm.Strategy & Strategies.Breakout) == Strategies.Breakout) {
-                  if (t.Buy) tm.CorridorStats.IsSellLock = true;
-                  else tm.CorridorStats.IsBuyLock = true;
-                }
-                if (pl < 0 && (tm.Strategy & Strategies.Range) == Strategies.Range)
-                  if (!t.Buy) tm.CorridorStats.IsBuyLock = true;
-                  else tm.CorridorStats.IsSellLock = true;
-                //if (tm.Strategy == Strategies.Breakout) tm.Strategy = Strategies.None;
-              });
-              if ((tm.Strategy & Strategies.Stop) == Strategies.Stop) tm.Strategy = Strategies.None;
-            }
-          }
-        }
-        //}
-      }
-
+      Action<Trade> setTradesLocks = t=>SetTradeLocks(tm,t,t.PL);
+      var eh = new TradeRemovedEventHandler(setTradesLocks);
+      tradesManager.TradeRemoved += eh;
       try {
-        var open = tm.OpenSignal;
-        if (open.HasValue && CanOpenTrade(pair, open.Value, trades)) {
-          var isHedged = tradesManager.GetAccount().Hedging;
-          if (isHedged)
-            tradesManager.ClosePair(pair, !open.Value);
-          OpenTradeWithWait(pair, open.Value, isHedged);
-          return;
-        }
-        #region Close Trade
-        var close = new[] { tm.CloseSignal}.Max();
-        if (close.HasValue && (!tm.CloseOnProfitOnly || trades.GrossInPips()>tm.TakeProfitPips)) {
-          var tradesInOpositDirection = trades.Where(t => t.IsBuy == close.Value).ToArray();
-          if (tradesInOpositDirection.Length > 0) {
-            bool pendingOpen = false;
-            if (false) {
-              pendingOpenRequest[pair] = (trade) => {
-                pendingOpen = true;
-                try {
-                  var tl = tradesManager.GetTrades(trade.Pair);
-                  var tod = tl.Where(t => t.Buy == trade.Buy).ToArray();
-                  if (tod.Length > 0) return false;
-                  var tsd = tl.Where(t => t.Buy != trade.Buy).ToArray();
-                  if (CanOpenTrade(pair, buy.Value, tl))
-                    OpenTradeWithWait(pair, !trade.Buy,false);
-                  pendingOpen = false;
-                } catch (Exception exc) {
-                  Log = exc;
-                  pendingOpen = false;
-                }
-                return true;
-              };
-            }
-            try {
-              //fw.TradeClosed += tradeClosed;
-              if (!tradesManager.ClosePair(pair, close.Value)) {
-                foreach (var trade in tradesManager.GetTrades(pair).Where(t => t.IsBuy != buy).ToArray())
-                  tradesManager.FixOrderClose(trade.Id);
+        if (trades.Length > 0 && (tm.CloseOnProfit || tm.CloseAllOnProfit)) {
+          //if (!((tm.Strategy & Strategies.Stop) == Strategies.None && tm.OpenSignal.HasValue)) {
+          var rates = GetRatesByPair(pair);
+          var trade = trades.OrderBy(t => t.Lots).Last();
+          if (buy.HasValue && CanOpenTrade(pair, buy.Value, trades) && trade.Buy == buy.Value) { } else {
+            var tradeBuy = trade.Buy;
+            var openDate = trade.Time;
+            var ratesSinceOpen = rates.SkipWhile(r => r.StartDate < openDate);
+            //var peakSinceOpen = tradeBuy ? ratesSinceOpen.Min(r => r.AskLow) : ratesSinceOpen.Max(r => r.BidHigh);
+            var heightSinceOpen = -10000;// tradesManager.InPips(pair, tradeBuy ? trade.Close - peakSinceOpen : peakSinceOpen - trade.Close);
+            var corridorHeight = tm.CorridorHeightByRegressionInPips;
+            var closeProfit = corridorHeight * tm.RangeRatioForTradeLimit;
+            var closeLoss = -corridorHeight * tm.RangeRatioForTradeStop;
+            var pl = tm.CloseAllOnProfit ? trades.Max(t => t.PL) : trades/*.Where(t => new bool?(t.Buy) != buy)*/.GrossInPips();
+            var gross = trades/*.Where(t => new bool?(t.Buy) != buy)*/.Sum(t => t.GrossPL);
+            //if ((tm.CurrentLoss<0 && gross > -tm.CurrentLoss) || (tm.CurrentLoss>=0 && pl > closeProfit) || pl < closeLoss) {
+            {
+              if (pl > closeProfit || (!tm.CloseOnProfitOnly && pl < closeLoss) || (trade.Lots > tm.LotSize*50 && tm.CurrentLoss<0 && gross>-tm.CurrentLoss) || heightSinceOpen > corridorHeight) {
+                tradesManager.ClosePair(pair);
               }
-              while (!IsInVirtualTrading && pendingOpen)
-                Thread.Sleep(100);
-            } catch (Exception exc) {
-              Log = exc;
-              return;
-            } finally {
-              //fw.TradeClosed -= tradeClosed;
-              RunPrice(pair);
-              buy = tm.OpenSignal;
             }
-            tradesInOpositDirection = tradesManager.GetTrades(pair).Where(t => t.IsBuy != buy).ToArray();
-            ScanCorridor(pair, GetRatesByPair(pair));
-            //return;
           }
+          //}
         }
-        #endregion
-        #region Open Trade
-        open = tm.OpenSignal;
-        if (open.HasValue && CanOpenTrade(pair, open.Value, trades)) {
-          OpenTradeWithWait(pair, buy.Value,false);
+
+        try {
+          var open = tm.OpenSignal;
+          if (open.HasValue && CanOpenTrade(pair, open.Value, trades)) {
+            var isHedged = tradesManager.GetAccount().Hedging;
+            if (isHedged)
+              tradesManager.ClosePair(pair, !open.Value);
+            OpenTradeWithWait(pair, open.Value, isHedged);
+            return;
+          }
+          #region Close Trade
+          var close = new[] { tm.CloseSignal }.Max();
+          if (close.HasValue && (!tm.CloseOnProfitOnly || trades.GrossInPips() > 0)) {
+            var tradesInOpositDirection = trades.Where(t => t.IsBuy == close.Value).ToArray();
+            if (tradesInOpositDirection.Length > 0) {
+              bool pendingOpen = false;
+              if (false) {
+                pendingOpenRequest[pair] = (trade) => {
+                  pendingOpen = true;
+                  try {
+                    var tl = tradesManager.GetTrades(trade.Pair);
+                    var tod = tl.Where(t => t.Buy == trade.Buy).ToArray();
+                    if (tod.Length > 0) return false;
+                    var tsd = tl.Where(t => t.Buy != trade.Buy).ToArray();
+                    if (CanOpenTrade(pair, buy.Value, tl))
+                      OpenTradeWithWait(pair, !trade.Buy, false);
+                    pendingOpen = false;
+                  } catch (Exception exc) {
+                    Log = exc;
+                    pendingOpen = false;
+                  }
+                  return true;
+                };
+              }
+              try {
+                //fw.TradeClosed += tradeClosed;
+                if (!tradesManager.ClosePair(pair, close.Value)) {
+                  foreach (var trade in tradesManager.GetTrades(pair).Where(t => t.IsBuy != buy).ToArray())
+                    tradesManager.FixOrderClose(trade.Id);
+                }
+                while (!IsInVirtualTrading && pendingOpen)
+                  Thread.Sleep(100);
+              } catch (Exception exc) {
+                Log = exc;
+                return;
+              } finally {
+                //fw.TradeClosed -= tradeClosed;
+                RunPrice(pair);
+                buy = tm.OpenSignal;
+              }
+              tradesInOpositDirection = tradesManager.GetTrades(pair).Where(t => t.IsBuy != buy).ToArray();
+              ScanCorridor(pair, GetRatesByPair(pair));
+              //return;
+            }
+          }
+          #endregion
+          #region Open Trade
+          open = tm.OpenSignal;
+          if (open.HasValue && CanOpenTrade(pair, open.Value, trades)) {
+            OpenTradeWithWait(pair, buy.Value, false);
+          }
+          #endregion
+        } catch (Exception exc) {
+          Log = exc;
+        } finally {
+          //if (IsInVirtualTrading) ShowChart(pair);
         }
-        #endregion
-      }catch(Exception exc){
-        Log = exc;
       } finally {
-        //if (IsInVirtualTrading) ShowChart(pair);
+        tradesManager.TradeRemoved -= eh;
       }
+    }
+
+    void tradesManager_TradeRemoved(Trade trade) {
+      throw new NotImplementedException();
+    }
+
+    private static void SetTradeLocks(TradingMacro tm, Trade trade, double pl) {
+      if (false && (tm.Strategy & Strategies.Breakout) == Strategies.Breakout) {
+        if (trade.Buy) tm.CorridorStats.IsSellLock = true;
+        else tm.CorridorStats.IsBuyLock = true;
+      }
+      if (pl < 0 && (tm.Strategy & Strategies.Range) == Strategies.Range)
+        if (!trade.Buy) tm.CorridorStats.IsBuyLock = true;
+        else tm.CorridorStats.IsSellLock = true;
+      //if (tm.Strategy == Strategies.Breakout) tm.Strategy = Strategies.None;
+      if ((tm.Strategy & Strategies.Stop) == Strategies.Stop) tm.Strategy = Strategies.None;
     }
 
     private static bool CloseTradeByRateDirection(TradingMacro tm, Trade t) {
@@ -664,14 +677,14 @@ namespace HedgeHog.Alice.Client {
       var opositeTrades = trades.Where(t => t.Buy != isBuy).ToArray();
       var tradesInSameDirection = trades.Where(t => t.Buy == isBuy).ToArray();
       TradingMacro tm = GetTradingMacro(pair);
-      if (tm.CloseOnProfitOnly && opositeTrades.Length> 0 && opositeTrades.All(t=>t.PL<tm.TakeProfitPips)) return false;
+      if (tm.CloseOnProfitOnly && opositeTrades.Length > 0 && opositeTrades.GrossInPips() < 0) return false;
       if (isBuy && tm.TradeDirection == TradeDirections.Down) return false;
       if (!isBuy && tm.TradeDirection == TradeDirections.Up) return false;
       var date = GetRatesByPair(pair).Last().StartDate;
       if (false && !tm.IsTradingHours) return false;
       var tradeTimeFrameOk = true;// tradesInSameDirection.Length == 0 || date - tradesInSameDirection.Max(t => t.Time) > TimeSpan.FromHours(8);
-      var tradeDistanceMin = tradesManager.InPips(pair, tm.Rates.Height());
-      var istradeDistanceOk = tradesInSameDirection.Length == 0 || tradesInSameDirection.Max(t => t.PL) <= -tradeDistanceMin;// *tradesInSameDirection.Length;
+      var tradeDistanceMin = Math.Max(tm.TradingDistance, tradesManager.InPips(pair, tm.Rates.Height()));
+      var istradeDistanceOk = tradesInSameDirection.Length == 0 || tradesInSameDirection.Max(t => t.PL) <= -tradeDistanceMin * (tm.StreachTradingDistance ? tradesInSameDirection.Length : 1);
       if (!tradeTimeFrameOk) return false;
       return (tradesInSameDirection.Length < tm.MaximumPositions)
                   && (!IsInVirtualTrading || tradesManager.IsInTest)
@@ -682,6 +695,13 @@ namespace HedgeHog.Alice.Client {
                   && tm.IsCorridorToRangeRatioOk
                   && !pendingOrders.ContainsKey(pair)
                   ;
+    }
+
+    private static Func<Trade, bool> HasNoProfit(Trade[] trades, TradingMacro tm) {
+      return t => !HasProfit(trades, tm)(t);
+    }
+    private static Func<Trade, bool> HasProfit(Trade[] trades, TradingMacro tm) {
+      return t => t.PL > tm.TakeProfitPips * Math.Sqrt(trades.Length);
     }
 
 

@@ -97,11 +97,29 @@ namespace HedgeHog {
       }
     }
 
+    Segment trendLine11 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
+    Rate[] TrendLine11 {
+      set {
+        var height = CorridorHeightMultiplier*(value[0].PriceAvg2 - value[0].PriceAvg3);
+        trendLine11.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2 + height);
+        trendLine11.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg2 + height);
+      }
+    }
+
     Segment trendLine2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine2 {
       set {
         trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
         trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg3);
+      }
+    }
+
+    Segment trendLine22 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
+    Rate[] TrendLine22 {
+      set {
+        var height = CorridorHeightMultiplier * (value[0].PriceAvg2 - value[0].PriceAvg3);
+        trendLine22.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3 - height);
+        trendLine22.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg3 - height);
       }
     }
 
@@ -209,7 +227,9 @@ namespace HedgeHog {
       plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(trendLine);
       plotter.Children.Add(trendLine1);
+      plotter.Children.Add(trendLine11);
       plotter.Children.Add(trendLine2);
+      plotter.Children.Add(trendLine22);
       #endregion
     }
 
@@ -322,7 +342,7 @@ namespace HedgeHog {
         var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
         var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
         var ratesForTrend = new[] { rateFirst, rateLast };
-        TrendLine = TrendLine1 = TrendLine2 = ratesForTrend;
+        TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForTrend;
         if (trendHighlight.HasValue)
           if (trendHighlight.Value) {
             trendLine1.StrokeThickness = 2;
@@ -355,7 +375,7 @@ namespace HedgeHog {
           if (voltsByTick != null) {
             ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
             for (var i = 0; i < voltsByTick.Count(); i++) {
-              animatedVoltValueY[i] = voltsByTick[i].Power;
+              animatedVoltValueY[i] = PriceBarValue(voltsByTick[i]);
               animatedVoltTimeX[i] = voltsByTick[i].StartDate;
             }
           }
@@ -421,6 +441,9 @@ namespace HedgeHog {
         Y.Add(0);
       }
     }
+
+    public double CorridorHeightMultiplier { get; set; }
+    public Func<PriceBar, double> PriceBarValue;
   }
 
   public class ChartTick : INotifyPropertyChanged,IEqualityComparer<ChartTick>{

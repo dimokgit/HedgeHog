@@ -614,14 +614,6 @@ namespace HedgeHog.Alice.Store {
     public bool? OpenSignal {
       get {
         if (CorridorStats == null) return null;
-        if (Strategy == Strategies.Correlation) {
-          if (CorridorAngle > 0) return true;
-          if (CorridorAngle < 0) return false;
-          return null;
-          if (Correlation > +CorrelationTreshold) TradeDirection = TradeDirections.Down;
-          if (Correlation < -CorrelationTreshold) TradeDirection = TradeDirections.Up;
-        }
-
         if (Strategy == Strategies.Momentum)
           if (IsPowerVolatilityOk)
             return CorridorStats.PriceCmaDiffHigh > RateLast.PriceAvg1 ? false 
@@ -632,7 +624,7 @@ namespace HedgeHog.Alice.Store {
           else return null;
         var os = CorridorStats.OpenSignal;
         if( !os.HasValue )return null;
-        if (Strategy == Strategies.Range) {
+        if (false && Strategy == Strategies.Range) {
           if (os.Value && RateDirection < 0) return null;
           if (!os.Value && RateDirection > 0) return null;
         }
@@ -664,6 +656,15 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    [DisplayName("Trading Angle Range")]
+    [Category(categoryTrading)]
+    public double IterationsForPower_ {
+      get { return TradingAngleRange; }
+      set { TradingAngleRange = value; }
+    }
+
+
 
     public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
 
@@ -838,7 +839,10 @@ namespace HedgeHog.Alice.Store {
           if (CorridorStats != null) {
             var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
             tu.TradeStats = new TradeStatistics() {
-              SessionId = SessionId
+              SessionId = SessionId,
+               PowerAverage = PowerAverage,
+               PowerVolatility = PowerVolatility
+
             };
           }
         }
@@ -852,7 +856,7 @@ namespace HedgeHog.Alice.Store {
       get { return Math.Max(LotSize, LastTrade.Lots); }
     }
     public int MaxLotSize(IEnumerable<Trade>trades) {
-      if (true) {
+      if (CloseOnProfitOnly) {
         if (trades.Any(t => t.Buy) && trades.Any(t => !t.Buy)) return 0;
         return trades.Sum(t => t.Lots) + LotSize;
       }
@@ -939,11 +943,30 @@ namespace HedgeHog.Alice.Store {
       get { try { return CorridorHeightByRegression / BigCorridorHeight; } catch { return 0; } }
     }
 
-    [DisplayName("Corridor To Range Minimum Ratio")]
-    [Category("Corridor")]
-    public double CorridorToRangeMinimumRatio {
+    public double CorridorToRangeMinimumRatio { get { return 0; } }
+
+    [DisplayName("Corridor Height Multiplier")]
+    [Category(categoryTrading)]
+    [Description("Ex: CorrUp = PriceRegr + Up + corrHeight*X")]
+    public double CorridorHeightMultiplier {
       get { return CorridornessMin; }
       set { CorridornessMin = value; }
+    }
+
+    [DisplayName("Reverse Strategy")]
+    [Category(categoryTrading)]
+    public bool ReverseStrategy_ {
+      get { return ReverseStrategy; }
+      set { ReverseStrategy = value; }
+    }
+
+
+    [DisplayName("Close All On Profit")]
+    [Category(categoryTrading)]
+    [Description("Ex: if(trade.PL > Profit) ClosePair()")]
+    public bool CloseAllOnProfit_ {
+      get { return CloseAllOnProfit; }
+      set { CloseAllOnProfit = value; }
     }
 
     [ReadOnly(true)]
@@ -1004,6 +1027,13 @@ namespace HedgeHog.Alice.Store {
     public bool TradeByAngle_ {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
+    }
+
+    [Category(categoryTrading)]
+    [DisplayName("Trade And Angle Are Synced")]
+    public bool TradeAndAngleSynced_ {
+      get { return TradeAndAngleSynced; }
+      set { TradeAndAngleSynced = value; }
     }
 
     [Category(categoryTrading)]
@@ -1104,12 +1134,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     Lib.CmaWalker powerVolatilityWalker = new Lib.CmaWalker(1);
-    public bool IsPowerVolatilityOk {
-      get {
-        return !TradeByPowerVolatilty ||
-          (PowerCurrent > PowerVolatility /*&& powerVolatilityWalker.Diff(PowerVolatility) <= 0*/);
-      }
-    }
+    public bool IsPowerVolatilityOk { get { return !TradeByPowerVolatilty || true; } }
     double _PowerVolatility;
     public double PowerVolatility {
       get { return _PowerVolatility; }
@@ -1121,6 +1146,14 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("IsPowerVolatilityOk");
         OnPropertyChanged("IsPowerOk");
       }
+    }
+
+    [DisplayName("Streach Trading Distance")]
+    [Category(categoryTrading)]
+    [Description("Ex: PL < tradingDistance * (X ? trades.Length:1)")]
+    public bool StreachTradingDistance_ {
+      get { return StreachTradingDistance; }
+      set { StreachTradingDistance = value; }
     }
 
     [DisplayName("Close On Open Only")]
@@ -1176,6 +1209,18 @@ namespace HedgeHog.Alice.Store {
 
 
     public double BigCorridorHeight { get; set; }
+
+    private double _TradingDistance;
+    public double TradingDistance {
+      get { return _TradingDistance; }
+      set {
+        if (_TradingDistance != value) {
+          _TradingDistance = value;
+          OnPropertyChanged("TradingDistance");
+        }
+      }
+    }
+
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }

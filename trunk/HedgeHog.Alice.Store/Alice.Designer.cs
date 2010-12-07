@@ -1502,7 +1502,12 @@ namespace HedgeHog.Alice.Store
         /// <param name="closeOnProfitOnly">Initial value of the CloseOnProfitOnly property.</param>
         /// <param name="closeOnProfit">Initial value of the CloseOnProfit property.</param>
         /// <param name="closeOnOpen">Initial value of the CloseOnOpen property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen)
+        /// <param name="streachTradingDistance">Initial value of the StreachTradingDistance property.</param>
+        /// <param name="closeAllOnProfit">Initial value of the CloseAllOnProfit property.</param>
+        /// <param name="reverseStrategy">Initial value of the ReverseStrategy property.</param>
+        /// <param name="tradeAndAngleSynced">Initial value of the TradeAndAngleSynced property.</param>
+        /// <param name="tradingAngleRange">Initial value of the TradingAngleRange property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1543,7 +1548,6 @@ namespace HedgeHog.Alice.Store
             tradingMacro.ProfitToLossExitRatio = profitToLossExitRatio;
             tradingMacro.CorridorHeightBySpreadRatio = corridorHeightBySpreadRatio;
             tradingMacro.PowerRowOffset = powerRowOffset;
-            tradingMacro.PowerVolatilityMinimum = powerVolatilityMinimum;
             tradingMacro.RangeRatioForTradeStop = rangeRatioForTradeStop;
             tradingMacro.ReversePower = reversePower;
             tradingMacro.CorrelationTreshold = correlationTreshold;
@@ -1552,6 +1556,11 @@ namespace HedgeHog.Alice.Store
             tradingMacro.CloseOnProfitOnly = closeOnProfitOnly;
             tradingMacro.CloseOnProfit = closeOnProfit;
             tradingMacro.CloseOnOpen = closeOnOpen;
+            tradingMacro.StreachTradingDistance = streachTradingDistance;
+            tradingMacro.CloseAllOnProfit = closeAllOnProfit;
+            tradingMacro.ReverseStrategy = reverseStrategy;
+            tradingMacro.TradeAndAngleSynced = tradeAndAngleSynced;
+            tradingMacro.TradingAngleRange = tradingAngleRange;
             return tradingMacro;
         }
 
@@ -2736,6 +2745,126 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _CloseOnOpen;
         partial void OnCloseOnOpenChanging(global::System.Boolean value);
         partial void OnCloseOnOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean StreachTradingDistance
+        {
+            get
+            {
+                return _StreachTradingDistance;
+            }
+            set
+            {
+                OnStreachTradingDistanceChanging(value);
+                ReportPropertyChanging("StreachTradingDistance");
+                _StreachTradingDistance = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StreachTradingDistance");
+                OnStreachTradingDistanceChanged();
+            }
+        }
+        private global::System.Boolean _StreachTradingDistance;
+        partial void OnStreachTradingDistanceChanging(global::System.Boolean value);
+        partial void OnStreachTradingDistanceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean CloseAllOnProfit
+        {
+            get
+            {
+                return _CloseAllOnProfit;
+            }
+            set
+            {
+                OnCloseAllOnProfitChanging(value);
+                ReportPropertyChanging("CloseAllOnProfit");
+                _CloseAllOnProfit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CloseAllOnProfit");
+                OnCloseAllOnProfitChanged();
+            }
+        }
+        private global::System.Boolean _CloseAllOnProfit;
+        partial void OnCloseAllOnProfitChanging(global::System.Boolean value);
+        partial void OnCloseAllOnProfitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean ReverseStrategy
+        {
+            get
+            {
+                return _ReverseStrategy;
+            }
+            set
+            {
+                OnReverseStrategyChanging(value);
+                ReportPropertyChanging("ReverseStrategy");
+                _ReverseStrategy = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ReverseStrategy");
+                OnReverseStrategyChanged();
+            }
+        }
+        private global::System.Boolean _ReverseStrategy;
+        partial void OnReverseStrategyChanging(global::System.Boolean value);
+        partial void OnReverseStrategyChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean TradeAndAngleSynced
+        {
+            get
+            {
+                return _TradeAndAngleSynced;
+            }
+            set
+            {
+                OnTradeAndAngleSyncedChanging(value);
+                ReportPropertyChanging("TradeAndAngleSynced");
+                _TradeAndAngleSynced = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradeAndAngleSynced");
+                OnTradeAndAngleSyncedChanged();
+            }
+        }
+        private global::System.Boolean _TradeAndAngleSynced;
+        partial void OnTradeAndAngleSyncedChanging(global::System.Boolean value);
+        partial void OnTradeAndAngleSyncedChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double TradingAngleRange
+        {
+            get
+            {
+                return _TradingAngleRange;
+            }
+            set
+            {
+                OnTradingAngleRangeChanging(value);
+                ReportPropertyChanging("TradingAngleRange");
+                _TradingAngleRange = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradingAngleRange");
+                OnTradingAngleRangeChanged();
+            }
+        }
+        private global::System.Double _TradingAngleRange;
+        partial void OnTradingAngleRangeChanging(global::System.Double value);
+        partial void OnTradingAngleRangeChanged();
 
         #endregion
     
