@@ -664,6 +664,14 @@ namespace HedgeHog.Alice.Store {
       set { TradingAngleRange = value; }
     }
 
+    [DisplayName("Close By Momentum")]
+    [Category(categoryTrading)]
+    [Description("Close trade when rate changes direction.")]
+    public bool CloseByMomentum_ {
+      get { return CloseByMomentum; }
+      set { CloseByMomentum = value; }
+    }
+
 
 
     public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
@@ -806,15 +814,26 @@ namespace HedgeHog.Alice.Store {
     }
 
     Dictionary<string, Strategies> tradeStrategies = new Dictionary<string, Strategies>();
-    Dictionary<Strategies, int[]> strategyScores = new Dictionary<Strategies, int[]>() { 
-      { Strategies.Breakout, new int[2] }, { Strategies.Range, new int[2] }, { Strategies.Brange, new int[2] } , { Strategies.Correlation, new int[2] } };
+    Dictionary<Strategies, double[]> strategyScores = new Dictionary<Strategies, double[]>() { 
+      { Strategies.Range, new double[]{initialScore,initialScore} }
+      //,{ Strategies.Breakout, new double[]{initialScore,initialScore} },
+      //{ Strategies.Brange, new double[]{initialScore,initialScore} } ,
+      //{ Strategies.Correlation, new double[]{initialScore,initialScore} } 
+    };
     public string StrategyScoresText {
       get {
-        return string.Join(",", strategyScores.Where(sc=>sc.Value.Sum()>0).Select(sc => sc.Key + ":" +
-          sc.Value[0] + "/" + sc.Value[1] + "=" + ((double)sc.Value[0] / (sc.Value[0] + sc.Value[1])).ToString("n2")).ToArray());
+        return string.Join(",", strategyScores.Where(sc => sc.Value.Sum() > 0).Select(sc =>
+          string.Format("{3}:{0:n1}/{1:n1}={2:n1}", sc.Value[0], sc.Value[1], sc.Value[0] / (sc.Value[0] + sc.Value[1])*100, sc.Key))
+          .ToArray());
       }
     }
-    public void StrategyScoresReset() { strategyScores.Values.ToList().ForEach(ss => { ss[0] = ss[1] = 0; }); }
+    public double StrategyScore {
+      get {
+        return strategyScores[Strategy][0] / (strategyScores[Strategy][0] + (double)strategyScores[Strategy][1]);
+      }
+    }
+    const int initialScore = 50;
+    public void StrategyScoresReset() { strategyScores.Values.ToList().ForEach(ss => { ss[0] = ss[1] = initialScore; }); }
     public Trade LastTrade {
       get { return _lastTrade; }
       set {
@@ -823,9 +842,14 @@ namespace HedgeHog.Alice.Store {
           var id = LastTrade.Id + "";
           if (!string.IsNullOrWhiteSpace(id)) {
             Strategies tradeStrategy = tradeStrategies[id];
+            var strategyScore = strategyScores[tradeStrategy];
             if (strategyScores.ContainsKey(tradeStrategy)) {
-              strategyScores[tradeStrategy][0] = strategyScores[tradeStrategy][0] + (LastTrade.PL > 0 ? 1 : 0);
-              strategyScores[tradeStrategy][1] = strategyScores[tradeStrategy][1] + (LastTrade.PL > 0 ? 0 : 1);
+              strategyScore[0] += (LastTrade.PL > 0 ? 1 : 0);
+              strategyScore[1] += (LastTrade.PL > 0 ? 0 : 1);
+              if (strategyScore.Min() > initialScore*1.1) {
+                strategyScore[0] *= .9;
+                strategyScore[1] *= .9;
+              }
             }
           }
         } else {
@@ -834,17 +858,7 @@ namespace HedgeHog.Alice.Store {
           if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
 
           ProfitCounter = CurrentLoss >= 0 ? 0 : ProfitCounter + (LastTrade.PL > 0 ? 1 : -1);
-
           _lastTrade = value;
-          if (CorridorStats != null) {
-            var tu = _lastTrade.InitUnKnown<TradeUnKNown>();
-            tu.TradeStats = new TradeStatistics() {
-              SessionId = SessionId,
-               PowerAverage = PowerAverage,
-               PowerVolatility = PowerVolatility
-
-            };
-          }
         }
         OnPropertyChanged("LastTrade");
         OnPropertyChanged("LastLotSize");
@@ -860,7 +874,7 @@ namespace HedgeHog.Alice.Store {
         if (trades.Any(t => t.Buy) && trades.Any(t => !t.Buy)) return 0;
         return trades.Sum(t => t.Lots) + LotSize;
       }
-      return Math.Min(LastLotSize + LotSize, MaxLotByTakeProfitRatio.ToInt() * LotSize);
+      return StrategyScore < .47 ? LotSize : Math.Min(LastLotSize + LotSize, MaxLotByTakeProfitRatio.ToInt() * LotSize);
     }
 
     private double _Profitability;
@@ -1134,7 +1148,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     Lib.CmaWalker powerVolatilityWalker = new Lib.CmaWalker(1);
-    public bool IsPowerVolatilityOk { get { return !TradeByPowerVolatilty || true; } }
+    public bool IsPowerVolatilityOk { get { return !TradeByPowerVolatilty || PowerVolatility <= PowerVolatilityMinimum; } }
     double _PowerVolatility;
     public double PowerVolatility {
       get { return _PowerVolatility; }

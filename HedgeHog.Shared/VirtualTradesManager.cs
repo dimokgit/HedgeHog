@@ -304,7 +304,7 @@ namespace HedgeHog.Shared {
     }
 
     public object FixOrderClose(string tradeId, int mode, Price price, int lot) {
-      throw new NotImplementedException();
+      return CloseTrade(GetTrades().Single(t => t.Id == tradeId), lot, price);
     }
     public object FixOrderClose(string tradeId) {
       throw new NotImplementedException();
