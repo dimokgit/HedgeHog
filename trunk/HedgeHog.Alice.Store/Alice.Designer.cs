@@ -1507,7 +1507,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="reverseStrategy">Initial value of the ReverseStrategy property.</param>
         /// <param name="tradeAndAngleSynced">Initial value of the TradeAndAngleSynced property.</param>
         /// <param name="tradingAngleRange">Initial value of the TradingAngleRange property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange)
+        /// <param name="closeByMomentum">Initial value of the CloseByMomentum property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1548,6 +1549,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.ProfitToLossExitRatio = profitToLossExitRatio;
             tradingMacro.CorridorHeightBySpreadRatio = corridorHeightBySpreadRatio;
             tradingMacro.PowerRowOffset = powerRowOffset;
+            tradingMacro.PowerVolatilityMinimum = powerVolatilityMinimum;
             tradingMacro.RangeRatioForTradeStop = rangeRatioForTradeStop;
             tradingMacro.ReversePower = reversePower;
             tradingMacro.CorrelationTreshold = correlationTreshold;
@@ -1561,6 +1563,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.ReverseStrategy = reverseStrategy;
             tradingMacro.TradeAndAngleSynced = tradeAndAngleSynced;
             tradingMacro.TradingAngleRange = tradingAngleRange;
+            tradingMacro.CloseByMomentum = closeByMomentum;
             return tradingMacro;
         }
 
@@ -2865,6 +2868,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _TradingAngleRange;
         partial void OnTradingAngleRangeChanging(global::System.Double value);
         partial void OnTradingAngleRangeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean CloseByMomentum
+        {
+            get
+            {
+                return _CloseByMomentum;
+            }
+            set
+            {
+                OnCloseByMomentumChanging(value);
+                ReportPropertyChanging("CloseByMomentum");
+                _CloseByMomentum = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CloseByMomentum");
+                OnCloseByMomentumChanged();
+            }
+        }
+        private global::System.Boolean _CloseByMomentum;
+        partial void OnCloseByMomentumChanging(global::System.Boolean value);
+        partial void OnCloseByMomentumChanged();
 
         #endregion
     

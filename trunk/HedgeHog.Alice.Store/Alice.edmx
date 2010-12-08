@@ -134,6 +134,7 @@
           <Property Name="ReverseStrategy" Type="bit" Nullable="false" />
           <Property Name="TradeAndAngleSynced" Type="bit" Nullable="false" />
           <Property Name="TradingAngleRange" Type="float" Nullable="false" />
+          <Property Name="CloseByMomentum" Type="bit" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -219,6 +220,7 @@
           <Property Type="Boolean" Name="ReverseStrategy" Nullable="false" />
           <Property Type="Boolean" Name="TradeAndAngleSynced" Nullable="false" />
           <Property Type="Double" Name="TradingAngleRange" Nullable="false" />
+          <Property Type="Boolean" Name="CloseByMomentum" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -288,7 +290,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
+            <ScalarProperty Name="CloseByMomentum" ColumnName="CloseByMomentum" />
+                <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
                 <ScalarProperty Name="TradeAndAngleSynced" ColumnName="TradeAndAngleSynced" />
                 <ScalarProperty Name="ReverseStrategy" ColumnName="ReverseStrategy" />
                 <ScalarProperty Name="CloseAllOnProfit" ColumnName="CloseAllOnProfit" />

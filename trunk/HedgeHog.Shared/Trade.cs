@@ -93,15 +93,11 @@ namespace HedgeHog.Shared {
       get { return _tradesManager; }
       set {
         if (_tradesManager != null)
-          _tradesManager.PriceChanged -= TradesManager_PriceChanged;
+          _tradesManager.PriceChanged -= UpdateByPrice;
         _tradesManager = value;
         if (_tradesManager != null)
-          _tradesManager.PriceChanged += TradesManager_PriceChanged;
+          _tradesManager.PriceChanged += UpdateByPrice;
       }
-    }
-
-    void TradesManager_PriceChanged(Price Price) {
-      UpdateByPrice(Price);
     }
 
     public void UpdateByPrice(Price Price) {

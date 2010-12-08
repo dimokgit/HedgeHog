@@ -27,6 +27,15 @@ namespace HedgeHog.Alice.Store {
     protected void SetRatesByPair(string pair, List<Rate> rates) {
       ratesByPair[pair] = rates;
     }
+
+    protected Dictionary<string, TradeStatistics> TradeStatisticsDictionary = new Dictionary<string, TradeStatistics>();
+    void SetTradesStatistics(Price price, Trade[] trades) {
+    }
+    void SetTradeStatistics(Price price, Trade trade) {
+      var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics();
+      ts.PLMaximum = trade.PL;
+    }
+    
     protected List<Rate> GetRatesByPair(string pair) {
       if (!ratesByPair.ContainsKey(pair)) ratesByPair.Add(pair, new List<Rate>());
       lock (ratesByPair[pair]) {
@@ -425,10 +434,6 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         tm.PopupText = exc.Message;
       }
-    }
-
-    protected static double TradesMultiplier(TradingMacro tm) {
-      return Math.Pow(tm.Trades.Select(t => t.Lots).DefaultIfEmpty(tm.LotSize).Max() / tm.LotSize, 0.6);
     }
     private static void SetCorrelations(TradingMacro tm, List<Rate> rates, CorridorStatistics csFirst, PriceBar[] priceBars) {
       var pbs = priceBars/*.Where(pb => pb.StartDate > csFirst.StartDate)*/.OrderBy(pb => pb.StartDate).Select(pb => pb.Power).ToArray();

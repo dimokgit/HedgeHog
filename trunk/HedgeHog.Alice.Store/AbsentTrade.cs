@@ -27,6 +27,12 @@ namespace HedgeHog.Alice.Store {
     public bool IsSyncPending { get; set; }
     public TradeStatistics TradeStats { get; set; }
     public Guid SessionId { get; set; }
+    public TradeStatistics InitTradeStatistics(TradeStatistics tradesStatistics = null) {
+      if (tradesStatistics != null && this.TradeStats != null)
+        throw new InvalidOperationException("TradeStats member is already set.");
+      TradeStats = tradesStatistics ?? new TradeStatistics();
+      return TradeStats;
+    }
   }
 
   public class OrderUnKnown : UnKnownAliceBase {
