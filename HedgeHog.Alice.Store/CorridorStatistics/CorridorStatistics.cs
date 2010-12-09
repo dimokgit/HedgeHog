@@ -75,7 +75,18 @@ namespace HedgeHog.Alice.Store {
 
     public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
     public DateTime EndDate { get; set; }
-    public DateTime StartDate { get; set; }
+
+    private DateTime _StartDate;
+    public DateTime StartDate {
+      get { return _StartDate; }
+      set {
+        if (_StartDate != value) {
+          _StartDate = value;
+          OnPropertyChanged("StartDate");
+        }
+      }
+    }
+
     public int Periods { get; set; }
     public int Iterations { get; set; }
     public double Height {
@@ -96,6 +107,8 @@ namespace HedgeHog.Alice.Store {
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
       this.EndDate = endDate;
+      // Mast go before StartDate
+      this.Slope = slope;
       this.StartDate = startDate;
       this.Periods = periods;
       this.Iterations = iterations;
@@ -103,7 +116,6 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown = this.HeightDown0 = heightDown;
       //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
       Corridornes = Density;
-      Slope = slope;
       OnPropertyChanged("Height");
       OnPropertyChanged("HeightInPips");
     }
@@ -237,26 +249,6 @@ namespace HedgeHog.Alice.Store {
       this.TradingMacro = tradingMacro;
     }
 
-    public void ResetLock() { IsBuyLock = IsSellLock = false; }
-    bool _isBuyLock;
-    public bool IsBuyLock {
-      get { return _isBuyLock; }
-      set { 
-        _isBuyLock = value;
-        if (value) IsSellLock = false;
-        OnPropertyChanged("IsBuyLock");
-      }
-    }
-    bool _isSellLock;
-    public bool IsSellLock {
-      get { return _isSellLock; }
-      set { 
-        _isSellLock = value;
-        if (value) IsBuyLock = false;
-        OnPropertyChanged("IsSellLock");
-      }
-    }
-
     bool? _TradeSignal;
     public bool? TradeSignal {
       get {
@@ -292,13 +284,16 @@ namespace HedgeHog.Alice.Store {
           default: return null;
         }
         if (b.HasValue) {
-          if (b.Value && !canBuy) return null;
-          if (!b.Value && !canSell) return null;
+          if (b.Value && (!canBuy || IsSellLock)) return null;
+          if (!b.Value && (!canSell || IsBuyLock)) return null;
           return lastSignal = b;
         }
         return null;
       }
     }
+
+    bool IsSellLock { get { return TradingMacro.IsSellLock; } }
+    bool IsBuyLock { get { return TradingMacro.IsBuyLock; } }
 
     private double GetTradingHeight(double multiplier) {
       var m = Math.Max(1, HeightUpDownInPips) * multiplier;
@@ -384,12 +379,12 @@ namespace HedgeHog.Alice.Store {
       if (or.HasValue) return !or;
       if (PriceDiffHigh > 0) {
         if (!TradingMacro.ReverseStrategy)
-          IsBuyLock = false;
+          TradingMacro.IsBuyLock = false;
         return GetSignal(false);
       }
       if (PriceDiffLow < 0) {
         if (!TradingMacro.ReverseStrategy)
-          IsSellLock = false;
+          TradingMacro.IsSellLock = false;
         return GetSignal(true);
       }
       return null;

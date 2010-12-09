@@ -28,14 +28,6 @@ namespace HedgeHog.Alice.Store {
       ratesByPair[pair] = rates;
     }
 
-    protected Dictionary<string, TradeStatistics> TradeStatisticsDictionary = new Dictionary<string, TradeStatistics>();
-    void SetTradesStatistics(Price price, Trade[] trades) {
-    }
-    void SetTradeStatistics(Price price, Trade trade) {
-      var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics();
-      ts.PLMaximum = trade.PL;
-    }
-    
     protected List<Rate> GetRatesByPair(string pair) {
       if (!ratesByPair.ContainsKey(pair)) ratesByPair.Add(pair, new List<Rate>());
       lock (ratesByPair[pair]) {
@@ -116,6 +108,8 @@ namespace HedgeHog.Alice.Store {
           tradesManager.ClosePair(VirtualPair);
           if (e.ClearTest) {
             tm.CurrentLoss = 0;
+            tm.Support = new Rate();
+            tm.Resistance = new Rate();
             tm.MinimumGross = 0;
             tm.HistoryMaximumLot = 0;
             tm.RunningBalance = 0;
