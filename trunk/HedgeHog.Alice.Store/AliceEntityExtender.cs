@@ -175,10 +175,25 @@ namespace HedgeHog.Alice.Store {
       }
       return cs;
     }
-    private ObservableCollection<CorridorStatistics> _CorridorStatsArray = new ObservableCollection<CorridorStatistics>();
+
+    void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      var cs = (sender as CorridorStatistics);
+      if (e.PropertyName == Lib.GetLambda(() => cs.StartDate)) {
+        var rates = Rates.Where(r=>r.StartDate >= cs.StartDate).OrderBy(r => r.PriceAvg).ToArray();
+        var rateMax = rates.Last();
+        var rateMin = rates.First();
+        if (cs.Slope > 0 && Support.StartDate < rateMin.StartDate) Support = rateMin;
+        if (cs.Slope < 0 && Resistance.StartDate < rateMax.StartDate) Resistance = rateMax;
+      }
+
+    }
+    private ObservableCollection<CorridorStatistics> _CorridorStatsArray;
     public ObservableCollection<CorridorStatistics> CorridorStatsArray {
       get {
-        //if( _CorridorStatsArray == null)
+        if (_CorridorStatsArray == null) {
+          _CorridorStatsArray = new ObservableCollection<CorridorStatistics>();
+          _CorridorStatsArray.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(CorridorStatsArray_CollectionChanged);
+        }
         //  _CorridorStatsArray = new CorridorStatistics[] { new CorridorStatistics(this), new CorridorStatistics(this), new CorridorStatistics(this) };
         return _CorridorStatsArray;
       }
@@ -188,6 +203,11 @@ namespace HedgeHog.Alice.Store {
           OnPropertyChanged("CorridorStatsArray");
         }
       }
+    }
+
+    void CorridorStatsArray_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
+      if( e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add )
+        (e.NewItems[0] as CorridorStatistics).PropertyChanged += cs_PropertyChanged;
     }
 
     private CorridorStatistics _CorridorStats;
@@ -614,6 +634,12 @@ namespace HedgeHog.Alice.Store {
     public bool? OpenSignal {
       get {
         if (CorridorStats == null) return null;
+        if (Strategy == Strategies.SuppRes) {
+          if (Math.Min(Support.PriceAvg, Resistance.PriceAvg) == 0) return null;
+          if (!IsSellLock && RateLast.PriceAvg > Math.Max(Support.PriceAvg, Resistance.PriceAvg)) return true;
+          if (!IsBuyLock && RateLast.PriceAvg < Math.Min(Support.PriceAvg, Resistance.PriceAvg)) return false;
+          return null;
+        }
         if (Strategy == Strategies.Momentum)
           if (IsPowerVolatilityOk)
             return CorridorStats.PriceCmaDiffHigh > RateLast.PriceAvg1 ? false 
@@ -633,8 +659,71 @@ namespace HedgeHog.Alice.Store {
     }
     public bool? CloseSignal {
       get {
+        if (Strategy == Strategies.SuppRes && !string.IsNullOrWhiteSpace(LastTrade.Id)) {
+          if (RateLast.PriceAvg.Between(Support.PriceAvg, Resistance.PriceAvg) ||
+              RatePreLast.PriceAvg.Between(Support.PriceAvg, Resistance.PriceAvg)
+            ) {
+            if (IsBuyLock || IsSellLock) ResetLock();
+            return LastTrade.Buy;
+          }
+          var tch = GetTradeStatistics(LastTrade).CorridorHeight;
+          if (tch > 0 && LastTrade.PL > tch) return LastTrade.Buy;
+          return null;
+        }
         return CorridorStats == null ? null : CorridorStats.CloseSignal;
       }
+    }
+
+    public void ResetLock() { IsBuyLock = IsSellLock = false; }
+    bool _isBuyLock;
+    public bool IsBuyLock {
+      get { return _isBuyLock; }
+      set { 
+        _isBuyLock = value;
+        if (value) IsSellLock = false;
+        OnPropertyChanged("IsBuyLock");
+      }
+    }
+    bool _isSellLock;
+    public bool IsSellLock {
+      get { return _isSellLock; }
+      set {
+        _isSellLock = value;
+        if (value) IsBuyLock = false;
+        OnPropertyChanged("IsSellLock");
+      }
+    }
+
+
+
+    public void SubscribeToTradeClosedEVent(ITradesManager tradesManager) {
+      tradesManager.TradeClosed += OnTradeClosed;
+    }
+    void OnTradeClosed(object sender, TradeEventArgs e) {
+      if (Strategy == Strategies.None) return;
+      var trade = e.Trade;
+      ResetLock();
+
+      if (Strategy == Strategies.SuppRes) {
+        if (trade.Buy) IsSellLock = true;
+        else IsBuyLock = true;
+      }
+    }
+
+    protected Dictionary<string, TradeStatistics> TradeStatisticsDictionary = new Dictionary<string, TradeStatistics>();
+    public void SetTradesStatistics(Price price, Trade[] trades) {
+      foreach (var trade in trades)
+        SetTradeStatistics(price, trade);
+    }
+    public TradeStatistics SetTradeStatistics(Price price, Trade trade) {
+      if (!TradeStatisticsDictionary.ContainsKey(trade.Id)) 
+        TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics());
+      var ts = TradeStatisticsDictionary[trade.Id];
+      ts.PLMaximum = trade.PL;
+      return ts;
+    }
+    public TradeStatistics GetTradeStatistics(Trade trade) {
+      return TradeStatisticsDictionary[trade.Id];
     }
 
     public Price PriceCurrent { get; set; }
@@ -709,6 +798,18 @@ namespace HedgeHog.Alice.Store {
     private static Func<Rate, double> _GetPriceHigh = r => r.BidHigh;
     public static Func<Rate, double> GetPriceHigh { get { return _GetPriceHigh; } }
 
+    Rate _Support = new Rate();
+    public Rate Support {
+      get { return _Support; }
+      set { _Support = value; }
+    }
+    Rate _Resistance = new Rate();
+
+    public Rate Resistance {
+      get { return _Resistance; }
+      set { _Resistance = value; }
+    }
+
     List<Rate> _Rates;
     public List<Rate> Rates {
       get { return _Rates; }
@@ -719,6 +820,10 @@ namespace HedgeHog.Alice.Store {
           CorridorAngle = Rates.Skip(Rates.Count - CorridorStats.Periods)
             .SetCorridorPrices(CorridorStats.HeightUp, CorridorStats.HeightDown, 
             r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d, (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d)[1];
+          if (CorridorAngle.Abs() < 1) {
+            Resistance = Rates.OrderBy(r => r.PriceHigh).Last();
+            Support = Rates.OrderBy(r => r.PriceLow).First();
+          }
           OnPropertyChanged("CorridorThinness");
           OnPropertyChanged("CorridorHeightsRatio");
           OnPropertyChanged("CorridorHeightByRegressionInPips");
@@ -728,6 +833,7 @@ namespace HedgeHog.Alice.Store {
         //var dateLast = value.Last().StartDate.AddMinutes(-4);
         RatesLast = value.Skip(value.Count - 3).ToArray();// value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
         RateLast = RatesLast.DefaultIfEmpty(new Rate()).Last();
+        RatePreLast = Rates.Skip(Rates.Count - 2).First();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
     }
@@ -742,6 +848,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    private Rate _RatePreLast;
+    public Rate RatePreLast {
+      get { return _RatePreLast; }
+      set {
+        if (_RatePreLast != value) {
+          _RatePreLast = value;
+          OnPropertyChanged("RatePreLast");
+        }
+      }
+    }
     public Rate[] RatesLast { get; protected set; }
     public Rate[] RatesDirection { get; protected set; }
     public double RateLastAsk { get { return RatesLast.Max(r => r.AskHigh); } }
@@ -817,6 +933,7 @@ namespace HedgeHog.Alice.Store {
     Dictionary<Strategies, double[]> strategyScores = new Dictionary<Strategies, double[]>() { 
       { Strategies.Range, new double[]{initialScore,initialScore} }
       //,{ Strategies.Breakout, new double[]{initialScore,initialScore} },
+      //,{ Strategies.Breakout, new double[]{initialScore,initialScore} },
       //{ Strategies.Brange, new double[]{initialScore,initialScore} } ,
       //{ Strategies.Correlation, new double[]{initialScore,initialScore} } 
     };
@@ -853,7 +970,8 @@ namespace HedgeHog.Alice.Store {
             }
           }
         } else {
-          var strategy = Strategy & (Strategies.Breakout | Strategies.Range | Strategies.Brange | Strategies.Correlation);
+          var strategy = Strategy & (Strategies.Breakout | Strategies.Range| Strategies.SuppRes);
+          if (strategy == Strategies.SuppRes) strategy = Strategies.Range;
           tradeStrategies[value.Id + ""] = strategy;
           if (-LastTrade.PL > AvarageLossInPips / 10) AvarageLossInPips = Lib.CMA(AvarageLossInPips, 0, 10, LastTrade.PL.Abs());
 
@@ -874,7 +992,8 @@ namespace HedgeHog.Alice.Store {
         if (trades.Any(t => t.Buy) && trades.Any(t => !t.Buy)) return 0;
         return trades.Sum(t => t.Lots) + LotSize;
       }
-      return StrategyScore < .47 ? LotSize : Math.Min(LastLotSize + LotSize, MaxLotByTakeProfitRatio.ToInt() * LotSize);
+        return (Strategy == Strategies.Range && StrategyScore < .47) ? LotSize 
+          : Math.Min(LastLotSize + LotSize, MaxLotByTakeProfitRatio.ToInt() * LotSize);
     }
 
     private double _Profitability;
@@ -948,7 +1067,7 @@ namespace HedgeHog.Alice.Store {
         _trades = value;
         PositionsBuy = value.Count(t => t.Buy);
         PositionsSell = value.Count(t => !t.Buy);
-        if (value.Length > 0) CorridorStats.ResetLock();
+        if (value.Length > 0) ResetLock();
       }
     }
     [ReadOnly(true)]
@@ -1243,6 +1362,6 @@ namespace HedgeHog.Alice.Store {
   public enum Strategies {
     None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Momentum = 16, Reverse = 32, Momentum_R = Momentum + Reverse,
-    OverPower = 64, Brange = 128,Correlation = 256
+    OverPower = 64, Brange = 128,SuppRes = 256
   }
 }

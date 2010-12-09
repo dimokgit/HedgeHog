@@ -195,7 +195,6 @@ namespace HedgeHog.Alice.Client {
     void ClosePair(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        tm.CorridorStats.ResetLock();
         tradesManager.CloseTradesAsync(tradesManager.GetTrades(tm.Pair));
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
@@ -379,6 +378,9 @@ namespace HedgeHog.Alice.Client {
               Log = exc;
             }
           }));
+          if( e.PropertyName == Lib.GetLambda(()=>tm.IsActive)){
+            if (tm.IsActive) tm.SubscribeToTradeClosedEVent(tradesManager);
+          }
         }
       } catch (Exception exc) { Log = exc; }
     }
@@ -502,7 +504,7 @@ namespace HedgeHog.Alice.Client {
               charter.PriceBarValue = pb => pb.Power;
               charter.AddTicks(price, rates, new PriceBar[1][] { priceBars}, info, trendHighlight,
                 tm.PowerAverage,  powerBars.AverageByIterations((v,a)=>v<=a,tm.IterationsForPower).Average(),// tm.PowerVolatility,
-                0, 0,
+                (tm.Resistance ?? new Rate()).PriceAvg, (tm.Support ?? new Rate()).PriceAvg,
                 0/*csFirst.AverageHigh*/, 0/*csFirst.AverageLow*/,
                 timeHigh, timeCurr, timeLow,
                 new double[0]);
@@ -535,7 +537,7 @@ namespace HedgeHog.Alice.Client {
         tm.BalanceOnStop = account.Balance + tm.StopAmount.GetValueOrDefault();
         tm.BalanceOnLimit = account.Balance + tm.LimitAmount.GetValueOrDefault();
         SetLotSize(tm, account);
-
+        tm.SetTradesStatistics(price, trades);
         CheckTrades(trades);
       } catch (Exception exc) { Log = exc; }
       if (sw.Elapsed > TimeSpan.FromSeconds(5))
@@ -660,12 +662,12 @@ namespace HedgeHog.Alice.Client {
 
     private static void SetTradeLocks(TradingMacro tm, Trade trade, double pl) {
       if (false && (tm.Strategy & Strategies.Breakout) == Strategies.Breakout) {
-        if (trade.Buy) tm.CorridorStats.IsSellLock = true;
-        else tm.CorridorStats.IsBuyLock = true;
+        if (trade.Buy) tm.IsSellLock = true;
+        else tm.IsBuyLock = true;
       }
       if ((tm.Strategy & Strategies.Range) == Strategies.Range)
-        if (!trade.Buy) tm.CorridorStats.IsBuyLock = true;
-        else tm.CorridorStats.IsSellLock = true;
+        if (!trade.Buy) tm.IsBuyLock = true;
+        else tm.IsSellLock = true;
       //if (tm.Strategy == Strategies.Breakout) tm.Strategy = Strategies.None;
       if ((tm.Strategy & Strategies.Stop) == Strategies.Stop) tm.Strategy = Strategies.None;
     }
@@ -759,6 +761,8 @@ namespace HedgeHog.Alice.Client {
       tm.CurrentLot = trades.Sum(t => t.Lots);
       var amountK = tm.CurrentLot/1000;
       if (tm.HistoryMaximumLot < amountK) tm.HistoryMaximumLot = amountK;
+      var ts = tm.SetTradeStatistics(GetCurrentPrice(tm.Pair), trade);
+      ts.CorridorHeight = tradesManager.InPips(trade.Pair, (tm.Support.PriceAvg - tm.Resistance.PriceAvg).Abs());
       //MessageBox.Show(trade.PropertiesToString(Environment.NewLine), "Open");
     }
 
@@ -824,7 +828,7 @@ namespace HedgeHog.Alice.Client {
 
         try {
           System.IO.File.AppendAllText("ClosedTrades_new.xml", Environment.NewLine + trade);
-          var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics(TradeStatisticsDictionary[trade.Pair]);
+          var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics(tm.GetTradeStatistics(trade));
           ts.SessionId = TradingMacro.SessionId;
           ts.PowerAverage = tm.PowerAverage;
           ts.PowerVolatility = tm.PowerVolatility;
@@ -1363,6 +1367,8 @@ namespace HedgeHog.Alice.Client {
       tm.CorridorStatsArray.Clear();
       foreach (var i in tm.CorridorIterationsArray)
         tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });
+      if( tm.IsActive)
+        tm.SubscribeToTradeClosedEVent(tradesManager);
     }
     #endregion
 

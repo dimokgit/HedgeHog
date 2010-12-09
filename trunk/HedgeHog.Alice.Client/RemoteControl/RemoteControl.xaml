@@ -58,7 +58,7 @@
           <Button.ContentTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding LotSizeByLoss,StringFormat=B:{0:c0}}"
-                         FontWeight="{Binding CorridorStats.IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
+                         FontWeight="{Binding IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
@@ -67,7 +67,7 @@
           <Button.ContentTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding LotSizeByLoss,StringFormat=S:{0:c0}}"
-                         FontWeight="{Binding CorridorStats.IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
+                         FontWeight="{Binding IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>

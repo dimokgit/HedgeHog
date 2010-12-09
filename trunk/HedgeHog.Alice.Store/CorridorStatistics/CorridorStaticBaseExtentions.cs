@@ -98,7 +98,7 @@ namespace HedgeHog.Alice.Store {
           density = (heightDown + heightUp) / periods;
         }
         rates.ToList().ForEach(r => priceSet(r, 0));
-        return new CorridorStatistics(density, coeffs[1], heightUp, heightDown, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        return new CorridorStatistics(density, -coeffs[1], heightUp, heightDown, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = priceGet, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {
