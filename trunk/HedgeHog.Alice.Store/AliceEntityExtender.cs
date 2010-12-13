@@ -182,9 +182,11 @@ namespace HedgeHog.Alice.Store {
         var rates = Rates.Where(r=>r.StartDate >= cs.StartDate).OrderBy(r => r.PriceAvg).ToArray();
         var rateMax = rates.Last();
         var rateMin = rates.First();
-        if (cs.Slope > 0) Support = rateMin.Clone() as Rate;
-        if (cs.Slope < 0) Resistance = rateMax.Clone() as Rate;
-        return;
+        if (false) {
+          if (cs.Slope > 0) Support = rateMin.Clone() as Rate;
+          if (cs.Slope < 0) Resistance = rateMax.Clone() as Rate;
+          return;
+        }
         if (cs.Slope > 0 && (SupportPrice == 0 || GetSupportPrice(rateMin) < SupportPrice)) {
           if( SupportPrice>0) Resistance = Support;
           Support = rateMin.Clone() as Rate;
