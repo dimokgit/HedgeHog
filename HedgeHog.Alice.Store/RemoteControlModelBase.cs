@@ -375,7 +375,8 @@ namespace HedgeHog.Alice.Store {
         var priceBarsIntervals = priceBarsForCorridor.GetIntervals(5);
         var powerBar = !tm.TradeByFirstWave.HasValue ? priceBarsForCorridor.OrderBy(pb => pb.Power).Last() 
           : priceBarsIntervals.First().OrderBy(pb=>pb.Power).Last();
-        var startDate = tm.RatesStartDate = tm.CorridorStartDate ?? powerBar.StartDate;
+        var startDate = tm.CorridorStartDate ?? powerBar.StartDate;
+        tm.RatesStartDate = tm.CorridorStartDate != null ? DateTime.MaxValue : startDate;
         var periodsLength = startDate == null ? tm.CorridorPeriodsLength : 1;
         var periodsStart = Math.Min(rates.Count - 1, startDate == null ? tm.CorridorPeriodsStart : rates.Count(r => r.StartDate >= startDate));
         var corridornesses = rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, tm.IterationsForCorridorHeights, false)
