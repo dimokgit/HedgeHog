@@ -11,7 +11,10 @@ namespace HedgeHog.Shared {
   public class VirtualTradesManager : ITradesManager {
     const string TRADE_ID_FORMAT = "yyMMddhhmmssffff";
     ObservableCollection<Offer> offersCollection = new ObservableCollection<Offer>(new[]{
-      new Offer(){Pair = "EUR/USD",Digits=5,PipCost=1,MMR = 150,PointSize=.0001}
+      new Offer(){Pair = "EUR/USD",Digits=5,PipCost=1,MMR = 150,PointSize=.0001},
+      new Offer(){Pair = "GBP/USD",Digits=5,PipCost=1,MMR = 170,PointSize=.0001},
+      new Offer(){Pair = "USD/JPY",Digits=3,PipCost=1.19,MMR = 100,PointSize=.01},
+      new Offer(){Pair = "EUR/JPY",Digits=3,PipCost=1.19,MMR = 150,PointSize=.01}
     });
     ObservableCollection<Trade> tradesOpened = new ObservableCollection<Trade>();
     ObservableCollection<Trade> tradesClosed = new ObservableCollection<Trade>();

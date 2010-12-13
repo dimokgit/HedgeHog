@@ -9,10 +9,12 @@ using System.ComponentModel.DataAnnotations;
 namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
   public enum OverlapType { None = 0, Up = 1, Down = -1 };
-  public abstract class BarBase : IEquatable<BarBase>,ICloneable {
-    public int Index { get; set; }
+  public abstract class BarBaseDate{
     public DateTime StartDate { get; set; }
     public DateTime StartDateContinuous { get; set; }
+  }
+  public abstract class BarBase : BarBaseDate, IEquatable<BarBase>, ICloneable {
+    public int Index { get; set; }
     public readonly bool IsHistory;
 
     #region Bid/Ask
@@ -345,7 +347,7 @@ namespace HedgeHog.Bars {
     public DateTime StartDate { get; set; }
   }
 
-  public class PriceBar {
+  public class PriceBar : BarBaseDate {
     // Properties
     [DisplayName("")]
     public double AskHigh { get; set; }
@@ -374,9 +376,6 @@ namespace HedgeHog.Bars {
 
     [DisplayFormat(DataFormatString = "{0:n0}"), DisplayName("")]
     public double Spread { get; set; }
-
-    [DisplayFormat(DataFormatString = "{0:dd HH:mm}"), DisplayName("Date")]
-    public DateTime StartDate { get; set; }
 
   }
 }

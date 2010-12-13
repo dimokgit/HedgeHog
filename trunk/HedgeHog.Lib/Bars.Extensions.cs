@@ -35,7 +35,7 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
-    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
       var period = bars.GetPeriod();
       if (period == TimeSpan.Zero)
         bars.AsParallel().ForAll(b => b.StartDateContinuous = b.StartDate);
@@ -49,7 +49,7 @@ namespace HedgeHog.Bars {
       }
     }
 
-    public static TimeSpan GetPeriod<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+    public static TimeSpan GetPeriod<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
       if (bars.Count() < 2) return TimeSpan.Zero;
       var periods = new List<double>();
       bars.Aggregate((bp, bn) => { periods.Add((bp.StartDate - bn.StartDate).Duration().TotalMinutes); return bn; });
@@ -138,22 +138,36 @@ namespace HedgeHog.Bars {
       return extreams.ToArray();
     }
 
-    private static int[] GetIntervals<TBar>(TBar[] bars, int margin) where TBar : BarBase {
+    public static TBar[][] GetIntervals<TBar>(this ICollection<TBar> bars, int margin) where TBar : BarBaseDate {
       var intervals = new List<int>();
-      var period = (bars[1].StartDate - bars[0].StartDate).Duration();
-      intervals = new List<int>();
-      int interval = 0;
-      Func<TBar, TBar, TBar> getInterval = (rp, rn) => {
-        var i = (rp.StartDate - rn.StartDate).Duration() == period ? 1 : 0;
-        if (i == 0) {
-          if (interval > margin * 2) intervals.Add(interval);
-          interval = 0;
-        } else interval++;
-        return rn;
-      };
-      bars.Aggregate(getInterval);
-      if (interval > margin * 2) intervals.Add(interval);
-      return intervals.ToArray();
+      var barIntervals = new List<TBar[]>();
+      var barInterval = new List<TBar>();
+      if (bars.Count < 2) {
+        barIntervals.Add(bars.ToArray());
+      } else {
+        var period = bars.GetPeriod();
+        intervals = new List<int>();
+        int interval = 0;
+        Func<TBar, TBar, TBar> getInterval = (rp, rn) => {
+          var i = (rp.StartDate - rn.StartDate).Duration() == period ? 1 : 0;
+          if (i == 0) {
+            if (interval > 0) {
+              interval = 0;
+              barIntervals.Add(barInterval.ToArray());
+            }
+          } else {
+            if (interval > margin * 2) {
+              if (barInterval.Count == 0) barInterval.Add(rp);
+              barInterval.Add(rn);
+            }
+            interval++;
+          }
+          return rn;
+        };
+        bars.Aggregate(getInterval);
+        if (interval > margin * 2) barIntervals.Add(barInterval.ToArray());
+      }
+      return barIntervals.ToArray();
     }
 
     #region AverageBy
@@ -182,14 +196,14 @@ namespace HedgeHog.Bars {
     }
 
     #region AverageByIterations
-    public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, double iterations) where TBar : BarBase {
+    public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, double iterations) where TBar : BarBaseDate {
       return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations);
     }
-    public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations) where TBar : BarBase {
+    public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations) where TBar : BarBaseDate {
       double average;
       return AverageByIterations<TBar>(values, getPrice, compare, iterations, out average);
     }
-    static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations, out double average) where TBar : BarBase {
+    static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations, out double average) where TBar : BarBaseDate {
       var avg = values.Count() == 0 ? 0 : values.Average(getPrice);
       for (int i = 1; i < iterations && values.Count() > 0; i++) {
         values = values.Where(r => compare(getPrice(r), avg)).ToArray();
@@ -916,11 +930,11 @@ namespace HedgeHog.Bars {
               }
                   ).ToArray();
     }
-    public static IEnumerable<T> OrderBars<T>(this IEnumerable<T> rates) where T : BarBase {
+    public static IEnumerable<T> OrderBars<T>(this IEnumerable<T> rates) where T : BarBaseDate {
       return typeof(T) == typeof(Tick) ?
         rates.Cast<Tick>().OrderBy(r => r.StartDate).ThenBy(r => r.Row).Cast<T>() : rates.OrderBy(r => r.StartDate);
     }
-    public static IEnumerable<T> OrderBarsDescending<T>(this IEnumerable<T> rates) where T : BarBase {
+    public static IEnumerable<T> OrderBarsDescending<T>(this IEnumerable<T> rates) where T : BarBaseDate {
       return typeof(T) == typeof(Tick) ?
         rates.OfType<Tick>().OrderByDescending(r => r.StartDate).ThenByDescending(r => r.Row).OfType<T>() : rates.ToArray().OrderByDescending(r => r.StartDate);
     }

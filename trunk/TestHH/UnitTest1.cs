@@ -90,16 +90,17 @@ namespace TestHH {
     public void LoadBars() {
       //AddTicks(0, "EUR/USD");
       //SavePair(0, "EUR/USD");
-      //SavePair(1, "EUR/USD");
-      SavePair(5, "EUR/USD");
-      SavePair(15, "EUR/USD");
-      SavePair(60, "EUR/USD");
+      var pair = "EUR/USD"; //"GBP/USD";// "USD/JPY"; //"EUR/USD";
+      SavePair(5, pair);
+      //SavePair(15, pair);
+      //SavePair(60, pair);
+      //SavePair(1, pair);
     }
-
     private void AddTicks(int period, string pair) {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
-        var ticks = o2g.GetBarsBase(pair, period,dateStart.AddHours(-1), dateStart);
+        Action<string> showProgress = msg => TestContext.WriteLine("{0}", msg);
+        var ticks = o2g.GetBarsBase(pair, period,dateStart.AddYears(-4), dateStart,showProgress);
         while (ticks.Count() > 0) {
           var i = 0;
           foreach (var t in ticks) {
@@ -125,21 +126,28 @@ namespace TestHH {
           }
           dateStart = dateStart.AddHours(-1);
           ticks = o2g.GetBarsBase(pair, period, dateStart.AddHours(-1), dateStart);
+        }
+        try {
           context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+        } catch (Exception exc) {
+          Debug.WriteLine(exc);
         }
       }
     }
 
     private void SavePair(int period, string pair) {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
-        var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddDays(-14)).Max().AddMinutes(period);
+        var dateStart = context.t_Bar
+          .Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddYears(-3))
+          .Max().AddMinutes(period);
+        Action<string> showProgress = msg => { };// Console.WriteLine(msg);
         var ticks = o2g.GetBarsBase(pair, period, dateStart);
         if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
         context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Pair = {2} AND Period = {1} AND StartDate>={0}", lastDate, period, pair);
         var i = 0;
-        ticks.ToList().ForEach(t => {
+        foreach (var t in ticks.Distinct().OrderBars()) {
           var bar = context.CreateObject<t_Bar>();
           bar.Pair = pair;
           bar.Period = period;
@@ -154,13 +162,21 @@ namespace TestHH {
           bar.BidClose = t.BidClose;
           context.t_Bar.AddObject(bar);
           if (i++ % 1000 == 0)
-          try {
-            context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
-          } catch (Exception exc) {
-            Debugger.Break();
-          }
-        });
-        context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+            try {
+              context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+              context.AcceptAllChanges();
+            } catch (Exception exc) {
+              Debug.WriteLine(exc);
+              Debugger.Break();
+            }
+        }
+        try {
+          context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          context.AcceptAllChanges();
+        } catch (Exception exc) {
+          Debug.WriteLine(exc);
+          Debugger.Break();
+        }
       }
     }
     public void TicksPerMinute() {

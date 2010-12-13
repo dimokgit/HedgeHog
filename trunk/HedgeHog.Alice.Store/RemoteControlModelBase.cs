@@ -17,7 +17,7 @@ using System.Collections.ObjectModel;
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
 
-    static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK" };
+    static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK","EUR/JPY" };
     ObservableCollection<string> _Instruments = new ObservableCollection<string>(defaultInstruments);
     public ObservableCollection<string> Instruments { get { return _Instruments; } }
 
@@ -136,7 +136,6 @@ namespace HedgeHog.Alice.Store {
               Thread.Sleep(100);
               continue;
             }
-            tm.TradingDistance = tradesManager.InPips(VirtualPair, getHourlyAverage(rates.Last()));
             virtualTrader.RaisePriceChanged(VirtualPair, rates.Last());
             tm.Profitability = tm.RunningBalance / (rates.Last().StartDate - VirtualStartDate).TotalDays * 30;
             Thread.Yield();
@@ -145,7 +144,8 @@ namespace HedgeHog.Alice.Store {
             if (rate == null) break;
             lock (rates) {
               rates.Add(rate);
-              rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
+              var removeCount = rates.Count(r => r.StartDate < tm.RatesStartDate);
+              rates.RemoveRange(0, Math.Min(removeCount, Math.Max(0, rates.Count - tm.BarsCount)));
             }
           }
           if (fw.IsLoggedIn) {
@@ -362,28 +362,20 @@ namespace HedgeHog.Alice.Store {
         if (false && !tm.IsTradingHours) return;
         #region Prepare Corridor
         var ratesForSpread = tm.LimitBar == 0?rates.GetMinuteTicks(1).OrderBars().ToArray() :rates.ToArray();
-        var spreadShort = ratesForSpread.Skip(ratesForSpread.Count() - 10).ToArray().AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
-        var spreadLong = ratesForSpread.AverageByIterations(r => r.Spread, 1).Average(r => r.Spread);
+        var spreadShort = tm.SpreadShort = ratesForSpread.Skip(ratesForSpread.Count() - 10).ToArray().AverageByIterations(r => r.Spread, 2).Average(r => r.Spread);
+        var spreadLong = tm.SpreadLong = ratesForSpread.AverageByIterations(r => r.Spread, 2).Average(r => r.Spread);
         var spread = tradesManager.InPips(pair, Math.Max(spreadLong, spreadShort));
         var priceBars = FetchPriceBars(pair, tm.PowerRowOffset, tm.ReversePower).OrderByDescending(pb => pb.StartDate).ToArray();
         var powerBars = priceBars.Select(pb => pb.Power).ToArray();
-        var powerBarShort = priceBars.Take((priceBars.Count() / 10.0).ToInt()).OrderBy(pb => pb.Power).Last();
-        tm.PowerAverage = powerBars.AverageByIterations((v, a) => v >= a, tm.IterationsForPower).Average();//stAvgPower + stDevPower * tm.PowerVolatilityMinimum
         var corridorMinimum = tm.CorridorHeightBySpreadRatio * (spread + MasterModel.CommissionByTrade(new Trade() { Lots = 10000 }));
         Func<CorridorStatistics, double> heightToMinimum = cs => corridorMinimum / tradesManager.InPips(pair, cs.HeightUpDown);
         Func<CorridorStatistics, bool> filter = cs => heightToMinimum(cs) < 1;
-        var powerMinimum = tm.PowerAverage;
-        var powerAverage = priceBars.Average(pb => pb.Power);
-        var priceBarsForCorridor = priceBars.SkipWhile(pb => pb.Power > powerAverage).ToArray();
-        var priceBarDates = priceBarsForCorridor
-          .Where(pb => pb.Spread > corridorMinimum && pb.Power > powerMinimum)
-          .Select(pb => pb.StartDate).DefaultIfEmpty(DateTime.MaxValue);
-        var powerStart = tm.TradeByFirstWave.HasValue ? !tm.TradeByFirstWave.Value ? priceBarDates.Min() : priceBarDates.Max() : DateTime.MinValue;
-        var powerBar = !tm.TradeByFirstWave.HasValue ? priceBarsForCorridor.OrderBy(pb => pb.Power).Last() :
-          !tm.TradeByFirstWave.Value
-          ? priceBarsForCorridor.OrderBy(pb => pb.StartDate).SkipWhile(pb => pb.StartDate < powerStart).TakeWhile(pb => pb.Power > powerMinimum).OrderBy(pb => pb.Power).Last()
-          : priceBarsForCorridor.OrderByDescending(pb => pb.StartDate).SkipWhile(pb => pb.StartDate > powerStart).TakeWhile(pb => pb.Power > powerMinimum).OrderBy(pb => pb.Power).Last();
-        var startDate = tm.CorridorStartDate ?? powerBar.StartDate;
+        var priceBarsForCorridor = priceBars.AverageByIterations(pb=>pb.Power,tm.IterationsForPower);
+        tm.PowerAverage = priceBarsForCorridor.Average(pb => pb.Power);
+        var priceBarsIntervals = priceBarsForCorridor.GetIntervals(5);
+        var powerBar = !tm.TradeByFirstWave.HasValue ? priceBarsForCorridor.OrderBy(pb => pb.Power).Last() 
+          : priceBarsIntervals.First().OrderBy(pb=>pb.Power).Last();
+        var startDate = tm.RatesStartDate = tm.CorridorStartDate ?? powerBar.StartDate;
         var periodsLength = startDate == null ? tm.CorridorPeriodsLength : 1;
         var periodsStart = Math.Min(rates.Count - 1, startDate == null ? tm.CorridorPeriodsStart : rates.Count(r => r.StartDate >= startDate));
         var corridornesses = rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, tm.IterationsForCorridorHeights, false)
@@ -428,6 +420,11 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         tm.PopupText = exc.Message;
       }
+    }
+
+    private static PriceBar LastPowerWave(PriceBar[] priceBarsForCorridor, DateTime powerStart) {
+      Func<PriceBar, bool> dateFilter = pb => pb.StartDate < powerStart;
+      return priceBarsForCorridor.OrderBy(pb => pb.StartDate).SkipWhile(dateFilter).OrderBy(pb => pb.Power).Last();
     }
     private static void SetCorrelations(TradingMacro tm, List<Rate> rates, CorridorStatistics csFirst, PriceBar[] priceBars) {
       var pbs = priceBars/*.Where(pb => pb.StartDate > csFirst.StartDate)*/.OrderBy(pb => pb.StartDate).Select(pb => pb.Power).ToArray();

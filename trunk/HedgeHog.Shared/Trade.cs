@@ -105,7 +105,7 @@ namespace HedgeHog.Shared {
       Close = Buy ? Price.Bid : Price.Ask;
       var gross = Buy ? Close - Open : Open - Close;
       PL = gross / Price.PipSize;
-      GrossPL = gross * Lots;
+      GrossPL = gross * (Lots/10000) / Price.PipSize;
       if (false) TimeClose = Price.Time;
     }
 
