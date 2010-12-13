@@ -634,11 +634,11 @@ namespace Order2GoAddIn {
       return ticks.OrderBars().ToArray();
     }
 
-    public Rate[] GetBarsBase(string pair, int period, DateTime startDate) {
-      return GetBarsBase(pair, period, startDate, FX_DATE_NOW);
+    public Rate[] GetBarsBase(string pair, int period, DateTime startDate, Action<string> callBack = null) {
+      return GetBarsBase(pair, period, startDate, FX_DATE_NOW,callBack);
     }
 
-    public Rate[] GetBarsBase(string pair, int period, DateTime startDate, DateTime endDate) {
+    public Rate[] GetBarsBase(string pair, int period, DateTime startDate, DateTime endDate,Action<string> callBack = null) {
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
@@ -654,7 +654,9 @@ namespace Order2GoAddIn {
             ticks = ticks.Union(t).ToArray();
             if (endDate > ticks.Min(b => b.StartDate)) {
               endDate = ticks.Min(b => b.StartDate);
-              System.Diagnostics.Debug.WriteLine("Bars<" + period + ">:" + ticks.Count() + " @ " + endDate);
+              var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
+              if (callBack != null) callBack(msg);
+              else System.Diagnostics.Debug.WriteLine(msg);
             } else
               endDate = endDate.AddSeconds(-30);
           } catch (Exception exc) {

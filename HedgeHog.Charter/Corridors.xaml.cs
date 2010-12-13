@@ -171,7 +171,8 @@ namespace HedgeHog {
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedDataSource = new EnumerableDataSource<double>(animatedPriceY);
         animatedDataSource.SetYMapping(y => y);
-        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), Colors.Maroon, 1, "").Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
+        this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColor, 1, "");
+        this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
         Border infoBorder = new Border() { 
           BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3) };
         infoBorder.Child = infoBox;
@@ -376,14 +377,14 @@ namespace HedgeHog {
             ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
             for (var i = 0; i < voltsByTick.Count(); i++) {
               animatedVoltValueY[i] = PriceBarValue(voltsByTick[i]);
-              animatedVoltTimeX[i] = voltsByTick[i].StartDate;
+              animatedVoltTimeX[i] = voltsByTick[i].StartDateContinuous;
             }
           }
           if (voltsByTicks!= null && voltsByTicks.Length >1) {
             ReAdjustXY(animatedVolt1TimeX, animatedVolt1ValueY, voltsByTicks[1].Length);
             for (var i = 0; i < voltsByTicks[1].Count(); i++) {
               animatedVolt1ValueY[i] = voltsByTicks[1][i].Power;
-              animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDate;
+              animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDateContinuous;
             }
           }
 
@@ -399,14 +400,15 @@ namespace HedgeHog {
           animatedPriceY.AddRange(add.Select(r => r.PriceAvg));
           animatedTimeX.AddRange(add.Select(r => r.StartDateContinuous));
         }
-        var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
+        //var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
+        var up = animatedPriceY.First() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
         var yHeight = animatedPriceY.Max() - animatedPriceY.Min();
         var xWidth = dateAxis.ConvertToDouble(animatedTimeX.Max()) - dateAxis.ConvertToDouble(animatedTimeX.Min());
         var yOffset = yHeight * infoBox.ActualHeight / plotter.ActualHeight / 2;
         var xOffset = xWidth * infoBox.ActualWidth / plotter.ActualWidth / 2;
         var y = (up ? animatedPriceY.Max() - yOffset : animatedPriceY.Min() + yOffset);
         infoBox.Text = string.Join(Environment.NewLine, info);
-        viewPortContainer.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX.Max()) - xOffset, y);
+        viewPortContainer.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX.Min()) + xOffset, y);
       }
       animatedDataSource.RaiseDataChanged();
       animatedVoltDataSource.RaiseDataChanged();
@@ -444,6 +446,19 @@ namespace HedgeHog {
 
     public double CorridorHeightMultiplier { get; set; }
     public Func<PriceBar, double> PriceBarValue;
+
+    public LineGraph PriceLineGraph { get; set; }
+    static Color priceLineGraphColor = Colors.Black;
+    static Color priceLineGraphColorBuy = Colors.DarkGreen;
+    static Color priceLineGraphColorSell = Colors.Navy;
+    bool? buySell;
+    public void SetPriceLineColor(bool? buySell) {
+      if (this.buySell != buySell) {
+        this.buySell = buySell;
+        PriceLineGraph.LinePen.Brush =
+          new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColor);
+      }
+    }
   }
 
   public class ChartTick : INotifyPropertyChanged,IEqualityComparer<ChartTick>{

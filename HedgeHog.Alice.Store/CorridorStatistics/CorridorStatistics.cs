@@ -339,7 +339,7 @@ namespace HedgeHog.Alice.Store {
       bool? buy = new bool?(TradingMacro.CorridorAngle<0);
       return (or == buy || ob == buy) ? buy : null;
     }
-    private bool? OpenRange(double level, double m) {
+    public bool? OpenRange(double level, double m) {
       if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return GetSignal(false);
       if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return GetSignal(true);
       return null;
