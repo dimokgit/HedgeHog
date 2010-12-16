@@ -53,8 +53,13 @@ namespace HedgeHog.Bars {
       if (bars.Count() < 2) return TimeSpan.Zero;
       var periods = new List<double>();
       bars.Aggregate((bp, bn) => { periods.Add((bp.StartDate - bn.StartDate).Duration().TotalMinutes); return bn; });
-      var period = TimeSpan.FromMinutes(periods.ToArray().AverageByIterations((d, a) => d <= a, 3).Average().ToInt());
-      return period;
+      var periodGroups = from p in periods
+                         group p by p into pg
+                         select new { Period = pg.Key, Count = pg.Count() };
+      return TimeSpan.FromMinutes(periodGroups.OrderBy(pg => pg.Count).Last().Period);
+                         
+      //var period = TimeSpan.FromMinutes(periods.ToArray().AverageByIterations((d, a) => d <= a, 3).Average().ToInt());
+      //return period;
     }
 
     static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
@@ -70,11 +75,16 @@ namespace HedgeHog.Bars {
       return coeffs;
     }
 
-    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, double heightUp, double heightDown,
-      Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine, Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow) {
+    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, double heightUp0, double heightDown0, double heightUp, double heightDown,
+      Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
+      , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
+      , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
+      ) {
       var coeffs = rates.SetRegressionPrice(1, getPriceForLine, setPriceLine);
       //var stDev = rates.Select(r => (getPriceForLine(r) - getPriceLine(r)).Abs()).ToArray().StdDev();
       rates.ToList().ForEach(r => {
+        setPriceHigh0(r, r.PriceAvg1 + heightUp0);
+        setPriceLow0(r, r.PriceAvg1 - heightDown0);
         setPriceHigh(r, r.PriceAvg1 + heightUp);
         setPriceLow(r, r.PriceAvg1 - heightDown);
       });
@@ -147,25 +157,21 @@ namespace HedgeHog.Bars {
       } else {
         var period = bars.GetPeriod();
         intervals = new List<int>();
-        int interval = 0;
         Func<TBar, TBar, TBar> getInterval = (rp, rn) => {
           var i = (rp.StartDate - rn.StartDate).Duration() == period ? 1 : 0;
           if (i == 0) {
-            if (interval > 0) {
-              interval = 0;
+            if (barInterval.Count > margin * 2) {
               barIntervals.Add(barInterval.ToArray());
+              barInterval.Clear();
             }
           } else {
-            if (interval > margin * 2) {
-              if (barInterval.Count == 0) barInterval.Add(rp);
-              barInterval.Add(rn);
-            }
-            interval++;
+            if (barInterval.Count == 0) barInterval.Add(rp);
+            barInterval.Add(rn);
           }
           return rn;
         };
         bars.Aggregate(getInterval);
-        if (interval > margin * 2) barIntervals.Add(barInterval.ToArray());
+        if (barInterval.Count > margin * 2) barIntervals.Add(barInterval.ToArray());
       }
       return barIntervals.ToArray();
     }
@@ -198,6 +204,9 @@ namespace HedgeHog.Bars {
     #region AverageByIterations
     public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, double iterations) where TBar : BarBaseDate {
       return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations);
+    }
+    public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, double iterations,out double average) where TBar : BarBaseDate {
+      return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations,out average);
     }
     public static TBar[] AverageByIterations<TBar>(this ICollection<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations) where TBar : BarBaseDate {
       double average;

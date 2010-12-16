@@ -5,6 +5,15 @@ using System.Text;
 
 namespace HedgeHog {
   public static class Fibonacci {
+    static double[] InsideLevels = new[] { 1.618, 1.382, 1.272, .764, .618, .382, .236, -.272, -.382, -.618 };
+
+    public static double[] Levels(double up, double down) {
+      var spread = up - down;
+      var levels = new List<double>();
+      InsideLevels.ToList().ForEach(l => levels.Add((down + spread * l).Round(5)));
+      return levels.ToArray();
+    }
+
     public static double FibRatioSign(double d1, double d2) { return d1 / d2 - d2 / d1; }
     public static double FibRatio(double d1, double d2) { return Math.Abs(d1 / d2 - d2 / d1); }
 

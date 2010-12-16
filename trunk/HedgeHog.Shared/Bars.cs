@@ -10,7 +10,14 @@ namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
   public enum OverlapType { None = 0, Up = 1, Down = -1 };
   public abstract class BarBaseDate{
-    public DateTime StartDate { get; set; }
+    DateTime _StartDate;
+    public DateTime StartDate {
+      get { return _StartDate; }
+      set {
+        if (_StartDate == value) return;
+        _StartDate = StartDateContinuous = value;
+      }
+    }
     public DateTime StartDateContinuous { get; set; }
   }
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>, ICloneable {
@@ -56,8 +63,10 @@ namespace HedgeHog.Bars {
     #region PriceAvgs
     public double PriceAvg1 { get; set; }
     public double PriceAvg2 { get; set; }
+    public double PriceAvg02 { get; set; }
     public double PriceHeight2 { get { return PriceAvg1 != 0 && PriceAvg2 != 0 ? PriceAvg2 - PriceAvg : 0; } }
     public double PriceAvg3 { get; set; }
+    public double PriceAvg03 { get; set; }
     public double PriceHeight3 { get { return PriceAvg1 != 0 && PriceAvg3 != 0 ? PriceAvg3 - PriceAvg : 0; } }
     public double PriceAvg4 { get; set; }
     #endregion
@@ -288,7 +297,7 @@ namespace HedgeHog.Bars {
 
     #endregion
   }
-  public enum BarsPeriodType { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24, W1 = 7 }
+  public enum BarsPeriodType { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24 * H1, W1 = 7 * D1 }
   public class Rate : BarBase {
     public Rate() { }
     public Rate(bool isHistory) : base(isHistory) { }

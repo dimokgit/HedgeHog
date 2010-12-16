@@ -60,6 +60,8 @@ namespace HedgeHog.Alice.Store {
         var iterations = 2;
         var heightUp = 0.0;
         var heightDown = 0.0;
+        var heightUp0 = 0.0;
+        var heightDown0 = 0.0;
         var density = 0.0;
         var periods = rates.Count();
         var lineLow = new LineInfo(new Rate[0], 0, 0);
@@ -94,11 +96,14 @@ namespace HedgeHog.Alice.Store {
           density = angles.Average(d => d.Diff);
           #endregion
         } else {
+          rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, 1, out heightUp0, out heightDown0);
           rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, iterationsForHeights, out heightUp, out heightDown);
           density = (heightDown + heightUp) / periods;
         }
         rates.ToList().ForEach(r => priceSet(r, 0));
-        return new CorridorStatistics(density, -coeffs[1], Math.Max(heightUp, heightDown), Math.Max(heightUp, heightDown), lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        var height0 = Math.Max(heightUp0, heightDown0);
+        var height = Math.Max(heightUp, heightDown);
+        return new CorridorStatistics(density, -coeffs[1], height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = priceGet, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {
