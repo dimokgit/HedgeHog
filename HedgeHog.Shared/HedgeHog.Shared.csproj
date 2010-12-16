@@ -32,6 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -47,6 +48,7 @@
     <Compile Include="Bars.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
+    <Compile Include="IRemoteControlModel.cs" />
     <Compile Include="ITradesManager.cs" />
     <Compile Include="Offer.cs" />
     <Compile Include="Order.cs" />

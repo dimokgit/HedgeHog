@@ -98,11 +98,11 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(double density,double slope, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(density,slope, heightUp, heightDown,lineHigh,lineLow, periods, endDate, startDate, 0);
+    public CorridorStatistics(double density, double slope, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(density, slope, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0);
     }
 
-    public void Init(double density,double slope, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
+    public void Init(double density, double slope, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
       this.Density = density;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
@@ -112,8 +112,10 @@ namespace HedgeHog.Alice.Store {
       this.StartDate = startDate;
       this.Periods = periods;
       this.Iterations = iterations;
-      this.HeightUp = this.HeightUp0 = heightUp;
-      this.HeightDown = this.HeightDown0 = heightDown;
+      this.HeightUp = heightUp;
+      this.HeightUp0 = heightUp0;
+      this.HeightDown = heightDown;
+      this.HeightDown0 = heightDown0;
       //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
       Corridornes = Density;
       OnPropertyChanged("Height");
@@ -389,26 +391,26 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-    static Func<Rate, double> diffPriceHigh = r => r.PriceAvg;
-    static Func<Rate, double> diffPriceLow = r => r.PriceAvg;
+    static Func<Rate, double> diffPriceHigh = r => TradingMacro.GetPriceHigh(r);
+    static Func<Rate, double> diffPriceLow = r => TradingMacro.GetPriceHigh(r);
     public double? PriceCmaDiffHigh {
       get {
         //var extreamHigh = LineHigh == null?null:  LineHigh.Line.OrderBars().LastOrDefault();
         //if (extreamHigh != null) return extreamHigh.PriceHigh - extreamHigh.PriceAvg2;
         var rl = RateForDiffHigh;
-        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg2;
+        return rl == null ? (double?)null : TradingMacro.GetPriceHigh(rl) - rl.PriceAvg2;
       }
     }
     public double? PriceDiffHigh {
       get {
         var rl = RateForDiffHigh;
-        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg1;
+        return rl == null ? (double?)null : TradingMacro.GetPriceHigh(rl) - rl.PriceAvg1;
       }
     }
     public double? PriceDiffLow {
       get {
         var rl = RateForDiffLow;
-        return rl == null ? (double?)null : diffPriceHigh(rl) - rl.PriceAvg1;
+        return rl == null ? (double?)null : TradingMacro.GetPriceLow(rl) - rl.PriceAvg1;
       }
     }
 

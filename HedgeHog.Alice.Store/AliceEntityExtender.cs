@@ -7,6 +7,7 @@ using HedgeHog.Bars;
 using HedgeHog.Shared;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Threading;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -178,7 +179,7 @@ namespace HedgeHog.Alice.Store {
 
     void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       var cs = (sender as CorridorStatistics);
-      if (e.PropertyName == Lib.GetLambda(() => cs.StartDate)) {
+      if (e.PropertyName == Lib.GetLambda(() => cs.StartDate) && (SupportPrice == 0 && ResistancePrice ==0 || !IsSuppResManual)) {
         var rates = Rates.Where(r=>r.StartDate >= cs.StartDate).OrderBy(r => r.PriceAvg).ToArray();
         var rateMax = rates.Last();
         var rateMin = rates.First();
@@ -195,6 +196,8 @@ namespace HedgeHog.Alice.Store {
           if (ResistancePrice > 0) Support = Resistance;
           Resistance = rateMax.Clone() as Rate;
         }
+        if (SupportPrice == 0) Support = Resistance;
+        if (ResistancePrice == 0) Resistance = Support;
       }
 
     }
@@ -688,8 +691,14 @@ namespace HedgeHog.Alice.Store {
         }
         if (Strategy == Strategies.Momentum && CorridorStats.HeightUpDownInPips > 0) {
           if (CorridorStats.HeightUpDown / SpreadLong < CorridorHeightToSpreadRatioLow) {
-            SellWhenReady = CorridorAngle > 0;
-            BuyWhenReady = CorridorAngle < 0;
+            if (CorridorAngle > 0) {
+              SellWhenReady = true;
+              return true;
+            }
+            if (CorridorAngle < 0) {
+              BuyWhenReady = true;
+              return false;
+            }
           }
           if (CorridorHeightToSpreadRatio > CorridorHeightToSpreadRatioHigh) {
             if (SellWhenReady && CorridorAngle > 0 && (!TradeByRateDirection || RateDirection > 0)) return false;
@@ -913,16 +922,26 @@ namespace HedgeHog.Alice.Store {
 
     public double CorridorThinness { get { return CorridorStats == null ? 4 : CorridorStats.Thinness; } }
 
-    private static Func<Rate, double> _GetPriceLow = r => r.AskLow;
+    private static Func<Rate, double> _GetPriceLow = r => r.PriceLow;
     public static Func<Rate, double> GetPriceLow { get { return _GetPriceLow; } }
-    private static Func<Rate, double> _GetPriceHigh = r => r.BidHigh;
+    private static Func<Rate, double> _GetPriceHigh = r => r.PriceHigh;
     public static Func<Rate, double> GetPriceHigh { get { return _GetPriceHigh; } }
+
+    [Category(categoryCorridor)]
+    [DisplayName("Is SuppRes Manual")]
+    public bool IsSuppResManual { get; set; }
 
     Rate[] SuppResArray { get { return new[] { Support, Resistance }; } }
     double SpreadForSuppRes { get { return Math.Max(SpreadShort, SpreadLong); } }
 
     private double GetSupportPrice(Rate support) { return support.BidLow == 0 ? 0 : support.BidLow; }
-    public double SupportPrice { get { return GetSupportPrice(Support); } }
+    public double SupportPrice {
+      get { return GetSupportPrice(Support); }
+      set {
+        var rate = GetRateByPrice(value);
+        Support = rate ?? Rates.OrderBy(r=>r.PriceLow).ThenBy(r=>r.Spread).First();
+      }
+    }
     public double SupportPriceClose { get { return SupportPrice; } }
     Rate _Support = new Rate();
     public Rate Support {
@@ -931,7 +950,18 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public double ResistancePrice { get { return GetResistancePrice(Resistance); } }
+    public double ResistancePrice { 
+      get { return GetResistancePrice(Resistance); }
+      set {
+        var rate = GetRateByPrice(value);
+        Resistance = rate ?? Rates.OrderByDescending(r => r.PriceLow).ThenBy(r => r.Spread).First(); ;
+      }
+    }
+
+    private Rate GetRateByPrice(double price) {
+      var rate = Rates.Where(r => price.Between(r.PriceLow, r.PriceHigh)).OrderBy(r => r.Spread).FirstOrDefault();
+      return rate;
+    }
 
     private double GetResistancePrice(Rate resistance) { return resistance.AskHigh == 0 ? 0 : resistance.AskHigh; }
     public double ResistancePriceClose { get { return ResistancePrice; } }
@@ -941,16 +971,50 @@ namespace HedgeHog.Alice.Store {
       set { _Resistance = value; }
     }
 
-    List<Rate> _Rates;
+    private Rate _CenterOfMass = new Rate();
+    public Rate CenterOfMass {
+      get { return _CenterOfMass; }
+      set {
+        if (_CenterOfMass != value) {
+          _CenterOfMass = value;
+          OnPropertyChanged("CenterOfMass");
+        }
+      }
+    }
+
+    static Rate CalculateCenterOfMass(ICollection<Rate> rates) {
+      return rates.AsParallel().Select(rate => rates.Where(r => r.OverlapsWith(rate) != OverlapType.None).ToArray()).ToArray()
+        .OrderBy(rm => rm.Length).Last().OrderBy(r => r.Spread).First();
+      var ratesMass = new List<Rate[]>();
+      foreach (var rate in rates) {
+        var mass = rates.Where(r => r.OverlapsWith(rate) != OverlapType.None).ToArray();
+        ratesMass.Add(mass);
+      }
+
+      return ratesMass.OrderBy(rm => rm.Length).Last().OrderBy(r => r.Spread).First();
+    }
+
+    BackgroundWorkerDispenser<string> backgroundWorkers = new BackgroundWorkerDispenser<string>();
+    List<Rate> _Rates = new List<Rate>();
     public List<Rate> Rates {
       get { return _Rates; }
       set {
+        var distanceOld = _Rates.Sum(r => r.Spread);
+        var distanceNew = value.Sum(r => r.Spread);
         _Rates = value;
+        if (distanceOld != distanceNew)
+          backgroundWorkers.Run("CenterOfMass", () => {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+            CenterOfMass = CalculateCenterOfMass(value);
+          });
         if (CorridorStats != null && CorridorStats.Periods > 0) {
           Rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
           CorridorAngle = Rates.Skip(Rates.Count - CorridorStats.Periods)
-            .SetCorridorPrices(CorridorStats.HeightUp, CorridorStats.HeightDown, 
-            r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d, (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d)[1];
+            .SetCorridorPrices(CorridorStats.HeightUp0, CorridorStats.HeightDown0, CorridorStats.HeightUp, CorridorStats.HeightDown, 
+            r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
+            , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
+            , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
+            )[1];
           //if (CorridorAngle.Abs() < 1) {
           //  Resistance = Rates.OrderBy(r => r.PriceHigh).Last();
           //  Support = Rates.OrderBy(r => r.PriceLow).First();
@@ -964,7 +1028,7 @@ namespace HedgeHog.Alice.Store {
         //var dateLast = value.Last().StartDate.AddMinutes(-4);
         RatesLast = value.Skip(value.Count - 3).ToArray();// value.ToArray().SkipWhile(r => r.StartDate < dateLast).ToArray();
         RateLast = RatesLast.DefaultIfEmpty(new Rate()).Last();
-        RatePreLast = Rates.Skip(Rates.Count - 2).First();
+        RatePreLast = Rates.Skip(Rates.Count - 2).DefaultIfEmpty(new Rate()).First();
         _RateDirection = Rates.Skip(Rates.Count - 2).ToArray();
       }
     }
@@ -1492,6 +1556,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+    public bool IsCharterMinimized { get; set; }
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }

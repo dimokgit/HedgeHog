@@ -19,7 +19,7 @@ namespace HedgeHog.Shared {
     ObservableCollection<Trade> tradesOpened = new ObservableCollection<Trade>();
     ObservableCollection<Trade> tradesClosed = new ObservableCollection<Trade>();
     ObservableCollection<Order> ordersOpened = new ObservableCollection<Order>();
-    Dictionary<string, List<Rate>> ratesByPair;
+    List<Rate> ratesByPair;
     public double GetPipSize(string pair) { return GetOffer(pair).PointSize; }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
     public double GetPipCost(string pair) { return GetOffer(pair).PipCost; }
@@ -71,10 +71,10 @@ namespace HedgeHog.Shared {
     #endregion
 
     static long tradeId = 0;
-    public VirtualTradesManager(string accountId, int minimumQuantity, Dictionary<string, List<Rate>> ratesByPair) {
+    public VirtualTradesManager(string accountId, int minimumQuantity, List<Rate> rates) {
       this.accountId = accountId;
       this.minimumQuantity = minimumQuantity;
-      this.ratesByPair = ratesByPair;
+      this.ratesByPair = rates;
       this.tradesOpened.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(_virualPortfolio_CollectionChanged);
     }
     public double InPips(string pair, double? price) { return TradesManagedStatic.InPips(price, GetPipSize(pair)); }
@@ -263,7 +263,7 @@ namespace HedgeHog.Shared {
 
 
     public Price GetPrice(string pair) {
-      var rate = ratesByPair[pair].Last();
+      var rate = ratesByPair.Last();
       return new Price(pair, rate, GetPipSize(pair), GetDigits(pair));
     }
 

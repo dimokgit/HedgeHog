@@ -218,10 +218,10 @@ namespace HedgeHog {
       else ts.Command = () => runner();
     }
   }
-  public class BackgroundWorkerDispenser : Dictionary<string, BackgroundWorker> {
+  public class BackgroundWorkerDispenser<T> : Dictionary<T, BackgroundWorker> {
     TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created, TaskStatus.Faulted };
     bool IsDone(BackgroundWorker task) { return !task.IsBusy; }
-    BackgroundWorker Get(string key, Action runner) {
+    BackgroundWorker Get(T key, Action runner) {
       if (!this.ContainsKey(key)) {
         var bw = new BackgroundWorker();
         bw.DoWork += new DoWorkEventHandler(DoWork);
@@ -234,13 +234,13 @@ namespace HedgeHog {
       var task = e.Argument as Action;
       task();
     }
-    public void Run(string key, Action runner) {
+    public void Run(T key, Action runner) {
       Run(key, runner, e => { });
     }
-    public void Run(string key, Action runner, Action<Exception> log) {
+    public void Run(T key, Action runner, Action<Exception> log) {
       Run(key, false, runner, log);
     }
-    public void Run(string key,bool runSync, Action runner, Action<Exception> log) {
+    public void Run(T key,bool runSync, Action runner, Action<Exception> log) {
       if (runSync) runner();
       else {
         var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });

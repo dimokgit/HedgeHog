@@ -302,6 +302,10 @@
       <Project>{ADB28C09-8DE9-4006-80D5-74856EB4A48B}</Project>
       <Name>GalaSoft.MvvmLight</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DynamicDataDisplay\DynamicDataDisplay.csproj">
+      <Project>{ECD37682-DF7E-409F-912D-0965634556B5}</Project>
+      <Name>DynamicDataDisplay</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
       <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
       <Name>HedgeHog.Alice.Store</Name>
