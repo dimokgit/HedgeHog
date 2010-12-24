@@ -204,6 +204,7 @@
     <Compile Include="Charts\Shapes\Arrow.cs" />
     <Compile Include="Charts\Shapes\DraggablePoint.xaml.cs">
       <DependentUpon>DraggablePoint.xaml</DependentUpon>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
     <Compile Include="Charts\Shapes\HorizontalLine.cs" />
     <Compile Include="Charts\Navigation\MouseNavigationBase.cs" />
@@ -516,6 +517,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Page>
     <Page Include="Charts\Shapes\RangeHighlightStyle.xaml">
       <SubType>Designer</SubType>

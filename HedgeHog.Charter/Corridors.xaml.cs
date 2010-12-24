@@ -28,6 +28,7 @@ using System.Diagnostics;
 using Microsoft.Research.DynamicDataDisplay.Charts.Shapes;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
+using HedgeHog.Charter;
 
 
 namespace HedgeHog {
@@ -184,8 +185,8 @@ namespace HedgeHog {
     Segment gannLine = new Segment() { StrokeThickness = 2, StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.DarkGray) };
     Rate[] GannLine {
       set {
-        gannLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceGann1x1);
-        gannLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceGann1x1);
+        gannLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].GannPrice1x1);
+        gannLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].GannPrice1x1);
       }
     }
 
@@ -233,14 +234,38 @@ namespace HedgeHog {
     }
     #endregion
 
+    private GannAngleOffsetDraggablePoint _GannAngleOffsetPoint;
+    public GannAngleOffsetDraggablePoint GannAngleOffsetPoint {
+      get {
+        if (_GannAngleOffsetPoint == null) {
+          _GannAngleOffsetPoint = new GannAngleOffsetDraggablePoint();
+          _GannAngleOffsetPoint.PositionChanged += _GannAngleOffsetPoint_PositionChanged;
+        }
+        return _GannAngleOffsetPoint; 
+      }
+    }
+
+    void _GannAngleOffsetPoint_PositionChanged(object sender, PositionChangedEventArgs e) {
+      var offset = GannAngleOffsetPoint.AngleOffset;
+      //GannAngleOffsetPoint.ToolTip = string.Format("Tangent:{0}", offset);
+      if (GannAngleOffsetPoint.IsMouseCaptured)
+        OnGannAngleChanged(offset);
+    }
+
+    public event EventHandler<GannAngleOffsetChangedEventArgs> GannAngleOffsetChanged;
+    private void OnGannAngleChanged(double offset) {
+      if (GannAngleOffsetChanged != null)
+        GannAngleOffsetChanged(this, new GannAngleOffsetChangedEventArgs(offset));
+    }
+
     DraggablePoint _CorridorStartPointX;
     DraggablePoint CorridorStartPointX {
       get {
         if (_CorridorStartPointX == null) {
           _CorridorStartPointX = new DraggablePoint();
 
-          _CorridorStartPointX.PositionChanged += new EventHandler<PositionChangedEventArgs>(CorridorStartPointX_PositionChanged);
-          _CorridorStartPointX.IsMouseCapturedChanged += new DependencyPropertyChangedEventHandler(CorridorStartPointX_IsMouseCapturedChanged);
+          _CorridorStartPointX.PositionChanged += CorridorStartPointX_PositionChanged;
+          _CorridorStartPointX.IsMouseCapturedChanged += CorridorStartPointX_IsMouseCapturedChanged;
 
           //_CorridorStartPointX.MouseLeftButtonDown += new MouseButtonEventHandler(DraggablePoint_MouseLeftButtonDown);
           //_CorridorStartPointX.PreviewMouseLeftButtonUp += new MouseButtonEventHandler(_CorridorStartPointX_PreviewMouseLeftButtonDown);
@@ -428,6 +453,8 @@ namespace HedgeHog {
 
       plotter.Children.Add(SupportPointY);
       plotter.Children.Add(ResistancePointY);
+
+      plotter.Children.Add(GannAngleOffsetPoint);
 
       InsertFibLines();
       InsertGannLines();
@@ -647,10 +674,10 @@ namespace HedgeHog {
           {
             var i = 0;
             var lastRate = ticks.Aggregate((rp, rn) => {
-              SetPoint(i++,rp.PriceAvg < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh,rp.PriceCMA[2],rp);
+              SetPoint(i++, rp.PriceAvg < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh, rp.PriceCMA, rp);
               return rn;
             });
-            SetPoint(i, lastRate.PriceClose, lastRate.PriceCMA[2], lastRate);
+            SetPoint(i, lastRate.PriceClose, lastRate.PriceCMA, lastRate);
           }
           for (var i = 100000; i < ticks.Count(); i++) {
             animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
@@ -754,6 +781,9 @@ namespace HedgeHog {
             CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), ticks.Min(r => r.PriceAvg) + ticks.Height() / 2);
             CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
           }
+          if (!GannAngleOffsetPoint.IsMouseCaptured) {
+            GannAngleOffsetPoint.Position = new Point(ConvertToDouble(rateLast.StartDate), rateLast.GannPrice1x1);
+          }
           LineTimeMin = timeCurr;
           LineTimeAvg = timeLow;
           LineNetSell = netSell;
@@ -773,13 +803,11 @@ namespace HedgeHog {
           inRendering = false;
         }
       }), DispatcherPriority.ContextIdle);
-
-
     }
 
-    private void SetPoint(int i,double y,double y1, Rate rateLast) {
+    private void SetPoint(int i,double y,double[] cma, Rate rateLast) {
       animatedPriceY[i] = y;
-      animatedPrice1Y[i] = y1;
+      animatedPrice1Y[i] = cma == null ? y : cma[2];
       animatedTimeX[i] = rateLast.StartDateContinuous;
       animatedTime0X[i] = rateLast.StartDate;
     }
@@ -788,8 +816,10 @@ namespace HedgeHog {
       var rateFirst = rates.First(r => r.GannPrices[0] > 0);
       var rateLast = rates.Last();
       foreach (var i in Enumerable.Range(0, GannAngles.Count)) {
-        GannAngles[i].StartPoint = new Point(dateAxis.ConvertToDouble(rateFirst.StartDateContinuous), rateFirst.GannPrices[i]);
+        var gannPriceFirst = rateFirst.GannPrices[i];
+        GannAngles[i].StartPoint = new Point(dateAxis.ConvertToDouble(rateFirst.StartDateContinuous), gannPriceFirst);
         GannAngles[i].EndPoint = new Point(dateAxis.ConvertToDouble(rateLast.StartDateContinuous), rateLast.GannPrices[i]);
+        if (i == GannAngles.Count / 2) GannAngleOffsetPoint.Anchor = new Point(ConvertToDouble(rateFirst.StartDate), gannPriceFirst);
       }
     }
 
@@ -882,6 +912,12 @@ namespace HedgeHog {
     }
   }
 
+  public class GannAngleOffsetChangedEventArgs : EventArgs {
+    public double Offset { get; set; }
+    public GannAngleOffsetChangedEventArgs(double offset) {
+      this.Offset = offset;
+    }
+  }
   public class SupportResistanceChangedEventArgs : PositionChangedBaseEventArgs<double> {
     public bool IsSupport { get; set; }
     public SupportResistanceChangedEventArgs(bool isSupport, double newPosition, double oldPosition) : base(newPosition, oldPosition) {
