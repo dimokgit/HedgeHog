@@ -5,8 +5,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
+             xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight"
+             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras"
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
@@ -29,11 +32,26 @@
           </ToolTip>
         </WrapPanel.ToolTip>
         <TextBlock>
-        <TextBlock Text="{Binding Pair}"/>
+        <TextBlock Text="{Binding Pair}">
+          <TextBlock.InputBindings>
+            <MouseBinding Command="{Binding DataContext.ShowPropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" MouseAction="LeftClick"/>
+          </TextBlock.InputBindings>
+          </TextBlock>
           <LineBreak/>
         <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
           <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
         </TextBlock>
+        <Popup IsOpen="{Binding ShowProperties}">
+          <Popup.InputBindings>
+            <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
+          </Popup.InputBindings>
+          <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="400"/>
+        </Popup>
+        <!--<i:Interaction.Triggers>
+          <i:EventTrigger EventName="KeyDown">
+            <galaCmd:EventToCommand Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" PassEventArgsToCommand="true" />
+          </i:EventTrigger>
+        </i:Interaction.Triggers>-->
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentEditTemplate">
@@ -46,9 +64,6 @@
         <TextBox Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
           <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>
         </TextBlock>
-        <Popup IsOpen="True">
-          <wpg:PropertyGrid Instance="{Binding}" Width="300" Height="400"/>
-        </Popup>
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">
@@ -214,15 +229,10 @@
             <DataTemplate>
               <StackPanel>
                 <TextBlock Name="CorridorBlock">
-                <TextBlock Text="{Binding CorridorToRangeRatio,StringFormat={}{0:p0}/}" ToolTip="Corridor To Range Ratio" 
-                  FontWeight="{Binding IsCorridorToRangeRatioOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           />
                 <TextBlock Text="{Binding CorridorAngle,StringFormat={}{0:n2}/}" ToolTip="Corridor Angle" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=:{0:n0}]}" ToolTip="Corridor Height0 By Regression In Pips" />
-                <TextBlock Text="{Binding PowerVolatility,StringFormat=/{0:n1}}" ToolTip="Power Volatility" 
-                  FontWeight="{Binding IsPowerOk,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                />
+                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}}" ToolTip="Corridor Height0 By Regression In Pips" />
+                <TextBlock Text="{Binding CorridorsRatio,StringFormat='{}={0:p0}]'}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"

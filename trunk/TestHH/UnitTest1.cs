@@ -91,10 +91,11 @@ namespace TestHH {
       //AddTicks(0, "EUR/USD");
       //SavePair(0, "EUR/USD");
       var pair = "EUR/USD"; //"GBP/USD";// "USD/JPY"; //"EUR/USD";
+      SavePair(1, pair);
+      return;
       SavePair(5, pair);
-      //SavePair(15, pair);
-      //SavePair(60, pair);
-      //SavePair(1, pair);
+      SavePair(15, pair);
+      SavePair(60, pair);
     }
     private void AddTicks(int period, string pair) {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
@@ -295,7 +296,7 @@ namespace TestHH {
 
 
       timer = Stopwatch.StartNew();
-      rates.SkipWhile(t => !t.PriceRsi.HasValue).SetCMA(t => t.PriceRsi.GetValueOrDefault(), 2);
+      rates.SkipWhile(t => !t.PriceRsi.HasValue).ToArray().SetCMA(t => t.PriceRsi.GetValueOrDefault(), 2);
       Debug.WriteLine("CMA:" + timer.Elapsed);
 
 

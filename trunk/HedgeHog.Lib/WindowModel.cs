@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Windows.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Diagnostics;
 
 namespace HedgeHog.Models {
   public class ModelBase : INotifyPropertyChanged {
@@ -35,7 +36,7 @@ namespace HedgeHog.Models {
     protected void RaisePropertyChangedCore(params string[] propertyNames) {
       if (PropertyChanged == null) return;
       if (propertyNames.Length == 0)
-        propertyNames = new[] { new System.Diagnostics.StackFrame(1).GetMethod().Name.Substring(4) };
+        propertyNames = new[] { new StackFrame(1).GetMethod().Name.Substring(4) };
       foreach (var pn in propertyNames)
         //Application.Current.MainWindow.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
           PropertyChanged(this, new PropertyChangedEventArgs(pn));
@@ -54,6 +55,9 @@ namespace HedgeHog.Models {
 
     #region INotifyPropertyChanged Members
     public event PropertyChangedEventHandler PropertyChanged;
+    protected void OnPropertyChanged(string propertyName) {
+      RaisePropertyChangedCore(propertyName);
+    }
     protected void RaisePropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       if (propertyLamdas == null || propertyLamdas.Length == 0) RaisePropertyChangedCore();
       else

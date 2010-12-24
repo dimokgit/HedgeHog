@@ -429,7 +429,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     public bool IsLoggedIn { get { return CoreFX.IsLoggedIn; } }
 
     #region Event Handlers
-    void fwLocal_PriceChanged(Price Price) {
+    void fwLocal_PriceChanged(object sender, PriceChangedEventArgs e) {
       InvokeSyncronize();
     }
     Trade resubmitMasterPendingTrade = null;

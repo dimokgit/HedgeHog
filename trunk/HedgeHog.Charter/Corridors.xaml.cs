@@ -34,26 +34,49 @@ namespace HedgeHog {
   /// <summary>
   /// Interaction logic for Corridors.xaml
   /// </summary>
-  public partial class Corridors : Window {
-    IRemoteControlModel _RemoteControlModel;
-    [Import]
-    public IRemoteControlModel RemoteControlModel {
-      get { return _RemoteControlModel; }
+  public partial class Corridors : HedgeHog.Models.WindowModel {
+
+    private bool _IsInPlay;
+    public bool IsInPlay {
+      get { return _IsInPlay; }
       set {
-        _RemoteControlModel = value; 
-      _RemoteControlModel.DrawChart+=new EventHandler<DrawChartEventArgs>(RemoteControlModel_DrawChart);
+        if (_IsInPlay != value) {
+          _IsInPlay = value;
+          RaisePropertyChangedCore();
+          OnPlay(value, PlayStartDate, DelayInSeconds);
+        }
       }
     }
-    Scheduler showChartScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.1));
-    void RemoteControlModel_DrawChart(object sender, DrawChartEventArgs e) {
-      if (!showChartScheduler.IsRunning)
-        showChartScheduler.Command = () => e.ShowChart(e.Parent);
+
+    private double _DelayInSeconds;
+    public double DelayInSeconds {
+      get { return _DelayInSeconds; }
+      set {
+        if (_DelayInSeconds != value) {
+          _DelayInSeconds = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+    private DateTime _PlayStartDate;
+    public DateTime PlayStartDate {
+      get { return _PlayStartDate; }
+      set {
+        if (_PlayStartDate != value) {
+          _PlayStartDate = value;
+          RaisePropertyChangedCore();
+        }
+      }
     }
 
     List<DateTime> animatedTimeX = new List<DateTime>();
     List<DateTime> animatedTime0X = new List<DateTime>();
     List<double> animatedPriceY = new List<double>();
     EnumerableDataSource<double> animatedDataSource = null;
+
+    List<double> animatedPrice1Y = new List<double>();
+    EnumerableDataSource<double> animatedDataSource1 = null;
 
     List<DateTime> animatedVoltTimeX = new List<DateTime>();
     List<double> animatedVoltValueY = new List<double>();
@@ -131,7 +154,22 @@ namespace HedgeHog {
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
-    VerticalLine lineTimeMax = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Brown) };
+    #region TimeLines
+    VerticalLine _lineTimeMax;
+    VerticalLine lineTimeMax {
+      get {
+        if (_lineTimeMax == null) {
+          _lineTimeMax = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Brown) };
+          _lineTimeMax.MouseLeftButtonDown += new MouseButtonEventHandler(DraggablePoint_MouseLeftButtonDown);
+          _lineTimeMax.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseDirectlyOver") {
+            Source = _lineTimeMax,
+            Converter = new BoolToSrtingConverter(),
+            ConverterParameter = "1|1|2"
+          });
+        }
+        return _lineTimeMax;
+      }
+    }
     DateTime LineTimeMax { set { lineTimeMax.Value = dateAxis.ConvertToDouble(value); } }
 
     VerticalLine lineTimeMin = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy) };
@@ -139,6 +177,18 @@ namespace HedgeHog {
 
     VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
     DateTime LineTimeAvg { set { lineTimeAvg.Value = dateAxis.ConvertToDouble(value); } }
+    #endregion
+
+    #region
+
+    Segment gannLine = new Segment() { StrokeThickness = 2, StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.DarkGray) };
+    Rate[] GannLine {
+      set {
+        gannLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceGann1x1);
+        gannLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceGann1x1);
+      }
+    }
+
 
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
     Rate[] TrendLine {
@@ -181,17 +231,75 @@ namespace HedgeHog {
         trendLine22.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg03);
       }
     }
+    #endregion
 
-    DraggablePoint CorridorStartPointX = new DraggablePoint();
+    DraggablePoint _CorridorStartPointX;
+    DraggablePoint CorridorStartPointX {
+      get {
+        if (_CorridorStartPointX == null) {
+          _CorridorStartPointX = new DraggablePoint();
+
+          _CorridorStartPointX.PositionChanged += new EventHandler<PositionChangedEventArgs>(CorridorStartPointX_PositionChanged);
+          _CorridorStartPointX.IsMouseCapturedChanged += new DependencyPropertyChangedEventHandler(CorridorStartPointX_IsMouseCapturedChanged);
+
+          //_CorridorStartPointX.MouseLeftButtonDown += new MouseButtonEventHandler(DraggablePoint_MouseLeftButtonDown);
+          //_CorridorStartPointX.PreviewMouseLeftButtonUp += new MouseButtonEventHandler(_CorridorStartPointX_PreviewMouseLeftButtonDown);
+          //_CorridorStartPointX.PreviewMouseUp += new MouseButtonEventHandler(_CorridorStartPointX_PreviewMouseUp);
+          //_CorridorStartPointX.GotFocus += new RoutedEventHandler(_CorridorStartPointX_GotFocus);
+          //_CorridorStartPointX.KeyDown += new KeyEventHandler(DraggablePoint_KeyDown);
+
+          corridorStartDateScheduler = new ThreadScheduler(OnCorridorStartPositionChanged, (s, e) => { });
+        }
+        return _CorridorStartPointX;
+      }
+    }
+
+    void _CorridorStartPointX_PreviewMouseUp(object sender, MouseButtonEventArgs e) {
+    }
+
+    void _CorridorStartPointX_GotFocus(object sender, RoutedEventArgs e) {
+      ActiveDraggablePoint = (DraggablePoint)sender;
+    }
+
+    void _CorridorStartPointX_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+      DraggablePoint_MouseLeftButtonDown(sender, e);
+    }
+
+    void DraggablePoint_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+
+      ActiveDraggablePoint = LineToPoint[(SimpleLine)sender];
+      var b = ActiveDraggablePoint.Focus();
+    }
+    void DraggablePoint_KeyDown(object sender, KeyEventArgs e) {
+      var dp = (DraggablePoint)sender;
+      if (e.Key == Key.Escape)
+        dp.Dispatcher.BeginInvoke(new Action(() => dp.MoveFocus(new TraversalRequest(FocusNavigationDirection.First))));
+      if (new[] { Key.Left, Key.Right }.Contains(e.Key)) {
+        e.Handled = true;
+        var x = ConvertToDateTime(ActiveDraggablePoint.Position.X);
+        var i = animatedTimeX.FindIndex(d => d == x);
+        var step = e.Key == Key.Right ? 1 : -1;
+        dp.Position = new Point(ConvertToDouble(animatedTimeX[i + step]), ActiveDraggablePoint.Position.Y);
+      }
+    }
     DraggablePoint SupportPointY = new DraggablePoint();
     DraggablePoint ResistancePointY = new DraggablePoint();
+
+    DraggablePoint _ActiveDraggablePoint;
+
+    public DraggablePoint ActiveDraggablePoint {
+      get { return _ActiveDraggablePoint; }
+      set { _ActiveDraggablePoint = value; }
+    }
 
     List<HorizontalLine> otherHLines = new List<HorizontalLine>();
     List<VerticalLine> otherVLines = new List<VerticalLine>();
     #endregion
 
     #region Ctor
-    public Corridors() : this("",null) { }
+    public
+
+    Corridors() : this("",null) { }
     public Corridors(string name,CompositionContainer container) {
       if( container!=null) container.SatisfyImportsOnce(this);
       this.Name = name.Replace("/", "");
@@ -200,6 +308,10 @@ namespace HedgeHog {
       plotter.Children.RemoveAll<AxisNavigation>();
 
       Closing += new System.ComponentModel.CancelEventHandler(Corridors_Closing);
+      PlayStartDateBox.TextChanged += new TextChangedEventHandler(PlayStartDateBox_TextChanged);
+    }
+
+    void PlayStartDateBox_TextChanged(object sender, TextChangedEventArgs e) {
     }
     #endregion
 
@@ -227,6 +339,9 @@ namespace HedgeHog {
     #endregion
 
     bool Initialized;
+    List<HorizontalLine> FibLevels = new List<HorizontalLine>();
+    List<Segment> GannAngles = new List<Segment>();
+    Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
     private void CreateCurrencyDataSource(bool doVolts) {
       plotter.Children.RemoveAt(0);
 
@@ -238,6 +353,12 @@ namespace HedgeHog {
         animatedDataSource.SetYMapping(y => y);
         this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColor, 1, "");
         this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
+
+        animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
+        animatedDataSource1.SetYMapping(y => y);
+        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
+          .Description.LegendItem.Visibility = Visibility.Collapsed;
+
         Border infoBorder = new Border() {
           BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3)
         };
@@ -261,7 +382,7 @@ namespace HedgeHog {
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVoltDataSource = new EnumerableDataSource<double>(animatedVoltValueY);
         animatedVoltDataSource.SetYMapping(y => y);
-        innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.DarkOrange, 1, "")
+        innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.Tan, 1, "")
           .Description.LegendItem.Visibility = Visibility.Collapsed;
 
         xSrc = new EnumerableDataSource<DateTime>(animatedVolt1TimeX);
@@ -272,6 +393,8 @@ namespace HedgeHog {
           lg.Description.LegendItem.Visibility = Visibility.Collapsed;
           lg.Opacity = .25;
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
+          plotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Right;
+          innerPlotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Left;
       } else {
         innerPlotter.Children.Remove(innerPlotter.Children.OfType<VerticalAxis>().Single());
         plotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Right;
@@ -291,25 +414,54 @@ namespace HedgeHog {
       plotter.Children.Add(lineAvgBid);
       plotter.Children.Add(lineTimeMin);
       plotter.Children.Add(lineTimeAvg);
-      plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(trendLine);
       plotter.Children.Add(trendLine1);
       plotter.Children.Add(trendLine11);
       plotter.Children.Add(trendLine2);
       plotter.Children.Add(trendLine22);
+      plotter.Children.Add(gannLine);
       plotter.Children.Add(centerOfMassHLine);
+
+      plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(CorridorStartPointX);
+      LineToPoint.Add(lineTimeMax, CorridorStartPointX);
+
       plotter.Children.Add(SupportPointY);
       plotter.Children.Add(ResistancePointY);
-      
-      CorridorStartPointX.PositionChanged += new EventHandler<PositionChangedEventArgs>(CorridorStartPointX_PositionChanged);
-      CorridorStartPointX.IsMouseCapturedChanged += new DependencyPropertyChangedEventHandler(CorridorStartPointX_IsMouseCapturedChanged);
-      corridorStartDateScheduler = new ThreadScheduler(OnCorridorStartPositionChanged, (s, e) => { });
 
+      InsertFibLines();
+      InsertGannLines();
+      
       SupportPointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(SupportPointY_PositionChanged);
       ResistancePointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(ResistancePointY_PositionChanged);
 
+      plotter.KeyDown += new KeyEventHandler(plotter_KeyDown);
+      plotter.PreviewKeyDown += new KeyEventHandler(plotter_PreviewKeyDown);
+
       #endregion
+    }
+
+    private void InsertGannLines() {
+      for (var i = 0; i < BarBase.GannAngles.Length; i++) {
+        var hl = new Segment() { Stroke = new SolidColorBrush(Colors.DarkGray), StrokeThickness = 2, StrokeDashArray = { 2 } };
+        GannAngles.Add(hl);
+        plotter.Children.Add(hl);
+      }
+    }
+    private void InsertFibLines() {
+      foreach (var i in Enumerable.Range(0, Fibonacci.Levels(0, 0).Length)) {
+        var hl = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.MidnightBlue), StrokeThickness = 1 };
+        FibLevels.Add(hl);
+        plotter.Children.Add(hl);
+      }
+    }
+
+    void plotter_PreviewKeyDown(object sender, KeyEventArgs e) {
+    }
+
+    void plotter_KeyDown(object sender, KeyEventArgs e) {
+
+      e.Handled = true;
     }
 
     #region Event Handlers
@@ -335,7 +487,7 @@ namespace HedgeHog {
     }}
 
     void CorridorStartPointX_PositionChanged(object sender, PositionChangedEventArgs e) {
-      if (CorridorStartPositionChanged != null && CorridorStartPointX.IsMouseCaptured && !corridorStartDateScheduler.IsRunning) {
+      if (CorridorStartPositionChanged != null && (ActiveDraggablePoint == sender || CorridorStartPointX.IsMouseCaptured) && !corridorStartDateScheduler.IsRunning) {
         corridorStartDateScheduler.Command = () => {
           CorridorStartPositionChanged(this,
           new CorridorPositionChangedEventArgs(GetPriceStartDate(dateAxis.ConvertFromDouble(e.Position.X)), dateAxis.ConvertFromDouble(e.PreviousPosition.X)));
@@ -346,6 +498,11 @@ namespace HedgeHog {
     #endregion
 
     #region Events
+    public event EventHandler<PlayEventArgs> Play;
+    protected void OnPlay(bool play,DateTime startDate,double delayInSeconds) {
+      if (Play != null) Play(this, new PlayEventArgs(play, startDate, delayInSeconds));
+    }
+
     public event EventHandler<CorridorPositionChangedEventArgs> CorridorStartPositionChanged;
     private void OnCorridorStartPositionChanged() {
       var x = GetPriceStartDate(ConvertToDateTime(CorridorStartPointX.Position.X));
@@ -354,6 +511,7 @@ namespace HedgeHog {
 
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
     protected void OnSupportResistanceChanged(bool isSupport, Point position) {
+      SetFibLevels(ResistancePointY.Position.Y, SupportPointY.Position.Y);
       var isMouseCaptured = (isSupport ? SupportPointY : ResistancePointY).IsMouseCaptured;
       if (isMouseCaptured && SupportResistanceChanged != null)
         SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(isSupport, position.Y, position.Y));
@@ -439,6 +597,8 @@ namespace HedgeHog {
       }
     }
     #endregion
+
+    bool inRendering;
     public void AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
@@ -448,6 +608,7 @@ namespace HedgeHog {
     public void AddTicks(Price lastPrice, Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
                           double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
+                            if (inRendering) return;
       var voltsByTick = voltsByTicks[0];
       #region Conversion Functions
       var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDateContinuous });
@@ -460,12 +621,6 @@ namespace HedgeHog {
       #region Set DataSources
       if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {
         #region Set Trendlines
-        var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
-        var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
-        var ratesForTrend = new[] { rateFirst, rateLast };
-        trendLine.Dispatcher.Invoke(new Action(() => {
-          TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForTrend;
-        }));
         if (false && trendHighlight.HasValue)
           if (trendHighlight.Value) {
             trendLine1.StrokeThickness = 2;
@@ -482,19 +637,22 @@ namespace HedgeHog {
       }
       var aw = plotter.ActualWidth;
       #endregion
-      if (!Initialized) {
-        Initialized = true;
-        trendLine.Dispatcher.Invoke(new Action(() => {
-          CreateCurrencyDataSource(voltsByTick != null);
-        }));
-      }
       #region Update Main Chart
       {
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) {
           ReAdjustXY(animatedTimeX, animatedPriceY, ticks.Count());
           ReAdjustXY(animatedTime0X, ticks.Count());
-          for (var i = 0; i < ticks.Count(); i++) {
+          ReAdjustXY(animatedPrice1Y, ticks.Count());
+          {
+            var i = 0;
+            var lastRate = ticks.Aggregate((rp, rn) => {
+              SetPoint(i++,rp.PriceAvg < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh,rp.PriceCMA[2],rp);
+              return rn;
+            });
+            SetPoint(i, lastRate.PriceClose, lastRate.PriceCMA[2], lastRate);
+          }
+          for (var i = 100000; i < ticks.Count(); i++) {
             animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
             animatedTimeX[i] = ticks[i].StartDateContinuous;
             animatedTime0X[i] = ticks[i].StartDate;
@@ -526,54 +684,121 @@ namespace HedgeHog {
           animatedPriceY.AddRange(add.Select(r => r.PriceAvg));
           animatedTimeX.AddRange(add.Select(r => r.StartDateContinuous));
         }
-        //var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
-        var up = animatedPriceY.First() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
-        var yHeight = animatedPriceY.Max() - animatedPriceY.Min();
-        var xWidth = dateAxis.ConvertToDouble(animatedTimeX.Max()) - dateAxis.ConvertToDouble(animatedTimeX.Min());
-        var yOffset = yHeight * infoBox.ActualHeight / plotter.ActualHeight / 2;
-        var xOffset = xWidth * infoBox.ActualWidth / plotter.ActualWidth / 2;
-        var y = (up ? animatedPriceY.Max() - yOffset : animatedPriceY.Min() + yOffset);
-        trendLine.Dispatcher.Invoke(new Action(() => {
-          infoBox.Text = string.Join(Environment.NewLine, info);
-          viewPortContainer.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX.Min()) + xOffset, y);
-        }));
       }
-      trendLine.Dispatcher.Invoke(new Action(() => {
-        animatedDataSource.RaiseDataChanged();
-      }));
       //animatedVoltDataSource.RaiseDataChanged();
       //animatedVolt1DataSource.RaiseDataChanged();
       #endregion
 
       //plotter.FitToView();
       //System.Diagnostics.Debug.WriteLine("AddTicks:" + (DateTime.Now - d).TotalMilliseconds + " ms.");
-      #region Set Lines
-      trendLine.Dispatcher.Invoke(new Action(() => {
-        LineMax = voltageHigh;
-        LineMin = voltageCurr;
 
-        LineMaxAvg = priceMaxAvg;
-        ResistancePointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMaxAvg);
-
-        LineMinAvg = priceMinAvg;
-        SupportPointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMinAvg);
-
-        CenterOfMassHLine = CenterOfMass;
-
-
-        LineTimeMax = timeHigh;
-        var corridorTime = ticks.First(r => r.StartDateContinuous == timeHigh).StartDate;
-        lineTimeMax.ToolTip = corridorTime;
-        if (!CorridorStartPointX.IsMouseCaptured) {
-          CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), ticks.Min(r => r.PriceAvg) + ticks.Height() / 2);
-          CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
+      var animatedPriceYMax = animatedPriceY.Max();
+      var animatedPriceYMin = animatedPriceY.Min();
+      var animatedTimeXMax = animatedTimeX.Max();
+      var animatedTimeXMin = animatedTimeX.Min();
+      var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
+      var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
+      var ratesForTrend = new[] { rateFirst, rateLast };
+      var errorMessage = "Period:" + (ticks[1].StartDate - ticks[0].StartDate).Duration().Minutes + " minutes.";
+      Action a = () => {
+        if (!Initialized) {
+          Initialized = true;
+          CreateCurrencyDataSource(voltsByTick != null);
         }
-        LineTimeMin = timeCurr;
-        LineTimeAvg = timeLow;
-        LineNetSell = netSell;
-        LineNetBuy = netBuy;
-      }));
-      #endregion
+        try {
+          SetGannAngles(ticks);
+          animatedDataSource.RaiseDataChanged();
+        } catch (InvalidOperationException exc) {
+          plotter.FitToView();
+          throw new InvalidOperationException(errorMessage, exc);
+        } finally {
+          TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForTrend;
+          //GannLine = ratesForGann;
+          infoBox.Text = string.Join(Environment.NewLine, info);
+          //var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
+          var up = animatedPriceY.First() < (animatedPriceYMax + animatedPriceYMin) / 2;
+          var yHeight = animatedPriceYMax - animatedPriceYMin;
+          var xWidth = dateAxis.ConvertToDouble(animatedTimeXMax) - dateAxis.ConvertToDouble(animatedTimeXMin);
+          var yOffset = yHeight * infoBox.ActualHeight / plotter.ActualHeight / 2;
+          var xOffset = xWidth * infoBox.ActualWidth / plotter.ActualWidth / 2;
+          var y = (up ? animatedPriceYMax - yOffset : animatedPriceYMin + yOffset);
+          if (viewPortContainer.ActualWidth < 10 && infoBox.ActualWidth > 0) {
+            plotter.Children.Remove(viewPortContainer);
+            var child = viewPortContainer.Content;
+            viewPortContainer.Content = null;
+            viewPortContainer = new ViewportUIContainer();
+            viewPortContainer.Content = child;
+            plotter.Children.Add(viewPortContainer);
+          }
+          viewPortContainer.Position = new Point(dateAxis.ConvertToDouble(animatedTimeXMin) + xOffset, y);
+          viewPortContainer.InvalidateVisual();
+
+          #region Set Lines
+          LineMax = voltageHigh;
+          LineMin = voltageCurr;
+
+          LineMaxAvg = priceMaxAvg;
+          ResistancePointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMaxAvg);
+
+          LineMinAvg = priceMinAvg;
+          SupportPointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMinAvg);
+
+          CenterOfMassHLine = CenterOfMass;
+
+          //SetFibLevels(priceMaxAvg, priceMinAvg);
+
+          LineTimeMax = timeHigh;
+          var corridorTime = ticks.First(r => r.StartDateContinuous == timeHigh).StartDate;
+          lineTimeMax.ToolTip = corridorTime;
+          if (!CorridorStartPointX.IsMouseCaptured) {
+            CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), ticks.Min(r => r.PriceAvg) + ticks.Height() / 2);
+            CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
+          }
+          LineTimeMin = timeCurr;
+          LineTimeAvg = timeLow;
+          LineNetSell = netSell;
+          LineNetBuy = netBuy;
+          #endregion
+        }
+      };
+
+      if (Dispatcher.CheckAccess())
+        a();
+      else
+      this.Dispatcher.BeginInvoke(new Action(() => {
+        inRendering = true;
+        try {
+          a();
+        } finally {
+          inRendering = false;
+        }
+      }), DispatcherPriority.ContextIdle);
+
+
+    }
+
+    private void SetPoint(int i,double y,double y1, Rate rateLast) {
+      animatedPriceY[i] = y;
+      animatedPrice1Y[i] = y1;
+      animatedTimeX[i] = rateLast.StartDateContinuous;
+      animatedTime0X[i] = rateLast.StartDate;
+    }
+
+    private void SetGannAngles(ICollection<Rate> rates) {
+      var rateFirst = rates.First(r => r.GannPrices[0] > 0);
+      var rateLast = rates.Last();
+      foreach (var i in Enumerable.Range(0, GannAngles.Count)) {
+        GannAngles[i].StartPoint = new Point(dateAxis.ConvertToDouble(rateFirst.StartDateContinuous), rateFirst.GannPrices[i]);
+        GannAngles[i].EndPoint = new Point(dateAxis.ConvertToDouble(rateLast.StartDateContinuous), rateLast.GannPrices[i]);
+      }
+    }
+
+    private void SetFibLevels(double priceMaxAvg, double priceMinAvg) {
+      var fibLevels = Fibonacci.Levels(priceMaxAvg, priceMinAvg);
+      foreach (var i in Enumerable.Range(0, FibLevels.Count)) {
+        FibLevels[i].Value = fibLevels[i];
+        FibLevels[i].ToolTip = fibLevels[i];
+      }
     }
 
     #region Helpers
@@ -587,6 +812,14 @@ namespace HedgeHog {
         Y.Add(0);
       }
     }
+    private void ReAdjustXY(List<double> Y, int count) {
+      while (Y.Count > count) {
+        Y.RemoveAt(0);
+      }
+      while (Y.Count < count) {
+        Y.Add(0);
+      }
+    }
     private void ReAdjustXY(List<DateTime> X, int count) {
       while (X.Count > count) {
         X.RemoveAt(0);
@@ -596,6 +829,7 @@ namespace HedgeHog {
       }
     }
     public DateTime ConvertToDateTime(double d) { return dateAxis.ConvertFromDouble(d); }
+    public double ConvertToDouble(DateTime d) { return dateAxis.ConvertToDouble(d); }
     #endregion
 
   }
@@ -634,6 +868,18 @@ namespace HedgeHog {
     }
 
     #endregion
+  }
+
+  public class PlayEventArgs : EventArgs {
+    public bool Play { get; set; }
+    public DateTime StartDate { get; set; }
+    public TimeSpan Delay { get; set; }
+    public PlayEventArgs(bool play, DateTime startDate, double delayInSeconds) : this(play,startDate, TimeSpan.FromSeconds(delayInSeconds)) { }
+    public PlayEventArgs(bool play,DateTime startDate, TimeSpan delay) {
+      this.Play = play;
+      this.StartDate = startDate;
+      this.Delay = delay;
+    }
   }
 
   public class SupportResistanceChangedEventArgs : PositionChangedBaseEventArgs<double> {

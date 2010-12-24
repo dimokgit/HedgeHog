@@ -70,6 +70,11 @@
     <Compile Include="AliceEntityExtender.cs" />
     <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
     <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
+    <Compile Include="CS_4_0.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CS_4_0.tt</DependentUpon>
+    </Compile>
     <Compile Include="Events.cs" />
     <Compile Include="Forex.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -113,8 +118,15 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>Forex.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <None Include="CS_4_0.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CS_4_0.cs</LastGenOutput>
+    </None>
     <None Include="Properties\DataSources\AliceEntities.datasource" />
     <None Include="Properties\DataSources\ForexEntities.datasource" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

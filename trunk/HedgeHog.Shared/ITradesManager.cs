@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
   public interface ITradesManager {
@@ -54,7 +55,7 @@ namespace HedgeHog.Shared {
     #region Events
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
-    event PriceChangedEventHandler PriceChanged;
+    event EventHandler<PriceChangedEventArgs> PriceChanged;
     event TradeAddedEventHandler TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
     event EventHandler<ErrorEventArgs> Error;
@@ -76,6 +77,14 @@ namespace HedgeHog.Shared {
     Account GetAccount();
     Account GetAccount(bool includeOtherInfo);
     #endregion
+
+    Rate[] GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
+
+    Tick[] GetTicks(string pair, int periodsBack);
+
+    void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList);
+
+    //void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList);
   }
   public class ErrorEventArgs : EventArgs {
     public string Pair { get; set; }
@@ -109,6 +118,7 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagedStatic {
+    public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
       return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
     }

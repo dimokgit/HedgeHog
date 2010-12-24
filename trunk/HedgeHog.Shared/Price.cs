@@ -5,6 +5,16 @@ using System.Text;
 using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
+  public class PriceChangedEventArgs : EventArgs {
+    public Price Price { get; set; }
+    public Account Account { get; set; }
+    public Trade[] Trades { get; set; }
+    public PriceChangedEventArgs(Price price,Account account,Trade[] trades) {
+      this.Price = price;
+      this.Account = account;
+      this.Trades = trades;
+    }
+  }
   public delegate void PriceChangedEventHandler(Price Price);
   [Serializable]
   public class Price {
@@ -17,6 +27,7 @@ namespace HedgeHog.Shared {
     public int BidChangeDirection { get; set; }
     public int AskChangeDirection { get; set; }
     public bool IsReal { get { return Time != DateTime.MinValue; } }
+    public bool IsPlayback { get; set; }
     public int Digits { get; set; }
     public double PipSize { get; set; }
     public Price() {    }

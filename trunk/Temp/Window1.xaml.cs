@@ -103,7 +103,7 @@ namespace Temp {
         }
         ClearLog();
         AddLog("Rates.");
-        fw.GetBars(fw.Pair, Period, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+        fw.GetBars(fw.Pair, Period,0, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), rates);
         AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
         CorridorStatistics corridorStats = null;// rates.ScanCorridornesses(CorridorIterations, rates.GetCorridornesses(UseStDev, 30, 180), CorridorIterations, 0);
         var corridorMinutes = corridorStats.Periods * Period;
@@ -122,7 +122,7 @@ namespace Temp {
         }
         ClearLog();
         AddLog("Rates.");
-        fw.GetBars(fw.Pair, 1, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), ref rates);
+        fw.GetBars(fw.Pair, 1,0, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), rates);
         AddLog("RSI.");
         rates.ToArray().Rsi((Period * RsiPeriods).ToInt(),true);
         var rsiStats = rates.RsiStats();

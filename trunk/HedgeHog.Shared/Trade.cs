@@ -9,6 +9,11 @@ using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
+  public static class TradeExtensions {
+    public static Trade[] ByPair(this ICollection<Trade> trades, string pair) {
+      return trades.Where(t => t.Pair == pair).ToArray();
+    }
+  }
   public class TradeEventArgs : EventArgs {
     public Trade Trade { get; set; }
     public TradeEventArgs(Trade newTrade) {
@@ -100,7 +105,8 @@ namespace HedgeHog.Shared {
       }
     }
 
-    public void UpdateByPrice(Price Price) {
+    public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
+      Price Price = e.Price;
       if (Price.PipSize == 0) throw new Exception("Price.PipSize property must not be Zero.");
       Close = Buy ? Price.Bid : Price.Ask;
       var gross = Buy ? Close - Open : Open - Close;

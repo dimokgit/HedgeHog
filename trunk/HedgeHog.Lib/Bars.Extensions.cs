@@ -101,13 +101,17 @@ namespace HedgeHog.Bars {
       var heightsUp = (lineHigh.Length > 0 ? lineHigh : rates.Where(r => getHeightHigh(r) > 0))
         .Where(r => priceLine(r) > 0).ToArray();
       //.AverageByPercantage(getHeightHigh, treshold, minimumCount);
-      heightAvgUp = heightsUp.Select(getHeightHigh).ToArray().AverageByIterations(avgCompare, iterations).Average();
+      heightAvgUp = iterations > 5
+      ? heightsUp.AverageByPercantage(getHeightHigh, iterations/100.0, 3).Average(getHeightHigh)
+      : heightsUp.Select(getHeightHigh).ToArray().AverageByIterations(avgCompare, iterations).Average();
       //heightAvgUp = heightsUp.Min();
 
       var heightsDown = (lineLow.Length > 0 ? lineLow : rates.Where(r => getHeightLow(r) > 0))
         .Where(r => priceLine(r) > 0).ToArray();
       //.AverageByPercantage(getHeightLow, treshold, minimumCount);
-      heightAvgDown = heightsDown.Select(getHeightLow).ToArray().AverageByIterations(avgCompare, iterations).Average();
+      heightAvgDown = iterations > 5
+        ? heightsDown.AverageByPercantage(getHeightLow, iterations/100.0, 3).Average(getHeightLow)
+        : heightsDown.Select(getHeightLow).ToArray().AverageByIterations(avgCompare, iterations).Average();
     }
     public static void Index(this Rate[] rates) {
       rates[0].Index = 0;
@@ -903,7 +907,7 @@ namespace HedgeHog.Bars {
         bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/, period);
       return bars;
     }
-    public static void SetCMA<TBars>(this IEnumerable<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {
+    public static void SetCMA<TBars>(this ICollection<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {
       double? cma1 = null;
       double? cma2 = null;
       double? cma3 = null;
@@ -914,10 +918,8 @@ namespace HedgeHog.Bars {
         bar.PriceCMA[0] = cma1.Value;
       }
     }
-    public static void SetCMA<TBars>(this IEnumerable<TBars> ticks, int cmaPeriod) where TBars : BarBase {
-      double? cma1 = null;
-      double? cma2 = null;
-      double? cma3 = null;
+    public static void SetCMA<TBars>(this ICollection<TBars> ticks, int cmaPeriod
+      , double? cma1 = null, double? cma2 = null, double? cma3 = null) where TBars : BarBase {
       ticks.ToList().ForEach(t => {
         t.PriceCMA = new double[3];
         t.PriceCMA[2] = (cma3 = Lib.CMA(cma3, cmaPeriod, (cma2 = Lib.CMA(cma2, cmaPeriod, (cma1 = Lib.CMA(cma1, cmaPeriod, t.PriceAvg)).Value)).Value)).Value;

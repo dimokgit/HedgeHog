@@ -51,6 +51,7 @@ namespace HedgeHog {
       : this(dispatcher) {
       Error += error;
     }
+    public Scheduler() : this(Application.Current.Dispatcher) { }
     public Scheduler(Dispatcher dispatcher)
       : this(dispatcher, new TimeSpan(0, 0, 0, 0, 100)) {
       if(dispatcher!=null)
@@ -61,6 +62,10 @@ namespace HedgeHog {
       _time = new DispatcherTimer(delay, DispatcherPriority.Background, _time_Tick, dispatcher);
     }
 
+    public void TryRun(CommandDelegate command) {
+      if (IsRunning) return;
+      this.Command = command;
+    }
 
     public void Cancel() {
       IsRunning = false;
@@ -72,7 +77,7 @@ namespace HedgeHog {
       try {
         var t = (DispatcherTimer)sender;
         if (!t.IsEnabled) return;
-        t.Dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
+        t.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
           t.Stop();
         }));
         IsRunning = true;
@@ -85,6 +90,19 @@ namespace HedgeHog {
       }
     }
   }
+
+  public class SchedulersDispenser<T> : Dictionary<T, Scheduler> {
+    public Scheduler Get(T key) {
+      if (!this.ContainsKey(key)) this.Add(key, new Scheduler());
+      return this[key];
+    }
+    public void Run(T key, Action runner) {
+      var ts = Get(key);
+      if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
+      else ts.Command = () => runner();
+    }
+  }
+
 
   public class ThreadScheduler {
     public class TimerErrorException : EventArgs {
@@ -145,6 +163,10 @@ namespace HedgeHog {
     public delegate void CommandDelegate();
     private CommandDelegate _command;
     public CommandDelegate Command { set { Init(_command = value); } }
+    public void TryRun(CommandDelegate command) {
+      if (IsRunning) return;
+      Init(_command); 
+    }
     public void Run() { Init(_command); }
     public void Init(CommandDelegate command) { Init(command, TimeSpan.MinValue); }
     public void Init(CommandDelegate command, TimeSpan delay) {
@@ -218,6 +240,7 @@ namespace HedgeHog {
       else ts.Command = () => runner();
     }
   }
+
   public class BackgroundWorkerDispenser<T> : Dictionary<T, BackgroundWorker> {
     TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created, TaskStatus.Faulted };
     bool IsDone(BackgroundWorker task) { return !task.IsBusy; }
@@ -237,13 +260,35 @@ namespace HedgeHog {
     public void Run(T key, Action runner) {
       Run(key, runner, e => { });
     }
-    public void Run(T key, Action runner, Action<Exception> log) {
-      Run(key, false, runner, log);
+    public void Run(T key, Action runner, ThreadPriority threadPriority) {
+      Run(key, runner, e => { },threadPriority);
     }
-    public void Run(T key,bool runSync, Action runner, Action<Exception> log) {
+    public void Run(T key, Action runner, Action<Exception> log) {
+      Run(key, false, runner, log,false, ThreadPriority.Lowest);
+    }
+    public void Run(T key, Action runner, Action<Exception> log, ThreadPriority threadPriority) {
+      Run(key, false, runner, log,threadPriority);
+    }
+    public void Run(T key, bool runSync, Action runner, Action<Exception> log) {
+      Run(key, runSync, runner, log, false, ThreadPriority.Lowest);
+    }
+    public void Run(T key, bool runSync, Action runner, Action<Exception> log, ThreadPriority threadPriority) {
+      Run(key, runSync, runner, log, true, threadPriority);
+    }
+    private void Run(T key, bool runSync, Action runner, Action<Exception> log, bool useThreadPriority, ThreadPriority threadPriority) {
       if (runSync) runner();
       else {
-        var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
+        var ts = Get(key, () => {
+          var p = Thread.CurrentThread.Priority;
+          if (useThreadPriority)
+            Thread.CurrentThread.Priority = threadPriority;
+          try {
+            runner();
+          } catch (Exception exc) { log(exc); 
+          } finally {
+            Thread.CurrentThread.Priority = p;
+          }
+        });
         if (!IsDone(ts)) return;// ts.SetFinished((s, ea) => runner());
         else ts.RunWorkerAsync(runner);
       }

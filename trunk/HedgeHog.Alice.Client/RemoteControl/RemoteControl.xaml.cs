@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
+using System.ComponentModel.Composition;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -24,6 +25,8 @@ namespace HedgeHog.Alice.Client {
         DataContext = new RemoteControlModel();
       else
         DataContext = App.container.GetExportedValue<RemoteControlModel>();
+      //GalaSoft.MvvmLight.Command.EventToCommand ec;
+      //new TriggerActionCollection().Add(ec);
     }
 
     private void DataGrid_KeyDown(object sender, KeyEventArgs e) {

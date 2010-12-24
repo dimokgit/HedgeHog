@@ -223,7 +223,7 @@ namespace Microsoft.Research.DynamicDataDisplay
 		{
 			if (DataSource == null) return;
 
-			if (filteredPoints.HasPoints)
+			if (filteredPoints!= null && filteredPoints.HasPoints)
 			{
 				using (StreamGeometryContext context = streamGeometry.Open())
 				{
