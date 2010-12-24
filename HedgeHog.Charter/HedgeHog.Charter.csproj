@@ -68,6 +68,12 @@
     <Compile Include="Corridors.xaml.cs">
       <DependentUpon>Corridors.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CursorH.xaml.cs">
+      <DependentUpon>CursorH.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="GraggableLine.xaml.cs">
+      <DependentUpon>GraggableLine.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -108,6 +114,10 @@
       <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>
       <Name>HedgeHog.Signaler</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.UI\HedgeHog.UI.csproj">
+      <Project>{7D258DF9-4DD8-4BB0-82AA-42DCC61374FA}</Project>
+      <Name>HedgeHog.UI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
       <Name>Order2GoAddIn</Name>
@@ -123,6 +133,14 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="CursorH.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="GraggableLine.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

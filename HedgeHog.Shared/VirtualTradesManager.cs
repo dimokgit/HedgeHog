@@ -129,10 +129,11 @@ namespace HedgeHog.Shared {
         var newTrade = trade.Clone();
         newTrade.Lots = trade.Lots - lot;
         newTrade.Id = NewTradeId() + "";
-        newTrade.UpdateByPrice(price);
+        var e = new PriceChangedEventArgs(price,GetAccount(),GetTrades());
+        newTrade.UpdateByPrice(this,e);
         tradesOpened.Add(trade);
         trade.Lots = lot;
-        trade.UpdateByPrice(price);
+        trade.UpdateByPrice(this, e);
         CloseTrade(trade);
       }
       return true;
@@ -225,14 +226,14 @@ namespace HedgeHog.Shared {
       if (TradeClosedEvent != null) TradeClosedEvent(this, new TradeEventArgs(trade));
     }
 
-    public event PriceChangedEventHandler PriceChanged;
+    public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair,Rate rate) {
-      RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair)));
+      RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair)), GetTrades());
     }
-    public void RaisePriceChanged(Price price) {
+    public void RaisePriceChanged(Price price,Trade[] trades) {
       _serverTime = price.Time;
-      if (PriceChanged != null) PriceChanged(price);
+      if (PriceChanged != null) PriceChanged(this, new PriceChangedEventArgs(price,GetAccount(), trades));
     }
 
     public event TradeAddedEventHandler TradeAdded;
@@ -322,6 +323,27 @@ namespace HedgeHog.Shared {
     }
 
     public void FixOrderSetStop(string tradeId, double stopLoss, string remark) {
+      throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region ITradesManager Members
+
+
+    public Rate[] GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate) {
+      throw new NotImplementedException();
+    }
+
+    public Tick[] GetTicks(string pair, int periodsBack) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList) {
       throw new NotImplementedException();
     }
 

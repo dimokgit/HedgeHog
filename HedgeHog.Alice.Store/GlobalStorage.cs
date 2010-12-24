@@ -5,6 +5,7 @@ using System.Text;
 using HedgeHog.Alice.Store;
 using System.Windows;
 using System.Runtime.CompilerServices;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage {
@@ -61,5 +62,33 @@ namespace HedgeHog.Alice.Store {
       if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return new TradingAccount[] { };
       return Context.TradingAccounts.ToArray();
     }
+    public static List<Rate> GetRateFromDB(string pair, DateTime startDate, int barsCount, int minutesPerBar) {
+      var bars = GlobalStorage.ForexContext.t_Bar.
+        Where(b => b.Pair == pair && b.Period == minutesPerBar && b.StartDate >= startDate)
+        .OrderBy(b => b.StartDate).Take(barsCount);
+      return GetRatesFromDBBars(bars);
+    }
+
+    public static List<Rate> GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {
+      IQueryable<Store.t_Bar> bars;
+      if (minutesPerPriod == 0) {
+        bars = GlobalStorage.ForexContext.t_Bar
+          .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate >= startDate)
+          .OrderBy(b => b.StartDate).Take(barsCount * 2);
+      } else {
+        var endDate = startDate.AddMinutes(barsCount * minutesPerPriod);
+        bars = GlobalStorage.ForexContext.t_Bar
+          .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate <= endDate)
+          .OrderByDescending(b => b.StartDate).Take(barsCount);
+      }
+      return GetRatesFromDBBars(bars);
+    }
+
+    static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {
+      var ratesList = new List<Rate>();
+      bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDate)));
+      return ratesList.OrderBars().ToList();
+    }
+
   }
 }

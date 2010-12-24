@@ -20,7 +20,7 @@ namespace HedgeHog.Bars {
     }
     public DateTime StartDateContinuous { get; set; }
   }
-  public abstract class BarBase : BarBaseDate, IEquatable<BarBase>, ICloneable {
+  public abstract class BarBase : BarBaseDate, IEquatable<BarBase>,IComparable<BarBase>, ICloneable {
     public int Index { get; set; }
     public readonly bool IsHistory;
 
@@ -70,6 +70,24 @@ namespace HedgeHog.Bars {
     public double PriceHeight3 { get { return PriceAvg1 != 0 && PriceAvg3 != 0 ? PriceAvg3 - PriceAvg : 0; } }
     public double PriceAvg4 { get; set; }
     #endregion
+
+    #region Gunn Angles
+    //public static double[] GannAngles = new[] { 82.5, 75, 71.25, 63.75, 45.0, 26.25, 18.75, 15, 7.5 };
+    public static double[] GannAngles = new[] { 8, 4, 3, 2, 1.0, 1 / 2.0, 1 / 3.0, 1 / 4.0, 1 / 8.0 };
+    double[] _gannPrices = new double[GannAngles.Length];
+    public double[] GannPrices {
+      get { return _gannPrices; }
+      set { _gannPrices = value; }
+    }
+    public double PriceGann1x1 { get; set; }
+    public double PriceGunn1x2 { get; set; }
+    public double PriceGunn1x4 { get; set; }
+    public double PriceGunn1x8 { get; set; }
+    public double PriceGunn2x1 { get; set; }
+    public double PriceGunn4x1 { get; set; }
+    public double PriceGunn8x1 { get; set; }
+    #endregion
+
 
     #region Price Indicators
     public double? PriceSpeed { get; set; }
@@ -293,6 +311,14 @@ namespace HedgeHog.Bars {
       var bb =  MemberwiseClone() as BarBase;
       bb.Ph = this.Ph.Clone() as PhClass;
       return bb;
+    }
+
+    #endregion
+
+    #region IComparable<BarBase> Members
+
+    public int CompareTo(BarBase other) {
+      return other == null ? 1 : this == null ? -1 : this.StartDate.CompareTo(other.StartDate);
     }
 
     #endregion

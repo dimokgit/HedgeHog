@@ -14,6 +14,10 @@ namespace HedgeHog.Shared {
     public double PowerAverage { get; set; }
     public double PowerVolatility { get; set; }
     public double CorridorHeight { get; set; }
+    /// <summary>
+    /// Ratio between Wide and Narrow corridors
+    /// </summary>
+    public double CorridorsRatio { get; set; }
     public double Resistanse { get; set; }
     public double Support { get; set; }
   }

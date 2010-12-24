@@ -40,12 +40,18 @@ namespace HedgeHog {
     }
 
     public static double Angle(this double tangent) { return Math.Atan(tangent) * (180 / Math.PI); }
+    public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
 
     public static double RegressionValue(this double[] coeffs, int i) {
       double y = 0; int j = 0;
       coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
     }
+
+    public static double OpsiteCathetusByFegrees(this double adjacentCathetus, double angleInDegrees) {
+      return adjacentCathetus * Math.Tan(angleInDegrees.Radians());
+    }
+
 
     public static double[] AverageByIterations(this double[] values,Func<double,double,bool> compare, double iterations)  {
       var avg = values.DefaultIfEmpty().Average();

@@ -128,7 +128,7 @@ namespace Temp {
       try {
         IsBusy = true;
         var barMin = 5;
-        fw.GetBars(Pair, 0, DateTime.Now.AddMinutes(-MinutesBack), DateTime.FromOADate(0),ref ticks);
+        fw.GetBars(Pair, 0,0, DateTime.Now.AddMinutes(-MinutesBack), DateTime.FromOADate(0),ticks);
         var sw = Stopwatch.StartNew();
         var rates = ticks.GetMinuteTicks(1);
         BarHeightInPips = fw.InPips(Pair, rates.GetWaveHeight(barMin, BarMinutesMax));

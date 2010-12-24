@@ -2918,6 +2918,78 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _TradeByRateDirection;
         partial void OnTradeByRateDirectionChanging(global::System.Boolean value);
         partial void OnTradeByRateDirectionChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> SupportDate
+        {
+            get
+            {
+                return _SupportDate;
+            }
+            set
+            {
+                OnSupportDateChanging(value);
+                ReportPropertyChanging("SupportDate");
+                _SupportDate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SupportDate");
+                OnSupportDateChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _SupportDate;
+        partial void OnSupportDateChanging(Nullable<global::System.DateTime> value);
+        partial void OnSupportDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> ResistanceDate
+        {
+            get
+            {
+                return _ResistanceDate;
+            }
+            set
+            {
+                OnResistanceDateChanging(value);
+                ReportPropertyChanging("ResistanceDate");
+                _ResistanceDate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ResistanceDate");
+                OnResistanceDateChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _ResistanceDate;
+        partial void OnResistanceDateChanging(Nullable<global::System.DateTime> value);
+        partial void OnResistanceDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> GannAnglesOffset
+        {
+            get
+            {
+                return _GannAnglesOffset;
+            }
+            set
+            {
+                OnGannAnglesOffsetChanging(value);
+                ReportPropertyChanging("GannAnglesOffset");
+                _GannAnglesOffset = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("GannAnglesOffset");
+                OnGannAnglesOffsetChanged();
+            }
+        }
+        private Nullable<global::System.Double> _GannAnglesOffset;
+        partial void OnGannAnglesOffsetChanging(Nullable<global::System.Double> value);
+        partial void OnGannAnglesOffsetChanged();
 
         #endregion
     

@@ -85,7 +85,8 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_IsInVirtualTrading != value) {
           _IsInVirtualTrading = value;
-          RaisePropertyChanged();
+          RaisePropertyChangedCore();
+          //GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(value, typeof(VirtualTradesManager));
         }
       }
     }
@@ -378,6 +379,7 @@ namespace HedgeHog.Alice.Client {
           _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
         }
         exc = FileLogger.LogToFile(exc);
+        lastLogTime = DateTime.Now;
         RaisePropertyChanged(() => LogText, () => IsLogExpanded);
       }
     }
@@ -389,7 +391,13 @@ namespace HedgeHog.Alice.Client {
     }
 
     public bool IsLogExpanded {
-      get { return (DateTime.Now - lastLogTime) < TimeSpan.FromSeconds(10); }
+      get { 
+        var ts = DateTime.Now - lastLogTime;
+        var ret = ts < TimeSpan.FromSeconds(10);
+        if (ret)
+          new ThreadScheduler(ts, TimeSpan.Zero, () => RaisePropertyChanged(() => IsLogExpanded), (s, e) => Log = e.Exception);
+        return ret;
+      }
     }
     #endregion
 
@@ -1020,13 +1028,15 @@ namespace HedgeHog.Alice.Client {
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
         try {
-          var account = fwMaster.GetAccount();
-          if (account == null) {
-            Thread.Sleep(1000);
-            account = fwMaster.GetAccount();
+          if (!IsInVirtualTrading) {
+            var account = fwMaster.GetAccount();
+            if (account == null) {
+              Thread.Sleep(1000);
+              account = fwMaster.GetAccount();
+            }
+            if (account != null)
+              AccountModel.Update(account, 0, fwMaster.ServerTime);
           }
-          if (account != null)
-            AccountModel.Update(account, 0, fwMaster.ServerTime);
         } catch (Exception exc) {
           Log = exc;
           MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
@@ -1107,8 +1117,10 @@ namespace HedgeHog.Alice.Client {
         IsInLogin = true;
         CoreFX.IsInVirtualTrading = IsInVirtualTrading;
         if (CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
-          RaiseSlaveLoginRequestEvent();
-          InvokeSyncronize(fwMaster.GetAccount());
+          if (!IsInVirtualTrading) {
+            RaiseSlaveLoginRequestEvent();
+            InvokeSyncronize(fwMaster.GetAccount());
+          }
           return true;
         } else {
           MessageBox.Show("Login failed. See Log.");
@@ -1126,20 +1138,24 @@ namespace HedgeHog.Alice.Client {
 
     ThreadSchedulersDispenser PriceChangedSchedulers = new ThreadSchedulersDispenser();
     void fwMaster_PriceChanged(string pair) {
-      fwMaster_PriceChanged(new Price() { Pair = pair });
+      fwMaster_PriceChanged(fwMaster, new PriceChangedEventArgs(new Price() { Pair = pair },fwMaster.GetAccount(), fwMaster.GetTrades()));
     }
-    void fwMaster_PriceChanged(Price Price) {
+    void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
+      Price Price = e.Price;
       //if (!ServerTrades.Any(t => t.Pair == Price.Pair)) return;
-      RunPrice(Price.Pair);
+      RunPrice(e);
     }
 
-    private void RunPrice(string pair) {
-      PriceChangedSchedulers.Run(pair, () => RunPriceChanged(pair));
+    private void RunPrice(PriceChangedEventArgs e) {
+      string pair = e.Price.Pair;
+      PriceChangedSchedulers.Run(pair, () => RunPriceChanged(e));
     }
 
-    private void RunPriceChanged(string pair) {
+    private void RunPriceChanged(PriceChangedEventArgs e) {
+      string pair = e.Price.Pair;
       try {
-        var a = fwMaster.GetAccount();
+        var a = fwMaster.GetAccount(false);
+        a.Trades = e.Trades;
         if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
           a.Orders = fwMaster.GetOrders("");
           InvokeSyncronize(a);
@@ -1155,7 +1171,7 @@ namespace HedgeHog.Alice.Client {
 
     void fwMaster_TradeAdded(Trade trade) {
       OnMasterTradeAdded(trade);
-      RunPrice(trade.Pair);
+      RunPrice(new PriceChangedEventArgs(fwMaster.GetPrice(trade.Pair),fwMaster.GetAccount(), fwMaster.GetTrades()));
     }
     void fwMaster_TradeChanged(object sender, TradeEventArgs e) {
       //fwMaster_PriceChanged(e.Trade.Pair);
@@ -1332,7 +1348,7 @@ namespace HedgeHog.Alice.Client {
           TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
           //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
           ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
-          var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.PLMaximum, tradeStats.CorridorHeight, tradeStats.SessionId);
+          var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.PLMaximum, tradeStats.CorridorsRatio, tradeStats.SessionId);
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
           GlobalStorage.ForexContext.t_Trade.AddObject(ct);

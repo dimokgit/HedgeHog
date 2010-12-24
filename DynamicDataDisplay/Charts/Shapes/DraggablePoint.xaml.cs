@@ -13,6 +13,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
 using Microsoft.Research.DynamicDataDisplay;
+using System.Diagnostics;
 
 namespace Microsoft.Research.DynamicDataDisplay.Charts.Shapes
 {
@@ -70,6 +71,17 @@ namespace Microsoft.Research.DynamicDataDisplay.Charts.Shapes
 			dragging = false;
 
 			e.Handled = true;
+      Dispatcher.BeginInvoke(new Action(() => Focus()));
 		}
+    protected override void OnGotFocus(RoutedEventArgs e) {
+      base.OnGotFocus(e);
+    }
+    protected override void OnPreviewKeyDown(KeyEventArgs e) {
+      base.OnPreviewKeyDown(e);
+    }
+
+    private void Grid_PreviewKeyDown(object sender, KeyEventArgs e) {
+      Debugger.Break();
+    }
 	}
 }

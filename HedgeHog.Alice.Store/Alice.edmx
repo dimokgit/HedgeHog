@@ -136,6 +136,9 @@
           <Property Name="TradingAngleRange" Type="float" Nullable="false" />
           <Property Name="CloseByMomentum" Type="bit" Nullable="false" />
           <Property Name="TradeByRateDirection" Type="bit" Nullable="false" />
+          <Property Name="SupportDate" Type="datetime" />
+          <Property Name="ResistanceDate" Type="datetime" />
+          <Property Name="GannAnglesOffset" Type="float" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -223,6 +226,9 @@
           <Property Type="Double" Name="TradingAngleRange" Nullable="false" />
           <Property Type="Boolean" Name="CloseByMomentum" Nullable="false" />
           <Property Type="Boolean" Name="TradeByRateDirection" Nullable="false" />
+          <Property Type="DateTime" Name="SupportDate" />
+          <Property Type="DateTime" Name="ResistanceDate" />
+          <Property Type="Double" Name="GannAnglesOffset" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -292,7 +298,10 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="TradeByRateDirection" ColumnName="TradeByRateDirection" />
+            <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />
+                <ScalarProperty Name="ResistanceDate" ColumnName="ResistanceDate" />
+                <ScalarProperty Name="SupportDate" ColumnName="SupportDate" />
+                <ScalarProperty Name="TradeByRateDirection" ColumnName="TradeByRateDirection" />
                 <ScalarProperty Name="CloseByMomentum" ColumnName="CloseByMomentum" />
                 <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
                 <ScalarProperty Name="TradeAndAngleSynced" ColumnName="TradeAndAngleSynced" />
