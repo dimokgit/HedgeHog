@@ -79,13 +79,7 @@ namespace HedgeHog.Bars {
       get { return _gannPrices; }
       set { _gannPrices = value; }
     }
-    public double PriceGann1x1 { get; set; }
-    public double PriceGunn1x2 { get; set; }
-    public double PriceGunn1x4 { get; set; }
-    public double PriceGunn1x8 { get; set; }
-    public double PriceGunn2x1 { get; set; }
-    public double PriceGunn4x1 { get; set; }
-    public double PriceGunn8x1 { get; set; }
+    public double GannPrice1x1 { get { return GannPrices[GannAngles.Length / 2]; } }
     #endregion
 
 

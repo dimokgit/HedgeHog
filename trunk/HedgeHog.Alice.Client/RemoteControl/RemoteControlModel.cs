@@ -43,13 +43,21 @@ namespace HedgeHog.Alice.Client {
         charter.StateChanged += new EventHandler(charter_StateChanged);
         charters.Add(tradingMacro, charter);
         App.ChildWindows.Add(charter);
-        charter.CorridorStartPositionChanged += new EventHandler<CorridorPositionChangedEventArgs>(charter_CorridorStartPositionChanged);
-        charter.SupportResistanceChanged += new EventHandler<SupportResistanceChangedEventArgs>(charter_SupportResistanceChanged);
-        charter.Play += new EventHandler<PlayEventArgs>(charter_Play);
+        charter.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
+        charter.SupportResistanceChanged += charter_SupportResistanceChanged;
+        charter.Play += charter_Play;
+        charter.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
         charter.Show();
         //}), System.Windows.Threading.DispatcherPriority.Send);
       }
       return charters[tradingMacro];
+    }
+
+    void charter_GannAngleOffsetChanged(object sender, GannAngleOffsetChangedEventArgs e) {
+      var tm = GetTradingMacro((Corridors)sender);
+      tm.GannAnglesOffset = e.Offset;
+      tm.SetGannAngle();
+      ShowChart(tm);
     }
 
     void charter_Play(object sender, PlayEventArgs e) {

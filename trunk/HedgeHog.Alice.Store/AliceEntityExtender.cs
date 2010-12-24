@@ -241,7 +241,7 @@ namespace HedgeHog.Alice.Store {
           , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
           , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
           )[1];
-         SetGannAngle(Rates);
+         SetGannAngle();
 
         OnPropertyChanged("CorridorThinness");
         OnPropertyChanged("CorridorHeightsRatio");
@@ -256,9 +256,9 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("PriceCmaDiffLowInPips");
       }
     }
-    void SetGannAngle(ICollection<Rate> rates) {
-      rates.ToList().ForEach(r => Enumerable.Range(0, BarBase.GannAngles.Length).ToList().ForEach(i => r.GannPrices[i] = 0));
-      var ratesForGann = rates.Skip(Rates.Count - CorridorStats.Periods).ToArray();
+    public void SetGannAngle() {
+      Rates.ToList().ForEach(r => Enumerable.Range(0, BarBase.GannAngles.Length).ToList().ForEach(i => r.GannPrices[i] = 0));
+      var ratesForGann = Rates.Skip(Rates.Count - CorridorStats.Periods).ToArray();
       var rateStart = CorridorAngle > 0 ? ratesForGann.OrderBy(r => r.BidLow).First() : ratesForGann.OrderBy(r => r.AskHigh).Last();
       ratesForGann = ratesForGann.Where(r => r >= rateStart).OrderBars().ToArray();
       for (var i = 0; i < ratesForGann.Count(); i++) {
