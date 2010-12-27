@@ -1509,7 +1509,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="tradingAngleRange">Initial value of the TradingAngleRange property.</param>
         /// <param name="closeByMomentum">Initial value of the CloseByMomentum property.</param>
         /// <param name="tradeByRateDirection">Initial value of the TradeByRateDirection property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection)
+        /// <param name="gannAngleIndexMinimum">Initial value of the GannAngleIndexMinimum property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Double corridorHeightBySpreadRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean tradeByPowerVolatilty, global::System.Boolean tradeByPowerAverage, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.Int32 gannAngleIndexMinimum)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1566,6 +1567,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.TradingAngleRange = tradingAngleRange;
             tradingMacro.CloseByMomentum = closeByMomentum;
             tradingMacro.TradeByRateDirection = tradeByRateDirection;
+            tradingMacro.GannAngleIndexMinimum = gannAngleIndexMinimum;
             return tradingMacro;
         }
 
@@ -2990,6 +2992,30 @@ namespace HedgeHog.Alice.Store
         private Nullable<global::System.Double> _GannAnglesOffset;
         partial void OnGannAnglesOffsetChanging(Nullable<global::System.Double> value);
         partial void OnGannAnglesOffsetChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 GannAngleIndexMinimum
+        {
+            get
+            {
+                return _GannAngleIndexMinimum;
+            }
+            set
+            {
+                OnGannAngleIndexMinimumChanging(value);
+                ReportPropertyChanging("GannAngleIndexMinimum");
+                _GannAngleIndexMinimum = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("GannAngleIndexMinimum");
+                OnGannAngleIndexMinimumChanged();
+            }
+        }
+        private global::System.Int32 _GannAngleIndexMinimum;
+        partial void OnGannAngleIndexMinimumChanging(global::System.Int32 value);
+        partial void OnGannAngleIndexMinimumChanged();
 
         #endregion
     

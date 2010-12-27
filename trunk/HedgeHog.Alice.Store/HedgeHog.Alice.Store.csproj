@@ -67,7 +67,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
-    <Compile Include="AliceEntityExtender.cs" />
+    <Compile Include="AliceEntityExtender_MC.cs" />
+    <None Include="AliceEntityExtender.cs">
+      <SubType>Code</SubType>
+    </None>
     <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
     <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
     <Compile Include="CS_4_0.cs">

@@ -96,10 +96,13 @@ namespace HedgeHog {
       if (!this.ContainsKey(key)) this.Add(key, new Scheduler());
       return this[key];
     }
-    public void Run(T key, Action runner) {
-      var ts = Get(key);
-      if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
-      else ts.Command = () => runner();
+    public void Run(T key, Action runner,bool runSync = false) {
+      if (runSync) runner();
+      else {
+        var ts = Get(key);
+        if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
+        else ts.Command = () => runner();
+      }
     }
   }
 
