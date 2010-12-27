@@ -96,6 +96,7 @@ namespace HedgeHog.Alice.Store {
           tradesManager.ClosePair(VirtualPair);
           if (e.ClearTest) {
             tm.CurrentLoss = 0;
+            tm.CorridorStats = null;
             tm.Support = new Rate();
             tm.Resistance = new Rate();
             tm.MinimumGross = 0;
@@ -131,7 +132,8 @@ namespace HedgeHog.Alice.Store {
             if (rate == null) break;
             lock (rates) {
               rates.Add(rate);
-              rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
+              if( (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
+                rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
             }
           }
           if (fw.IsLoggedIn) {

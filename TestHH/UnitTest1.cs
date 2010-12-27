@@ -766,5 +766,10 @@ namespace TestHH {
       System.Diagnostics.Debug.WriteLine("Volts:" + volts.Count());
       return;
     }
+    public void Conversion() {
+      var ticks = new[] { new Tick(DateTime.MinValue, 1.3, 1.2, 0, true) };
+      var rates = ticks.OfType<Rate>().ToArray();
+      var ticks1 = rates.OfType<Tick>().ToArray();
+    }
   }
 }

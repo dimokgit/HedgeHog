@@ -206,6 +206,7 @@
       <DependentUpon>DraggablePoint.xaml</DependentUpon>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
+    <Compile Include="Charts\Shapes\GannAngleOffsetDraggablePoint.cs" />
     <Compile Include="Charts\Shapes\HorizontalLine.cs" />
     <Compile Include="Charts\Navigation\MouseNavigationBase.cs" />
     <Compile Include="Charts\Axes\AxisControl.cs" />

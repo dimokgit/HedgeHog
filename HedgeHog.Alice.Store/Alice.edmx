@@ -139,6 +139,7 @@
           <Property Name="SupportDate" Type="datetime" />
           <Property Name="ResistanceDate" Type="datetime" />
           <Property Name="GannAnglesOffset" Type="float" />
+          <Property Name="GannAngleIndexMinimum" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -229,6 +230,7 @@
           <Property Type="DateTime" Name="SupportDate" />
           <Property Type="DateTime" Name="ResistanceDate" />
           <Property Type="Double" Name="GannAnglesOffset" />
+          <Property Type="Int32" Name="GannAngleIndexMinimum" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -298,7 +300,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />
+            <ScalarProperty Name="GannAngleIndexMinimum" ColumnName="GannAngleIndexMinimum" />
+                <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />
                 <ScalarProperty Name="ResistanceDate" ColumnName="ResistanceDate" />
                 <ScalarProperty Name="SupportDate" ColumnName="SupportDate" />
                 <ScalarProperty Name="TradeByRateDirection" ColumnName="TradeByRateDirection" />

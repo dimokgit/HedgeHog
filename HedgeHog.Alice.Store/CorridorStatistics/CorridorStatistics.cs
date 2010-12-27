@@ -12,10 +12,10 @@ namespace HedgeHog.Alice.Store {
     public Func<Rate,double> priceHigh { get; set; }
     public Func<Rate,double> priceLow { get; set; }
 
-    public double Density { get; set; }
-    public double Slope { get; set; }
-    public LineInfo LineLow { get; set; }
-    public LineInfo LineHigh { get; set; }
+    public double Density { get; private set; }
+    public double Slope { get; private set; }
+    public LineInfo LineLow { get; private set; }
+    public LineInfo LineHigh { get; private set; }
 
     public TrendLevel TrendLevel {
       get {
@@ -38,7 +38,7 @@ namespace HedgeHog.Alice.Store {
     double _HeightUp0;
     public double HeightUp0 {
       get { return _HeightUp0; }
-      set { _HeightUp0 = value; }
+      private set { _HeightUp0 = value; }
     }
     double _HeightUp;
     public double HeightUp {
@@ -49,7 +49,7 @@ namespace HedgeHog.Alice.Store {
     double _HeightDown0;
     public double HeightDown0 {
       get { return _HeightDown0; }
-      set { _HeightDown0 = value; }
+      private set { _HeightDown0 = value; }
     }
     double _HeightDown;
     public double HeightDown {
@@ -74,12 +74,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
-    public DateTime EndDate { get; set; }
+    public DateTime EndDate { get; private set; }
 
     private DateTime _StartDate;
     public DateTime StartDate {
       get { return _StartDate; }
-      set {
+      private set {
         if (_StartDate != value) {
           _StartDate = value;
           OnPropertyChanged("StartDate");
@@ -107,9 +107,7 @@ namespace HedgeHog.Alice.Store {
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
       this.EndDate = endDate;
-      // Mast go before StartDate
       this.Slope = slope;
-      this.StartDate = startDate;
       this.Periods = periods;
       this.Iterations = iterations;
       this.HeightUp = heightUp;
@@ -118,6 +116,8 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown0 = heightDown0;
       //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
       Corridornes = Density;
+      // Must the last one
+      this.StartDate = startDate;
       OnPropertyChanged("Height");
       OnPropertyChanged("HeightInPips");
     }

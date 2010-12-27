@@ -53,7 +53,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DynamicDataDisplay, Version=0.3.2.0, Culture=neutral, PublicKeyToken=5b7d744a7263923f" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.configuration" />
@@ -193,6 +192,10 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DynamicDataDisplay\DynamicDataDisplay.csproj">
+      <Project>{ECD37682-DF7E-409F-912D-0965634556B5}</Project>
+      <Name>DynamicDataDisplay</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
       <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
       <Name>HedgeHog.Alice.Store</Name>
@@ -232,10 +235,6 @@
     <ProjectReference Include="..\Persistancy\Persistance.csproj">
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
       <Name>Persistance</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Telerik\Telerik.csproj">
-      <Project>{B005825C-7051-4E72-A39A-A0BD3DE7994F}</Project>
-      <Name>Telerik</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

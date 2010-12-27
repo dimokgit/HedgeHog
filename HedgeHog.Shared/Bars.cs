@@ -19,6 +19,9 @@ namespace HedgeHog.Bars {
       }
     }
     public DateTime StartDateContinuous { get; set; }
+    public virtual object Clone() {
+      return MemberwiseClone();
+    }
   }
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>,IComparable<BarBase>, ICloneable {
     public int Index { get; set; }
@@ -73,13 +76,24 @@ namespace HedgeHog.Bars {
 
     #region Gunn Angles
     //public static double[] GannAngles = new[] { 82.5, 75, 71.25, 63.75, 45.0, 26.25, 18.75, 15, 7.5 };
+    /// <summary>
+    /// Tangents of Gann Angles.
+    /// <remarks>
+    /// Do not change the order of angles.
+    /// </remarks>
+    /// </summary>
     public static double[] GannAngles = new[] { 8, 4, 3, 2, 1.0, 1 / 2.0, 1 / 3.0, 1 / 4.0, 1 / 8.0 };
+    /// <summary>
+    /// Index of 1x1 angle in <see cref="GannAngles"/>
+    /// </summary>
+    public static int GannAngle1x1 = GannAngles.Length / 2;
     double[] _gannPrices = new double[GannAngles.Length];
     public double[] GannPrices {
       get { return _gannPrices; }
       set { _gannPrices = value; }
     }
     public double GannPrice1x1 { get { return GannPrices[GannAngles.Length / 2]; } }
+    public double TrendLine { get; set; }
     #endregion
 
 
@@ -301,8 +315,8 @@ namespace HedgeHog.Bars {
 
     #region ICloneable Members
 
-    public virtual object Clone() {
-      var bb =  MemberwiseClone() as BarBase;
+    public override object Clone() {
+      var bb =  base.Clone() as BarBase;
       bb.Ph = this.Ph.Clone() as PhClass;
       return bb;
     }

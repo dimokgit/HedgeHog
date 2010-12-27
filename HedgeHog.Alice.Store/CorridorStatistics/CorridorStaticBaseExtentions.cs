@@ -30,6 +30,7 @@ namespace HedgeHog.Alice.Store {
           //Stopwatch sw = Stopwatch.StartNew(); int swCount = 1;            /*sw.Stop();*/ Debug.WriteLine("ScanCorridorWithAngle " + (swCount) + ":" + sw.ElapsedMilliseconds + " ms."); //sw.Restart();
           rates.OrderBars().ToArray().Index();
           var periodsEnd = Math.Min(rates.Count(), periodsStart + periodsLength);
+          periodsStart = Math.Min(rates.Count() - 1, periodsStart);
           for (var i = periodsStart; i < periodsEnd; i = i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()) {
             var cs = rates.Take(i).ToArray().ScanCorridorWithAngle(priceHigh, priceLow,iterationsForHeights, useRegression);
             if (cs != null)

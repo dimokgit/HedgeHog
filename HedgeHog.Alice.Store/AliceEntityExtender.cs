@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Diagnostics;
 using System.Reflection;
+using System.Collections.Specialized;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -182,6 +183,13 @@ namespace HedgeHog.Alice.Store {
     void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       var cs = (sender as CorridorStatistics);
       if (e.PropertyName == Lib.GetLambda(() => cs.StartDate) && (SupportPrice == 0 && ResistancePrice ==0 || !IsSuppResManual)) {
+
+        if (CorridorStats == null) CorridorStats = sender as CorridorStatistics;
+
+        var slopByTrend = this.Slope;// FindTrendAngle();
+        var gannAnglesOffset = slopByTrend.Abs() / GannAngle1x1;
+        if (gannAnglesOffset != GannAnglesOffset) GannAnglesOffset = gannAnglesOffset;
+
         var rates = Rates.Where(r=>r.StartDate >= cs.StartDate).OrderBy(r => r.PriceAvg).ToArray();
         var rateMax = rates.Last();
         var rateMin = rates.First();
@@ -221,8 +229,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    void CorridorStatsArray_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
-      if( e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add )
+    void CorridorStatsArray_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+      if( e.Action == NotifyCollectionChangedAction.Add )
         (e.NewItems[0] as CorridorStatistics).PropertyChanged += cs_PropertyChanged;
     }
 
@@ -230,19 +238,25 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics CorridorStats {
       get { return _CorridorStats; }
       set {
+        var datePrev = _CorridorStats == null ? DateTime.MinValue : _CorridorStats.StartDate;
         _CorridorStats = value;
         CorridorStatsArray.ToList().ForEach(cs => cs.IsCurrent = cs == value);
 
         Rates.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = 0);
-        var corridorRates = Rates.Skip(Rates.Count - CorridorStats.Periods).ToArray();
-        CorridorAngle = corridorRates
-          .SetCorridorPrices(CorridorStats.HeightUp0, CorridorStats.HeightDown0, CorridorStats.HeightUp, CorridorStats.HeightDown,
-          r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
-          , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
-          , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
-          )[1];
-         SetGannAngle();
+        if (value != null) {
+          var corridorRates = Rates.Skip(Rates.Count - CorridorStats.Periods).ToArray();
+          var tangent = corridorRates
+            .SetCorridorPrices(CorridorStats.HeightUp0, CorridorStats.HeightDown0, CorridorStats.HeightUp, CorridorStats.HeightDown,
+            r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
+            , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
+            , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
+            )[1];
 
+          CorridorAngle = tangent;
+          FindTrendAngle();
+        }
+
+        #region PropertyChanged
         OnPropertyChanged("CorridorThinness");
         OnPropertyChanged("CorridorHeightsRatio");
         OnPropertyChanged("CorridorHeightByRegressionInPips");
@@ -254,25 +268,153 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("CorridorStats");
         OnPropertyChanged("PriceCmaDiffHighInPips");
         OnPropertyChanged("PriceCmaDiffLowInPips");
+        #endregion
       }
     }
-    public void SetGannAngle() {
+    double Slope { get { return CorridorStats == null ? 0 : CorridorStats.Slope; } }
+    //Dimok: Need to implement FindTrendAngle
+    double FindTrendAngle() {
+      Rates.ForEach(r => r.TrendLine = 0);
+      var rates = RatesForCorridor();
+      if (rates.Length == 0) return 0;
+      var rateStart = this.Slope > 0 ? rates.OrderBy(r => r.BidLow).First() : rates.OrderBy(r => r.AskHigh).Last();
+      var dots = rates.SkipWhile(r => r <= rateStart).Select((r,i)=>new {rate=r,index=i+1}).ToArray();
+      var trends = new Dictionary<double, double>();
+      foreach (var dot in dots) {
+        var slope = (this.Slope > 0 ? dot.rate.AskHigh - rateStart.BidLow : dot.rate.BidLow - rateStart.AskHigh) / dot.index;
+        var dotsCurrent = dots.TakeWhile(dt => dt.rate <= dot.rate).ToArray();
+        foreach (var dt in dotsCurrent.AsParallel()) {
+          dt.rate.TrendLine = new double[] { rateStart.PriceAvg, slope }.RegressionValue(dt.index);
+        }
+        var trendPower = dotsCurrent.Count(dt => dt.rate.TrendLine.Between(dt.rate.BidLow, dt.rate.AskHigh));
+        if (!trends.ContainsKey(slope))trends.Add(slope, trendPower);
+        else trends[slope] = Math.Max(trends[slope], trendPower);
+      }
+      trends = trends.OrderByDescending(t => t.Value).ThenBy(t=>t.Value.Abs()).ToDictionary(t => t.Key, t => t.Value);
+      var slopeNew = trends.First().Key;
+      var coeffs = new []{rateStart.PriceAvg,slopeNew};
+      foreach (var dot in dots)
+        dot.rate.TrendLine = coeffs.RegressionValue(dot.index);
+      rateStart.TrendLine = rateStart.PriceAvg;
+      return slopeNew;
+    }
+    partial void OnGannAnglesOffsetChanged() {
+      if (Rates.Count == 0) return;
+      var rateLast = Rates.Last();
+      if (CorridorStats == null) return;
+      SetGannAngles();
+      var slope = CorridorStats.Slope;
+      Predicate<double> filter = ga => slope < 0 ? rateLast.PriceAvg > ga : rateLast.PriceAvg < ga;
+      var gann = slope > 0
+        ? rateLast.GannPrices.Where(ga => rateLast.PriceAvg > ga).DefaultIfEmpty().Max()
+        : rateLast.GannPrices.Where(ga => rateLast.PriceAvg < ga).DefaultIfEmpty().Min();
+      var index = rateLast.GannPrices.ToList().FindIndex(ga => ga == gann);
+      if (index >= 0)
+        GannAngleActive = index;
+      //else
+      //  Debugger.Break();
+      if (false) {
+        UpdateTradingGannAngleIndex(true);
+        GannAngleActive += 1;
+      }
+      OnPropertyChanged(Metadata.TradingMacroMetadata.GannAnglesOffset_);
+    }
+    public void UpdateTradingGannAngleIndex(bool reset = false) {
+      if (CorridorStats == null) return;
+      var ratesForGann = SetGannAngles().Reverse().ToList();
+      var testList = new List<Tuple<Rate, Rate>>();
+      if (Slope != 0) {
+        ratesForGann.Aggregate((rp, rn) => {
+          testList.Add(new Tuple<Rate, Rate>(rp, rn));
+          return rn;
+        });
+        Func<Rate, Rate, int, bool> cross1 = (r1, r2, gannIndex) => {
+          var gannLow = Math.Min(r1.GannPrices[gannIndex], r2.GannPrices[gannIndex]);
+          var gannHigh = Math.Max(r1.GannPrices[gannIndex], r2.GannPrices[gannIndex]);
+          var ask = Math.Max(r1.AskHigh, r2.AskHigh);
+          var bid = Math.Min(r1.BidLow, r2.BidLow);
+          return gannLow < ask && gannHigh > bid;
+        };
+        Func<Rate, Rate, int> cross2 = (rp, rn) =>
+          rn.GannPrices.Select((gp, i) =>
+            new { i, cross = cross1(rp, rn, i) })
+            .Where(a => a.cross).DefaultIfEmpty(new { i = -1, cross = false }).Last().i;
+        Predicate<Tuple<Rate, Rate>> cross3 = t => cross2(t.Item1, t.Item2) > 0;
+        var rateCross = testList.Find(cross3);
+        if (rateCross != null) {
+          var newIndex = cross2(rateCross.Item1, rateCross.Item2);
+          if (reset || newIndex > GannAngleActive)
+            GannAngleActive = newIndex;
+        }
+        return;
+      }
+      {
+        var ratesList = new Rate[BarBase.GannAngles.Length];
+        var testArray = ratesForGann.Select(rate => new { rate.GannPrices, rate.AskHigh, rate.BidLow, rate.StartDate }).ToArray();
+        Func<Rate, int> crossFilter = rate =>
+          rate.GannPrices.Select((gp, i) => new { i, cross = gp.Between(rate.BidLow, rate.AskHigh) })
+          .Where(a => a.cross).DefaultIfEmpty(new { i = -1, cross = false }).Select(a => a.i).Last();
+        Predicate<Rate> findFilter = rate => crossFilter(rate) >= 0;
+        var rateCross = ratesForGann.Find(findFilter);
+        GannAngleActive = crossFilter(rateCross);
+        return;
+        foreach (var i in Enumerable.Range(0, BarBase.GannAngles.Length).AsParallel())
+          ratesList[i] = ratesForGann
+            .Find(rate => rate.GannPrices[i].Between(rate.BidLow, rate.AskHigh));
+        var rateLast = ratesList.OrderBars().Last();
+        GannAngleActive = ratesList.ToList().FindIndex(rate => rate == rateLast);
+        return;
+        rateLast = Rates.Last();
+        Predicate<double> filter = ga => CorridorStats.Slope > 0 ? rateLast.PriceAvg < ga : rateLast.PriceAvg > ga;
+        var newIndex = rateLast.GannPrices.ToList().FindLastIndex(filter);
+        if (newIndex > GannAngleActive)
+          GannAngleActive = rateLast.GannPrices.ToList().FindLastIndex(filter);
+      }
+    }
+
+    public Rate[] SetGannAngles() {
+      if (CorridorStats == null) return new Rate[0];
       Rates.ToList().ForEach(r => Enumerable.Range(0, BarBase.GannAngles.Length).ToList().ForEach(i => r.GannPrices[i] = 0));
-      var ratesForGann = Rates.Skip(Rates.Count - CorridorStats.Periods).ToArray();
-      var rateStart = CorridorAngle > 0 ? ratesForGann.OrderBy(r => r.BidLow).First() : ratesForGann.OrderBy(r => r.AskHigh).Last();
+      var ratesForGann = RatesForCorridor();
+      var rateStart = this.Slope > 0 ? ratesForGann.OrderBy(r => r.BidLow).First() : ratesForGann.OrderBy(r => r.AskHigh).Last();
       ratesForGann = ratesForGann.Where(r => r >= rateStart).OrderBars().ToArray();
+      var spread = ratesForGann.Average(r => r.Spread);
       for (var i = 0; i < ratesForGann.Count(); i++) {
         for (var j = 0; j < BarBase.GannAngles.Length; j++) {
           double tangent = BarBase.GannAngles[j] * PointSize * GannAnglesOffset.GetValueOrDefault();
-          var coeffs = new[] { ratesForGann[0].PriceAvg, Math.Sign(CorridorAngle) * tangent };
+          var coeffs = new[] { ratesForGann[0].PriceAvg, Math.Sign(this.Slope) * tangent };
           ratesForGann[i].GannPrices[j] = coeffs.RegressionValue(i);
         }
       }
+      return ratesForGann;
     }
-    void FindTrendAngle(ICollection<Rate> rates) {
-      
 
+    private Rate[] RatesForCorridor() {
+      return CorridorStats == null ? new Rate[0] : Rates.SkipWhile(r => r.StartDate < CorridorStats.StartDate).ToArray();
     }
+    public double GannAngle1x1 { get { return PointSize; } }
+    private int _GannAngleActive;
+    /// <summary>
+    /// Index of active Gann Angle
+    /// </summary>
+    public int GannAngleActive {
+      get { return GannAngleIndexMinimum < 0 ? -GannAngleIndexMinimum : _GannAngleActive; }
+      set {
+        _GannAngleActive = Math.Min(value, GannAngleIndexMinimum);
+      }
+    }
+    double GannPriceForTrade(Rate rate) {
+      return GannAngleActive.Between(0, BarBase.GannAngles.Length - 1) ? rate.GannPrices[GannAngleActive] : double.NaN;
+    }
+
+    [DisplayName("Gann Angle Index Minimum")]
+    [Category(categoryCorridor)]
+    public int GannAngleIndexMinimum_ {
+      get { return GannAngleIndexMinimum; }
+      set { GannAngleIndexMinimum = value; }
+    }
+
+
     #endregion
 
     public void SetCorrelation(string currency, double correlation) {
@@ -725,6 +867,8 @@ namespace HedgeHog.Alice.Store {
     public bool? OpenSignal {
       get {
         if (CorridorStats == null) return null;
+        var slope = CorridorStats.Slope;
+        #region SuppRes
         if (Strategy == Strategies.SuppRes) {
           if (CloseSignal.HasValue) return null;
           if (RateLast.BidLow > ResistancePrice) SellWhenReady = true;
@@ -737,26 +881,36 @@ namespace HedgeHog.Alice.Store {
           if (SellWhenReady && RateLast.AskHigh< ResistancePrice - margin)  return GetSignal(false);
           return null;
         }
+        #endregion
+        #region Momentum
         if (Strategy == Strategies.Momentum && CorridorStats.HeightUpDownInPips > 0) {
           if (CorridorStats.HeightUpDown / SpreadLong < CorridorHeightToSpreadRatioLow) {
-            if (CorridorAngle > 0) {
+            if (CorridorStats.Slope > 0) {
               SellWhenReady = true;
               return true;
             }
-            if (CorridorAngle < 0) {
+            if (CorridorStats.Slope < 0) {
               BuyWhenReady = true;
               return false;
             }
           }
           if (CorridorHeightToSpreadRatio > CorridorHeightToSpreadRatioHigh) {
-            if (SellWhenReady && CorridorAngle > 0 && (!TradeByRateDirection || RateDirection > 0)) return false;
-            if (BuyWhenReady && CorridorAngle < 0 && (!TradeByRateDirection || RateDirection < 0)) return true;
+            if (SellWhenReady && CorridorStats.Slope > 0 && (!TradeByRateDirection || RateDirection > 0)) return false;
+            if (BuyWhenReady && CorridorStats.Slope < 0 && (!TradeByRateDirection || RateDirection < 0)) return true;
           }
           return null;
         }
-        if (Strategy == Strategies.OverPower)
-          if (IsPowerAverageOk) return CorridorAngle < 0;
-          else return null;
+        #endregion
+        if (Strategy == Strategies.Gann) {
+          var rateLast = Rates.Last();
+          var gannPrice = GannPriceForTrade(rateLast);
+          if (gannPrice > 0) {
+            var cma = rateLast.PriceCMA.Last();
+            if (rateLast.PriceLow > gannPrice + rateLast.Spread && rateLast.PriceAvg > cma && cma > gannPrice) return true;
+            if (rateLast.PriceHigh < gannPrice - rateLast.Spread && rateLast.PriceAvg < cma && cma < gannPrice) return false;
+          }
+          return null;
+        }
         var os = CorridorStats.OpenSignal;
         if( !os.HasValue )return null;
         if (false && Strategy == Strategies.Range) {
@@ -770,29 +924,23 @@ namespace HedgeHog.Alice.Store {
     public double CorridorHeightToSpreadRatio { get { return CorridorStats.HeightUpDown / SpreadLong; } }
     public bool? CloseSignal {
       get {
-        if (CloseOnOpen) return null;
-        if (Strategy == Strategies.SuppRes && !string.IsNullOrWhiteSpace(LastTrade.Id)) {
-          if (ResetLockForSuppRes(RateLast) && (IsBuyLock || IsSellLock)) ResetLock();
-          var lastTrade = Trades.DefaultIfEmpty(LastTrade).Last();
-          if (CloseSuppRes(RateLast)) return lastTrade.Buy;
-          if (!CloseOnProfit && CurrentLoss<0 && Trades.GrossInPips() > -CurrentLoss * 2) return lastTrade.Buy;
-          return null;
-          var pl = GetTradeStatistics(LastTrade).CorridorHeight;
-          if (pl > 0 && LastTrade.PL > pl) return LastTrade.Buy;
-          return null;
+        if (CorridorStats == null || CloseOnOpen) return null;
+        switch (Strategy) {
+          case Strategies.Gann: return null;
+          case Strategies.SuppRes:
+            if (!string.IsNullOrWhiteSpace(LastTrade.Id)) {
+              if (ResetLockForSuppRes(RateLast) && (IsBuyLock || IsSellLock)) ResetLock();
+              var lastTrade = Trades.DefaultIfEmpty(LastTrade).Last();
+              if (CloseSuppRes(RateLast)) return lastTrade.Buy;
+              if (!CloseOnProfit && CurrentLoss < 0 && Trades.GrossInPips() > -CurrentLoss * 2) return lastTrade.Buy;
+            }
+            return null;
+          case Strategies.Range:
+            if (RateLast.PriceAvg.Between(RateLast.PriceAvg2, RateLast.PriceAvg3))
+              ResetLock();
+            break;
         }
-        if (Strategy == Strategies.Momentum && Trades.Length > 0 && CorridorStats.HeightUpDownInPips > 0) {
-          var trade = Trades.Last();
-          var ts = GetTradeStatistics(trade);
-          if (CloseOnProfit && Trades.GrossInPips() > InPips(SuppResArray.Height()) * RangeRatioForTradeLimit
-              || trade.Buy && RateLast.AskHigh < ts.Support
-              || !trade.Buy && RateLast.BidLow > ts.Resistanse)
-              return trade.Buy;
-          return null;
-        }
-        if (Strategy == Strategies.Range && RateLast.PriceAvg.Between(RateLast.PriceAvg2, RateLast.PriceAvg3))
-          ResetLock();
-        return CorridorStats == null ? null : CorridorStats.CloseSignal;
+        return CorridorStats.CloseSignal;
       }
     }
 
@@ -1088,6 +1236,11 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    /// <summary>
+    /// Returns instant deep copy of Rates
+    /// </summary>
+    /// <returns></returns>
+    public Rate[] RatesCopy() { return Rates.Select(r => r.Clone() as Rate).ToArray(); }
 
     private Rate _RatePreLast;
     public Rate RatePreLast {
@@ -1650,6 +1803,7 @@ namespace HedgeHog.Alice.Store {
       var lastCmaIndex = Rates.FindLastIndex(r => r.PriceCMA != null)-1;
       var lastCma = lastCmaIndex < 1?new double?[3]:Rates[lastCmaIndex].PriceCMA.Select(c=>new double?(c)).ToArray();
       Rates.Skip(Math.Max(0, lastCmaIndex)).ToArray().SetCMA(PriceCmaPeriod, lastCma[0], lastCma[1], lastCma[2]);
+      UpdateTradingGannAngleIndex();
       bgWorkers.Run(workers.ScanCorridor, IsInPlayback, () => {
         ScanCorridor();
         doAfterScanCorridor(this);
@@ -1684,8 +1838,9 @@ namespace HedgeHog.Alice.Store {
         var powerBar = !TradeByFirstWave.HasValue ? priceBarsForCorridor.OrderBy(pb => pb.Power).Last()
           : (TradeByFirstWave.Value ? priceBarsIntervals.First() : priceBarsIntervals.Last()).First();//.OrderBy(pb => pb.Power).Last();
         var startDate = CorridorStartDate.GetValueOrDefault(powerBar.StartDate);
-        var periodsLength = startDate == null ? CorridorPeriodsLength : 1;
-        var periodsStart = Math.Min(Rates.Count - 1, startDate == null ? CorridorPeriodsStart : Rates.Count(r => r.StartDate >= startDate));
+          //new[] { powerBar.StartDate, CorridorStats == null ? DateTime.MinValue : CorridorStats.StartDate }.Max());
+        var periodsLength = 1;
+        var periodsStart = Rates.Count(r => r.StartDate >= startDate);
         var corridornesses = Rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, IterationsForCorridorHeights, false)
           //.Where(c => tradesManager.InPips(tm.Pair, c.Value.HeightUpDown) > 0)
           .Select(c => c.Value).ToArray();
@@ -1697,8 +1852,6 @@ namespace HedgeHog.Alice.Store {
           foreach (int i in CorridorIterationsArray) {
             //var a = corridornesses.Where(filter).Select(c => new { c.StartDate, c.Corridornes }).OrderBy(c => c.Corridornes).ToArray();
             var csCurr = corridornesses.OrderBy(c => c.Corridornes).First();
-            //rates.ScanCorridornesses(i, corridornesses, tm.CorridornessMin, 
-            ///*tm.Trades.Length == 0 && */tm.LimitCorridorByBarHeight ? tm.CorridorHeightMinimum : 0);
             var cs = GetCorridorStats(csCurr.Iterations);
             cs.Init(csCurr.Density, csCurr.Slope, csCurr.HeightUp0, csCurr.HeightDown0, csCurr.HeightUp, csCurr.HeightDown, csCurr.LineHigh, csCurr.LineLow, csCurr.Periods, csCurr.EndDate, csCurr.StartDate, csCurr.Iterations);
             if (!filter(cs)) {
@@ -1861,7 +2014,7 @@ namespace HedgeHog.Alice.Store {
   public enum Strategies {
     None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Momentum = 16, Reverse = 32, Momentum_R = Momentum + Reverse,
-    OverPower = 64, Brange = 128,SuppRes = 256
+    Gann = 64, Brange = 128,SuppRes = 256
   }
   public struct Playback {
     public bool Play;

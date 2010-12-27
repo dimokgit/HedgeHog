@@ -182,11 +182,11 @@ namespace HedgeHog {
 
     #region
 
-    Segment gannLine = new Segment() { StrokeThickness = 2, StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.DarkGray) };
+    Segment gannLine = new Segment() { StrokeThickness = 2, StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.Green) };
     Rate[] GannLine {
       set {
-        gannLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].GannPrice1x1);
-        gannLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].GannPrice1x1);
+        gannLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].TrendLine);
+        gannLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].TrendLine);
       }
     }
 
@@ -238,18 +238,19 @@ namespace HedgeHog {
     public GannAngleOffsetDraggablePoint GannAngleOffsetPoint {
       get {
         if (_GannAngleOffsetPoint == null) {
-          _GannAngleOffsetPoint = new GannAngleOffsetDraggablePoint();
+          _GannAngleOffsetPoint = new GannAngleOffsetDraggablePoint(dateAxis.ConvertFromDouble,new NumberToStringAutoFormatConverter());
           _GannAngleOffsetPoint.PositionChanged += _GannAngleOffsetPoint_PositionChanged;
         }
         return _GannAngleOffsetPoint; 
       }
     }
 
+    Scheduler GannAngleChangedScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.5));
     void _GannAngleOffsetPoint_PositionChanged(object sender, PositionChangedEventArgs e) {
-      var offset = GannAngleOffsetPoint.AngleOffset;
+      var offset = GannAngleOffsetPoint.GetAngleByPosition(e.Position);
       //GannAngleOffsetPoint.ToolTip = string.Format("Tangent:{0}", offset);
       if (GannAngleOffsetPoint.IsMouseCaptured)
-        OnGannAngleChanged(offset);
+        GannAngleChangedScheduler.TryRun(() => OnGannAngleChanged(offset));
     }
 
     public event EventHandler<GannAngleOffsetChangedEventArgs> GannAngleOffsetChanged;
@@ -363,11 +364,12 @@ namespace HedgeHog {
     EnumerableDataSource<Volt> dsVoltsPoly = null;
     #endregion
 
-    bool Initialized;
     List<HorizontalLine> FibLevels = new List<HorizontalLine>();
-    List<Segment> GannAngles = new List<Segment>();
+    List<ColoredSegment> GannAngles = new List<ColoredSegment>();
     Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
     private void CreateCurrencyDataSource(bool doVolts) {
+      if (IsPlotterInitialised) return;
+      IsPlotterInitialised = true;
       plotter.Children.RemoveAt(0);
 
       #region Add Main Graph
@@ -470,7 +472,9 @@ namespace HedgeHog {
 
     private void InsertGannLines() {
       for (var i = 0; i < BarBase.GannAngles.Length; i++) {
-        var hl = new Segment() { Stroke = new SolidColorBrush(Colors.DarkGray), StrokeThickness = 2, StrokeDashArray = { 2 } };
+        var color = BarBase.GannAngle1x1 == i ? Colors.Black : Colors.DarkGray;
+        var hl = new ColoredSegment() { 
+          Stroke = new SolidColorBrush(color), StrokeThickness = 2, StrokeDashArray = { 2 }, SelectedColor = Colors.Maroon };
         GannAngles.Add(hl);
         plotter.Children.Add(hl);
       }
@@ -626,6 +630,7 @@ namespace HedgeHog {
     #endregion
 
     bool inRendering;
+    private bool IsPlotterInitialised;
     public void AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
   double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
@@ -674,7 +679,7 @@ namespace HedgeHog {
           {
             var i = 0;
             var lastRate = ticks.Aggregate((rp, rn) => {
-              SetPoint(i++, rp.PriceAvg < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh, rp.PriceCMA, rp);
+              SetPoint(i++, rp.PriceAvg/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, rp.PriceCMA, rp);
               return rn;
             });
             SetPoint(i, lastRate.PriceClose, lastRate.PriceCMA, lastRate);
@@ -725,22 +730,22 @@ namespace HedgeHog {
       var animatedTimeXMin = animatedTimeX.Min();
       var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
       var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
-      var ratesForTrend = new[] { rateFirst, rateLast };
+      var ratesForCorridor = new[] { rateFirst, rateLast };
+      //var ratesforTrend = new[] { ticks.First(r => r.TrendLine > 0), ticks.Last(r => r.TrendLine > 0) };
       var errorMessage = "Period:" + (ticks[1].StartDate - ticks[0].StartDate).Duration().Minutes + " minutes.";
       Action a = () => {
-        if (!Initialized) {
-          Initialized = true;
-          CreateCurrencyDataSource(voltsByTick != null);
-        }
+        CreateCurrencyDataSource(voltsByTick != null);
         try {
-          SetGannAngles(ticks);
+          SetGannAngles(ticks, SelectedGannAngleIndex);
           animatedDataSource.RaiseDataChanged();
+          animatedVoltDataSource.RaiseDataChanged();
+          
         } catch (InvalidOperationException exc) {
           plotter.FitToView();
           throw new InvalidOperationException(errorMessage, exc);
         } finally {
-          TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForTrend;
-          //GannLine = ratesForGann;
+          TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForCorridor;
+          //GannLine = ratesforTrend;
           infoBox.Text = string.Join(Environment.NewLine, info);
           //var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
           var up = animatedPriceY.First() < (animatedPriceYMax + animatedPriceYMin) / 2;
@@ -781,9 +786,6 @@ namespace HedgeHog {
             CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), ticks.Min(r => r.PriceAvg) + ticks.Height() / 2);
             CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
           }
-          if (!GannAngleOffsetPoint.IsMouseCaptured) {
-            GannAngleOffsetPoint.Position = new Point(ConvertToDouble(rateLast.StartDate), rateLast.GannPrice1x1);
-          }
           LineTimeMin = timeCurr;
           LineTimeAvg = timeLow;
           LineNetSell = netSell;
@@ -812,14 +814,21 @@ namespace HedgeHog {
       animatedTime0X[i] = rateLast.StartDate;
     }
 
-    private void SetGannAngles(ICollection<Rate> rates) {
+    private void SetGannAngles(ICollection<Rate> rates,int selectedIndex) {
       var rateFirst = rates.First(r => r.GannPrices[0] > 0);
-      var rateLast = rates.Last();
+      var rateLast = rates.Reverse().First(r => r.GannPrices[0] > 0);
       foreach (var i in Enumerable.Range(0, GannAngles.Count)) {
         var gannPriceFirst = rateFirst.GannPrices[i];
+        GannAngles[i].SelectedValue = selectedIndex - i;
         GannAngles[i].StartPoint = new Point(dateAxis.ConvertToDouble(rateFirst.StartDateContinuous), gannPriceFirst);
         GannAngles[i].EndPoint = new Point(dateAxis.ConvertToDouble(rateLast.StartDateContinuous), rateLast.GannPrices[i]);
-        if (i == GannAngles.Count / 2) GannAngleOffsetPoint.Anchor = new Point(ConvertToDouble(rateFirst.StartDate), gannPriceFirst);
+        if (i == GannAngles.Count / 2) {
+          GannAngleOffsetPoint.Anchor = new Point(ConvertToDouble(rateFirst.StartDate), rateFirst.GannPrice1x1);
+          if (!GannAngleOffsetPoint.IsMouseCaptured) {
+            GannAngleOffsetPoint.BarPeriod = TimeSpan.FromMinutes(1);
+            GannAngleOffsetPoint.Position = new Point(ConvertToDouble(rateLast.StartDate), rateLast.GannPrice1x1);
+          }
+        }
       }
     }
 
@@ -862,6 +871,8 @@ namespace HedgeHog {
     public double ConvertToDouble(DateTime d) { return dateAxis.ConvertToDouble(d); }
     #endregion
 
+
+    public int SelectedGannAngleIndex { get; set; }
   }
 
   public class ChartTick : INotifyPropertyChanged, IEqualityComparer<ChartTick> {
