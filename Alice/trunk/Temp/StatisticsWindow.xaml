@@ -1,0 +1,14 @@
+﻿<Window x:Class="HedgeHog.Statistics.StatisticsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:HedgeHog.Statistics"
+        xmlns:o2g="clr-namespace:Order2GoAddIn;assembly=Order2GoAddIn"
+        Title="Statistics" Height="300" Width="300">
+  <Window.Resources>
+    <o2g:FXCoreWrapper x:Key="FXW"/>
+    <l:StatisticsModel x:Key="StatisticsModel" fw="{StaticResource FXW}"/>
+  </Window.Resources>
+  <Grid DataContext="{StaticResource StatisticsModel}">
+    <DataGrid  HorizontalAlignment="Left" Name="dataGrid1" VerticalAlignment="Top" />
+  </Grid>
+</Window>

@@ -1,0 +1,159 @@
+﻿[MethodImpl(MethodImplOptions.Synchronized)]
+private void ProcessPrice()
+{
+    Exception exc;
+    try
+    {
+        <>c__DisplayClass19 CS$<>8__locals1a;
+        double spreadMin = this.spreadMin;
+        int bsPeriodMax = this.bsPeriodMax;
+        BarsPeriodType bsPeriodMin = this.bsPeriodMin;
+        double edgeMargin = this.edgeMargin;
+        DateTime serverTime = ((DateTime) this.fw.Desk.ServerTime).AddHours(-4.0);
+        DateTime timeNow = DateTime.Now;
+        int periodMin = (int) bsPeriodMin;
+        int periodMax = bsPeriodMax;
+        int barsMax = periodMax / periodMin;
+        DateTime startTime = ((this.Rates == null) || (this.Rates.Count<Rate>() == 0)) ? DateTime.Now.AddMinutes((double) -(periodMax + periodMin)) : this.Rates.First<Rate>().StartDate.AddMinutes((double) -periodMin);
+        lock (this.fw.DeskLocker)
+        {
+            MarketRateEnumAut mr;
+            <>c__DisplayClass19 CS$<>8__locals1a = CS$<>8__locals1a;
+            try
+            {
+                mr = (MarketRateEnumAut) this.fw.Desk.GetPriceHistory(this.pair, bsPeriodMin, startTime, DateTime.FromOADate(0.0), barsMax, true, true);
+            }
+            catch (Exception exception1)
+            {
+                exc = exception1;
+                throw;
+            }
+            DateTime firstBarDate = serverTime;
+            List<Rate> rates = mr.OfType<MarketRateAut>().OrderByDescending<MarketRateAut, DateTime>(delegate (MarketRateAut r) {
+                return r.StartDate;
+            }).Select<MarketRateAut, Rate>(delegate (MarketRateAut r, int i) {
+                Rate <>g__initLocal0 = new Rate {
+                    AskClose = r.AskClose,
+                    AskHigh = r.AskHigh,
+                    AskLow = r.AskLow,
+                    AskOpen = r.AskOpen,
+                    BidClose = r.BidClose,
+                    BidHigh = r.BidHigh,
+                    BidLow = r.BidLow,
+                    BidOpen = r.BidOpen,
+                    StartDate = (i == 0) ? (firstBarDate = r.StartDate) : r.StartDate,
+                    Row = i + 1
+                };
+                TimeSpan CS$0$0002 = (TimeSpan) (CS$<>8__locals1a.serverTime - firstBarDate);
+                <>g__initLocal0.Minutes = CS$0$0002.TotalMinutes + (i * CS$<>8__locals1a.periodMin);
+                return <>g__initLocal0;
+            }).ToList<Rate>();
+            this.Rates = ((this.Rates == null) ? rates : rates.Union<Rate>(this.Rates, new RateComparer())).OrderByDescending<Rate, DateTime>(delegate (Rate r) {
+                return r.StartDate;
+            }).Select<Rate, Rate>(delegate (Rate r, int i) {
+                Rate <>g__initLocal1 = new Rate {
+                    AskClose = r.AskClose,
+                    AskHigh = r.AskHigh,
+                    AskLow = r.AskLow,
+                    AskOpen = r.AskOpen,
+                    BidClose = r.BidClose,
+                    BidHigh = r.BidHigh,
+                    BidLow = r.BidLow,
+                    BidOpen = r.BidOpen,
+                    StartDate = (i == 0) ? (firstBarDate = r.StartDate) : r.StartDate,
+                    Row = r.Row
+                };
+                TimeSpan CS$0$0002 = (TimeSpan) (CS$<>8__locals1a.serverTime - firstBarDate);
+                <>g__initLocal1.Minutes = CS$0$0002.TotalMinutes + (i * CS$<>8__locals1a.periodMin);
+                return <>g__initLocal1;
+            }).Take<Rate>(barsMax).ToList<Rate>();
+        }
+        Rate ratePrev = this.Rates.Skip<Rate>(1).FirstOrDefault<Rate>();
+        Rate rateCurr = this.Rates.FirstOrDefault<Rate>();
+        if (ratePrev != null)
+        {
+            <>c__DisplayClass19 CS$<>8__locals1a = CS$<>8__locals1a;
+            double askMax = double.MinValue;
+            double askMin = double.MaxValue;
+            double bidMax = double.MinValue;
+            double bidMin = double.MaxValue;
+            Rate[] aBars = this.Rates.ToArray();
+            List<PriceBar> bsPeriods = aBars.Select(delegate (Rate r) {
+                return new { AskHigh = askMax = Math.Round(Math.Max(askMax, r.AskHigh), this.fw.Digits), AskLow = askMin = Math.Round(Math.Min(askMin, r.AskLow), this.fw.Digits), BidLow = bidMin = Math.Round(Math.Min(bidMin, r.BidLow), this.fw.Digits), BidHigh = bidMax = Math.Round(Math.Max(bidMax, r.BidHigh), this.fw.Digits), SpreadAsk = askMax - askMin, SpreadBid = bidMax - bidMin, SpeedAsk = (r.Minutes > 0.0) ? ((askMax - askMin) / r.Minutes) : 0.0, SpeedBid = (r.Minutes > 0.0) ? ((bidMax - bidMin) / r.Minutes) : 0.0, Minutes = Math.Round(r.Minutes, 1), StartDate = r.StartDate };
+            }).Select(delegate (<>f__AnonymousType0<double, double, double, double, double, double, double, double, double, DateTime> r, int i) {
+                return new PriceBar { AskHigh = r.AskHigh, AskLow = r.AskLow, BidLow = r.BidLow, BidHigh = r.BidHigh, Spread = Math.Round((double) (Math.Min(r.SpreadAsk, r.SpreadBid) / this.fw.PointSize), 1), Speed = Math.Round((double) ((this.useMaxForSpreadCalc ? Math.Max(r.SpeedAsk, r.SpeedBid) : Math.Min(r.SpeedAsk, r.SpeedBid)) / this.fw.PointSize), 2), Power = Math.Round((double) ((((this.useMaxForSpreadCalc ? Math.Max(r.SpeedAsk, r.SpeedBid) : Math.Min(r.SpeedAsk, r.SpeedBid)) * (this.useMaxForSpreadCalc ? Math.Max(r.SpreadAsk, r.SpreadBid) : Math.Max(r.SpreadAsk, r.SpreadBid))) / this.fw.PointSize) / this.fw.PointSize), 2), Row = i, Minutes = r.Minutes, StartDate = r.StartDate };
+            }).OrderByDescending<PriceBar, double>(delegate (PriceBar r) {
+                return r.Power;
+            }).ThenByDescending<PriceBar, double>(delegate (PriceBar r) {
+                return r.Spread;
+            }).ThenBy<PriceBar, double>(delegate (PriceBar r) {
+                return r.Minutes;
+            }).ToList<PriceBar>();
+            double timeSpanLast = DateTime.Now.Subtract(timeNow).TotalMilliseconds;
+            DispatcherOperationStatus[] CS$0$0004 = new DispatcherOperationStatus[2];
+            CS$0$0004[1] = DispatcherOperationStatus.Executing;
+            DispatcherOperationStatus[] sts = CS$0$0004;
+            if ((this._do != null) && sts.Contains<DispatcherOperationStatus>(this._do.Status))
+            {
+                this._do.Abort();
+            }
+            this._do = this.dgBuySellBars.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, delegate {
+                this.BarsDataSource.Clear();
+                foreach (PriceBar bar in bsPeriods)
+                {
+                    this.BarsDataSource.Add(bar);
+                }
+            });
+            PriceBar barsBest = bsPeriods.Where<PriceBar>(delegate (PriceBar r) {
+                return (r.Row > 0);
+            }).First<PriceBar>();
+            Summary summary = this.fw.GetSummary() ?? new Summary();
+            bool canBuy = (barsBest.Spread >= spreadMin) || (summary.BuyLots > 0.0);
+            double positionBuy = (rateCurr.AskClose - barsBest.AskLow) / (barsBest.AskHigh - barsBest.AskLow);
+            bool goBuy = positionBuy <= edgeMargin;
+            this.GoBuy = (canBuy && goBuy) && ((rateCurr.AskClose > ratePrev.AskClose) || (positionBuy <= 0.01));
+            this.CloseSell = (!this.closeOnReverseOnly || ((summary != null) && (summary.SellNetPL > 0.0))) ? goBuy : this.GoBuy;
+            this.TakeProfitBuy = 0.0;
+            this.StopLossBuy = 0.0;
+            bool canSell = (barsBest.Spread >= spreadMin) || (summary.SellLots > 0.0);
+            double positionSell = (barsBest.BidHigh - rateCurr.BidClose) / (barsBest.BidHigh - barsBest.BidLow);
+            bool goSell = positionSell <= edgeMargin;
+            this.GoSell = (canSell && goSell) && ((ratePrev.BidClose < ratePrev.BidClose) || (positionSell <= 0.01));
+            this.CloseBuy = (!this.closeOnReverseOnly || ((summary != null) && (summary.BuyNetPL > 0.0))) ? goSell : this.GoSell;
+            this.TakeProfitSell = 0.0;
+            this.StopLossSell = 0.0;
+            this.LotsToTrade = (int) Math.Round(bsPeriods.Single<PriceBar>(delegate (PriceBar r) {
+                return (r.Row == 1);
+            }).Speed, 0);
+            double powerCurrent = barsBest.Power;
+            double powerAverage = bsPeriods.Average<PriceBar>(delegate (PriceBar r) {
+                return r.Power;
+            });
+            Lib.SetLabelText(this.lblPower, string.Format("{0:n1}/{1:n1}={2:n2}", powerCurrent, powerAverage, powerCurrent / powerAverage));
+            Lib.SetLabelText(this.lblOpenBuy, string.Format("{0:p0}", positionBuy));
+            Lib.SetLabelText(this.lblOpenSell, string.Format("{0:p0}", positionSell));
+            Lib.SetBackGround(this.lblOpenSell, new SolidColorBrush(this.GoSell ? Colors.PaleGreen : (this.CloseSell ? Colors.LightSalmon : (goSell ? Colors.Yellow : Colors.Transparent))));
+            Lib.SetBackGround(this.lblOpenBuy, new SolidColorBrush(this.GoBuy ? Colors.PaleGreen : (this.CloseBuy ? Colors.LightSalmon : (goBuy ? Colors.Yellow : Colors.Transparent))));
+            Lib.SetLabelText(this.lblServerTime, string.Format("{0:HH:mm:ss}/{1:n0}]", serverTime, timeSpanLast));
+            if (this.PriceGridChanged != null)
+            {
+                this.PriceGridChanged();
+            }
+        }
+    }
+    catch (ThreadAbortException)
+    {
+    }
+    catch (Exception exception3)
+    {
+        exc = exception3;
+        if (this.PriceGridError != null)
+        {
+            this.PriceGridError(exc);
+        }
+    }
+}
+
+ 
+
+ 
