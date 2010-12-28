@@ -40,13 +40,28 @@ namespace HedgeHog.Shared {
     [DisplayName("")]
     [DisplayFormat(DataFormatString = "{0}")]
     public TradeRemark Remark { get; set; }
+    double _Open;
     [DataMember]
     [DisplayName("")]
-    public double Open { get; set; }
+    public double Open {
+      get { return _Open; }
+      set {
+        _Open = value; 
+      }
+    }
+    double _Close;
     [DataMember]
     [DisplayName("")]
     [UpdateOnUpdate]
-    public double Close { get; set; }
+    public double Close {
+      get { return _Close; }
+      set {
+        _Close = value;
+        var gross = Buy ? Close - Open : Open - Close;
+        PL = gross / PipSize;
+        GrossPL = gross * (Lots / 10000.0) / PipSize;
+      }
+    }
     [DataMember]
     [DisplayName("")]
     [UpdateOnUpdate("LimitInPips","LimitToCloseInPips")]
@@ -106,13 +121,11 @@ namespace HedgeHog.Shared {
     }
 
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
-      Price Price = e.Price;
-      if (Price.PipSize == 0) throw new Exception("Price.PipSize property must not be Zero.");
-      Close = Buy ? Price.Bid : Price.Ask;
-      var gross = Buy ? Close - Open : Open - Close;
-      PL = gross / Price.PipSize;
-      GrossPL = gross * (Lots/10000) / Price.PipSize;
-      if (false) TimeClose = Price.Time;
+      UpdateByPrice(sender as ITradesManager, e.Price);
+    }
+    public void UpdateByPrice(ITradesManager tradesManager, Price price) {
+      if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
+      Close = Buy ? price.Bid : price.Ask;
     }
 
     public double NetPL { get { return GrossPL + Commission; } }
@@ -168,6 +181,9 @@ namespace HedgeHog.Shared {
 
       this.Remark = new TradeRemark(xmlElement.Attribute("CQTXT").Value);
     }
+
+    [UpdateOnUpdate]
+    public double PipSize { get; set; }
   }
   [Serializable]
   [DataContract]

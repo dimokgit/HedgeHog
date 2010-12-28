@@ -91,8 +91,7 @@ namespace TestHH {
       //AddTicks(0, "EUR/USD");
       //SavePair(0, "EUR/USD");
       var pair = "EUR/USD"; //"GBP/USD";// "USD/JPY"; //"EUR/USD";
-      SavePair(1, pair);
-      return;
+//      SavePair(1, pair);
       SavePair(5, pair);
       SavePair(15, pair);
       SavePair(60, pair);
@@ -101,7 +100,8 @@ namespace TestHH {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
         var dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
         Action<string> showProgress = msg => TestContext.WriteLine("{0}", msg);
-        var ticks = o2g.GetBarsBase(pair, period,dateStart.AddYears(-4), dateStart,showProgress);
+        var ticks = new List<Rate>();
+        o2g.GetBarsBase(pair, period, 0, dateStart.AddYears(-4), dateStart, ticks, showProgress);
         while (ticks.Count() > 0) {
           var i = 0;
           foreach (var t in ticks) {
@@ -126,7 +126,7 @@ namespace TestHH {
               }
           }
           dateStart = dateStart.AddHours(-1);
-          ticks = o2g.GetBarsBase(pair, period, dateStart.AddHours(-1), dateStart);
+          o2g.GetBarsBase(pair, period, 0, dateStart.AddHours(-1), dateStart, ticks);
         }
         try {
           context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
@@ -142,7 +142,8 @@ namespace TestHH {
           .Where(b => b.Pair == pair && b.Period == period).Select(b=>b.StartDate).DefaultIfEmpty(DateTime.Now.AddYears(-3))
           .Max().AddMinutes(period);
         Action<string> showProgress = msg => { };// Console.WriteLine(msg);
-        var ticks = o2g.GetBarsBase(pair, period, dateStart);
+        var ticks = new List<Rate>();
+        o2g.GetBarsBase(pair, period, 0, dateStart, TradesManagedStatic.FX_DATE_NOW, ticks);
         if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
