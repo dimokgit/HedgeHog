@@ -75,7 +75,7 @@ namespace HedgeHog.Shared {
       this.accountId = accountId;
       this.minimumQuantity = minimumQuantity;
       this.ratesByPair = rates;
-      this.tradesOpened.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(_virualPortfolio_CollectionChanged);
+      this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
     }
     public double InPips(string pair, double? price) { return TradesManagedStatic.InPips(price, GetPipSize(pair)); }
     public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this, pair, price); }
@@ -86,7 +86,8 @@ namespace HedgeHog.Shared {
     }
     void AddTrade(bool isBuy, int lot, Price price) {
       //if (tradesOpened.Count > 0) Debugger.Break();
-      tradesOpened.Add(new Trade() {
+      var trade = new Trade() {
+        PipSize = GetPipSize(price.Pair),
         Id = NewTradeId() + "",
         Pair = price.Pair,
         Buy = isBuy,
@@ -97,7 +98,8 @@ namespace HedgeHog.Shared {
         Time = price.Time,
         TimeClose = price.Time,
         IsVirtual = true
-      });
+      };
+      tradesOpened.Add(trade);
     }
 
     #region Close Trade
@@ -140,7 +142,7 @@ namespace HedgeHog.Shared {
     }
     #endregion
     
-    void _virualPortfolio_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
+    void VirualPortfolio_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
       var trade = (e.NewItems ?? e.OldItems)[0] as Trade;
       switch (e.Action) {
         case NotifyCollectionChangedAction.Add:
