@@ -67,6 +67,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
+    <Compile Include="AliceEntityExtender.properties.cs" />
     <Compile Include="AliceEntityExtender_MC.cs" />
     <None Include="AliceEntityExtender.cs">
       <SubType>Code</SubType>
