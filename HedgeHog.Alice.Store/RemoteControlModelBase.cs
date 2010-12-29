@@ -96,6 +96,7 @@ namespace HedgeHog.Alice.Store {
           tradesManager.ClosePair(VirtualPair);
           if (e.ClearTest) {
             tm.CurrentLoss = 0;
+            tm.CorridorStartDate = null;
             tm.CorridorStats = null;
             tm.Support = new Rate();
             tm.Resistance = new Rate();

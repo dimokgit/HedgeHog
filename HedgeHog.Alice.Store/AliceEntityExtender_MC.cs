@@ -181,25 +181,32 @@ namespace HedgeHog.Alice.Store {
     }
 
     partial void OnGannAnglesOffsetChanged() {
-      if (Rates.Count == 0) return;
-      var rateLast = Rates.Last();
-      if (CorridorStats == null) return;
-      SetGannAngles();
-      var slope = CorridorStats.Slope;
-      Predicate<double> filter = ga => slope < 0 ? rateLast.PriceAvg > ga : rateLast.PriceAvg < ga;
+      if (Rates.Count > 0) {
+        var rateLast = Rates.Last();
+        if (CorridorStats != null) {
+          SetGannAngles();
+          var slope = CorridorStats.Slope;
+          Predicate<double> filter = ga => slope < 0 ? rateLast.PriceAvg > ga : rateLast.PriceAvg < ga;
+          var index = GetGannIndex(rateLast, slope);
+          if (index >= 0)
+            GannAngleActive = index;
+          else
+            Debugger.Break();
+        }
+      }
+      OnPropertyChanged(Metadata.TradingMacroMetadata.GannAnglesOffset_);
+    }
+
+    private static int GetGannIndex(Rate rateLast, double slope) {
       var gann = slope > 0
         ? rateLast.GannPrices.Where(ga => rateLast.PriceAvg > ga).DefaultIfEmpty().Max()
         : rateLast.GannPrices.Where(ga => rateLast.PriceAvg < ga).DefaultIfEmpty().Min();
-      var index = rateLast.GannPrices.ToList().FindIndex(ga => ga == gann);
-      if (index >= 0)
-        GannAngleActive = index;
-      else
-        Debugger.Break();
-      OnPropertyChanged(Metadata.TradingMacroMetadata.GannAnglesOffset_);
+      var index = rateLast.GannPrices.ToList().IndexOf(gann);
+      return index;
     }
     void cs_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       var cs = (sender as CorridorStatistics);
-      if (e.PropertyName == Lib.GetLambda(() => cs.StartDate) && (SupportPrice == 0 && ResistancePrice ==0 || !IsSuppResManual)) {
+      if (e.PropertyName == Metadata.CorridorStatisticsMetadata.StartDate && (SupportPrice == 0 && ResistancePrice ==0 || !IsSuppResManual)) {
 
         GannAnglesOffset = cs.Slope.Abs() / GannAngle1x1;
 
@@ -738,14 +745,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Price CMA Period")]
-    [Category(categoryCorridor)]
-    public int PriceCmaPeriod {
-      get { return LongMAPeriod; }
-      set { LongMAPeriod = value; }
-    }
-
-
     struct TradeSignal {
       public double OpenPrice { get; set; }
       public double ClosePrice { get; set; }
@@ -952,82 +951,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Gann Angles Offset in Rads")]
-    [Category(categoryCorridor)]
-    public double GannAnglesOffset_ {
-      get { return GannAnglesOffset.GetValueOrDefault(); }
-      set { GannAnglesOffset = value; }
-    }
-
-
-
-    [DisplayName("Trading Angle Range")]
-    [Category(categoryTrading)]
-    public double IterationsForPower_ {
-      get { return TradingAngleRange; }
-      set { TradingAngleRange = value; }
-    }
-
-    [DisplayName("Trade By Rate Direction")]
-    [Category(categoryTrading)]
-    public bool TradeByRateDirection_ {
-      get { return TradeByRateDirection; }
-      set { TradeByRateDirection = value; }
-    }
-
-    [DisplayName("Close By Momentum")]
-    [Category(categoryTrading)]
-    [Description("Close trade when rate changes direction.")]
-    public bool CloseByMomentum_ {
-      get { return CloseByMomentum; }
-      set { CloseByMomentum = value; }
-    }
-
-    [DisplayName("Corr Height/Spread - Low")]
-    [Category(categoryTrading)]
-    [Description("Lock buy/sell when H/S < X/10")]
-    public double CorridorHeightToSpreadRatioLow {
-      get { return BarPeriodsLow/10.0; }
-      set { BarPeriodsLow = (int)value; }
-
-    }
-    [DisplayName("Corr Height/Spread - High")]
-    [Category(categoryTrading)]
-    [Description("Buy/Sell when locked && H/S > X/10")]
-    public double CorridorHeightToSpreadRatioHigh {
-      get { return BarPeriodsHigh/10.0; }
-      set { BarPeriodsHigh = (int)value; }
-    }
-
-
-
-    public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
-
-    [DisplayName("Iterations For Power")]
-    [Description("Number of Iterations to calculate power for wave")]
-    [Category(categoryCorridor)]
-    public int IterationsForPower {
-      get { return CorridorIterationsIn; } 
-      set { CorridorIterationsIn = value; } 
-    }
-
-    [DisplayName("Iterations For Corridor Heights")]
-    [Description("Ex: highs.AverageByIteration(N)")]
-    [Category(categoryCorridor)]
-    public int IterationsForCorridorHeights {
-      get { return CorridorIterationsOut; }
-      set { CorridorIterationsOut = value; }
-    }
-
-
-    [DisplayName("Power Row Offset")]
-    [Description("Ex: Speed = Spread / (row + X)")]
-    [Category(categoryCorridor)]
-    public int PowerRowOffset_ {
-      get { return PowerRowOffset; }
-      set { PowerRowOffset = value; }
-    }
-
 
     public double CorridorThinness { get { return CorridorStats == null ? 4 : CorridorStats.Thinness; } }
 
@@ -1035,10 +958,6 @@ namespace HedgeHog.Alice.Store {
     public static Func<Rate, double> GetPriceLow { get { return _GetPriceLow; } }
     private static Func<Rate, double> _GetPriceHigh = r => r.PriceHigh;
     public static Func<Rate, double> GetPriceHigh { get { return _GetPriceHigh; } }
-
-    [Category(categoryCorridor)]
-    [DisplayName("Is SuppRes Manual")]
-    public bool IsSuppResManual { get; set; }
 
     Rate[] SuppResArray { get { return new[] { Support, Resistance }; } }
     double SpreadForSuppRes { get { return Math.Max(SpreadShort, SpreadLong); } }

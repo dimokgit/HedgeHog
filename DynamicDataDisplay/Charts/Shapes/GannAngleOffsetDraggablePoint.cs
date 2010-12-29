@@ -18,7 +18,7 @@ namespace HedgeHog.Charter {
       get { return (Point)GetValue(AnchorProperty); }
       set { SetValue(AnchorProperty, value); }
     }
-
+    public int PositionIndex { get; set; }
     // Using a DependencyProperty as the backing store for Anchor.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty AnchorProperty =
         DependencyProperty.Register("Anchor", typeof(Point), typeof(GannAngleOffsetDraggablePoint), new UIPropertyMetadata(new Point(), (o, dpe) => {
@@ -27,18 +27,14 @@ namespace HedgeHog.Charter {
 
     #endregion
     public TimeSpan BarPeriod { get; set; }
-    public double Angle {
-      get {
-        return GetAngleByPosition(Position);
-      }
-    }
 
-    public double GetOffset(Point curernt, Point previous) {
-      return GetAngleByPosition(curernt) - GetAngleByPosition(previous);
+    public double GetOffset(Point curernt, Point previous,DateTime[] timeAxis,Func<double,DateTime>convertDoubleToDate) {
+      return GetAngleByPosition(curernt, timeAxis, convertDoubleToDate) - GetAngleByPosition(previous, timeAxis, convertDoubleToDate);
     }
-    public double GetAngleByPosition(Point position) {
-      if (BarPeriod.Ticks == 0) return 0;
-      var bars = (ConvertFromDouble(position.X) - ConvertFromDouble(Anchor.X)).Ticks / BarPeriod.Ticks;
+    public double GetAngleByPosition(Point position, DateTime[] timeAxis, Func<double, DateTime> convertDoubleToDate) {
+      var tickIndexEnd = timeAxis.GetIndex(convertDoubleToDate(position.X));
+      var tickIndexStart = timeAxis.GetIndex(convertDoubleToDate(Anchor.X));
+      var bars = tickIndexEnd - tickIndexStart;// (ConvertFromDouble(position.X) - ConvertFromDouble(Anchor.X)).Ticks / BarPeriod.Ticks;
       return bars == 0 ? double.MaxValue : (position.Y - Anchor.Y) / bars;
     }
     public GannAngleOffsetDraggablePoint(Func<double,DateTime> convertFromDouble,IValueConverter numberToStringConverter) {

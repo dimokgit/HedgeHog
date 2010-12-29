@@ -414,8 +414,9 @@ namespace HedgeHog.Alice.Client {
         if (propsToHandle.Contains(e.PropertyName)) {
           if (tm.LimitBar == 0) {
             tm.CorridorStartDate = null;
+            tm.Strategy = Strategies.None;
+            tm.Rates.Clear();
           }
-          tm.Rates.Clear();
         }
         if (TradingMacroMetadata.CorridorStats == e.PropertyName) {
           var rates = tm.RatesCopy();
