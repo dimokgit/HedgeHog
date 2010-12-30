@@ -231,7 +231,7 @@ namespace HedgeHog.Shared {
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair,Rate rate) {
-      RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair)), GetTrades());
+      RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
     }
     public void RaisePriceChanged(Price price,Trade[] trades) {
       _serverTime = price.Time;
@@ -267,7 +267,7 @@ namespace HedgeHog.Shared {
 
     public Price GetPrice(string pair) {
       var rate = ratesByPair.Last();
-      return new Price(pair, rate, GetPipSize(pair), GetDigits(pair));
+      return new Price(pair, rate, GetPipSize(pair), GetDigits(pair),true);
     }
 
     #endregion

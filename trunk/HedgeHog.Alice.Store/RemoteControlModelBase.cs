@@ -57,9 +57,9 @@ namespace HedgeHog.Alice.Store {
       }
       cancellationForBackTesting = new CancellationTokenSource();
       var ct = cancellationForBackTesting.Token;
-      VirtualPair = e.Pair;
 
-      var tm = GetTradingMacros(e.Pair).First();
+      var tm = GetTradingMacros("").First();
+      VirtualPair = tm.Pair;
       if (tm.Strategy == Strategies.None) { MessageBox.Show("No strategy, dude!"); return; }
       if (!tm.IsInPlayback) { MessageBox.Show("Set Chart to Playback, dude!"); return; }
       tm.ResetSessionId();
@@ -113,7 +113,7 @@ namespace HedgeHog.Alice.Store {
             if (e.StepBack) {
               var dateStart = rates.Min(r => r.StartDate).AddHours(-1);
               rates.Clear();
-              ratesBuffer = GlobalStorage.GetRateFromDBBackward(e.Pair, dateStart, tm.BarsCount, tm.LimitBar);
+              ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, dateStart, tm.BarsCount, tm.LimitBar);
               rates.AddRange(ratesBuffer.Take(tm.BarsCount));
               ratesBuffer.RemoveRange(0, tm.BarsCount);
               e.StepBack = false;

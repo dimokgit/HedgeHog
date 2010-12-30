@@ -688,10 +688,10 @@ namespace HedgeHog {
           {
             var i = 0;
             var lastRate = ticks.Aggregate((rp, rn) => {
-              SetPoint(i++, rp.AskHigh,rp.BidLow/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, rp.PriceCMA, rp);
+              SetPoint(i++, rp.PriceHigh,rp.PriceLow/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, rp.PriceCMA, rp);
               return rn;
             });
-            SetPoint(i, lastRate.AskHigh,lastRate.BidLow, lastRate.PriceCMA, lastRate);
+            SetPoint(i, lastRate.PriceHigh,lastRate.PriceLow, lastRate.PriceCMA, lastRate);
           }
           for (var i = 100000; i < ticks.Count(); i++) {
             animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
@@ -747,6 +747,8 @@ namespace HedgeHog {
         try {
           SetGannAngles(ticks, SelectedGannAngleIndex);
           animatedDataSource.RaiseDataChanged();
+          animatedDataSourceBid.RaiseDataChanged();
+          animatedDataSource1.RaiseDataChanged();
           animatedVoltDataSource.RaiseDataChanged();
           
         } catch (InvalidOperationException exc) {
@@ -816,10 +818,10 @@ namespace HedgeHog {
       }), DispatcherPriority.ContextIdle);
     }
 
-    private void SetPoint(int i,double ask,double bid,double[] cma, Rate rateLast) {
-      animatedPriceY[i] = ask;
-      animatedPriceBidY[i] = bid;
-      animatedPrice1Y[i] = cma == null ? (ask+bid)/2 : cma[2];
+    private void SetPoint(int i,double high,double low,double[] cma, Rate rateLast) {
+      animatedPriceY[i] = high;
+      animatedPriceBidY[i] = low;
+      animatedPrice1Y[i] = cma == null ? (high+low)/2 : cma[2];
       animatedTimeX[i] = rateLast.StartDateContinuous;
       animatedTime0X[i] = rateLast.StartDate;
     }

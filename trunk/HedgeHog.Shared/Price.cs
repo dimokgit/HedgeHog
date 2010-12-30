@@ -31,7 +31,7 @@ namespace HedgeHog.Shared {
     public int Digits { get; set; }
     public double PipSize { get; set; }
     public Price() {    }
-    public Price(string pair, Rate rate,double pipSize,int digits) {
+    public Price(string pair, Rate rate,double pipSize,int digits,bool isPlayBack) {
       Ask = rate.AskClose;
       Bid = rate.BidClose;
       Digits = digits;
@@ -40,7 +40,7 @@ namespace HedgeHog.Shared {
       PipSize = pipSize;
       AskChangeDirection = 0;
       BidChangeDirection = 0;
-
+      this.IsPlayback = isPlayBack;
     }
   }
 
