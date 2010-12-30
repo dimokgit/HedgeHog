@@ -411,13 +411,6 @@ namespace HedgeHog.Alice.Client {
         if (propsToHandle.Contains(e.PropertyName)) SetLotSize(tm, tradesManager.GetAccount());
         //if (e.PropertyName == Lib.GetLambda(() => tm.OverlapToStop)) LoadRates(tm.Pair);
         propsToHandle = new[] { TradingMacroMetadata.CorridorBarMinutes, TradingMacroMetadata.LimitBar };
-        if (propsToHandle.Contains(e.PropertyName)) {
-          if (tm.LimitBar == 0) {
-            tm.CorridorStartDate = null;
-            tm.Strategy = Strategies.None;
-            tm.Rates.Clear();
-          }
-        }
         if (TradingMacroMetadata.CorridorStats == e.PropertyName) {
           var rates = tm.RatesCopy();
           ShowChartSchedulersDispenser.Run(tm,() => ShowChart(tm,rates));

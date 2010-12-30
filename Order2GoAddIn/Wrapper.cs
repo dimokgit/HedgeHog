@@ -637,26 +637,34 @@ namespace Order2GoAddIn {
     //  return GetBarsBase(pair, period, startDate, TradesManagedStatic.FX_DATE_NOW,callBack);
     //}
 
-    public void GetBarsBase(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<Rate> ticks,Action<string> callBack = null) {
+    public class RateLoadingCallbackArgs<TBar> where TBar : Rate {
+      public string Message { get; set; }
+      public TBar[] NewRates { get; set; }
+      public RateLoadingCallbackArgs() {
+
+      }
+    }
+    public void GetBarsBase<TBar>(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<TBar> ticks,Action<string> callBack = null)where TBar : Rate {
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != TradesManagedStatic.FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
       }
-      ticks.AddRange(GetBarsBase_(pair, period, startDate, endDate).Except(ticks));
+      ticks.AddRange(GetBarsBase_<TBar>(pair, period, startDate, endDate).Except(ticks));
       int timeoutCount = 1;
       Func<bool> doContinue = () => (startDate != TradesManagedStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
       if (ticks.Count() > 0) {
         endDate = ticks.Min(b => b.StartDate);
         while (doContinue()) {
           try {
-            var t = GetBarsBase_(pair, period, startDate, endDate);
+            var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
             if (t.Count() == 0) break;
-            ticks.AddRange(t.Except(ticks));
+            var ticksNew = t.Except(ticks).ToArray();
+            ticks.AddRange(ticksNew);
+            var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
+            if (callBack != null) callBack(msg);
+            else System.Diagnostics.Debug.WriteLine(msg);
             if (endDate > ticks.Min(b => b.StartDate)) {
               endDate = ticks.Min(b => b.StartDate);
-              var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
-              if (callBack != null) callBack(msg);
-              else System.Diagnostics.Debug.WriteLine(msg);
             } else
               endDate = endDate.AddSeconds(-30);
           } catch (Exception exc) {
@@ -702,13 +710,13 @@ namespace Order2GoAddIn {
     //}
     readonly int maxTicks = 300;
     [MethodImpl(MethodImplOptions.Synchronized)]
-    Rate[] GetBarsBase_(string pair, int period, DateTime startDate, DateTime endDate) {
+    TBar[] GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar:Rate {
       try {
         return period == 0 ?
-          GetTicks(pair,startDate, endDate) :
-          GetBarsFromHistory(pair, period, startDate, endDate);
+          GetTicks(pair,startDate, endDate).Cast<TBar>().ToArray() :
+          GetBarsFromHistory(pair, period, startDate, endDate).Cast<TBar>().ToArray();
       } catch (Exception exc) {
-        var empty = (period == 0 ? new Tick[] { }.Cast<Rate>() : new Rate[] { }).ToArray();
+        var empty = (period == 0 ? new Tick[] { }.Cast<TBar>() : new TBar[] { }).ToArray();
         var e = new Exception("StartDate:" + startDate + ",EndDate:" + endDate + ":" + Environment.NewLine + "\t" + exc.Message, exc);
         if (exc.Message.Contains("The specified date's range is empty.") ||
             exc.Message.Contains("Object reference not set to an instance of an object.")) {
