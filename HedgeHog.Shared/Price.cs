@@ -31,11 +31,11 @@ namespace HedgeHog.Shared {
     public int Digits { get; set; }
     public double PipSize { get; set; }
     public Price() {    }
-    public Price(string pair, Rate rate,double pipSize,int digits,bool isPlayBack) {
+    public Price(string pair, Rate rate,DateTime serverTime,double pipSize,int digits,bool isPlayBack) {
       Ask = rate.AskClose;
       Bid = rate.BidClose;
       Digits = digits;
-      Time = rate.StartDate;
+      Time = serverTime;
       Pair = pair;
       PipSize = pipSize;
       AskChangeDirection = 0;

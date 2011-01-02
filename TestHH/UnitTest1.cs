@@ -88,9 +88,9 @@ namespace TestHH {
 
     [TestMethod]
     public void LoadBars() {
-      AddTicks(0, "EUR/USD");
+      //AddTicks(0, "EUR/USD");
       //SavePair(0, "EUR/USD");
-      var pair = "USD/JPY"; //"GBP/USD";// "USD/JPY"; //"EUR/USD";
+      var pair = "GBP/USD";// "USD/JPY"; //"EUR/USD";
       SavePair(1, pair);
       SavePair(5, pair);
       SavePair(15, pair);

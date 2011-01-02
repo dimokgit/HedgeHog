@@ -22,6 +22,23 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static class Lib {
+
+    public static T Pop<T>(this List<T> list, int position = 0) {
+      try {
+        return list[position];
+      } finally {
+        list.RemoveAt(position);
+      }
+    }
+
+    public static T[] PopRange<T>(this List<T> list,int count = 1, int position = 0) {
+      try {
+        return list.Skip(position).Take(count).ToArray();
+      } finally {
+        list.RemoveRange(position, count);
+      }
+    }
+
     public static string GetLambda(LE.Expression<Func<object>> func) { return func.Name(); }
     public static string[] GetLambdas(params LE.Expression<Func<object>>[] funcs) { return funcs.Names(); }
     public static string[] Names(this LE.Expression<Func<object>>[] funcs) {

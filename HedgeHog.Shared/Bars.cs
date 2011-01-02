@@ -22,6 +22,9 @@ namespace HedgeHog.Bars {
     public virtual object Clone() {
       return MemberwiseClone();
     }
+    public override string ToString() {
+      return StartDate.ToString("MM/dd/yyyy HH:mm:ss");
+    }
   }
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>,IComparable<BarBase>, ICloneable {
     public int Index { get; set; }
@@ -82,17 +85,17 @@ namespace HedgeHog.Bars {
     /// Do not change the order of angles.
     /// </remarks>
     /// </summary>
-    public static double[] GannAngles = new[] { 8, 4, 3, 2, 1.0, 1 / 2.0, 1 / 3.0, 1 / 4.0, 1 / 8.0 };
+    //public static double[] GannAngles = new[] { 8, 4, 3, 2,1.5, 1.0,1/1.5, 1 / 2.0, 1 / 3.0, 1 / 4.0, 1 / 8.0 };
     /// <summary>
     /// Index of 1x1 angle in <see cref="GannAngles"/>
     /// </summary>
-    public static int GannAngle1x1 = GannAngles.Length / 2;
-    double[] _gannPrices = new double[GannAngles.Length];
+    //public static int GannAngle1x1 = GannAngles.Length / 2;
+    double[] _gannPrices = new double[0];
     public double[] GannPrices {
       get { return _gannPrices; }
       set { _gannPrices = value; }
     }
-    public double GannPrice1x1 { get { return GannPrices[GannAngles.Length / 2]; } }
+    public double GannPrice1x1 { get { return GannPrices[GannPrices.Length / 2]; } }
     public double TrendLine { get; set; }
     #endregion
 
@@ -420,5 +423,17 @@ namespace HedgeHog.Bars {
     [DisplayFormat(DataFormatString = "{0:n0}"), DisplayName("")]
     public double Spread { get; set; }
 
+    public override string ToString() {
+      return base.ToString() + " : " + Power;
+    }
+  }
+
+  public class BarPoint<TBar> where  TBar: BarBaseDate {
+    public int Index { get; set; }
+    public TBar Bar { get; set; }
+    public BarPoint(int index,TBar bar) {
+      this.Index = index;
+      this.Bar = bar;
+    }
   }
 }

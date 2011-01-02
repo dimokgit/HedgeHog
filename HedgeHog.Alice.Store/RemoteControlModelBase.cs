@@ -194,10 +194,14 @@ namespace HedgeHog.Alice.Store {
         } else {
           if (_tradingMacrosCopy.Count == 0)
             _tradingMacrosCopy = TradingMacros.ToList();
-          return _tradingMacrosCopy.Where(tm => tm.IsActive && tm.TradingMacroName == MasterModel.TradingMacroName || ShowAllMacrosFilter).ToArray();
+          return _tradingMacrosCopy.Where(tm => TradingMacroFilter(tm) || ShowAllMacrosFilter).ToArray();
         }
       }
     }
+    protected bool TradingMacroFilter(TradingMacro tm) {
+      return tm.IsActive && tm.TradingMacroName == MasterModel.TradingMacroName;
+    }
+
     protected void TradingMacrosCopy_Add(TradingMacro tm) {
       _tradingMacrosCopy.Add(tm);
       ResetTradingMacros();
@@ -213,7 +217,7 @@ namespace HedgeHog.Alice.Store {
       return GetTradingMacros(pair).Where(tm => tm.LimitBar == period).SingleOrDefault();
     }
     protected TradingMacro[] GetTradingMacros(string pair = "") {
-      return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && tm.IsActive).OrderBy(tm => tm.PairIndex).ToArray();
+      return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && TradingMacroFilter(tm) ).OrderBy(tm => tm.PairIndex).ToArray();
     }
     #endregion
 

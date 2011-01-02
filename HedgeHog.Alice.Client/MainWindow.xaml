@@ -124,7 +124,13 @@
               </DataGridTemplateColumn>
               <DataGridTextColumn Header="L ∑" Binding="{Binding LimitAmount,StringFormat=c0}" IsReadOnly="True"/>
               <DataGridTextColumn Header="L ∑∑" Binding="{Binding UnKnown.BalanceOnLimit,StringFormat=c0}" IsReadOnly="True"/>
-              <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}"/>
+              <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
+                <DataGridTextColumn.CellStyle>
+                  <Style TargetType="{x:Type DataGridCell}">
+                    <Setter Property="Background" Value="{Binding PL,Converter={StaticResource ProfitToColorConverter}}"/>
+                  </Style>
+                </DataGridTextColumn.CellStyle>
+              </DataGridTextColumn>
               <DataGridTemplateColumn Header="$$$" CellTemplate="{StaticResource GrossCellTemplate}"/>
             </DataGrid.Columns>
           </DataGrid>

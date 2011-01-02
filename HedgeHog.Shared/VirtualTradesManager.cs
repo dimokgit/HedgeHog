@@ -24,11 +24,11 @@ namespace HedgeHog.Shared {
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
     public double GetPipCost(string pair) { return GetOffer(pair).PipCost; }
 
+    public bool IsLoggedIn { get { return true; } }
     int minimumQuantity;
     public int MinimumQuantity { get { return minimumQuantity; } }
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
-    DateTime _serverTime;
-    public DateTime ServerTime { get { return _serverTime; } }
+    public DateTime ServerTime { get { return ratesByPair.Select(r=>r.StartDate).LastOrDefault().AddMinutes(barMinutes) - TimeSpan.FromSeconds(1); ; } }
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
@@ -71,11 +71,12 @@ namespace HedgeHog.Shared {
     #endregion
 
     static long tradeId = 0;
-    public VirtualTradesManager(string accountId, int minimumQuantity, List<Rate> rates) {
+    public VirtualTradesManager(string accountId, int minimumQuantity, List<Rate> rates,int barMinutes) {
       this.accountId = accountId;
       this.minimumQuantity = minimumQuantity;
       this.ratesByPair = rates;
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
+      this.barMinutes = barMinutes;
     }
     public double InPips(string pair, double? price) { return TradesManagedStatic.InPips(price, GetPipSize(pair)); }
     public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this, pair, price); }
@@ -231,10 +232,9 @@ namespace HedgeHog.Shared {
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair,Rate rate) {
-      RaisePriceChanged(new Price(pair, rate, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
+      RaisePriceChanged(new Price(pair, rate, ServerTime, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
     }
     public void RaisePriceChanged(Price price,Trade[] trades) {
-      _serverTime = price.Time;
       if (PriceChanged != null) PriceChanged(this, new PriceChangedEventArgs(price,GetAccount(), trades));
     }
 
@@ -267,7 +267,7 @@ namespace HedgeHog.Shared {
 
     public Price GetPrice(string pair) {
       var rate = ratesByPair.Last();
-      return new Price(pair, rate, GetPipSize(pair), GetDigits(pair),true);
+      return new Price(pair, rate, ServerTime, GetPipSize(pair), GetDigits(pair), true);
     }
 
     #endregion
@@ -350,6 +350,8 @@ namespace HedgeHog.Shared {
     }
 
     #endregion
+
+    public int barMinutes { get; set; }
   }
 
 }
