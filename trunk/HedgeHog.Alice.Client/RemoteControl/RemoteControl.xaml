@@ -7,6 +7,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
+             xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
              xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight"
              xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras"
@@ -302,7 +303,7 @@
         <DataGridTemplateColumn Header="RateTime">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock>
+              <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}">
               <TextBlock Text="{Binding LastRateTime,StringFormat=HH:mm}"/>
                 <LineBreak/>
               <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:dd HH:mm}}"/>

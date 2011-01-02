@@ -152,7 +152,7 @@ namespace HedgeHog {
     HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     double LineNetBuy { set { lineNetBuy.Value = value; } }
 
-    HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
+    HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.SeaGreen) };
     double LineAvgAsk { set { lineAvgAsk.Value = value; } }
 
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
@@ -439,12 +439,13 @@ namespace HedgeHog {
 
 
       #region Add Lines
+      innerPlotter.Children.Add(lineMax);
+      innerPlotter.Children.Add(lineMin);
+
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
-      innerPlotter.Children.Add(lineMax);
       plotter.Children.Add(lineMaxAvg);
       plotter.Children.Add(lineMinAvg);
-      innerPlotter.Children.Add(lineMin);
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
       plotter.Children.Add(lineTimeMin);
@@ -478,9 +479,22 @@ namespace HedgeHog {
       #endregion
     }
 
+    private int _gannAnglesCount;
+
+    public int GannAnglesCount {
+      get { return _gannAnglesCount; }
+      set {
+        if (_gannAnglesCount == value) return;
+        _gannAnglesCount = value; 
+      }
+    }
+
+    int GannAngle1x1 { get { return GannAnglesCount / 2; } }
+
     private void InsertGannLines() {
-      for (var i = 0; i < BarBase.GannAngles.Length; i++) {
-        var color = BarBase.GannAngle1x1 == i ? Colors.Black : Colors.DarkGray;
+      GannAngles.ForEach(ga=>plotter.Children.Remove(ga));
+      for (var i = 0; i < GannAnglesCount; i++) {
+        var color = GannAngle1x1 == i ? Colors.Black : Colors.DarkGray;
         var hl = new ColoredSegment() { 
           Stroke = new SolidColorBrush(color), StrokeThickness = 2, StrokeDashArray = { 2 }, SelectedColor = Colors.Maroon };
         GannAngles.Add(hl);
@@ -780,6 +794,8 @@ namespace HedgeHog {
           LineMax = voltageHigh;
           LineMin = voltageCurr;
 
+          LineAvgAsk = lastPrice.Average;
+
           LineMaxAvg = priceMaxAvg;
           ResistancePointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMaxAvg);
 
@@ -841,10 +857,14 @@ namespace HedgeHog {
             Rate rateForGannPoint;
             if (up) {
               var rateMax = rates.OrderBy(r => r.AskHigh).Last();
-              rateForGannPoint = rates.Last(r => r.GannPrice1x1 < rateMax.BidLow);
+              rateForGannPoint = rates.Last(r => r.GannPrices.Length>0 && r.GannPrice1x1 < rateMax.BidLow);
+              var dateMiddle = rateFirst.StartDateContinuous + (rateForGannPoint.StartDateContinuous - rateFirst.StartDateContinuous).Multiply(.5);
+              rateForGannPoint = rates.Last(r => r.StartDateContinuous <= dateMiddle);
             } else {
               var rateMin = rates.OrderBy(r => r.BidLow).First();
-              rateForGannPoint = rates.Last(r => r.GannPrice1x1 > rateMin.AskHigh);
+              rateForGannPoint = rates.Last(r => r.GannPrices.Length > 0 && r.GannPrice1x1 > rateMin.AskHigh);
+              var dateMiddle = rateFirst.StartDateContinuous + (rateForGannPoint.StartDateContinuous - rateFirst.StartDateContinuous).Multiply(.5);
+              rateForGannPoint = rates.Last(r => r.StartDateContinuous <= dateMiddle);
             }
 
             GannAngleOffsetPoint.BarPeriod = TimeSpan.FromMinutes(1);

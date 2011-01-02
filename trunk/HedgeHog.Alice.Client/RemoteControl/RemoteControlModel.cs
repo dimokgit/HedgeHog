@@ -55,6 +55,7 @@ namespace HedgeHog.Alice.Client {
 
     void charter_GannAngleOffsetChanged(object sender, GannAngleOffsetChangedEventArgs e) {
       var tm = GetTradingMacro((Corridors)sender);
+      tm.Strategy = Strategies.None;
       tm.GannAnglesOffset = e.Offset.Abs()/tm.GannAngle1x1;
       tm.SetGannAngles();
       ShowChart(tm);
@@ -163,7 +164,8 @@ namespace HedgeHog.Alice.Client {
         tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.CorridorHeightBySpreadRatio, tm.PowerRowOffset,tm.PowerVolatilityMinimum,
         tm.RangeRatioForTradeStop,tm.ReversePower,tm.CorrelationTreshold,tm.TradeByPowerVolatilty,tm.TradeByPowerAverage,
         tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen,tm.StreachTradingDistance,tm.CloseAllOnProfit,tm.ReverseStrategy,
-        tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,tm.GannAngleIndexMinimum);
+        tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,tm.GannAngleIndexMinimum,
+        tm.GannAngles);
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
       //    .DefaultIfEmpty(new EdmScalarPropertyAttribute()).First() as EdmScalarPropertyAttribute).EntityKeyProperty
@@ -338,7 +340,8 @@ namespace HedgeHog.Alice.Client {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)true, BuyOrderCommand);
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
           fw = new FXW(MasterModel.CoreFX);
-          virtualTrader = new VirtualTradesManager(MasterModel.LoginInfo.AccountId, 10000, GetTradingMacros().First().Rates);
+          var tmFirst = GetTradingMacros().First();
+          virtualTrader = new VirtualTradesManager(MasterModel.LoginInfo.AccountId, 10000, tmFirst.Rates, tmFirst.LimitBar);
           MasterModel.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
           MasterModel.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
         }
@@ -409,7 +412,6 @@ namespace HedgeHog.Alice.Client {
         var tm = sender as TradingMacro;
         var propsToHandle = new[] { TradingMacroMetadata.Pair, TradingMacroMetadata.TradingRatio };
         if (propsToHandle.Contains(e.PropertyName)) SetLotSize(tm, tradesManager.GetAccount());
-        //if (e.PropertyName == Lib.GetLambda(() => tm.OverlapToStop)) LoadRates(tm.Pair);
         propsToHandle = new[] { TradingMacroMetadata.CorridorBarMinutes, TradingMacroMetadata.LimitBar };
         if (TradingMacroMetadata.CorridorStats == e.PropertyName) {
           var rates = tm.RatesCopy();
@@ -430,7 +432,7 @@ namespace HedgeHog.Alice.Client {
             }
           }));
           if( e.PropertyName == TradingMacroMetadata.IsActive){
-            if (tm.IsActive) tm.SubscribeToTradeClosedEVent(tradesManager);
+            if (TradingMacroFilter(tm)) tm.SubscribeToTradeClosedEVent(tradesManager);
           }
         }
       } catch (Exception exc) { Log = exc; }
@@ -451,6 +453,7 @@ namespace HedgeHog.Alice.Client {
         foreach (var tm in TradingMacrosCopy) {
           tm.CurrentLot = tradesManager.GetTrades().Where(t => t.Pair == tm.Pair).Sum(t => t.Lots);
           tm.LastTrade = tradesManager.GetLastTrade(tm.Pair);
+          tm.LoadRatesAsync();
         }
         MasterModel.CurrentLoss = CurrentLoss;
         if (!IsInVirtualTrading) {
@@ -529,6 +532,7 @@ namespace HedgeHog.Alice.Client {
               charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? TradingMacro.GetPriceHigh(r) : TradingMacro.GetPriceLow(r);
               charter.CenterOfMass = tm.CenterOfMass.PriceAvg;
               charter.SelectedGannAngleIndex = tm.GannAngleActive;
+              charter.GannAnglesCount = tm.GannAnglesArray.Length;
               charter.AddTicks(price, rates, new PriceBar[1][] { priceBars}, info, trendHighlight,
                 tm.PowerAverage,  powerBars.AverageByIterations((v,a)=>v<=a,tm.IterationsForPower).Average(),// tm.PowerVolatility,
                 tm.ResistancePrice, tm.SupportPrice,
@@ -766,6 +770,8 @@ namespace HedgeHog.Alice.Client {
         tradesManager.OrderRemoved -= orh;
         if (pendingOrders.ContainsKey(pair)) pendingOrders.Remove(pair);
       }
+      var trade = tradesManager.GetTrades().FirstOrDefault();
+      var ts = tm.GetTradeStatistics(trade);
     }
 
     private int AllowedLotSize(TradingMacro tm,ICollection<Trade> trades) {
@@ -1256,7 +1262,7 @@ namespace HedgeHog.Alice.Client {
       tm.CorridorStatsArray.Clear();
       foreach (var i in tm.CorridorIterationsArray)
         tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });
-      if (tm.IsActive)
+      if (TradingMacroFilter(tm))
         Application.Current.Dispatcher.BeginInvoke(new Action(() => {
           tm.SubscribeToTradeClosedEVent(tradesManager); 
           GetCharter(tm);

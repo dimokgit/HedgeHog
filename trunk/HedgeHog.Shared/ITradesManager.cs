@@ -6,6 +6,7 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Shared {
   public interface ITradesManager {
+    bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
 
     #region Common Info

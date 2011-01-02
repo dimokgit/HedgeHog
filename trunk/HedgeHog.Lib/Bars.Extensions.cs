@@ -152,31 +152,33 @@ namespace HedgeHog.Bars {
       return extreams.ToArray();
     }
 
-    public static TBar[][] GetIntervals<TBar>(this ICollection<TBar> bars, int margin) where TBar : BarBaseDate {
+    public static T[][] GetIntervals<T>(this ICollection<Tuple<int, T>> barPoints, int margin) {
       var intervals = new List<int>();
-      var barIntervals = new List<TBar[]>();
-      var barInterval = new List<TBar>();
-      if (bars.Count < 2) {
-        barIntervals.Add(bars.ToArray());
+      var barIntervals = new List<T[]>();
+      var barInterval = new List<T>();
+      if (barPoints.Count < 2) {
+        barIntervals.Add(barPoints.Select(bp => bp.Item2).ToArray());
       } else {
-        var period = bars.GetPeriod();
         intervals = new List<int>();
-        Func<TBar, TBar, TBar> getInterval = (rp, rn) => {
-          var i = (rp.StartDate - rn.StartDate).Duration() == period ? 1 : 0;
+        Func<Tuple<int, T>, Tuple<int, T>, Tuple<int, T>> getInterval = (bpp, bpn) => {
+          var i = (bpp.Item1 - bpn.Item1).Abs() == 1 ? 1 : 0;
           if (i == 0) {
             if (barInterval.Count > margin * 2) {
               barIntervals.Add(barInterval.ToArray());
               barInterval.Clear();
             }
           } else {
-            if (barInterval.Count == 0) barInterval.Add(rp);
-            barInterval.Add(rn);
+            if (barInterval.Count == 0) barInterval.Add(bpp.Item2);
+            barInterval.Add(bpn.Item2);
           }
-          return rn;
+          return bpn;
         };
-        bars.Aggregate(getInterval);
+        barPoints.Aggregate(getInterval);
         if (barInterval.Count > margin * 2) barIntervals.Add(barInterval.ToArray());
       }
+      if (barIntervals.Count == 0)
+        if (margin > 0) return barPoints.GetIntervals(margin - 1);
+        else barPoints.Select(bp => bp.Item2).ToList().ForEach(b => barIntervals.Add(new T[] { b }));
       return barIntervals.ToArray();
     }
 
@@ -569,13 +571,13 @@ namespace HedgeHog.Bars {
                 AskHigh = tg.Max(t => t.AskHigh),
                 AskLow = tg.Min(t => t.AskLow),
                 AskAvg = tg.Average(t => (t.AskHigh + t.AskLow) / 2),
-                AskOpen = tg.First().AskOpen,
-                AskClose = tg.Last().AskClose,
+                AskOpen = tg.Last().AskOpen,
+                AskClose = tg.First().AskClose,
                 BidHigh = tg.Max(t => t.BidHigh),
                 BidLow = tg.Min(t => t.BidLow),
                 BidAvg = tg.Average(t => (t.BidHigh + t.BidLow) / 2),
-                BidOpen = tg.First().BidOpen,
-                BidClose = tg.Last().BidClose,
+                BidOpen = tg.Last().BidOpen,
+                BidClose = tg.First().BidClose,
                 Mass = tg.Sum(t => t.Mass),
                 PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
                              : tempRsi > rsiAverage ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),

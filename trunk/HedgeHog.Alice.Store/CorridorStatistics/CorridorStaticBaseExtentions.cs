@@ -98,7 +98,9 @@ namespace HedgeHog.Alice.Store {
           #endregion
         } else {
           rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, 1, out heightUp0, out heightDown0);
+          heightUp0 = heightDown0 = rates.Select(heightHigh).Union(rates.Select(heightLow)).StdDev();
           rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, iterationsForHeights, out heightUp, out heightDown);
+          heightUp = heightDown = heightDown0 * 2;
           density = (heightDown + heightUp) / periods;
         }
         rates.ToList().ForEach(r => priceSet(r, 0));
