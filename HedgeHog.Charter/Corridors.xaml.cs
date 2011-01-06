@@ -248,7 +248,7 @@ namespace HedgeHog {
       }
     }
 
-    Scheduler GannAngleChangedScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.5));
+    Scheduler GannAngleChangedScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.1));
     void _GannAngleOffsetPoint_PositionChanged(object sender, PositionChangedEventArgs e) {
       var offset = GannAngleOffsetPoint.GetAngleByPosition(e.Position, animatedTimeX.ToArray(), ConvertToDateTime);
       //GannAngleOffsetPoint.ToolTip = string.Format("Tangent:{0}", offset);
@@ -468,7 +468,6 @@ namespace HedgeHog {
       plotter.Children.Add(GannAngleOffsetPoint);
 
       InsertFibLines();
-      InsertGannLines();
       
       SupportPointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(SupportPointY_PositionChanged);
       ResistancePointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(ResistancePointY_PositionChanged);
@@ -485,16 +484,25 @@ namespace HedgeHog {
       get { return _gannAnglesCount; }
       set {
         if (_gannAnglesCount == value) return;
-        _gannAnglesCount = value; 
+        _gannAnglesCount = value;
+        Dispatcher.Invoke(new Action(() => InsertGannLines()));
       }
     }
 
-    int GannAngle1x1 { get { return GannAnglesCount / 2; } }
+    int _GannAngle1x1Index;
+    public int GannAngle1x1Index {
+      get { return _GannAngle1x1Index; }
+      set {
+        if (_GannAngle1x1Index == value) return;
+        _GannAngle1x1Index = value;
+        Dispatcher.Invoke(new Action(() => InsertGannLines()));
+      }
+    }
 
     private void InsertGannLines() {
-      GannAngles.ForEach(ga=>plotter.Children.Remove(ga));
+      GannAngles.PopRange(GannAngles.Count).ToList().ForEach(ga=>plotter.Children.Remove(ga));
       for (var i = 0; i < GannAnglesCount; i++) {
-        var color = GannAngle1x1 == i ? Colors.Black : Colors.DarkGray;
+        var color = GannAngle1x1Index == i ? Colors.Black : Colors.DarkGray;
         var hl = new ColoredSegment() { 
           Stroke = new SolidColorBrush(color), StrokeThickness = 2, StrokeDashArray = { 2 }, SelectedColor = Colors.Maroon };
         GannAngles.Add(hl);
@@ -842,15 +850,16 @@ namespace HedgeHog {
       animatedTime0X[i] = rateLast.StartDate;
     }
 
+    Func<Rate, bool> hasGannAnglesFilter = r => r.GannPrice1x1 > 0;
     private void SetGannAngles(ICollection<Rate> rates,int selectedIndex) {
-      var rateFirst = rates.First(r => r.GannPrices[0] > 0);
-      var rateLast = rates.Reverse().First(r => r.GannPrices[0] > 0);
-      foreach (var i in Enumerable.Range(0, GannAngles.Count)) {
+      var rateFirst = rates.First(hasGannAnglesFilter);
+      var rateLast = rates.Reverse().First(hasGannAnglesFilter);
+      foreach (var i in Enumerable.Range(0, GannAnglesCount)) {
         var gannPriceFirst = rateFirst.GannPrices[i];
         GannAngles[i].SelectedValue = selectedIndex - i;
         GannAngles[i].StartPoint = new Point(dateAxis.ConvertToDouble(rateFirst.StartDateContinuous), gannPriceFirst);
         GannAngles[i].EndPoint = new Point(dateAxis.ConvertToDouble(rateLast.StartDateContinuous), rateLast.GannPrices[i]);
-        if (i == GannAngles.Count / 2) {
+        if (i == GannAngle1x1Index) {
           GannAngleOffsetPoint.Anchor = new Point(ConvertToDouble(rateFirst.StartDate), rateFirst.GannPrice1x1);
           if (!GannAngleOffsetPoint.IsMouseCaptured) {
             var up = rates.First(r => r.GannPrice1x1 > 0).GannPrice1x1 < rates.Last(r => r.GannPrice1x1 > 0).GannPrice1x1;
@@ -868,7 +877,7 @@ namespace HedgeHog {
             }
 
             GannAngleOffsetPoint.BarPeriod = TimeSpan.FromMinutes(1);
-            GannAngleOffsetPoint.Position = new Point(ConvertToDouble(rateForGannPoint.StartDate), rateForGannPoint.GannPrice1x1);
+            GannAngleOffsetPoint.Position = new Point(ConvertToDouble(rateForGannPoint.StartDate), rateForGannPoint.GannPrices[GannAngle1x1Index]);
           }
         }
       }
@@ -915,6 +924,7 @@ namespace HedgeHog {
 
 
     public int SelectedGannAngleIndex { get; set; }
+
   }
 
   public class ChartTick : INotifyPropertyChanged, IEqualityComparer<ChartTick> {

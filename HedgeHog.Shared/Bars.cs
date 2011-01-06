@@ -95,7 +95,7 @@ namespace HedgeHog.Bars {
       get { return _gannPrices; }
       set { _gannPrices = value; }
     }
-    public double GannPrice1x1 { get { return GannPrices[GannPrices.Length / 2]; } }
+    public double GannPrice1x1 { get { return GannPrices.Length == 0 ? 0 : GannPrices[GannPrices.Length / 2]; } }
     public double TrendLine { get; set; }
     #endregion
 

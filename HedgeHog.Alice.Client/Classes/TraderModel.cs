@@ -328,7 +328,7 @@ namespace HedgeHog.Alice.Client {
       get { return Path.Combine(serverAddressSuffix, _serverAddress, serverAddressPostfix); }
       set { _serverAddress = value; }
     }
-    public bool isInRemoteMode { get { return !string.IsNullOrWhiteSpace(_serverAddress); } }
+    public bool isInRemoteMode { get { return false && !string.IsNullOrWhiteSpace(_serverAddress); } }
     #endregion
     
     #region AliceMode

@@ -639,38 +639,35 @@ namespace Order2GoAddIn {
 
     public class RateLoadingCallbackArgs<TBar> where TBar : Rate {
       public string Message { get; set; }
-      public TBar[] NewRates { get; set; }
-      public RateLoadingCallbackArgs() {
-
+      public ICollection<TBar> NewRates { get; set; }
+      public RateLoadingCallbackArgs(string message,ICollection<TBar> newBars) {
+        this.Message = message;
+        this.NewRates = newBars;
       }
     }
-    public void GetBarsBase<TBar>(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<TBar> ticks,Action<string> callBack = null)where TBar : Rate {
+    public void GetBarsBase<TBar>(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<TBar> ticks,Action<RateLoadingCallbackArgs<TBar>> callBack = null)where TBar : Rate {
       if (period >= 1) {
         startDate = startDate.Round(period);
         if (endDate != TradesManagedStatic.FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
       }
-      ticks.AddRange(GetBarsBase_<TBar>(pair, period, startDate, endDate).Except(ticks));
       int timeoutCount = 1;
       Func<bool> doContinue = () => (startDate != TradesManagedStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
-      if (ticks.Count() > 0) {
-        endDate = ticks.Min(b => b.StartDate);
-        while (doContinue()) {
-          try {
-            var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
-            if (t.Count() == 0) break;
-            var ticksNew = t.Except(ticks).ToArray();
-            ticks.AddRange(ticksNew);
-            var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
-            if (callBack != null) callBack(msg);
-            else System.Diagnostics.Debug.WriteLine(msg);
-            if (endDate > ticks.Min(b => b.StartDate)) {
-              endDate = ticks.Min(b => b.StartDate);
-            } else
-              endDate = endDate.AddSeconds(-30);
-          } catch (Exception exc) {
-            if (exc.Message.ToLower().Contains("timeout")) {
-              if (timeoutCount-- == 0) break;
-            }
+      while (doContinue()) {
+        try {
+          var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
+          if (t.Count() == 0) break;
+          var ticksNew = t.Except(ticks).ToArray();
+          ticks.AddRange(ticksNew);
+          var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
+          if (callBack != null) callBack(new RateLoadingCallbackArgs<TBar>(msg, ticksNew));
+          else System.Diagnostics.Debug.WriteLine(msg);
+          if (endDate > ticks.Min(b => b.StartDate)) {
+            endDate = ticks.Min(b => b.StartDate);
+          } else
+            endDate = endDate.AddSeconds(-30);
+        } catch (Exception exc) {
+          if (exc.Message.ToLower().Contains("timeout")) {
+            if (timeoutCount-- == 0) break;
           }
         }
       }
@@ -765,11 +762,14 @@ namespace Order2GoAddIn {
       }
     }
 
-    public void GetBars(string pair, int Period,int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars) {
+      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null);
+    }
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack) {
       if (periodsBack == 0 && StartDate == TradesManagedStatic.FX_DATE_NOW)
         throw new ArgumentOutOfRangeException("Either periodsBack or startDate must have a real value.");
       if (Bars.Count == 0)
-        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars);
+        GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars,callBack);
       if (Bars.Count == 0) return;
       if (EndDate != TradesManagedStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
@@ -780,15 +780,17 @@ namespace Order2GoAddIn {
       } else {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
-          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars);
+          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
         var maximumDate = Bars.Max(b => b.StartDate);
         if (EndDate == TradesManagedStatic.FX_DATE_NOW || EndDate > maximumDate) {
-          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars);
+          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
         }
       }
       if (EndDate != TradesManagedStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
           Bars.Remove(bar);
+      if( Bars.Count < periodsBack)
+        GetBarsBase(pair, Period, periodsBack, TradesManagedStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
       Bars.Sort();
       var countMaximum = Math.Max(StartDate == TradesManagedStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate > StartDate), periodsBack);
       //Dimok: Warn when negative

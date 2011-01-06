@@ -17,7 +17,7 @@ namespace HedgeHog.Alice.Client {
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
       var colors = (parameter + "").Split(new[]{'|'}, StringSplitOptions.RemoveEmptyEntries);//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
-      if (colors.Length == 0) colors = new string[] { Colors.Transparent + "", Colors.LightPink + "", "#3A98EF71" };
+      if (colors.Length == 0) colors = new string[] { Colors.Transparent + "", TrueFalseColors.False, TrueFalseColors.True };
 
       if (value == null) return colors[0];
 

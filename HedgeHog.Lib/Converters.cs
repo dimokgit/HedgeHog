@@ -9,6 +9,10 @@ using System.Globalization;
 using System.ComponentModel;
 
 namespace HedgeHog {
+  public static class TrueFalseColors {
+    public static string False = Colors.LightPink + "";
+    public static string True = "#3A98EF71";
+  }
 
   [ValueConversion(typeof(string), typeof(DateTime?))]
   public class DateTimeConverter : IValueConverter {
@@ -48,11 +52,13 @@ namespace HedgeHog {
 
 
   public class CompareValueConverter : IValueConverter {
+    static string[] trueFalseDefaultColors = new[] { TrueFalseColors.True, TrueFalseColors.False };
     private static readonly CompareValueConverter defaultInstance = new CompareValueConverter();
     public static CompareValueConverter Default { get { return defaultInstance; } }
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-      var parameters = (parameter+"").Split(new[]{'|'}, StringSplitOptions.RemoveEmptyEntries);
-      if( parameters.Length < 3)return null;
+      var parameters = (parameter+"").Split(new[]{'|'}, StringSplitOptions.RemoveEmptyEntries).ToList();
+      if( parameters.Count < 1)return null;
+      if (parameters.Count == 1) parameters.AddRange(trueFalseDefaultColors);
       var ret = false;
       if (!targetType.IsValueType)
         ret = (value + "") == parameters[0];
