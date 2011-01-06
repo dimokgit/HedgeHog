@@ -117,15 +117,12 @@
           <Property Name="RangeRatioForTradeLimit" Type="float" Nullable="false" />
           <Property Name="TradeByAngle" Type="bit" Nullable="false" />
           <Property Name="ProfitToLossExitRatio" Type="float" Nullable="false" />
-          <Property Name="CorridorHeightBySpreadRatio" Type="float" Nullable="false" />
           <Property Name="TradeByFirstWave" Type="bit" />
           <Property Name="PowerRowOffset" Type="int" Nullable="false" />
           <Property Name="PowerVolatilityMinimum" Type="float" Nullable="false" />
           <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
           <Property Name="ReversePower" Type="bit" Nullable="false" />
           <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
-          <Property Name="TradeByPowerVolatilty" Type="bit" Nullable="false" />
-          <Property Name="TradeByPowerAverage" Type="bit" Nullable="false" />
           <Property Name="CloseOnProfitOnly" Type="bit" Nullable="false" />
           <Property Name="CloseOnProfit" Type="bit" Nullable="false" />
           <Property Name="CloseOnOpen" Type="bit" Nullable="false" />
@@ -139,8 +136,9 @@
           <Property Name="SupportDate" Type="datetime" />
           <Property Name="ResistanceDate" Type="datetime" />
           <Property Name="GannAnglesOffset" Type="float" />
-          <Property Name="GannAngleIndexMinimum" Type="int" Nullable="false" />
-          <Property Name="GannAngles" Type="nvarchar" Nullable="false" MaxLength="100" />
+          <Property Name="GannAngles" Type="nvarchar" Nullable="false" MaxLength="1024" />
+          <Property Name="IsGannAnglesManual" Type="bit" Nullable="false" />
+          <Property Name="GannAnglesAnchorDate" Type="datetime" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -209,15 +207,12 @@
           <Property Type="Double" Name="RangeRatioForTradeLimit" Nullable="false" />
           <Property Type="Boolean" Name="TradeByAngle" Nullable="false" />
           <Property Type="Double" Name="ProfitToLossExitRatio" Nullable="false" />
-          <Property Type="Double" Name="CorridorHeightBySpreadRatio" Nullable="false" />
           <Property Type="Boolean" Name="TradeByFirstWave" Nullable="true" />
           <Property Type="Int32" Name="PowerRowOffset" Nullable="false" />
           <Property Type="Double" Name="PowerVolatilityMinimum" Nullable="false" />
           <Property Type="Double" Name="RangeRatioForTradeStop" Nullable="false" />
           <Property Type="Boolean" Name="ReversePower" Nullable="false" />
           <Property Type="Double" Name="CorrelationTreshold" Nullable="false" />
-          <Property Type="Boolean" Name="TradeByPowerVolatilty" Nullable="false" />
-          <Property Type="Boolean" Name="TradeByPowerAverage" Nullable="false" />
           <Property Type="Boolean" Name="CloseOnProfitOnly" Nullable="false" />
           <Property Type="Boolean" Name="CloseOnProfit" Nullable="false" />
           <Property Type="Boolean" Name="CloseOnOpen" Nullable="false" />
@@ -231,8 +226,9 @@
           <Property Type="DateTime" Name="SupportDate" />
           <Property Type="DateTime" Name="ResistanceDate" />
           <Property Type="Double" Name="GannAnglesOffset" />
-          <Property Type="Int32" Name="GannAngleIndexMinimum" Nullable="false" />
-          <Property Type="String" Name="GannAngles" Nullable="false" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="GannAngles" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="IsGannAnglesManual" Nullable="false" />
+          <Property Type="DateTime" Name="GannAnglesAnchorDate" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -302,8 +298,9 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="GannAngles" ColumnName="GannAngles" />
-                <ScalarProperty Name="GannAngleIndexMinimum" ColumnName="GannAngleIndexMinimum" />
+            <ScalarProperty Name="GannAnglesAnchorDate" ColumnName="GannAnglesAnchorDate" />
+                <ScalarProperty Name="IsGannAnglesManual" ColumnName="IsGannAnglesManual" />
+                <ScalarProperty Name="GannAngles" ColumnName="GannAngles" />
                 <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />
                 <ScalarProperty Name="ResistanceDate" ColumnName="ResistanceDate" />
                 <ScalarProperty Name="SupportDate" ColumnName="SupportDate" />
@@ -317,15 +314,12 @@
                 <ScalarProperty Name="CloseOnOpen" ColumnName="CloseOnOpen" />
                 <ScalarProperty Name="CloseOnProfit" ColumnName="CloseOnProfit" />
                 <ScalarProperty Name="CloseOnProfitOnly" ColumnName="CloseOnProfitOnly" />
-                <ScalarProperty Name="TradeByPowerAverage" ColumnName="TradeByPowerAverage" />
-                <ScalarProperty Name="TradeByPowerVolatilty" ColumnName="TradeByPowerVolatilty" />
                 <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
                 <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
                 <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
                 <ScalarProperty Name="PowerVolatilityMinimum" ColumnName="PowerVolatilityMinimum" />
                 <ScalarProperty Name="PowerRowOffset" ColumnName="PowerRowOffset" />
                 <ScalarProperty Name="TradeByFirstWave" ColumnName="TradeByFirstWave" />
-                <ScalarProperty Name="CorridorHeightBySpreadRatio" ColumnName="CorridorHeightBySpreadRatio" />
                 <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
                 <ScalarProperty Name="TradeByAngle" ColumnName="TradeByAngle" />
                 <ScalarProperty Name="RangeRatioForTradeLimit" ColumnName="RangeRatioForTradeLimit" />
@@ -438,7 +432,7 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="4.5505582682291656" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="10.467062174479166" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="5.375" PointY="4.75" Height="3.2357796223958317" />
         <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />

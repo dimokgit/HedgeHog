@@ -6,6 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+             xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
              xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
@@ -46,7 +47,10 @@
           <Popup.InputBindings>
             <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
           </Popup.InputBindings>
-          <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="400"/>
+          <StackPanel>
+            <localModels:GannAnglesEdit Height="200" />
+            <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="400"/>
+          </StackPanel>
         </Popup>
         <!--<i:Interaction.Triggers>
           <i:EventTrigger EventName="KeyDown">
@@ -110,9 +114,9 @@
       <ContentPresenter HorizontalAlignment="Center" Content="{Binding LimitBar}"/>
     </DataTemplate>
     <DataTemplate x:Key="NetCellTemplate">
-      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding Net,Converter={StaticResource ProfitToColorConverter}}">
+      <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding OpenTradesGross,Converter={StaticResource ProfitToColorConverter}}">
         <TextBlock>
-          <TextBlock Text="{Binding Net,StringFormat=c1}"/>
+          <TextBlock Text="{Binding OpenTradesGross,StringFormat=c1}"/>
           <TextBlock Text="{Binding PositionsBuy,StringFormat=/{0}}" ToolTip="Positions Buy"/>
           <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
           <TextBlock Text="{Binding PipsPerPosition,StringFormat=|{0:n0}}" ToolTip="Pips Per Position"/>
@@ -126,9 +130,9 @@
     <DataTemplate x:Key="LossCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalContentAlignment="Stretch" >
         <TextBlock>
-          <TextBlock Background="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}">
-            <TextBlock Text="{Binding CurrentLoss,StringFormat=c1}"  />
-            <TextBlock Text="{Binding AvarageLossInPips,StringFormat=/{0:n0}}" ToolTip="Avarage Loss In Pips"  />
+          <TextBlock Background="{Binding CurrentNet,Converter={StaticResource ProfitToColorConverter}}">
+            <TextBlock Text="{Binding CurrentLoss,StringFormat=c0}"  ToolTip="Current Loss" />
+            <TextBlock Text="{Binding CurrentNet,StringFormat=/{0:c0}}" ToolTip="Current Net"  />
             
             <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
             <TextBlock Text="{Binding ProfitCounter,StringFormat=/{0:n1}}" ToolTip="Profit Counter" />
@@ -282,15 +286,9 @@
         <DataGridTemplateColumn Header="Strategy">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <StackPanel>
-                <TextBlock Text="{Binding Strategy}"></TextBlock>
-                <TextBlock ToolTip="Close On Profit">
-                  CP: <CheckBox IsChecked="{Binding CloseOnProfit}"/>
-                </TextBlock>
-                <TextBlock ToolTip="Close On Profit Only">
-                  CPO: <CheckBox IsChecked="{Binding CloseOnProfitOnly}"/>
-                </TextBlock>
-              </StackPanel>
+              <TextBlock Text="{Binding Strategy}" 
+                         Background="{Binding Strategy,Converter={x:Static Member=lib:CompareValueConverter.Default},ConverterParameter=None}"
+                         ></TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
@@ -304,6 +302,8 @@
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}">
+              <TextBlock Text="{Binding Rates.Count}"/>
+                <TextBlock>@</TextBlock>
               <TextBlock Text="{Binding LastRateTime,StringFormat=HH:mm}"/>
                 <LineBreak/>
               <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:dd HH:mm}}"/>

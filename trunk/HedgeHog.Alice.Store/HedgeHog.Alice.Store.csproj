@@ -85,6 +85,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Forex.edmx</DependentUpon>
     </Compile>
+    <Compile Include="GannAnglesEdit.xaml.cs">
+      <DependentUpon>GannAnglesEdit.xaml</DependentUpon>
+    </Compile>
     <Compile Include="GlobalStorage.cs" />
     <Compile Include="IMainModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -131,6 +134,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="GannAnglesEdit.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

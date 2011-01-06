@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_02\</OutputPath>
+    <OutputPath>bin\Debug_03\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -408,7 +408,7 @@
     </None>
     <Content Include="bin\Debug_01\Store\Alice.sdf" />
     <Content Include="bin\Debug_02\Store\Alice.sdf" />
-    <Content Include="bin\Debug_03\Store\Alice.sdf" />
+    <Content Include="bin\DTurbo\Store\Alice.sdf" />
     <Resource Include="Images\DownArrow-32.png" />
     <Resource Include="Images\UpArrow-32.png" />
     <Content Include="Store\Alice.sdf" />

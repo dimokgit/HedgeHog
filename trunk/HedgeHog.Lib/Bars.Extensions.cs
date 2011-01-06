@@ -943,6 +943,13 @@ namespace HedgeHog.Bars {
               }
                   ).ToArray();
     }
+    public static TBar FindBar<TBar>(this IEnumerable<TBar> bars, DateTime startDate) where TBar : BarBaseDate {
+      if (bars.Count() < 2) return bars.FirstOrDefault();
+      for (var node = new LinkedList<TBar>(bars.OrderBars()).First; node.Next != null; node = node.Next)
+        if (startDate >= node.Value.StartDate && startDate < node.Next.Value.StartDate)
+          return new[] { node.Value, node.Next.Value }.OrderBy(b => (b.StartDate - startDate).Duration()).First();
+      return null;
+    }
     public static IEnumerable<T> OrderBars<T>(this IEnumerable<T> rates) where T : BarBaseDate {
       return typeof(T) == typeof(Tick) ?
         rates.Cast<Tick>().OrderBy(r => r.StartDate).ThenBy(r => r.Row).Cast<T>() : rates.OrderBy(r => r.StartDate);

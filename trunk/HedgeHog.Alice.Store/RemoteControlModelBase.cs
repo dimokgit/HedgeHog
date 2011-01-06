@@ -180,7 +180,7 @@ namespace HedgeHog.Alice.Store {
         try {
           return !IsInDesigh ? GlobalStorage.Context.TradingMacroes.OrderBy(tm => tm.TradingGroup).ThenBy(tm => tm.PairIndex) : new[] { new TradingMacro() }.AsQueryable();
         } catch (Exception exc) {
-          Debug.Fail("TradingMacros is null.");
+          Debug.Fail(exc.ToString());
           return null;
         }
       }

@@ -420,7 +420,7 @@ namespace HedgeHog.Alice.Store {
 
     private Rate RateForDiffHigh {
       get {
-        var rates = TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).ToArray();
+        var rates = TradingMacro == null ? new Rate[0] : TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).ToArray();
         return rates.OrderBy(r => r.PriceHigh).LastOrDefault();
         var rm = rates.OrderBy(r => r.PriceHigh).FirstOrDefault();
         var rh = rates.FindExtreams(peak,1).DefaultIfEmpty(rm).First();
@@ -439,7 +439,7 @@ namespace HedgeHog.Alice.Store {
     }
     private Rate RateForDiffLow {
       get {
-        var rates = TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).ToArray();
+        var rates = TradingMacro == null ? new Rate[0] : TradingMacro.RatesLast.Where(r => r.PriceAvg1 > 0).ToArray();
         return rates.OrderBy(r => r.PriceLow).FirstOrDefault();
         var rm = rates.OrderBy(r => r.PriceLow).LastOrDefault();
         var rh = rates.FindExtreams(valley,1).DefaultIfEmpty(rm).First();

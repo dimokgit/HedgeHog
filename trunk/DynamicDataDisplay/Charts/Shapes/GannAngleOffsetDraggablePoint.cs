@@ -41,7 +41,7 @@ namespace HedgeHog.Charter {
       this.ConvertFromDouble = convertFromDouble;
       this.NumberToStringConverter = numberToStringConverter;
 
-      SetBinding(ToolTipProperty, new Binding("Angle") { Source = this, Converter = NumberToStringConverter });
+      //SetBinding(ToolTipProperty, new Binding("Angle") { Source = this, Converter = NumberToStringConverter });
       PositionChanged += new EventHandler<PositionChangedEventArgs>(GannAngleOffsetDraggablePoint_PositionChanged);
     }
 
