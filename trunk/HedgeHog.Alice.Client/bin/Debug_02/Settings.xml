@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Left" value="13" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Top" value="797" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Top" value="824" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Height" value="638" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Width" value="1200" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.ServerAddress]Text" value="net.tcp://HedgeHog.Alice.WCF" />
