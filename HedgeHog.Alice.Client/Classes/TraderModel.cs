@@ -23,6 +23,7 @@ using HedgeHog.Reports;
 using HedgeHog.Alice.Store;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -84,6 +85,7 @@ namespace HedgeHog.Alice.Client {
       get { return _IsInVirtualTrading; }
       set {
         if (_IsInVirtualTrading != value) {
+          if (!_IsInVirtualTrading) fwMaster.LogOff();
           _IsInVirtualTrading = value;
           RaisePropertyChangedCore();
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(value, typeof(VirtualTradesManager));
@@ -97,7 +99,7 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_VirtualDateStart != value) {
           _VirtualDateStart = value;
-          RaisePropertyChanged();
+          RaisePropertyChangedCore();
         }
       }
     }
@@ -109,18 +111,7 @@ namespace HedgeHog.Alice.Client {
         if (_VirtualDelay != value) {
           _VirtualDelay = value;
           this.BackTestEventArgs.Delay = value;
-          RaisePropertyChanged();
-        }
-      }
-    }
-
-    private string _VirtualPair;
-    public string VirtualPair {
-      get { return _VirtualPair; }
-      set {
-        if (_VirtualPair != value) {
-          _VirtualPair = value;
-          RaisePropertyChanged();
+          RaisePropertyChangedCore();
         }
       }
     }
@@ -129,11 +120,10 @@ namespace HedgeHog.Alice.Client {
     public bool VirtualPause {
       get { return _VirtualPause; }
       set {
-        if (_VirtualPause != value) {
           _VirtualPause = value;
           this.BackTestEventArgs.Pause = value;
-          RaisePropertyChanged();
-        }
+          OnPropertyChanged(Metadata.TraderModelMetadata.VirtualPause);
+          CommandManager.InvalidateRequerySuggested();
       }
     }
 
@@ -144,7 +134,7 @@ namespace HedgeHog.Alice.Client {
         if (_VirtualClearTest != value) {
           _VirtualClearTest = value;
           this.BackTestEventArgs.Pause = value;
-          RaisePropertyChanged();
+          RaisePropertyChangedCore();
         }
       }
     }
@@ -155,7 +145,7 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_VirtualMonthsToTest != value) {
           _VirtualMonthsToTest = value;
-          RaisePropertyChanged();
+          RaisePropertyChangedCore();
         }
       }
     }
@@ -175,6 +165,53 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Events
+
+    EventHandler _stepForwarRequery;
+    EventHandler stepForwarRequery {
+      get {
+        if (_stepForwarRequery == null) _stepForwarRequery = new EventHandler(CommandManager_RequerySuggested);
+        return _stepForwarRequery;
+      }
+    }
+    ICommand _StepForwardCommand;
+    public ICommand StepForwardCommand {
+      get {
+        if (_StepForwardCommand == null) {
+          _StepForwardCommand = new Gala.RelayCommand(OnStepForward, () => VirtualPause);
+          _StepForwardCommand.CanExecuteChanged += new EventHandler(_StepForwardCommand_CanExecuteChanged);
+          CommandManager.RequerySuggested += stepForwarRequery;
+        }
+        return _StepForwardCommand;
+      }
+    }
+
+    void CommandManager_RequerySuggested(object sender, EventArgs e) {
+    }
+
+    void _StepForwardCommand_CanExecuteChanged(object sender, EventArgs e) {
+      Debugger.Break();
+    }
+    public event EventHandler<EventArgs> StepForward;
+    protected void OnStepForward() {
+      if (StepForward != null) StepForward(this, new EventArgs());
+    }
+
+
+    ICommand _StepBackCommand;
+    public ICommand StepBackCommand {
+      get {
+        if (_StepBackCommand == null) {
+          _StepBackCommand = new Gala.RelayCommand(OnStepBack, () => VirtualPause);
+        }
+        return _StepBackCommand;
+      }
+    }
+
+    public event EventHandler<EventArgs> StepBack;
+    protected void OnStepBack() {
+      if (StepBack != null) StepBack(this, new EventArgs());
+    }
+
     public event EventHandler<OrderEventArgs> OrderToNoLoss;
     protected void OnOrderToNoLoss(Order order) {
       if (OrderToNoLoss != null) {
@@ -793,7 +830,8 @@ namespace HedgeHog.Alice.Client {
         });
       else
         try {
-          Log = new Exception("Trade " + tradeId + " was closed with OrderId " + fwMaster.FixOrdersClose(tradeId).FirstOrDefault());
+          fwMaster.CloseTrade(tradeId);
+          Log = new Exception("Trade " + tradeId + " was closed");
         } catch (Exception exc) { Log = exc; }
     }
     #endregion
@@ -811,10 +849,10 @@ namespace HedgeHog.Alice.Client {
         return _BackTestCommand;
       }
     }
-    BackTestEventArgs BackTestEventArgs;
+    BackTestEventArgs BackTestEventArgs = new BackTestEventArgs();
     void BackTest() {
       if (StartBackTesting != null)
-        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualPair, VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause, VirtualClearTest));
+        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause, VirtualClearTest));
     }
 
     #endregion

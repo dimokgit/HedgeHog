@@ -6,7 +6,7 @@
              mc:Ignorable="d" 
              >
     <Grid Background="White">
-      <DataGrid ItemsSource="{Binding OrderTemplates}" AutoGenerateColumns="False" HorizontalAlignment="Left" KeyDown="DataGrid_KeyDown">
+    <DataGrid ItemsSource="{Binding OrderTemplates}" AutoGenerateColumns="False" HorizontalAlignment="Left" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}">
       <DataGrid.Columns>
         <DataGridTemplateColumn Header="Pair">
           <DataGridTemplateColumn.CellTemplate>

@@ -91,11 +91,12 @@ namespace TestHH {
     public void LoadBars() {
       //AddTicks(0, "EUR/USD");
       //SavePair(0, "EUR/USD");
-      var pair = "USD/JPY";// "USD/JPY"; //"EUR/USD";
-      AddTicks(1, pair, DateTime.Now.AddYears(-3));
-      //SavePair(5, pair);
-      //SavePair(15, pair);
-      //SavePair(60, pair);
+      var pair = "EUR/USD";// "USD/JPY"; //"EUR/USD";
+      //AddTicks(1, pair, DateTime.Now.AddYears(-3));
+      SavePair(1, pair);
+      SavePair(5, pair);
+      SavePair(15, pair);
+      SavePair(60, pair);
     }
     private void AddTicks(int period, string pair,DateTime dateStart) {
       using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
@@ -139,7 +140,7 @@ namespace TestHH {
           .Max().AddMinutes(period);
         Action<string> showProgress = msg => { };// Console.WriteLine(msg);
         var ticks = new List<Rate>();
-        o2g.GetBarsBase(pair, period, 0, dateStart, TradesManagedStatic.FX_DATE_NOW, ticks);
+        o2g.GetBarsBase(pair, period, 0, dateStart, TradesManagerStatic.FX_DATE_NOW, ticks);
         if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();

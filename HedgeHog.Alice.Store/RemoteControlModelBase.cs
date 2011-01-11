@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
           _MasterModel = value;
           value.OrderToNoLoss += OrderToNoLossHandler;
           value.StartBackTesting += MasterModel_StartBackTesting;
-          (value as INotifyPropertyChanged).PropertyChanged += MasterModel_PropertyChanged;
+          value.PropertyChanged += MasterModel_PropertyChanged;
           RaisePropertyChangedCore();
         }
       }

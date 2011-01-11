@@ -32,7 +32,7 @@ namespace HedgeHog.Shared {
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return TradesManagedStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
+      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
     }
     #endregion
 
@@ -78,8 +78,8 @@ namespace HedgeHog.Shared {
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
       this.barMinutes = barMinutes;
     }
-    public double InPips(string pair, double? price) { return TradesManagedStatic.InPips(price, GetPipSize(pair)); }
-    public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this, pair, price); }
+    public double InPips(string pair, double? price) { return TradesManagerStatic.InPips(price, GetPipSize(pair)); }
+    public double InPoints(string pair, double? price) { return TradesManagerStatic.InPoins(this, pair, price); }
     static long NewTradeId() {
       if( tradeId == 0)
         tradeId = DateTime.Now.Ticks/10000;

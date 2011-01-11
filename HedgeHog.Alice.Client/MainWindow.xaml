@@ -49,13 +49,13 @@
       <DataTemplate x:Key="TradesOnServer">
         <StackPanel>
           <StackPanel.Resources>
-            <Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>
+            <!--<Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>-->
           </StackPanel.Resources>
           <WrapPanel>
             <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
           </WrapPanel>
           <!--Server Trades-->
-          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}">
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
             <DataGrid.Columns>
               <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
@@ -136,7 +136,7 @@
           </DataGrid>
           <!--Server Orders-->
           <Label Content="Orders"/>
-          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding OrdersList}" >
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding OrdersList}" Style="{StaticResource ReadOnlyDataGridStyle}" >
             <DataGrid.Columns>
               <DataGridTemplateColumn>
                 <DataGridTemplateColumn.CellTemplate>
@@ -213,11 +213,6 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
               <DataGridTemplateColumn Header="Limit">
-                <DataGridTemplateColumn.HeaderStyle>
-                  <Style TargetType="{x:Type DataGridColumnHeader}">
-                    <Setter Property="HorizontalAlignment" Value="Center"/>
-                  </Style>
-                </DataGridTemplateColumn.HeaderStyle>
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <WrapPanel Background="LightGreen">
@@ -288,17 +283,12 @@
         <ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
         <Label ToolTip="Virtual Trading">VT:</Label>
         <u:CheckBox2 IsChecked2="{Binding IsInVirtualTrading,Mode=TwoWay}" IsChecked="{state:UserSettings}" Name="chkVT"/>
-        <u:TextBox2 Text2="{Binding VirtualDateStart,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualDateStart" MinWidth="30" />
-        <u:TextBox2 Text2="{Binding VirtualMonthsToTest,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualMonthsToTest" MinWidth="20" />
-        <u:TextBox2 Text2="{Binding VirtualDelay,Mode=TwoWay}" Text="{state:UserSettings}" Name="VitrualDekay" MinWidth="20" />
-        <u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay}" IsChecked="{state:UserSettings}" Name="chkVP"/>
-        <ComboBox SelectedValue="{Binding VirtualPair}" SelectedIndex="{state:UserSettings}">
-          <sys:String>EUR/USD</sys:String>
-          <sys:String>EUR/JPY</sys:String>
-          <sys:String>USD/CHF</sys:String>
-          <sys:String>USD/JPY</sys:String>
-        </ComboBox>
-        <Button Command="{Binding BackTestStepBackCommand}">Back</Button>
+        <u:TextBox2 Text2="{Binding VirtualDateStart,Mode=TwoWay,FallbackValue='1/1/2000',IsAsync=True}" Text="{state:UserSettings Default='1/1/2000'}" Name="VitrualDateStart" MinWidth="30" />
+        <u:TextBox2 Text2="{Binding VirtualMonthsToTest,Mode=TwoWay,FallbackValue=0,IsAsync=True}" Text="{state:UserSettings Default=0}" Name="VitrualMonthsToTest" MinWidth="20" />
+        <u:TextBox2 Text2="{Binding VirtualDelay,Mode=TwoWay,FallbackValue=0,IsAsync=True}" Text="{state:UserSettings Default=0}" Name="VitrualDekay" MinWidth="20" />
+        <Button Command="{Binding StepBackCommand}" Content="_&lt;&lt;"></Button>
+        <u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay,IsAsync=True}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
+        <Button Command="{Binding StepForwardCommand}" Content=">_>"></Button>
         <CheckBox IsChecked="{Binding VirtualClearTest,Mode=TwoWay}" Name="chkClearTest" ToolTip="Clear Previouse Test Results"/>
         <Button Command="{Binding BackTestCommand}">Test</Button>
         <Button Command="{Binding ReportCommand}">Report</Button>
@@ -322,7 +312,7 @@
         <Expander Header="Accounts Manager" IsExpanded="True">
           <StackPanel>
             <!--Slave Account Infos-->
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding TradingAccountsList}">
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding TradingAccountsList}" Style="{StaticResource ReadOnlyDataGridStyle}">
               <DataGrid.Columns>
                 <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"></DataGridTemplateColumn>
                 <DataGridTemplateColumn>
@@ -391,10 +381,10 @@
     </Expander>
 
     <!--Slave Accounts-->
-    <DataGrid Grid.Row="2" ItemsSource="{Binding SlaveModels}" AutoGenerateColumns="False" EnableRowVirtualization="False" HorizontalAlignment="Left" RowDetailsVisibilityMode="VisibleWhenSelected" VerticalAlignment="Top" CanUserAddRows="False" CanUserDeleteRows="False" KeyDown="SlaveModelGrid_KeyDown" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontWeight="Bold">
+    <DataGrid Grid.Row="2" ItemsSource="{Binding SlaveModels}" AutoGenerateColumns="False" EnableRowVirtualization="False" HorizontalAlignment="Left" RowDetailsVisibilityMode="VisibleWhenSelected" VerticalAlignment="Top" CanUserAddRows="False" CanUserDeleteRows="False" KeyDown="SlaveModelGrid_KeyDown" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontWeight="Bold" Style="{StaticResource ReadOnlyDataGridStyle}" Visibility="Collapsed">
       <DataGrid.Columns>
         <DataGridTextColumn Header="Account" Binding="{Binding AccountModel.ID,Mode=OneWay}" IsReadOnly="True"/>
-        <DataGridTemplateColumn Header="Balance" IsReadOnly="True">
+        <DataGridTemplateColumn Header="Balance" IsReadOnly="True" SortMemberPath="AccountModel.Equity">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <WrapPanel>

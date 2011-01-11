@@ -192,13 +192,20 @@
         <x:Type TypeName="localModels:CorridorCalculationMethod" />
       </ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
-    <Style TargetType="{x:Type DataGridCell}" x:Key="PapayaWhipBackgroundStyle">
+    <Style TargetType="{x:Type DataGridCell}" x:Key="PapayaWhipBackgroundStyle" BasedOn="{StaticResource {x:Type DataGridCell}}">
       <Setter Property="Background" Value="PapayaWhip"></Setter>
       <Setter Property="Foreground" Value="Black"></Setter>
+      <Setter Property="FontWeight" Value="Normal"></Setter>
     </Style>
   </UserControl.Resources>
     <Grid>
-    <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown">
+    <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}"
+              FontWeight="Black">
+      <DataGrid.CellStyle>
+        <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+          <Setter Property="FontWeight" Value="Normal"/>
+        </Style>
+      </DataGrid.CellStyle>
       <DataGrid.Columns>
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTextColumn Header="G" Binding="{Binding TradingGroup}"/>
@@ -238,6 +245,14 @@
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <TextBlock Text="{Binding CorridorsRatio,StringFormat='{}={0:p0}]'}" ToolTip="Corridor Height0 By Regression In Pips" />
+                <LineBreak/>
+                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}"/>
+                <TextBlock>/</TextBlock>
+                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}"/>
+                <TextBlock>=</TextBlock>
+                <TextBlock Text="{Binding SpreadShortToLongRatio,StringFormat=n1}"
+                  FontWeight="{Binding IsSpreadShortToLongRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
                 <LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
