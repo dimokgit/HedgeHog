@@ -903,7 +903,7 @@ namespace HedgeHog.Alice.Store {
     private Rate GetLastRate(ICollection<Rate> rates) {
       if (rates.Count == 0) return null;
       var rateLast = rates.Skip(rates.Count - 2)
-        .LastOrDefault(r => r.StartDate <= CurrentPrice.Time - TimeSpan.FromMinutes(LimitBar));
+        .LastOrDefault(r => r.StartDate <= CurrentPrice.Time - TimeSpan.FromMinutes(LimitBar/2));
       return rateLast ?? rates.Last();
     }
     static Func<Rate, double> gannPriceHigh = rate => rate.PriceAvg;

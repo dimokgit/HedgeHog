@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Left" value="28" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Top" value="826" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Height" value="661" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Left" value="14" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Top" value="490" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Height" value="664" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Width" value="1115" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.ServerAddress]Text" value="net.tcp://HedgeHog.Alice.WCF" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.AliceMode]SelectedIndex" value="0" />
@@ -40,8 +40,8 @@
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Width" value="900" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="1" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVT]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDateStart]Text" value="10/1/10 13:00" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVT]IsChecked" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDateStart]Text" value="1/1/2008 12:00:00 AM" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.13]SelectedIndex" value="0" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="99" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.14]SelectedIndex" value="0" />
@@ -73,14 +73,14 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_1.EURUSD_1]Width" value="581" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.DelayInSecondsBox]Text" value="0" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Left" value="1" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Top" value="-2" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Left" value="-2" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Top" value="1" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Height" value="447" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_15.EURUSD_15]Width" value="1200" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_15.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_15.DelayInSecondsBox]Text" value="0" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Left" value="10" />
-  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Top" value="438" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Left" value="149" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Top" value="925" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Height" value="385" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_5.EURUSD_5]Width" value="716" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_5.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />

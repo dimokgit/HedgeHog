@@ -5,4 +5,3 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Math.
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\ResolveAssemblyReference.cache
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Shared.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Shared.pdb
-C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Shared.XML
