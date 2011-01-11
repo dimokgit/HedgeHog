@@ -44,16 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cmdrekay.snippet" />
-    <None Include="CS_4_0.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>CS_4_0.cs</LastGenOutput>
-    </None>
     <None Include="dimoktrycatchlog.snippet" />
     <None Include="listcollview.snippet" />
-    <None Include="MetadataGeneration.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>MetadataGeneration.cs</LastGenOutput>
-    </None>
     <None Include="mvvmInpcProperty.snippet" />
     <None Include="mvvmPropA.snippet" />
     <None Include="mvvmPropDP.snippet" />
