@@ -4,6 +4,7 @@
         xmlns:l="clr-namespace:HedgeHog.Alice.Client"
         xmlns:u="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+    xmlns:viblend="clr-namespace:VIBlend.WPF.Controls;assembly=VIBlend.WPF.Editors"
              StartupUri="MainWindow.xaml"
              ShutdownMode="OnMainWindowClose"
              Exit="Application_Exit"
@@ -29,22 +30,22 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
       </Style>
       <!--DataGrid-->
-      <Style TargetType="DataGrid" x:Key="ReadOnlyDataGridStyle">
+      <Style TargetType="DataGrid" x:Key="ReadOnlyDataGridStyle" BasedOn="{StaticResource {x:Type DataGrid}}">
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="CanUserDeleteRows" Value="False"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
       </Style>
-      <Style TargetType="DataGridRow">
-        <!--<Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />-->
+      <!--<Setter Property="Background" Value="{Binding CurrentLoss,Converter={StaticResource ProfitToColorConverter}}" />-->
+      <!--<Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
         <Style.Triggers>
           <Trigger Property="IsSelected" Value="True">
             <Setter Property="Background" Value="Red"/>
             <Setter Property="Foreground" Value="WhiteSmoke"/>
           </Trigger>
         </Style.Triggers>
-      </Style>
-      <Style TargetType="DataGridCell">
+      </Style>-->
+      <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
         <Style.Triggers>
           <Trigger Property="IsSelected" Value="True">
             <Setter Property="Background" Value="WhiteSmoke"/>
@@ -52,12 +53,15 @@
           </Trigger>
         </Style.Triggers>
       </Style>
-      <Style TargetType="{x:Type DataGridColumnHeader}">
+      <!--<Style TargetType="{x:Type DataGridColumnHeader}"  BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
-      </Style>
+      </Style>-->
+      <!--<Style TargetType="{x:Type Button}" BasedOn="{StaticResource Office2010SilverButtonStyle}"/>-->
       <!---->
       <ResourceDictionary.MergedDictionaries>
+      <ResourceDictionary Source="/PresentationFramework.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL;component/themes/aero.normalcolor.xaml" /> 
         <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml"/>
+        <!--<ResourceDictionary Source="pack://application:,,,/WPFToolkit;component/Themes/Aero.NormalColor.xaml" />-->
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

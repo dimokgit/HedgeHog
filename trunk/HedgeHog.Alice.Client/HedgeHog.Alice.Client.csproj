@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_03\</OutputPath>
+    <OutputPath>bin\DTurbo\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -61,6 +61,7 @@
       <HintPath>..\..\..\..\..\..\Program Files\Microsoft.NET\Primary Interop Assemblies\Microsoft.mshtml.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="PresentationFramework.Aero" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.Composition.Initialization">
@@ -75,6 +76,12 @@
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Windows.Controls.DataVisualization.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -122,10 +129,21 @@
     </Reference>
     <Reference Include="UIAutomationProvider" />
     <Reference Include="UIAutomationTypes" />
+    <Reference Include="VIBlend.WPF.Editors">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Editors.dll</HintPath>
+    </Reference>
+    <Reference Include="VIBlend.WPF.Theme.Office2010Blue">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Blue.dll</HintPath>
+    </Reference>
+    <Reference Include="VIBlend.WPF.Theme.Office2010Silver">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Silver.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WPFToolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="WPFToolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="WPFToolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -225,6 +243,58 @@
     <Page Include="UI\Controls\Account\View\SlaveAccount.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Style\Aero.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\BureauBlack.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\BureauBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Classic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ExpressionDark.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ExpressionLight.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.HomeStead.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.Metallic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Royale.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ShinyBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ShinyRed.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="UI\TradesOnServer.xaml">
       <SubType>Designer</SubType>

@@ -68,6 +68,7 @@
     <Compile Include="ap.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="Dynamic.cs" />
+    <Compile Include="Expressions.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
     <Compile Include="MEF.cs" />

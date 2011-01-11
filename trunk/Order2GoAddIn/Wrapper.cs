@@ -593,7 +593,7 @@ namespace Order2GoAddIn {
     }
     public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate, int barsMax) {
       lock (lockHistory) {
-        if (endDate != TradesManagedStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
+        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         startDate = ConvertDateToUTC(startDate);
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, "t1", startDate, endDate, barsMax, true, true))
@@ -648,10 +648,10 @@ namespace Order2GoAddIn {
     public void GetBarsBase<TBar>(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<TBar> ticks,Action<RateLoadingCallbackArgs<TBar>> callBack = null)where TBar : Rate {
       if (period >= 1) {
         startDate = startDate.Round(period);
-        if (endDate != TradesManagedStatic.FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
+        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
       }
       int timeoutCount = 1;
-      Func<bool> doContinue = () => (startDate != TradesManagedStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
+      Func<bool> doContinue = () => (endDate == TradesManagerStatic.FX_DATE_NOW || startDate != TradesManagerStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
       while (doContinue()) {
         try {
           var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
@@ -661,7 +661,7 @@ namespace Order2GoAddIn {
           var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
           if (callBack != null) callBack(new RateLoadingCallbackArgs<TBar>(msg, ticksNew));
           else System.Diagnostics.Debug.WriteLine(msg);
-          if (endDate > ticks.Min(b => b.StartDate)) {
+          if (endDate == TradesManagerStatic.FX_DATE_NOW || endDate > ticks.Min(b => b.StartDate)) {
             endDate = ticks.Min(b => b.StartDate);
           } else
             endDate = endDate.AddSeconds(-30);
@@ -724,7 +724,7 @@ namespace Order2GoAddIn {
     }
 
     public Rate[] GetBarsFromHistory(string pair, int period, DateTime startDate) {
-      return GetBarsFromHistory(pair, period, startDate, TradesManagedStatic.FX_DATE_NOW);
+      return GetBarsFromHistory(pair, period, startDate, TradesManagerStatic.FX_DATE_NOW);
     }
     static object rateFromMarketRateLocker = new object();
     Rate RateFromMarketRate(string pair, FXCore.MarketRateAut r) {
@@ -742,7 +742,7 @@ namespace Order2GoAddIn {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public Rate[] GetBarsFromHistory(string pair, int period, DateTime startDate, DateTime endDate) {
       lock (lockHistory) {
-        if (endDate != TradesManagedStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
+        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         startDate = ConvertDateToUTC(startDate);
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
           ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", startDate, endDate, int.MaxValue, true, true))
@@ -755,7 +755,7 @@ namespace Order2GoAddIn {
     private Rate[] GetBarsFromHistory(string pair, int period, int barsCount) {
       lock (lockHistory) {
         var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
-          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", DateTime.MinValue, TradesManagedStatic.FX_DATE_NOW, barsCount, true, true))
+          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)period + "", DateTime.MinValue, TradesManagerStatic.FX_DATE_NOW, barsCount, true, true))
           .Cast<FXCore.MarketRateAut>().ToArray();
         return mr.Select((r) => RateFromMarketRate(pair, r)).ToArray();
         //);
@@ -766,12 +766,12 @@ namespace Order2GoAddIn {
       GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null);
     }
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack) {
-      if (periodsBack == 0 && StartDate == TradesManagedStatic.FX_DATE_NOW)
+      if (periodsBack == 0 && StartDate == TradesManagerStatic.FX_DATE_NOW)
         throw new ArgumentOutOfRangeException("Either periodsBack or startDate must have a real value.");
       if (Bars.Count == 0)
         GetBarsBase(pair, Period, periodsBack, StartDate, EndDate, Bars,callBack);
       if (Bars.Count == 0) return;
-      if (EndDate != TradesManagedStatic.FX_DATE_NOW)
+      if (EndDate != TradesManagerStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
           Bars.Remove(bar);
       if (Bars.Count == 0) {
@@ -782,17 +782,17 @@ namespace Order2GoAddIn {
         if (StartDate < minimumDate)
           GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
         var maximumDate = Bars.Max(b => b.StartDate);
-        if (EndDate == TradesManagedStatic.FX_DATE_NOW || EndDate > maximumDate) {
+        if (EndDate == TradesManagerStatic.FX_DATE_NOW || EndDate > maximumDate) {
           GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
         }
       }
-      if (EndDate != TradesManagedStatic.FX_DATE_NOW)
+      if (EndDate != TradesManagerStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
           Bars.Remove(bar);
       if( Bars.Count < periodsBack)
-        GetBarsBase(pair, Period, periodsBack, TradesManagedStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
+        GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
       Bars.Sort();
-      var countMaximum = Math.Max(StartDate == TradesManagedStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate > StartDate), periodsBack);
+      var countMaximum = Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate > StartDate), periodsBack);
       //Dimok: Warn when negative
       Bars.RemoveRange(0, Math.Max(0, Bars.Count - countMaximum));
     }
@@ -1566,6 +1566,9 @@ namespace Order2GoAddIn {
       foreach (var trade in trades)
         CloseTrade(trade);
     }
+    public void CloseTrade(string tradeId) {
+      CloseTrade(GetTrade(tradeId));
+    }
     public void CloseTrade(Trade trade) {
       CloseTrade(trade, trade.Lots);
     }
@@ -1641,7 +1644,7 @@ namespace Order2GoAddIn {
     }
     public object FixOrderClose(string tradeId) { return FixOrderClose(tradeId, coreFX.Desk.FIX_CLOSEMARKET, null as Price); }
     public bool ClosePair(string pair) {
-      return ClosePair(pair, true) && ClosePair(pair, false);
+      return ClosePair(pair, true) || ClosePair(pair, false);
     }
     public bool ClosePair(string pair, bool buy) {
       try {
@@ -1779,7 +1782,7 @@ namespace Order2GoAddIn {
     public double InPips(string pair, double? price) { return (price / GetPipSize(pair)).GetValueOrDefault(); }
 
     public double InPoints(double? price) { return (price * GetPipSize(Pair)).GetValueOrDefault(); }
-    public double InPoints(string pair, double? price) { return TradesManagedStatic.InPoins(this,pair, price); }
+    public double InPoints(string pair, double? price) { return TradesManagerStatic.InPoins(this,pair, price); }
 
     Dictionary<string, double> pointSizeDictionary = new Dictionary<string, double>() { { "EUR/USD", .0001 } };
     public double GetPipSize(string pair) {
@@ -1842,7 +1845,7 @@ namespace Order2GoAddIn {
     }
 
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return TradesManagedStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
+      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
     }
 
     #endregion

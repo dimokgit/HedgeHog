@@ -6,7 +6,6 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public class BackTestEventArgs : EventArgs {
-    public string Pair { get; set; }
     public DateTime StartDate { get; set; }
     public int MonthToTest { get; set; }
     public double Delay { get; set; }
@@ -14,8 +13,7 @@ namespace HedgeHog.Alice.Store {
     public bool StepBack { get; set; }
     public bool ClearTest { get; set; }
     public BackTestEventArgs() { }
-    public BackTestEventArgs(string pair, DateTime startDate, int monthsToTest, double delay, bool pause, bool clearTest) {
-      this.Pair = pair;
+    public BackTestEventArgs( DateTime startDate, int monthsToTest, double delay, bool pause, bool clearTest) {
       this.StartDate = startDate;
       this.MonthToTest = monthsToTest;
       this.Delay = delay;

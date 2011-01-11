@@ -446,19 +446,20 @@
                             <Border x:Name="DisabledVisualElement" Background="#FFF1F1F1" BorderBrush="#FFB2B2B2" BorderThickness="1" CornerRadius="3" IsHitTestVisible="false" Visibility="Collapsed"/>
                             <ContentPresenter
                         		x:Name="contentPresenter"
+                            RecognizesAccessKey="True"
                         		Content="{TemplateBinding Content}"
                         		ContentTemplate="{TemplateBinding ContentTemplate}"
                         		VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                         		HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                         		Margin="{TemplateBinding Padding}"/>
-                            <TextBlock Panel.ZIndex="1"
+                            <!--<TextBlock Panel.ZIndex="1"
                         		x:Name="DisabledOverlay"
                         		Text="{TemplateBinding Content}"
                         		Foreground="#FF969696"
                         		HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                         		VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                         		Margin="{TemplateBinding Padding}"
-                        		Visibility="Collapsed"/>
+                        		Visibility="Collapsed"/>-->
                             <Border x:Name="FocusVisualElement" Margin="1" BorderBrush="{StaticResource btnFocus}" BorderThickness="1" CornerRadius="2" IsHitTestVisible="false" Opacity="0"/>
                             <Border x:Name="DefaultBorder" Margin="1" BorderBrush="{StaticResource btnFocus}" BorderThickness="1" CornerRadius="2" IsHitTestVisible="false" Opacity="0"/>
                         </Grid>
@@ -498,8 +499,8 @@
                             <Trigger Property="IsEnabled" Value="false">
                                 <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}"/>
                                 <Setter Property="Visibility" TargetName="DisabledVisualElement" Value="Visible"/>
-                                <Setter Property="Visibility" TargetName="DisabledOverlay" Value="Visible"/>
-                                <Setter Property="Visibility" TargetName="contentPresenter" Value="Collapsed"/>
+                                <!--<Setter Property="Visibility" TargetName="DisabledOverlay" Value="Visible"/>
+                                <Setter Property="Visibility" TargetName="contentPresenter" Value="Collapsed"/>-->
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

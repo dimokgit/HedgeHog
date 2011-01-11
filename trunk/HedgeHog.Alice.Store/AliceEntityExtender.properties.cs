@@ -20,6 +20,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+    [DisplayName("Spread Short/Long Treshold")]
+    [Category(categoryCorridor)]
+    public double SpreadShortToLongTreshold_ {
+      get { return SpreadShortToLongTreshold; }
+      set { SpreadShortToLongTreshold = value; }
+    }
+
     [DisplayName("Corridor Height Multiplier")]
     [Category(categoryTrading)]
     [Description("Ex: CorrUp = PriceRegr + Up + corrHeight*X")]

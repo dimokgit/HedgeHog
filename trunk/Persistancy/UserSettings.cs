@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Configuration;
 using System.Xml.Serialization;
 using System.Diagnostics;
+using System.Windows.Controls;
 
 namespace WpfPersist {
   /// <summary>
@@ -172,8 +173,14 @@ namespace WpfPersist {
         var uie = ui;
         while (!(uie is Window) && uie != null)
           uie = LogicalTreeHelper.GetParent(uie);
-        if (uie == null)
+        if (uie == null) {
+          if (ui is UserControl) {
+            var uc = ui as UserControl;
+            if (uc.Parent != null) return getParent(uc.Parent);
+            else return Application.Current.MainWindow;
+          }
           return getParent((ui as FrameworkElement).Parent);
+        }
         return uie as Window;
       });
       #region key
@@ -195,7 +202,8 @@ namespace WpfPersist {
           };
           string persistID = (foo(targetObject, "Name") ?? ((UIElement)targetObject).PersistId) + "";
           var window = getParent(targetObject as UIElement);
-          if (window == null) System.Diagnostics.Debugger.Break();
+          //System.Diagnostics.Debug.Assert(window!=null,"Main window is <Null>");
+          if (window == null) return null;
           var windowName = window.Name;
           key = string.Format("{0}.{1}[{2}.{3}]{4}",
               uriContext.BaseUri.PathAndQuery,

@@ -14,7 +14,7 @@
 >
   <StackPanel x:Name="LayoutRoot">
     <StackPanel.Resources>
-      <Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>
+      <!--<Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>-->
       <DataTemplate x:Key="CloseLocalTradeTemplate">
         <Button Content="{Binding Id}" CommandParameter="{Binding Id}"
                   Command="{Binding DataContext.CloseLocalTradeCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
@@ -64,7 +64,7 @@
       </DataGrid>
       <!--<Expander>        <Expander.Header>          <TextBlock Text="{Binding AbsentTradesList.Count,StringFormat=Trades to Sync {0}}"/>        </Expander.Header>-->
       <!--Sync Trades-->
-      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}">
+      <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding AbsentTradesList}">
           <DataGrid.Columns>
             <DataGridTemplateColumn CellTemplate="{StaticResource SyncTradeTemplate}" SortMemberPath="{Binding}" Header="Id"/>
             <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>

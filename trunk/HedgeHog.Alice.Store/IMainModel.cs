@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog.Shared;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
-  public interface IMainModel {
+  public interface IMainModel : INotifyPropertyChanged {
     event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
     event EventHandler<OrderEventArgs> OrderToNoLoss;
     event EventHandler<BackTestEventArgs> StartBackTesting;
+    event EventHandler<EventArgs> StepBack;
+    event EventHandler<EventArgs> StepForward;
     Order2GoAddIn.CoreFX CoreFX { get; }
     Exception Log { set; }
     string TradingMacroName { get; }

@@ -120,6 +120,13 @@ namespace HedgeHog {
 
   [ValueConversion(typeof(object), typeof(object))]
   public class PassThroughConverter : IValueConverter {
+    static PassThroughConverter _Default;
+    public static PassThroughConverter Default {
+      get {
+        if (PassThroughConverter._Default == null) PassThroughConverter._Default = new PassThroughConverter();
+        return PassThroughConverter._Default;
+      }
+    }
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
       return value;
     }

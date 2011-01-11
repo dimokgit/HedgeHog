@@ -139,6 +139,7 @@
           <Property Name="GannAngles" Type="nvarchar" Nullable="false" MaxLength="1024" />
           <Property Name="IsGannAnglesManual" Type="bit" Nullable="false" />
           <Property Name="GannAnglesAnchorDate" Type="datetime" />
+          <Property Name="SpreadShortToLongTreshold" Type="float" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -229,6 +230,7 @@
           <Property Type="String" Name="GannAngles" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Type="Boolean" Name="IsGannAnglesManual" Nullable="false" />
           <Property Type="DateTime" Name="GannAnglesAnchorDate" />
+          <Property Type="Double" Name="SpreadShortToLongTreshold" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -298,7 +300,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="GannAnglesAnchorDate" ColumnName="GannAnglesAnchorDate" />
+            <ScalarProperty Name="SpreadShortToLongTreshold" ColumnName="SpreadShortToLongTreshold" />
+                <ScalarProperty Name="GannAnglesAnchorDate" ColumnName="GannAnglesAnchorDate" />
                 <ScalarProperty Name="IsGannAnglesManual" ColumnName="IsGannAnglesManual" />
                 <ScalarProperty Name="GannAngles" ColumnName="GannAngles" />
                 <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />

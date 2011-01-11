@@ -118,7 +118,7 @@ namespace HedgeHog.Shared {
   }
 
 
-  public static class TradesManagedStatic {
+  public static class TradesManagerStatic {
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
       return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
@@ -128,7 +128,7 @@ namespace HedgeHog.Shared {
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static int MoneyAndPipsToLot(double Money, double pips, double PipCost, int BaseUnitSize) {
-      return TradesManagedStatic.GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
+      return TradesManagerStatic.GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
     }
     public static double MoneyAndLotToPips(ITradesManager tm, double money, double lots, string pair) {
       return MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.MinimumQuantity);
