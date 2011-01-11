@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\DTurbo\</OutputPath>
+    <OutputPath>bin\Debug_03\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -366,6 +366,7 @@
     <None Include="Store\Alice.xls" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="bin\Debug_03\" />
     <Folder Include="Controls\" />
     <Folder Include="Data\" />
   </ItemGroup>

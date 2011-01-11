@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>propui</Title>
+      <Author></Author>
+      <Description>Property connected to UI</Description>
+      <HelpUrl></HelpUrl>
+      <SnippetTypes />
+      <Keywords />
+      <Shortcut>propui</Shortcut>
+    </Header>
+    <Snippet>
+      <References />
+      <Imports />
+      <Declarations>
+        <Literal Editable="true">
+          <ID>type</ID>
+          <Type></Type>
+          <ToolTip></ToolTip>
+          <Default>bool</Default>
+          <Function></Function>
+        </Literal>
+        <Literal Editable="true">
+          <ID>member</ID>
+          <Type></Type>
+          <ToolTip></ToolTip>
+          <Default>Name</Default>
+          <Function></Function>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp" Kind="method decl" Delimiter="$"><![CDATA[    public $type$ _$member$;
+    public $type$ $member$ { get { return _$member$; } }
+$end$]]></Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>
