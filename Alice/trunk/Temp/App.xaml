@@ -1,0 +1,14 @@
+﻿<Application x:Class="Temp.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Temp"
+    xmlns:reports="clr-namespace:HedgeHog.Reports;assembly=HedgeHog.Reports"
+    ShutdownMode="OnExplicitShutdown">
+  <Application.MainWindow>
+    <l:Waver Visibility="Visible" />
+    <!--<reports:Report Visibility="Visible" />-->
+  </Application.MainWindow>
+  <Application.Resources>
+         
+    </Application.Resources>
+</Application>

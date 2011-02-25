@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dictionary>
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Left" value="6" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Top" value="509" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Height" value="525" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.MainWindow[.1]Width" value="1076" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="1" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVT]IsChecked" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDateStart]Text" value="12/1/2009" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="0" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDekay]Text" value="0." />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVP]IsChecked" value="False" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.ServerAddress]Text" value="localhost:9200/" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.AliceMode]SelectedIndex" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_1.EURUSD_1]Left" value="-2" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_1.EURUSD_1]Top" value="-2" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_1.EURUSD_1]Height" value="497" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURUSD_1.EURUSD_1]Width" value="1196" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.DelayInSecondsBox]Text" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURUSD_1.10]IsChecked" value="False" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURUSD_1.11]IsChecked" value="False" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[USDJPY_1.USDJPY_1]Left" value="1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[USDJPY_1.USDJPY_1]Top" value="-1" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[USDJPY_1.USDJPY_1]Height" value="509" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[USDJPY_1.USDJPY_1]Width" value="1194" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[USDJPY_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[USDJPY_1.DelayInSecondsBox]Text" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[USDJPY_1.10]IsChecked" value="True" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[USDJPY_1.11]IsChecked" value="False" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[GBPJPY_1.GBPJPY_1]Left" value="4" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[GBPJPY_1.GBPJPY_1]Top" value="3" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[GBPJPY_1.GBPJPY_1]Height" value="487" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[GBPJPY_1.GBPJPY_1]Width" value="1173" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[GBPJPY_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[GBPJPY_1.DelayInSecondsBox]Text" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[GBPJPY_1.10]IsChecked" value="True" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[GBPJPY_1.11]IsChecked" value="False" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURJPY_1.EURJPY_1]Left" value="-5" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURJPY_1.EURJPY_1]Top" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURJPY_1.EURJPY_1]Height" value="499" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.Corridors[EURJPY_1.EURJPY_1]Width" value="1206" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURJPY_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURJPY_1.DelayInSecondsBox]Text" value="0" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURJPY_1.10]IsChecked" value="True" />
+  <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURJPY_1.11]IsChecked" value="False" />
+</dictionary>

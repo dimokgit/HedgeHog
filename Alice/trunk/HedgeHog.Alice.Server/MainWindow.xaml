@@ -1,0 +1,25 @@
+﻿<Window x:Class="HedgeHog.Alice.Server.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:m="clr-namespace:HedgeHog.Alice.Server"
+        xmlns:settings="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+        xmlns:hhlib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+        DataContext="{x:Static Member=m:MainWindowModel.Default}"
+        Title="{Binding Title}" 
+        Top="{settings:UserSettings Default=300}" Left="{settings:UserSettings Default=200}"
+        Height="{settings:UserSettings Default=200}" Width="{settings:UserSettings Default=400}"
+        >
+    <Grid>
+      
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <StackPanel Orientation="Horizontal">
+      <hhui:AccountLoginView AccountLoginCommand="{Binding DataContext.LoginCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Grid}}" />
+      <ListBox>
+      </ListBox>
+    </StackPanel>
+  </Grid>
+</Window>

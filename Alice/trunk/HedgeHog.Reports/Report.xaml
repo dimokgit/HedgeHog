@@ -1,0 +1,67 @@
+﻿<Window x:Class="HedgeHog.Reports.Report"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hhModels="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+        xmlns:tk="http://schemas.telerik.com/2008/xaml/presentation"
+        xmlns:hhShd="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
+        xmlns:settings="clr-namespace:WpfPersist;assembly=Persistance"
+        Title="Report" 
+        Top="{settings:UserSettings}" Left="{settings:UserSettings}" 
+        Height="{settings:UserSettings}" Width="{settings:UserSettings}" 
+        mc:Ignorable="d" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        Loaded="WindowModel_Loaded"
+        Unloaded="WindowModel_Unloaded"
+        >
+  <Window.Resources>
+    <CollectionViewSource x:Key="tradeViewSource" />
+  </Window.Resources>
+  <Grid>
+      <tk:RadGridView ItemsSource="{Binding Source={StaticResource tradeViewSource}}" AutoGenerateColumns="False"
+                    ShowColumnFooters="True" ShowGroupFooters="True" Name="rgvReport"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    >
+        <tk:RadGridView.Columns>
+          <tk:GridViewDataColumn DataMemberBinding="{Binding Id}" IsReadOnly="True" />
+        <tk:GridViewDataColumn DataMemberBinding="{Binding Pair}" IsReadOnly="True" SortingState="Ascending" />
+        <tk:GridViewDataColumn DataMemberBinding="{Binding IsBuy}" IsReadOnly="True" />
+          <tk:GridViewDataColumn DataMemberBinding="{Binding AmountK}" IsReadOnly="True" TextAlignment="Right">
+            <tk:GridViewDataColumn.AggregateFunctions>
+              <tk:SumFunction Caption="Lot Σ:" SourceField="AmountK" ResultFormatString="{}{0:n0}"/>
+              <tk:AverageFunction Caption="Lot Ǻ:" SourceField="AmountK" ResultFormatString="{}{0:n0}"/>
+            </tk:GridViewDataColumn.AggregateFunctions>
+          </tk:GridViewDataColumn>
+        <tk:GridViewDataColumn DataMemberBinding="{Binding Time}" Header="Opened" IsReadOnly="True" />
+        <tk:GridViewDataColumn DataMemberBinding="{Binding TimeClose}" Header="Closed" IsReadOnly="True" />
+          <tk:GridViewDataColumn DataMemberBinding="{Binding NetPL}" IsReadOnly="True" TextAlignment="Right" >
+            <tk:GridViewDataColumn.AggregateFunctions>
+              <tk:SumFunction Caption="NPL Σ:" SourceField="NetPL" ResultFormatString="{}{0:c0}"/>
+              <tk:AverageFunction Caption="NPL Ǻ:" SourceField="NetPL" ResultFormatString="{}{0:c1}"/>
+            </tk:GridViewDataColumn.AggregateFunctions>
+          </tk:GridViewDataColumn>
+          <tk:GridViewDataColumn DataMemberBinding="{Binding GrossPL}" IsReadOnly="True" TextAlignment="Right" >
+            <tk:GridViewDataColumn.AggregateFunctions>
+              <tk:SumFunction Caption="GPL Σ:" SourceField="GrossPL" ResultFormatString="{}{0:c0}"/>
+              <tk:AverageFunction Caption="GPL Ǻ:" SourceField="GrossPL" ResultFormatString="{}{0:c1}"/>
+            </tk:GridViewDataColumn.AggregateFunctions>
+          </tk:GridViewDataColumn>
+          <tk:GridViewDataColumn DataMemberBinding="{Binding Commission}" IsReadOnly="True" TextAlignment="Right" >
+            <tk:GridViewDataColumn.AggregateFunctions>
+              <tk:SumFunction Caption="Com Σ:" SourceField="Commission" ResultFormatString="{}{0:c0}"/>
+              <tk:AverageFunction Caption="Com Ǻ:" SourceField="Commission" ResultFormatString="{}{0:c1}"/>
+            </tk:GridViewDataColumn.AggregateFunctions>
+          </tk:GridViewDataColumn>
+          <tk:GridViewDataColumn DataMemberBinding="{Binding PL,StringFormat=n1}" TextAlignment="Right" IsReadOnly="True" >
+            <tk:GridViewDataColumn.AggregateFunctions>
+              <tk:SumFunction Caption="PL Σ:" SourceField="PL" ResultFormatString="{}{0:n0}"/>
+              <tk:AverageFunction Caption="PL Ǻ:" SourceField="PL" ResultFormatString="{}{0:n0}"/>
+            </tk:GridViewDataColumn.AggregateFunctions>
+          </tk:GridViewDataColumn>
+        <tk:GridViewDataColumn DataMemberBinding="{Binding Open}" IsReadOnly="True" />
+        <tk:GridViewDataColumn DataMemberBinding="{Binding Close}" IsReadOnly="True" />
+        <tk:GridViewDataColumn DataMemberBinding="{Binding DateClose}" IsReadOnly="True" />
+          <tk:GridViewDataColumn DataMemberBinding="{Binding DaysSinceClose}" Header="DSC" ToolTip="Days Since Close" IsReadOnly="True" />
+        </tk:RadGridView.Columns>
+      </tk:RadGridView>
+  </Grid>
+</Window>

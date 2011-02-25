@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 11, 8.5" name="ForexDB">
+  <DataContextMoniker Name="/ForexDBDataContext" />
+  <nestedChildShapes>
+    <classShape Id="fb42c05a-236f-4e9e-b3d4-fa98fd69c785" absoluteBounds="2.25, 1.5, 2, 2.5752791341145831">
+      <DataClassMoniker Name="/ForexDBDataContext/t_Price" />
+      <nestedChildShapes>
+        <elementListCompartment Id="85340217-5b54-4a79-8b63-5f4336f62bfb" absoluteBounds="2.265, 1.96, 1.9700000000000002, 2.015279134114583" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="39680967-f54c-486d-9ff9-1b1d953c6b1e" absoluteBounds="5.75, 2.5, 2, 1.4248478190104168">
+      <DataClassMoniker Name="/ForexDBDataContext/t_Tick" />
+      <nestedChildShapes>
+        <elementListCompartment Id="d034a0e8-67e6-4b92-b370-d4aab220fda7" absoluteBounds="5.765, 2.96, 1.9700000000000002, 0.86484781901041674" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>

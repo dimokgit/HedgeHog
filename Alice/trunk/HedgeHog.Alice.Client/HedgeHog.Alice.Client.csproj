@@ -1,0 +1,515 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8412BC60-FB5C-4996-A7E5-BBD0D53733AA}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HedgeHog.Alice.Client</RootNamespace>
+    <AssemblyName>HedgeHog.Alice.Client</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <ExpressionBlendVersion>4.0.20421.0</ExpressionBlendVersion>
+    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <PublishUrl>http://localhost/HedgeHog.Alice.Client/</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Web</InstallFrom>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <Utf8Output>true</Utf8Output>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug_02\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <HintPath>..\..\..\..\..\..\Program Files\Microsoft.NET\Primary Interop Assemblies\Microsoft.mshtml.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="PresentationFramework.Aero" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.Composition.Initialization">
+      <HintPath>..\..\..\..\..\..\Program Files\Microsoft SDKs\Silverlight\v4.0\Libraries\Client\System.ComponentModel.Composition.Initialization.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Data.Linq" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows.Controls.DataVisualization.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Controls.Layout.Toolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.Data, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.DataVisualization, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.DataVisualization.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.Docking, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Docking.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.GridView, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.GridView.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.Input, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Input.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.Navigation, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Navigation.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.RibbonBar, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.RibbonBar.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Data, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="VIBlend.WPF.Editors">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Editors.dll</HintPath>
+    </Reference>
+    <Reference Include="VIBlend.WPF.Theme.Office2010Blue">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Blue.dll</HintPath>
+    </Reference>
+    <Reference Include="VIBlend.WPF.Theme.Office2010Silver">
+      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Silver.dll</HintPath>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WPFToolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="WPFToolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="WPFToolkit.VisualStudio.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="Classes\Converters.cs" />
+    <Compile Include="Classes\IAccountHolder.cs" />
+    <Compile Include="Classes\ReportModel.cs" />
+    <Compile Include="Classes\Static.cs" />
+    <Compile Include="Classes\StyleSelectors.cs" />
+    <Compile Include="Classes\TradeRequestManager.cs" />
+    <Compile Include="Classes\TradingAccountModel.cs" />
+    <Compile Include="Commands\CommandReference.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Commands\DelegateCommand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="CS_4_0.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CS_4_0.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\AccountLogin.Model.cs" />
+    <Compile Include="RemoteControl\ButtonImage.xaml.cs">
+      <DependentUpon>ButtonImage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RemoteControl\OrderTemplates.xaml.cs">
+      <DependentUpon>OrderTemplates.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RemoteControl\OrderTemplatesModel.cs" />
+    <Compile Include="RemoteControl\RemoteControl.xaml.cs">
+      <DependentUpon>RemoteControl.xaml</DependentUpon>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="RemoteControl\RemoteControlModel.cs" />
+    <Compile Include="Service References\TraderService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
+    <Compile Include="Classes\TraderModel.cs" />
+    <Compile Include="UI\Alice.xaml.cs">
+      <DependentUpon>Alice.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\AccountInfo.cs" />
+    <Compile Include="UI\Controls\Account\AccountLogin.xaml.cs">
+      <DependentUpon>AccountLogin.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\Account\View\SlaveAccount.xaml.cs">
+      <DependentUpon>SlaveAccount.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
+    <Compile Include="UI\Overrides\DataGrid_D.cs" />
+    <Page Include="Dictionary1.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="RemoteControl\ButtonImage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RemoteControl\OrderTemplates.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RemoteControl\RemoteControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Page>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Alice.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Controls\Account\AccountLogin.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Controls\Account\View\SlaveAccount.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Style\Aero.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\BureauBlack.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\BureauBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Classic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ExpressionDark.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ExpressionLight.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.HomeStead.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.Metallic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Luna.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\Royale.NormalColor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ShinyBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\Style\ShinyRed.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UI\TradesOnServer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\Style\WhistlerBlue.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="CS_4_0.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CS_4_0.cs</LastGenOutput>
+    </None>
+    <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
+    <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />
+    <None Include="Properties\DataSources\HedgeHog.Shared.AccountInfo.datasource" />
+    <None Include="Properties\DataSources\HedgeHog.Shared.Trade.datasource" />
+    <None Include="Properties\DataSources\Order2GoAddIn.Trade.datasource" />
+    <None Include="Properties\DataSources\TradingAccountModel.datasource" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <AppDesigner Include="Properties\" />
+    <None Include="Service References\TraderService\Arrays.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TraderService\HedgeHog.Alice.Client.TraderService.CompositeType.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\TraderService\HedgeHog.Alice.WCF.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TraderService\HedgeHog.Shared.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TraderService\service.wsdl" />
+    <None Include="Service References\TraderService\service.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TraderService\service1.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\TraderService\System.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Store\Alice.xls" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Controls\" />
+    <Folder Include="Data\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras\GalaSoft.MvvmLight.Extras.csproj">
+      <Project>{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}</Project>
+      <Name>GalaSoft.MvvmLight.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight\GalaSoft.MvvmLight.csproj">
+      <Project>{ADB28C09-8DE9-4006-80D5-74856EB4A48B}</Project>
+      <Name>GalaSoft.MvvmLight</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
+      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Name>HedgeHog.Alice.Store</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Charter\HedgeHog.Charter.csproj">
+      <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
+      <Name>HedgeHog.Charter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
+      <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
+      <Name>HedgeHog.DB</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.FXCM\HedgeHog.FXCM.csproj">
+      <Project>{18E142A3-5835-4AD3-8462-DD2D8C725756}</Project>
+      <Name>HedgeHog.FXCM</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
+      <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
+      <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
+      <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>
+      <Name>HedgeHog.Reports</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.UI\HedgeHog.UI.csproj">
+      <Project>{7D258DF9-4DD8-4BB0-82AA-42DCC61374FA}</Project>
+      <Name>HedgeHog.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
+      <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
+      <Name>Order2GoAddIn</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Persistancy\Persistance.csproj">
+      <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
+      <Name>Persistance</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PropertyGrid\WPG\WPG.csproj">
+      <Project>{022EDA6A-0B76-44C3-A530-8312C1B40030}</Project>
+      <Name>WPG</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RunWithTimeout\RunWithTimeout.csproj">
+      <Project>{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}</Project>
+      <Name>RunWithTimeout</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{3259AA49-8AA1-44D3-9025-A0B520596A8C}" />
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.SQL.Server.Compact.3.5">
+      <Visible>False</Visible>
+      <ProductName>SQL Server Compact 3.5 SP2</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Sql.Server.Express.9.2">
+      <Visible>False</Visible>
+      <ProductName>SQL Server 2005 Express Edition SP2 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\down-arrow-3675-16.png" />
+    <Resource Include="Themes\UpArrow-32.png" />
+    <Resource Include="Themes\DownArrow-32.png" />
+    <None Include="Service References\TraderService\configuration91.svcinfo" />
+    <None Include="Service References\TraderService\configuration.svcinfo" />
+    <None Include="Service References\TraderService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <Content Include="bin\Debug_01\Store\Alice.sdf" />
+    <Content Include="bin\Debug_02\Store\Alice.sdf" />
+    <Resource Include="bin\Debug_03\RadGridView.txt">
+      <SubType>Designer</SubType>
+    </Resource>
+    <Content Include="bin\DTurbo\Store\Alice.sdf" />
+    <Resource Include="Images\DownArrow-32.png" />
+    <Resource Include="Images\UpArrow-32.png" />
+    <Content Include="Store\Alice.sdf" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadataStorage Include="Service References\TraderService\" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="FXCore">
+      <Guid>{C670D13A-F27D-48E9-91F8-6E30E6D1D8C7}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
