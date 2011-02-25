@@ -17,6 +17,8 @@ using System.Windows.Data;
 using System.Threading;
 using System.IO;
 using System.Xml.Linq;
+using HedgeHog.Alice.Store;
+using HedgeHog.DB;
 
 namespace TestHH {
   /// <summary>
@@ -63,10 +65,10 @@ namespace TestHH {
       o2g = new FXCoreWrapper(core);
 
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
-      if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
+      ////if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("65245768", "1962", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      //if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -86,36 +88,58 @@ namespace TestHH {
     //
     #endregion
 
+    public void LoadOffersInfo() {
+      foreach (var offer in o2g.GetOffers()) {
+        var pair = offer.Pair;
+        var dbOffer = GlobalStorage.ForexContext.t_Offer.SingleOrDefault(o => o.Pair == pair);
+        if (dbOffer == null)
+          GlobalStorage.ForexContext.t_Offer.AddObject(new t_Offer() {
+            Pair = pair, Digits = o2g.GetDigits(pair), PipCost = offer.PipCost, MMR = offer.MMR, PipSize = o2g.GetPipSize(pair)
+          });
+        else {
+          dbOffer.PipCost = offer.PipCost;
+          dbOffer.MMR = offer.MMR;
+        }
+        GlobalStorage.ForexContext.SaveChanges();
+      }
+    }
     [TestMethod]
     [Timeout(TestTimeout.Infinite)]
     public void LoadBars() {
-      //AddTicks(0, "EUR/USD");
-      //SavePair(0, "EUR/USD");
-      var pair = "EUR/USD";// "USD/JPY"; //"EUR/USD";
-      //AddTicks(1, pair, DateTime.Now.AddYears(-3));
-      SavePair(1, pair);
-      SavePair(5, pair);
-      SavePair(15, pair);
-      SavePair(60, pair);
+      var pairsAvl = o2g.CoreFX.Instruments;
+      var pairs = new ForexEntities().v_Pair.Select(p => p.Pair).ToArray();
+      foreach( var minutes in new []{5,15,30,60})
+        foreach (var pair in pairs) {
+          o2g.Desk.SetOfferSubscription(pair, "Enabled");
+          AddTicks(minutes, pair, DateTime.Now.AddYears(-4));
+        }
+      //SavePair(5, pair);
+      //SavePair(15, pair);
+      //SavePair(60, pair);
     }
     private void AddTicks(int period, string pair,DateTime dateStart) {
-      using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
-        #region callback
-        Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
-          TestContext.WriteLine("{0}", args.Message);
-          foreach (var t in args.NewRates) {
-            var bar = context.CreateObject<t_Bar>();
-            FillBar(period, pair, bar, t);
-            context.t_Bar.AddObject(bar);
-          }
-          context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
-        };
-        #endregion
-        var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
-        o2g.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+      try {
+        using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
+          #region callback
+          Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
+            TestContext.WriteLine("{0}", args.Message);
+            foreach (var t in args.NewRates) {
+              var bar = context.CreateObject<t_Bar>();
+              FillBar(period, pair, bar, t);
+              context.t_Bar.AddObject(bar);
+            }
+            context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          };
+          #endregion
 
-        dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max();
-        o2g.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
+          var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
+          o2g.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+
+          dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max();
+          o2g.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
+        }
+      } catch (Exception exc) {
+        Debug.WriteLine(exc.ToString());
       }
     }
 
@@ -123,14 +147,14 @@ namespace TestHH {
       bar.Pair = pair;
       bar.Period = period;
       bar.StartDate = t.StartDate;
-      bar.AskHigh = t.AskHigh;
-      bar.AskLow = t.AskLow;
-      bar.AskOpen = t.AskOpen;
-      bar.AskClose = t.AskClose;
-      bar.BidHigh = t.BidHigh;
-      bar.BidLow = t.BidLow;
-      bar.BidOpen = t.BidOpen;
-      bar.BidClose = t.BidClose;
+      bar.AskHigh = (float)t.AskHigh;
+      bar.AskLow = (float)t.AskLow;
+      bar.AskOpen = (float)t.AskOpen;
+      bar.AskClose = (float)t.AskClose;
+      bar.BidHigh = (float)t.BidHigh;
+      bar.BidLow = (float)t.BidLow;
+      bar.BidOpen = (float)t.BidOpen;
+      bar.BidClose = (float)t.BidClose;
     }
 
     private void SavePair(int period, string pair) {
@@ -151,14 +175,14 @@ namespace TestHH {
           bar.Pair = pair;
           bar.Period = period;
           bar.StartDate = t.StartDate;
-          bar.AskHigh = t.AskHigh;
-          bar.AskLow = t.AskLow;
-          bar.AskOpen = t.AskOpen;
-          bar.AskClose = t.AskClose;
-          bar.BidHigh = t.BidHigh;
-          bar.BidLow = t.BidLow;
-          bar.BidOpen = t.BidOpen;
-          bar.BidClose = t.BidClose;
+          bar.AskHigh = (float)t.AskHigh;
+          bar.AskLow = (float)t.AskLow;
+          bar.AskOpen = (float)t.AskOpen;
+          bar.AskClose = (float)t.AskClose;
+          bar.BidHigh = (float)t.BidHigh;
+          bar.BidLow = (float)t.BidLow;
+          bar.BidOpen = (float)t.BidOpen;
+          bar.BidClose = (float)t.BidClose;
           context.t_Bar.AddObject(bar);
           if (i++ % 1000 == 0)
             try {
@@ -377,24 +401,6 @@ namespace TestHH {
          r => o2g.InPips(1, r.PriceCMA[0]),
          r => o2g.InPips(1, r.PriceCMA[2]),
          "C:\\Speed.csv");
-    }
-    public void LoadTicks() {
-      var ticks = o2g.GetBarsBase("EUR/USD",1, DateTime.Now.AddMonths(-4));
-      using (var context = new ForexEntities() { CommandTimeout = 6000 }) {
-        var lastDate = ticks.Min(t => t.StartDate);
-        var a = typeof(t_Tick).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
-        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE StartDate>={0}", lastDate);
-        var t_ticks = context.t_Tick;
-        ticks.ToList().ForEach(t => {
-          var tick = context.CreateObject<t_Tick>();
-          tick.Pair = o2g.Pair;
-          tick.StartDate = t.StartDate;
-          tick.Ask = t.AskOpen;
-          tick.Bid = t.BidOpen;
-          context.AddTot_Tick(tick);
-        });
-        context.SaveChanges(System.Data.Objects.SaveOptions.DetectChangesBeforeSave);
-      }
     }
 
     public void Waves() {

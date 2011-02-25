@@ -91,6 +91,123 @@ namespace HedgeHog.Bars {
       return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
     }
 
+    public static Rate CalculateMagnetLevel(this ICollection<Rate> rateForCom, bool up) {
+      var rs = rateForCom.FindRatesByPrice(rateForCom.MagnetPrice());
+      return up ? rs.OrderBy(r => r.PriceHigh).Last() : rs.OrderBy(r => r.PriceLow).First();
+    }
+
+
+    public static Rate CenterOfMass(this ICollection<Rate> rates, bool up) {
+      var coms = rates.CentersOfMass();
+      return up ? coms.OrderBy(r => r.PriceHigh).Last() : coms.OrderBy(r => r.PriceLow).First();
+    }
+    public static Rate CenterOfMass(this ICollection<Rate> rates) {
+      return rates.CentersOfMass().OrderBy(r => r.Spread).First();
+    }
+    public static Rate CenterOfMass(this Rate[][] ovelaps) {
+      return ovelaps.CentersOfMass().OrderBy(r => r.Spread).FirstOrDefault();
+    }
+    public static Rate[] CentersOfMass(this ICollection<Rate> rates) {
+      return rates.Overlaps().OrderBy(rm => rm.Length).LastOrDefault() ?? new Rate[] { };
+    }
+    public static Rate[] CentersOfMass(this Rate[][] overlaps) {
+      return overlaps.OrderBy(rm => rm.Length).Last();
+    }
+
+    public static Rate[][] Overlaps(this ICollection<Rate> rates) {
+      return rates.AsParallel().Select(rate => rates.Where(r => r.OverlapsWith(rate) != OverlapType.None).ToArray()).ToArray();
+    }
+
+    public static IEnumerable<TBar> FindRatesByPrice<TBar>(this ICollection<TBar> Rates, double price) where TBar : BarBase {
+      return Rates.Where(r => price.Between(r.PriceLow, r.PriceHigh));
+    }
+
+    #region Level
+    public static double Level<TBar>(this ICollection<TBar> rates, bool up, int iterations)where TBar:BarBase {
+      var ratesForLevel = rates.DistanceAverage(up, iterations);
+      return up ? ratesForLevel.Average(r => r.PriceHigh) : ratesForLevel.Average(r => r.PriceLow);
+    }
+    static TBar[] DistanceAverage<TBar>(this ICollection<TBar> rates, bool up, int iterations) where TBar:BarBase{
+      TBar[] ratesToReturn = rates.ToArray();
+      var clusters = new List<TBar[]>(new TBar[][] { rates.ToArray() });
+      do {
+        var cs = clusters.Flatten().DistanceAverage(up).ToList();
+        if (cs.Count == 0) break;
+        clusters = cs;
+        var ll = clusters.Select(c => (double)c.Length).Distinct().ToArray();
+        var avg = ll.Average();
+        var stDev = ll.StdDev();
+        clusters = clusters.Where(c => c.Length.Between(avg - stDev, avg + stDev)).ToList();
+      } while (--iterations > 0 && clusters.Count > 2);
+      return clusters.OrderBy(c=>c.Length).Last();
+    }
+
+    static T[] Flatten<T>(this ICollection<T[]> clusters) {
+      if (clusters.Count == 0) return new T[0];
+      if (clusters.Count == 1) return clusters.First();
+      var list = new List<T>(clusters.First());
+      clusters.Skip(1).ToList().ForEach(c => list.AddRange(c));
+      return list.ToArray();
+    }
+    static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, bool up) where TBar : BarBase {
+      return rates.DistanceAverage(up ? (Func<TBar, double>)(r => r.PriceHigh) : r => r.PriceLow);
+    }
+    static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      Func<LinkedListNode<TBar>, double> getDistance = node =>
+        Math.Min((getPrice(node.Value) - getPrice(node.Previous.Value)).Abs(), (getPrice(node.Value) - getPrice(node.Next.Value)).Abs());
+      var nodeStart = new LinkedList<TBar>(rates.OrderBy(getPrice).ToArray()).First.Next;
+      var distances = new List<double>();
+      while (nodeStart.Next != null) {
+        distances.Add(getDistance(nodeStart));
+        nodeStart = nodeStart.Next;
+      }
+      nodeStart = nodeStart.List.First.Next;
+      var distanceAverage = distances.Average();
+      var cluster = new List<TBar>();
+      while (nodeStart.Next != null) {
+        var dist = getDistance(nodeStart);
+        if (dist <= distanceAverage)
+          cluster.Add(nodeStart.Value);
+        else {
+          if (cluster.Count > 0) {
+            yield return cluster.ToArray();
+            cluster.Clear();
+          }
+        }
+        nodeStart = nodeStart.Next;
+      }
+    }
+    #endregion
+
+    public static double MagnetPrice(this ICollection<Rate> rates) {
+      var priceHeights = "".Select(o => new { price = 0.0, height = 0.0 }).ToList();
+      var ms = rates.Take(rates.Count - 1)
+        .Select(r1 => rates.Where(r2 => r2 > r1)
+          .Select(r3 => new {
+            price = (r1.PriceHigh + r3.PriceLow) / 2,
+            height = new[] { (r1.PriceLow - r3.PriceLow).Abs(), (r1.PriceHigh - r3.PriceHigh).Abs(), (r1.PriceHigh - r3.PriceLow).Abs(), (r1.PriceLow - r3.PriceHigh).Abs() }.Min()
+          }).OrderBy(m=>m.price).ToArray()).ToList();
+      ms.ForEach(m => priceHeights.AddRange(m));
+      priceHeights.Sort((ph1, ph2) => ph1.price.CompareTo(ph2.price));
+      var heightIterations = 6;
+      var minimumHeight = priceHeights.Select(m => m.height).ToArray().AverageByIterations(heightIterations, true).Average();
+      priceHeights.RemoveAll(m => m.height > minimumHeight);
+      var prices = priceHeights.Select(ph => ph.price).Distinct().ToArray();
+
+      var priceDistances = new List<double>();
+      var pds = prices.Take(prices.Count() - 1)
+        .Select(p1 => prices.Where(p2 => p2 != p1)
+          .Select(p3 => new {
+            price1 = p1, price2 = p3, distance = (p1 - p3).Abs()
+          }).ToList()).ToList();
+      pds.ForEach(pd => priceDistances.AddRange(pd.Select(a=>a.distance)));
+      var distanceIterations = 5;
+      var minimumDistance = priceDistances.AverageByIterations(distanceIterations, true).Average();
+      var distanceCount = priceDistances.Count(pd => pd < minimumDistance);
+      pds.ForEach(pd => pd.RemoveAll(pd1 => pd1.distance > minimumDistance));
+      pds.Sort((l1, l2) => l2.Count.CompareTo(l1.Count));
+      return pds[0][0].price1;
+    }
     public static void GetCorridorHeights(this IEnumerable<Rate> rates, Func<Rate, double> priceLine, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, Func<double, double, bool> avgCompare, int minimumCount, int iterations, out double heightAvgUp, out double heightAvgDown) {
       rates.GetCorridorHeights(new Rate[0], new Rate[0], priceLine, priceHigh, priceLow, avgCompare, minimumCount, iterations, out heightAvgUp, out heightAvgDown);
     }
@@ -222,6 +339,7 @@ namespace HedgeHog.Bars {
       var avg = values.Count() == 0 ? 0 : values.Average(getPrice);
       for (int i = 1; i < iterations && values.Count() > 0; i++) {
         values = values.Where(r => compare(getPrice(r), avg)).ToArray();
+        if (values.Count == 0) break;
         avg = values.Average(getPrice);
       }
       average = avg;
@@ -274,6 +392,12 @@ namespace HedgeHog.Bars {
     }
     #endregion
 
+    public static Rate High(this ICollection<Rate> rates) {
+      return rates.OrderBy(r => r.PriceAvg).Last();
+    }
+    public static Rate Low(this ICollection<Rate> rates) {
+      return rates.OrderBy(r => r.PriceAvg).First();
+    }
     public static double Height(this ICollection<Rate> rates) {
       return rates.Max(r => r.PriceAvg) - rates.Min(r => r.PriceAvg);
     }

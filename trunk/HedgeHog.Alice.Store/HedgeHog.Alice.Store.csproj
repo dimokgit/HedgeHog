@@ -80,20 +80,20 @@
       <DependentUpon>CS_4_0.tt</DependentUpon>
     </Compile>
     <Compile Include="Events.cs" />
-    <Compile Include="Forex.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Forex.edmx</DependentUpon>
-    </Compile>
     <Compile Include="GannAnglesEdit.xaml.cs">
       <DependentUpon>GannAnglesEdit.xaml</DependentUpon>
     </Compile>
     <Compile Include="GlobalStorage.cs" />
     <Compile Include="IMainModel.cs" />
+    <Compile Include="PriceHistory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RemoteControlModelBase.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
+      <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
+      <Name>HedgeHog.DB</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
@@ -121,10 +121,6 @@
     <None Include="App.Config">
       <SubType>Designer</SubType>
     </None>
-    <EntityDeploy Include="Forex.edmx">
-      <Generator>EntityModelCodeGenerator</Generator>
-      <LastGenOutput>Forex.Designer.cs</LastGenOutput>
-    </EntityDeploy>
     <None Include="CS_4_0.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CS_4_0.cs</LastGenOutput>

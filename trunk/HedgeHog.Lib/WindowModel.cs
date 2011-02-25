@@ -86,4 +86,21 @@ namespace HedgeHog.Models {
     }
     #endregion
   }
+  public class ObservableValue<TValue> : ModelBase{
+    private TValue _Value;
+    public TValue Value {
+      get { return _Value; }
+      set {
+        if (_Value.Equals(value)) return;
+        _Value = value;
+        OnPropertyChanged("Value");
+      }
+    }
+    public ObservableValue() {
+    }
+    ~ObservableValue() {
+    }
+
+  }
+
 }

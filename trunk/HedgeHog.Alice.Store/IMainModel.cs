@@ -18,7 +18,7 @@ namespace HedgeHog.Alice.Store {
     string TradingMacroName { get; }
     double CurrentLoss { set; }
     void AddCosedTrade(Trade trade);
-    double CommissionByTrade(Trade trade);
+    double CommissionByTrade(Trade trades);
     bool IsInVirtualTrading { get; set; }
     DateTime VirtualDateStart { get; set; }
     TradingLogin LoginInfo { get; }

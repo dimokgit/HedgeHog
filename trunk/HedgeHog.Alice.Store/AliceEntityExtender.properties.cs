@@ -3,8 +3,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.ComponentModel;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
+  public partial class SuppRes {
+    private int _TradesCount;
+    public int TradesCount {
+      get { return _TradesCount; }
+      set {
+        if (_TradesCount != value) {
+          _TradesCount = value;
+          OnPropertyChanged("TradesCount");
+        }
+      }
+    }
+
+    private int _Index;
+    public int Index {
+      get { return _Index; }
+      set {
+        if (_Index != value) {
+          _Index = value;
+          OnPropertyChanged("Index");
+        }
+      }
+    }
+  }
   public partial class TradingMacro {
 
     GannAngles _GannAnglesList;
@@ -21,19 +45,97 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Spread Short/Long Treshold")]
+    [DisplayName("StDev Levels")]
+    [Description("StDev Levels - .5,2,2.5")]
     [Category(categoryCorridor)]
+    public string FibMax_ {
+      get { return FibMax; }
+      set { FibMax = value; }
+    }
+
+    [DisplayName("Streatch Rates")]
+    [Description("Streatch Rates to Corridor")]
+    [Category(categoryCorridor)]
+    public bool DoStreatchRates_ {
+      get { return DoStreatchRates; }
+      set { DoStreatchRates = value; }
+    }
+
+    [DisplayName("Spread Short/Long Treshold")]
+    [Category(categoryXXX)]
     public double SpreadShortToLongTreshold_ {
       get { return SpreadShortToLongTreshold; }
       set { SpreadShortToLongTreshold = value; }
     }
 
-    [DisplayName("Corridor Height Multiplier")]
+    [DisplayName("SuppRes Level Type")]
     [Category(categoryTrading)]
+    public LevelType LevelType_ {
+      get { return (LevelType)LevelType; }
+      set { LevelType = (int)value; }
+    }
+
+    [DisplayName("SuppRes Levels Count")]
+    [Category(categoryCorridor)]
+    public int SuppResLevelsCount_ {
+      get { return SuppResLevelsCount; }
+      set { SuppResLevelsCount = value; }
+    }
+
+    [DisplayName("SuppRes Level Type Iterations")]
+    [Category(categoryTrading)]
+    public int IterationsForSuppResLevels_ {
+      get { return IterationsForSuppResLevels; }
+      set { IterationsForSuppResLevels = value; }
+    }
+
+
+    [DisplayName("Corridor Height Multiplier")]
+    [Category(categoryXXX)]
     [Description("Ex: CorrUp = PriceRegr + Up + corrHeight*X")]
     public double CorridorHeightMultiplier {
       get { return CorridornessMin; }
       set { CorridornessMin = value; }
+    }
+
+    [DisplayName("Streach Trading Distance")]
+    [Category(categoryTrading)]
+    [Description("Ex: PL < tradingDistance * (X ? trades.Length:1)")]
+    public bool StreachTradingDistance_ {
+      get { return StreachTradingDistance; }
+      set { StreachTradingDistance = value; }
+    }
+
+    [DisplayName("Close On Open Only")]
+    [Category(categoryTrading)]
+    [Description("Close position only when opposite opens.")]
+    public bool CloseOnOpen_ {
+      get { return CloseOnOpen; }
+      set { CloseOnOpen = value; }
+    }
+
+    [DisplayName("Close On Profit")]
+    [Category(categoryTrading)]
+    [Description("Ex: if( PL > Limit) CloseTrade()")]
+    public bool CloseOnProfit_ {
+      get { return CloseOnProfit; }
+      set { CloseOnProfit = value; }
+    }
+
+    [DisplayName("Close On Profit Only")]
+    [Category(categoryTrading)]
+    [Description("Ex: if( PL > Limit) OpenTrade()")]
+    public bool CloseOnProfitOnly_ {
+      get { return CloseOnProfitOnly; }
+      set { CloseOnProfitOnly = value; }
+    }
+
+    [DisplayName("Power Volatility Minimum")]
+    [Category(categoryTrading)]
+    [Description("Ex: CanTrade = Power > (Power-Avg)/StDev")]
+    public double PowerVolatilityMinimum_ {
+      get { return PowerVolatilityMinimum; }
+      set { PowerVolatilityMinimum = value; }
     }
 
     [DisplayName("Reverse Strategy")]
@@ -79,7 +181,7 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [Category(categoryTrading)]
+    [Category(categoryXXX)]
     [DisplayName("Correlation Treshold")]
     [Description("Ex: if(Corr >  X) return sell")]
     public double CorrelationTreshold_ {
@@ -87,7 +189,7 @@ namespace HedgeHog.Alice.Store {
       set { CorrelationTreshold = value; }
     }
 
-    [Category(categoryTrading)]
+    [Category(categoryCorridor)]
     [DisplayName("Range Ratio For TradeLimit")]
     [Description("Ex:Exit when PL > Range * X")]
     public double RangeRatioForTradeLimit_ {
@@ -95,7 +197,7 @@ namespace HedgeHog.Alice.Store {
       set { RangeRatioForTradeLimit = value; }
     }
 
-    [Category(categoryTrading)]
+    [Category(categoryCorridor)]
     [DisplayName("Range Ratio For TradeStop")]
     [Description("Ex:Exit when PL < -Range * X")]
     public double RangeRatioForTradeStop_ {
@@ -126,15 +228,15 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Gann Angles Offset in Rads")]
-    [Category(categoryCorridor)]
+    //[DisplayName("Gann Angles Offset in Rads")]
+    //[Category(categoryCorridor)]
     public double GannAnglesOffset_ {
       get { return GannAnglesOffset.GetValueOrDefault(); }
       set { GannAnglesOffset = value; }
     }
 
-    [DisplayName("Gann Angles")]
-    [Category(categoryCorridor)]
+    //[DisplayName("Gann Angles")]
+    //[Category(categoryCorridor)]
     public string GannAngles_ {
       get { return GannAngles; }
       set { GannAngles = value; }
@@ -171,7 +273,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Corr Height/Spread - Low")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX)]
     [Description("Lock buy/sell when H/S < X/10")]
     public double CorridorHeightToSpreadRatioLow {
       get { return BarPeriodsLow / 10.0; }
@@ -179,7 +281,7 @@ namespace HedgeHog.Alice.Store {
 
     }
     [DisplayName("Corr Height/Spread - High")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX)]
     [Description("Buy/Sell when locked && H/S > X/10")]
     public double CorridorHeightToSpreadRatioHigh {
       get { return BarPeriodsHigh / 10.0; }
@@ -209,15 +311,18 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Power Row Offset")]
     [Description("Ex: Speed = Spread / (row + X)")]
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     public int PowerRowOffset_ {
       get { return PowerRowOffset; }
       set { PowerRowOffset = value; }
     }
 
-    [Category(categoryXXX)]
+    [Category(categoryCorridor)]
     [DisplayName("Is SuppRes Manual")]
-    public bool IsSuppResManual { get; set; }
+    public bool IsSuppResManual_ {
+      get { return IsSuppResManual; }
+      set { IsSuppResManual = value; }
+    }
 
     [DisplayName("Is Gann Angles Manual")]
     [Category(categoryCorridor)]
@@ -226,7 +331,19 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
+    [DisplayName("Bars Period")]
+    [Category(categoryCorridor)]
+    public BarsPeriodType LimitBar_ {
+      get { return (BarsPeriodType)LimitBar; }
+      set { LimitBar = (int)value; }
+    }
 
+    [DisplayName("Bars Minutes(45,360,..)")]
+    [Category(categoryCorridor)]
+    public int BarMinutes_ {
+      get { return CorridorBarMinutes; }
+      set { CorridorBarMinutes = value; }
+    }
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
   }

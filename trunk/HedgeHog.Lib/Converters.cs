@@ -33,6 +33,39 @@ namespace HedgeHog {
   }
 
 
+  public class AnyToVisibilityConverter : IValueConverter {
+    private static readonly AnyToVisibilityConverter defaultInstance = new AnyToVisibilityConverter();
+    public static AnyToVisibilityConverter Default { get { return defaultInstance; } }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="targetType"></param>
+    /// <param name="parameter"></param>
+    /// <param name="culture"></param>
+    /// <returns></returns>
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      var parameters = (parameter + "").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+      if (parameters.Count < 2) {
+        parameters.Clear();
+        parameters.AddRange(new[] { Visibility.Collapsed + "", Visibility.Collapsed + "", Visibility.Visible + "" });
+      }
+      bool b;
+      if (bool.TryParse(value + "", out b)) {
+        Visibility visGood = Visibility.Visible;
+        Enum.TryParse<Visibility>(b ? parameters[2] : parameters[1], out visGood);
+        return visGood;
+      }
+      Visibility visBad = Visibility.Visible;
+      Enum.TryParse<Visibility>(parameters[0], out visBad);
+      return visBad;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotImplementedException();
+    }
+  }
+
   public class NumberToStringAutoFormatConverter : IValueConverter {
     private static readonly NumberToStringAutoFormatConverter defaultInstance = new NumberToStringAutoFormatConverter();
     public static NumberToStringAutoFormatConverter Default { get { return defaultInstance; } }

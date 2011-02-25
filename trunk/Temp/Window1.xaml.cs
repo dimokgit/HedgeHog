@@ -19,6 +19,8 @@ using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;
 using Temp.Models;
+using HedgeHog.Shared;
+using HedgeHog.DB;
 
 namespace Temp {
   /// <summary>
@@ -139,7 +141,7 @@ namespace Temp {
         AddLog("Done.");
         return;
         var statName = "MinuteRsi";
-        var context = new Temp.Models.ForexEntities();
+        var context = new ForexEntities();
         var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
         context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
         var stats = context.t_Stat;
@@ -153,7 +155,7 @@ namespace Temp {
         context.SaveChanges();
       }
     }
-    void fw_TradeAdded(HedgeHog.Shared.Trade trade) {
+    void fw_TradeAdded(object sender,TradeEventArgs e) {
       ShowTables();
     }
 

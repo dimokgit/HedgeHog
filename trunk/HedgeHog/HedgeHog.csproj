@@ -73,6 +73,7 @@
       <HintPath>..\..\..\..\..\..\Program Files\Laurent Bugnion (GalaSoft)\Mvvm Light Toolkit\Binaries\WPF4\GalaSoft.MvvmLight.WPF4.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>

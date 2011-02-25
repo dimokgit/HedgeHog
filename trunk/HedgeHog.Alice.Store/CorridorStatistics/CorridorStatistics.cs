@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
 using System.Diagnostics;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
@@ -342,6 +343,7 @@ namespace HedgeHog.Alice.Store {
       return (or == buy || ob == buy) ? buy : null;
     }
     public bool? OpenRange(double level, double m) {
+
       if (PriceCmaDiffHigh.HasValue && InPips(PriceCmaDiffHigh.Value).Between(-level, m)) return GetSignal(false);
       if (PriceCmaDiffLow.HasValue && InPips(PriceCmaDiffLow.Value).Between(-m, level)) return GetSignal(true);
       return null;

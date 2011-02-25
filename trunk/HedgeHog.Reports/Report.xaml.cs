@@ -60,8 +60,13 @@ namespace HedgeHog.Reports {
     #region Ctor
     public Report(FXCoreWrapper fw) {
       this.fw = fw;
-      InitializeComponent();
+      try {
+        InitializeComponent();
+      } catch (Exception exc) {
+        throw;
+      }
     }
+
     public Report() {
       Container.SatisfyImportsOnce(this);
 

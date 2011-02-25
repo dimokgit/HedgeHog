@@ -190,16 +190,26 @@ namespace HedgeHog {
 
     }
 
-    public class CmaWalker {
+    public class CmaWalker:Models.ModelBase {
+      public double Current { get; set; }
+      public double Difference { get { return Last - Prev; } }
+      public double Last { get { return CmaArray.Last().GetValueOrDefault(); } }
+      public double Prev { get { return CmaArray.Length == 1 ? Current : CmaArray[CmaArray.Length - 2].GetValueOrDefault(); } }
       public double?[] CmaArray;
       public CmaWalker(int cmaCount) {
+        if (cmaCount < 1) throw new ArgumentException("Array length must be more then zero.", "cmaCount");
         this.CmaArray = new double?[cmaCount];
       }
       public void Add(double value, double cmaPeriod) {
+        Current = value;
         for (var i = 0; i < CmaArray.Length; i++) {
           CmaArray[i] = Lib.CMA(CmaArray[i], cmaPeriod, value);
           value = CmaArray[i].Value;
         }
+        OnPropertyChanged("Difference");
+        OnPropertyChanged("Current");
+        OnPropertyChanged("Last");
+        OnPropertyChanged("Prev");
       }
       public void Reset(int newPeriod) {
         var offset = newPeriod - CmaArray.Length;

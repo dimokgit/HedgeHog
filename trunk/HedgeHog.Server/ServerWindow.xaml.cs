@@ -28,6 +28,7 @@ using HedgeHog.Bars;
 using HedgeHog.Rsi;
 using HedgeHog.Models;
 using HedgeHog.Shared;
+using HedgeHog.alglib;
 
 namespace HedgeHog {
   public sealed partial class ServerWindow : WindowModel, IServer, IDisposable {
@@ -359,8 +360,8 @@ namespace HedgeHog {
     public double Angle1 { get { return A1.Angle(); } }
     public double Angle { get { return A.Angle(); } }
     
-    public double AngleRounded { get { return Math.Round(Angle / fw.PointSize, 2); } }
-    public double Angle1Rounded { get { return Math.Round(Angle1 / fw.PointSize, 2); } }
+    public double AngleRounded { get { return Math.Round(Angle / fw.GetPipSize(Pair), 2); } }
+    public double Angle1Rounded { get { return Math.Round(Angle1 / fw.GetPipSize(Pair), 2); } }
 
     public bool? AngleColor { get { return A == 0 ? (bool?)null : A > 0; } }
     public bool? Angle1Color { get { return A1 == 0 ? (bool?)null : A1 > 0; } }
@@ -510,7 +511,7 @@ namespace HedgeHog {
       InitializeComponent();
       System.IO.File.Delete(logFileName);
       Closing += new System.ComponentModel.CancelEventHandler(Window_Closing);
-      coreFX.LoggedInEvent += new EventHandler<EventArgs>(coreFX_LoggedInEvent);
+      coreFX.LoggedInEvent += coreFX_LoggedInEvent;
       coreFX.LoginError += new Order2GoAddIn.CoreFX.LoginErrorHandler(coreFX_LoginError);
       fw.Pair = cmbPair.Text;
       fw.PriceChanged += fxCoreWrapper_EURJPY_PriceChanged;
@@ -577,7 +578,7 @@ namespace HedgeHog {
         //if ((_ticks.Last().StartDate - ticks.Last().StartDate).Duration().TotalSeconds > 30) {
         //  //fw.GetBars(ratePeriod, StartDate, EndDate, ref ticks);
         {
-          var ts = _ticks.ToArray().AddUp(fw.GetTicks(550)).ToList();
+          var ts = _ticks.ToArray().AddUp(fw.GetTicks(Pair, 550)).ToList();
           lock (_ticks) {
             Ticks = ts;
             //}
@@ -597,7 +598,7 @@ namespace HedgeHog {
     }
 
     private List<Rate> LoadTickByCount() {
-      return fw.GetTicks(ui.ticksBack).OfType<Rate>().OrderBars().ToList();
+      return fw.GetTicks(Pair, ui.ticksBack).OfType<Rate>().OrderBars().ToList();
     }
 
 
@@ -911,8 +912,8 @@ namespace HedgeHog {
           #endregion
 
           #region Overlaps
-          ticksByMinute.FillOverlaps();
-          ticksByMinute1.FillOverlaps();
+          ticksByMinute.FillOverlaps(TimeSpan.FromMinutes(1));
+          ticksByMinute1.FillOverlaps(TimeSpan.FromMinutes(1));
           OverlapAverage = TimeSpan.FromSeconds(Lib.CMA(OverlapAverage.TotalSeconds, 0, cmaPeriod,
             Math.Min(ticksByMinute.Average(r => r.Overlap.TotalSeconds), ticksByMinute1.Average(r => r.Overlap.TotalSeconds)))
             );
@@ -1212,8 +1213,8 @@ namespace HedgeHog {
       var ts = ticksRsi.Where(r => GetRsiValue(r).GetValueOrDefault(50) != 50 ).ToArray();
       var x = ts.Select(r => r.PriceClose).ToArray();
       var y = ts.Select(r=>GetRsiValue(r).Value).ToArray();
-      corr1 = HedgeHog.correlation.pearsoncorrelation(ref x, ref y, x.Length);
-      corr2 = HedgeHog.correlation.spearmanrankcorrelation(x, y, x.Length);
+      corr1 = correlation.pearsoncorrelation(ref x, ref y, x.Length);
+      corr2 = correlation.spearmanrankcorrelation(x, y, x.Length);
     }
 
     void GetMinutesBack_() {
@@ -1490,7 +1491,7 @@ namespace HedgeHog {
         RatesHigh.Where(r => r.StartDate < endTime).ToList().ForEach(r => RatesHigh.Remove(r));
         endTime = ServerTime.Round(1).AddMinutes(-1);
         do {
-          fw.GetBars(fw.Pair, 1, startTime, endTime, ref RatesHigh);
+          fw.GetBars(fw.Pair, 1, 0,startTime, endTime, RatesHigh);
           if (RatesHigh.Count > 0 && (RatesHigh.Max(r => r.StartDate) - RatesHigh.Min(r => r.StartDate)).TotalHours >= ui.highMinutesHoursBack) break;
           startTime = startTime.AddHours(-1);
         } while (true);
@@ -1727,7 +1728,7 @@ namespace HedgeHog {
 
         #region Density Functions
         var densityFoo_0 = new Func<bool, double>((buy) => {
-          return Math.Round(Math.Max(Math.Max(PeakVolt.AverageAsk - ValleyVolt.AverageBid, fw.GetMaxDistance(buy)) / fw.PointSize, SpreadAverage5MinInPips), 1);
+          return Math.Round(Math.Max(Math.Max(PeakVolt.AverageAsk - ValleyVolt.AverageBid, fw.GetMaxDistance(buy)) / fw.GetPipSize(Pair), SpreadAverage5MinInPips), 1);
         });
         var densityFoo_1 = new Func<bool, double>((buy) => {
           return fw.InPips(Math.Max(fw.GetMaxDistance(buy), SpreadByBarPeriod(tr.highBarMinutes, false)), 1);
@@ -2140,7 +2141,8 @@ namespace HedgeHog {
 
 
     #region FX Event Handlers
-    void fxCoreWrapper_EURJPY_PriceChanged(Price price) {
+    void fxCoreWrapper_EURJPY_PriceChanged(object sender,PriceChangedEventArgs e) {
+      Price price = e.Price;
       Price = price;
       lock (_ticks) {
         ProcessPrice(price, ref _ticks);
@@ -2152,11 +2154,11 @@ namespace HedgeHog {
     void coreFX_LoginError(Exception exc) {
       Log = exc;
     }
-    void coreFX_LoggedInEvent(object sender, EventArgs e) {
+    void coreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
       Log = "User " + ui.Account + " logged in.";
       CorridorsWindow_EURJPY.Show();
       Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
-        fxCoreWrapper_EURJPY_PriceChanged(null);
+        fxCoreWrapper_EURJPY_PriceChanged(null, new PriceChangedEventArgs(null, null, null));
       }));
     }
     #endregion

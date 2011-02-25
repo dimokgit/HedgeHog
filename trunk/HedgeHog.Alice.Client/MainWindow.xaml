@@ -283,15 +283,16 @@
         <ComboBox SelectedValue="{Binding TradingAccount}" SelectedIndex="{state:UserSettings}" Name="TradingAccount" ItemsSource="{Binding TradingAccounts}" />
         <Label ToolTip="Virtual Trading">VT:</Label>
         <u:CheckBox2 IsChecked2="{Binding IsInVirtualTrading,Mode=TwoWay}" IsChecked="{state:UserSettings}" Name="chkVT"/>
-        <u:TextBox2 Text2="{Binding VirtualDateStart,Mode=TwoWay,FallbackValue='1/1/2000',IsAsync=True}" Text="{state:UserSettings Default='1/1/2000'}" Name="VitrualDateStart" MinWidth="30" />
-        <u:TextBox2 Text2="{Binding VirtualMonthsToTest,Mode=TwoWay,FallbackValue=0,IsAsync=True}" Text="{state:UserSettings Default=0}" Name="VitrualMonthsToTest" MinWidth="20" />
-        <u:TextBox2 Text2="{Binding VirtualDelay,Mode=TwoWay,FallbackValue=0,IsAsync=True}" Text="{state:UserSettings Default=0}" Name="VitrualDekay" MinWidth="20" />
+        <u:TextBox2 Text2="{Binding VirtualDateStart,Mode=TwoWay,FallbackValue='1/1/2000'}" Text="{state:UserSettings Default='1/1/2000'}" Name="VitrualDateStart" MinWidth="30" />
+        <u:TextBox2 Text2="{Binding VirtualMonthsToTest,Mode=TwoWay,FallbackValue=0}" Text="{state:UserSettings Default=0}" Name="VitrualMonthsToTest" MinWidth="20" />
+        <u:TextBox2 Text2="{Binding VirtualDelay,Mode=TwoWay,FallbackValue=0}" Text="{state:UserSettings Default=0}" Name="VitrualDekay" MinWidth="20" />
         <Button Command="{Binding StepBackCommand}" Content="_&lt;&lt;"></Button>
-        <u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay,IsAsync=True}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
+        <u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
         <Button Command="{Binding StepForwardCommand}" Content=">_>"></Button>
         <CheckBox IsChecked="{Binding VirtualClearTest,Mode=TwoWay}" Name="chkClearTest" ToolTip="Clear Previouse Test Results"/>
         <Button Command="{Binding BackTestCommand}">Test</Button>
         <Button Command="{Binding ReportCommand}">Report</Button>
+        <Button Command="{Binding LoadHistoryCommand}">History</Button>
         <TextBlock>Status:</TextBlock>
         <TextBlock Text="{Binding SessionStatus}"/>
         
@@ -312,7 +313,7 @@
         <Expander Header="Accounts Manager" IsExpanded="True">
           <StackPanel>
             <!--Slave Account Infos-->
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding TradingAccountsList}" Style="{StaticResource ReadOnlyDataGridStyle}">
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding TradingAccountsList}">
               <DataGrid.Columns>
                 <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"></DataGridTemplateColumn>
                 <DataGridTemplateColumn>

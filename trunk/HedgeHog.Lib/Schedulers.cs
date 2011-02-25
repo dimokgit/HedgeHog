@@ -14,7 +14,8 @@ namespace HedgeHog {
     public class TimerErrorException : EventArgs {
       public bool CancelFinishedEvent;
       public Exception Exception;
-      public TimerErrorException(Exception exception,bool cancelFinishedEvent):this(exception) {
+      public TimerErrorException(Exception exception, bool cancelFinishedEvent)
+        : this(exception) {
         CancelFinishedEvent = cancelFinishedEvent;
       }
       public TimerErrorException(Exception exception) {
@@ -43,7 +44,7 @@ namespace HedgeHog {
       get { return _command; }
       set {
         _command = value;
-        if( !_time.IsEnabled )
+        if (!_time.IsEnabled)
           _time.Start();
       }
     }
@@ -54,12 +55,12 @@ namespace HedgeHog {
     public Scheduler() : this(Application.Current.Dispatcher) { }
     public Scheduler(Dispatcher dispatcher)
       : this(dispatcher, new TimeSpan(0, 0, 0, 0, 100)) {
-      if(dispatcher!=null)
-      _time = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 100), DispatcherPriority.Background, _time_Tick, dispatcher);
+      if (dispatcher != null)
+        _time = new DispatcherTimer(new TimeSpan(0, 0, 0, 0, 100), DispatcherPriority.Background, _time_Tick, dispatcher);
     }
     public Scheduler(Dispatcher dispatcher, TimeSpan delay) {
-      if( dispatcher !=null)
-      _time = new DispatcherTimer(delay, DispatcherPriority.Background, _time_Tick, dispatcher);
+      if (dispatcher != null)
+        _time = new DispatcherTimer(delay, DispatcherPriority.Background, _time_Tick, dispatcher);
     }
 
     public void TryRun(CommandDelegate command) {
@@ -81,9 +82,9 @@ namespace HedgeHog {
           t.Stop();
         }));
         IsRunning = true;
-        if( Command!=null) Command();
+        if (Command != null) Command();
       } catch (Exception exc) {
-        if (Error != null) Error(this,tex = new TimerErrorException(exc));
+        if (Error != null) Error(this, tex = new TimerErrorException(exc));
       } finally {
         IsRunning = false;
         if (tex == null || !tex.CancelFinishedEvent) RaiseFinished();
@@ -92,16 +93,21 @@ namespace HedgeHog {
   }
 
   public class SchedulersDispenser<T> : Dictionary<T, Scheduler> {
+    object _locker = new object();
     public Scheduler Get(T key) {
-      if (!this.ContainsKey(key)) this.Add(key, new Scheduler());
-      return this[key];
+      lock (_locker) {
+        if (!this.ContainsKey(key)) this.Add(key, new Scheduler());
+        return this[key];
+      }
     }
-    public void Run(T key, Action runner,bool runSync = false) {
+    public void Run(T key, Action runner, bool runSync = false) {
       if (runSync) runner();
       else {
-        var ts = Get(key);
-        if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
-        else ts.Command = () => runner();
+        lock (_locker) {
+          var ts = Get(key);
+          if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
+          else ts.Command = () => runner();
+        }
       }
     }
   }
@@ -168,7 +174,7 @@ namespace HedgeHog {
     public CommandDelegate Command { set { Init(_command = value); } }
     public void TryRun(CommandDelegate command) {
       if (IsRunning) return;
-      Init(_command); 
+      Init(_command);
     }
     public void Run() { Init(_command); }
     public void Init(CommandDelegate command) { Init(command, TimeSpan.MinValue); }
@@ -195,18 +201,21 @@ namespace HedgeHog {
       },
       null, Delay, _period);
     }
-    public ThreadScheduler(EventHandler<TimerErrorException> error) : this(TimeSpan.FromMilliseconds(0)) {
+    public ThreadScheduler(EventHandler<TimerErrorException> error)
+      : this(TimeSpan.FromMilliseconds(0)) {
       Error += error;
     }
-    public ThreadScheduler(TimeSpan delay, EventHandler<TimerErrorException> error) : this(delay) {
+    public ThreadScheduler(TimeSpan delay, EventHandler<TimerErrorException> error)
+      : this(delay) {
       Error += error;
     }
     public ThreadScheduler() : this(zero, infinity) { }
     public ThreadScheduler(TimeSpan delay) : this(delay, infinity) { }
     public ThreadScheduler(TimeSpan delay, TimeSpan period)
-      : this(delay, period, null,null) {
+      : this(delay, period, null, null) {
     }
-    public ThreadScheduler(TimeSpan delay, TimeSpan period, CommandDelegate command)      : this(delay, period, command,null) {
+    public ThreadScheduler(TimeSpan delay, TimeSpan period, CommandDelegate command)
+      : this(delay, period, command, null) {
     }
     public ThreadScheduler(CommandDelegate command, EventHandler<TimerErrorException> error) : this(zero, infinity, command, error) { }
     public ThreadScheduler(TimeSpan delay, TimeSpan period, CommandDelegate command, EventHandler<TimerErrorException> error) {
@@ -239,7 +248,7 @@ namespace HedgeHog {
     }
     public void Run(string key, Action runner) {
       var ts = Get(key);
-      if (ts.IsRunning)return;// ts.SetFinished((s, ea) => runner());
+      if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
       else ts.Command = () => runner();
     }
   }
@@ -247,11 +256,14 @@ namespace HedgeHog {
   public class BackgroundWorkerDispenser<T> : Dictionary<T, BackgroundWorker> {
     TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created, TaskStatus.Faulted };
     bool IsDone(BackgroundWorker task) { return !task.IsBusy; }
-    BackgroundWorker Get(T key, Action runner) {
-      if (!this.ContainsKey(key)) {
-        var bw = new BackgroundWorker();
-        bw.DoWork += new DoWorkEventHandler(DoWork);
-        this.Add(key, bw);
+    object locker = new object();
+    BackgroundWorker Get(T key) {
+      lock (locker) {
+        if (!this.ContainsKey(key)) {
+          var bw = new BackgroundWorker();
+          bw.DoWork += new DoWorkEventHandler(DoWork);
+          this.Add(key, bw);
+        }
       }
       return this[key];
     }
@@ -264,13 +276,13 @@ namespace HedgeHog {
       Run(key, runner, e => { });
     }
     public void Run(T key, Action runner, ThreadPriority threadPriority) {
-      Run(key, runner, e => { },threadPriority);
+      Run(key, runner, e => { }, threadPriority);
     }
     public void Run(T key, Action runner, Action<Exception> log) {
-      Run(key, false, runner, log,false, ThreadPriority.Lowest);
+      Run(key, false, runner, log, false, ThreadPriority.Lowest);
     }
     public void Run(T key, Action runner, Action<Exception> log, ThreadPriority threadPriority) {
-      Run(key, false, runner, log,threadPriority);
+      Run(key, false, runner, log, threadPriority);
     }
     public void Run(T key, bool runSync, Action runner, Action<Exception> log) {
       Run(key, runSync, runner, log, false, ThreadPriority.Lowest);
@@ -281,42 +293,30 @@ namespace HedgeHog {
     private void Run(T key, bool runSync, Action runner, Action<Exception> log, bool useThreadPriority, ThreadPriority threadPriority) {
       if (runSync) runner();
       else {
-        var ts = Get(key, () => {
-          var p = Thread.CurrentThread.Priority;
-          if (useThreadPriority)
-            Thread.CurrentThread.Priority = threadPriority;
-          try {
-            runner();
-          } catch (Exception exc) { log(exc); 
-          } finally {
-            Thread.CurrentThread.Priority = p;
-          }
-        });
+        var ts = Get(key);
         if (!IsDone(ts)) return;// ts.SetFinished((s, ea) => runner());
         else ts.RunWorkerAsync(runner);
       }
     }
   }
 
-  public class TasksDispenser : Dictionary<string, Task> {
-    TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created,TaskStatus.Faulted };
-    bool IsDone(Task task) { return done.Contains(task.Status); }
-    Task Get(string key,Action runner) {
-      if (!this.ContainsKey(key)) {
-        this.Add(key, new Task(runner));
-        return this[key];
-      }
-      if (!IsDone(this[key])) return this[key];
-      this.Remove(key);
-      return Get(key, runner);
-    }
-    public void Run(string key, Action runner) {
+  public class TasksDispenser<T> : Dictionary<T, Task> {
+    object locker = new object();
+    public void Run(T key, Action runner) {
       Run(key, runner, e => { });
     }
-    public void Run(string key, Action runner,Action<Exception> log) {
-      var ts = Get(key, () => { try { runner(); } catch (Exception exc) { log(exc); } });
-      if (!IsDone( ts)) return;// ts.SetFinished((s, ea) => runner());
-      else ts.Start();
+    public void Run(T key, Action runner, Action<Exception> log) {
+      lock (locker) {
+        if (this.ContainsKey(key)) {
+          var done = this[key].Wait(0);
+          if (!done) return;
+        }
+        this[key] = Task.Factory.StartNew(() => {
+          try {
+            runner();
+          } catch (Exception exc) { log(exc); }
+        });
+      }
     }
   }
 }

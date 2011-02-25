@@ -29,6 +29,7 @@ using Microsoft.Research.DynamicDataDisplay.Charts.Shapes;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using HedgeHog.Charter;
+using HedgeHog.Models;
 
 
 namespace HedgeHog {
@@ -36,6 +37,41 @@ namespace HedgeHog {
   /// Interaction logic for Corridors.xaml
   /// </summary>
   public partial class Corridors : HedgeHog.Models.WindowModel {
+
+    #region Attached Properties
+    #region IsInteractive
+    public static bool GetIsInteractive(DependencyObject obj) {
+      return (bool)obj.GetValue(IsInteractiveProperty);
+    }
+
+    public static void SetIsInteractive(DependencyObject obj, bool value) {
+      obj.SetValue(IsInteractiveProperty, value);
+    }
+
+    // Using a DependencyProperty as the backing store for IsInteractive.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty IsInteractiveProperty =
+        DependencyProperty.RegisterAttached("IsInteractive", typeof(bool), typeof(Corridors));
+
+    #endregion
+
+    #region Friend
+
+
+    public static IPlotterElement GetFriend(DependencyObject obj) {
+      return (IPlotterElement)obj.GetValue(FriendProperty);
+    }
+
+    public static void SetFriend(DependencyObject obj, IPlotterElement value) {
+      obj.SetValue(FriendProperty, value);
+    }
+
+    // Using a DependencyProperty as the backing store for Friend.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty FriendProperty =
+        DependencyProperty.RegisterAttached("Friend", typeof(IPlotterElement), typeof(Corridors));
+
+    #endregion
+
+    #endregion
 
     private bool _IsInPlay;
     public bool IsInPlay {
@@ -98,14 +134,15 @@ namespace HedgeHog {
 
     public Func<Rate, double> GetPriceFunc { get; set; }
 
-    public double CenterOfMass { get; set; }
+    public double CenterOfMassBuy { get; set; }
+    public double CenterOfMassSell { get; set; }
 
 
     #region Lines
     public LineGraph PriceLineGraph { get; set; }
     static Color priceLineGraphColor = Colors.Black;
     static Color priceLineGraphColorBuy = Colors.DarkGreen;
-    static Color priceLineGraphColorSell = Colors.Navy;
+    static Color priceLineGraphColorSell = Colors.DarkRed;
     bool? buySell;
     public void SetPriceLineColor(bool? buySell) {
       if (this.buySell != buySell) {
@@ -137,14 +174,59 @@ namespace HedgeHog {
       }
     }
 
-    HorizontalLine centerOfMassHLine = new HorizontalLine() { StrokeThickness = 2, Stroke = new SolidColorBrush(Colors.SteelBlue) };
-    double CenterOfMassHLine {
+    private bool _DoShowCenterOfMass;
+    public bool DoShowCenterOfMass {
+      get { return _DoShowCenterOfMass; }
       set {
-        centerOfMassHLine.Value = value;
-        centerOfMassHLine.ToolTip = value;
+        if (_DoShowCenterOfMass != value) {
+          _DoShowCenterOfMass = value;
+          OnPropertyChanged("DoShowCenterOfMass");
+        }
       }
     }
 
+    static Brush centerOfMassBrush = new SolidColorBrush(Colors.SteelBlue);
+    HorizontalLine _centerOfMassHLineHigh;
+    HorizontalLine centerOfMassHLineHigh {
+      get {
+        if (_centerOfMassHLineHigh == null) {
+          _centerOfMassHLineHigh = new HorizontalLine() { StrokeThickness = 2, Stroke = centerOfMassBrush };
+          _centerOfMassHLineHigh.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
+        }
+        return _centerOfMassHLineHigh;
+      }
+    }
+    double CenterOfMassHLineHigh {
+      set {
+        centerOfMassHLineHigh.Value = value;
+        centerOfMassHLineHigh.ToolTip = value;
+      }
+    }
+    HorizontalLine _centerOfMassHLineLow;
+    HorizontalLine centerOfMassHLineLow {
+      get {
+        if (_centerOfMassHLineLow == null) {
+          _centerOfMassHLineLow = new HorizontalLine() { StrokeThickness = 2, Stroke = centerOfMassBrush };
+          _centerOfMassHLineLow.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
+        }
+        return _centerOfMassHLineLow;
+      }
+    }
+    double CenterOfMassHLineLow {
+      set {
+        centerOfMassHLineLow.Value = value;
+        centerOfMassHLineLow.ToolTip = value;
+      }
+    }
+
+    HorizontalLine magnetPrice;
+    public double MagnetPrice {
+      set {
+        if (magnetPrice == null)
+          plotter.Children.Add(magnetPrice = new HorizontalLine() { StrokeThickness = 2, Stroke = new SolidColorBrush(Colors.DarkViolet) });
+        magnetPrice.Dispatcher.BeginInvoke(new Action(() => magnetPrice.Value = value));
+      }
+    }
 
     HorizontalLine lineNetSell = new HorizontalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkBlue) };
     double LineNetSell { set { lineNetSell.Value = value; } }
@@ -152,7 +234,7 @@ namespace HedgeHog {
     HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     double LineNetBuy { set { lineNetBuy.Value = value; } }
 
-    HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.SeaGreen) };
+    HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     double LineAvgAsk { set { lineAvgAsk.Value = value; } }
 
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
@@ -311,8 +393,6 @@ namespace HedgeHog {
         dp.Position = new Point(ConvertToDouble(animatedTimeX[i + step]), ActiveDraggablePoint.Position.Y);
       }
     }
-    DraggablePoint SupportPointY = new DraggablePoint();
-    DraggablePoint ResistancePointY = new DraggablePoint();
 
     DraggablePoint _ActiveDraggablePoint;
 
@@ -329,7 +409,7 @@ namespace HedgeHog {
     public
 
     Corridors() : this("",null) { }
-    public Corridors(string name,CompositionContainer container) {
+    public Corridors(string name,CompositionContainer container = null) {
       if( container!=null) container.SatisfyImportsOnce(this);
       this.Name = name.Replace("/", "");
       InitializeComponent();
@@ -367,11 +447,131 @@ namespace HedgeHog {
     EnumerableDataSource<Volt> dsVoltsPoly = null;
     #endregion
 
+
+    class DraggablePointInfo {
+      public DraggablePoint DraggablePoint { get; set; }
+      public ObservableValue<double> TradesCount { get; set; }
+      public DraggablePointInfo(DraggablePoint dp,double tradesCount) {
+        this.DraggablePoint = dp;
+        this.TradesCount = new ObservableValue<double>() { Value = tradesCount };
+      }
+    }
+
+    Dictionary<Guid, DraggablePointInfo> BuyRates = new Dictionary<Guid, DraggablePointInfo>();
+    Dictionary<Guid, DraggablePointInfo> SellRates = new Dictionary<Guid, DraggablePointInfo>();
+
+    public class BuySellLevel {
+      public double Rate { get; set; }
+      public int CrossCount { get; set; }
+      public bool IsBuy { get; set; }
+      public BuySellLevel(double rate, int crossCount, bool isBuy) {
+        this.Rate = rate;
+        this.CrossCount = crossCount;
+        this.IsBuy = isBuy;
+      }
+    }
+
+    Dictionary<string, HorizontalLine> tradeLines = new Dictionary<string, HorizontalLine>();
+    public void SetTradeLines(ICollection<Trade> trades,double spread) {
+      var tradesAdd = from value in trades.Select(t => t.Id).Except(this.tradeLines.Select(t => t.Key))
+                      join trade in trades on value equals trade.Id
+                      select trade;
+      foreach (var t in tradesAdd) {
+        var hl = new HorizontalLine(t.Open + (t.Buy ? +1 : -1) * spread) { ToolTip = t.Open + " @ " + t.Time, StrokeDashArray = { 5, 2, 2, 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell) };
+        plotter.Children.Add(hl);
+        this.tradeLines.Add(t.Id, hl);
+      }
+      var tradesDelete = this.tradeLines.Select(t => t.Key).Except(trades.Select(t => t.Id)).ToArray();
+      foreach (var t in tradesDelete) {
+        var hl = tradeLines[t];
+        plotter.Children.Remove(hl);
+        tradeLines.Remove(t);
+      }
+    }
+
+    public void SetBuyRates(Dictionary<Guid, BuySellLevel> rates) {
+      CleanSuppResRates(BuyRates, rates);
+      SetBuySellRates(rates);
+    }
+    public void SetSellRates(Dictionary<Guid, BuySellLevel> rates) {
+      CleanSuppResRates(SellRates, rates);
+      SetBuySellRates(rates);
+    }
+
+    private void CleanSuppResRates(Dictionary<Guid,DraggablePointInfo> dpRates,  Dictionary<Guid, BuySellLevel> rates) {
+      foreach (var guid in dpRates.Keys.Except(rates.Keys).ToArray()) {
+        var rate = dpRates[guid];
+        var dp = rate.DraggablePoint;
+        var line = GetFriend(dp);
+        SetFriend(dp, null);
+        plotter.Children.Remove(dp);
+        plotter.Children.Remove(line);
+        dpRates.Remove(guid);
+      }
+    }
+    bool _isShiftDown;
+    void SetBuySellRates(Dictionary<Guid, BuySellLevel> suppReses) {
+      foreach (var suppRes in suppReses) {
+        var isBuy = suppRes.Value.IsBuy;
+        Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
+        var uid = suppRes.Key;
+        var rate = suppRes.Value.Rate;
+        var tradesCount = suppRes.Value.CrossCount;
+        if (!rates.ContainsKey(uid)) {
+          string anchorTemplateName = "DraggArrow" + (isBuy ? "Up" : "Down");
+          Brush brush = new SolidColorBrush(isBuy ? Colors.DarkRed : Colors.Navy);
+          var line = new HorizontalLine() { Stroke = brush, StrokeDashArray = { 2 } };
+          var dragPoint = new TemplateableDraggablePoint() { MarkerTemplate = FindResource(anchorTemplateName) as ControlTemplate };
+          SetFriend(dragPoint, line);
+          plotter.Children.Add(line);
+          plotter.Children.Add(dragPoint);
+          //dragPoint.SetBinding(DraggablePoint.PositionProperty, new Binding("Value") { Source = ov });
+          dragPoint.PositionChanged += (s, e) => {
+            OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, e.Position);
+          };
+          dragPoint.ToolTip = "UID:" + uid;
+          plotter.PreviewKeyDown += (s, e) => {
+            _isShiftDown = e.Key == Key.LeftShift || e.Key == Key.RightShift;
+            if (!dragPoint.IsMouseOver) return;
+            e.Handled = true;
+            switch (e.Key) {
+              case Key.Add:
+                OnBuySellAdded(isBuy, dragPoint.Position.Y); 
+                break;
+              case Key.Delete:
+                OnBuySellRemoved(uid);
+                plotter.Children.Remove(GetFriend(dragPoint));
+                plotter.Children.Remove(dragPoint);
+                rates.Remove(uid);
+                break;
+            }
+          };
+          DraggableManager.SetHorizontalAnchor(line, dragPoint);
+          var dpi = new DraggablePointInfo(dragPoint, tradesCount);
+          rates.Add(uid, dpi);
+          dragPoint.DataContext = dpi;
+        }
+        var dp = rates[uid].DraggablePoint;
+        dp.Dispatcher.Invoke(new Action(()=>{
+          var raiseChanged = rate == 0;
+          if (raiseChanged) rate = animatedPriceY.Average();
+          dp.Position = CreatePointY(rate);
+          rates[uid].TradesCount.Value = tradesCount;
+        }));
+      }
+    }
+
+    private Point CreatePointY(double y) { return new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), y); }
+
     List<HorizontalLine> FibLevels = new List<HorizontalLine>();
     List<ColoredSegment> GannAngles = new List<ColoredSegment>();
     Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
+      plotter.KeyUp += (s, e) => {
+        if (e.Key == Key.RightShift || e.Key == Key.LeftShift)
+          _isShiftDown = false;
+      };
       IsPlotterInitialised = true;
       plotter.Children.RemoveAt(0);
 
@@ -395,7 +595,8 @@ namespace HedgeHog {
           .Description.LegendItem.Visibility = Visibility.Collapsed;
 
         Border infoBorder = new Border() {
-          BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3)
+          BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1)
+          , CornerRadius = new CornerRadius(3),Visibility = Visibility.Hidden
         };
         infoBorder.Child = infoBox;
         viewPortContainer.Content = infoBorder;
@@ -439,13 +640,9 @@ namespace HedgeHog {
 
 
       #region Add Lines
-      innerPlotter.Children.Add(lineMax);
-      innerPlotter.Children.Add(lineMin);
-
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
-      plotter.Children.Add(lineMaxAvg);
-      plotter.Children.Add(lineMinAvg);
+
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
       plotter.Children.Add(lineTimeMin);
@@ -456,21 +653,17 @@ namespace HedgeHog {
       plotter.Children.Add(trendLine2);
       plotter.Children.Add(trendLine22);
       plotter.Children.Add(gannLine);
-      plotter.Children.Add(centerOfMassHLine);
+
+      plotter.Children.Add(centerOfMassHLineHigh);
+      plotter.Children.Add(centerOfMassHLineLow);
 
       plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(CorridorStartPointX);
       LineToPoint.Add(lineTimeMax, CorridorStartPointX);
 
-      plotter.Children.Add(SupportPointY);
-      plotter.Children.Add(ResistancePointY);
-
       plotter.Children.Add(GannAngleOffsetPoint);
 
       InsertFibLines();
-      
-      SupportPointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(SupportPointY_PositionChanged);
-      ResistancePointY.PositionChanged += new EventHandler<PositionChangedEventArgs>(ResistancePointY_PositionChanged);
 
       plotter.KeyDown += new KeyEventHandler(plotter_KeyDown);
       plotter.PreviewKeyDown += new KeyEventHandler(plotter_PreviewKeyDown);
@@ -509,15 +702,44 @@ namespace HedgeHog {
         plotter.Children.Add(hl);
       }
     }
+    private bool _DoShowFibLines;
+    public bool DoShowFibLines {
+      get { return _DoShowFibLines; }
+      set {
+        if (_DoShowFibLines != value) {
+          _DoShowFibLines = value;
+          OnPropertyChanged(Metadata.CorridorsMetadata.DoShowFibLines);
+        }
+      }
+    }
+
     private void InsertFibLines() {
       foreach (var i in Enumerable.Range(0, Fibonacci.Levels(0, 0).Length)) {
         var hl = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.MidnightBlue), StrokeThickness = 1 };
+        hl.SetBinding(HorizontalLine.VisibilityProperty, new Binding(Metadata.CorridorsMetadata.DoShowFibLines) {
+          Converter = AnyToVisibilityConverter.Default
+        });
         FibLevels.Add(hl);
         plotter.Children.Add(hl);
       }
     }
 
+    double GuessPipSize(double price) { return price < 10 ? 0.0001 : 0.01; }
+
     void plotter_PreviewKeyDown(object sender, KeyEventArgs e) {
+    }
+
+    private void AdjustDraggablePointByPip(DraggablePoint dp,KeyEventArgs e) {
+      if (dp.IsMouseOver) {
+        var pip = GuessPipSize(dp.Position.Y);
+        var step = e.Key == Key.Down ? -pip : e.Key == Key.Up ? pip : 0;
+        if (step != 0) {
+          e.Handled = true;
+          SetIsInteractive(dp, true);
+          dp.Position = new Point(dp.Position.X, dp.Position.Y + step);
+          SetIsInteractive(dp, false);
+        }
+      }
     }
 
     void plotter_KeyDown(object sender, KeyEventArgs e) {
@@ -526,15 +748,6 @@ namespace HedgeHog {
     }
 
     #region Event Handlers
-    void ResistancePointY_PositionChanged(object sender, PositionChangedEventArgs e) {
-      LineMaxAvg = e.Position.Y;
-      OnSupportResistanceChanged(false, e.Position);
-    }
-
-    void SupportPointY_PositionChanged(object sender, PositionChangedEventArgs e) {
-      LineMinAvg = e.Position.Y;
-      OnSupportResistanceChanged(true, e.Position);
-    }
     DateTime CorridorStartPositionOld;
     DateTime GetPriceStartDate(DateTime startDateContinuous) {
       var x = animatedTimeX.OrderBy(d => (d - startDateContinuous).Duration()).First();
@@ -559,6 +772,16 @@ namespace HedgeHog {
     #endregion
 
     #region Events
+    public event EventHandler<BuySellRateRemovedEventArgs> BuySellRemoved;
+    protected void OnBuySellRemoved(Guid uid) {
+      if (BuySellRemoved != null)
+        BuySellRemoved(this, new BuySellRateRemovedEventArgs(uid));
+    }
+    public event EventHandler<BuySellRateAddedEventArgs> BuySellAdded;
+    protected void OnBuySellAdded(bool isBuy, double rate) {
+      if (BuySellAdded != null)
+        BuySellAdded(this, new BuySellRateAddedEventArgs(isBuy, rate));
+    }
     public event EventHandler<PlayEventArgs> Play;
     protected void OnPlay(bool play,DateTime startDate,double delayInSeconds) {
       if (Play != null) Play(this, new PlayEventArgs(play, startDate, delayInSeconds));
@@ -571,11 +794,18 @@ namespace HedgeHog {
     }
 
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
-    protected void OnSupportResistanceChanged(bool isSupport, Point position) {
-      SetFibLevels(ResistancePointY.Position.Y, SupportPointY.Position.Y);
-      var isMouseCaptured = (isSupport ? SupportPointY : ResistancePointY).IsMouseCaptured;
-      if (isMouseCaptured && SupportResistanceChanged != null)
-        SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(isSupport, position.Y, position.Y));
+    protected void OnSupportResistanceChanged(DraggablePoint dp, Guid uid, Point positionOld, Point positionNew) {
+      var isMouseCaptured = dp.IsMouseCaptured;
+      var isInteractive = GetIsInteractive(dp);
+      if ((isMouseCaptured || isInteractive) && SupportResistanceChanged != null) {
+        SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
+        if (!_isShiftDown) {
+          var isBuy = BuyRates.Any(br => br.Key == uid);
+          var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
+          SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(next.Key, positionNew.Y, positionOld.Y));
+          next.Value.DraggablePoint.Position = positionNew;
+        }
+      }
     }
     #endregion
 
@@ -680,6 +910,7 @@ namespace HedgeHog {
       //(t.PriceAvg > t.PriceAvg1 ? t.PriceHigh : t.PriceAvg < t.PriceAvg1 ? t.PriceLow : t.PriceAvg).Round(roundTo)));  
       #endregion
       List<Point> minuteTicks = null;
+      ticks = new List<Rate>(ticks).ToArray();
       #region Set DataSources
       if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {
         #region Set Trendlines
@@ -787,30 +1018,23 @@ namespace HedgeHog {
           var yOffset = yHeight * infoBox.ActualHeight / plotter.ActualHeight / 2;
           var xOffset = xWidth * infoBox.ActualWidth / plotter.ActualWidth / 2;
           var y = (up ? animatedPriceYMax - yOffset : animatedPriceYMin + yOffset);
-          if (viewPortContainer.ActualWidth < 10 && infoBox.ActualWidth > 0) {
+          if (viewPortContainer.Visibility == Visibility.Visible && viewPortContainer.ActualWidth < 10 && infoBox.ActualWidth > 0) {
             plotter.Children.Remove(viewPortContainer);
             var child = viewPortContainer.Content;
             viewPortContainer.Content = null;
             viewPortContainer = new ViewportUIContainer();
             viewPortContainer.Content = child;
-            plotter.Children.Add(viewPortContainer);
+            //plotter.Children.Add(viewPortContainer);
           }
           viewPortContainer.Position = new Point(dateAxis.ConvertToDouble(animatedTimeXMin) + xOffset, y);
           viewPortContainer.InvalidateVisual();
 
           #region Set Lines
-          LineMax = voltageHigh;
-          LineMin = voltageCurr;
 
           LineAvgAsk = lastPrice.Average;
 
-          LineMaxAvg = priceMaxAvg;
-          ResistancePointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMaxAvg);
-
-          LineMinAvg = priceMinAvg;
-          SupportPointY.Position = new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), priceMinAvg);
-
-          CenterOfMassHLine = CenterOfMass;
+          CenterOfMassHLineHigh = CenterOfMassBuy;
+          CenterOfMassHLineLow = CenterOfMassSell;
 
           //SetFibLevels(priceMaxAvg, priceMinAvg);
 
@@ -852,7 +1076,8 @@ namespace HedgeHog {
 
     Func<Rate, bool> hasGannAnglesFilter = r => r.GannPrice1x1 > 0;
     private void SetGannAngles(ICollection<Rate> rates,int selectedIndex) {
-      var rateFirst = rates.First(hasGannAnglesFilter);
+      var rateFirst = rates.FirstOrDefault(hasGannAnglesFilter);
+      if (rateFirst == null) return;
       var rateLast = rates.Reverse().First(hasGannAnglesFilter);
       foreach (var i in Enumerable.Range(0, GannAnglesCount)) {
         var gannPriceFirst = rateFirst.GannPrices[i];
@@ -862,16 +1087,16 @@ namespace HedgeHog {
         if (i == GannAngle1x1Index) {
           GannAngleOffsetPoint.Anchor = new Point(ConvertToDouble(rateFirst.StartDate), rateFirst.GannPrice1x1);
           if (!GannAngleOffsetPoint.IsMouseCaptured) {
-            var up = rates.First(r => r.GannPrice1x1 > 0).GannPrice1x1 < rates.Last(r => r.GannPrice1x1 > 0).GannPrice1x1;
+            var up = rateFirst.GannPrice1x1 < rateLast.GannPrice1x1;
             Rate rateForGannPoint;
             if (up) {
               var rateMax = rates.OrderBy(r => r.AskHigh).Last();
-              rateForGannPoint = rates.Last(r => r.GannPrices.Length>0 && r.GannPrice1x1 < rateMax.BidLow);
+              rateForGannPoint = rates.Where(r => r.GannPrices.Length>0 && r.GannPrice1x1 < rateMax.BidLow).DefaultIfEmpty(rateLast).Last();
               var dateMiddle = rateFirst.StartDateContinuous + (rateForGannPoint.StartDateContinuous - rateFirst.StartDateContinuous).Multiply(.5);
               rateForGannPoint = rates.Last(r => r.StartDateContinuous <= dateMiddle);
             } else {
               var rateMin = rates.OrderBy(r => r.BidLow).First();
-              rateForGannPoint = rates.Last(r => r.GannPrices.Length > 0 && r.GannPrice1x1 > rateMin.AskHigh);
+              rateForGannPoint = rates.Where(r => r.GannPrices.Length > 0 && r.GannPrice1x1 > rateMin.AskHigh).DefaultIfEmpty(rateLast).Last();
               var dateMiddle = rateFirst.StartDateContinuous + (rateForGannPoint.StartDateContinuous - rateFirst.StartDateContinuous).Multiply(.5);
               rateForGannPoint = rates.Last(r => r.StartDateContinuous <= dateMiddle);
             }
@@ -925,6 +1150,7 @@ namespace HedgeHog {
 
     public int SelectedGannAngleIndex { get; set; }
 
+
   }
 
   public class ChartTick : INotifyPropertyChanged, IEqualityComparer<ChartTick> {
@@ -963,6 +1189,20 @@ namespace HedgeHog {
     #endregion
   }
 
+  public class BuySellRateRemovedEventArgs : EventArgs {
+    public Guid UID { get; set; }
+    public BuySellRateRemovedEventArgs(Guid uid) {
+      this.UID = uid;
+    }
+  }
+  public class BuySellRateAddedEventArgs : EventArgs {
+    public bool IsBuy { get; set; }
+    public double Rate { get; set; }
+    public BuySellRateAddedEventArgs(bool isBuy, double rate) {
+      this.IsBuy = isBuy;
+      this.Rate = rate;
+    }
+  }
   public class PlayEventArgs : EventArgs {
     public bool Play { get; set; }
     public DateTime StartDate { get; set; }
@@ -982,9 +1222,9 @@ namespace HedgeHog {
     }
   }
   public class SupportResistanceChangedEventArgs : PositionChangedBaseEventArgs<double> {
-    public bool IsSupport { get; set; }
-    public SupportResistanceChangedEventArgs(bool isSupport, double newPosition, double oldPosition) : base(newPosition, oldPosition) {
-      this.IsSupport = isSupport;
+    public Guid UID { get; set; }
+    public SupportResistanceChangedEventArgs(Guid uid, double newPosition, double oldPosition) : base(newPosition, oldPosition) {
+      this.UID = uid;
     }
   }
 

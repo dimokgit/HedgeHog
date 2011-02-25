@@ -349,7 +349,7 @@ namespace HedgeHog {
     }
     List<Rate> rsiBars = new List<Rate>();
     void ProcessRsi() {
-      fw.GetBars(fw.Pair, 5, fw.ServerTime.Round(5).AddHours(-12), DateTime.FromOADate(0), ref rsiBars);
+      fw.GetBars(fw.Pair, 5,0, fw.ServerTime.Round(5).AddHours(-12), DateTime.FromOADate(0), rsiBars);
     }
     void timer_Tick(object sender, EventArgs e) {
       try {
@@ -369,8 +369,9 @@ namespace HedgeHog {
     IAsyncResult asyncRes = null;
     object priceSync = new object();
     Scheduler PriceScheduler;
-    public void fw_PriceChanged() { fw_PriceChanged(null); }
-    void fw_PriceChanged(Price Price) {
+    public void fw_PriceChanged() { fw_PriceChanged(null, new PriceChangedEventArgs(null, null, null)); }
+    void fw_PriceChanged(object sender, PriceChangedEventArgs e) {
+      Price Price = e.Price;
       lock (priceSync) {
         try {
           if( !PriceScheduler.IsRunning)
@@ -390,7 +391,7 @@ namespace HedgeHog {
     void priceCallBack(IAsyncResult res) {
       if (res != null && res.AsyncState != null)
         ((Action)res.AsyncState).EndInvoke(res);
-      if (runPrice) fw_PriceChanged(null);
+      if (runPrice) fw_PriceChanged(null, new PriceChangedEventArgs(null, null, null));
     }
     #endregion
 
@@ -399,7 +400,7 @@ namespace HedgeHog {
       //if (RsiScheduler.IsRunning) { RaisePriceGridError(new Exception("RsiScheduler is overwelmed.")); return; }
       var startTime = fw.ServerTime.AddHours(-12).Round(1);
       var endTime = DateTime.FromOADate(0);
-      fw.GetBars(fw.Pair, 1, startTime, endTime, ref rsiRates);
+      fw.GetBars(fw.Pair, 1,0, startTime, endTime,  rsiRates);
       rsiRates.Where(r => r.StartDate < startTime).ToList().ForEach(r => rsiRates.Remove(r));
       rsiRates.Remove(rsiRates.Last());
       var rsiChart = rsiRates.GetMinuteTicks(RsiTradeSignalBar);
@@ -640,7 +641,7 @@ namespace HedgeHog {
           #region Statts
           var ts = ti.TradeStats;
           if (ts == null) return;
-          TradeInfo = new TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1), ti.TradeStats.Angle / fw.PointSize);
+          TradeInfo = new TradeRemark(ti.TradeWaveInMinutes, fw.InPips(ti.TradeStats.corridorSpread, 1), ti.TradeStats.Angle / fw.GetPipSize(pair));
           positionBuy = ts.positionBuy;
           positionSell = ts.positionSell;
           spreadAverage = ts.spreadAverage;
@@ -696,14 +697,14 @@ namespace HedgeHog {
           if (ti.DoTakeProfitBuy) {
             var trade = fw.GetTradeLast(true);
             if (trade != null)
-              this.TakeProfitBuy = -(trade.Open + profitMin * fw.PointSize);
+              this.TakeProfitBuy = -(trade.Open + profitMin * fw.GetPipSize(pair));
             //else
             //  this.TakeProfitBuy = -(price.Ask + ti.TradeStats.corridorSpread);
           }
           if (ti.DoTakeProfitSell) {
             var trade = fw.GetTradeLast(false);
             if (trade != null)
-              this.TakeProfitSell = -(trade.Open - profitMin * fw.PointSize);
+              this.TakeProfitSell = -(trade.Open - profitMin * fw.GetPipSize(pair));
             //else
             //  this.TakeProfitSell = -(price.Bid - ti.TradeStats.corridorSpread);
           }
@@ -821,7 +822,8 @@ namespace HedgeHog {
       }
     }
 
-    private void TradeCountChangedHandler(Trade trade) {
+    private void TradeCountChangedHandler(object sender, TradeEventArgs e) {
+      Trade trade = e.Trade;
       if (IsSecondTrade(trade)) return;
       tradeAdded = trade;
       Dispatcher.BeginInvoke(new Action(() => {
@@ -893,7 +895,7 @@ namespace HedgeHog {
     public double TakeProfitNet(double TakePropfitPips, Order2GoAddIn.Summary Summary, bool Buy) {
       return Math.Round(
         TakePropfitPips == 0 ? 0 :
-        Buy ? Summary.BuyAvgOpen + TakePropfitPips * fw.PointSize : Summary.SellAvgOpen - TakePropfitPips * fw.PointSize, fw.Digits);
+        Buy ? Summary.BuyAvgOpen + TakePropfitPips * fw.GetPipSize(pair) : Summary.SellAvgOpen - TakePropfitPips * fw.GetPipSize(pair), fw.GetDigits(pair));
     }
     #endregion
 

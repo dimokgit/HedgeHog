@@ -58,11 +58,12 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Price
-    public double PriceHigh { get { return (AskHigh + BidHigh) / 2; } }
-    public double PriceLow { get { return (AskLow + BidLow) / 2; } }
+    public virtual double PriceHigh { get { return (AskHigh + BidHigh) / 2; } }
+    public virtual double PriceLow { get { return (AskLow + BidLow) / 2; } }
     public double PriceClose { get { return (AskClose + BidClose) / 2; } }
     public double PriceOpen { get { return (AskOpen + BidOpen) / 2; } }
     public double PriceAvg { get { return (AskAvg + BidAvg) / 2; } }
+    public double PriceHLC { get { return (PriceHigh + PriceLow + PriceClose) / 3; } }
     public double PriceHeight(BarBase bar) { return Math.Abs(PriceAvg - bar.PriceAvg); }
     #endregion
 
@@ -280,11 +281,15 @@ namespace HedgeHog.Bars {
     public static bool operator <=(BarBase b1, BarBase b2) {
       return (object)b1 == null || (object)b2 == null ? false : b1.StartDate <= b2.StartDate;
     }
-    public static bool operator >(BarBase b1, BarBase b2) { return b2 <= b1; }
+    public static bool operator >(BarBase b1, BarBase b2) {
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate > b2.StartDate;
+    }
     public static bool operator >=(BarBase b1, BarBase b2) {
       return (object)b1 == null || (object)b2 == null ? false : b1.StartDate >= b2.StartDate;
     }
-    public static bool operator <(BarBase b1, BarBase b2) { return b2 >= b1; }
+    public static bool operator <(BarBase b1, BarBase b2) {
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate < b2.StartDate;
+    }
 
 
     public static bool operator ==(BarBase b1, BarBase b2) { return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2); }
@@ -368,6 +373,11 @@ namespace HedgeHog.Bars {
       : base(price, isHistory) {
       Row = row;
     }
+
+    public override double PriceHigh { get { return AskHigh; } }
+    public override double PriceLow { get { return BidLow; } }
+
+
     #region IEquatable<Tick> Members
 
     public override bool Equals(BarBase other) { 

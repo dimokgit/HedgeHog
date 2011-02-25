@@ -8,7 +8,9 @@
              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
              xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
+             xmlns:hhShared="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
              xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+             xmlns:hhBars="clr-namespace:HedgeHog.Bars;assembly=HedgeHog.Shared"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
              xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight"
              xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras"
@@ -25,14 +27,6 @@
     </DataTemplate>
     <DataTemplate x:Key="InstrumentTemplate">
       <WrapPanel>
-        <WrapPanel.ToolTip>
-          <ToolTip>
-            <TextBlock>
-                <TextBlock FontWeight="Black">Maximum Positions:</TextBlock>
-                <TextBlock Text="{Binding MaximumPositions}"></TextBlock>
-            </TextBlock>
-          </ToolTip>
-        </WrapPanel.ToolTip>
         <TextBlock>
         <TextBlock Text="{Binding Pair}">
           <TextBlock.InputBindings>
@@ -48,7 +42,9 @@
             <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
           </Popup.InputBindings>
           <StackPanel>
-            <localModels:GannAnglesEdit Height="200" />
+            <Expander Header="Gann" IsExpanded="False" Background="AliceBlue">
+              <localModels:GannAnglesEdit Height="200" />
+            </Expander>
             <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="400"/>
           </StackPanel>
         </Popup>
@@ -68,6 +64,8 @@
         <LineBreak/>
         <TextBox Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
           <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>
+        <Button Content="PH"  CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Price History"
+                Command="{Binding DataContext.PriceHistoryCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
         </TextBlock>
       </StackPanel>
     </DataTemplate>
@@ -122,8 +120,10 @@
           <TextBlock Text="{Binding PipsPerPosition,StringFormat=|{0:n0}}" ToolTip="Pips Per Position"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
           <LineBreak/>
-          <TextBlock Text="{Binding RateLast.StartDate,StringFormat='MM/dd/yy'}"/>
-          <TextBlock Text="{Binding Profitability,StringFormat=[{0:c0}]}" ToolTip="Profitability Per Month"/>
+          <TextBlock Text="{Binding Profitability,StringFormat={}{0:c0}}" ToolTip="Profitability Per Month"/>
+          <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
+          <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
+          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n2}}" ToolTip="Profitability Ratio" />
         </TextBlock>
       </Label>
     </DataTemplate>
@@ -134,16 +134,14 @@
             <TextBlock Text="{Binding CurrentLoss,StringFormat=c0}"  ToolTip="Current Loss" />
             <TextBlock Text="{Binding CurrentNet,StringFormat=/{0:c0}}" ToolTip="Current Net"  />
             
-            <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}"  />
-            <TextBlock Text="{Binding ProfitCounter,StringFormat=/{0:n1}}" ToolTip="Profit Counter" />
+            <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}" ToolTip="Curren tLoss Percent" />
           </TextBlock>
           <LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
             Text="{Binding RunningBalance,StringFormat=c2}"  />
-          <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}"  />
-          <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
-          <LineBreak/>
-          <TextBlock Text="{Binding StrategyScoresText}" />
+          <TextBlock Text="{Binding RateLast.StartDate,StringFormat='MM/dd/yy'}"/>
+          <!--<LineBreak/>
+          <TextBlock Text="{Binding StrategyScoresText}" />-->
         </TextBlock>
       </Label>
     </DataTemplate>
@@ -175,7 +173,7 @@
                         ObjectType="{x:Type sys:Enum}"
                         x:Key="TradeDirectionValues">
       <ObjectDataProvider.MethodParameters>
-        <x:Type TypeName="localModels:TradeDirections" />
+        <x:Type TypeName="hhShared:TradeDirections" />
       </ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
     <ObjectDataProvider MethodName="GetValues"
@@ -190,6 +188,13 @@
                         x:Key="CorridorCalculationValues">
       <ObjectDataProvider.MethodParameters>
         <x:Type TypeName="localModels:CorridorCalculationMethod" />
+      </ObjectDataProvider.MethodParameters>
+    </ObjectDataProvider>
+    <ObjectDataProvider MethodName="GetValues"
+                        ObjectType="{x:Type sys:Enum}"
+                        x:Key="BarsPeriodValues">
+      <ObjectDataProvider.MethodParameters>
+        <x:Type TypeName="hhBars:BarsPeriodType" />
       </ObjectDataProvider.MethodParameters>
     </ObjectDataProvider>
     <Style TargetType="{x:Type DataGridCell}" x:Key="PapayaWhipBackgroundStyle" BasedOn="{StaticResource {x:Type DataGridCell}}">
@@ -246,14 +251,22 @@
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <TextBlock Text="{Binding CorridorsRatio,StringFormat='{}={0:p0}]'}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <LineBreak/>
-                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}"/>
+                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}"/>
+                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
                 <TextBlock>=</TextBlock>
-                <TextBlock Text="{Binding SpreadShortToLongRatio,StringFormat=n1}"
-                  FontWeight="{Binding IsSpreadShortToLongRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                <TextBlock Text="{Binding SpreadShortLongRatioAverage,StringFormat=n1}"
+                  FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <LineBreak/>
+                <TextBlock Text="{Binding CorridorStDevRatio.Prev,StringFormat=n2}" ToolTip="Corridor StDev Ratio - Prev"/>
+                <TextBlock>/</TextBlock>
+                <TextBlock Text="{Binding CorridorStDevRatio.Last,StringFormat=n2}" ToolTip="CorridorStDevRatio - Last"/>
+                <TextBlock>=</TextBlock>
+                <TextBlock Text="{Binding CorridorStDevRatio.Difference,StringFormat=n2}" ToolTip="Corridor StDev Ratio - Difference"
+                  FontWeight="{Binding IsCorridorStDevRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                           />
+                <!--<LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
@@ -264,7 +277,8 @@
                   Foreground="DarkGreen"
                   Background="{Binding OpenSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}"
                            />
-                <TextBlock Text="{Binding TradingDistance,StringFormat=[{0:n0}]}" ToolTip="Trading Distance"/>
+                <TextBlock Text="{Binding TradingDistance,StringFormat=[{0:n0}}" ToolTip="Trading Distance"/>
+                <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>-->
                   
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
@@ -318,8 +332,8 @@
             <DataTemplate>
               <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}">
               <TextBlock Text="{Binding Rates.Count}"/>
-                <TextBlock>@</TextBlock>
-              <TextBlock Text="{Binding LastRateTime,StringFormat=HH:mm}"/>
+                <TextBlock Text="{Binding LimitBar,StringFormat=[{0}]}"/>
+              <TextBlock Text="{Binding LastRatePullTime,StringFormat=HH:mm}"/>
                 <LineBreak/>
               <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:dd HH:mm}}"/>
               </TextBlock>

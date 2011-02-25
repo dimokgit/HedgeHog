@@ -78,6 +78,7 @@
     <Compile Include="DateTimeExtender.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="SimpleCommand.cs" />
+    <Compile Include="TBar.cs" />
     <Compile Include="UI\GroupFilter.cs" />
     <Compile Include="MarkupExtemssions.cs" />
     <Compile Include="ViewModelLocator.cs" />

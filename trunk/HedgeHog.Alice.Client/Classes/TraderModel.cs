@@ -24,6 +24,8 @@ using HedgeHog.Alice.Store;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using HedgeHog.DB;
+using System.Threading.Tasks;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -875,6 +877,33 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
+    #region LoadHistoryCommand
+
+    ICommand _LoadHistoryCommand;
+    public ICommand LoadHistoryCommand {
+      get {
+        if (_LoadHistoryCommand == null) {
+          _LoadHistoryCommand = new Gala.RelayCommand(LoadHistory, () => !isLoadHistoryTaskRunning);
+        }
+
+        return _LoadHistoryCommand;
+      }
+    }
+    Task loadHistoryTast;
+    bool isLoadHistoryTaskRunning { get { return loadHistoryTast != null && loadHistoryTast.Status == TaskStatus.Running; } }
+    void LoadHistory() {
+      if (isLoadHistoryTaskRunning)
+        MessageBox.Show("LoadHistoryTask is in " + loadHistoryTast.Status + " status.");
+      else {
+        Action a = () => { PriceHistory.LoadBars(fwMaster,"", o => Log = new Exception(o + "")); };
+        if (loadHistoryTast == null)
+          loadHistoryTast = Task.Factory.StartNew(a);
+        else loadHistoryTast.Start();
+      }
+    }
+
+    #endregion
+
     #region ReportCommand
     ICommand _ReportCommand;
     public ICommand ReportCommand {
@@ -1118,7 +1147,6 @@ namespace HedgeHog.Alice.Client {
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
       OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
-
     }
 
     void fwMaster_SessionStatusChanged(object sender, FXW.SesstionStatusEventArgs e) {
@@ -1192,8 +1220,7 @@ namespace HedgeHog.Alice.Client {
     private void RunPriceChanged(PriceChangedEventArgs e) {
       string pair = e.Price.Pair;
       try {
-        var a = fwMaster.GetAccount(false);
-        a.Trades = e.Trades;
+        var a = e.Account;
         if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
           a.Orders = fwMaster.GetOrders("");
           InvokeSyncronize(a);
@@ -1207,9 +1234,14 @@ namespace HedgeHog.Alice.Client {
         MasterTradeAdded(this, new MasterTradeEventArgs(trade));
     }
 
-    void fwMaster_TradeAdded(Trade trade) {
-      OnMasterTradeAdded(trade);
-      RunPrice(new PriceChangedEventArgs(fwMaster.GetPrice(trade.Pair),fwMaster.GetAccount(), fwMaster.GetTrades()));
+    void fwMaster_TradeAdded(object sender,TradeEventArgs e) {
+      try {
+        Trade trade = e.Trade;
+        OnMasterTradeAdded(trade);
+        RunPrice(new PriceChangedEventArgs(fwMaster.GetPrice(trade.Pair), fwMaster.GetAccount(), fwMaster.GetTrades()));
+      } catch (Exception exc) {
+        Log = exc;
+      }
     }
     void fwMaster_TradeChanged(object sender, TradeEventArgs e) {
       //fwMaster_PriceChanged(e.Trade.Pair);
@@ -1376,6 +1408,7 @@ namespace HedgeHog.Alice.Client {
 
     public string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
     public double CommissionByTrade(Trade trade) { return MasterAccount == null ? 0 : trade.Lots / 10000.0 * MasterAccount.Commission; }
+    public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";
     public void AddCosedTrade(Trade trade) {
       try {
@@ -1386,11 +1419,16 @@ namespace HedgeHog.Alice.Client {
           TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
           //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
           ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
-          var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.PLMaximum, tradeStats.CorridorsRatio, tradeStats.SessionId);
+          var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.CorridorStDev, tradeStats.CorridorStDevCma, tradeStats.SessionId, trade.Open, trade.Close);
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
           GlobalStorage.ForexContext.t_Trade.AddObject(ct);
-          GlobalStorage.ForexContext.SaveChanges();
+          try {
+            GlobalStorage.ForexContext.SaveChanges();
+          } catch {
+            GlobalStorage.ForexContext.DeleteObject(ct);
+            throw;
+          }
         }
       } catch (Exception exc) { Log = exc; }
     }
