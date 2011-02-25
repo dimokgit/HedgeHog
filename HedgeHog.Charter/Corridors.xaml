@@ -1,8 +1,9 @@
 ﻿<models:WindowModel x:Class="HedgeHog.Corridors"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
-        xmlns:models="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+    xmlns:d3shapes="clr-namespace:Microsoft.Research.DynamicDataDisplay.Charts.Shapes;assembly=DynamicDataDisplay"
+    xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+    xmlns:models="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
                     
     Title="Corridors"
   xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
@@ -14,6 +15,39 @@
   DataContext="{Binding RelativeSource={RelativeSource Self}}"
         >
   <Window.Resources>
+    <ControlTemplate x:Key="DraggArrowUp" TargetType="{x:Type Control}">
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+        <ContentPresenter Content="{Binding}">
+          <ContentPresenter.ContentTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding TradesCount.Value,Converter={x:Static hh:PassThroughConverter.Default}}" ></TextBlock>
+            </DataTemplate>
+          </ContentPresenter.ContentTemplate>
+        </ContentPresenter>
+        <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
+          <Image.LayoutTransform>
+            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+          </Image.LayoutTransform>
+        </Image>
+      </StackPanel>
+    </ControlTemplate>
+    <ControlTemplate x:Key="DraggArrowDown" TargetType="{x:Type Control}">
+      <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+        <ContentPresenter Content="{Binding}">
+          <ContentPresenter.ContentTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding TradesCount.Value,Converter={x:Static hh:PassThroughConverter.Default}}" ></TextBlock>
+            </DataTemplate>
+          </ContentPresenter.ContentTemplate>
+        </ContentPresenter>
+        <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
+          <Image.LayoutTransform>
+            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+          </Image.LayoutTransform>
+        </Image>
+      </StackPanel>
+    </ControlTemplate>
+
     <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
     <Style x:Key="PlayButtonStyle" TargetType="ToggleButton">
       <Style.Triggers>
@@ -32,7 +66,6 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <Border Grid.Row="0">
       <WrapPanel>
         <TextBlock Text="Start:"/>
         <u:TextBox2 Text2="{Binding PlayStartDate,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text="{state:UserSettings}" Name="PlayStartDateBox" MinWidth="50" u:UseEnterKey.EnterKeyDirection="Right"/>
@@ -40,8 +73,9 @@
         <TextBlock Text="Delay:"/>
         <u:TextBox2 Text2="{Binding DelayInSeconds,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text="{state:UserSettings}" Name="DelayInSecondsBox" MinWidth="20" u:UseEnterKey.EnterKeyDirection="Right"/>
         <ToggleButton IsChecked="{Binding IsInPlay}" Content="{Binding IsInPlay,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=Play|Play|Stop}"/>
+      <u:CheckBox2 IsChecked2="{Binding DoShowFibLines,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Content="Fib" ToolTip="Show Fibonacci"/>
+      <u:CheckBox2 IsChecked2="{Binding DoShowCenterOfMass,Mode=TwoWay}" IsChecked="{state:UserSettings Default=false}" Content="CoM" ToolTip="Show Center Of Mass"/>
       </WrapPanel>
-    </Border>
       <d3:ChartPlotter Name="plotter" Grid.Row="1">
       <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="True" IsDefaultAxis="True" ShowMinorTicks="True" Visibility="Visible" />
       <d3:InjectedPlotter Name="innerPlotter" Background="Aqua">

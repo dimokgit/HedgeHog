@@ -55,16 +55,38 @@ namespace Order2GoAddIn {
     }
     #endregion
 
-    string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK" };
-    public string[] Instruments { 
+    public enum Tables { Accounts, Orders, Offers, Trades, ClosedTrades, Summary, Messages };
+
+    [CLSCompliant(false)]
+    public FXCore.TableAut Table(Tables table) { return Table(table + ""); }
+    [CLSCompliant(false)]
+    public FXCore.TableAut Table(string TableName) {
+      return (FXCore.TableAut)Desk.FindMainTable(TableName);
+    }
+
+    [CLSCompliant(false)]
+    public FXCore.RowAut[] TableRows(Tables table) { return TableRows(table + ""); }
+    public FXCore.RowAut[] TableRows(string tableName) { return ((FXCore.RowsEnumAut)Table(tableName).Rows).Cast<FXCore.RowAut>().ToArray(); }
+
+    private string[] _Instruments;
+    public string[] Instruments {
       get {
+        if (!IsLoggedIn || IsInVirtualTrading) return defaultInstruments;
+        if (_Instruments == null)
+          _Instruments = (from offer in TableRows(Tables.Offers)
+                          select offer.CellValue("Instrument") + ""
+                         ).ToArray();
+        return _Instruments;
+      }
+    }
+    static string[] defaultInstruments = new string[] { "EUR/GBP","EUR/USD","EUR/CAD","EUR/CHF","EUR/JPY","GBP/USD","GBP/CAD","GBP/CHF","GBP/JPY","USD/CAD","USD/CHF","USD/JPY","CAD/CHF","CAD/JPY","CHF/JPY"};
+    public string[] InstrumentsAll() { 
         if (Desk == null) return defaultInstruments;
         var instruments = Desk.GetInstruments() as FXCore.StringEnumAut;
         List<string> l = new List<string>();
         foreach (var i in instruments)
           l.Add(i+"");
         return l.ToArray();
-      } 
     }
 
     TimeSpan silenceInterval = TimeSpan.FromSeconds(60*5);
@@ -100,6 +122,7 @@ namespace Order2GoAddIn {
         try {
           mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
           mDesk.SetTimeout(mDesk.TIMEOUT_PRICEHISTORY, 30000);
+          mDesk.SetTimeout(mDesk.TIMEOUT_COMMON, 60*1000);
           mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
           InitTimer();
         } catch (Exception e) {
@@ -120,6 +143,10 @@ namespace Order2GoAddIn {
       } catch { }
     }
     public bool IsLoggedIn { get { try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
+
+    public void SetOfferSubscription(string pair) {
+      Desk.SetOfferSubscription(pair, "Enabled");
+    }
 
     #region IDisposable Members
 

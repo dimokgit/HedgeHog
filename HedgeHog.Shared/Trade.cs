@@ -10,8 +10,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
+    public static double GrossInPips(this IEnumerable<Trade> trades) {
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.PL * t.Lots) / trades.Sum(t => t.Lots);
+    }
+    public static double Gross(this IEnumerable<Trade> trades) {
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.GrossPL);
+    }
     public static Trade[] ByPair(this ICollection<Trade> trades, string pair) {
-      return trades.Where(t => t.Pair == pair).ToArray();
+      return (string.IsNullOrWhiteSpace(pair) ? trades : trades.Where(t => t.Pair == pair)).ToArray();
+    }
+    public static Trade[] IsBuy(this ICollection<Trade> trades, bool isBuy) {
+      return trades.Where(t => t.Buy == isBuy).ToArray();
     }
   }
   public class TradeEventArgs : EventArgs {
@@ -57,6 +66,7 @@ namespace HedgeHog.Shared {
       get { return _Close; }
       set {
         _Close = value;
+        if (PipSize == 0) return;
         var gross = Buy ? Close - Open : Open - Close;
         PL = gross / PipSize;
         GrossPL = gross * (Lots / 10000.0) / PipSize;
@@ -125,6 +135,7 @@ namespace HedgeHog.Shared {
     }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
       if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
+      TimeClose = price.Time;
       Close = Buy ? price.Bid : price.Ask;
     }
 

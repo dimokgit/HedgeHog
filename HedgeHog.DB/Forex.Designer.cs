@@ -17,7 +17,7 @@ using System.Runtime.Serialization;
 
 [assembly: EdmSchemaAttribute()]
 
-namespace HedgeHog.Alice.Store
+namespace HedgeHog.DB
 {
     #region Contexts
     
@@ -84,6 +84,38 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
+        public ObjectSet<t_Stat> t_Stat
+        {
+            get
+            {
+                if ((_t_Stat == null))
+                {
+                    _t_Stat = base.CreateObjectSet<t_Stat>("t_Stat");
+                }
+                return _t_Stat;
+            }
+        }
+        private ObjectSet<t_Stat> _t_Stat;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<v_Pair> v_Pair
+        {
+            get
+            {
+                if ((_v_Pair == null))
+                {
+                    _v_Pair = base.CreateObjectSet<v_Pair>("v_Pair");
+                }
+                return _v_Pair;
+            }
+        }
+        private ObjectSet<v_Pair> _v_Pair;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
         public ObjectSet<t_Bar> t_Bar
         {
             get
@@ -96,6 +128,22 @@ namespace HedgeHog.Alice.Store
             }
         }
         private ObjectSet<t_Bar> _t_Bar;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Offer> t_Offer
+        {
+            get
+            {
+                if ((_t_Offer == null))
+                {
+                    _t_Offer = base.CreateObjectSet<t_Offer>("t_Offer");
+                }
+                return _t_Offer;
+            }
+        }
+        private ObjectSet<t_Offer> _t_Offer;
 
         #endregion
         #region AddTo Methods
@@ -109,11 +157,35 @@ namespace HedgeHog.Alice.Store
         }
     
         /// <summary>
+        /// Deprecated Method for adding a new object to the t_Stat EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Stat(t_Stat t_Stat)
+        {
+            base.AddObject("t_Stat", t_Stat);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the v_Pair EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTov_Pair(v_Pair v_Pair)
+        {
+            base.AddObject("v_Pair", v_Pair);
+        }
+    
+        /// <summary>
         /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
         /// </summary>
         public void AddTot_Bar(t_Bar t_Bar)
         {
             base.AddObject("t_Bar", t_Bar);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Offer EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Offer(t_Offer t_Offer)
+        {
+            base.AddObject("t_Offer", t_Offer);
         }
 
         #endregion
@@ -354,7 +426,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.String Pair
         {
@@ -364,14 +436,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_Pair != value)
-                {
-                    OnPairChanging(value);
-                    ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
-                    ReportPropertyChanged("Pair");
-                    OnPairChanged();
-                }
+                OnPairChanging(value);
+                ReportPropertyChanging("Pair");
+                _Pair = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Pair");
+                OnPairChanged();
             }
         }
         private global::System.String _Pair;
@@ -381,7 +450,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Int32 Period
         {
@@ -391,14 +460,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_Period != value)
-                {
-                    OnPeriodChanging(value);
-                    ReportPropertyChanging("Period");
-                    _Period = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("Period");
-                    OnPeriodChanged();
-                }
+                OnPeriodChanging(value);
+                ReportPropertyChanging("Period");
+                _Period = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Period");
+                OnPeriodChanged();
             }
         }
         private global::System.Int32 _Period;
@@ -408,7 +474,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.DateTime StartDate
         {
@@ -418,14 +484,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_StartDate != value)
-                {
-                    OnStartDateChanging(value);
-                    ReportPropertyChanging("StartDate");
-                    _StartDate = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("StartDate");
-                    OnStartDateChanged();
-                }
+                OnStartDateChanging(value);
+                ReportPropertyChanging("StartDate");
+                _StartDate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StartDate");
+                OnStartDateChanged();
             }
         }
         private global::System.DateTime _StartDate;
@@ -435,7 +498,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskHigh
         {
@@ -445,14 +508,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_AskHigh != value)
-                {
-                    OnAskHighChanging(value);
-                    ReportPropertyChanging("AskHigh");
-                    _AskHigh = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("AskHigh");
-                    OnAskHighChanged();
-                }
+                OnAskHighChanging(value);
+                ReportPropertyChanging("AskHigh");
+                _AskHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskHigh");
+                OnAskHighChanged();
             }
         }
         private global::System.Single _AskHigh;
@@ -462,7 +522,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskLow
         {
@@ -472,14 +532,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_AskLow != value)
-                {
-                    OnAskLowChanging(value);
-                    ReportPropertyChanging("AskLow");
-                    _AskLow = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("AskLow");
-                    OnAskLowChanged();
-                }
+                OnAskLowChanging(value);
+                ReportPropertyChanging("AskLow");
+                _AskLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskLow");
+                OnAskLowChanged();
             }
         }
         private global::System.Single _AskLow;
@@ -489,7 +546,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskOpen
         {
@@ -499,14 +556,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_AskOpen != value)
-                {
-                    OnAskOpenChanging(value);
-                    ReportPropertyChanging("AskOpen");
-                    _AskOpen = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("AskOpen");
-                    OnAskOpenChanged();
-                }
+                OnAskOpenChanging(value);
+                ReportPropertyChanging("AskOpen");
+                _AskOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskOpen");
+                OnAskOpenChanged();
             }
         }
         private global::System.Single _AskOpen;
@@ -516,7 +570,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single AskClose
         {
@@ -526,14 +580,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_AskClose != value)
-                {
-                    OnAskCloseChanging(value);
-                    ReportPropertyChanging("AskClose");
-                    _AskClose = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("AskClose");
-                    OnAskCloseChanged();
-                }
+                OnAskCloseChanging(value);
+                ReportPropertyChanging("AskClose");
+                _AskClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AskClose");
+                OnAskCloseChanged();
             }
         }
         private global::System.Single _AskClose;
@@ -543,7 +594,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidHigh
         {
@@ -553,14 +604,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_BidHigh != value)
-                {
-                    OnBidHighChanging(value);
-                    ReportPropertyChanging("BidHigh");
-                    _BidHigh = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("BidHigh");
-                    OnBidHighChanged();
-                }
+                OnBidHighChanging(value);
+                ReportPropertyChanging("BidHigh");
+                _BidHigh = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidHigh");
+                OnBidHighChanged();
             }
         }
         private global::System.Single _BidHigh;
@@ -570,7 +618,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidLow
         {
@@ -580,14 +628,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_BidLow != value)
-                {
-                    OnBidLowChanging(value);
-                    ReportPropertyChanging("BidLow");
-                    _BidLow = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("BidLow");
-                    OnBidLowChanged();
-                }
+                OnBidLowChanging(value);
+                ReportPropertyChanging("BidLow");
+                _BidLow = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidLow");
+                OnBidLowChanged();
             }
         }
         private global::System.Single _BidLow;
@@ -597,7 +642,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidOpen
         {
@@ -607,14 +652,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_BidOpen != value)
-                {
-                    OnBidOpenChanging(value);
-                    ReportPropertyChanging("BidOpen");
-                    _BidOpen = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("BidOpen");
-                    OnBidOpenChanged();
-                }
+                OnBidOpenChanging(value);
+                ReportPropertyChanging("BidOpen");
+                _BidOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidOpen");
+                OnBidOpenChanged();
             }
         }
         private global::System.Single _BidOpen;
@@ -624,7 +666,7 @@ namespace HedgeHog.Alice.Store
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
         public global::System.Single BidClose
         {
@@ -634,14 +676,11 @@ namespace HedgeHog.Alice.Store
             }
             set
             {
-                if (_BidClose != value)
-                {
-                    OnBidCloseChanging(value);
-                    ReportPropertyChanging("BidClose");
-                    _BidClose = StructuralObject.SetValidValue(value);
-                    ReportPropertyChanged("BidClose");
-                    OnBidCloseChanged();
-                }
+                OnBidCloseChanging(value);
+                ReportPropertyChanging("BidClose");
+                _BidClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BidClose");
+                OnBidCloseChanged();
             }
         }
         private global::System.Single _BidClose;
@@ -682,6 +721,376 @@ namespace HedgeHog.Alice.Store
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Offer")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_Offer : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_Offer object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="digits">Initial value of the Digits property.</param>
+        /// <param name="pipCost">Initial value of the PipCost property.</param>
+        /// <param name="mMR">Initial value of the MMR property.</param>
+        /// <param name="pipSize">Initial value of the PipSize property.</param>
+        public static t_Offer Createt_Offer(global::System.String pair, global::System.Int32 digits, global::System.Double pipCost, global::System.Double mMR, global::System.Double pipSize)
+        {
+            t_Offer t_Offer = new t_Offer();
+            t_Offer.Pair = pair;
+            t_Offer.Digits = digits;
+            t_Offer.PipCost = pipCost;
+            t_Offer.MMR = mMR;
+            t_Offer.PipSize = pipSize;
+            return t_Offer;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Digits
+        {
+            get
+            {
+                return _Digits;
+            }
+            set
+            {
+                OnDigitsChanging(value);
+                ReportPropertyChanging("Digits");
+                _Digits = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Digits");
+                OnDigitsChanged();
+            }
+        }
+        private global::System.Int32 _Digits;
+        partial void OnDigitsChanging(global::System.Int32 value);
+        partial void OnDigitsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double PipCost
+        {
+            get
+            {
+                return _PipCost;
+            }
+            set
+            {
+                OnPipCostChanging(value);
+                ReportPropertyChanging("PipCost");
+                _PipCost = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PipCost");
+                OnPipCostChanged();
+            }
+        }
+        private global::System.Double _PipCost;
+        partial void OnPipCostChanging(global::System.Double value);
+        partial void OnPipCostChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double MMR
+        {
+            get
+            {
+                return _MMR;
+            }
+            set
+            {
+                OnMMRChanging(value);
+                ReportPropertyChanging("MMR");
+                _MMR = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MMR");
+                OnMMRChanged();
+            }
+        }
+        private global::System.Double _MMR;
+        partial void OnMMRChanging(global::System.Double value);
+        partial void OnMMRChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double PipSize
+        {
+            get
+            {
+                return _PipSize;
+            }
+            set
+            {
+                OnPipSizeChanging(value);
+                ReportPropertyChanging("PipSize");
+                _PipSize = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PipSize");
+                OnPipSizeChanged();
+            }
+        }
+        private global::System.Double _PipSize;
+        partial void OnPipSizeChanging(global::System.Double value);
+        partial void OnPipSizeChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Stat")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_Stat : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_Stat object.
+        /// </summary>
+        /// <param name="id">Initial value of the Id property.</param>
+        /// <param name="time">Initial value of the Time property.</param>
+        /// <param name="price">Initial value of the Price property.</param>
+        /// <param name="value1">Initial value of the Value1 property.</param>
+        /// <param name="value2">Initial value of the Value2 property.</param>
+        /// <param name="value3">Initial value of the Value3 property.</param>
+        /// <param name="name">Initial value of the Name property.</param>
+        public static t_Stat Createt_Stat(global::System.Int32 id, global::System.DateTime time, global::System.Double price, global::System.Double value1, global::System.Double value2, global::System.Double value3, global::System.String name)
+        {
+            t_Stat t_Stat = new t_Stat();
+            t_Stat.Id = id;
+            t_Stat.Time = time;
+            t_Stat.Price = price;
+            t_Stat.Value1 = value1;
+            t_Stat.Value2 = value2;
+            t_Stat.Value3 = value3;
+            t_Stat.Name = name;
+            return t_Stat;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Id
+        {
+            get
+            {
+                return _Id;
+            }
+            set
+            {
+                if (_Id != value)
+                {
+                    OnIdChanging(value);
+                    ReportPropertyChanging("Id");
+                    _Id = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Id");
+                    OnIdChanged();
+                }
+            }
+        }
+        private global::System.Int32 _Id;
+        partial void OnIdChanging(global::System.Int32 value);
+        partial void OnIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime Time
+        {
+            get
+            {
+                return _Time;
+            }
+            set
+            {
+                OnTimeChanging(value);
+                ReportPropertyChanging("Time");
+                _Time = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Time");
+                OnTimeChanged();
+            }
+        }
+        private global::System.DateTime _Time;
+        partial void OnTimeChanging(global::System.DateTime value);
+        partial void OnTimeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Price
+        {
+            get
+            {
+                return _Price;
+            }
+            set
+            {
+                OnPriceChanging(value);
+                ReportPropertyChanging("Price");
+                _Price = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Price");
+                OnPriceChanged();
+            }
+        }
+        private global::System.Double _Price;
+        partial void OnPriceChanging(global::System.Double value);
+        partial void OnPriceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Value1
+        {
+            get
+            {
+                return _Value1;
+            }
+            set
+            {
+                OnValue1Changing(value);
+                ReportPropertyChanging("Value1");
+                _Value1 = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Value1");
+                OnValue1Changed();
+            }
+        }
+        private global::System.Double _Value1;
+        partial void OnValue1Changing(global::System.Double value);
+        partial void OnValue1Changed();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Value2
+        {
+            get
+            {
+                return _Value2;
+            }
+            set
+            {
+                OnValue2Changing(value);
+                ReportPropertyChanging("Value2");
+                _Value2 = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Value2");
+                OnValue2Changed();
+            }
+        }
+        private global::System.Double _Value2;
+        partial void OnValue2Changing(global::System.Double value);
+        partial void OnValue2Changed();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Value3
+        {
+            get
+            {
+                return _Value3;
+            }
+            set
+            {
+                OnValue3Changing(value);
+                ReportPropertyChanging("Value3");
+                _Value3 = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Value3");
+                OnValue3Changed();
+            }
+        }
+        private global::System.Double _Value3;
+        partial void OnValue3Changing(global::System.Double value);
+        partial void OnValue3Changed();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Name
+        {
+            get
+            {
+                return _Name;
+            }
+            set
+            {
+                OnNameChanging(value);
+                ReportPropertyChanging("Name");
+                _Name = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Name");
+                OnNameChanged();
+            }
+        }
+        private global::System.String _Name;
+        partial void OnNameChanging(global::System.String value);
+        partial void OnNameChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
     [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Trade")]
     [Serializable()]
     [DataContractAttribute(IsReference=true)]
@@ -706,7 +1115,9 @@ namespace HedgeHog.Alice.Store
         /// <param name="corridorHeightInPips">Initial value of the CorridorHeightInPips property.</param>
         /// <param name="corridorMinutesBack">Initial value of the CorridorMinutesBack property.</param>
         /// <param name="sessionId">Initial value of the SessionId property.</param>
-        public static t_Trade Createt_Trade(global::System.String id, global::System.Boolean buy, global::System.Double pL, global::System.Double grossPL, global::System.Double lot, global::System.String pair, global::System.DateTime timeOpen, global::System.DateTime timeClose, global::System.String accountId, global::System.Double commission, global::System.Boolean isVirtual, global::System.Double corridorHeightInPips, global::System.Double corridorMinutesBack, global::System.Guid sessionId)
+        /// <param name="priceOpen">Initial value of the PriceOpen property.</param>
+        /// <param name="priceClose">Initial value of the PriceClose property.</param>
+        public static t_Trade Createt_Trade(global::System.String id, global::System.Boolean buy, global::System.Double pL, global::System.Double grossPL, global::System.Double lot, global::System.String pair, global::System.DateTime timeOpen, global::System.DateTime timeClose, global::System.String accountId, global::System.Double commission, global::System.Boolean isVirtual, global::System.Double corridorHeightInPips, global::System.Double corridorMinutesBack, global::System.Guid sessionId, global::System.Double priceOpen, global::System.Double priceClose)
         {
             t_Trade t_Trade = new t_Trade();
             t_Trade.Id = id;
@@ -723,6 +1134,8 @@ namespace HedgeHog.Alice.Store
             t_Trade.CorridorHeightInPips = corridorHeightInPips;
             t_Trade.CorridorMinutesBack = corridorMinutesBack;
             t_Trade.SessionId = sessionId;
+            t_Trade.PriceOpen = priceOpen;
+            t_Trade.PriceClose = priceClose;
             return t_Trade;
         }
 
@@ -1091,6 +1504,167 @@ namespace HedgeHog.Alice.Store
         private global::System.Guid _SessionId;
         partial void OnSessionIdChanging(global::System.Guid value);
         partial void OnSessionIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double PriceOpen
+        {
+            get
+            {
+                return _PriceOpen;
+            }
+            set
+            {
+                OnPriceOpenChanging(value);
+                ReportPropertyChanging("PriceOpen");
+                _PriceOpen = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PriceOpen");
+                OnPriceOpenChanged();
+            }
+        }
+        private global::System.Double _PriceOpen;
+        partial void OnPriceOpenChanging(global::System.Double value);
+        partial void OnPriceOpenChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double PriceClose
+        {
+            get
+            {
+                return _PriceClose;
+            }
+            set
+            {
+                OnPriceCloseChanging(value);
+                ReportPropertyChanging("PriceClose");
+                _PriceClose = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PriceClose");
+                OnPriceCloseChanged();
+            }
+        }
+        private global::System.Double _PriceClose;
+        partial void OnPriceCloseChanging(global::System.Double value);
+        partial void OnPriceCloseChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="v_Pair")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class v_Pair : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new v_Pair object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="weight1">Initial value of the Weight1 property.</param>
+        /// <param name="weight2">Initial value of the Weight2 property.</param>
+        public static v_Pair Createv_Pair(global::System.String pair, global::System.Int32 weight1, global::System.Int32 weight2)
+        {
+            v_Pair v_Pair = new v_Pair();
+            v_Pair.Pair = pair;
+            v_Pair.Weight1 = weight1;
+            v_Pair.Weight2 = weight2;
+            return v_Pair;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Weight1
+        {
+            get
+            {
+                return _Weight1;
+            }
+            set
+            {
+                if (_Weight1 != value)
+                {
+                    OnWeight1Changing(value);
+                    ReportPropertyChanging("Weight1");
+                    _Weight1 = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Weight1");
+                    OnWeight1Changed();
+                }
+            }
+        }
+        private global::System.Int32 _Weight1;
+        partial void OnWeight1Changing(global::System.Int32 value);
+        partial void OnWeight1Changed();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Weight2
+        {
+            get
+            {
+                return _Weight2;
+            }
+            set
+            {
+                if (_Weight2 != value)
+                {
+                    OnWeight2Changing(value);
+                    ReportPropertyChanging("Weight2");
+                    _Weight2 = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Weight2");
+                    OnWeight2Changed();
+                }
+            }
+        }
+        private global::System.Int32 _Weight2;
+        partial void OnWeight2Changing(global::System.Int32 value);
+        partial void OnWeight2Changed();
 
         #endregion
     

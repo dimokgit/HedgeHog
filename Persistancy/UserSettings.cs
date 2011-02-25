@@ -103,11 +103,16 @@ namespace WpfPersist {
         get {
           if (_dictionary == null) {
             if (File.Exists(SettingsFileName)) {
-              var s = new System.IO.StreamReader(SettingsFileName);
-              _dictionary = new XmlSerializer(typeof(StringDictionary))
-                .Deserialize(s) as StringDictionary;
-              s.Close();
-            } else
+              using (var s = new System.IO.StreamReader(SettingsFileName)) {
+                try {
+                  _dictionary = new XmlSerializer(typeof(StringDictionary))
+                    .Deserialize(s) as StringDictionary;
+                } catch(Exception exc) {
+                  Debug.Fail(exc.ToString());
+                }
+              }
+            }
+            if( _dictionary == null)
               _dictionary = new StringDictionary();
           }
           return _dictionary;

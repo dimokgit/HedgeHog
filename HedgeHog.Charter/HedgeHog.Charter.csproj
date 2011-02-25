@@ -65,9 +65,15 @@
     <Compile Include="Corridors.xaml.cs">
       <DependentUpon>Corridors.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CS_4_0.cs">
+      <DependentUpon>CS_4_0.tt</DependentUpon>
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+    </Compile>
     <Compile Include="CursorH.xaml.cs">
       <DependentUpon>CursorH.xaml</DependentUpon>
     </Compile>
+    <Compile Include="DraggableHorizontalLine.cs" />
     <Compile Include="GraggableLine.xaml.cs">
       <DependentUpon>GraggableLine.xaml</DependentUpon>
     </Compile>
@@ -88,6 +94,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="CS_4_0.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CS_4_0.cs</LastGenOutput>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -144,9 +154,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Themes\Generic.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="ChartElements\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\DownArrow-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

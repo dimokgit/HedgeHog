@@ -416,7 +416,7 @@ namespace HedgeHog {
     }
 
     void ShowSpread(Price Price) {
-      var digits = fw.Digits;
+      var digits = fw.GetDigits(pair);
       Spread = fw.InPips(Price.Ask - Price.Bid);
       SpreadCma = SpreadCma.Cma(50, Spread);
     }
@@ -430,7 +430,6 @@ namespace HedgeHog {
       PipsToMC = Account.PipsToMC;
       minEquityHistory = (int)Account.Equity;
       LotsLeft = (int)(Account.UsableMargin * Leverage);
-      var summaries = fw.GetSummaries();
       var tradesAll = fw.GetTrades("");
       NetPL = tradesAll.GrossInPips();
       UsableMargin = string.Format("{0:c0}/{1:p1}", Account.UsableMargin, Account.UsableMargin / Account.Equity);
@@ -467,7 +466,7 @@ namespace HedgeHog {
       BuyLPP = summary.BuyLPP;
       BuyPositions = summary.BuyPositions;
       BuyPips = (int)(summary.BuyDelta / summary.PointSize);
-      var totalPips = (summary.BuyPriceFirst - summary.SellPriceFirst) / fw.PointSize;
+      var totalPips = (summary.BuyPriceFirst - summary.SellPriceFirst) / fw.GetPipSize(pair);
       BuyPipsToNet = summary.BuyNetPLPip;
       SellPipsToNet = summary.SellNetPLPip;
       buyLossPerLotK = summary.BuyLots > 0 ? summary.BuyNetPL / (summary.BuyLots / 1000) : 0;
@@ -502,14 +501,14 @@ namespace HedgeHog {
         RaisePropertyChanged(() => DensityAverage);
         if (Visibility == Visibility.Hidden) return;
         Price Price = fw.GetPrice();
-        var digits = fw.Digits;
+        var digits = fw.GetDigits(pair);
         ShowSpread(Price);
 
         var account = fw.GetAccount();
         var usableMargin = account.UsableMargin;
         var avalibleTotal = usableMargin * Leverage;
-        AmountToBuy = FXW.GetLotstoTrade(account.Balance, Leverage, lotsToBuyRatio, fw.MinimumQuantity);
-        AmountToSell = FXW.GetLotstoTrade(account.Balance, Leverage, lotsToSellRatio, fw.MinimumQuantity);
+        AmountToBuy = TradesManagerStatic.GetLotstoTrade(account.Balance, Leverage, lotsToBuyRatio, fw.MinimumQuantity);
+        AmountToSell = TradesManagerStatic.GetLotstoTrade(account.Balance, Leverage, lotsToSellRatio, fw.MinimumQuantity);
         var summary = fw.GetSummary() ?? new Order2GoAddIn.Summary();
         ShowAccount(account, summary);
         ShowSummary(summary, account);

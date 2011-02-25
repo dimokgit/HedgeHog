@@ -15,6 +15,7 @@ using HedgeHog.Bars;
 using HedgeHog.Shared;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 [assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
@@ -162,8 +163,8 @@ namespace Order2GoAddIn {
   [ComVisible(true)]
   public class FXCoreWrapper:IDisposable,ITradesManager {
     private readonly string ERROR_FILE_NAME = "FXCM.log";
-
-    
+    public Func<Trade, double> CommissionByTrade { get; set; }
+    public double CommissionByTrades(params Trade[] trades) { return trades.Sum(CommissionByTrade); }
 
     #region Constants
     public const string TABLE_ACCOUNTS = "accounts";
@@ -317,18 +318,19 @@ namespace Order2GoAddIn {
     #endregion
 
     #region TradeAddedEvent
-    event TradeAddedEventHandler TradeAddedEvent;
-    public event TradeAddedEventHandler TradeAdded {
+    event EventHandler<TradeEventArgs> TradeAddedEvent;
+    public event EventHandler<TradeEventArgs> TradeAdded {
       add {
         if (TradeAddedEvent == null || !TradeAddedEvent.GetInvocationList().Contains(value))
           TradeAddedEvent += value;
       }
       remove {
-        TradeAddedEvent -= value;
+        if (TradeAddedEvent != null)
+          TradeAddedEvent -= value;
       }
     }
     void RaiseTradeAdded(Trade trade) {
-      if (TradeAddedEvent != null) TradeAddedEvent(trade);
+      if (TradeAddedEvent != null) TradeAddedEvent(this,new TradeEventArgs(trade));
     }
     #endregion
 
@@ -432,7 +434,8 @@ namespace Order2GoAddIn {
           TradeClosedEvent += value;
       }
       remove {
-        TradeClosedEvent -= value;
+        if (TradeClosedEvent != null)
+          TradeClosedEvent -= value;
       }
     }
     void RaiseTradeClosed(Trade trade) {
@@ -488,11 +491,27 @@ namespace Order2GoAddIn {
     int _minimumQuantity = 0;
 
     string _accountID = "";
-
     public string AccountID {
       get {
-        if (_accountID == "") _accountID = GetAccount(false).ID;
+        if (_accountID == "") _accountID = GetAccount().ID;
         return _accountID;
+      }
+    }
+
+    private bool? _isHedged;
+    public bool IsHedged {
+      get {
+        if (!_isHedged.HasValue) _isHedged = GetAccount().Hedging;
+        return _isHedged.Value; }
+    }
+
+
+    private bool? _Hedging;
+
+    public bool Hedging {
+      get {
+        if (_Hedging == null) _Hedging = GetAccount().Hedging;
+        return _Hedging.Value;
       }
     }
 
@@ -511,15 +530,17 @@ namespace Order2GoAddIn {
       get { return coreFX; }
       set { coreFX = value; }
     }
-    public FXCoreWrapper() : this(new CoreFX(), null) { }
-    public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null) { }
-    public FXCoreWrapper(CoreFX coreFX,string pair) {
+    public FXCoreWrapper() : this(new CoreFX(), null,null) { }
+    public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null,null) { }
+    public FXCoreWrapper(CoreFX coreFX, Func<Trade, double> commissionByTrade) : this(coreFX, null,commissionByTrade) { }
+    public FXCoreWrapper(CoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
       this.coreFX = coreFX;
       if (pair != null) this.Pair = pair;
       coreFX.LoggedInEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedInEvent);
       coreFX.LoggedOffEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedOffEvent);
       isWiredUp = true;
       PendingOrders.CollectionChanged += PendingOrders_CollectionChanged;
+      this.CommissionByTrade = commissionByTrade;
     }
 
     void PendingOrders_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
@@ -563,6 +584,8 @@ namespace Order2GoAddIn {
     void coreFX_LoggedOffEvent(object sender, LoggedInEventArgs e) {
       if (e.IsInVirtualTrading) return;
       _accountID = "";
+      _TimeZoneConverter = null;
+      tableIndices.Clear();
       Unsubscribe();
     }
 
@@ -648,7 +671,7 @@ namespace Order2GoAddIn {
     public void GetBarsBase<TBar>(string pair, int period,int periodsBack, DateTime startDate, DateTime endDate,List<TBar> ticks,Action<RateLoadingCallbackArgs<TBar>> callBack = null)where TBar : Rate {
       if (period >= 1) {
         startDate = startDate.Round(period);
-        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period).AddMinutes(period);
+        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period);
       }
       int timeoutCount = 1;
       Func<bool> doContinue = () => (endDate == TradesManagerStatic.FX_DATE_NOW || startDate != TradesManagerStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
@@ -658,7 +681,7 @@ namespace Order2GoAddIn {
           if (t.Count() == 0) break;
           var ticksNew = t.Except(ticks).ToArray();
           ticks.AddRange(ticksNew);
-          var msg = "Bars<" + period + ">:" + ticks.Count() + " @ " + endDate;
+          var msg = "Bars[" + pair + "]<" + period + ">:" + ticks.Count() + " @ " + endDate;
           if (callBack != null) callBack(new RateLoadingCallbackArgs<TBar>(msg, ticksNew));
           else System.Diagnostics.Debug.WriteLine(msg);
           if (endDate == TradesManagerStatic.FX_DATE_NOW || endDate > ticks.Min(b => b.StartDate)) {
@@ -669,10 +692,11 @@ namespace Order2GoAddIn {
           if (exc.Message.ToLower().Contains("timeout")) {
             if (timeoutCount-- == 0) break;
           }
+          throw new Exception(string.Format("Pair:{0},Period:{1}", pair, period), exc);
         }
       }
       ticks.Sort();
-      var removeCount = periodsBack == 0 ? 0 : ticks.Count - periodsBack;//, ticks.Count(t => t.StartDate < startDate));
+      var removeCount = Math.Max(0, periodsBack == 0 ? 0 : ticks.Count - periodsBack);//, ticks.Count(t => t.StartDate < startDate));
       ticks.RemoveRange(0, removeCount);
     }
     //public Rate[] GetBars(string pair, int period, int barsCount) {
@@ -719,7 +743,7 @@ namespace Order2GoAddIn {
             exc.Message.Contains("Object reference not set to an instance of an object.")) {
           return empty;
         }
-        throw e;
+        throw;
       }
     }
 
@@ -792,7 +816,7 @@ namespace Order2GoAddIn {
       if( Bars.Count < periodsBack)
         GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
       Bars.Sort();
-      var countMaximum = Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate > StartDate), periodsBack);
+      var countMaximum = Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate >= StartDate), periodsBack);
       //Dimok: Warn when negative
       Bars.RemoveRange(0, Math.Max(0, Bars.Count - countMaximum));
     }
@@ -800,10 +824,16 @@ namespace Order2GoAddIn {
 
     #region FX Tables
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    public Account GetAccount() { return GetAccount(true); }
-    public Account GetAccount(bool includeOtherInfo) {
+    public Account GetAccount() {
+      if (accountInternal == null) {
+        SetTrades();
+        accountInternal = GetAccount_Slow(true);
+      }
+      return accountInternal; 
+    }
+    public Account GetAccount_Slow(bool includeOtherInfo) {
+      Stopwatch sw = Stopwatch.StartNew();
       try {
-        var sw = Stopwatch.StartNew();
         var row = GetRows(TABLE_ACCOUNTS).First();
         //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
         var trades = new Trade[] { };
@@ -829,8 +859,25 @@ namespace Order2GoAddIn {
       } catch (Exception exc) {
         RaiseError(exc);
         return null;
+      } finally {
+        //Debug.WriteLine("{0}@{2:mm:ss} - {1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds,DateTime.Now);
       }
     }
+    private Account GetAccount(FXCore.ParserAut row) {
+      accountInternal.ID = row.GetValue(FIELD_ACCOUNTID) + "";
+      accountInternal.Balance = (double)row.GetValue(FIELD_BALANCE);
+      accountInternal.UsableMargin = (double)row.GetValue(FIELD_USABLEMARGIN);
+      accountInternal.IsMarginCall = row.GetValue(FIELD_MARGINCALL) + "" == "W";
+      accountInternal.Equity = (double)row.GetValue(FIELD_EQUITY);
+      accountInternal.Hedging = row.GetValue("Hedging").ToString() == "Y";
+      accountInternal.Trades = GetTrades();
+      accountInternal.StopAmount = trades.Sum(t => t.StopAmount);
+      accountInternal.LimitAmount = trades.Sum(t => t.LimitAmount);
+      accountInternal.ServerTime = ServerTime;
+      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
+      return accountInternal;
+    }
+
     public double CommisionPending { get { return GetTrades("").Sum(t => t.Lots) / 10000; } }
 
     private static bool IsBuy(object BS) { return BS + "" == "B"; }
@@ -917,7 +964,7 @@ namespace Order2GoAddIn {
       return GetPrice(GetRows(TABLE_OFFERS, pair).FirstOrDefault());
     }
     private Price GetPrice(FXCore.RowAut Row) {
-      return new Price() {
+      return Row == null ? null : new Price() {
         Ask = (double)Row.CellValue(FIELD_ASK), Bid = (double)Row.CellValue(FIELD_BID), 
         AskChangeDirection = (int)Row.CellValue(FIELD_ASKCHANGEDIRECTION), 
         BidChangeDirection = (int)Row.CellValue(FIELD_BIDCHANGEDIRECTION), 
@@ -1073,14 +1120,14 @@ namespace Order2GoAddIn {
     static object lockGetRows = new object();
     private FXCore.RowAut[] GetRows(string tableName,bool updateTable = false) {
       //lock (lockGetRows) {
-      var rows = ((FXCore.RowsEnumAut)GetTable(tableName).Rows);
-      try {
-        var rows1 = rows.Cast<FXCore.RowAut>().ToArray();
-        return rows1;
-      } catch (Exception exc) {
-        if (!updateTable) return GetRows(tableName, true);
-        else throw new ArrayTypeMismatchException();
-      }
+        var rows = ((FXCore.RowsEnumAut)GetTable(tableName).Rows);
+        try {
+          var rows1 = rows.Cast<FXCore.RowAut>().ToArray();
+          return rows1;
+        } catch (Exception exc) {
+          if (!updateTable) return GetRows(tableName, true);
+          else throw new ArrayTypeMismatchException();
+        }
       //}
     }
     #endregion
@@ -1088,22 +1135,24 @@ namespace Order2GoAddIn {
     #region GetTrades
     Trade[] trades = new Trade[0];
     Trade[] SetTrades() {
-      return trades = GetTradesInternal("");
+      OpenTrades.Clear();
+      GetTradesInternal("").ToList().ForEach(t=>OpenTrades[t.Id] = t);
+      return GetTrades();
     }
+    public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
     public Trade GetTrade(string tradeId) { return GetTrades().Where(t => t.Id == tradeId).SingleOrDefault(); }
     public Trade GetTrade(bool buy, bool last) { return last ? GetTradeLast(buy) : GetTradeFirst(buy); }
     public Trade GetTradeFirst(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).FirstOrDefault(); }
     public Trade GetTradeLast(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).LastOrDefault(); }
     public Trade[] GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
     object getTradesLock = new object();
-    public Trade[] GetTrades() { return trades; }
     public Trade[] GetTrades(string pair) { return GetTrades().ByPair(pair); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public Trade[] GetTrades(string pair, bool buy) {
       return GetTrades().ByPair(pair).Where(t => t.Buy == buy).ToArray();
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
-    Trade[] GetTradesInternal(string Pair) {
+    public Trade[] GetTradesInternal(string Pair) {
       //      lock (getTradesLock) {
       try {
         return (from t in GetRows(TABLE_TRADES)
@@ -1207,6 +1256,7 @@ namespace Order2GoAddIn {
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
+      trade.IsParsed = true;
       return trade;
     }
     #endregion
@@ -1363,6 +1413,7 @@ namespace Order2GoAddIn {
 //    Dictionary<string, int> tableIndices = new Dictionary<string, int>();
     Dictionary<string, FXCore.TableAut> tableIndices = new Dictionary<string, FXCore.TableAut>();
     [CLSCompliant(false)]
+    [MethodImpl( MethodImplOptions.Synchronized)]
     public FXCore.TableAut GetTable(string TableName,bool updateTable = false) {
       if (updateTable && tableIndices.ContainsKey(TableName)) 
         tableIndices.Remove(TableName);
@@ -1376,8 +1427,9 @@ namespace Order2GoAddIn {
         }
       }
       return tableIndices[TableName];
-      return (FXCore.TableAut)coreFX.Desk.FindMainTable(TableName);
+      return CoreFX.Table(TableName);
     }
+
 
     #endregion
 
@@ -1520,7 +1572,10 @@ namespace Order2GoAddIn {
       FixOrderOpen(Pair, buy, lots, takeProfit, stopLoss, remark);
     }
     static private object globalOrderPending = new object();
-    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark,Price price) {
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      object orderId, DI;
+      Desk.OpenTrade2(AccountID, pair, buy, lots, 0, "", 0, Desk.SL_NONE, 0, 0, 0, out orderId, out DI);
+      return null;
       return FixOrderOpen(pair, buy, lots, takeProfit, stopLoss, remark);
     }
     public PendingOrder FixOrderOpen(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark) {
@@ -1563,8 +1618,19 @@ namespace Order2GoAddIn {
       }
     }
     public void CloseTrades(Trade[] trades) {
-      foreach (var trade in trades)
-        CloseTrade(trade);
+      if( trades.Length == 0)return;
+      if (IsHedged)
+        foreach (var trade in trades)
+          CloseTrade(trade);
+      else {
+        var buys = trades.IsBuy(true);
+        if (buys.Length > 0)
+          OpenTrade(buys[0].Pair, false, buys.Sum(t => t.Lots), 0, 0, "", null);
+
+        var sells = trades.IsBuy(false);
+        if (sells.Length > 0)
+          OpenTrade(sells[0].Pair, true, sells.Sum(t => t.Lots), 0, 0, "", null);
+      }
     }
     public void CloseTrade(string tradeId) {
       CloseTrade(GetTrade(tradeId));
@@ -1577,7 +1643,10 @@ namespace Order2GoAddIn {
     public bool CloseTrade(Trade trade, int lot, Price price) {
       object o1,o2;
       try {
-        Desk.CloseTrade(trade.Id, lot, trade.Close, "", 0, out o1,out o2);
+        if (IsHedged)
+          Desk.CloseTrade(trade.Id, lot, trade.Close, "", 0, out o1, out o2);
+        else
+          OpenTrade(trade.Pair, !trade.Buy, trade.Lots, 0, 0, "", null);
         return true;
       } catch (Exception exc) {
         RaiseError(exc);
@@ -1648,9 +1717,11 @@ namespace Order2GoAddIn {
     }
     public bool ClosePair(string pair, bool buy) {
       try {
-        object o1, o2;
-        Desk.CloseTradesByInstrument(pair, AccountID, buy, 0, "", 0, out o1, out o2);
-      } catch (Exception exc) { 
+        if (GetTrades(buy).ByPair(pair).Count() > 0) {
+          object o1, o2;
+          Desk.CloseTradesByInstrument(pair, AccountID, buy, 0, "", 0, out o1, out o2);
+        }
+      } catch (Exception exc) {
         RaiseError(new ErrorEventArgs(exc));
         return false;
       }
@@ -1668,7 +1739,7 @@ namespace Order2GoAddIn {
           var row = GetTable(TABLE_TRADES).FindRow(FIELD_TRADEID, tradeId, 0) as FXCore.RowAut;
           if (lot == 0) lot = (int)row.CellValue("Lot");
           var dRate = mode == coreFX.Desk.FIX_CLOSEMARKET || price == null ? 0 : IsBuy(row.CellValue("BS")) ? price.Bid : price.Ask;
-          if (GetAccount(false).Hedging) {
+          if (Hedging) {
             //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(5), () => {
             coreFX.Desk.CreateFixOrder(mode, tradeId, dRate, 0, "", "", "", true, lot, "", out psOrderID, out psDI);
             try {
@@ -1901,7 +1972,10 @@ namespace Order2GoAddIn {
     }
 
     List<string> ClosedTradeIDs = new List<string>();
-    List<string> OpenedTradeIDs = new List<string>();
+    Dictionary<string, Trade> OpenTrades = new Dictionary<string, Trade>();
+    void OpenTrades_Remove(string tradeId) {
+      if (OpenTrades.ContainsKey(tradeId)) OpenTrades.Remove(tradeId);
+    }
 
     void mSink_ITradeDeskEvents_Event_OnRowAdded(object _table, string sRowID) {
       FXCore.TableAut table = _table as FXCore.TableAut;
@@ -1909,7 +1983,7 @@ namespace Order2GoAddIn {
       FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
       try {
         switch (table.Type.ToLower()) {
-          case "trades":
+          case "trades":break;
             try {
               row = table.FindRow("TradeID", sRowID, 0) as FXCore.RowAut;
             } catch { break; }
@@ -1937,9 +2011,12 @@ namespace Order2GoAddIn {
         switch (table.Type.ToLower()) {
           #region Trades
           case "trades": {
+              var tradeParsed = GetTradeSure(RowID,parser,rowText,table);
+              OpenTrades[RowID] = tradeParsed;
+              RaiseTradeAdded(tradeParsed);
+              break;
+              #region Pending Stuff
               lock (globalOrderPending) {
-                parser.ParseEventRow(rowText, table.Type);
-                var tradeParsed = InitTrade(parser);
                 var poStop = PendingStops.SingleOrDefault(po => po.TradeId == RowID);
                 if (poStop != null) {
                   try {
@@ -1967,6 +2044,7 @@ namespace Order2GoAddIn {
                   FixOrderOpen(poTrade.Pair, poTrade.Buy, poTrade.Lot, poTrade.Limit, poTrade.Stop, poTrade.Remark);
                 }
               }
+              #endregion
             }
             break;
           #endregion
@@ -2002,6 +2080,7 @@ namespace Order2GoAddIn {
           case "closed trades": {
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
               var trade = InitClosedTrade(row);
+              OpenTrades_Remove(trade.Id);
               RaiseTradeClosed(trade);
               try {
                 if (ClosedTradeIDs.Contains(trade.Id)) break;
@@ -2015,6 +2094,7 @@ namespace Order2GoAddIn {
       } catch (Exception exc) { RaiseError(exc); }
     }
 
+    #region CurrentPrices
     Dictionary<string, Price> currentPrices = new Dictionary<string, Price>();
 
     public double GetCurrentPrice(string pair, bool isBuy) {
@@ -2023,9 +2103,10 @@ namespace Order2GoAddIn {
     }
     public Price GetCurrentPrice(string pair) { return !currentPrices.ContainsKey(pair) ? new Price() : currentPrices[pair]; }
     void SetCurrentPrice( Price price) { currentPrices[price.Pair] = price; }
+    #endregion
 
+    #region Parser
     FXCore.ParserAut _parser;
-
     public FXCore.ParserAut Parser {
       get {
         if (_parser == null)
@@ -2033,8 +2114,9 @@ namespace Order2GoAddIn {
         return _parser;
       }
     }
+    #endregion
 
-
+    Account accountInternal = null;
     void FxCore_RowChanged(object _table, string rowID, string rowText) {
       try {
         FXCore.TableAut table = _table as FXCore.TableAut;
@@ -2045,44 +2127,37 @@ namespace Order2GoAddIn {
             Parser.ParseEventRow(rowText, table.Type);
             var price = GetPrice(Parser);
             SetCurrentPrice(price);
-            SetTrades();
             OnPriceChanged(price,GetAccount(),GetTrades());
-            //if ((DateTime)row.CellValue(FIELD_TIME) != _prevOfferDate
-            //  && new[] { "", row.CellValue(FIELD_INSTRUMENT) + "" }.Contains(Pair.ToUpper())
-            //  && PriceChanged != null) {
-            //  _prevOfferDate = (DateTime)row.CellValue(FIELD_TIME);
-            //  PriceChanged(price);
-            //}
+            break;
+          case TABLE_ACCOUNTS:
+            //SetTrades();
+            Parser.ParseEventRow(rowText, table.Type);
+            GetAccount(Parser);
             break;
           case TABLE_ORDERS:
             Parser.ParseEventRow(rowText, table.Type);
             var order = InitOrder(Parser);
             RaiseOrderChanged(order);
-            //parser.ParseEventRow(rowText, table.Type);
-            //var order = InitOrder(parser);
-            //var poOrder = PendingOrders.SingleOrDefault(po => po.RequestId == order.RequestID);
-            //if (poOrder != null && !poOrder.HasKids(PendingOrders)) RemovePendingOrder(poOrder);
             break;
           case TABLE_TRADES:
-            Parser.ParseEventRow(rowText, table.Type);
-            var trade = InitTrade(Parser);
-            trade.IsParsed = true;
-            try {
-              row = table.FindRow("TradeID", rowID, 0) as FXCore.RowAut;
-              trade = InitTrade(row);
-            } catch {
-            }
-            if (!OpenedTradeIDs.Contains(rowID)) {
-              OpenedTradeIDs.Add(rowID);
-            }else
-              RaiseTradeChanged(trade);
-            //var poTrade = PendingOrders.SingleOrDefault(po => po.RequestId == trade.OpenOrderReqID);
-            //if (poTrade != null && !poTrade.HasKids(PendingOrders)) RemovePendingOrder(poTrade);
+            var trade = GetTradeSure(rowID,Parser,rowText,table);
+            OpenTrades[rowID] = trade;
+            RaiseTradeChanged(trade);
             break;
         }
       } catch (Exception exc) {
         RaiseError(exc);
       }
+    }
+    private Trade GetTradeSure(string rowID, FXCore.ParserAut Parser, string rowText, FXCore.TableAut table) {
+      Parser.ParseEventRow(rowText, table.Type);
+      var trade = InitTrade(Parser);
+      try {
+        var row = table.FindRow("TradeID", rowID, 0) as FXCore.RowAut;
+        trade = InitTrade(row);
+      } catch {
+      }
+      return trade;
     }
 
     void mSink_ITradeDeskEvents_Event_OnRequestCompleted(string sRequestID) {
@@ -2113,14 +2188,8 @@ namespace Order2GoAddIn {
         FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
         switch (table.Type.ToLower()) {
           case "trades":
-            parser.ParseEventRow(sExtInfo, table.Type);
-            var trade = InitTrade(parser);
-            trade.IsParsed = true;
-            try {
-              var row = table.FindRow("TradeID", RowID, 0) as FXCore.RowAut;
-              if (row != null)
-                trade = InitTrade(row);
-            } catch { }
+            var trade = GetTradeSure(RowID,parser,sExtInfo,table);
+            OpenTrades_Remove(RowID);
             RaiseTradeRemoved(trade);
             break;
         }
@@ -2186,12 +2255,16 @@ namespace Order2GoAddIn {
         var volume = (int)double.Parse(getData(2).Value.Replace(",", ""));
         var timeOpen = DateTime.Parse(getData(3).Value);
         var isBuy = getData(4).Value == "";
+        double priceOpen = double.Parse(getData(isBuy ? 5 : 4).Value);
         row = row.NextNode as XElement;
+        double priceClose = double.Parse(getData(isBuy ? 4 : 5).Value);
         var timeClose = DateTime.Parse(getData(3).Value);
         var grossPL = double.Parse(getData(6).Value);
+        var pipSize = GetPipCost(pair);
+        var pl = grossPL * 10000 / pipSize / volume;
         var commission = double.Parse(getData(7).Value);
         var rollover = double.Parse(getData(8).Value);
-        trades.Add(new Trade() { Pair = pair, Buy = isBuy, Commission = commission + rollover, GrossPL = grossPL, Id = ticket.Value, IsBuy = isBuy, Lots = volume, Time = timeOpen, TimeClose = timeClose, OpenOrderID = "", OpenOrderReqID = "" });
+        trades.Add(new Trade() { Pair = pair, Buy = isBuy, Open = priceOpen, Close = priceClose, Commission = commission + rollover, GrossPL = grossPL, PL = pl, Id = ticket.Value, IsBuy = isBuy, Lots = volume, Time = timeOpen, TimeClose = timeClose, OpenOrderID = "", OpenOrderReqID = "" });
         row = row.NextNode as XElement;
       }
       return trades;
@@ -2223,6 +2296,19 @@ namespace Order2GoAddIn {
         return _minimumQuantity;
       }
     }
+
+    private new Dictionary<string, int> _MMR = new Dictionary<string, int>();
+    public int GetMMR(string pair) {
+      if (_MMR.Count == 0)
+        foreach (var offer in GetOffers())
+          try {
+            _MMR.Add(offer.Pair, (int)TradingSettingsProvider.GetMMR(offer.Pair, AccountID));
+          } catch (Exception exc) {
+            throw;
+          }
+      return _MMR[pair];
+    }
+
 
     public class TradingSettings {
       string pair;

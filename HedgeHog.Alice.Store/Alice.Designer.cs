@@ -16,6 +16,11 @@ using System.Xml.Serialization;
 using System.Runtime.Serialization;
 
 [assembly: EdmSchemaAttribute()]
+#region EDM Relationship Metadata
+
+[assembly: EdmRelationshipAttribute("AliceModel", "TradingMacro_SuppRes", "TradingMacro", System.Data.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.Alice.Store.TradingMacro), "SuppRes", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.Alice.Store.SuppRes), true)]
+
+#endregion
 
 namespace HedgeHog.Alice.Store
 {
@@ -144,6 +149,22 @@ namespace HedgeHog.Alice.Store
             }
         }
         private ObjectSet<OrderTemplate> _OrderTemplates;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<SuppRes> SuppRes
+        {
+            get
+            {
+                if ((_SuppRes == null))
+                {
+                    _SuppRes = base.CreateObjectSet<SuppRes>("SuppRes");
+                }
+                return _SuppRes;
+            }
+        }
+        private ObjectSet<SuppRes> _SuppRes;
 
         #endregion
         #region AddTo Methods
@@ -186,6 +207,14 @@ namespace HedgeHog.Alice.Store
         public void AddToOrderTemplates(OrderTemplate orderTemplate)
         {
             base.AddObject("OrderTemplates", orderTemplate);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the SuppRes EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToSuppRes(SuppRes suppRes)
+        {
+            base.AddObject("SuppRes", suppRes);
         }
 
         #endregion
@@ -738,6 +767,180 @@ namespace HedgeHog.Alice.Store
 
         #endregion
     
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="AliceModel", Name="SuppRes")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class SuppRes : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new SuppRes object.
+        /// </summary>
+        /// <param name="rate">Initial value of the Rate property.</param>
+        /// <param name="isSupport">Initial value of the IsSupport property.</param>
+        /// <param name="tradingMacroID">Initial value of the TradingMacroID property.</param>
+        /// <param name="uID">Initial value of the UID property.</param>
+        public static SuppRes CreateSuppRes(global::System.Double rate, global::System.Boolean isSupport, global::System.Guid tradingMacroID, global::System.Guid uID)
+        {
+            SuppRes suppRes = new SuppRes();
+            suppRes.Rate = rate;
+            suppRes.IsSupport = isSupport;
+            suppRes.TradingMacroID = tradingMacroID;
+            suppRes.UID = uID;
+            return suppRes;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Rate
+        {
+            get
+            {
+                return _Rate;
+            }
+            set
+            {
+                OnRateChanging(value);
+                ReportPropertyChanging("Rate");
+                _Rate = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Rate");
+                OnRateChanged();
+            }
+        }
+        private global::System.Double _Rate;
+        partial void OnRateChanging(global::System.Double value);
+        partial void OnRateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean IsSupport
+        {
+            get
+            {
+                return _IsSupport;
+            }
+            set
+            {
+                OnIsSupportChanging(value);
+                ReportPropertyChanging("IsSupport");
+                _IsSupport = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IsSupport");
+                OnIsSupportChanged();
+            }
+        }
+        private global::System.Boolean _IsSupport;
+        partial void OnIsSupportChanging(global::System.Boolean value);
+        partial void OnIsSupportChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Guid TradingMacroID
+        {
+            get
+            {
+                return _TradingMacroID;
+            }
+            set
+            {
+                OnTradingMacroIDChanging(value);
+                ReportPropertyChanging("TradingMacroID");
+                _TradingMacroID = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradingMacroID");
+                OnTradingMacroIDChanged();
+            }
+        }
+        private global::System.Guid _TradingMacroID;
+        partial void OnTradingMacroIDChanging(global::System.Guid value);
+        partial void OnTradingMacroIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Guid UID
+        {
+            get
+            {
+                return _UID;
+            }
+            set
+            {
+                if (_UID != value)
+                {
+                    OnUIDChanging(value);
+                    ReportPropertyChanging("UID");
+                    _UID = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("UID");
+                    OnUIDChanged();
+                }
+            }
+        }
+        private global::System.Guid _UID;
+        partial void OnUIDChanging(global::System.Guid value);
+        partial void OnUIDChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("AliceModel", "TradingMacro_SuppRes", "TradingMacro")]
+        public TradingMacro TradingMacro
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<TradingMacro>("AliceModel.TradingMacro_SuppRes", "TradingMacro").Value;
+            }
+            set
+            {
+                ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<TradingMacro>("AliceModel.TradingMacro_SuppRes", "TradingMacro").Value = value;
+            }
+        }
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [BrowsableAttribute(false)]
+        [DataMemberAttribute()]
+        public EntityReference<TradingMacro> TradingMacroReference
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<TradingMacro>("AliceModel.TradingMacro_SuppRes", "TradingMacro");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedReference<TradingMacro>("AliceModel.TradingMacro_SuppRes", "TradingMacro", value);
+                }
+            }
+        }
+
+        #endregion
     }
     
     /// <summary>
@@ -1509,7 +1712,12 @@ namespace HedgeHog.Alice.Store
         /// <param name="gannAngles">Initial value of the GannAngles property.</param>
         /// <param name="isGannAnglesManual">Initial value of the IsGannAnglesManual property.</param>
         /// <param name="spreadShortToLongTreshold">Initial value of the SpreadShortToLongTreshold property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold)
+        /// <param name="levelType">Initial value of the LevelType property.</param>
+        /// <param name="iterationsForSuppResLevels">Initial value of the IterationsForSuppResLevels property.</param>
+        /// <param name="suppResLevelsCount">Initial value of the SuppResLevelsCount property.</param>
+        /// <param name="doStreatchRates">Initial value of the DoStreatchRates property.</param>
+        /// <param name="isSuppResManual">Initial value of the IsSuppResManual property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1566,6 +1774,11 @@ namespace HedgeHog.Alice.Store
             tradingMacro.GannAngles = gannAngles;
             tradingMacro.IsGannAnglesManual = isGannAnglesManual;
             tradingMacro.SpreadShortToLongTreshold = spreadShortToLongTreshold;
+            tradingMacro.LevelType = levelType;
+            tradingMacro.IterationsForSuppResLevels = iterationsForSuppResLevels;
+            tradingMacro.SuppResLevelsCount = suppResLevelsCount;
+            tradingMacro.DoStreatchRates = doStreatchRates;
+            tradingMacro.IsSuppResManual = isSuppResManual;
             return tradingMacro;
         }
 
@@ -3014,9 +3227,202 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _SpreadShortToLongTreshold;
         partial void OnSpreadShortToLongTresholdChanging(global::System.Double value);
         partial void OnSpreadShortToLongTresholdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> SupportPriceStore
+        {
+            get
+            {
+                return _SupportPriceStore;
+            }
+            set
+            {
+                OnSupportPriceStoreChanging(value);
+                ReportPropertyChanging("SupportPriceStore");
+                _SupportPriceStore = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SupportPriceStore");
+                OnSupportPriceStoreChanged();
+            }
+        }
+        private Nullable<global::System.Double> _SupportPriceStore;
+        partial void OnSupportPriceStoreChanging(Nullable<global::System.Double> value);
+        partial void OnSupportPriceStoreChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> ResistancePriceStore
+        {
+            get
+            {
+                return _ResistancePriceStore;
+            }
+            set
+            {
+                OnResistancePriceStoreChanging(value);
+                ReportPropertyChanging("ResistancePriceStore");
+                _ResistancePriceStore = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ResistancePriceStore");
+                OnResistancePriceStoreChanged();
+            }
+        }
+        private Nullable<global::System.Double> _ResistancePriceStore;
+        partial void OnResistancePriceStoreChanging(Nullable<global::System.Double> value);
+        partial void OnResistancePriceStoreChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 LevelType
+        {
+            get
+            {
+                return _LevelType;
+            }
+            set
+            {
+                OnLevelTypeChanging(value);
+                ReportPropertyChanging("LevelType");
+                _LevelType = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LevelType");
+                OnLevelTypeChanged();
+            }
+        }
+        private global::System.Int32 _LevelType;
+        partial void OnLevelTypeChanging(global::System.Int32 value);
+        partial void OnLevelTypeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 IterationsForSuppResLevels
+        {
+            get
+            {
+                return _IterationsForSuppResLevels;
+            }
+            set
+            {
+                OnIterationsForSuppResLevelsChanging(value);
+                ReportPropertyChanging("IterationsForSuppResLevels");
+                _IterationsForSuppResLevels = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IterationsForSuppResLevels");
+                OnIterationsForSuppResLevelsChanged();
+            }
+        }
+        private global::System.Int32 _IterationsForSuppResLevels;
+        partial void OnIterationsForSuppResLevelsChanging(global::System.Int32 value);
+        partial void OnIterationsForSuppResLevelsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 SuppResLevelsCount
+        {
+            get
+            {
+                return _SuppResLevelsCount;
+            }
+            set
+            {
+                OnSuppResLevelsCountChanging(value);
+                ReportPropertyChanging("SuppResLevelsCount");
+                _SuppResLevelsCount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SuppResLevelsCount");
+                OnSuppResLevelsCountChanged();
+            }
+        }
+        private global::System.Int32 _SuppResLevelsCount;
+        partial void OnSuppResLevelsCountChanging(global::System.Int32 value);
+        partial void OnSuppResLevelsCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean DoStreatchRates
+        {
+            get
+            {
+                return _DoStreatchRates;
+            }
+            set
+            {
+                OnDoStreatchRatesChanging(value);
+                ReportPropertyChanging("DoStreatchRates");
+                _DoStreatchRates = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DoStreatchRates");
+                OnDoStreatchRatesChanged();
+            }
+        }
+        private global::System.Boolean _DoStreatchRates;
+        partial void OnDoStreatchRatesChanging(global::System.Boolean value);
+        partial void OnDoStreatchRatesChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean IsSuppResManual
+        {
+            get
+            {
+                return _IsSuppResManual;
+            }
+            set
+            {
+                OnIsSuppResManualChanging(value);
+                ReportPropertyChanging("IsSuppResManual");
+                _IsSuppResManual = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IsSuppResManual");
+                OnIsSuppResManualChanged();
+            }
+        }
+        private global::System.Boolean _IsSuppResManual;
+        partial void OnIsSuppResManualChanging(global::System.Boolean value);
+        partial void OnIsSuppResManualChanged();
 
         #endregion
     
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("AliceModel", "TradingMacro_SuppRes", "SuppRes")]
+        public EntityCollection<SuppRes> SuppRes
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<SuppRes>("AliceModel.TradingMacro_SuppRes", "SuppRes");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<SuppRes>("AliceModel.TradingMacro_SuppRes", "SuppRes", value);
+                }
+            }
+        }
+
+        #endregion
     }
 
     #endregion

@@ -210,6 +210,7 @@ namespace Telerik.Windows.Controls.GridView.Settings
                   }
                 } catch (Exception exc) {
                   System.Diagnostics.Debug.Fail(exc.ToString());
+                  throw;
                 }
             }
 
@@ -349,14 +350,16 @@ namespace Telerik.Windows.Controls.GridView.Settings
                   if (matchingColumn != null) {
                     ColumnFilterDescriptor cfd = new ColumnFilterDescriptor(matchingColumn);
 
-                    cfd.FieldFilter.Filter1.Member = setting.Filter1.Member;
-                    cfd.FieldFilter.Filter1.Operator = setting.Filter1.Operator;
-                    cfd.FieldFilter.Filter1.Value = setting.Filter1.Value;
-
-                    cfd.FieldFilter.Filter2.Member = setting.Filter2.Member;
-                    cfd.FieldFilter.Filter2.Operator = setting.Filter2.Operator;
-                    cfd.FieldFilter.Filter2.Value = setting.Filter2.Value;
-
+                    if (setting.Filter1 != null) {
+                      cfd.FieldFilter.Filter1.Member = setting.Filter1.Member;
+                      cfd.FieldFilter.Filter1.Operator = setting.Filter1.Operator;
+                      cfd.FieldFilter.Filter1.Value = setting.Filter1.Value;
+                    }
+                    if (setting.Filter2 != null) {
+                      cfd.FieldFilter.Filter2.Member = setting.Filter2.Member;
+                      cfd.FieldFilter.Filter2.Operator = setting.Filter2.Operator;
+                      cfd.FieldFilter.Filter2.Value = setting.Filter2.Value;
+                    }
                     foreach (Telerik.Windows.Data.FilterDescriptor descriptor in setting.SelectedDistinctValues) {
                       cfd.DistinctFilter.FilterDescriptors.Add(descriptor);
                     }
@@ -412,27 +415,31 @@ namespace Telerik.Windows.Controls.GridView.Settings
                     foreach (IColumnFilterDescriptor cfd in grid.FilterDescriptors.OfType<IColumnFilterDescriptor>())
                     {
                         FilterSetting setting = new FilterSetting();
+                        if (!(cfd.FieldFilter.Filter1.Value == FilterDescriptor.UnsetValue)) {
+                          setting.Filter1 = new Telerik.Windows.Data.FilterDescriptor();
+                          setting.Filter1.Member = cfd.FieldFilter.Filter1.Member;
+                          setting.Filter1.Operator = cfd.FieldFilter.Filter1.Operator;
+                          setting.Filter1.Value = cfd.FieldFilter.Filter1.Value;
+                          setting.Filter1.MemberType = null;
+                        }
+                        if (!(cfd.FieldFilter.Filter2.Value == FilterDescriptor.UnsetValue)) {
+                          setting.Filter2 = new Telerik.Windows.Data.FilterDescriptor();
+                          setting.Filter2.Member = cfd.FieldFilter.Filter2.Member;
+                          setting.Filter2.Operator = cfd.FieldFilter.Filter2.Operator;
+                          setting.Filter2.Value = cfd.FieldFilter.Filter2.Value;
+                          setting.Filter2.MemberType = null;
+                        }
+                        foreach (Telerik.Windows.Data.FilterDescriptor fd in cfd.DistinctFilter.FilterDescriptors.OfType<Telerik.Windows.Data.FilterDescriptor>()) {
+                          if (fd.Value == FilterDescriptor.UnsetValue) {
+                            continue;
+                          }
 
-                        setting.Filter1 = new Telerik.Windows.Data.FilterDescriptor();
-                        setting.Filter1.Member = cfd.FieldFilter.Filter1.Member;
-                        setting.Filter1.Operator = cfd.FieldFilter.Filter1.Operator;
-                        setting.Filter1.Value = cfd.FieldFilter.Filter1.Value;
-                        setting.Filter1.MemberType = null;
-
-                        setting.Filter2 = new Telerik.Windows.Data.FilterDescriptor();
-                        setting.Filter2.Member = cfd.FieldFilter.Filter2.Member;
-                        setting.Filter2.Operator = cfd.FieldFilter.Filter2.Operator;
-                        setting.Filter2.Value = cfd.FieldFilter.Filter2.Value;
-                        setting.Filter2.MemberType = null;
-
-                        foreach (Telerik.Windows.Data.FilterDescriptor fd in cfd.DistinctFilter.FilterDescriptors.OfType<Telerik.Windows.Data.FilterDescriptor>())
-                        {
-                            Telerik.Windows.Data.FilterDescriptor newFd = new Telerik.Windows.Data.FilterDescriptor();
-                            newFd.Member = fd.Member;
-                            newFd.Operator = fd.Operator;
-                            newFd.Value = fd.Value;
-                            newFd.MemberType = null;
-                            setting.SelectedDistinctValues.Add(newFd);
+                          Telerik.Windows.Data.FilterDescriptor newFd = new Telerik.Windows.Data.FilterDescriptor();
+                          newFd.Member = fd.Member;
+                          newFd.Operator = fd.Operator;
+                          newFd.Value = fd.Value;
+                          newFd.MemberType = null;
+                          setting.SelectedDistinctValues.Add(newFd);
                         }
 
                         setting.PropertyName = cfd.Column.DataMemberBinding.Path.Path;

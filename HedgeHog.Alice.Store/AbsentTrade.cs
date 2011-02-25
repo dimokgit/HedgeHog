@@ -28,8 +28,8 @@ namespace HedgeHog.Alice.Store {
     public TradeStatistics TradeStats { get; set; }
     public Guid SessionId { get; set; }
     public TradeStatistics InitTradeStatistics(TradeStatistics tradesStatistics = null) {
-      if (tradesStatistics != null && this.TradeStats != null)
-        throw new InvalidOperationException("TradeStats member is already set.");
+      //if (tradesStatistics != null && this.TradeStats != null)
+      //  throw new InvalidOperationException("TradeStats member is already set.");
       TradeStats = tradesStatistics ?? new TradeStatistics();
       return TradeStats;
     }

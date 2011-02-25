@@ -8,9 +8,14 @@
         <EntityContainer Name="AliceModelStoreContainer">
           <EntitySet Name="Bar" EntityType="AliceModel.Store.Bar" store:Type="Tables" />
           <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" />
+          <EntitySet Name="SuppRes" EntityType="AliceModel.Store.SuppRes" store:Type="Tables" />
           <EntitySet Name="TradeHistory" EntityType="AliceModel.Store.TradeHistory" store:Type="Tables" />
           <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
           <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
+          <AssociationSet Name="TradingMacro_SuppRes" Association="AliceModel.Store.TradingMacro_SuppRes">
+            <End Role="TradingMacro" EntitySet="TradingMacro" />
+            <End Role="SuppRes" EntitySet="SuppRes" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="Bar">
           <Key>
@@ -40,6 +45,15 @@
           <Property Name="Lot" Type="int" Nullable="false" />
           <Property Name="StopOrderID" Type="int" Nullable="false" />
           <Property Name="Pair" Type="nvarchar" MaxLength="7" />
+        </EntityType>
+        <EntityType Name="SuppRes">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Rate" Type="float" Nullable="false" />
+          <Property Name="IsSupport" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
         </EntityType>
         <EntityType Name="TradeHistory">
           <Key>
@@ -140,7 +154,28 @@
           <Property Name="IsGannAnglesManual" Type="bit" Nullable="false" />
           <Property Name="GannAnglesAnchorDate" Type="datetime" />
           <Property Name="SpreadShortToLongTreshold" Type="float" Nullable="false" />
+          <Property Name="SupportPriceStore" Type="float" />
+          <Property Name="ResistancePriceStore" Type="float" />
+          <Property Name="LevelType" Type="int" Nullable="false" />
+          <Property Name="IterationsForSuppResLevels" Type="int" Nullable="false" />
+          <Property Name="SuppResLevelsCount" Type="int" Nullable="false" />
+          <Property Name="DoStreatchRates" Type="bit" Nullable="false" />
+          <Property Name="IsSuppResManual" Type="bit" Nullable="false" />
         </EntityType>
+        <Association Name="TradingMacro_SuppRes">
+          <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="SuppRes" Type="AliceModel.Store.SuppRes" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TradingMacro">
+              <PropertyRef Name="UID" />
+            </Principal>
+            <Dependent Role="SuppRes">
+              <PropertyRef Name="TradingMacroID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -151,6 +186,11 @@
           <EntitySet Name="Bars" EntityType="AliceModel.Bar" />
           <EntitySet Name="TradeHistories" EntityType="AliceModel.TradeHistory" />
           <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
+          <EntitySet Name="SuppRes" EntityType="AliceModel.SuppRes" />
+          <AssociationSet Name="TradingMacro_SuppRes" Association="AliceModel.TradingMacro_SuppRes">
+            <End Role="TradingMacro" EntitySet="TradingMacroes" />
+            <End Role="SuppRes" EntitySet="SuppRes" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="TradingAccount">
           <Key>
@@ -231,6 +271,14 @@
           <Property Type="Boolean" Name="IsGannAnglesManual" Nullable="false" />
           <Property Type="DateTime" Name="GannAnglesAnchorDate" />
           <Property Type="Double" Name="SpreadShortToLongTreshold" Nullable="false" />
+          <Property Type="Double" Name="SupportPriceStore" />
+          <Property Type="Double" Name="ResistancePriceStore" />
+          <NavigationProperty Name="SuppRes" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="TradingMacro" ToRole="SuppRes" />
+          <Property Type="Int32" Name="LevelType" Nullable="false" />
+          <Property Type="Int32" Name="IterationsForSuppResLevels" Nullable="false" />
+          <Property Type="Int32" Name="SuppResLevelsCount" Nullable="false" />
+          <Property Type="Boolean" Name="DoStreatchRates" Nullable="false" />
+          <Property Type="Boolean" Name="IsSuppResManual" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -281,6 +329,28 @@
           <Property Type="Int32" Name="StopOrderID" Nullable="false" />
           <Property Type="String" Name="Pair" MaxLength="7" FixedLength="false" Unicode="true" />
         </EntityType>
+        <EntityType Name="SuppRes">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Type="Double" Name="Rate" Nullable="false" />
+          <Property Type="Boolean" Name="IsSupport" Nullable="false" />
+          <Property Type="Guid" Name="TradingMacroID" Nullable="false" />
+          <Property Type="Guid" Name="UID" Nullable="false" />
+          <NavigationProperty Name="TradingMacro" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="SuppRes" ToRole="TradingMacro" />
+        </EntityType>
+        <Association Name="TradingMacro_SuppRes">
+          <End Type="AliceModel.TradingMacro" Role="TradingMacro" Multiplicity="1" />
+          <End Type="AliceModel.SuppRes" Role="SuppRes" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TradingMacro">
+              <PropertyRef Name="UID" />
+            </Principal>
+            <Dependent Role="SuppRes">
+              <PropertyRef Name="TradingMacroID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -300,7 +370,14 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="SpreadShortToLongTreshold" ColumnName="SpreadShortToLongTreshold" />
+            <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
+                <ScalarProperty Name="DoStreatchRates" ColumnName="DoStreatchRates" />
+                <ScalarProperty Name="SuppResLevelsCount" ColumnName="SuppResLevelsCount" />
+                <ScalarProperty Name="IterationsForSuppResLevels" ColumnName="IterationsForSuppResLevels" />
+                <ScalarProperty Name="LevelType" ColumnName="LevelType" />
+                <ScalarProperty Name="ResistancePriceStore" ColumnName="ResistancePriceStore" />
+                <ScalarProperty Name="SupportPriceStore" ColumnName="SupportPriceStore" />
+                <ScalarProperty Name="SpreadShortToLongTreshold" ColumnName="SpreadShortToLongTreshold" />
                 <ScalarProperty Name="GannAnglesAnchorDate" ColumnName="GannAnglesAnchorDate" />
                 <ScalarProperty Name="IsGannAnglesManual" ColumnName="IsGannAnglesManual" />
                 <ScalarProperty Name="GannAngles" ColumnName="GannAngles" />
@@ -413,6 +490,16 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="SuppRes">
+            <EntityTypeMapping TypeName="AliceModel.SuppRes">
+              <MappingFragment StoreEntitySet="SuppRes">
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="TradingMacroID" ColumnName="TradingMacroID" />
+                <ScalarProperty Name="IsSupport" ColumnName="IsSupport" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -427,7 +514,7 @@
     <Options>
       <DesignerInfoPropertySet>
         <DesignerProperty Name="ValidateOnBuild" Value="true" />
-        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="EnablePluralization" Value="False" />
         <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
       </DesignerInfoPropertySet>
     </Options>
@@ -435,10 +522,15 @@
     <Diagrams>
       <Diagram Name="Alice">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="10.467062174479166" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="1.0992643229166665" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
-        <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="5.375" PointY="4.75" Height="3.2357796223958317" />
+        <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="9.375" PointY="3.125" Height="3.4001269531249996" />
         <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
+        <EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="3.875" Height="1.7566536458333317" />
+        <AssociationConnector Association="AliceModel.TradingMacro_SuppRes" >
+          <ConnectorPoint PointX="4.625" PointY="4.7533268229166659" />
+          <ConnectorPoint PointX="5.375" PointY="4.7533268229166659" />
+        </AssociationConnector>
       </Diagram>
     </Diagrams>
   </Designer>

@@ -31,6 +31,7 @@ namespace HedgeHog.Shared {
     #endregion
 
     #region Trades
+    Trade[] GetTradesInternal(string Pair);
     Trade[] GetTrades(string pair);
     Trade[] GetTrades();
     Trade GetLastTrade(string pair);
@@ -57,7 +58,7 @@ namespace HedgeHog.Shared {
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
     event EventHandler<PriceChangedEventArgs> PriceChanged;
-    event TradeAddedEventHandler TradeAdded;
+    event EventHandler<TradeEventArgs> TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
     event EventHandler<ErrorEventArgs> Error;
     event EventHandler<RequestEventArgs> RequestFailed;
@@ -76,9 +77,11 @@ namespace HedgeHog.Shared {
 
     #region Account
     Account GetAccount();
-    Account GetAccount(bool includeOtherInfo);
+    //Account GetAccount(bool includeOtherInfo);
     #endregion
 
+    Func<Trade, double> CommissionByTrade { get; }
+    double CommissionByTrades(params Trade[] trades);
     Rate[] GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate);
 
     Tick[] GetTicks(string pair, int periodsBack);

@@ -53,19 +53,19 @@ namespace HedgeHog {
     }
 
 
-    public static double[] AverageByIterations(this double[] values, double iterations,bool low = false) {
+    public static double[] AverageByIterations(this ICollection< double> values, double iterations,bool low = false) {
       return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations);
     }
-    public static double[] AverageByIterations(this double[] values, Func<double, double, bool> compare, double iterations) {
+    public static double[] AverageByIterations(this ICollection<double> values, Func<double, double, bool> compare, double iterations) {
       var avg = values.DefaultIfEmpty().Average();
-      if (values.Length == 0) return values;
+      if (values.Count == 0) return values.ToArray();
       for (int i = 1; i < iterations; i++) {
         var vs = values.Where(r => compare(r, avg)).ToArray();
         if (vs.Length == 0) break;
         values = vs;
         avg = values.Average();
       }
-      return values;
+      return values.ToArray();
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }

@@ -6,6 +6,7 @@ using HedgeHog.Alice.Store;
 using System.Windows;
 using System.Runtime.CompilerServices;
 using HedgeHog.Bars;
+using HedgeHog.DB;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage {
@@ -70,7 +71,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static List<Rate> GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {
-      IQueryable<Store.t_Bar> bars;
+      IQueryable<t_Bar> bars;
       if (minutesPerPriod == 0) {
         bars = GlobalStorage.ForexContext.t_Bar
           .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate >= startDate)
