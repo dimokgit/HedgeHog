@@ -712,7 +712,7 @@ namespace HedgeHog {
     Rate GetFractalWave(Rate[] ratesFractal, int waveCountMinimum) {
       if (ratesFractal.Count() < 5) return null;
       SetTicksPrice(ratesFractal, 1, r => r.PriceAvg, (r, d) => r.PriceAvg1 = d);
-      var stDev = ratesFractal.StdDev(r => r.PriceAvg - r.PriceAvg1);
+      var stDev = ratesFractal.StDev(r => r.PriceAvg - r.PriceAvg1);
       ratesFractal = ratesFractal.HasFractal(r => Math.Abs(r.PriceAvg - r.PriceAvg1) > stDev).ToArray();
       var rateFractal = ratesFractal.LastOrDefault(r => r.Fractal > 0);
       for (int waveCount = 0; rateFractal != null && ++waveCount < waveCountMinimum; )
@@ -723,7 +723,7 @@ namespace HedgeHog {
 
     Rate GetTsiWave(Rate[] ratesTsi, int waveCountMinimum) {
       if (ratesTsi.Count() == 0) return null;
-      var tsiStDev = ratesTsi.StdDev(r => r.PriceTsi);
+      var tsiStDev = ratesTsi.StDev(r => r.PriceTsi);
       var tsiAnerage = ratesTsi.Average(r => r.PriceTsi).Value;
       var tsiWave = ratesTsi.Where(r => IsTsiWaive(r, tsiAnerage, tsiStDev)).OrderBy(r => r.StartDate).LastOrDefault();
       for (int waveCount = 0; tsiWave != null && ++waveCount < waveCountMinimum; )
@@ -765,7 +765,7 @@ namespace HedgeHog {
           var poss = new[] { posBuy, posSell };
           //var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Math.Min(posSell, posBuy) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
           var posTrade = Fibonacci.FibRatio(posBuy, posSell);
-          var stDev = ticksCopy.StdDev(t => readFrom(t) - t.PriceAvg4);
+          var stDev = ticksCopy.StDev(t => readFrom(t) - t.PriceAvg4);
           var waveRatio = stDev / (vd + vu);// Math.Min(vd, vh) / (tickHigh.PriceClose - tickLow.PriceClose);
           wi.Add(new WaveInfo(tickLocal.StartDate, Math.Round(waveRatio, 3), Math.Round(posTrade, 2), upDownRatio, /*Math.Abs(vu / vd - vd / vu)*/ vu, vd, coeffs, TimeSpan.Zero/*interval*/));
           break;
@@ -918,7 +918,7 @@ namespace HedgeHog {
             Math.Min(ticksByMinute.Average(r => r.Overlap.TotalSeconds), ticksByMinute1.Average(r => r.Overlap.TotalSeconds)))
             );
           OverlapStDev = TimeSpan.FromSeconds(Lib.CMA(OverlapStDev.TotalSeconds, 0, cmaPeriod,
-            Math.Min(ticksByMinute.StdDev(r => r.Overlap.TotalSeconds), ticksByMinute1.StdDev(r => r.Overlap.TotalSeconds)))
+            Math.Min(ticksByMinute.StDev(r => r.Overlap.TotalSeconds), ticksByMinute1.StDev(r => r.Overlap.TotalSeconds)))
             );
           OverlapAverageShort = Fractals.Length == 0 ? OverlapAverage :
             TimeSpan.FromSeconds(Lib.CMA(OverlapAverageShort.TotalSeconds, 0, cmaPeriod,
@@ -1320,7 +1320,7 @@ namespace HedgeHog {
                   var poss = new[] { posBuy, posSell };
                   //var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Math.Min(posSell, posBuy) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
                   var posTrade = vd == vu || !ui.corridorByMinimumVolatility.HasValue ? Fibonacci.FibRatio(posBuy, posSell) : fooPosTradeCondition(vd, vu) ? posBuy : posSell;
-                  var stDev = ticksCopy.StdDev(t => readFrom(t) - t.PriceAvg4);
+                  var stDev = ticksCopy.StDev(t => readFrom(t) - t.PriceAvg4);
                   var waveRatio = stDev / (vd + vu);// Math.Min(vd, vh) / (tickHigh.PriceClose - tickLow.PriceClose);
                   lock (wi) {
                     wi.Add(new WaveInfo(tickLocal.StartDate, Math.Round(waveRatio, 3), Math.Round(posTrade, 2), upDownRatio, /*Math.Abs(vu / vd - vd / vu)*/ vu, vd, coeffs, interval));

@@ -114,7 +114,11 @@ namespace HedgeHog.Bars {
       return overlaps.OrderBy(rm => rm.Length).Last();
     }
 
-    public static Rate[][] Overlaps(this ICollection<Rate> rates) {
+    public static Rate[][] Overlaps(this ICollection<Rate> rates,int iterationsForSpread = 0) {
+      if (iterationsForSpread > 0) {
+        var spreadAverage = rates.Select(r => r.Spread).ToArray().AverageByIterations(iterationsForSpread, true).Average();
+        rates = rates.Where(r => r.Spread <= spreadAverage).ToArray();
+      }
       return rates.AsParallel().Select(rate => rates.Where(r => r.OverlapsWith(rate) != OverlapType.None).ToArray()).ToArray();
     }
 
@@ -136,7 +140,7 @@ namespace HedgeHog.Bars {
         clusters = cs;
         var ll = clusters.Select(c => (double)c.Length).Distinct().ToArray();
         var avg = ll.Average();
-        var stDev = ll.StdDev();
+        var stDev = ll.StDev();
         clusters = clusters.Where(c => c.Length.Between(avg - stDev, avg + stDev)).ToList();
       } while (--iterations > 0 && clusters.Count > 2);
       return clusters.OrderBy(c=>c.Length).Last();
@@ -447,8 +451,8 @@ namespace HedgeHog.Bars {
       RsiAverageHigh = rsiHigh.Average(r => r.PriceRsi).Value;
       RsiAverageLow = rsiLow.Average(r => r.PriceRsi).Value;
 
-      var RsiStdHigh = rsiHigh.StdDev(r => r.PriceRsi);
-      var RsiStdLow = rsiLow.StdDev(r => r.PriceRsi);
+      var RsiStdHigh = rsiHigh.StDev(r => r.PriceRsi);
+      var RsiStdLow = rsiLow.StDev(r => r.PriceRsi);
 
       var rsiSellHigh = rsiHigh.Max(r => r.PriceRsi);
       var rsiBuyLow = rsiLow.Min(r => r.PriceRsi);
@@ -464,7 +468,7 @@ namespace HedgeHog.Bars {
       var waves = new List<TBar>();
       var wave = new List<TBar>() { barPrev };
       var average = bars.Average(Sort).GetValueOrDefault();
-      var stDev = bars.StdDev(Sort);
+      var stDev = bars.StDev(Sort);
       Func<TBar, double, double, bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
       Sign = (r) => Math.Sign(Sort(r).Value - average);
       bars = bars.Where(b => where(b, average, stDev)).Skip(1);

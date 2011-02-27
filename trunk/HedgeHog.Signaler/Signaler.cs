@@ -130,7 +130,7 @@ namespace HedgeHog {
       var ad = waves.Where(w => w <= wa).DefaultIfEmpty(wa).Average();
       waves = waves.Where(w => w > ad).DefaultIfEmpty(wa).ToArray();
       wa = waves.Average();
-      var wst = waves.StdDev();
+      var wst = waves.StDev();
       return new WaveStats(wa, wst, au, ad);
     }
 

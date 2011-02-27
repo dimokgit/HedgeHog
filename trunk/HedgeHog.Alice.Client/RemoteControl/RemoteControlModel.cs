@@ -302,7 +302,7 @@ namespace HedgeHog.Alice.Client {
     void ClosePair(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        tradesManager.CloseTradesAsync(tradesManager.GetTradesInternal(tm.Pair));
+        tradesManager.ClosePair(tm.Pair);
         tm.DisableTrading();
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
@@ -522,10 +522,13 @@ namespace HedgeHog.Alice.Client {
         }
         foreach (var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
-          tm.CurrentPrice = tradesManager.GetPrice(tm.Pair) ?? tm.CurrentPrice;
+          if( !IsInVirtualTrading)
+            tm.CurrentPrice = tradesManager.GetPrice(tm.Pair) ?? tm.CurrentPrice;
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
-          tm.LastTrade = tradesManager.GetLastTrade(tm.Pair);
-          tm.LoadRatesAsync();
+          if (!IsInVirtualTrading) {
+            tm.LastTrade = tradesManager.GetLastTrade(tm.Pair);
+            tm.LoadRatesAsync();
+          }
           tm.SetLotSize(tradesManager.GetAccount());
         }
         MasterModel.CurrentLoss = CurrentLoss;
@@ -595,7 +598,7 @@ namespace HedgeHog.Alice.Client {
           ).ToList().ForEach(a => a.pb.StartDateContinuous = a.StartDateContinuous);
         var powerBars = priceBars.Select(pb => pb.Power).ToArray();
         var stDevPower = priceBars.Average(pb => pb.Power);
-        var stAvgPower = priceBars.StdDev(pb => pb.Power);
+        var stAvgPower = priceBars.StDev(pb => pb.Power);
         var dateMin = rates.Min(r => r.StartDateContinuous);
         string[] info = new string[] { 
           "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tradesManager.InPips(pair, rates.Height()),tradesManager.ServerTime),
@@ -781,6 +784,7 @@ namespace HedgeHog.Alice.Client {
                   && (!IsInVirtualTrading || tradesManager.IsInTest)
                   && istradeDistanceOk
                   && !pendingOrders.ContainsKey(pair)
+                  && tm.CanTrade
                   //&& tm.IsSpreadShortToLongRatioOk
                   ;
     }

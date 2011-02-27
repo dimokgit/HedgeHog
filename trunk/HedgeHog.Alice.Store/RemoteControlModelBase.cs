@@ -61,7 +61,7 @@ namespace HedgeHog.Alice.Store {
       var tm = GetTradingMacros("").First();
       VirtualPair = tm.Pair;
       if (tm.Strategy == Strategies.None) { MessageBox.Show("No strategy, dude!"); return; }
-      if (!tm.IsInPlayback) { MessageBox.Show("Set Chart to Playback, dude!"); return; }
+      //if (!tm.IsInPlayback) { MessageBox.Show("Set Chart to Playback, dude!"); return; }
       tm.ResetSessionId();
       tm.EnableTrading();
       tm.SuppResResetAllTradeCounts();
