@@ -7,12 +7,13 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   public partial class SuppRes {
-    private int _TradesCount;
-    public int TradesCount {
+    static private readonly double _TradesCountMinimum = .5;
+    private double _TradesCount = _TradesCountMinimum;
+    public double TradesCount {
       get { return _TradesCount; }
       set {
         if (_TradesCount != value) {
-          _TradesCount = value;
+          _TradesCount = Math.Max(_TradesCountMinimum, value);
           OnPropertyChanged("TradesCount");
         }
       }
@@ -59,6 +60,13 @@ namespace HedgeHog.Alice.Store {
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
+    }
+
+    [DisplayName("Trade On Level Cross")]
+    [Category(categoryXXX)]
+    public bool TradeOnLevelCrossOnly {
+      get { return StrictTradeClose; }
+      set { StrictTradeClose = value; }
     }
 
     [DisplayName("Spread Short/Long Treshold")]

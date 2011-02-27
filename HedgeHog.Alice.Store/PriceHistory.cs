@@ -14,7 +14,7 @@ namespace HedgeHog.Alice.Store {
       var pairsAvl = fw.CoreFX.Instruments;
       var pairs = new ForexEntities().v_Pair.Select(p => p.Pair).ToArray();
       if (!string.IsNullOrWhiteSpace(pairToLoad)) pairs = pairs.Where(p => p == pairToLoad).ToArray();
-      foreach (var minutes in new[] { 1, 5, 15, 30, 60 })
+      foreach (var minutes in new[] { 15, 30, 60 })
         foreach (var pair in pairs) {
           fw.CoreFX.SetOfferSubscription(pair);
           AddTicks(fw,minutes, pair, DateTime.Now.AddYears(-4),progressCallback);

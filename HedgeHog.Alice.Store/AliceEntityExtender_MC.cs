@@ -18,6 +18,7 @@ using System.Windows.Threading;
 using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
 using HedgeHog.DB;
+using System.Data.Objects.DataClasses;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -54,10 +55,24 @@ namespace HedgeHog.Alice.Store {
     public double NetPL { get { return GrossPL - Commission; } }
   }
 
-  public partial class OrderTemplate {
-  }
-
   public partial class TradingMacro {
+    public TradingMacro() {
+      this.SuppRes.AssociationChanged += new CollectionChangeEventHandler(SuppRes_AssociationChanged);
+    }
+
+    void SuppRes_AssociationChanged(object sender, CollectionChangeEventArgs e) {
+      var ec = sender as EntityCollection<SuppRes>;
+      foreach(var sr in ec)
+        sr.PropertyChanged += new PropertyChangedEventHandler(SuppRes_PropertyChanged);
+    }
+
+    void SuppRes_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if (e.PropertyName == Metadata.SuppResMetadata.Rate) {
+        OnPropertyChanged(Metadata.TradingMacroMetadata.SuppResHeight);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.IsSuppResHeightOk);
+      }
+    }
+
     static Guid _sessionId = Guid.NewGuid();
     public static Guid SessionId { get { return _sessionId; } }
     public void ResetSessionId() {
@@ -897,11 +912,12 @@ namespace HedgeHog.Alice.Store {
     }
     private bool? GetSuppResSignal(Rate rateLast, Rate ratePrev) {
       bool? signal = null;
-      return GetSignal(
-      rateLast.PriceLow > ResistancePrice ? true
-      : rateLast.PriceHigh < SupportPrice ? false
-      : (bool?)null
-      );
+      if (!TradeOnLevelCrossOnly)
+        return GetSignal(
+        suppResPriceHigh(rateLast) > ResistancePrice ? true
+        : suppResPriceHigh(rateLast) < SupportPrice ? false
+        : (bool?)null
+        );
       //return null;
         if (CrossUp(suppResPriceLow(rateLast), ratePrev.PriceLow, ResistancePrice, ResistancePrice))
           signal = true;
@@ -959,8 +975,8 @@ namespace HedgeHog.Alice.Store {
     static Func<Rate, double> gannPriceHigh = rate => rate.PriceAvg;
     static Func<Rate, double> gannPriceLow = rate => rate.PriceAvg;
 
-    static Func<Rate, double> suppResPriceHigh = rate => rate.PriceHigh;
-    static Func<Rate, double> suppResPriceLow = rate => rate.PriceLow;
+    static Func<Rate, double> suppResPriceHigh = rate => rate.PriceAvg;
+    static Func<Rate, double> suppResPriceLow = rate => rate.PriceAvg;
 
 
     public double? PriceCmaDiffHigh {
@@ -1002,6 +1018,17 @@ namespace HedgeHog.Alice.Store {
     }
     public double? PriceCmaDiffLowInPips { get { return InPips(PriceCmaDiffLow); } }
 
+    public double SuppResHeight { get { return HeightBySuppRes(); } }
+    public double RatesStDevInPips { get { return InPips(RatesStDev); } }
+    public double SuppResHeightInPips { get { return InPips(SuppResHeight); } }
+    public double SuppResHeightToRatesStDevRatio { get { return SuppResHeight/RatesStDev; } }
+    public bool IsSuppResHeightOk { get { return SuppResHeightToRatesStDevRatio > PowerVolatilityMinimum; } }
+    public bool CanTrade {
+      get {
+        return IsSuppResHeightOk;
+      }
+    }
+
     public double CorridorHeightToSpreadRatio { get { return CorridorStats.HeightUpDown / SpreadLong; } }
     public bool? CloseSignal {
       get {
@@ -1018,16 +1045,26 @@ namespace HedgeHog.Alice.Store {
               ) return GetSignal(false);
             return null;
           case Strategies.Massa:
-            return null;
-            if (Trades.Length > 0 && Trades.GrossInPips() < InPips(SupportLow().Rate - SupportHigh().Rate)/20)
-              return Trades.First().Buy;
-            var comm = Trades.Select(t=>TradesManager.CommissionByTrade(t)).Sum();
-            var currentLoss = CloseOnProfitOnly ? CurrentLoss - comm : 0;
-            if (CurrentNet >= currentLoss/2 && Trades.GrossInPips() >= InPips(ratesStDev * RangeRatioForTradeLimit)) return Trades.First().Buy;
-            if (CurrentNet >= currentLoss / 2 && Trades.GrossInPips() >= InPips(ratesStDev * RangeRatioForTradeLimit*2)) return Trades.First().Buy;
-            if (Trades.Sum(t => t.Lots) >= LotSize * 10 && CurrentNet >= 0) return Trades.First().Buy;
-            return null;// GetSignal(!OpenSignal);
-            if( !CloseOnProfit || Trades.Length == 0)return null;
+            if(Trades.Length>0) {
+              if (CurrentNet > 0 && (TradeOnLevelCrossOnly || Trades.Sum(t => t.Lots) > LotSize) && (SupportPrice - Rates.Last().PriceAvg).Abs() > ratesStDev) return Trades.First().Buy;
+              return !OpenSignal;
+              if (CurrentNet>0 && Trades.GrossInPips() > InPips(ratesStDev)) return Trades.First().Buy;
+              var comm = Trades.Select(t => TradesManager.CommissionByTrade(t)).Sum();
+              var currentLoss = CurrentLoss - comm;
+              if (CurrentLoss < 0 && CurrentNet >= currentLoss.Abs() / RangeRatioForTradeLimit) return Trades.First().Buy;
+              //if (RunningBalance > 0 && CurrentLoss.Abs() > RunningBalance * 0.7) { CurrentLoss = 0; SuppResResetAllTradeCounts(); return Trades.First().Buy; } 
+              return null;
+            }
+            if (Trades.Length > 0 && Trades.GrossInPips() < InPips(SupportLow().Rate - SupportHigh().Rate) / 20)
+              return Trades.First().Buy; {
+              var comm = Trades.Select(t => TradesManager.CommissionByTrade(t)).Sum();
+              var currentLoss = CloseOnProfitOnly ? CurrentLoss - comm : 0;
+              if (CurrentNet >= currentLoss / 2 && Trades.GrossInPips() >= InPips(ratesStDev * RangeRatioForTradeLimit)) return Trades.First().Buy;
+              if (CurrentNet >= currentLoss / 2 && Trades.GrossInPips() >= InPips(ratesStDev * RangeRatioForTradeLimit * 2)) return Trades.First().Buy;
+              if (Trades.Sum(t => t.Lots) >= LotSize * 10 && CurrentNet >= 0) return Trades.First().Buy;
+              return null;// GetSignal(!OpenSignal);
+            }
+            if (!CloseOnProfit || Trades.Length == 0) return null;
             var close = CurrentNet >= TakeProfitPips * LotSize / 10000.0;
             if (close) {
               DisableTrading();
@@ -1087,15 +1124,14 @@ namespace HedgeHog.Alice.Store {
       PositionsBuy = Trades.Count(t => t.Buy);
       PositionsSell = Trades.Count(t => !t.Buy);
       try {
-        if (IsSpreadShortToLongRatioOk){
+        var step = IsSuppResHeightOk ? MaxLotByTakeProfitRatio : 1;
           if (e.Trade.IsBuy) {
             //ResistanceCurrent().TradesCount++;
-            Resistances.ToList().ForEach(r => r.TradesCount++/* = (int)Math.Round(Math.Max(1, r.TradesCount) * MaxLotByTakeProfitRatio)*/);
+            Resistances.ToList().ForEach(r => r.TradesCount *= step);
           } else {
             //SupportCurrent().TradesCount++;
-            Supports.ToList().ForEach(r => r.TradesCount++/* = (int)Math.Round(Math.Max(1, r.TradesCount) * MaxLotByTakeProfitRatio)*/);
+            Supports.ToList().ForEach(r => r.TradesCount *= step);
           }
-        }
         //SuppResResetInactiveTradeCounts();
       } catch (Exception exc) {
         Log = exc;
@@ -1152,10 +1188,11 @@ namespace HedgeHog.Alice.Store {
           }
           break;
         case Strategies.Range:
-        case Strategies.Massa:
+        case Strategies.Massa: return;
           if (!ReverseStrategy && trade.PL > 0) {
-            Supports.ToList().ForEach(s => s.TradesCount = ( s.TradesCount * MaxLotByTakeProfitRatio).ToInt());
-            Resistances.ToList().ForEach(r => r.TradesCount = (r.TradesCount * MaxLotByTakeProfitRatio).ToInt());
+            var ratio = 1- trade.GrossPL / CurrentLoss.Abs();
+            if (trade.Buy) Resistances.ToList().ForEach(r => r.TradesCount *= ratio);
+            else Supports.ToList().ForEach(s => s.TradesCount *= ratio);
           }
           break;
       }
@@ -1311,6 +1348,7 @@ namespace HedgeHog.Alice.Store {
     private Store.SuppRes[] SuppResNotCurrent(SuppRes[] suppReses) {
       return suppReses.OrderBy(s => (s.Rate - CurrentPrice.Ask).Abs()).Skip(1).ToArray();
     }
+    Rate lastSuppres = new Rate();
     private Store.SuppRes SuppResCurrent(SuppRes[] suppReses) {
       foreach(var rate in Rates.ToArray().Reverse())
         foreach(var sr in suppReses)
@@ -1337,15 +1375,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
       return suppReses;
-    }
-
-    Dictionary<SuppRes, List<int>> maxTradeCounts = new Dictionary<SuppRes, List<int>>();
-
-    void SuppRes_TradesCountReset(object sender, EventArgs e) {
-      var suppRes = sender as SuppRes;
-      if (!maxTradeCounts.ContainsKey(suppRes))
-        maxTradeCounts.Add(suppRes, new List<int>());
-      maxTradeCounts[suppRes].Add( suppRes.TradesCount);
     }
 
     #region Supports/Resistances
@@ -1427,6 +1456,20 @@ namespace HedgeHog.Alice.Store {
     static Func<Rate, double> centerOfMassSell = r => r.PriceLow;
 
     double ratesStDev = double.MaxValue;
+
+    public double RatesStDev {
+      get { return ratesStDev; }
+      set {
+        if (ratesStDev == value) return;
+        ratesStDev = value;
+        OnPropertyChanged(Metadata.TradingMacroMetadata.RatesStDev);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.RatesStDevInPips);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.SuppResHeight);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.SuppResHeightInPips);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.IsSuppResHeightOk);
+        OnPropertyChanged(Metadata.TradingMacroMetadata.SuppResHeightToRatesStDevRatio);
+      }
+    }
     public Rate[][] CentersOfMass { get; set; }
     double _CenterOfMassSell = double.NaN;
     public double CenterOfMassSell {
@@ -1450,26 +1493,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private Lib.CmaWalker _corridorStDevRatio = new Lib.CmaWalker(2);
+    private Lib.CmaWalker _corridorStDevRatio = new Lib.CmaWalker(1);
     public Lib.CmaWalker CorridorStDevRatio { get { return _corridorStDevRatio; } }
     public bool IsCorridorStDevRatioOk { get { return CorridorStDevRatio.Difference > 0; } }
 
     double[] StDevLevels = new double[0];
     bool _doCenterOfMass = true;
+    double _tradeLevelLast;
     void CalculateSuppResLevels() {
       var iterations = IterationsForSuppResLevels;
       var levelsCount = SuppResLevelsCount;
+      var suppResCount = Math.Max(levelsCount, StDevLevels.Length);
 
       #region Adjust SUppReses
-      while (Resistances.Count() < levelsCount)
-        AddResistance(0);
-      while (Supports.Count() < levelsCount)
-        AddSupport(0);
-
-      while (Resistances.Count() > levelsCount)
-        RemoveSuppRes(Resistances.Last());
-      while (Supports.Count() > levelsCount)
-        RemoveSuppRes(Supports.Last());
+      if( levelsCount!=1)
+        AdjustSuppResCount(levelsCount);
       #endregion
 
       if (IsSuppResManual) return;
@@ -1496,12 +1534,11 @@ namespace HedgeHog.Alice.Store {
 
       //var fibLevels = Fibonacci.Levels(levelHigh/*.PriceAvg*/, levelLow/*.PriceAvg*/);
       var rateAverage = rates.Average(r => r.PriceAvg); //CenterOfMassBuy;
-      var rateStDev = ratesStDev = rates.StdDev(r => r.PriceAvg);
-      CorridorStDevRatio.Add(InPips(rateStDev / rateAverage),CorridorBarMinutes/10);
+      var rateStDev = rates.StDev(r => r.PriceAvg);
+      CorridorStDevRatio.Add(rateStDev/rateAverage, CorridorBarMinutes / 10);
       OnPropertyChanged(Metadata.TradingMacroMetadata.IsCorridorStDevRatioOk);
-      var rateStDevUp = rates.Where(r => r.PriceAvg > rateAverage).ToArray().StdDev(r => r.PriceAvg);
-      var rateStDevDown = rates.Where(r => r.PriceAvg < rateAverage).ToArray().StdDev(r => r.PriceAvg);
-
+      var rateStDevUp = rates.Where(r => r.PriceAvg > rateAverage).ToArray().StDev(r => r.PriceAvg);
+      var rateStDevDown = rates.Where(r => r.PriceAvg < rateAverage).ToArray().StDev(r => r.PriceAvg);
       switch (levelsCount) {
         case 6:
           if (StDevLevels.Length > 2) {
@@ -1555,10 +1592,15 @@ namespace HedgeHog.Alice.Store {
             support = support.Next;
           }
           goto case 2;
-        case 2:
-          var com1 = CentersOfMass.CentersOfMass();
-          var rateHigh = com1.Max(r=>r.PriceHigh);
-          var rateLow = com1.Min(r=>r.PriceLow);
+        case 2: {
+          _doCenterOfMass = false;
+          var rs2 = rates.ToArray().Reverse().Take((rates.Count() / StDevLevels[0]).ToInt()).ToArray();
+            var centersOfMass = rs2.Overlaps(2);//cr.Skip(cr.Length - (cr.Length/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
+            var com2 = centersOfMass.CentersOfMass().OrderBars().ToArray();
+            var rls = rates.Where(com2.First(), com2.Last());
+            var rateHigh = rls.Max(r => r.PriceHigh);
+            var rateLow = rls.Min(r => r.PriceLow);
+            //CorridorStDevRatio.Add(rates.Select(r=>r.PriceAvg).Where(a=>a.Between(rateLow,rateHigh)).ToArray().StDevRatio(), CorridorBarMinutes / 10);
             resistance.Value.Rate = rateHigh;//.PriceAvg;//fibLevels[3];// levelsCount >= 2 ? GetPriceHigh(level) - 0.0001 : GetPriceLow(level);
             support.Value.Rate = resistance.Value.Rate;
 
@@ -1567,10 +1609,49 @@ namespace HedgeHog.Alice.Store {
 
             resistance.Value.Rate = rateLow;//.PriceAvg; //fibLevels[6];// levelsCount >= 2 ? GetPriceLow(level) + .0001 : GetPriceHigh(level);
             support.Value.Rate = resistance.Value.Rate;
+        }
           return;
         case 1:
-          resistance.Value.Rate = CenterOfMass.PriceAvg;
-          support.Value.Rate = resistance.Value.Rate;
+          _doCenterOfMass = false;
+          if (StDevLevels.Length == 1) {
+            AdjustSuppResCount(2);
+            int partsCount = StDevLevels[0].ToInt();
+            var partLength = Math.Ceiling(rates.Count()/(double)partsCount).ToInt();
+              var centersOfMass = rates.Take(partLength*(partsCount-1)).ToArray().Overlaps();//cr.Skip(cr.Length - (cr.Length/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
+              var com1 = centersOfMass.CentersOfMass();
+              var tradeLevel = centersOfMass.CenterOfMass().PriceAvg;
+
+              resistance.Value.Rate = tradeLevel;// rates.Last().PriceAvg < rateAverage ? com1.Min(r => r.PriceLow) : com1.Min(r => r.PriceHigh);
+              support.Value.Rate = resistance.Value.Rate;
+
+              resistance = resistance.Next;
+              support = support.Next;
+
+              var rs1 = rates.Skip(partLength * (partsCount - 1)).ToArray();
+              RatesStDev = rs1.StDev(r => r.PriceAvg);
+              centersOfMass = rs1.Overlaps();//cr.Skip(cr.Length - (cr.Length/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
+            com1 = centersOfMass.CentersOfMass();
+            tradeLevel = centersOfMass.CenterOfMass().PriceAvg;
+
+              resistance.Value.Rate = tradeLevel;// rates.Last().PriceAvg < rateAverage ? com1.Min(r => r.PriceLow) : com1.Min(r => r.PriceHigh);
+              support.Value.Rate = resistance.Value.Rate;
+
+              resistance = resistance.Next;
+              support = support.Next;
+          } else {
+            AdjustSuppResCount(StDevLevels.Length);
+            foreach (var stDevLevel in StDevLevels) {
+              var centersOfMass = rates.ToArray().Reverse().Take((rates.Count() / stDevLevel).ToInt()).ToArray().Overlaps();//cr.Skip(cr.Length - (cr.Length/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
+              var com1 = centersOfMass.CentersOfMass();
+              var tradeLevel = centersOfMass.CenterOfMass().PriceAvg;
+
+              resistance.Value.Rate = tradeLevel;// rates.Last().PriceAvg < rateAverage ? com1.Min(r => r.PriceLow) : com1.Min(r => r.PriceHigh);
+              support.Value.Rate = resistance.Value.Rate;
+
+              resistance = resistance.Next;
+              support = support.Next;
+            }
+          }
           return;
         case 7:
           _doCenterOfMass = false;
@@ -1678,6 +1759,18 @@ namespace HedgeHog.Alice.Store {
       #endregion
     }
 
+    private void AdjustSuppResCount(int suppResCount) {
+      while (Resistances.Count() < suppResCount)
+        AddResistance(0);
+      while (Supports.Count() < suppResCount)
+        AddSupport(0);
+
+      while (Resistances.Count() > suppResCount)
+        RemoveSuppRes(Resistances.Last());
+      while (Supports.Count() > suppResCount)
+        RemoveSuppRes(Supports.Last());
+    }
+
     private double _MagnetPrice;
     public double MagnetPrice {
       get { return _MagnetPrice; }
@@ -1741,7 +1834,8 @@ namespace HedgeHog.Alice.Store {
               Thread.CurrentThread.Priority = ThreadPriority.Lowest;
               var rates = new List<Rate>(Rates);
               if (_doCenterOfMass) {
-                CentersOfMass = rates.ToArray().Reverse().Take((rates.Count()/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
+                var cr = CorridorRates.ToArray();
+                CentersOfMass = cr.Skip(cr.Length - (cr.Length/PowerVolatilityMinimum).ToInt()).ToArray().Overlaps();
                 CenterOfMass = CentersOfMass.CenterOfMass() ?? CenterOfMass;
               }
               MagnetPrice = rates.Average(r => r.PriceAvg);
@@ -2078,8 +2172,7 @@ namespace HedgeHog.Alice.Store {
     public double TradingDistance {
       get {
         if (Strategy == Strategies.Vilner) {
-          var srs = SuppRes.OrderBy(sr => sr.Rate).ToArray();
-          return InPips(srs.Last().Rate - srs.First().Rate);
+          return InPips(HeightBySuppRes());
         }
         var rates = new List<Rate>(Rates);
         return Strategy == Strategies.SuppRes ? 10
@@ -2090,6 +2183,20 @@ namespace HedgeHog.Alice.Store {
           _TradingDistance = value;
         }
       }
+    }
+
+    private double HeightBySuppRes() {
+      var srs = SuppRes.OrderBy(sr => sr.Rate).ToArray();
+      return srs.Last().Rate - srs.First().Rate;
+    }
+    private double SuppResHeightMinimum() {
+      var srCross = from sr1 in Supports
+                    from sr2 in Supports
+                    where sr1 != sr2
+                    let diff = (sr1.Rate - sr2.Rate).Abs()
+                    orderby diff
+                    select diff;
+      return srCross.First();
     }
 
 
@@ -2195,7 +2302,7 @@ namespace HedgeHog.Alice.Store {
         var startDate = CorridorStartDate.GetValueOrDefault(//powerBar.StartDate);
           new[] { powerBar.StartDate, CorridorStats == null ? DateTime.MinValue : CorridorStats.StartDate }.Max());
         var periodsLength = 1;
-        var periodsStart = Rates.Count();//r => r.StartDate >= startDate);
+        var periodsStart = Rates.Count(r => r.StartDate >= startDate);
         if (periodsStart == 1) return;
         var corridornesses = Rates.GetCorridornesses(TradingMacro.GetPriceHigh, TradingMacro.GetPriceLow, periodsStart, periodsLength, IterationsForCorridorHeights, false)
           //.Where(c => tradesManager.InPips(tm.Pair, c.Value.HeightUpDown) > 0)
@@ -2244,14 +2351,10 @@ namespace HedgeHog.Alice.Store {
     }
     public Func<Trade,double> CommissionByTrade = trade=> 0.7;
 
-    private bool CanTrade() {
-      return Rates.Count() > 0;
-    }
-
     private void RunPrice(Price price,Account account, Trade[] trades) {
       var sw = Stopwatch.StartNew();
       try {
-        if (!CanTrade()) return;
+        if (Rates.Count == 0) return;
         if (!price.IsReal) price = TradesManager.GetPrice(Pair);
         var minGross = CurrentLoss + trades.Sum(t => t.GrossPL);// +tm.RunningBalance;
         if (MinimumGross > minGross) MinimumGross = minGross;
@@ -2287,12 +2390,12 @@ namespace HedgeHog.Alice.Store {
 
     public int AllowedLotSize(ICollection<Trade> trades) {
       if (Strategy == Strategies.Massa || Strategy == Strategies.Range) {
-        var tc = ResistanceCurrent().TradesCount + SupportCurrent().TradesCount;
+        var tc = (ResistanceCurrent().TradesCount + SupportCurrent().TradesCount).ToInt();
         if (tc > MaximumPositions) {
           SuppResResetAllTradeCounts();
           tc = 0;
         }
-        return LotSize * Math.Max(1, tc);
+        return LotSize * Math.Max(1, tc /**  (IsCorridorStDevRatioOk ? 1 : 0)*/);
       }
       return Math.Min(MaxLotSize(trades)/* - trades.Sum(t=>t.Lots)*/, Math.Max(LotSize, CalculateLot( trades)));
     }

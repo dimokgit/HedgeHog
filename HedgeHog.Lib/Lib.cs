@@ -123,10 +123,20 @@ namespace HedgeHog {
       Population,
       Sample
     }
-    public static double StdDev<T>(this IEnumerable<T> values, Func<T, double?> value) {
-      return values.Where(v=>value(v).HasValue).Select(v=>value(v).Value).ToArray().StdDev();
+
+
+    public static double StDevRatio(this ICollection<double> values) {
+      var stDev = values.StDev();
+      var range = values.Max() - values.Min();
+      return stDev / range;
     }
-    public static double StdDev(this IEnumerable<double> values) {
+    public static double StDev<T>(this IEnumerable<T> values, Func<T, double> value) {
+      return values.Select(v => value(v)).ToArray().StDev();
+    }
+    public static double StDev<T>(this IEnumerable<T> values, Func<T, double?> value) {
+      return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
+    }
+    public static double StDev(this ICollection<double> values) {
       double ret = 0;
       if (values.Count() > 0) {
         double avg = values.Average();
@@ -136,7 +146,7 @@ namespace HedgeHog {
       return ret;
     }
 
-    public static double StandardDeviation(List<double> doubleList) {
+    public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
       double sumOfDerivation = 0;
       doubleList.ForEach(v => sumOfDerivation += Math.Pow(v, 2));
@@ -192,7 +202,7 @@ namespace HedgeHog {
 
     public class CmaWalker:Models.ModelBase {
       public double Current { get; set; }
-      public double Difference { get { return Last - Prev; } }
+      public double Difference { get { return Prev - Last; } }
       public double Last { get { return CmaArray.Last().GetValueOrDefault(); } }
       public double Prev { get { return CmaArray.Length == 1 ? Current : CmaArray[CmaArray.Length - 2].GetValueOrDefault(); } }
       public double?[] CmaArray;

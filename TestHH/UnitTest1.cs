@@ -414,7 +414,7 @@ namespace TestHH {
       var waves0 = ticks.GetWaves(period.ToInt());
       var waves = waves0.OrderBy(w=>w).Take(waves0.Count() - 1).ToArray();
       var wa = waves.Average();
-      var wst = waves.StdDev();
+      var wst = waves.StDev();
       waves = waves.Where(w => w > wa).ToArray();
       if (waves != null && waves.Count() > 1) {
         Debug.WriteLine("Wave Avg:" + o2g.InPips(wa, 1));
@@ -509,7 +509,7 @@ namespace TestHH {
       timer.Reset(); timer.Start();
       rates.OrderBarsDescending().FillOverlaps(TimeSpan.FromMinutes(1));
       Debug.WriteLine("Get Overlap:" + timer.Elapsed.TotalSeconds + " sec.");
-      var stDevSeconds = rates.StdDev(r => r.Overlap.TotalSeconds);
+      var stDevSeconds = rates.StDev(r => r.Overlap.TotalSeconds);
       var avgSeconds = rates.Average(r => r.Overlap.TotalSeconds);
       Debug.WriteLine("stDev:" + TimeSpan.FromSeconds(stDevSeconds).TotalMinutes);
       Debug.WriteLine("average:" + TimeSpan.FromSeconds(avgSeconds).TotalMinutes);
@@ -627,7 +627,7 @@ namespace TestHH {
       timer = DateTime.Now;
       rates.FillRsi(14, r => r.PriceClose);
       SaveToFile(rates, getRsi, "C:\\RSI.csv");
-      Debug.WriteLine("StdDev:" + rates.StdDev(getRsi));
+      Debug.WriteLine("StdDev:" + rates.StDev(getRsi));
       Debug.WriteLine("Get Rsi:" + (DateTime.Now - timer).TotalSeconds);
     }
     public void GetRSI() {

@@ -462,9 +462,9 @@ namespace HedgeHog {
 
     public class BuySellLevel {
       public double Rate { get; set; }
-      public int CrossCount { get; set; }
+      public double CrossCount { get; set; }
       public bool IsBuy { get; set; }
-      public BuySellLevel(double rate, int crossCount, bool isBuy) {
+      public BuySellLevel(double rate, double crossCount, bool isBuy) {
         this.Rate = rate;
         this.CrossCount = crossCount;
         this.IsBuy = isBuy;

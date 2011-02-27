@@ -138,7 +138,7 @@
           </TextBlock>
           <LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
-            Text="{Binding RunningBalance,StringFormat=c2}"  />
+            Text="{Binding RunningBalance,StringFormat=c2}" ToolTip="Running Balance"  />
           <TextBlock Text="{Binding RateLast.StartDate,StringFormat='MM/dd/yy'}"/>
           <!--<LineBreak/>
           <TextBlock Text="{Binding StrategyScoresText}" />-->
@@ -253,20 +253,26 @@
                 <LineBreak/>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
+
+                  <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
+                  <TextBlock Text="{Binding SuppResHeightInPips,StringFormat=[{0:n1}]}" ToolTip="SuppRes Height In Pips"
+                    FontWeight="{Binding IsSuppResHeightOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                             />
                 <TextBlock>=</TextBlock>
                 <TextBlock Text="{Binding SpreadShortLongRatioAverage,StringFormat=n1}"
                   FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
                 <LineBreak/>
-                <TextBlock Text="{Binding CorridorStDevRatio.Prev,StringFormat=n2}" ToolTip="Corridor StDev Ratio - Prev"/>
+                <TextBlock Text="{Binding SuppResHeightInPips,StringFormat=n1}" ToolTip="SuppRes Height"/>
                 <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding CorridorStDevRatio.Last,StringFormat=n2}" ToolTip="CorridorStDevRatio - Last"/>
+                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=n1}" ToolTip="Rates StDev"/>
                 <TextBlock>=</TextBlock>
-                <TextBlock Text="{Binding CorridorStDevRatio.Difference,StringFormat=n2}" ToolTip="Corridor StDev Ratio - Difference"
-                  FontWeight="{Binding IsCorridorStDevRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
+                <TextBlock Text="{Binding SuppResHeightToRatesStDevRatio,StringFormat=n1}" ToolTip="SuppResHeight To RatesStDev Ratio"
+                  FontWeight="{Binding IsSuppResHeightOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                            />
-                <!--<LineBreak/>
+                <TextBlock Text="{Binding PowerVolatilityMinimum,StringFormat=&gt;{0:n1}}" ToolTip="Power Volatility Minimum"/>
+
+                  <!--<LineBreak/>
                 <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
                   FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
                   Foreground="DarkRed"
