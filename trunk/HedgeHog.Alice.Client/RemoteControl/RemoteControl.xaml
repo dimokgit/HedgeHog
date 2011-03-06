@@ -75,7 +75,7 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLoss,StringFormat=B:{0:c0}}"
+              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}}"
                          FontWeight="{Binding IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -84,7 +84,7 @@
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLoss,StringFormat=S:{0:c0}}"
+              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}}"
                          FontWeight="{Binding IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -123,18 +123,18 @@
           <TextBlock Text="{Binding Profitability,StringFormat={}{0:c0}}" ToolTip="Profitability Per Month"/>
           <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
           <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
-          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n2}}" ToolTip="Profitability Ratio" />
+          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />
         </TextBlock>
       </Label>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalContentAlignment="Stretch" >
         <TextBlock>
-          <TextBlock Background="{Binding CurrentNet,Converter={StaticResource ProfitToColorConverter}}">
+          <TextBlock Background="{Binding CurrentGross,Converter={StaticResource ProfitToColorConverter}}">
             <TextBlock Text="{Binding CurrentLoss,StringFormat=c0}"  ToolTip="Current Loss" />
-            <TextBlock Text="{Binding CurrentNet,StringFormat=/{0:c0}}" ToolTip="Current Net"  />
-            
-            <TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}" ToolTip="Curren tLoss Percent" />
+            <TextBlock Text="{Binding CurrentGross,StringFormat=/{0:c0}}" ToolTip="Current Gross"  />
+            <TextBlock Text="{Binding CurrentGrossInPips,StringFormat=[{0:n0}]}" ToolTip="Current Gross In Pips"  />
+            <!--<TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}" ToolTip="Current Loss Percent" />-->
           </TextBlock>
           <LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
@@ -246,10 +246,10 @@
             <DataTemplate>
               <StackPanel>
                 <TextBlock Name="CorridorBlock">
-                <TextBlock Text="{Binding CorridorAngle,StringFormat={}{0:n2}/}" ToolTip="Corridor Angle" />
+                <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance"/>
+                <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}}" ToolTip="Corridor Height0 By Regression In Pips" />
-                <TextBlock Text="{Binding CorridorsRatio,StringFormat='{}={0:p0}]'}" ToolTip="Corridor Height0 By Regression In Pips" />
+                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}]}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <LineBreak/>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock>/</TextBlock>
@@ -283,8 +283,7 @@
                   Foreground="DarkGreen"
                   Background="{Binding OpenSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}"
                            />
-                <TextBlock Text="{Binding TradingDistance,StringFormat=[{0:n0}}" ToolTip="Trading Distance"/>
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>-->
+-->
                   
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
