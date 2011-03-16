@@ -84,22 +84,6 @@ namespace HedgeHog.DB
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        public ObjectSet<t_Stat> t_Stat
-        {
-            get
-            {
-                if ((_t_Stat == null))
-                {
-                    _t_Stat = base.CreateObjectSet<t_Stat>("t_Stat");
-                }
-                return _t_Stat;
-            }
-        }
-        private ObjectSet<t_Stat> _t_Stat;
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
         public ObjectSet<v_Pair> v_Pair
         {
             get
@@ -144,6 +128,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<t_Offer> _t_Offer;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Stat> t_Stat
+        {
+            get
+            {
+                if ((_t_Stat == null))
+                {
+                    _t_Stat = base.CreateObjectSet<t_Stat>("t_Stat");
+                }
+                return _t_Stat;
+            }
+        }
+        private ObjectSet<t_Stat> _t_Stat;
 
         #endregion
         #region AddTo Methods
@@ -154,14 +154,6 @@ namespace HedgeHog.DB
         public void AddTot_Trade(t_Trade t_Trade)
         {
             base.AddObject("t_Trade", t_Trade);
-        }
-    
-        /// <summary>
-        /// Deprecated Method for adding a new object to the t_Stat EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
-        /// </summary>
-        public void AddTot_Stat(t_Stat t_Stat)
-        {
-            base.AddObject("t_Stat", t_Stat);
         }
     
         /// <summary>
@@ -186,6 +178,14 @@ namespace HedgeHog.DB
         public void AddTot_Offer(t_Offer t_Offer)
         {
             base.AddObject("t_Offer", t_Offer);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Stat EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Stat(t_Stat t_Stat)
+        {
+            base.AddObject("t_Stat", t_Stat);
         }
 
         #endregion

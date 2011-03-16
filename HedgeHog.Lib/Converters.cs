@@ -151,6 +151,30 @@ namespace HedgeHog {
     }
   }
 
+
+  [ValueConversion(typeof(object), typeof(object))]
+  public class TemplatedParentDataContextConverter : IValueConverter {
+    static TemplatedParentDataContextConverter _Default;
+    public static TemplatedParentDataContextConverter Default {
+      get {
+        if (TemplatedParentDataContextConverter._Default == null) 
+          TemplatedParentDataContextConverter._Default = new TemplatedParentDataContextConverter();
+        return TemplatedParentDataContextConverter._Default;
+      }
+    }
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      var fe = value as FrameworkElement;
+      if (fe == null) return value;
+      fe = fe.TemplatedParent as FrameworkElement;
+      if (fe == null) return value;
+      return fe.DataContext;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      return value;
+    }
+  }
+
   [ValueConversion(typeof(object), typeof(object))]
   public class PassThroughConverter : IValueConverter {
     static PassThroughConverter _Default;

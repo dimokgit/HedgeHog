@@ -462,7 +462,7 @@ namespace HedgeHog.Bars {
     }
 
     public static TBar[] FindWaves<TBar>(
-      this IEnumerable<TBar> bars, Func<TBar, int> Sign, Func<TBar, double?> Sort) where TBar : BarBase {
+      this ICollection<TBar> bars, Func<TBar, int> Sign, Func<TBar, double?> Sort) where TBar : BarBase {
       bars = bars.Where(b => Sort(b).GetValueOrDefault(50) != 50).OrderBars().ToArray();
       var barPrev = bars.First();
       var waves = new List<TBar>();
@@ -471,7 +471,7 @@ namespace HedgeHog.Bars {
       var stDev = bars.StDev(Sort);
       Func<TBar, double, double, bool> where = (r, a, s) => Sort(r) > (a + s) || Sort(r) < (a - s);
       Sign = (r) => Math.Sign(Sort(r).Value - average);
-      bars = bars.Where(b => where(b, average, stDev)).Skip(1);
+      bars = bars.Where(b => where(b, average, stDev)).Skip(1).ToArray();
       foreach (var bar in bars) {
         if (Sign(barPrev) == Sign(bar))
           wave.Add(bar);

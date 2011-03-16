@@ -144,10 +144,10 @@
             <Parameter Name="BarMinutes" Mode="In" Type="Int32" />
             <Parameter Name="BarsCount" Mode="In" Type="Int32" />
           </FunctionImport>
-          <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
           <EntitySet Name="v_Pair" EntityType="ForexModel.v_Pair" />
           <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.t_Offer" />
+          <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
         </EntityContainer>
         <EntityType Name="t_Trade">
           <Key>
@@ -187,18 +187,6 @@
           <Property Type="DateTime" Name="DateClose" Nullable="true" Precision="23" />
           <Property Type="DateTime" Name="DateOpen" Nullable="true" Precision="23" />
         </ComplexType>
-        <EntityType Name="t_Stat">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Type="DateTime" Name="Time" Nullable="false" />
-          <Property Type="Double" Name="Price" Nullable="false" />
-          <Property Type="Double" Name="Value1" Nullable="false" />
-          <Property Type="Double" Name="Value2" Nullable="false" />
-          <Property Type="Double" Name="Value3" Nullable="false" />
-          <Property Type="String" Name="Name" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
-        </EntityType>
         <EntityType Name="v_Pair">
           <Key>
             <PropertyRef Name="Pair" />
@@ -235,6 +223,18 @@
           <Property Type="Double" Name="PipCost" Nullable="false" />
           <Property Type="Double" Name="MMR" Nullable="false" />
           <Property Type="Double" Name="PipSize" Nullable="false" />
+        </EntityType>
+        <EntityType Name="t_Stat">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="DateTime" Name="Time" Nullable="false" />
+          <Property Type="Double" Name="Price" Nullable="false" />
+          <Property Type="Double" Name="Value1" Nullable="false" />
+          <Property Type="Double" Name="Value2" Nullable="false" />
+          <Property Type="Double" Name="Value3" Nullable="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -290,19 +290,6 @@
               </ComplexTypeMapping>
             </ResultMapping>
           </FunctionImportMapping>
-          <EntitySetMapping Name="t_Stat">
-            <EntityTypeMapping TypeName="ForexModel.t_Stat">
-              <MappingFragment StoreEntitySet="t_Stat">
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Value3" ColumnName="Value3" />
-                <ScalarProperty Name="Value2" ColumnName="Value2" />
-                <ScalarProperty Name="Value1" ColumnName="Value1" />
-                <ScalarProperty Name="Price" ColumnName="Price" />
-                <ScalarProperty Name="Time" ColumnName="Time" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="v_Pair">
             <EntityTypeMapping TypeName="ForexModel.v_Pair">
               <MappingFragment StoreEntitySet="v_Pair">
@@ -341,6 +328,19 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_Stat">
+            <EntityTypeMapping TypeName="ForexModel.t_Stat">
+              <MappingFragment StoreEntitySet="t_Stat">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Value3" ColumnName="Value3" />
+                <ScalarProperty Name="Value2" ColumnName="Value2" />
+                <ScalarProperty Name="Value1" ColumnName="Value1" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -363,10 +363,10 @@
     <Diagrams>
       <Diagram Name="Forex">
         <EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="3.375" PointY="0.75" Height="3.4001269531249996" />
-        <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916656" />
         <EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="5.375" PointY="0.75" Height="1.4279589843749996" />
         <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.375" PointY="3.75" Height="1.7566536458333317" />
+        <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916674" />
       </Diagram>
     </Diagrams>
   </Designer>

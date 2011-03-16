@@ -18,10 +18,10 @@ namespace HedgeHog.Alice.Store {
     }
   }
   public static class CorridorStaticBaseExtentions {
-    public static Dictionary<int, CorridorStatistics> GetCorridornesses(this List<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights, bool useRegression = true) {
+    public static Dictionary<int, CorridorStatistics> GetCorridornesses(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights, bool useRegression = true) {
       return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength,iterationsForHeights, useRegression);
     }
-    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this IEnumerable<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights, bool useRegression = true) {
+    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights, bool useRegression = true) {
       try {
         if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
         else rates = rates.ToArray();
@@ -97,9 +97,9 @@ namespace HedgeHog.Alice.Store {
           density = angles.Average(d => d.Diff);
           #endregion
         } else {
-          rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, 1, out heightUp0, out heightDown0);
+          //rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, 1, out heightUp0, out heightDown0);
           heightUp0 = heightDown0 = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray().StDev();
-          rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, iterationsForHeights, out heightUp, out heightDown);
+          //rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, iterationsForHeights, out heightUp, out heightDown);
           heightUp = heightDown = heightDown0 * 2;
           density = (heightDown + heightUp) / periods;
         }

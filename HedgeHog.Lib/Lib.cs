@@ -130,10 +130,10 @@ namespace HedgeHog {
       var range = values.Max() - values.Min();
       return stDev / range;
     }
-    public static double StDev<T>(this IEnumerable<T> values, Func<T, double> value) {
+    public static double StDev<T>(this ICollection<T> values, Func<T, double> value) {
       return values.Select(v => value(v)).ToArray().StDev();
     }
-    public static double StDev<T>(this IEnumerable<T> values, Func<T, double?> value) {
+    public static double StDev<T>(this ICollection<T> values, Func<T, double?> value) {
       return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
     }
     public static double StDev(this ICollection<double> values) {
@@ -205,6 +205,8 @@ namespace HedgeHog {
       public double Difference { get { return Prev - Last; } }
       public double Last { get { return CmaArray.Last().GetValueOrDefault(); } }
       public double Prev { get { return CmaArray.Length == 1 ? Current : CmaArray[CmaArray.Length - 2].GetValueOrDefault(); } }
+      public double Max { get { return CmaArray.Concat(new double?[] { Current }).Max().GetValueOrDefault(); } }
+      public double Min { get { return CmaArray.Concat(new double?[] { Current }).Min().GetValueOrDefault(); } }
       public double?[] CmaArray;
       public CmaWalker(int cmaCount) {
         if (cmaCount < 1) throw new ArgumentException("Array length must be more then zero.", "cmaCount");
@@ -221,12 +223,16 @@ namespace HedgeHog {
         OnPropertyChanged("Last");
         OnPropertyChanged("Prev");
       }
-      public void Reset(int newPeriod) {
-        var offset = newPeriod - CmaArray.Length;
+      public void Clear() {
+        for (var i = 0; i < CmaArray.Length; i++)
+          CmaArray[i] = null;
+      }
+      public void Reset(int newCmaCount) {
+        var offset = newCmaCount - CmaArray.Length;
         if( offset == 0 )return;
         if (offset > 0)
-          CmaArray = CmaArray.Concat(new double?[newPeriod - CmaArray.Length]).ToArray();
-        else CmaArray = CmaArray.Take(newPeriod).ToArray();
+          CmaArray = CmaArray.Concat(new double?[newCmaCount - CmaArray.Length]).ToArray();
+        else CmaArray = CmaArray.Take(newCmaCount).ToArray();
       }
       public double Diff(double current) { return current - CmaArray[0].Value; }
       public double[] Diffs() {

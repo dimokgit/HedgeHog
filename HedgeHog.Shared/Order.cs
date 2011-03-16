@@ -14,6 +14,11 @@ namespace HedgeHog.Shared {
     }
   }
 
+  public static class OrderExtentions {
+    public static Order[] IsBuy(this ICollection<Order> orders, bool isBuy) {
+      return orders.Where(o => o.IsBuy == isBuy).ToArray();
+    }
+  }
 
   [DataContract]
   public class Order : PositionBase {

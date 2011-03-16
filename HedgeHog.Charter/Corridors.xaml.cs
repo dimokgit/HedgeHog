@@ -38,6 +38,19 @@ namespace HedgeHog {
   /// </summary>
   public partial class Corridors : HedgeHog.Models.WindowModel {
 
+    #region Ctor
+    public Corridors() : this("", null) { }
+    public Corridors(string name, CompositionContainer container = null) {
+      if (container != null) container.SatisfyImportsOnce(this);
+      this.Name = name.Replace("/", "");
+      InitializeComponent();
+      this.Title += ": " + name;
+      plotter.Children.RemoveAll<AxisNavigation>();
+
+      Closing += new System.ComponentModel.CancelEventHandler(Corridors_Closing);
+    }
+    #endregion
+
     #region Attached Properties
     #region IsInteractive
     public static bool GetIsInteractive(DependencyObject obj) {
@@ -106,6 +119,8 @@ namespace HedgeHog {
         }
       }
     }
+
+    public double SuppResMinimumDistance { get; set; }
 
     List<DateTime> animatedTimeX = new List<DateTime>();
     List<DateTime> animatedTime0X = new List<DateTime>();
@@ -228,10 +243,10 @@ namespace HedgeHog {
       }
     }
 
-    HorizontalLine lineNetSell = new HorizontalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkBlue) };
+    HorizontalLine lineNetSell = new HorizontalLine() { StrokeThickness = 2, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = new SolidColorBrush(Colors.DarkRed) };
     double LineNetSell { set { lineNetSell.Value = value; } }
 
-    HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
+    HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 2, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = new SolidColorBrush(Colors.DarkGreen) };
     double LineNetBuy { set { lineNetBuy.Value = value; } }
 
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
@@ -405,25 +420,6 @@ namespace HedgeHog {
     List<VerticalLine> otherVLines = new List<VerticalLine>();
     #endregion
 
-    #region Ctor
-    public
-
-    Corridors() : this("",null) { }
-    public Corridors(string name,CompositionContainer container = null) {
-      if( container!=null) container.SatisfyImportsOnce(this);
-      this.Name = name.Replace("/", "");
-      InitializeComponent();
-      this.Title += ": " + name;
-      plotter.Children.RemoveAll<AxisNavigation>();
-
-      Closing += new System.ComponentModel.CancelEventHandler(Corridors_Closing);
-      PlayStartDateBox.TextChanged += new TextChangedEventHandler(PlayStartDateBox_TextChanged);
-    }
-
-    void PlayStartDateBox_TextChanged(object sender, TextChangedEventArgs e) {
-    }
-    #endregion
-
     #region Window Events
     void Corridors_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
       e.Cancel = true;
@@ -471,22 +467,27 @@ namespace HedgeHog {
       }
     }
 
+    static double[] StrokeArrayForTrades = new double []{ 5, 2, 2, 2 };
     Dictionary<string, HorizontalLine> tradeLines = new Dictionary<string, HorizontalLine>();
     public void SetTradeLines(ICollection<Trade> trades,double spread) {
-      var tradesAdd = from value in trades.Select(t => t.Id).Except(this.tradeLines.Select(t => t.Key))
-                      join trade in trades on value equals trade.Id
-                      select trade;
-      foreach (var t in tradesAdd) {
-        var hl = new HorizontalLine(t.Open + (t.Buy ? +1 : -1) * spread) { ToolTip = t.Open + " @ " + t.Time, StrokeDashArray = { 5, 2, 2, 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell) };
-        plotter.Children.Add(hl);
-        this.tradeLines.Add(t.Id, hl);
-      }
-      var tradesDelete = this.tradeLines.Select(t => t.Key).Except(trades.Select(t => t.Id)).ToArray();
-      foreach (var t in tradesDelete) {
-        var hl = tradeLines[t];
-        plotter.Children.Remove(hl);
-        tradeLines.Remove(t);
-      }
+      Dispatcher.Invoke(new Action(() => {
+        var tradesAdd = from value in trades.Select(t => t.Id).Except(this.tradeLines.Select(t => t.Key))
+                        join trade in trades on value equals trade.Id
+                        select trade;
+        foreach (var t in tradesAdd) {
+          var hl = new HorizontalLine(t.Open + (t.Buy ? +1 : -1) * spread) { ToolTip = t.Open + " @ " + t.Time, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell) };
+          plotter.Children.Add(hl);
+          this.tradeLines.Add(t.Id, hl);
+        }
+        var tradesDelete = this.tradeLines.Select(t => t.Key).Except(trades.Select(t => t.Id)).ToArray();
+        foreach (var t in tradesDelete) {
+          var hl = tradeLines[t];
+          plotter.Children.Remove(hl);
+          tradeLines.Remove(t);
+        }
+        lineNetBuy.Visibility = trades.IsBuy(true).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
+        lineNetSell.Visibility = trades.IsBuy(false).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
+      }));
     }
 
     public void SetBuyRates(Dictionary<Guid, BuySellLevel> rates) {
@@ -793,18 +794,24 @@ namespace HedgeHog {
       CorridorStartPositionChanged(this, new CorridorPositionChangedEventArgs(x, CorridorStartPositionOld));
     }
 
+    Scheduler _suppResChangeScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.3));
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
     protected void OnSupportResistanceChanged(DraggablePoint dp, Guid uid, Point positionOld, Point positionNew) {
       var isMouseCaptured = dp.IsMouseCaptured;
       var isInteractive = GetIsInteractive(dp);
       if ((isMouseCaptured || isInteractive) && SupportResistanceChanged != null) {
-        SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
-        if (!_isShiftDown) {
-          var isBuy = BuyRates.Any(br => br.Key == uid);
-          var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
-          SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(next.Key, positionNew.Y, positionOld.Y));
-          next.Value.DraggablePoint.Position = positionNew;
-        }
+        _suppResChangeScheduler.Cancel();
+        _suppResChangeScheduler.Command = () => {
+          SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
+          if (!_isShiftDown) {
+            var isBuy = BuyRates.Any(br => br.Key == uid);
+            var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
+            var distance = (isBuy ? -1 : 1) * SuppResMinimumDistance;
+            var newNextPosition = new Point(positionNew.X, positionNew.Y + distance);
+            next.Value.DraggablePoint.Position = newNextPosition;
+            SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(next.Key, newNextPosition.Y, newNextPosition.Y));
+          }
+        };
       }
     }
     #endregion

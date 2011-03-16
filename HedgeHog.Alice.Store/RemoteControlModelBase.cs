@@ -24,7 +24,7 @@ namespace HedgeHog.Alice.Store {
     public ObservableCollection<string> Instruments { get { return _Instruments; } }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-    protected Order2GoAddIn.FXCoreWrapper fw;
+    protected Order2GoAddIn.FXCoreWrapper fwMaster { get { return MasterModel.FWMaster; } }
     
     IMainModel _MasterModel;
     [Import]
@@ -35,16 +35,12 @@ namespace HedgeHog.Alice.Store {
           _MasterModel = value;
           value.OrderToNoLoss += OrderToNoLossHandler;
           value.StartBackTesting += MasterModel_StartBackTesting;
-          value.PropertyChanged += MasterModel_PropertyChanged;
           RaisePropertyChangedCore();
         }
       }
     }
 
-    protected virtual void MasterModel_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-    }
-
-    protected VirtualTradesManager virtualTrader;
+    protected ITradesManager tradesManager { get { return MasterModel.TradesManager; } }
     public string VirtualPair { get; set; }
     public DateTime VirtualStartDate { get; set; }
     Task backTestThread;
@@ -102,12 +98,14 @@ namespace HedgeHog.Alice.Store {
           tradesManager.ClosePair(VirtualPair);
           if (e.ClearTest) {
             tm.CurrentLoss = 0;
-            tm.CorridorStartDate = null;
+            if (tm.CorridorStartDate != DateTime.Parse("1/1/2001"))
+              tm.CorridorStartDate = null;
             tm.CorridorStats = null;
             tm.MinimumGross = 0;
             tm.HistoryMaximumLot = 0;
             tm.RunningBalance = 0;
             tm.StrategyScoresReset();
+            tm.RateGannCurrentLast = null;
           }
           ManualResetEvent suspendEvent = new ManualResetEvent(false);
           while (rates.Count() > 0) {
@@ -139,11 +137,12 @@ namespace HedgeHog.Alice.Store {
               rates.Add(rate);
               if(!tm.DoStreatchRates || (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
                 rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
+              OnPropertyChanged(Metadata.TradingMacroMetadata.Rates);
             }
           }
-          if (fw.IsLoggedIn) {
+          if (fwMaster.IsLoggedIn) {
             var ratesFx = new List<Rate>();
-            fw.GetBars(VirtualPair, 1,tm.BarsCount, rates.First().StartDate, rates.Last().StartDate, ratesFx);
+            fwMaster.GetBars(VirtualPair, 1,tm.BarsCount, rates.First().StartDate, rates.Last().StartDate, ratesFx);
             var pipSize = tradesManager.GetPipSize(VirtualPair) / 10;
             for (var i = 0; i < rates.Count; i++)
               if ((rates[i].PriceAvg - ratesFx[i].PriceAvg).Abs() > pipSize)
@@ -273,7 +272,7 @@ namespace HedgeHog.Alice.Store {
     protected Account accountCached = new Account();
 
 
-    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
+//    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }
     protected bool IsInVirtualTrading { get { return MasterModel == null ? false : MasterModel.IsInVirtualTrading; } }
 
     #region PriceBars
@@ -321,6 +320,7 @@ namespace HedgeHog.Alice.Store {
   public class RatesLoader {
     FXW fw = new FXW();
     Dictionary<string, Rate[]> ticksDictionary = new Dictionary<string, Rate[]>();
+    Task _loadTask;
     public RatesLoader() {}
     void SetTicks(string pair, Rate[] rates) {
       lock (ticksDictionary) {
@@ -334,6 +334,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void ClearRates(string pair) { SetTicks(pair, new Rate[0]); }
+    public void LoadRatesAsync(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
+      try {
+        Action a = () => LoadRates(fw, pair, periodMinutes, periodsBack, startDate, endDate, ratesList);
+        if (_loadTask == null || _loadTask.IsCompleted)
+          _loadTask = Task.Factory.StartNew(a);
+        else
+          _loadTask = _loadTask.ContinueWith(t => a());
+        _loadTask.Wait();
+      } catch (Exception exc) {
+        Debug.Fail(exc + "");
+      }
+    }
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() > 0 && (ratesList[0].StartDate - ratesList[1].StartDate).Duration() > TimeSpan.FromMinutes(Math.Max(1, periodMinutes)))

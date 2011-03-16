@@ -104,6 +104,25 @@ namespace TestHH {
       }
     }
     [TestMethod]
+    public void ShowDensities() {
+      var pair = "EUR/JPY";
+      var rates = new List<Rate>();
+      o2g.GetBars(pair, 1, 720, TradesManagerStatic.FX_DATE_NOW, TradesManagerStatic.FX_DATE_NOW,rates);
+      var densities = "".Select(b => new { Rate = new Rate(), Density = 0.0 }).ToList();
+      Func<double, double> inPips = d => o2g.InPips(pair, d);
+      foreach (var i in Enumerable.Range(10, rates.Count - 10)) {
+        densities.Add(new{Rate = rates[i], Density = inPips(i/rates.Take(i).ToArray().Height())});
+      }
+      var statName = "Densities";
+      using (var context = new ForexEntities()) {
+        var a = typeof(t_Stat).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
+        context.ExecuteStoreCommand("DELETE " + a.First().Name + " WHERE Name={0}", statName);
+        foreach (var d in densities)
+          context.t_Stat.AddObject(new t_Stat() { Time = d.Rate.StartDate, Price = d.Rate.PriceAvg, Value1 = d.Density,Name = statName });
+        context.SaveChanges();
+        context.AcceptAllChanges();
+      }
+    }
     [Timeout(TestTimeout.Infinite)]
     public void LoadBars() {
       var pairsAvl = o2g.CoreFX.Instruments;

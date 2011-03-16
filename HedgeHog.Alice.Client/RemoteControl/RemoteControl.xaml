@@ -20,9 +20,9 @@
     <DataTemplate x:Key="DeleteAccountCellTemplate">
       <StackPanel>
         <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-            Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+            Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"/>
         <Button Content="C" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-            Command="{Binding DataContext.CopyTradingMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+            Command="{Binding DataContext.CopyTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"/>
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentTemplate">
@@ -30,7 +30,7 @@
         <TextBlock>
         <TextBlock Text="{Binding Pair}">
           <TextBlock.InputBindings>
-            <MouseBinding Command="{Binding DataContext.ShowPropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" MouseAction="LeftClick"/>
+            <MouseBinding Command="{Binding DataContext.ShowPropertiesDialogCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" CommandParameter="{Binding}" MouseAction="LeftClick"/>
           </TextBlock.InputBindings>
           </TextBlock>
           <LineBreak/>
@@ -39,7 +39,7 @@
         </TextBlock>
         <Popup IsOpen="{Binding ShowProperties}">
           <Popup.InputBindings>
-            <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
+            <KeyBinding Command="{Binding DataContext.HidePropertiesDialogCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Popup}}" Gesture="Escape"/>
           </Popup.InputBindings>
           <StackPanel>
             <Expander Header="Gann" IsExpanded="False" Background="AliceBlue">
@@ -205,7 +205,7 @@
   </UserControl.Resources>
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}"
-              FontWeight="Black">
+              FontWeight="Black" VerticalScrollBarVisibility="Auto" Background="#FFF7F3F7">
       <DataGrid.CellStyle>
         <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
           <Setter Property="FontWeight" Value="Normal"/>
@@ -215,22 +215,26 @@
         <DataGridTemplateColumn CellTemplate="{StaticResource DeleteAccountCellTemplate}"/>
         <DataGridTextColumn Header="G" Binding="{Binding TradingGroup}"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource InstrumentTemplate}" CellEditingTemplate="{StaticResource InstrumentEditTemplate}">
-          <DataGridTemplateColumn.Header>
-            <WrapPanel>
-              <TextBlock>Pair</TextBlock>
-              <Button Content="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource AncestorType=DataGrid},Converter={StaticResource BoolToSrtingConverter},ConverterParameter=x|x|-}" 
-                      Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
-            </WrapPanel>
-          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.HeaderTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock>Pair</TextBlock>
+                <Button Content="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid},Converter={StaticResource BoolToSrtingConverter},ConverterParameter=+|+|-}" 
+                      Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.HeaderTemplate>
         </DataGridTemplateColumn>
         <DataGridTextColumn Header="R" Binding="{Binding TradingRatio,Mode=TwoWay}" />
         <DataGridTemplateColumn CellTemplate="{StaticResource LossCellTemplate}" CellEditingTemplate="{StaticResource LossEditCellTemplate}">
-          <DataGridTemplateColumn.Header>
-            <WrapPanel>
-              <TextBlock>Loss</TextBlock>
-              <Button Content="x" Command="{Binding DataContext.ClearCurrentLossCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="2,-4,0,-4" Visibility="Collapsed"/>
-            </WrapPanel>
-          </DataGridTemplateColumn.Header>
+          <DataGridTemplateColumn.HeaderTemplate>
+            <DataTemplate>
+              <WrapPanel>
+                <TextBlock>Loss</TextBlock>
+                <Button Content="x" Command="{Binding DataContext.ClearCurrentLossCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" Margin="2,-4,0,-4" Visibility="Collapsed"/>
+              </WrapPanel>
+            </DataTemplate>
+          </DataGridTemplateColumn.HeaderTemplate>
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
         <DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>
@@ -253,38 +257,14 @@
                 <LineBreak/>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock>/</TextBlock>
-
-                  <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
-                  <TextBlock Text="{Binding SuppResHeightInPips,StringFormat=[{0:n1}]}" ToolTip="SuppRes Height In Pips"
-                    FontWeight="{Binding IsSuppResHeightOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                             />
+                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
                 <TextBlock>=</TextBlock>
                 <TextBlock Text="{Binding SpreadShortLongRatioAverage,StringFormat=n1}"
-                  FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           />
+                  FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />
                 <LineBreak/>
-                <TextBlock Text="{Binding SuppResHeightInPips,StringFormat=n1}" ToolTip="SuppRes Height"/>
+                <TextBlock Text="{Binding CorridorStDevRatioPrevInPips,StringFormat=n0}" ToolTip="Rates StDev Prev"/>
                 <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=n1}" ToolTip="Rates StDev"/>
-                <TextBlock>=</TextBlock>
-                <TextBlock Text="{Binding SuppResHeightToRatesStDevRatio,StringFormat=n1}" ToolTip="SuppResHeight To RatesStDev Ratio"
-                  FontWeight="{Binding IsSuppResHeightOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                           />
-                <TextBlock Text="{Binding PowerVolatilityMinimum,StringFormat=&gt;{0:n1}}" ToolTip="Power Volatility Minimum"/>
-
-                  <!--<LineBreak/>
-                <TextBlock Text="{Binding PriceCmaDiffHighInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff High In Pips" 
-                  FontWeight="{Binding PriceCmaDiffHighInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}"
-                  Foreground="DarkRed"
-                  Background="{Binding OpenSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Pink|Transparent}"
-                           />
-                <TextBlock Text="{Binding PriceCmaDiffLowInPips,StringFormat=[{0:n1}]}" ToolTip="Price Cma Diff Low In Pips"
-                  FontWeight="{Binding PriceCmaDiffLowInPips,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Black|Normal}"
-                  Foreground="DarkGreen"
-                  Background="{Binding OpenSignal,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Transparent|Transparent|LightGreen}"
-                           />
--->
-                  
+                <TextBlock Text="{Binding CorridorStDevRatioLastInPips,StringFormat=n0}" ToolTip="Rates StDev Last"/>
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">

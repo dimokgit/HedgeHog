@@ -61,6 +61,10 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttachedProperties.cs" />
+    <Compile Include="CharterControl.xaml.cs">
+      <DependentUpon>CharterControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ColoredSegment.cs" />
     <Compile Include="Corridors.xaml.cs">
       <DependentUpon>Corridors.xaml</DependentUpon>
@@ -105,6 +109,10 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight\GalaSoft.MvvmLight.csproj">
+      <Project>{ADB28C09-8DE9-4006-80D5-74856EB4A48B}</Project>
+      <Name>GalaSoft.MvvmLight</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DynamicDataDisplay\DynamicDataDisplay.csproj">
       <Project>{ECD37682-DF7E-409F-912D-0965634556B5}</Project>
       <Name>DynamicDataDisplay</Name>
@@ -140,6 +148,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="CharterControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Corridors.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

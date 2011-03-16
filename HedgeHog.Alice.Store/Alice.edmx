@@ -54,6 +54,7 @@
           <Property Name="IsSupport" Type="bit" Nullable="false" />
           <Property Name="TradingMacroID" Type="uniqueidentifier" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="TradesCount" Type="float" Nullable="false" />
         </EntityType>
         <EntityType Name="TradeHistory">
           <Key>
@@ -161,6 +162,8 @@
           <Property Name="SuppResLevelsCount" Type="int" Nullable="false" />
           <Property Name="DoStreatchRates" Type="bit" Nullable="false" />
           <Property Name="IsSuppResManual" Type="bit" Nullable="false" />
+          <Property Name="TradeOnCrossOnly" Type="bit" Nullable="false" />
+          <Property Name="TakeProfitFunctionInt" Type="int" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -279,6 +282,8 @@
           <Property Type="Int32" Name="SuppResLevelsCount" Nullable="false" />
           <Property Type="Boolean" Name="DoStreatchRates" Nullable="false" />
           <Property Type="Boolean" Name="IsSuppResManual" Nullable="false" />
+          <Property Type="Boolean" Name="TradeOnCrossOnly" Nullable="false" />
+          <Property Type="Int32" Name="TakeProfitFunctionInt" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -338,6 +343,7 @@
           <Property Type="Guid" Name="TradingMacroID" Nullable="false" />
           <Property Type="Guid" Name="UID" Nullable="false" />
           <NavigationProperty Name="TradingMacro" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="SuppRes" ToRole="TradingMacro" />
+          <Property Type="Double" Name="TradesCount" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Type="AliceModel.TradingMacro" Role="TradingMacro" Multiplicity="1" />
@@ -370,7 +376,9 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
+            <ScalarProperty Name="TakeProfitFunctionInt" ColumnName="TakeProfitFunctionInt" />
+                <ScalarProperty Name="TradeOnCrossOnly" ColumnName="TradeOnCrossOnly" />
+                <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
                 <ScalarProperty Name="DoStreatchRates" ColumnName="DoStreatchRates" />
                 <ScalarProperty Name="SuppResLevelsCount" ColumnName="SuppResLevelsCount" />
                 <ScalarProperty Name="IterationsForSuppResLevels" ColumnName="IterationsForSuppResLevels" />
@@ -493,6 +501,7 @@
           <EntitySetMapping Name="SuppRes">
             <EntityTypeMapping TypeName="AliceModel.SuppRes">
               <MappingFragment StoreEntitySet="SuppRes">
+                <ScalarProperty Name="TradesCount" ColumnName="TradesCount" />
                 <ScalarProperty Name="UID" ColumnName="UID" />
                 <ScalarProperty Name="TradingMacroID" ColumnName="TradingMacroID" />
                 <ScalarProperty Name="IsSupport" ColumnName="IsSupport" />

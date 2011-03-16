@@ -30,7 +30,7 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" 
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" FontWeight="Black"
                       RowBackground="{Binding [0].OriginalProfit,Converter={StaticResource ProfitToColorConverter}}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}" IsReadOnly="True"/>
