@@ -48,6 +48,10 @@ namespace HedgeHog.Alice.Client {
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
     FXW fwMaster;
+
+    public FXW FWMaster {
+      get { return fwMaster; }
+    }
     public bool IsLoggedIn { get { return CoreFX!= null && CoreFX.IsLoggedIn; } }
     bool _isInLogin;
     public bool IsInLogin {
@@ -55,6 +59,14 @@ namespace HedgeHog.Alice.Client {
       set { _isInLogin = value; RaisePropertyChanged(() => IsInLogin, () => IsNotInLogin); }
     }
     public bool IsNotInLogin { get { return !IsInLogin; } }
+
+    private VirtualTradesManager virtualTrader;
+    public VirtualTradesManager VirtualTrader {
+      get { return virtualTrader; }
+      set { virtualTrader = value; }
+    }
+    public ITradesManager TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
+
     private string _SessionStatus;
     public string SessionStatus {
       get { return _SessionStatus; }
@@ -168,6 +180,12 @@ namespace HedgeHog.Alice.Client {
 
     #region Events
 
+    public event EventHandler MasterTradeAccountChanged;
+    protected void OnMasterTradeAccountChanged() {
+      if (MasterTradeAccountChanged != null)
+        MasterTradeAccountChanged(this, EventArgs.Empty);
+    }
+
     EventHandler _stepForwarRequery;
     EventHandler stepForwarRequery {
       get {
@@ -191,7 +209,6 @@ namespace HedgeHog.Alice.Client {
     }
 
     void _StepForwardCommand_CanExecuteChanged(object sender, EventArgs e) {
-      Debugger.Break();
     }
     public event EventHandler<EventArgs> StepForward;
     protected void OnStepForward() {
@@ -253,6 +270,17 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    private bool _IsAccountManagerExpanded = true;
+    public bool IsAccountManagerExpanded {
+      get { return _IsAccountManagerExpanded; }
+      set {
+        if (_IsAccountManagerExpanded != value) {
+          _IsAccountManagerExpanded = value;
+          OnPropertyChanged("IsAccountManagerExpanded");
+        }
+      }
+    }
+
 
     ObservableCollection<TradingAccount> slaveAccounts = new ObservableCollection<TradingAccount>();
 
@@ -280,14 +308,19 @@ namespace HedgeHog.Alice.Client {
       get {
         if (_tradingAccountsList == null) {
           _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.Context.TradingAccounts);
-          _TradingAccountsSet.CollectionChanged += new System.Collections.Specialized.NotifyCollectionChangedEventHandler(_TradingAccountsSet_CollectionChanged);
+          _TradingAccountsSet.CollectionChanged += _TradingAccountsSet_CollectionChanged;
           _tradingAccountsList = new ListCollectionView(_TradingAccountsSet);
           _tradingAccountsList.Filter = FilterTradingAccounts;
+          _tradingAccountsList.CurrentChanged += _tradingAccountsList_CurrentChanged;
           
             //new Predicate<TradingAccount>(ta => new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter) as Predicate<object>;
         }
         return _tradingAccountsList; 
       }
+    }
+
+    void _tradingAccountsList_CurrentChanged(object sender, EventArgs e) {
+      OnMasterTradeAccountChanged();
     }
 
     private bool FilterTradingAccounts(object o) {
@@ -419,7 +452,7 @@ namespace HedgeHog.Alice.Client {
         }
         exc = FileLogger.LogToFile(exc);
         lastLogTime = DateTime.Now;
-        RaisePropertyChanged(() => LogText, () => IsLogExpanded);
+        RaisePropertyChanged(() => LogText, () => IsLogExpanded,()=>IsLogPinned);
       }
     }
 
@@ -429,12 +462,13 @@ namespace HedgeHog.Alice.Client {
       exc.TargetSite.Name + ": ") + exc.Message;
     }
 
+    public bool IsLogPinned { get { return !IsLogExpanded; } }
     public bool IsLogExpanded {
       get { 
         var ts = DateTime.Now - lastLogTime;
         var ret = ts < TimeSpan.FromSeconds(10);
         if (ret)
-          new ThreadScheduler(ts, TimeSpan.Zero, () => RaisePropertyChanged(() => IsLogExpanded), (s, e) => Log = e.Exception);
+          new ThreadScheduler(ts, TimeSpan.Zero, () => RaisePropertyChanged(() => IsLogExpanded,()=>IsLogPinned), (s, e) => Log = e.Exception);
         return ret;
       }
     }
@@ -832,7 +866,7 @@ namespace HedgeHog.Alice.Client {
         });
       else
         try {
-          fwMaster.CloseTrade(tradeId);
+          TradesManager.CloseTrade(TradesManager.GetTrades().Single(t=>t.Id == tradeId));
           Log = new Exception("Trade " + tradeId + " was closed");
         } catch (Exception exc) { Log = exc; }
     }
@@ -942,8 +976,8 @@ namespace HedgeHog.Alice.Client {
         });
       else {
         Log = new Exception("Closing all trades.");
-        var trades = fwMaster.GetTrades("");
-        fwMaster.CloseTradesAsync(trades);
+        var trades = TradesManager.GetTrades("");
+        TradesManager.CloseTradesAsync(trades);
         Log = new Exception("Trades closed:" + string.Join(",", trades.Select(t => t.Id)));
       }
     }
@@ -1080,14 +1114,14 @@ namespace HedgeHog.Alice.Client {
     public TraderModel() {
       Initialize();
       #region FXCM
-      fwMaster = new FXW(this.CoreFX);
+      fwMaster = new FXW(this.CoreFX,CommissionByTrade);
+      virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
       CoreFX.LoggedInEvent += (s, e) => {
         IsInLogin = false;
-        fwMaster.Error += fwMaster_Error;
-        fwMaster.TradeAdded += fwMaster_TradeAdded;
-        fwMaster.TradeRemoved += fwMaster_TradeRemoved;
-        fwMaster.TradeChanged += fwMaster_TradeChanged;
-        fwMaster.PriceChanged += fwMaster_PriceChanged;
+        TradesManager.Error += fwMaster_Error;
+        TradesManager.TradeAdded += fwMaster_TradeAdded;
+        TradesManager.TradeRemoved += fwMaster_TradeRemoved;
+        TradesManager.PriceChanged += fwMaster_PriceChanged;
         fwMaster.OrderChanged += fwMaster_OrderChanged;
         fwMaster.OrderAdded += fwMaster_OrderAdded;
         fwMaster.SessionStatusChanged += fwMaster_SessionStatusChanged;
@@ -1095,19 +1129,23 @@ namespace HedgeHog.Alice.Client {
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
         try {
-          if (!IsInVirtualTrading) {
-            var account = fwMaster.GetAccount();
-            if (account == null) {
-              Thread.Sleep(1000);
-              account = fwMaster.GetAccount();
-            }
-            if (account != null)
-              AccountModel.Update(account, 0, fwMaster.ServerTime);
+          var account = TradesManager.GetAccount();
+          if (account == null) {
+            Thread.Sleep(1000);
+            account = TradesManager.GetAccount();
           }
+          if (account != null)
+            GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+              try {
+                AccountModel.Update(account, 0, TradesManager.ServerTime);
+                InvokeSyncronize(account);
+              } catch (Exception exc) { Log = exc; }
+            }));
         } catch (Exception exc) {
           Log = exc;
           MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
         }
+        IsAccountManagerExpanded = false;
       };
       CoreFX.LoginError += exc => {
         IsInLogin = false;
@@ -1117,11 +1155,10 @@ namespace HedgeHog.Alice.Client {
       CoreFX.LoggedOffEvent += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
-        fwMaster.TradeAdded -= fwMaster_TradeAdded;
-        fwMaster.TradeRemoved -= fwMaster_TradeRemoved;
-        fwMaster.Error -= fwMaster_Error;
-        fwMaster.TradeChanged -= fwMaster_TradeChanged;
-        fwMaster.PriceChanged -= fwMaster_PriceChanged;
+        TradesManager.TradeAdded -= fwMaster_TradeAdded;
+        TradesManager.TradeRemoved -= fwMaster_TradeRemoved;
+        TradesManager.Error -= fwMaster_Error;
+        TradesManager.PriceChanged -= fwMaster_PriceChanged;
         fwMaster.OrderChanged -= fwMaster_OrderChanged;
         fwMaster.OrderAdded -= fwMaster_OrderAdded;
         fwMaster.SessionStatusChanged -= fwMaster_SessionStatusChanged;
@@ -1146,6 +1183,8 @@ namespace HedgeHog.Alice.Client {
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
       OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
+      OrdersList.SortDescriptions.Add(new SortDescription("Pair", ListSortDirection.Ascending));
+      OrdersList.SortDescriptions.Add(new SortDescription("OrderId", ListSortDirection.Descending));
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
     }
 
@@ -1162,6 +1201,10 @@ namespace HedgeHog.Alice.Client {
       if (MasterTradeRemoved != null) MasterTradeRemoved(this, new MasterTradeEventArgs(trade));
     }
     void fwMaster_TradeRemoved(Trade trade) {
+      if (IsInVirtualTrading) {
+        var account = TradesManager.GetAccount();
+        account.Balance += trade.GrossPL - CommissionByTrade(trade);
+      }
       OnMasterTradeRemoved(trade);
     }
 
@@ -1183,10 +1226,8 @@ namespace HedgeHog.Alice.Client {
         IsInLogin = true;
         CoreFX.IsInVirtualTrading = IsInVirtualTrading;
         if (CoreFX.LogOn(tradingAccount, tradingPassword, tradingDemo)) {
-          if (!IsInVirtualTrading) {
             RaiseSlaveLoginRequestEvent();
-            InvokeSyncronize(fwMaster.GetAccount());
-          }
+            InvokeSyncronize(TradesManager.GetAccount());
           return true;
         } else {
           MessageBox.Show("Login failed. See Log.");
@@ -1204,11 +1245,12 @@ namespace HedgeHog.Alice.Client {
 
     ThreadSchedulersDispenser PriceChangedSchedulers = new ThreadSchedulersDispenser();
     void fwMaster_PriceChanged(string pair) {
-      fwMaster_PriceChanged(fwMaster, new PriceChangedEventArgs(new Price() { Pair = pair },fwMaster.GetAccount(), fwMaster.GetTrades()));
+      fwMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(new Price() { Pair = pair },TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
       Price Price = e.Price;
       //if (!ServerTrades.Any(t => t.Pair == Price.Pair)) return;
+      e.Account.Equity = e.Account.Balance + e.Trades.Sum(t => t.GrossPL);
       RunPrice(e);
     }
 
@@ -1222,7 +1264,7 @@ namespace HedgeHog.Alice.Client {
       try {
         var a = e.Account;
         if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
-          a.Orders = fwMaster.GetOrders("");
+          a.Orders = TradesManager.GetOrders("");
           InvokeSyncronize(a);
         }
       } catch (Exception exc) { Log = exc; }
@@ -1238,13 +1280,11 @@ namespace HedgeHog.Alice.Client {
       try {
         Trade trade = e.Trade;
         OnMasterTradeAdded(trade);
-        RunPrice(new PriceChangedEventArgs(fwMaster.GetPrice(trade.Pair), fwMaster.GetAccount(), fwMaster.GetTrades()));
+        var tm = (ITradesManager)sender;
+        RunPrice(new PriceChangedEventArgs(tm.GetPrice(trade.Pair), tm.GetAccount(), tm.GetTrades()));
       } catch (Exception exc) {
         Log = exc;
       }
-    }
-    void fwMaster_TradeChanged(object sender, TradeEventArgs e) {
-      //fwMaster_PriceChanged(e.Trade.Pair);
     }
 
     void fwMaster_OrderChanged(object sender, OrderEventArgs e) {
@@ -1267,7 +1307,7 @@ namespace HedgeHog.Alice.Client {
         Log = account.Error;
       else {
         var trades = account.Trades;
-        AccountModel.Update(account, 0, fwMaster.IsLoggedIn ? fwMaster.ServerTime : DateTime.Now);
+        AccountModel.Update(account, 0, IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.BeginInvoke(new Action(() => {
           UpdateTrades(account, trades.ToList(), ServerTrades);
@@ -1283,11 +1323,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private void OpenTrade(string pair, bool buy, int lots, string serverTradeID) {
-      try {
-        fwMaster.FixOrderOpen(pair, buy, lots, 0, 0, serverTradeID);
-      } catch (Exception exc) { Log = exc; }
-    }
     private void UpdateTrades(Account account, List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
       var oldIds = tradesCollection.Select(t => t.Id).ToArray();
       var newIds = tradesList.Select(t => t.Id);
@@ -1316,7 +1351,7 @@ namespace HedgeHog.Alice.Client {
         odr.Update(order,
           o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
           o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
-          o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(fwMaster, account.Trades,odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
+          o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades,odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
           o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount/stopBalance ; },
           o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount/stopBalance ; }
           );
@@ -1365,10 +1400,10 @@ namespace HedgeHog.Alice.Client {
     }
     void changeStopsOrLimits(Dictionary<string, double> deltas, Func<Trade, double> getValue, Action<string, double> changeValue, ThreadScheduler changeScheduler) {
       foreach (var ld in deltas.Where(kv => kv.Value != 0).ToArray()) {
-        var trade = fwMaster.GetTrade(ld.Key);
+        var trade = TradesManager.GetTrades().SingleOrDefault(t => t.Id == ld.Key);
         if (trade == null) deltas.Remove(ld.Key);
         else {
-          var newValue = fwMaster.InPoints(trade.Pair, ld.Value) + getValue(trade);
+          var newValue = TradesManager.InPoints(trade.Pair, ld.Value) + getValue(trade);
           deltas[ld.Key] = 0;
           changeValue(ld.Key, newValue);
           if (deltas[ld.Key] != 0)
