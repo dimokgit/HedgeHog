@@ -39,7 +39,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Lesha\</OutputPath>
+    <OutputPath>bin\Debug_03\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -55,6 +55,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ActiproSoftware.Docking.Wpf351, Version=11.1.542.0, Culture=neutral, PublicKeyToken=36ff2196ab5654b9, processorArchitecture=MSIL" />
+    <Reference Include="DigitalIdeaSolutions.Collections">
+      <HintPath>..\..\DigitalIdeaSolutions.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <SpecificVersion>False</SpecificVersion>
       <EmbedInteropTypes>False</EmbedInteropTypes>
@@ -168,6 +172,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>CS_4_0.tt</DependentUpon>
     </Compile>
+    <Compile Include="DockingWindow.xaml.cs">
+      <DependentUpon>DockingWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Models\AccountLogin.Model.cs" />
     <Compile Include="RemoteControl\ButtonImage.xaml.cs">
       <DependentUpon>ButtonImage.xaml</DependentUpon>
@@ -200,6 +207,10 @@
     <Compile Include="UI\Controls\Account\View\SlaveAccountModel.cs" />
     <Compile Include="UI\Overrides\DataGrid_D.cs" />
     <Page Include="Dictionary1.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DockingWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

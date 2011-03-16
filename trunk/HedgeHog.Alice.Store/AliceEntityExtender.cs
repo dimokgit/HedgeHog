@@ -122,7 +122,6 @@ namespace HedgeHog.Alice.Store {
         if (_LotSizeByLoss != value) {
           _LotSizeByLoss = value;
           OnPropertyChanged("LotSizeByLoss");
-          OnPropertyChanged("TakeProfitPipsMinimum");
         }
       }
     }
@@ -133,7 +132,6 @@ namespace HedgeHog.Alice.Store {
         if (_currentLot == value) return;
         _currentLot = value;
         OnPropertyChanged("CurrentLot");
-        OnPropertyChanged("TakeProfitPipsMinimum");
       }
     }
     #endregion

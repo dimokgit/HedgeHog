@@ -8,12 +8,14 @@ namespace HedgeHog.Shared {
   public interface ITradesManager {
     bool IsLoggedIn { get; }
     bool IsInTest { get; set; }
+    bool IsHedged { get; }
 
     #region Common Info
     DateTime ServerTime { get; }
     int MinimumQuantity { get; }
     double Leverage(string pair);
 
+    double Round(string pair, double value);
     double InPips(string pair, double? price);
     double InPoints(string pair, double? price);
     double GetPipSize(string pair);
@@ -40,6 +42,7 @@ namespace HedgeHog.Shared {
 
     void CloseTrade(Trade trade);
     bool CloseTrade(Trade trade,int lot,Price price);
+    bool ClosePair(string pair, bool isBuy,int lot);
     bool ClosePair(string pair, bool isBuy);
     bool ClosePair(string pair);
 
@@ -67,7 +70,6 @@ namespace HedgeHog.Shared {
 
     #region Orders
     Order[] GetOrders(string pair);
-    void DeleteOrder(string orderId);
     void DeleteEntryOrderStop(string orderId);
     void DeleteEntryOrderLimit(string orderId);
     void ChangeOrderRate(Order order, double rate);
@@ -124,14 +126,14 @@ namespace HedgeHog.Shared {
   public static class TradesManagerStatic {
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
-      return (amountToTrade / baseUnitSize).ToInt() * baseUnitSize;
+      return Math.Ceiling((amountToTrade / baseUnitSize)).ToInt() * baseUnitSize;
     }
     public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
       var amountToTrade = balance * leverage * tradeRatio;
       return GetLotSize(amountToTrade, baseUnitSize);
     }
     public static int MoneyAndPipsToLot(double Money, double pips, double PipCost, int BaseUnitSize) {
-      return TradesManagerStatic.GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
+      return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
     }
     public static double MoneyAndLotToPips(ITradesManager tm, double money, double lots, string pair) {
       return MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.MinimumQuantity);

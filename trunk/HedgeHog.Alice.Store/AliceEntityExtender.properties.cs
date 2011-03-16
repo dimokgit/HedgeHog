@@ -4,21 +4,26 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using HedgeHog.Bars;
+using HedgeHog.Alice.Store.Metadata;
 
 namespace HedgeHog.Alice.Store {
   public partial class SuppRes {
-    static private readonly double _TradesCountMinimum = .5;
-    private double _TradesCount = _TradesCountMinimum;
-    public double TradesCount {
-      get { return _TradesCount; }
-      set {
-        if (_TradesCount != value) {
-          _TradesCount = Math.Max(_TradesCountMinimum, value);
-          OnPropertyChanged("TradesCount");
-        }
+    public static readonly double TradesCountMinimum = 1;
+
+    EventHandler _rateChangedDelegate;
+    public event EventHandler RateChanged {
+      add {
+        if ( _rateChangedDelegate == null || !_rateChangedDelegate.GetInvocationList().Contains(value))
+          _rateChangedDelegate += value;
+      }
+      remove {
+        _rateChangedDelegate -= value;
       }
     }
-
+    partial void OnRateChanged() {
+      if (_rateChangedDelegate != null)
+        _rateChangedDelegate(this, EventArgs.Empty);
+    }
     private int _Index;
     public int Index {
       get { return _Index; }
@@ -29,8 +34,56 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    protected override void OnPropertyChanged(string property) {
+      base.OnPropertyChanged(property);
+    }
   }
   public partial class TradingMacro {
+
+    [DisplayName("Take Profit Function")]
+    [Category(categoryTrading)]
+    public TradingMacroTakeProfitFunction TakeProfitFunction {
+      get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
+      set { 
+        TakeProfitFunctionInt = (int)value;
+        OnPropertyChanged(TradingMacroMetadata.TakeProfitFunction);
+      }
+    }
+
+    [DisplayName("Trades Count Buy")]
+    [Description("Reset TradesCount Buy")]
+    [Category(categoryCorridor)]
+    public double TradesCountBuy {
+      get { return GetTradesCountFromSuppRes(true); }
+      set {
+        if (GetTradesCountFromSuppRes(true) != value) {
+          SuppResResetTradeCounts(Resistances, value);
+          OnPropertyChanged(Metadata.TradingMacroMetadata.TradesCountBuy);
+        }
+      }
+    }
+
+    
+    [DisplayName("Trades Count Sell")]
+    [Description("Reset TradesCount Sell")]
+    [Category(categoryCorridor)]
+    public double TradesCountSell {
+      get { return GetTradesCountFromSuppRes(false); }
+      set {
+        if (GetTradesCountFromSuppRes(true) != value) {
+          SuppResResetTradeCounts(Supports, value);
+          OnPropertyChanged(Metadata.TradingMacroMetadata.TradesCountSell);
+        }
+      }
+    }
+
+    [DisplayName("Trade On Cross Only")]
+    [Category(categoryTrading)]
+    public bool TradeOnCrossOnly_ {
+      get { return TradeOnCrossOnly; }
+      set { TradeOnCrossOnly = value; }
+    }
+
 
     GannAngles _GannAnglesList;
     public GannAngles GannAnglesList {
@@ -343,16 +396,28 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryCorridor)]
     public BarsPeriodType LimitBar_ {
       get { return (BarsPeriodType)LimitBar; }
-      set { LimitBar = (int)value; }
+      set {
+        if (LimitBar != (int)value) {
+          LimitBar = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.LimitBar_);
+        }
+      }
     }
 
-    [DisplayName("Bars Minutes(45,360,..)")]
+    [DisplayName("Bars Count(45,360,..)")]
     [Category(categoryCorridor)]
-    public int BarMinutes_ {
+    public int BarsCount {
       get { return CorridorBarMinutes; }
-      set { CorridorBarMinutes = value; }
+      set {
+        if (CorridorBarMinutes != value) {
+          CorridorBarMinutes = value;
+          OnPropertyChanged(TradingMacroMetadata.BarsCount);
+        }
+      }
     }
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
+
+    public bool IsHot { get { return Strategy == Strategies.Hot; } }
   }
 }

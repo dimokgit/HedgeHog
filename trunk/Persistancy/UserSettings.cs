@@ -184,7 +184,7 @@ namespace WpfPersist {
             if (uc.Parent != null) return getParent(uc.Parent);
             else return Application.Current.MainWindow;
           }
-          return getParent((ui as FrameworkElement).Parent);
+          return ui is FrameworkElement ? getParent((ui as FrameworkElement).Parent) : null;
         }
         return uie as Window;
       });
@@ -208,8 +208,7 @@ namespace WpfPersist {
           string persistID = (foo(targetObject, "Name") ?? ((UIElement)targetObject).PersistId) + "";
           var window = getParent(targetObject as UIElement);
           //System.Diagnostics.Debug.Assert(window!=null,"Main window is <Null>");
-          if (window == null) return null;
-          var windowName = window.Name;
+          var windowName = window == null ? "" : window.Name;
           key = string.Format("{0}.{1}[{2}.{3}]{4}",
               uriContext.BaseUri.PathAndQuery,
               targetObject.GetType().Name,
@@ -273,7 +272,7 @@ namespace WpfPersist {
 
     private static object ConvertFromString(DependencyObject targetObject, DependencyProperty targetProperty, string stringValue) {
       DependencyPropertyDescriptor descriptor = DependencyPropertyDescriptor.FromProperty(targetProperty, targetObject.GetType());
-      return stringValue == null ? descriptor.GetValue(targetObject) : descriptor.Converter.ConvertFromInvariantString(stringValue);
+      return (stringValue == null || descriptor.Converter == null) ? descriptor.GetValue(targetObject) : descriptor.Converter.ConvertFromInvariantString(stringValue);
     }
 
     #endregion

@@ -7,6 +7,7 @@ using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   public interface IMainModel : INotifyPropertyChanged {
+    event EventHandler MasterTradeAccountChanged;
     event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
     event EventHandler<OrderEventArgs> OrderToNoLoss;
@@ -14,6 +15,8 @@ namespace HedgeHog.Alice.Store {
     event EventHandler<EventArgs> StepBack;
     event EventHandler<EventArgs> StepForward;
     Order2GoAddIn.CoreFX CoreFX { get; }
+    Order2GoAddIn.FXCoreWrapper FWMaster { get; }
+    ITradesManager TradesManager { get; }
     Exception Log { set; }
     string TradingMacroName { get; }
     double CurrentLoss { set; }

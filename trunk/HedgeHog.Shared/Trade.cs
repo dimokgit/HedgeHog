@@ -10,8 +10,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
+    public static double Lots(this IEnumerable<Trade> trades) {
+      return trades.Sum(t => t.Lots);
+    }
+    public static double NetLots(this IEnumerable<Trade> trades) {
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Buy ? t.Lots : -t.Lots);
+    }
     public static double GrossInPips(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.PL * t.Lots) / trades.Sum(t => t.Lots);
+    }
+    public static double NetOpen(this IEnumerable<Trade> trades) {
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Open * t.Lots) / trades.Sum(t => t.Lots);
     }
     public static double Gross(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.GrossPL);
@@ -112,6 +121,12 @@ namespace HedgeHog.Shared {
     [DataMember]
     public string OpenOrderReqID { get; set; }
     [DataMember]
+    public string StopOrderID { get; set; }
+    [DataMember]
+    public string LimitOrderID { get; set; }
+    
+
+    [DataMember]
     public double Commission { get; set; }
 
     [DataMember]
@@ -195,6 +210,8 @@ namespace HedgeHog.Shared {
 
     [UpdateOnUpdate]
     public double PipSize { get; set; }
+
+
   }
   [Serializable]
   [DataContract]

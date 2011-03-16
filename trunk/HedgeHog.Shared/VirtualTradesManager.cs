@@ -25,7 +25,12 @@ namespace HedgeHog.Shared {
     ObservableCollection<Trade> tradesOpened = new ObservableCollection<Trade>();
     ObservableCollection<Trade> tradesClosed = new ObservableCollection<Trade>();
     ObservableCollection<Order> ordersOpened = new ObservableCollection<Order>();
-    List<Rate> ratesByPair;
+    int barMinutes;
+    public int BarMinutes {
+      get { return barMinutes; }
+      set { barMinutes = value; }
+    }
+    public Func< Dictionary<string, List<Rate>>> RatesByPair;
     public double GetPipSize(string pair) { return GetOffer(pair).PointSize; }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
     public double GetPipCost(string pair) { return GetOffer(pair).PipCost; }
@@ -37,7 +42,8 @@ namespace HedgeHog.Shared {
     int minimumQuantity;
     public int MinimumQuantity { get { return minimumQuantity; } }
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
-    public DateTime ServerTime { get { return ratesByPair.ToArray().Select(r=>r.StartDate).LastOrDefault().AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/; ; } }
+    public DateTime ServerTime { get {
+      return RatesByPair().First().Value.ToArray().Select(r=>r.StartDate).LastOrDefault().AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/; ; } }
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
@@ -50,6 +56,11 @@ namespace HedgeHog.Shared {
     Account _account;
     bool isHedged;
 
+    public bool IsHedged {
+      get { return isHedged; }
+      set { isHedged = value; }
+    }
+
     public Account Account {
       get {
         if (_account == null) {
@@ -59,13 +70,13 @@ namespace HedgeHog.Shared {
             UsableMargin = 10000,
             IsMarginCall = false,
             Equity = 10000,
-            Hedging = false,
+            Hedging = true,
             //Trades = includeOtherInfo ? trades = GetTrades("") : null,
             //StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
             //LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
-            ServerTime = ServerTime
+            //ServerTime = ServerTime
           };
-          isHedged = _account.Hedging;
+          IsHedged = _account.Hedging;
         }
         return _account;
       }
@@ -83,16 +94,13 @@ namespace HedgeHog.Shared {
     #endregion
 
     static long tradeId = 0;
-    string pair;
-    public VirtualTradesManager(string accountId,string pair, int minimumQuantity, List<Rate> rates, int barMinutes,Func<Trade,double> commissionByTrade) {
-      this.pair = pair;
+    public VirtualTradesManager(string accountId,int minimumQuantity,  Func<Trade,double> commissionByTrade) {
       this.accountId = accountId;
       this.minimumQuantity = minimumQuantity;
-      this.ratesByPair = rates;
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
-      this.barMinutes = barMinutes;
       this.CommissionByTrade = commissionByTrade;
     }
+    public double Round(string pair, double value) { return Math.Round(value, GetDigits(pair)); }
     public double InPips(string pair, double? price) { return TradesManagerStatic.InPips(price, GetPipSize(pair)); }
     public double InPoints(string pair, double? price) { return TradesManagerStatic.InPoins(this, pair, price); }
     static long NewTradeId() {
@@ -157,9 +165,10 @@ namespace HedgeHog.Shared {
         newTrade.Id = NewTradeId() + "";
         var e = new PriceChangedEventArgs(price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
         newTrade.UpdateByPrice(this,e);
+        tradesOpened.Add(newTrade);
+        trade.Lots = lot;
         trade.UpdateByPrice(this, e);
         CloseTrade(trade);
-        tradesOpened.Add(trade);
       }
       return true;
     }
@@ -174,7 +183,7 @@ namespace HedgeHog.Shared {
           break;
         case NotifyCollectionChangedAction.Reset:
         case NotifyCollectionChangedAction.Remove:
-          trade.UpdateByPrice(this, GetPrice());
+          trade.UpdateByPrice(this, GetPrice(trade.Pair));
           trade.TradesManager = null;
           tradesClosed.Add(trade);
           OnTradeClosed(trade);
@@ -296,11 +305,8 @@ namespace HedgeHog.Shared {
     #region ITradesManager Members
 
 
-    Price GetPrice() {
-      return GetPrice(pair);
-    }
     public Price GetPrice(string pair) {
-      var rate = ratesByPair.Last();
+      var rate = RatesByPair()[pair].Last();
       return new Price(pair, rate, ServerTime, GetPipSize(pair), GetDigits(pair), true);
     }
 
@@ -384,8 +390,6 @@ namespace HedgeHog.Shared {
     }
 
     #endregion
-
-    public int barMinutes { get; set; }
 
     #region ITradesManager Members
 

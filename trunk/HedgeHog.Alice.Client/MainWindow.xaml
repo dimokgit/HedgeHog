@@ -147,6 +147,7 @@
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+              <DataGridTextColumn Header="Type" Binding="{Binding Type}"/>
               <DataGridTextColumn Header="BS" Binding="{Binding BS}"/>
               <DataGridTemplateColumn Header="Rate">
                 <DataGridTemplateColumn.CellTemplate>
@@ -310,7 +311,7 @@
                            IsEnabled="{Binding IsNotInLogin}"
         TradingAccount="{Binding TradingMaster.AccountId,Mode=TwoWay}" TradingPassword="{Binding TradingMaster.Password,Mode=TwoWay}" TradingDemo="{Binding TradingMaster.IsDemo,Mode=TwoWay}"/>
       <!--Account Manager-->
-        <Expander Header="Accounts Manager" IsExpanded="True">
+        <Expander Header="Accounts Manager" IsExpanded="{Binding IsAccountManagerExpanded}">
           <StackPanel>
             <!--Slave Account Infos-->
             <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding TradingAccountsList}">

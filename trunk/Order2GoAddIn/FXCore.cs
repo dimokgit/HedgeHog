@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 
 namespace Order2GoAddIn {
@@ -23,6 +24,7 @@ namespace Order2GoAddIn {
       if (LoggedOffEvent != null) LoggedOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
     }
     System.Threading.Timer timer;
+    object _deskLocker = new object();
     public FXCore.TradeDeskAut Desk { get { return mDesk; } }
     string user = "";
     string password = "";
@@ -142,7 +144,9 @@ namespace Order2GoAddIn {
         }
       } catch { }
     }
-    public bool IsLoggedIn { get { try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
+    public bool IsLoggedIn { get { 
+      lock(_deskLocker)
+      try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
 
     public void SetOfferSubscription(string pair) {
       Desk.SetOfferSubscription(pair, "Enabled");

@@ -786,13 +786,15 @@ namespace HedgeHog.Alice.Store
         /// <param name="isSupport">Initial value of the IsSupport property.</param>
         /// <param name="tradingMacroID">Initial value of the TradingMacroID property.</param>
         /// <param name="uID">Initial value of the UID property.</param>
-        public static SuppRes CreateSuppRes(global::System.Double rate, global::System.Boolean isSupport, global::System.Guid tradingMacroID, global::System.Guid uID)
+        /// <param name="tradesCount">Initial value of the TradesCount property.</param>
+        public static SuppRes CreateSuppRes(global::System.Double rate, global::System.Boolean isSupport, global::System.Guid tradingMacroID, global::System.Guid uID, global::System.Double tradesCount)
         {
             SuppRes suppRes = new SuppRes();
             suppRes.Rate = rate;
             suppRes.IsSupport = isSupport;
             suppRes.TradingMacroID = tradingMacroID;
             suppRes.UID = uID;
+            suppRes.TradesCount = tradesCount;
             return suppRes;
         }
 
@@ -897,6 +899,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Guid _UID;
         partial void OnUIDChanging(global::System.Guid value);
         partial void OnUIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double TradesCount
+        {
+            get
+            {
+                return _TradesCount;
+            }
+            set
+            {
+                OnTradesCountChanging(value);
+                ReportPropertyChanging("TradesCount");
+                _TradesCount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradesCount");
+                OnTradesCountChanged();
+            }
+        }
+        private global::System.Double _TradesCount;
+        partial void OnTradesCountChanging(global::System.Double value);
+        partial void OnTradesCountChanged();
 
         #endregion
     
@@ -1717,7 +1743,9 @@ namespace HedgeHog.Alice.Store
         /// <param name="suppResLevelsCount">Initial value of the SuppResLevelsCount property.</param>
         /// <param name="doStreatchRates">Initial value of the DoStreatchRates property.</param>
         /// <param name="isSuppResManual">Initial value of the IsSuppResManual property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual)
+        /// <param name="tradeOnCrossOnly">Initial value of the TradeOnCrossOnly property.</param>
+        /// <param name="takeProfitFunctionInt">Initial value of the TakeProfitFunctionInt property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1779,6 +1807,8 @@ namespace HedgeHog.Alice.Store
             tradingMacro.SuppResLevelsCount = suppResLevelsCount;
             tradingMacro.DoStreatchRates = doStreatchRates;
             tradingMacro.IsSuppResManual = isSuppResManual;
+            tradingMacro.TradeOnCrossOnly = tradeOnCrossOnly;
+            tradingMacro.TakeProfitFunctionInt = takeProfitFunctionInt;
             return tradingMacro;
         }
 
@@ -3395,6 +3425,54 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _IsSuppResManual;
         partial void OnIsSuppResManualChanging(global::System.Boolean value);
         partial void OnIsSuppResManualChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean TradeOnCrossOnly
+        {
+            get
+            {
+                return _TradeOnCrossOnly;
+            }
+            set
+            {
+                OnTradeOnCrossOnlyChanging(value);
+                ReportPropertyChanging("TradeOnCrossOnly");
+                _TradeOnCrossOnly = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TradeOnCrossOnly");
+                OnTradeOnCrossOnlyChanged();
+            }
+        }
+        private global::System.Boolean _TradeOnCrossOnly;
+        partial void OnTradeOnCrossOnlyChanging(global::System.Boolean value);
+        partial void OnTradeOnCrossOnlyChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 TakeProfitFunctionInt
+        {
+            get
+            {
+                return _TakeProfitFunctionInt;
+            }
+            set
+            {
+                OnTakeProfitFunctionIntChanging(value);
+                ReportPropertyChanging("TakeProfitFunctionInt");
+                _TakeProfitFunctionInt = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TakeProfitFunctionInt");
+                OnTakeProfitFunctionIntChanged();
+            }
+        }
+        private global::System.Int32 _TakeProfitFunctionInt;
+        partial void OnTakeProfitFunctionIntChanging(global::System.Int32 value);
+        partial void OnTakeProfitFunctionIntChanged();
 
         #endregion
     
