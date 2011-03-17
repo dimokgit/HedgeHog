@@ -1284,13 +1284,17 @@ namespace Order2GoAddIn {
       return offer == null ? double.NaN : buy ? offer.Ask : offer.Bid;
     }
     Func<Order, string> _ordersOrderBy = o => o.OrderID;
-    public Order[] GetEntryOrders(string Pair,bool getFromInternal = false) {
-      return (from order in GetOrders(Pair,getFromInternal)
-              where !_netStopLimitOrderIds.Contains(order.OrderID) && order.Type.EndsWith("E")
-              select order).ToArray();
-              
-      return GetOrders(Pair).Where(o => !_netStopLimitOrderIds.Contains(o.OrderID))
-        .OrderBy(o => o.OrderID).Where(o => o.Type.EndsWith("E")).ToArray();
+    public Order GetNetStopOrder(string Pair, bool getFromInternal = false) {
+      return GetNetOrders(Pair, getFromInternal).SingleOrDefault(o => o.Type == "SE");
+    }
+    public Order GetNetLimitOrder(string Pair, bool getFromInternal = false) {
+      return GetNetOrders(Pair, getFromInternal).SingleOrDefault(o => o.Type == "LE");
+    }
+    public Order[] GetNetOrders(string Pair, bool getFromInternal = false) {
+      return GetOrders(Pair, getFromInternal).Where(o => o.NetQuantity).ToArray();
+    }
+    public Order[] GetEntryOrders(string Pair, bool getFromInternal = false) {
+      return GetOrders(Pair, getFromInternal).Where(o => o.NetQuantity == false).ToArray();
     }
     public Order[] GetOrders(string Pair) { return GetOrders(Pair, false); }
     public Order[] GetOrders(string Pair,bool getFromInternal = false) {
@@ -1918,15 +1922,15 @@ namespace Order2GoAddIn {
         if (takeProfit == 0)
           Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, false);
         else {
-          var order = GetOrders(trade.Pair).Where(o => o.Type == "LE").FirstOrDefault();
+          var order = GetNetLimitOrder(trade.Pair);
           if (addToCurrent && order != null)
             takeProfit = (trade.Buy ? order.SellRate : order.BuyRate) + takeProfit;
           else {
             var trades = GetTradesInternal(pair);
             takeProfit = trades.NetOpen() + spreadToAdd + takeProfit;
           }
-          Desk.ChangeNetStopLimit(pair, AccountID, isBuy, takeProfit, false, out a);
-          _netStopLimitOrderIds.Add(a + "");
+          if (order == null || Round(pair, order.Rate, -1) != Round(pair, takeProfit, -1))
+            Desk.ChangeNetStopLimit(pair, AccountID, isBuy, takeProfit, false, out a);
         }
       } else {
         if (trade.Limit == 0 && InPips(trade.Pair, takeProfit) < 500)
@@ -1959,15 +1963,15 @@ namespace Order2GoAddIn {
         if (stopLoss == 0)
           Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, true);
         else {
-          var order = GetOrders(trade.Pair).Where(o => o.Type == "SE").FirstOrDefault();
+          var order = GetNetStopOrder(trade.Pair);
           if (addToCurrent && order != null)
             stopLoss = (trade.Buy ? order.SellRate : order.BuyRate) + stopLoss;
           else {
             var trades = GetTradesInternal(pair);
             stopLoss = trades.NetOpen() + spreadToAdd + stopLoss;
           }
-          Desk.ChangeNetStopLimit(pair, AccountID, isBuy, stopLoss, true, out a);
-          _netStopLimitOrderIds.Add(a + "");
+          if (order == null || Round(pair, order.Rate, -1) != Round(pair, stopLoss, -1))
+            Desk.ChangeNetStopLimit(pair, AccountID, isBuy, stopLoss, true, out a);
         }
       } else {
         if (stopLoss == 0)
@@ -2010,7 +2014,7 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Pips/Points Converters
-    public double Round(string pair, double value) { return Math.Round(value, GetDigits(pair)); }
+    public double Round(string pair, double value, int digitOffset = 0) { return Math.Round(value, GetDigits(pair) + digitOffset); }
     public double InPips(int level, double? price, int roundTo) { return Math.Round(InPips(level, price), roundTo); }
     public double InPips(int level,double? price) {
       if (level == 0) return price.GetValueOrDefault();
@@ -2137,7 +2141,6 @@ namespace Order2GoAddIn {
 
     List<string> ClosedTradeIDs = new List<string>();
 
-    List<string> _netStopLimitOrderIds = new List<string>();
     Dictionary<string, Order> _entryOrders;
     Dictionary<string, Order> EntryOrders {
       get {

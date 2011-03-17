@@ -15,6 +15,7 @@ using System.Reflection;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using FXW = Order2GoAddIn.FXCoreWrapper;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -315,6 +316,25 @@ namespace HedgeHog.Alice.Store {
       var rs = rates/*.Where(r => r.StartDate > csFirst.StartDate)*/.Select(r => r.PriceAvg).ToArray();
       tm.Correlation_P = global::alglib.pearsoncorrelation(pbs, rs);
       tm.Correlation_R = global::alglib.spearmancorr2(pbs, rs, Math.Min(pbs.Length, rs.Length));
+    }
+  }
+  public class Tasker {
+    Task _task;
+    Action _queuedAction;
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public void RunOrEnqueue(Action action) {
+      if (_task == null || _task.IsCompleted) {
+          _task = Task.Factory.StartNew(action);
+          _task.ContinueWith(RunQueue);
+      } else
+        _queuedAction = action;
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    void RunQueue(Task task) {
+      if (_queuedAction != null) {
+        _task = Task.Factory.StartNew(_queuedAction);
+        _queuedAction = null;
+      }
     }
   }
   public class RatesLoader {

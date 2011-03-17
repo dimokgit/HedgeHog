@@ -99,16 +99,17 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(double density, double slope, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(density, slope, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0);
+    public CorridorStatistics(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0);
     }
 
-    public void Init(double density, double slope, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
+    public void Init(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
       this.Density = density;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
       this.EndDate = endDate;
-      this.Slope = slope;
+      this.Coeffs = coeffs;
+      this.Slope = coeffs[1];
       this.Periods = periods;
       this.Iterations = iterations;
       this.HeightUp = heightUp;
@@ -271,6 +272,8 @@ namespace HedgeHog.Alice.Store {
     Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceLow).First();
     private bool? lastSignal;
 
+
+    public double[] Coeffs { get; set; }
   }
 
   public enum TrendLevel { None, Resistance, Support }

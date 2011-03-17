@@ -826,7 +826,7 @@ namespace HedgeHog {
         _suppResChangeScheduler.Cancel();
         _suppResChangeScheduler.Command = () => {
           SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
-          if (!_isShiftDown) {
+          if (_isShiftDown) {
             var isBuy = BuyRates.Any(br => br.Key == uid);
             var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
             var distance = (isBuy ? -1 : 1) * SuppResMinimumDistance;

@@ -324,6 +324,7 @@ namespace HedgeHog.Alice.Client {
     void ClosePair(TradingMacro tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
+        tm.Strategy = Strategies.None;
         tradesManager.ClosePair(tm.Pair);
         tm.DisableTrading();
       } catch (Exception exc) {
