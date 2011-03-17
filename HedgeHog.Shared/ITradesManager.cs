@@ -15,7 +15,7 @@ namespace HedgeHog.Shared {
     int MinimumQuantity { get; }
     double Leverage(string pair);
 
-    double Round(string pair, double value);
+    double Round(string pair, double value,int digitOffset = 0);
     double InPips(string pair, double? price);
     double InPoints(string pair, double? price);
     double GetPipSize(string pair);

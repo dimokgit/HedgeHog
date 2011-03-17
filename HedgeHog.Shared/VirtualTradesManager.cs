@@ -100,7 +100,7 @@ namespace HedgeHog.Shared {
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
     }
-    public double Round(string pair, double value) { return Math.Round(value, GetDigits(pair)); }
+    public double Round(string pair, double value, int digitOffset = 0) { return Math.Round(value, GetDigits(pair) + digitOffset); }
     public double InPips(string pair, double? price) { return TradesManagerStatic.InPips(price, GetPipSize(pair)); }
     public double InPoints(string pair, double? price) { return TradesManagerStatic.InPoins(this, pair, price); }
     static long NewTradeId() {

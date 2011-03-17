@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
         rates.ToList().ForEach(r => priceSet(r, 0));
         var height0 = Math.Max(heightUp0, heightDown0);
         var height = Math.Max(heightUp, heightDown);
-        return new CorridorStatistics(density, -coeffs[1], height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        return new CorridorStatistics(density, new[]{coeffs[0], -coeffs[1]}, height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = priceGet, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {
