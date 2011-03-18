@@ -7,9 +7,9 @@
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="1" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVT]IsChecked" value="True" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDateStart]Text" value="12/1/2010" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDateStart]Text" value="1/13/2011 00:00" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDekay]Text" value="0.51" />
+  <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.VitrualDekay]Text" value="0." />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.CheckBox2[.chkVP]IsChecked" value="False" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.TextBox2[.ServerAddress]Text" value="localhost:9200/" />
   <item key="/HedgeHog.Alice.Client;component/mainwindow.xaml.ComboBox[.AliceMode]SelectedIndex" value="0" />

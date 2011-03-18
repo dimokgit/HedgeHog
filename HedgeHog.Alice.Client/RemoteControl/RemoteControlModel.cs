@@ -1116,6 +1116,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     #region UpdateEntryOrder
+    TaskerDispenser<string> _changeOrderRateDispenser = new TaskerDispenser<string>();
+    TaskerDispenser<string> _changeOrderAmountDispenser = new TaskerDispenser<string>();
     /// <summary>
     /// Need this for parsed order that is not yet in orders table
     /// </summary>
@@ -1138,11 +1140,13 @@ namespace HedgeHog.Alice.Client {
               tradesManager.DeleteEntryOrderLimit(order.OrderID);
             if (order.TypeStop == 1 && order.Stop != 0)
               tradesManager.DeleteEntryOrderStop(order.OrderID);
-            tradesManager.ChangeOrderRate(order, rate);
+            _changeOrderRateDispenser.RunOrEnqueue(order.OrderID, () => tradesManager.ChangeOrderRate(order, rate), exc => Log = exc);
           }
           if (order.Lot != lot) {
-            tradesManager.ChangeOrderAmount(order.OrderID, lot);
-            order.Limit = 0;
+            _changeOrderAmountDispenser.RunOrEnqueue(order.OrderID, () => {
+              tradesManager.ChangeOrderAmount(order.OrderID, lot);
+              order.Limit = 0;
+            }, exc => Log = exc);
           }
           if (order.Limit == 0) {
             var limit = GetEntryOrderLimit(trades, order.Lot).Round(period).Abs();

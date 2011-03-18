@@ -16,6 +16,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Runtime.CompilerServices;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -318,16 +319,23 @@ namespace HedgeHog.Alice.Store {
       tm.Correlation_R = global::alglib.spearmancorr2(pbs, rs, Math.Min(pbs.Length, rs.Length));
     }
   }
+  public class TaskerDispenser<TKey> {
+    ConcurrentDictionary<TKey, Tasker> _taskers = new ConcurrentDictionary<TKey, Tasker>();
+    public void RunOrEnqueue(TKey key, Action action, Action<Exception> logError) {
+      if (!_taskers.ContainsKey(key)) _taskers[key] = new Tasker();
+      _taskers[key].RunOrEnqueue(action,logError);
+    }
+  }
   public class Tasker {
     Task _task;
     Action _queuedAction;
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public void RunOrEnqueue(Action action) {
+    public void RunOrEnqueue(Action action, Action<Exception> logError) {
       if (_task == null || _task.IsCompleted) {
-          _task = Task.Factory.StartNew(action);
-          _task.ContinueWith(RunQueue);
+        _task = Task.Factory.StartNew(MakeActionInternal(action, logError));
+        _task.ContinueWith(RunQueue);
       } else
-        _queuedAction = action;
+        _queuedAction = MakeActionInternal(action,logError);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     void RunQueue(Task task) {
@@ -336,7 +344,18 @@ namespace HedgeHog.Alice.Store {
         _queuedAction = null;
       }
     }
+    Action MakeActionInternal(Action action, Action<Exception> logError) {
+      return () => {
+        try {
+          action();
+        } catch (Exception exc) {
+          if (logError != null)
+            logError(exc);
+        }
+      };
+    }
   }
+  
   public class RatesLoader {
     FXW fw = new FXW();
     Dictionary<string, Rate[]> ticksDictionary = new Dictionary<string, Rate[]>();

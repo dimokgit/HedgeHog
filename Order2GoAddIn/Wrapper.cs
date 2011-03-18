@@ -1144,11 +1144,14 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetTrades
+    object _getTradesLocker = new object();
     Trade[] trades = new Trade[0];
     Trade[] SetTrades() {
-      OpenTrades.Clear();
-      GetTradesInternal("").ToList().ForEach(t=>OpenTrades[t.Id] = t);
-      return GetTrades();
+      lock (_getTradesLocker) {
+        OpenTrades.Clear();
+        GetTradesInternal("").ToList().ForEach(t => OpenTrades[t.Id] = t);
+        return GetTrades();
+      }
     }
     public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
     public Trade GetTrade(string tradeId) { return GetTrades().Where(t => t.Id == tradeId).SingleOrDefault(); }
@@ -1156,7 +1159,6 @@ namespace Order2GoAddIn {
     public Trade GetTradeFirst(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).FirstOrDefault(); }
     public Trade GetTradeLast(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).LastOrDefault(); }
     public Trade[] GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
-    object getTradesLock = new object();
     public Trade[] GetTrades(string pair) { return GetTrades().ByPair(pair); }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public Trade[] GetTrades(string pair, bool buy) {
@@ -1164,21 +1166,21 @@ namespace Order2GoAddIn {
     }
     //[MethodImpl(MethodImplOptions.Synchronized)]
     public Trade[] GetTradesInternal(string Pair) {
-      //      lock (getTradesLock) {
-      try {
-        var trades = (from t in GetRows(TABLE_TRADES)
-                   orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
-                   where new[] { "", (t.CellValue(FIELD_INSTRUMENT) + "").ToLower() }.Contains(Pair.ToLower())
-                   select InitTrade(t)).ToArray();
-        OpenTrades.Where(ot => ot.Key == Pair || Pair == "").ToList().ForEach(ot => OpenTrades.Remove(ot.Key));
-        trades.ToList().ForEach(t => OpenTrades[t.Id] = t);
-        return trades;
-      } catch (Exception exc) {
-        if (wasRowDeleted(exc)) return GetTradesInternal(Pair);
-        RaiseError(exc);
-        return null;
+      lock (_getTradesLocker) {
+        try {
+          var trades = (from t in GetRows(TABLE_TRADES)
+                        orderby t.CellValue("BS") + "", t.CellValue("TradeID") + "" descending
+                        where new[] { "", (t.CellValue(FIELD_INSTRUMENT) + "").ToLower() }.Contains(Pair.ToLower())
+                        select InitTrade(t)).ToArray();
+          OpenTrades.Where(ot => ot.Key == Pair || Pair == "").ToList().ForEach(ot => OpenTrades.Remove(ot.Key));
+          trades.ToList().ForEach(t => OpenTrades[t.Id] = t);
+          return trades;
+        } catch (Exception exc) {
+          if (wasRowDeleted(exc)) return GetTradesInternal(Pair);
+          RaiseError(exc);
+          return null;
+        }
       }
-      //    }
     }
     static bool wasRowDeleted(Exception exc) { return exc.Message.ToLower().Contains("row was deleted"); }
 
