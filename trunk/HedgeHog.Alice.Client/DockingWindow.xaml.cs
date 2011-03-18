@@ -69,7 +69,7 @@ namespace HedgeHog.Alice.Client {
 
     public void DockingWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
       using (var file = File.CreateText(SettingsFileName)) {
-        RootVisual.SaveLayout(file.BaseStream);
+        RootVisual.SaveLayout(file.BaseStream,true);
       }
     }
     #endregion
@@ -110,7 +110,7 @@ namespace HedgeHog.Alice.Client {
       return RootVisual.Panes.Where(p => RadDocking.GetSerializationTag(p) == charterName).FirstOrDefault();
     }
     RadSplitContainer FindChartsSplitter() {
-      var chart = RootVisual.ChildrenOfType<CharterControl>().FirstOrDefault();
+      var chart = RootVisual.ChildrenOfType<CharterControl>().LastOrDefault();
       if (chart == null) return ChartsSplitter;
       return chart.GetParent<RadSplitContainer>() ?? ChartsSplitter;
     }

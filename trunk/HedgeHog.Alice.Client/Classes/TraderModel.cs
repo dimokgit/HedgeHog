@@ -975,10 +975,15 @@ namespace HedgeHog.Alice.Client {
           } catch (Exception exc) { Log = exc; }
         });
       else {
-        Log = new Exception("Closing all trades.");
-        var trades = TradesManager.GetTrades("");
-        TradesManager.CloseTradesAsync(trades);
-        Log = new Exception("Trades closed:" + string.Join(",", trades.Select(t => t.Id)));
+        try {
+          Log = new Exception("Closing all trades.");
+          var trades = TradesManager.GetTradesInternal("");
+          foreach (var pair in trades.Select(t => t.Pair).Distinct())
+            TradesManager.ClosePair(pair);
+          Log = new Exception("Trades closed:" + string.Join(",", trades.Select(t => t.Id)));
+        } catch (Exception exc) {
+          Log = exc;
+        }
       }
     }
 

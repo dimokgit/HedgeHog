@@ -37,14 +37,13 @@
 
       <!--TradesOnServer-->
       <DataTemplate x:Key="TradesOnServer">
-        <ScrollViewer Background="#FFF7F3F7">
           <StackPanel Background="#FFF7F3F7">
           <StackPanel.Resources>
             <!--<Style TargetType="DataGrid" BasedOn="{StaticResource ReadOnlyDataGridStyle}"/>-->
           </StackPanel.Resources>
-          <Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>
+          <!--<Button Command="{Binding CloseAllServerTradesCommand}" HorizontalAlignment="Left">Close All</Button>-->
           <!--Server Trades-->
-            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7">
+            <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ServerTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
             <DataGrid.Columns>
               <DataGridTemplateColumn CellTemplate="{StaticResource CloseServerTradeTemplate}" Header="Id"/>
               <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
@@ -124,7 +123,6 @@
             </DataGrid.Columns>
           </DataGrid>
         </StackPanel>
-        </ScrollViewer>
       </DataTemplate>
       <DataTemplate x:Key="OrdersOnServer">
         <!--Server Orders-->
@@ -265,6 +263,20 @@
       <Style TargetType="{x:Type DataGrid}" BasedOn="{StaticResource {x:Type DataGrid}}">
         <Setter Property="Background" Value="#FFF7F3F7"/>
       </Style>
+      <!--Open Trades Title Template-->
+      <DataTemplate x:Key="OpenTradesTitleTemplate">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition />
+          </Grid.ColumnDefinitions>
+          <ContentPresenter Content="{Binding}" Margin="0,0,5,0" />
+          <Button Content="Close ALL"
+            Command="{Binding DataContext.CloseAllServerTradesCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
+            Grid.Column="1" >
+          </Button>
+        </Grid>
+      </DataTemplate>
     </ResourceDictionary>
   </Window.Resources>
 	<!-- DockSite -->
@@ -275,7 +287,7 @@
           <telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
             <telerik:RadPane.ContentTemplate>
               <DataTemplate>
-                <ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}">
+                <ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}" VerticalScrollBarVisibility="Auto">
                   <Label Content="{Binding LogText}" BorderBrush="Red" BorderThickness="1" VerticalAlignment="Bottom"></Label>
                 </ScrollViewer>
               </DataTemplate>
@@ -386,7 +398,10 @@
               <l:RemoteControlView Grid.Row="1"/>
             </Grid>
           </telerik:RadPane>
-          <telerik:RadPane IsSelected="{state:UserSettings}" Header="Opened Trades" Title="Opened Trades" telerik:RadDocking.SerializationTag="OpenedTrades" Name="OpenedTrades" ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" CanUserClose="False" />
+          <telerik:RadPane IsSelected="{state:UserSettings}" telerik:RadDocking.SerializationTag="OpenedTrades" Name="OpenedTrades" CanUserClose="False"
+                           Header="Opened Trades" HeaderTemplate="{StaticResource OpenTradesTitleTemplate}"
+                           Title="OpenTrades" TitleTemplate="{StaticResource OpenTradesTitleTemplate}"
+                           ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" />
           <telerik:RadPane IsSelected="{state:UserSettings}" Header="Opened Orders" Title="Opened Orders" telerik:RadDocking.SerializationTag="OpenedOrders" Name="OpenedOrders" ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" CanUserClose="False"/>
         </telerik:RadPaneGroup>
         <telerik:RadSplitContainer Name="ChartsSplitter" Orientation="Horizontal" telerik:RadDocking.SerializationTag="ChartsSplitter">
