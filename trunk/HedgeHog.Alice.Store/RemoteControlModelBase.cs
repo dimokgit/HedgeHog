@@ -322,20 +322,28 @@ namespace HedgeHog.Alice.Store {
   public class TaskerDispenser<TKey> {
     ConcurrentDictionary<TKey, Tasker> _taskers = new ConcurrentDictionary<TKey, Tasker>();
     public void RunOrEnqueue(TKey key, Action action, Action<Exception> logError) {
-      if (!_taskers.ContainsKey(key)) _taskers[key] = new Tasker();
+      if (!_taskers.ContainsKey(key)) _taskers[key] = new Tasker(key+"");
       _taskers[key].RunOrEnqueue(action,logError);
     }
   }
   public class Tasker {
     Task _task;
     Action _queuedAction;
+    private string _name;
+    private Guid _id;
+    public Tasker(string name) {
+      this._name = name;
+      _id = Guid.NewGuid();
+    }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void RunOrEnqueue(Action action, Action<Exception> logError) {
       if (_task == null || _task.IsCompleted) {
         _task = Task.Factory.StartNew(MakeActionInternal(action, logError));
         _task.ContinueWith(RunQueue);
-      } else
-        _queuedAction = MakeActionInternal(action,logError);
+      } else {
+        Debug.WriteLine("Tasker " + _name + " is busy.");
+        //_queuedAction = MakeActionInternal(action, logError);
+      }
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     void RunQueue(Task task) {
@@ -373,18 +381,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public void ClearRates(string pair) { SetTicks(pair, new Rate[0]); }
-    public void LoadRatesAsync(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
-      try {
-        Action a = () => LoadRates(fw, pair, periodMinutes, periodsBack, startDate, endDate, ratesList);
-        if (_loadTask == null || _loadTask.IsCompleted)
-          _loadTask = Task.Factory.StartNew(a);
-        else
-          _loadTask = _loadTask.ContinueWith(t => a());
-        _loadTask.Wait();
-      } catch (Exception exc) {
-        Debug.Fail(exc + "");
-      }
-    }
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() > 0 && (ratesList[0].StartDate - ratesList[1].StartDate).Duration() > TimeSpan.FromMinutes(Math.Max(1, periodMinutes)))

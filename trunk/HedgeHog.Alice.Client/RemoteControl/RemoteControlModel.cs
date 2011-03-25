@@ -51,19 +51,21 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
+    void RequestAddCharterToUI(CharterControl charter) {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
+    }
     CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
         ObservableValue<CharterControl> charterObserver = new ObservableValue<CharterControl>();
-        var charter = new CharterControl(tradingMacro.CompositeId, App.container);
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
-
-        charters.Add(tradingMacro, charter);
-        charter.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
-        charter.SupportResistanceChanged += charter_SupportResistanceChanged;
-        charter.Play += charter_Play;
-        charter.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
-        charter.BuySellAdded += charter_BuySellAdded;
-        charter.BuySellRemoved += charter_BuySellRemoved;
+        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container);
+        RequestAddCharterToUI(charterNew);
+        charters.Add(tradingMacro, charterNew);
+        charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
+        charterNew.SupportResistanceChanged += charter_SupportResistanceChanged;
+        charterNew.Play += charter_Play;
+        charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
+        charterNew.BuySellAdded += charter_BuySellAdded;
+        charterNew.BuySellRemoved += charter_BuySellRemoved;
         //charter.Show();
 
         /*
@@ -83,7 +85,10 @@ namespace HedgeHog.Alice.Client {
         //}), System.Windows.Threading.DispatcherPriority.Send);
          */ 
       }
-      return charters[tradingMacro];
+      var charterOld = charters[tradingMacro];
+      if (charterOld.Parent == null)
+        RequestAddCharterToUI(charterOld);
+      return charterOld;
     }
 
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
@@ -117,8 +122,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     void charter_SupportResistanceChanged(object sender, SupportResistanceChangedEventArgs e) {
-      var tm = GetTradingMacro((CharterControl)sender);
       try {
+        var tm = GetTradingMacro((CharterControl)sender);
         tm.UpdateSuppRes(e.UID, e.NewPosition);
       } catch (Exception exc) {
         Log = exc;
@@ -129,7 +134,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       if (tm.CorridorStartDate == e.NewPosition) return;
       tm.CorridorStartDate = e.NewPosition;
-      if( !IsInVirtualTrading && tm.Strategy != Strategies.Massa)
+      if( !IsInVirtualTrading && tm.Strategy != Strategies.Massa && !tm.IsHot)
         tm.Strategy = Strategies.None;
       tm.ScanCorridor();
       ShowChart(tm);
@@ -217,13 +222,11 @@ namespace HedgeHog.Alice.Client {
         false,tm.TradingMacroName, tm.LimitCorridorByBarHeight, tm.MaxLotByTakeProfitRatio, tm.BarPeriodsLow, tm.BarPeriodsHigh,
         tm.StrictTradeClose, tm.BarPeriodsLowHighRatio, tm.LongMAPeriod, tm.CorridorAverageDaysBack, tm.CorridorPeriodsStart,
         tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
-        tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset,tm.PowerVolatilityMinimum,
-        tm.RangeRatioForTradeStop,tm.ReversePower,tm.CorrelationTreshold,
-        tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen,tm.StreachTradingDistance,tm.CloseAllOnProfit,tm.ReverseStrategy,
-        tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,
-        tm.GannAngles,tm.IsGannAnglesManual,tm.SpreadShortToLongTreshold,
-        tm.LevelType,tm.IterationsForSuppResLevels,tm.SuppResLevelsCount,
-        tm.DoStreatchRates,tm.IsSuppResManual,tm.TradeOnCrossOnly,tm.TakeProfitFunctionInt);
+        tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset,tm.PowerVolatilityMinimum,tm.RangeRatioForTradeStop,
+        tm.ReversePower,tm.CorrelationTreshold,tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen,tm.StreachTradingDistance,
+        tm.CloseAllOnProfit,tm.ReverseStrategy,tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,
+        tm.GannAngles,tm.IsGannAnglesManual,tm.SpreadShortToLongTreshold,tm.LevelType,tm.IterationsForSuppResLevels,
+        tm.SuppResLevelsCount,tm.DoStreatchRates,tm.IsSuppResManual,tm.TradeOnCrossOnly,tm.TakeProfitFunctionInt,tm.DoAdjustTimeframeByAllowedLot);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -559,6 +562,7 @@ namespace HedgeHog.Alice.Client {
           if (!IsInVirtualTrading) {
             tm.LastTrade = tradesManager.GetLastTrade(tm.Pair);
             tm.LoadRatesAsync();
+            tm.RunPriceChanged(new PriceChangedEventArgs(tradesManager.GetPrice(tm.Pair), tradesManager.GetAccount(), tradesManager.GetTradesInternal(tm.Pair)), null);
           }
           tm.SetLotSize(tradesManager.GetAccount());
         }
@@ -946,8 +950,6 @@ namespace HedgeHog.Alice.Client {
           tm.CurrentLoss = tm.CurrentLoss + totalGross;
 
           var trades = tradesManager.GetTradesInternal(trade.Pair);
-          tm.PositionsBuy = trades.Count(t => t.Buy);
-          tm.PositionsSell = trades.Count(t => !t.Buy);
           AdjustCurrentLosses(tm);
           tm.CurrentLot = trades.Sum(t => t.Lots);
           tm.ScanCorridor();
@@ -1258,7 +1260,7 @@ namespace HedgeHog.Alice.Client {
 
     #region GetSlack
     private double GetFibSlack(double fib, TradingMacro tm) {
-      var slack = fib.FibReverse().YofS(tm.CorridorStats.Height);
+      var slack = fib.FibReverse().YofS(tm.CorridorStats.HeightUpDown);
       tm.SlackInPips = tradesManager.InPips(tm.Pair, slack);
       return slack;
     }

@@ -59,22 +59,7 @@ namespace HedgeHog.Alice.Store {
     }
     public double HeightUpDown0 { get { return HeightUp0 + HeightDown0; } }
     public double HeightUpDown { get { return HeightUp + HeightDown; } }
-    public double HeightUpDownInPips0 { get { return InPips == null ? 0 : InPips(HeightUpDown0); } }
-    public double HeightUpDownInPips { get { return InPips == null ? 0 : InPips(HeightUpDown); } }
 
-    public double HeightHigh {
-      get { return TradingMacro.RatesLast.Where(r => r.PriceAvg1 != 0).Select(r => r.PriceAvg2-r.PriceAvg1).FirstOrDefault(); }
-    }
-    
-    public double HeightLow {
-      get { return TradingMacro.RatesLast.Where(r => r.PriceAvg1 != 0).Select(r => r.PriceAvg1 - r.PriceAvg3).FirstOrDefault(); }
-    }
-
-    public TradeDirections TradeDirection {
-      get { return TradeDirections.None;/* HeightHigh > HeightLow ? TradeDirections.Up : TradeDirections.Down;*/ }
-    }
-
-    public double HeightInPips { get { return InPips == null ? 0 : InPips(Height); } }
     public DateTime EndDate { get; private set; }
 
     private DateTime _StartDate;
@@ -90,11 +75,6 @@ namespace HedgeHog.Alice.Store {
 
     public int Periods { get; set; }
     public int Iterations { get; set; }
-    public double Height {
-      get { return TradingMacro.RatesLast.Where(r => r.PriceAvg1 != 0).Select(r => r.PriceAvg2 - r.PriceAvg3).FirstOrDefault(); }
-    }
-
-    public double Thinness { get { return Periods / HeightUpDownInPips; } }
 
     public CorridorStatistics() {
 
@@ -212,12 +192,7 @@ namespace HedgeHog.Alice.Store {
 
     Func<double, double> _InPips = null;
 
-    public Func<double, double> InPips {
-      get { return _InPips; }
-      set { _InPips = value; }
-    }
-
-    private double _FibMinimum;
+    private double _FibMinimum = 1;
     public double FibMinimum {
       get { return _FibMinimum; }
       set {
@@ -253,20 +228,12 @@ namespace HedgeHog.Alice.Store {
       this.TradingMacro = tradingMacro;
     }
 
-    private double GetTradingHeight(double multiplier) {
-      var m = Math.Max(1, HeightUpDownInPips) * multiplier;
-      return m;
-    }
     bool IsAngleOk(bool buy) {
       var tm = TradingMacro;
       var a = TradingMacro.TradingAngleRange;
       if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() < a;
       return (tm.TradeAndAngleSynced? buy:!buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
     }
-
-    bool canBuy { get { return TradeDirection != TradeDirections.Down && IsAngleOk(true); } }
-    bool canSell { get { return TradeDirection != TradeDirections.Up && IsAngleOk(false); } }
-
 
     Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceHigh).Last();
     Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceLow).First();

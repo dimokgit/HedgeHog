@@ -22,11 +22,20 @@ namespace HedgeHog.Shared {
     public static double NetOpen(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Open * t.Lots) / trades.Sum(t => t.Lots);
     }
+    public static double NetClose(this IEnumerable<Trade> trades) {
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Close * t.Lots) / trades.Sum(t => t.Lots);
+    }
     public static double Gross(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.GrossPL);
     }
     public static Trade[] ByPair(this ICollection<Trade> trades, string pair) {
       return (string.IsNullOrWhiteSpace(pair) ? trades : trades.Where(t => t.Pair == pair)).ToArray();
+    }
+    public static bool HaveBuy(this ICollection<Trade> trades) {
+      return trades.Any(t => t.Buy);
+    }
+    public static bool HaveSell(this ICollection<Trade> trades) {
+      return trades.Any(t => !t.Buy);
     }
     public static Trade[] IsBuy(this ICollection<Trade> trades, bool isBuy) {
       return trades.Where(t => t.Buy == isBuy).ToArray();

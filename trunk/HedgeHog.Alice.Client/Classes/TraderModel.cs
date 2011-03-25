@@ -1267,9 +1267,10 @@ namespace HedgeHog.Alice.Client {
     private void RunPriceChanged(PriceChangedEventArgs e) {
       string pair = e.Price.Pair;
       try {
+        var fw = TradesManager as FXW;
         var a = e.Account;
         if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
-          a.Orders = TradesManager.GetOrders("");
+          a.Orders = fw == null ? TradesManager.GetOrders("") : fw.GetEntryOrders("");
           InvokeSyncronize(a);
         }
       } catch (Exception exc) { Log = exc; }

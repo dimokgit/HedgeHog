@@ -135,8 +135,8 @@ namespace HedgeHog.Shared {
     public static int MoneyAndPipsToLot(double Money, double pips, double PipCost, int BaseUnitSize) {
       return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
     }
-    public static double MoneyAndLotToPips(ITradesManager tm, double money, double lots, string pair) {
-      return MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.MinimumQuantity);
+    public static double MoneyAndLotToPips(this ITradesManager tm, double money, double lots, string pair) {
+      return tm == null ? double.NaN: MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.MinimumQuantity);
     }
     public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
       return money / lots / pipCost * baseUnitSize;

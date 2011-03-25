@@ -483,7 +483,7 @@ namespace HedgeHog {
         if (threadWait != null && threadWait.ThreadState == ThreadState.Running) threadWait.Abort();
         threadWait = new Thread(delegate() {
           threadProc.Join();
-          threadProc = new Thread(delegate() { ProcessPrice(); });
+          threadProc = new Thread(delegate() { ProcessPrice(Price); });
           threadProc.Priority = ThreadPriority.Lowest;
           try {
             threadProc.Start();
@@ -491,16 +491,16 @@ namespace HedgeHog {
         });
         threadWait.Start();
       } else {
-        threadProc = new Thread(delegate() { ProcessPrice(); });
+        threadProc = new Thread(delegate() { ProcessPrice(Price); });
         threadProc.Priority = ThreadPriority.Lowest;
         threadProc.Start();
       }
     }
-    private void ProcessPrice() {
+    private void ProcessPrice() { ProcessPrice(fw.GetPrice()); }
+    private void ProcessPrice(Price Price) {
       try {
         RaisePropertyChanged(() => DensityAverage);
         if (Visibility == Visibility.Hidden) return;
-        Price Price = fw.GetPrice();
         var digits = fw.GetDigits(pair);
         ShowSpread(Price);
 
@@ -658,7 +658,7 @@ namespace HedgeHog {
 
     public Account GetAccount() {
       var account = fw.GetAccount();
-      account.Orders = fw.GetOrders("");
+      account.Orders = fw.GetEntryOrders("");
       return account;
     }
 

@@ -114,11 +114,11 @@
     <DataTemplate x:Key="NetCellTemplate">
       <Label HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding OpenTradesGross,Converter={StaticResource ProfitToColorConverter}}">
         <TextBlock>
-          <TextBlock Text="{Binding OpenTradesGross,StringFormat=c1}"/>
-          <TextBlock Text="{Binding PositionsBuy,StringFormat=/{0}}" ToolTip="Positions Buy"/>
+          <TextBlock Text="{Binding OpenTradesGross,StringFormat=[{0:c1}]}" ToolTip="Open Trades Gross"/>
+          <TextBlock Text="{Binding PositionsBuy}" ToolTip="Positions Buy"/>
           <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
-          <TextBlock Text="{Binding PipsPerPosition,StringFormat=|{0:n0}}" ToolTip="Pips Per Position"/>
-          <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}}"/>
+          <TextBlock Text="{Binding PipsPerPosition,StringFormat=[{0:n0}}" ToolTip="Pips Per Position"/>
+          <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}]}" ToolTip="Total Lot"/>
           <LineBreak/>
           <TextBlock Text="{Binding Profitability,StringFormat={}{0:c0}}" ToolTip="Profitability Per Month"/>
           <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
@@ -139,7 +139,6 @@
           <LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
             Text="{Binding RunningBalance,StringFormat=c2}" ToolTip="Running Balance"  />
-          <TextBlock Text="{Binding RateLast.StartDate,StringFormat='MM/dd/yy'}"/>
           <!--<LineBreak/>
           <TextBlock Text="{Binding StrategyScoresText}" />-->
         </TextBlock>
@@ -237,7 +236,6 @@
           </DataGridTemplateColumn.HeaderTemplate>
         </DataGridTemplateColumn>
         <DataGridTemplateColumn Header="Net" CellTemplate="{StaticResource NetCellTemplate}" />
-        <DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>
         <DataGridTemplateColumn CellTemplate="{StaticResource CloseCellTemplate}"></DataGridTemplateColumn>
         <DataGridTemplateColumn Header="B/S" CellTemplate="{StaticResource BuyCellTemplate}"></DataGridTemplateColumn>
 
@@ -261,10 +259,10 @@
                 <TextBlock>=</TextBlock>
                 <TextBlock Text="{Binding SpreadShortLongRatioAverage,StringFormat=n1}"
                   FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />
-                <LineBreak/>
+                <!--<LineBreak/>
                 <TextBlock Text="{Binding CorridorStDevRatioPrevInPips,StringFormat=n0}" ToolTip="Rates StDev Prev"/>
                 <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding CorridorStDevRatioLastInPips,StringFormat=n0}" ToolTip="Rates StDev Last"/>
+                <TextBlock Text="{Binding CorridorStDevRatioLastInPips,StringFormat=n0}" ToolTip="Rates StDev Last"/>-->
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">
@@ -311,6 +309,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
+        <DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>
         <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
         <DataGridTemplateColumn Header="RateTime">
           <DataGridTemplateColumn.CellTemplate>

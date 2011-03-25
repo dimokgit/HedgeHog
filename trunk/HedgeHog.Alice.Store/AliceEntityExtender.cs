@@ -255,7 +255,6 @@ namespace HedgeHog.Alice.Store {
         }
 
         #region PropertyChanged
-        OnPropertyChanged("CorridorThinness");
         OnPropertyChanged("CorridorHeightsRatio");
         OnPropertyChanged("CorridorHeightByRegressionInPips");
         OnPropertyChanged("CorridorHeightByRegressionInPips0");

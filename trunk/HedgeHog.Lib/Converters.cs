@@ -22,7 +22,7 @@ namespace HedgeHog {
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
-      if( (value+"") == "" )return null;
+      if ((value + "") == "") return null;
       DateTime d;
       if (!DateTime.TryParse(value + "", out d)) return value;
       if (d.Date == DateTime.MinValue) return DateTime.Today + d.TimeOfDay;
@@ -33,6 +33,19 @@ namespace HedgeHog {
   }
 
 
+
+  public class InvertBooleanConverter : IValueConverter {
+    private static readonly InvertBooleanConverter defaultInstance = new InvertBooleanConverter();
+    public static InvertBooleanConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      if (targetType != typeof(bool))
+        throw new InvalidOperationException("The target must be a boolean");
+      return !(bool)value;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      return Convert(value, targetType, parameter, culture);
+    }
+  }
   public class AnyToVisibilityConverter : IValueConverter {
     private static readonly AnyToVisibilityConverter defaultInstance = new AnyToVisibilityConverter();
     public static AnyToVisibilityConverter Default { get { return defaultInstance; } }
@@ -89,8 +102,8 @@ namespace HedgeHog {
     private static readonly CompareValueConverter defaultInstance = new CompareValueConverter();
     public static CompareValueConverter Default { get { return defaultInstance; } }
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-      var parameters = (parameter+"").Split(new[]{'|'}, StringSplitOptions.RemoveEmptyEntries).ToList();
-      if( parameters.Count < 1)return null;
+      var parameters = (parameter + "").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+      if (parameters.Count < 1) return null;
       if (parameters.Count == 1) parameters.AddRange(trueFalseDefaultColors);
       var ret = false;
       if (!targetType.IsValueType)
@@ -157,7 +170,7 @@ namespace HedgeHog {
     static TemplatedParentDataContextConverter _Default;
     public static TemplatedParentDataContextConverter Default {
       get {
-        if (TemplatedParentDataContextConverter._Default == null) 
+        if (TemplatedParentDataContextConverter._Default == null)
           TemplatedParentDataContextConverter._Default = new TemplatedParentDataContextConverter();
         return TemplatedParentDataContextConverter._Default;
       }

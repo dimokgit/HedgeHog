@@ -164,6 +164,7 @@
           <Property Name="IsSuppResManual" Type="bit" Nullable="false" />
           <Property Name="TradeOnCrossOnly" Type="bit" Nullable="false" />
           <Property Name="TakeProfitFunctionInt" Type="int" Nullable="false" />
+          <Property Name="DoAdjustTimeframeByAllowedLot" Type="bit" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -284,6 +285,7 @@
           <Property Type="Boolean" Name="IsSuppResManual" Nullable="false" />
           <Property Type="Boolean" Name="TradeOnCrossOnly" Nullable="false" />
           <Property Type="Int32" Name="TakeProfitFunctionInt" Nullable="false" />
+          <Property Type="Boolean" Name="DoAdjustTimeframeByAllowedLot" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -376,7 +378,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="TakeProfitFunctionInt" ColumnName="TakeProfitFunctionInt" />
+            <ScalarProperty Name="DoAdjustTimeframeByAllowedLot" ColumnName="DoAdjustTimeframeByAllowedLot" />
+                <ScalarProperty Name="TakeProfitFunctionInt" ColumnName="TakeProfitFunctionInt" />
                 <ScalarProperty Name="TradeOnCrossOnly" ColumnName="TradeOnCrossOnly" />
                 <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
                 <ScalarProperty Name="DoStreatchRates" ColumnName="DoStreatchRates" />

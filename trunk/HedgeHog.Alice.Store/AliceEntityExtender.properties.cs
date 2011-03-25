@@ -7,9 +7,45 @@ using HedgeHog.Bars;
 using HedgeHog.Alice.Store.Metadata;
 
 namespace HedgeHog.Alice.Store {
+  public static class SuppResExtentions {
+    public static SuppRes[] Active(this ICollection<SuppRes> supReses) {
+      return supReses.Where(sr => sr.IsActive).ToArray();
+    }
+    public static SuppRes[] IsBuy(this ICollection<SuppRes> supReses,bool isBuy) {
+      return supReses.Where(sr => sr.IsBuy == isBuy).ToArray();
+    }
+  }
   public partial class SuppRes {
     public static readonly double TradesCountMinimum = 1;
+    public bool IsBuy { get { return !IsSupport; } }
+    public bool IsSell { get { return IsSupport; } }
+    private bool _IsActive = true;
+    public bool IsActive {
+      get { return _IsActive; }
+      set {
+        if (_IsActive != value) {
+          _IsActive = value;
+          OnPropertyChanged(Metadata.SuppResMetadata.IsActive);
+        }
+      }
+    }
 
+    public string EntryOrderId { get; set; }
+
+    EventHandler _IsActiveChanged;
+    public event EventHandler IsActiveChanged {
+      add {
+        if (_IsActiveChanged == null || !_IsActiveChanged.GetInvocationList().Contains(value))
+          _IsActiveChanged += value;
+      }
+      remove {
+        _IsActiveChanged -= value;
+      }
+    }
+    protected void OnIsActiveChanged() {
+      if (_IsActiveChanged != null)
+        _IsActiveChanged(this, EventArgs.Empty);
+    }
     EventHandler _rateChangedDelegate;
     public event EventHandler RateChanged {
       add {
@@ -350,9 +386,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-
-    public double CorridorHeightsRatio { get { return Fibonacci.FibRatioSign(CorridorStats.HeightHigh, CorridorStats.HeightLow); } }
-
     [DisplayName("Iterations For Power")]
     [Description("Number of Iterations to calculate power for wave")]
     [Category(categoryXXX)]
@@ -412,6 +445,20 @@ namespace HedgeHog.Alice.Store {
         if (CorridorBarMinutes != value) {
           CorridorBarMinutes = value;
           OnPropertyChanged(TradingMacroMetadata.BarsCount);
+        }
+      }
+    }
+
+    [DisplayName("Adjust TimeframeBy Lot")]
+    [Description("Do Adjust Timeframe By Allowed Lot")]
+    [Category(categoryCorridor)]
+    public bool DoAdjustTimeframeByAllowedLot_ {
+      get { return DoAdjustTimeframeByAllowedLot; }
+      set {
+        if (DoAdjustTimeframeByAllowedLot != value) {
+          DoAdjustTimeframeByAllowedLot = value;
+          OnPropertyChanged(TradingMacroMetadata.DoAdjustTimeframeByAllowedLot);
+          OnPropertyChanged(TradingMacroMetadata.DoAdjustTimeframeByAllowedLot_);
         }
       }
     }
