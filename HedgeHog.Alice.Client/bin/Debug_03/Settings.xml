@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dictionary>
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="996" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="-4" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="884" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1200" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="4" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVT]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDateStart]Text" value="3/17/2011 11:53:40 PM" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDateStart]Text" value="3/25/2011 2:34:07 PM" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="12" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDekay]Text" value="0" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVP]IsChecked" value="False" />
@@ -48,8 +48,17 @@
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.10]IsChecked" value="True" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.11]IsChecked" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="True" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="52" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="171" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="1036" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="458" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="88" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="1031" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Width" value="1057" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.11]SelectedIndex" value="-1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.50]IsSelected" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.12]SelectedIndex" value="-1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.51]IsSelected" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.13]SelectedIndex" value="-1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.52]IsSelected" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.14]SelectedIndex" value="-1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.54]IsSelected" value="True" />
 </dictionary>

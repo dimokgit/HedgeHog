@@ -22,7 +22,7 @@ namespace HedgeHog.Alice.Client {
             ) * lotOld / lot;
       }
       var stopLoss = currentLoss - trades.Sum(t => t.StopAmount);
-      return TradesManagerStatic.MoneyAndLotToPips(tm, stopLoss, lot, trades[0].Pair).Abs() + profitInPips;// +curentlimit;
+      return tm.MoneyAndLotToPips( stopLoss, lot, trades[0].Pair).Abs() + profitInPips;// +curentlimit;
     }
   }
 }

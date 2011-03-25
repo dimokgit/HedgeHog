@@ -15,7 +15,7 @@
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding TradesCount.Value,StringFormat=n1}" ></TextBlock>
+              <!--<TextBlock Text="{Binding TradesCount.Value,StringFormat=n1}" ></TextBlock>-->
             </DataTemplate>
           </ContentPresenter.ContentTemplate>
         </ContentPresenter>
@@ -31,7 +31,7 @@
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding TradesCount.Value,StringFormat=n1}" ></TextBlock>
+              <!--<TextBlock Text="{Binding TradesCount.Value,StringFormat=n1}" ></TextBlock>-->
             </DataTemplate>
           </ContentPresenter.ContentTemplate>
         </ContentPresenter>

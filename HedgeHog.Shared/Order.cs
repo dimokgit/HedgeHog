@@ -39,6 +39,8 @@ namespace HedgeHog.Shared {
     [DataMember]
     [UpdateOnUpdate]
     public Boolean NetQuantity { get; set; }
+    public bool IsNetOrder { get { return NetQuantity; } }
+    //public bool IsEntryOrder { get { return !NetQuantity; } }
     [DataMember]
     public String BS { get; set; }
     [DataMember]

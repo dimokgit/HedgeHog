@@ -17,6 +17,7 @@
       <l:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
       <hh:DateTimeConverter x:Key="DateTimeConverter"/>
       <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
+      <hh:InvertBooleanConverter x:Key="InvertBooleanConverter"/>
       <hh:PassThroughConverter x:Key="PassThroughConverter"/>
       <hh:TemplatedParentDataContextConverter x:Key="TemplatedParentDataContextConverter"/>
       <!---->
