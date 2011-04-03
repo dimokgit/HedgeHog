@@ -802,10 +802,13 @@ namespace Order2GoAddIn {
       }
     }
 
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars,bool doTrim) {
+      GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null,doTrim);
+    }
     public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars) {
       GetBars(pair, Period, periodsBack, StartDate, EndDate, Bars, null);
     }
-    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack) {
+    public void GetBars(string pair, int Period, int periodsBack, DateTime StartDate, DateTime EndDate, List<Rate> Bars, Action<RateLoadingCallbackArgs<Rate>> callBack, bool doTrim = true) {
       if (periodsBack == 0 && StartDate == TradesManagerStatic.FX_DATE_NOW)
         throw new ArgumentOutOfRangeException("Either periodsBack or startDate must have a real value.");
       if (Bars.Count == 0)
@@ -832,9 +835,11 @@ namespace Order2GoAddIn {
       if( Bars.Count < periodsBack)
         GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
       Bars.Sort();
-      var countMaximum = Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW?0: Bars.Count(b => b.StartDate >= StartDate), periodsBack);
-      //Dimok: Warn when negative
-      Bars.RemoveRange(0, Math.Max(0, Bars.Count - countMaximum));
+      if (doTrim) {
+        var countMaximum = Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW ? 0 : Bars.Count(b => b.StartDate >= StartDate), periodsBack);
+        //Dimok: Warn when negative
+        Bars.RemoveRange(0, Math.Max(0, Bars.Count - countMaximum));
+      }
     }
     #endregion
 
@@ -1663,18 +1668,16 @@ namespace Order2GoAddIn {
     public void DeleteOrder(Order order) {
       DeleteOrder(order.OrderID);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public bool DeleteOrder(string orderId) {
       try {
-        if (GetOrders("", true).Select(o => o.OrderID).Contains(orderId)) {
-          Desk.DeleteOrder(orderId);
-          while (GetOrdersInternal("").Any(o => o.OrderID == orderId))
-            Thread.Sleep(0);
+        if (GetOrders("").Any(o => o.OrderID==orderId)) {
+          object reqId;
+          Desk.DeleteOrderAsync(orderId, out reqId);
         }
-        _entryOrders.Remove(orderId);
         return true;
       } catch (Exception exc) {
-        RaiseError(exc);
-        return false;
+        throw new Exception("OrderId:" + orderId);
       }
     }
     public string GetFixOrderKindString(string pair, bool buy, double orderRate) {
@@ -2039,12 +2042,12 @@ namespace Order2GoAddIn {
               }
           }
         } else {
-          if (trade.Limit == 0 && InPips(trade.Pair, takeProfit) < 500)
-            takeProfit = trade.Close + takeProfit;
+          //if (/*trade.Limit == 0 && */InPips(trade.Pair, takeProfit).Abs() < 500)
+          limitRate = GetTrades(pair).NetOpen() + spreadToAdd + takeProfit;
           if (takeProfit == 0)
             Desk.DeleteTradeStopLimit(tradeId, false);
           else {
-            Desk.CreateFixOrder(Desk.FIX_LIMIT, tradeId, takeProfit, 0, "", "", "", true, 0, remark, out a, out b);
+            Desk.CreateFixOrder(Desk.FIX_LIMIT, tradeId, limitRate, 0, "", "", "", true, 0, remark, out a, out b);
           }
         }
       } catch (Exception exc) {
@@ -2095,10 +2098,11 @@ namespace Order2GoAddIn {
           }
         }
       } else {
+        stopRate = GetTrades(pair).NetOpen() + spreadToAdd + stopLoss;
         if (stopLoss == 0)
           Desk.DeleteTradeStopLimit(tradeId, true);
         else {
-          Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopLoss, 0, "", "", "", true, 0, remark, out a, out b);
+          Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopRate, 0, "", "", "", true, 0, remark, out a, out b);
         }
       }
     }
@@ -2466,8 +2470,8 @@ namespace Order2GoAddIn {
             RaiseTradeRemoved(trade);
             break;
           case TABLE_ORDERS:
-            parser.ParseEventRow(sExtInfo, table.Type);
-            var order = InitOrder(Parser);
+            //parser.ParseEventRow(sExtInfo, table.Type);
+            //var order = InitOrder(Parser);
             _entryOrders.Remove(RowID);
             SetTrades();
             break;
@@ -2570,8 +2574,9 @@ namespace Order2GoAddIn {
     }
     public int MinimumQuantity {
       get {
+        if (TradingSettingsProvider == null) return 10000;
         if (_minimumQuantity == 0){
-          _minimumQuantity = TradingSettingsProvider == null ? 10000 : TradingSettingsProvider.GetMinQuantity("EUR/USD", AccountID);
+          _minimumQuantity = TradingSettingsProvider.GetMinQuantity("EUR/USD", AccountID);
         }
         return _minimumQuantity;
       }

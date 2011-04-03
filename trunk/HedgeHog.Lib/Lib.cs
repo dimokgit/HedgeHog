@@ -282,6 +282,12 @@ namespace HedgeHog {
     public static int Abs(this int v) {
       return Math.Abs(v);
     }
+    public static double Max(this double v, double other) {
+      return Math.Max(v, other);
+    }
+    public static int Max(this int v, int other) {
+      return Math.Max(v, other);
+    }
 
     public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }
     public static double? Round(this double? v,int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }

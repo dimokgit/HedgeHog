@@ -573,7 +573,7 @@ namespace HedgeHog {
           dragPoint.DataContext = dpi;
         }
         var dp = rates[uid].DraggablePoint;
-        dp.Dispatcher.Invoke(new Action(() => {
+        dp.Dispatcher.BeginInvoke(new Action(() => {
           var raiseChanged = rate == 0;
           if (raiseChanged) rate = animatedPriceY.Average();
           dp.Position = CreatePointY(rate);
@@ -1022,8 +1022,8 @@ namespace HedgeHog {
       var animatedTimeXMin = animatedTimeX.Min();
       BarsPeriod = (animatedTimeX[0] - animatedTimeX[1]).Duration().TotalMinutes.ToInt();
       BarsCount = animatedTimeX.Count();
-      var rateFirst = ticks.First(r => r.PriceAvg1 != 0);
-      var rateLast = ticks.Last(r => r.PriceAvg1 != 0);
+      var rateFirst = ticks.FirstOrDefault(r => r.PriceAvg1 != 0) ?? new Rate();
+      var rateLast = ticks.LastOrDefault(r => r.PriceAvg1 != 0) ?? new Rate();
       var ratesForCorridor = new[] { rateFirst, rateLast };
       //var ratesforTrend = new[] { ticks.First(r => r.TrendLine > 0), ticks.Last(r => r.TrendLine > 0) };
       var errorMessage = "Period:" + (ticks[1].StartDate - ticks[0].StartDate).Duration().Minutes + " minutes.";

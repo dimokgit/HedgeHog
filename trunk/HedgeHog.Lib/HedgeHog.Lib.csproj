@@ -68,6 +68,7 @@
     <Compile Include="ap.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="Dynamic.cs" />
+    <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Fibonacci.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="DataPoint.cs" />
     <Compile Include="DateTimeExtender.cs" />
     <Compile Include="Lib.cs" />
+    <Compile Include="Schedulers\TaskScheduler.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="TBar.cs" />
     <Compile Include="UI\GroupFilter.cs" />
@@ -88,7 +90,7 @@
     <Compile Include="PropertyChangedExtenssion.cs" />
     <Compile Include="Regression.cs" />
     <Compile Include="RSI.cs" />
-    <Compile Include="Schedulers.cs" />
+    <Compile Include="Schedulers\Schedulers.cs" />
     <Compile Include="Volt.cs" />
   </ItemGroup>
   <ItemGroup>

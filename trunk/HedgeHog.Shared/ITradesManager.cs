@@ -88,7 +88,7 @@ namespace HedgeHog.Shared {
 
     Tick[] GetTicks(string pair, int periodsBack);
 
-    void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList);
+    void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool doTrim);
 
     //void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList);
   }

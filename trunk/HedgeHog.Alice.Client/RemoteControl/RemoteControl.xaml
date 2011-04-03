@@ -251,14 +251,13 @@
                 <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance"/>
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n0}]}" ToolTip="Corridor Height0 By Regression In Pips" />
+                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <LineBreak/>
-                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
-                <TextBlock>/</TextBlock>
+                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" ToolTip="Rates StDev"/>
+                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short" Margin="0,0,-2,0"/>
+                <TextBlock Margin="-2">/</TextBlock>
                 <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
-                <TextBlock>=</TextBlock>
-                <TextBlock Text="{Binding SpreadShortLongRatioAverage,StringFormat=n1}"
-                  FontWeight="{Binding IsSpreadShortLongRatioAverageOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />
+                  <!--FontWeight="{Binding IsBarHeightToPriceSpreadRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />-->
                 <!--<LineBreak/>
                 <TextBlock Text="{Binding CorridorStDevRatioPrevInPips,StringFormat=n0}" ToolTip="Rates StDev Prev"/>
                 <TextBlock>/</TextBlock>
@@ -314,8 +313,10 @@
         <DataGridTemplateColumn Header="RateTime">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}">
-              <TextBlock Text="{Binding Rates.Count}"/>
+              <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}"
+                         Background="{Binding HasCorridor,Converter={StaticResource BoolToColorConverter},ConverterParameter=White|Pink|White}" >
+              
+              <TextBlock Text="{Binding RatesInternal.Count}"/>
                 <TextBlock Text="{Binding LimitBar,StringFormat=[{0}]}"/>
               <TextBlock Text="{Binding LastRatePullTime,StringFormat=HH:mm}"/>
                 <LineBreak/>

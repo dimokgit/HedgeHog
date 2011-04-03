@@ -93,7 +93,7 @@ namespace HedgeHog.Alice.Store {
       backTestThread = Task.Factory.StartNew(() => {
         try {
           tradesManager.IsInTest = true;
-          var rates = tm.Rates;
+          var rates = tm.RatesInternal;
           rates.Clear();
           rates.AddRange(ratesBuffer.Take(tm.BarsCount));
           ratesBuffer.RemoveRange(0, tm.BarsCount);
@@ -139,7 +139,7 @@ namespace HedgeHog.Alice.Store {
               rates.Add(rate);
               if(!tm.DoStreatchRates || (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
                 rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
-              OnPropertyChanged(Metadata.TradingMacroMetadata.Rates);
+              OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
             }
           }
           if (fwMaster.IsLoggedIn) {
@@ -297,7 +297,7 @@ namespace HedgeHog.Alice.Store {
     }
     protected PriceBar[] FetchPriceBars(TradingMacro tradingMacro, int rowOffset, bool reversePower, DateTime dateStart) {
       var isLong = dateStart == DateTime.MinValue;
-      var rs = tradingMacro.Rates.Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
+      var rs = tradingMacro.RatesArraySafe.Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
       ratesForDensity.Index();
       SetPriceBars(tradingMacro,isLong, ratesForDensity.GetPriceBars(tradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
@@ -341,7 +341,7 @@ namespace HedgeHog.Alice.Store {
         _task = Task.Factory.StartNew(MakeActionInternal(action, logError));
         _task.ContinueWith(RunQueue);
       } else {
-        Debug.WriteLine("Tasker " + _name + " is busy.");
+        //Debug.WriteLine("Tasker " + _name + " is busy.");
         //_queuedAction = MakeActionInternal(action, logError);
       }
     }
@@ -366,21 +366,6 @@ namespace HedgeHog.Alice.Store {
   
   public class RatesLoader {
     FXW fw = new FXW();
-    Dictionary<string, Rate[]> ticksDictionary = new Dictionary<string, Rate[]>();
-    Task _loadTask;
-    public RatesLoader() {}
-    void SetTicks(string pair, Rate[] rates) {
-      lock (ticksDictionary) {
-        ticksDictionary[pair] = rates;
-      }
-    }
-    Rate[] GetTicks(string pair) {
-      lock (ticksDictionary) {
-        if (!ticksDictionary.ContainsKey(pair)) SetTicks(pair, new Rate[0]);
-        return ticksDictionary[pair];
-      }
-    }
-    public void ClearRates(string pair) { SetTicks(pair, new Rate[0]); }
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() > 0 && (ratesList[0].StartDate - ratesList[1].StartDate).Duration() > TimeSpan.FromMinutes(Math.Max(1, periodMinutes)))
@@ -396,13 +381,7 @@ namespace HedgeHog.Alice.Store {
           .Select(r => r.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min();
         ratesList.RemoveAll(r => r.StartDate >= d);
       }
-      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList);
-    }
-    void SaveToDB(string pair) {
-      var lastTickInDB = GlobalStorage.Context.Bars.LastOrDefault();
-      var dateLast = lastTickInDB == null ? DateTime.MinValue : lastTickInDB.StartDate;
-      GetTicks(pair).Where(t => t.StartDate > dateLast).ToList().ForEach(t =>
-        GlobalStorage.Context.Bars.AddObject(new Store.Bar() { AskClose = t.AskClose }));
+      fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList,true);
     }
   }
 }
