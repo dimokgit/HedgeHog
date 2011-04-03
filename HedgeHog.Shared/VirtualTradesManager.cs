@@ -381,7 +381,7 @@ namespace HedgeHog.Shared {
       throw new NotImplementedException();
     }
 
-    public void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
+    public void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim) {
       throw new NotImplementedException();
     }
 

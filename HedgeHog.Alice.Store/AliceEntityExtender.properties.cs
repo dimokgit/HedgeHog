@@ -16,6 +16,14 @@ namespace HedgeHog.Alice.Store {
     }
   }
   public partial class SuppRes {
+    public class EntryOrderIdEventArgs : EventArgs {
+      public string NewId { get; set; }
+      public string OldId { get; set; }
+      public EntryOrderIdEventArgs(string newId,string oldId) {
+        this.NewId = newId;
+        this.OldId= oldId;
+      }
+    }
     public static readonly double TradesCountMinimum = 1;
     public bool IsBuy { get { return !IsSupport; } }
     public bool IsSell { get { return IsSupport; } }
@@ -30,7 +38,32 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public string EntryOrderId { get; set; }
+
+    private string _EntryOrderId;
+    public string EntryOrderId {
+      get { return _EntryOrderId; }
+      set {
+        if (_EntryOrderId != value) {
+          var oldId = _EntryOrderId;
+          _EntryOrderId = value;
+          OnEntryOrderIdChanged(value, oldId);
+        }
+      }
+    }
+
+    event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChangedEvent;
+    public event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChanged {
+      add {
+        if (EntryOrderIdChangedEvent == null || !EntryOrderIdChangedEvent.GetInvocationList().Contains(value))
+          EntryOrderIdChangedEvent += value;
+      }
+      remove {
+        EntryOrderIdChangedEvent -= value;
+      }
+    }
+    void OnEntryOrderIdChanged(string newId,string oldId) {
+      if (EntryOrderIdChangedEvent != null) EntryOrderIdChangedEvent(this,new EntryOrderIdEventArgs(newId,oldId));
+    }
 
     EventHandler _IsActiveChanged;
     public event EventHandler IsActiveChanged {
@@ -425,6 +458,14 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
+    [DisplayName("Is Cold On Trades")]
+    [Description("Is not Hot when has trades")]
+    [Category(categoryTrading)]
+    public bool IsColdOnTrades_ {
+      get { return IsColdOnTrades; }
+      set { IsColdOnTrades = value; }
+    }
+
     [DisplayName("Bars Period")]
     [Category(categoryCorridor)]
     public BarsPeriodType LimitBar_ {
@@ -466,5 +507,7 @@ namespace HedgeHog.Alice.Store {
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
     public bool IsHot { get { return Strategy == Strategies.Hot; } }
+    public bool IsCold { get { return IsColdOnTrades && Trades.Length > 0; } }
+
   }
 }

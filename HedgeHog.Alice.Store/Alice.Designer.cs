@@ -1746,7 +1746,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="tradeOnCrossOnly">Initial value of the TradeOnCrossOnly property.</param>
         /// <param name="takeProfitFunctionInt">Initial value of the TakeProfitFunctionInt property.</param>
         /// <param name="doAdjustTimeframeByAllowedLot">Initial value of the DoAdjustTimeframeByAllowedLot property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot)
+        /// <param name="isColdOnTrades">Initial value of the IsColdOnTrades property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1811,6 +1812,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.TradeOnCrossOnly = tradeOnCrossOnly;
             tradingMacro.TakeProfitFunctionInt = takeProfitFunctionInt;
             tradingMacro.DoAdjustTimeframeByAllowedLot = doAdjustTimeframeByAllowedLot;
+            tradingMacro.IsColdOnTrades = isColdOnTrades;
             return tradingMacro;
         }
 
@@ -3499,6 +3501,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Boolean _DoAdjustTimeframeByAllowedLot;
         partial void OnDoAdjustTimeframeByAllowedLotChanging(global::System.Boolean value);
         partial void OnDoAdjustTimeframeByAllowedLotChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Boolean IsColdOnTrades
+        {
+            get
+            {
+                return _IsColdOnTrades;
+            }
+            set
+            {
+                OnIsColdOnTradesChanging(value);
+                ReportPropertyChanging("IsColdOnTrades");
+                _IsColdOnTrades = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("IsColdOnTrades");
+                OnIsColdOnTradesChanged();
+            }
+        }
+        private global::System.Boolean _IsColdOnTrades;
+        partial void OnIsColdOnTradesChanging(global::System.Boolean value);
+        partial void OnIsColdOnTradesChanged();
 
         #endregion
     

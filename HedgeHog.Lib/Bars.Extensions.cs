@@ -396,6 +396,17 @@ namespace HedgeHog.Bars {
     }
     #endregion
 
+    public static void AddRange<T>(this IList<T> bars, IEnumerable<T> barsToAdd) {
+      barsToAdd.ToList().ForEach(b => bars.Add(b));
+    }
+    public static void RemoveRange<T>(this IList<T> bars, int startIndex, int count) {
+      while (count-- > 0 && bars.Count() >= startIndex)
+        bars.Remove(bars[startIndex]);
+    }
+    public static void RemoveAll<T>(this IList<T> bars, Func<T,bool> filter) {
+      bars.Where(filter).ToList().ForEach(b => bars.Remove(b));
+    }
+
     public static Rate High(this ICollection<Rate> rates) {
       return rates.OrderBy(r => r.PriceAvg).Last();
     }
@@ -684,17 +695,17 @@ namespace HedgeHog.Bars {
     //  var timeRounded = fxTicks.Min(t => t.StartDate).Round().AddMinutes(1);
     //  return GetMinuteTicksCore(fxTicks.Where(t => t.StartDate >= timeRounded), period,false);
     //}
-    static Rate[] GetMinuteTicks<TBar>(this ICollection<TBar> fxTicks, int period, bool Round) where TBar : BarBase {
-      fxTicks = fxTicks.OrderBarsDescending().ToArray();
+    public static Rate[] GetMinuteTicks<TBar>(this ICollection<TBar> fxTicks, int period, bool Round, bool startFromEnd = true) where TBar : BarBase {
+      fxTicks = startFromEnd ? fxTicks.OrderBarsDescending().ToArray() : fxTicks.OrderBars().ToArray();
       if (fxTicks.Count() == 0) return new Rate[] { };
-      var startDate = fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate);
+      var startDate = startFromEnd ? fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate) : fxTicks.Min(t => t == null ? DateTime.MinValue : t.StartDate);
       if (Round) startDate = startDate.Round().AddMinutes(1);
       double? tempRsi;
       var rsiAverage = fxTicks.Average(t => t.PriceRsi.GetValueOrDefault());
       return (from t in fxTicks
               where period > 0
               group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
-              orderby tg.Key
+              orderby startFromEnd ? tg.Key : -tg.Key
               select new Rate() {
                 AskHigh = tg.Max(t => t.AskHigh),
                 AskLow = tg.Min(t => t.AskLow),
