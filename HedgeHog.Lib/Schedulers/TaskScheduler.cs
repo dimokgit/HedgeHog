@@ -1,16 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using System.Reflection;
+using System.ComponentModel;
+using System.Windows.Threading;
+using System.Windows;
 
 namespace HedgeHog.Schedulers {
+  public class TaskTimerDispenser<T> : ConcurrentDictionary<T, TaskTimer> {
+    private bool _runInUIThread;
+    private EventHandler<ExceptionEventArgs> _errorHandler;
+    private int _delay { get; set; }
+    public void TryAction(T key, Action action) {
+      var tt = this.GetOrAdd(key, new Func<T,TaskTimer>( k => new TaskTimer(_delay,_errorHandler,_runInUIThread)));
+      tt.Action = action;
+    }
+    public TaskTimerDispenser(int delay,EventHandler<ExceptionEventArgs> errorHandler,bool runInUIThread = false) {
+      this._delay = delay;
+      this._runInUIThread = runInUIThread;
+      this._errorHandler = errorHandler;
+    }
+  }
   public class TaskTimer {
     #region Properties
     int _delay;
+    bool _runInUIThread;
     System.Timers.Timer _timer;
     public bool IsBusy { get; set; }
     #region Action
@@ -43,12 +62,14 @@ namespace HedgeHog.Schedulers {
     #endregion
 
     #region Ctor
-    public TaskTimer(int delay, EventHandler<ExceptionEventArgs> exceptionHandler):this(delay) {
+    public TaskTimer(int delay, EventHandler<ExceptionEventArgs> exceptionHandler, bool runInUIThhread = false)
+      : this(delay, runInUIThhread) {
       Exception += exceptionHandler;
     }
-    public TaskTimer(int delay) {
+    public TaskTimer(int delay, bool runInUIThhread = false) {
       this._delay = delay;
       this._timer = new System.Timers.Timer(delay) { Enabled = false, AutoReset = false };
+      this._runInUIThread = runInUIThhread;
       this._timer.Elapsed += new System.Timers.ElapsedEventHandler(timer_Elapsed);
     }
     #endregion
@@ -58,7 +79,13 @@ namespace HedgeHog.Schedulers {
       try {
         if (action != null) {
           IsBusy = true;
-          action();
+          if (_runInUIThread && !Application.Current.Dispatcher.CheckAccess()) {
+            var t = new Thread(new ThreadStart(() => action()));
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
+            t.Join(1000);
+          } else
+            action();
         }
       } catch (Exception exc) {
         OnException(exc);

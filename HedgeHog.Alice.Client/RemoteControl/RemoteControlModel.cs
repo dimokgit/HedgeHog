@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using DigitalIdeaSolutions.Collections.Generic;
 using HedgeHog.Models;
+using HedgeHog.Schedulers;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -179,8 +180,10 @@ namespace HedgeHog.Alice.Client {
       if (ot.Price == 0) {
         try {
           object psOrderId, DI;
-          var slFLag = buy?(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN):(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN);
-          fwMaster.Desk.OpenTrade2(fwMaster.AccountID, ot.Pair, buy, lot, 0, "", 0, slFLag, stop, limit, 0, out psOrderId, out DI);
+          throw new NotImplementedException();
+          //var slFLag = buy?(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN):(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN);
+          throw new NotImplementedException();
+          //fwMaster.Desk.OpenTrade2(fwMaster.AccountID, ot.Pair, buy, lot, 0, "", 0, slFLag, stop, limit, 0, out psOrderId, out DI);
         } catch (Exception exc) { MessageBox.Show(exc + "", messageHeader); }
       } else {
         var openPrice = buy ? price.Ask : price.Bid;
@@ -401,7 +404,25 @@ namespace HedgeHog.Alice.Client {
       else tm.ShowProperties = !tm.ShowProperties;
     }
 
+    #region SetStrategiesCommand
 
+    ICommand _SetStrategiesCommand;
+    public ICommand SetStrategiesCommand {
+      get {
+        if (_SetStrategiesCommand == null) {
+          _SetStrategiesCommand = new Gala.RelayCommand<Strategies>(SetStrategies, (o) => true);
+        }
+
+        return _SetStrategiesCommand;
+      }
+    }
+    void SetStrategies(Strategies strategy) {
+      GetTradingMacros().ToList().ForEach(tm => tm.Strategy = strategy);
+    }
+    #endregion
+    #endregion
+
+    #region HidePropertiesDialogCommand
     ICommand _HidePropertiesDialogCommand;
     public ICommand HidePropertiesDialogCommand {
       get {
@@ -416,7 +437,6 @@ namespace HedgeHog.Alice.Client {
       var tm = ke.DataContext as TradingMacro;
       tm.ShowProperties = false;
     }
-
     #endregion
 
     #region Ctor
@@ -480,8 +500,10 @@ namespace HedgeHog.Alice.Client {
     void ObjectStateManager_ObjectStateManagerChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) {
       var tm = e.Element as TradingMacro;
       if (tm != null) {
-        if (tm.EntityState == System.Data.EntityState.Detached)
+        if (tm.EntityState == System.Data.EntityState.Detached) {
           tm.PropertyChanged -= TradingMacro_PropertyChanged;
+          tm.ShowChart -= TradingMacro_ShowChart;
+        }
         //else if (tm.EntityState == System.Data.EntityState.Added) {
         //  tm.PropertyChanged += TradingMacro_PropertyChanged;
         //  InitTradingMacro(tm);
@@ -493,10 +515,28 @@ namespace HedgeHog.Alice.Client {
       var tm = e.Entity as TradingMacro;
       if (tm == null) return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
+      tm.ShowChart += TradingMacro_ShowChart;
       InitTradingMacro(tm);
     }
 
-    SchedulersDispenser<TradingMacro> ShowChartSchedulersDispenser = new SchedulersDispenser<TradingMacro>();
+    class ShowChartDispatcher : BlockingConsumerBase<TradingMacro> {
+      public ShowChartDispatcher(Action<TradingMacro> action) {
+        Init(action);
+      }
+    }
+    ShowChartDispatcher _scd;
+    ShowChartDispatcher SCD {
+      get {
+        if (_scd == null)
+          _scd = new ShowChartDispatcher(tm => ShowChart(tm));
+        return _scd;
+      }
+    }
+    void TradingMacro_ShowChart(object sender, EventArgs e) {
+      var tm = sender as TradingMacro;
+      SCD.Add(tm);
+    }
+
     void TradingMacro_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
       try {
         var tm = sender as TradingMacro;
@@ -517,10 +557,6 @@ namespace HedgeHog.Alice.Client {
         var propsToHandle = new[] { TradingMacroMetadata.Pair, TradingMacroMetadata.TradingRatio };
         if (propsToHandle.Contains(e.PropertyName)) tm.SetLotSize(tradesManager.GetAccount());
         propsToHandle = new[] { TradingMacroMetadata.CorridorBarMinutes, TradingMacroMetadata.LimitBar };
-        if (TradingMacroMetadata.CorridorStats == e.PropertyName) {
-          var rates = tm.RatesCopy();
-          ShowChartSchedulersDispenser.Run(tm,() => ShowChart(tm,rates));
-        }
         if (e.PropertyName == TradingMacroMetadata.CorridorIterations)
           tm.CorridorStatsArray.Clear();
         if (e.PropertyName == TradingMacroMetadata.IsActive && ShowAllMacrosFilter)
@@ -608,10 +644,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     void ShowChart(TradingMacro tm) {
-      ShowChart(tm, (Rate[])tm.RatesArraySafe.Clone());
-    }
-    void ShowChart(TradingMacro tm, Rate[] rates) {
       try {
+        Rate[] rates = tm.RatesArraySafe;
         string pair = tm.Pair;
         var charter = GetCharter(tm);
         if (tm.IsCharterMinimized) return;
@@ -655,7 +689,7 @@ namespace HedgeHog.Alice.Client {
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Length;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
-          charter.AddTicks(price, rates, new PriceBar[1][] { priceBars }, info, trendHighlight,
+          charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average(),
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
@@ -1283,7 +1317,7 @@ namespace HedgeHog.Alice.Client {
       while (lotSizeRemove > 0 && tradesList.Count > 0) {
         var trade = tradesList.First();
         if (trade.Lots >= lotSizeRemove) {
-          tradesManager.FixOrderClose(trade.Id, fwMaster.Desk.FIX_CLOSEMARKET, (Price)null, lotSizeRemove);
+          tradesManager.CloseTrade(trade, lotSizeRemove,null);
           return;
         }
         lotSizeRemove -= trade.Lots;

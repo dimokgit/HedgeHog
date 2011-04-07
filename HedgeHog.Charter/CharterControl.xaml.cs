@@ -257,9 +257,11 @@ namespace HedgeHog {
     HorizontalLine magnetPrice;
     public double MagnetPrice {
       set {
-        if (magnetPrice == null)
-          plotter.Children.Add(magnetPrice = new HorizontalLine() { StrokeThickness = 2, Stroke = new SolidColorBrush(Colors.DarkViolet) });
-        magnetPrice.Dispatcher.BeginInvoke(new Action(() => magnetPrice.Value = value));
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+          if (magnetPrice == null)
+            plotter.Children.Add(magnetPrice = new HorizontalLine() { StrokeThickness = 2, Stroke = new SolidColorBrush(Colors.DarkViolet) });
+          magnetPrice.Dispatcher.BeginInvoke(new Action(() => magnetPrice.Value = value));
+        });
       }
     }
 
@@ -272,7 +274,7 @@ namespace HedgeHog {
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     double LineAvgAsk { set { lineAvgAsk.Value = value; } }
 
-    HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Pink) };
+    HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
     #region TimeLines
@@ -490,7 +492,7 @@ namespace HedgeHog {
     static double[] StrokeArrayForTrades = new double[] { 5, 2, 2, 2 };
     Dictionary<string, HorizontalLine> tradeLines = new Dictionary<string, HorizontalLine>();
     public void SetTradeLines(ICollection<Trade> trades, double spread) {
-      Dispatcher.Invoke(new Action(() => {
+      var a = new Action(() => {
         var tradesAdd = from value in trades.Select(t => t.Id).Except(this.tradeLines.Select(t => t.Key))
                         join trade in trades on value equals trade.Id
                         select trade;
@@ -507,16 +509,21 @@ namespace HedgeHog {
         }
         lineNetBuy.Visibility = trades.IsBuy(true).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
         lineNetSell.Visibility = trades.IsBuy(false).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
-      }));
+      });
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(a);
     }
 
     public void SetBuyRates(Dictionary<Guid, BuySellLevel> rates) {
-      CleanSuppResRates(BuyRates, rates);
-      SetBuySellRates(rates);
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        CleanSuppResRates(BuyRates, rates);
+        SetBuySellRates(rates);
+      });
     }
     public void SetSellRates(Dictionary<Guid, BuySellLevel> rates) {
-      CleanSuppResRates(SellRates, rates);
-      SetBuySellRates(rates);
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        CleanSuppResRates(SellRates, rates);
+        SetBuySellRates(rates);
+      });
     }
 
     private void CleanSuppResRates(Dictionary<Guid, DraggablePointInfo> dpRates, Dictionary<Guid, BuySellLevel> rates) {
@@ -700,7 +707,7 @@ namespace HedgeHog {
       set {
         if (_gannAnglesCount == value) return;
         _gannAnglesCount = value;
-        Dispatcher.Invoke(new Action(() => InsertGannLines()));
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(InsertGannLines);
       }
     }
 
@@ -710,7 +717,7 @@ namespace HedgeHog {
       set {
         if (_GannAngle1x1Index == value) return;
         _GannAngle1x1Index = value;
-        Dispatcher.Invoke(new Action(() => InsertGannLines()));
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(InsertGannLines);
       }
     }
 
@@ -1028,12 +1035,14 @@ namespace HedgeHog {
       //var ratesforTrend = new[] { ticks.First(r => r.TrendLine > 0), ticks.Last(r => r.TrendLine > 0) };
       var errorMessage = "Period:" + (ticks[1].StartDate - ticks[0].StartDate).Duration().Minutes + " minutes.";
       Action a = () => {
-        CreateCurrencyDataSource(voltsByTick != null);
+        var doVolts = voltsByTick != null;
+        CreateCurrencyDataSource(doVolts);
         try {
           SetGannAngles(ticks, SelectedGannAngleIndex);
           animatedDataSource.RaiseDataChanged();
           animatedDataSourceBid.RaiseDataChanged();
           animatedDataSource1.RaiseDataChanged();
+          if( doVolts )
           animatedVoltDataSource.RaiseDataChanged();
 
         } catch (InvalidOperationException exc) {
@@ -1063,7 +1072,8 @@ namespace HedgeHog {
 
           #region Set Lines
 
-          LineAvgAsk = lastPrice.Average;
+          LineAvgAsk = lastPrice.Ask;
+          LineAvgBid = lastPrice.Bid;
 
           CenterOfMassHLineHigh = CenterOfMassBuy;
           CenterOfMassHLineLow = CenterOfMassSell;

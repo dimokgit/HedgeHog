@@ -316,7 +316,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         masterTradesPending.Add(serverTradeID);
         PendingOrder po = null;
         Action<object, RequestEventArgs> reqiesFailedAction = (s, e) => {
-          if (po != null && e.ReqiestId == po.RequestId) {
+          if (po != null && e.RequestId == po.RequestId) {
             masterTradesPending.Remove(serverTradeID);
             po = null;
             Log = new Exception(e.Error);

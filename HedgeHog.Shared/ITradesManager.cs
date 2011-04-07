@@ -114,10 +114,11 @@ namespace HedgeHog.Shared {
     }
   }
   public class RequestEventArgs : EventArgs {
-    public string ReqiestId { get; set; }
+    public string RequestId { get; set; }
     public string Error { get; set; }
+    public RequestEventArgs(string requestId) : this(requestId, "") { }
     public RequestEventArgs(string requestId, string error) {
-      this.ReqiestId = requestId;
+      this.RequestId = requestId;
       this.Error = error;
     }
   }
@@ -146,5 +147,8 @@ namespace HedgeHog.Shared {
     }
     public static double InPips(double? price, double pipSize) { return price.GetValueOrDefault() / pipSize; }
     public static bool IsInPips(this double value, double curentPrice) { return value / curentPrice < .5; }
+    public static int GetMaxBarCount(int periodsBack, DateTime StartDate, List<Rate> Bars) {
+      return Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW ? 0 : Bars.Count(b => b.StartDate >= StartDate), periodsBack);
+    }
   }
 }

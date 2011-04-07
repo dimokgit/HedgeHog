@@ -219,7 +219,13 @@
               <WrapPanel>
                 <TextBlock>Pair</TextBlock>
                 <Button Content="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid},Converter={StaticResource BoolToSrtingConverter},ConverterParameter=+|+|-}" 
-                      Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" Margin="2,-4,0,-4"/>
+                      Command="{Binding DataContext.ToggleShowActiveMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" Margin="0">
+                  <Button.ContentTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding}" Margin="0,-5" Padding="0"></TextBlock>
+                    </DataTemplate>
+                  </Button.ContentTemplate>
+                </Button>
               </WrapPanel>
             </DataTemplate>
           </DataGridTemplateColumn.HeaderTemplate>
@@ -253,10 +259,16 @@
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />
                 <LineBreak/>
-                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" ToolTip="Rates StDev"/>
-                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short" Margin="0,0,-2,0"/>
-                <TextBlock Margin="-2">/</TextBlock>
-                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long"/>
+                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" ToolTip="Rates StDev" Margin="0,0,-3,0"/>
+                <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
+                <TextBlock Margin="-3">/</TextBlock>
+                <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long" Margin="-3,0,0,0"/>
+                <TextBlock Text="{Binding VolumeShort,StringFormat=[{0:n0}}" ToolTip="Volume Short"/>
+                <TextBlock Margin="-3">/</TextBlock>
+                <TextBlock Text="{Binding VolumeLong,StringFormat=n0}" ToolTip="Volume Long"/>
+                <TextBlock Margin="-3">=</TextBlock>
+                <TextBlock Text="{Binding VolumeShortToLongRatio,StringFormat={}{0:n1}]}" ToolTip="Volume Short/Long"/>
+
                   <!--FontWeight="{Binding IsBarHeightToPriceSpreadRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />-->
                 <!--<LineBreak/>
                 <TextBlock Text="{Binding CorridorStDevRatioPrevInPips,StringFormat=n0}" ToolTip="Rates StDev Prev"/>
@@ -294,7 +306,21 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridTemplateColumn Header="Strategy">
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.HeaderTemplate>
+            <DataTemplate>
+              <ComboBox SelectedValue="{Binding Strategy,Mode=TwoWay}" ItemsSource="{Binding Source={StaticResource StrategyValues}}">
+                <i:Interaction.Triggers>
+                  <i:EventTrigger EventName="SelectionChanged">
+            <galaCmd:EventToCommand 
+              Command="{Binding DataContext.SetStrategiesCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
+              CommandParameter="{Binding SelectedValue,RelativeSource={RelativeSource AncestorType=ComboBox}}"
+              PassEventArgsToCommand="false" />
+          </i:EventTrigger>
+        </i:Interaction.Triggers>
+              </ComboBox>
+            </DataTemplate>
+          </DataGridTemplateColumn.HeaderTemplate>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Strategy}" 
