@@ -33,7 +33,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_IsActive != value) {
           _IsActive = value;
-          OnPropertyChanged(Metadata.SuppResMetadata.IsActive);
+          if (!value) EntryOrderId = "";
+          OnIsActiveChanged();
         }
       }
     }
@@ -221,8 +222,8 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Corridor Height Multiplier")]
-    [Category(categoryXXX)]
-    [Description("Ex: CorrUp = PriceRegr + Up + corrHeight*X")]
+    [Category(categoryCorridor)]
+    [Description("Ex: CorrHeighMin = SpreadMax * X")]
     public double CorridorHeightMultiplier {
       get { return CorridornessMin; }
       set { CorridornessMin = value; }

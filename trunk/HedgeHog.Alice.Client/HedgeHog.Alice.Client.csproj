@@ -504,17 +504,6 @@
   <ItemGroup>
     <WCFMetadataStorage Include="Service References\TraderService\" />
   </ItemGroup>
-  <ItemGroup>
-    <COMReference Include="FXCore">
-      <Guid>{C670D13A-F27D-48E9-91F8-6E30E6D1D8C7}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

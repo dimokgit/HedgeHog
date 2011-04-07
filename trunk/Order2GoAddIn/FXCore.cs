@@ -19,10 +19,28 @@ namespace Order2GoAddIn {
     private void RaiseLoggedIn() {
       if (LoggedInEvent != null) LoggedInEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
     }
-    public event EventHandler<LoggedInEventArgs> LoggedOffEvent;
-    private void RaiseLoggedOff() {
-      if (LoggedOffEvent != null) LoggedOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+
+    //public event EventHandler<LoggedInEventArgs> LoggedOffEvent;
+    //private void RaiseLoggedOff() {
+    //  if (LoggedOffEvent != null) LoggedOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+    //}
+
+
+    event EventHandler<LoggedInEventArgs> LoggedOffEventEvent;
+    public event EventHandler<LoggedInEventArgs> LoggedOffEvent {
+      add {
+        if (LoggedOffEventEvent == null || !LoggedOffEventEvent.GetInvocationList().Contains(value))
+          LoggedOffEventEvent += value;
+      }
+      remove {
+        LoggedOffEventEvent -= value;
+      }
     }
+    void RaiseLoggedOff() {
+      if (LoggedOffEventEvent != null) LoggedOffEventEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+    }
+
+
     System.Threading.Timer timer;
     object _deskLocker = new object();
     public FXCore.TradeDeskAut Desk { get { return mDesk; } }

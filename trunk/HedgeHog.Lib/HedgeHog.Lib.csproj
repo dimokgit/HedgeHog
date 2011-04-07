@@ -66,6 +66,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ap.cs" />
+    <Compile Include="BlockingConsumerBase.cs" />
+    <Compile Include="Class1.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="Dynamic.cs" />
     <Compile Include="ExceptionEventArgs.cs" />
@@ -74,6 +76,7 @@
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
     <Compile Include="MEF.cs" />
+    <Compile Include="NameValueParser.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />

@@ -1313,7 +1313,7 @@ namespace HedgeHog.Alice.Client {
         Log = account.Error;
       else {
         var trades = account.Trades;
-        AccountModel.Update(account, 0, IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+        AccountModel.Update(account, 0, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.BeginInvoke(new Action(() => {
           UpdateTrades(account, trades.ToList(), ServerTrades);

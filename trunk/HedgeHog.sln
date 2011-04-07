@@ -149,7 +149,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Alice.UI", "HedgeH
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.D3", "HedgeHog.D3\HedgeHog.D3.csproj", "{AA93DD2F-6107-4846-B5A0-D07127E75C4F}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web4", "..\..\..\..\..\Documents and Settings\dimon\My Documents\Visual Studio 2010\WebSites\Web4", "{54D975F9-EA82-4E9F-A731-F9C87EDBA75D}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web4", "..\..\..\..\..\Documents and Settings\dimon\My Documents\Visual Studio 2010\WebSites\Web4\", "{54D975F9-EA82-4E9F-A731-F9C87EDBA75D}"
 	ProjectSection(WebsiteProperties) = preProject
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
 		Debug.AspNetCompiler.VirtualPath = "/Web4"
@@ -166,7 +166,7 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web4", "..\..\..\..\..\Docu
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "3574"
+		VWDPort = "1186"
 		DefaultWebSiteLanguage = "Visual C#"
 	EndProjectSection
 EndProject

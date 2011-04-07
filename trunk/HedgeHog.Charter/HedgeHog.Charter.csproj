@@ -109,6 +109,10 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras\GalaSoft.MvvmLight.Extras.csproj">
+      <Project>{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}</Project>
+      <Name>GalaSoft.MvvmLight.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight\GalaSoft.MvvmLight.csproj">
       <Project>{ADB28C09-8DE9-4006-80D5-74856EB4A48B}</Project>
       <Name>GalaSoft.MvvmLight</Name>

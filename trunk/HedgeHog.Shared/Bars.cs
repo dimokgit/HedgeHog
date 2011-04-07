@@ -49,6 +49,8 @@ namespace HedgeHog.Bars {
     public double AskOpen { get; set; }
     public double BidClose { get; set; }
     public double BidOpen { get; set; }
+
+    public int Volume { get; set; }
     #endregion
 
     #region Spread

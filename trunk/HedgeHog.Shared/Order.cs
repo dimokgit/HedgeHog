@@ -18,6 +18,12 @@ namespace HedgeHog.Shared {
     public static Order[] IsBuy(this ICollection<Order> orders, bool isBuy) {
       return orders.Where(o => o.IsBuy == isBuy).ToArray();
     }
+    public static Order OrderById(this ICollection<Order> orders, string orderId) {
+      return orders.Where(o => o.OrderID == orderId).SingleOrDefault();
+    }
+    public static Order OrderByRequestId(this ICollection<Order> orders, string requestId) {
+      return orders.Where(o => o.RequestID == requestId).SingleOrDefault();
+    }
   }
 
   [DataContract]
