@@ -760,7 +760,6 @@ namespace Order2GoAddIn {
     //  rates.RemoveRange(0, rates.Count() - periodsBack);
     //}
     readonly int maxTicks = 300;
-    [MethodImpl(MethodImplOptions.Synchronized)]
     TBar[] GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar:Rate {
       try {
         return period == 0 ?
@@ -794,17 +793,25 @@ namespace Order2GoAddIn {
         };
       }
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
+    double? _historyTimeAverage;
     public Rate[] GetBarsFromHistory(string pair, int period, DateTime startDate, DateTime endDate) {
       lock (lockHistory) {
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         startDate = ConvertDateToUTC(startDate);
         var periodToRun = Enum.GetValues(typeof(BarsPeriodTypeFXCM)).Cast<int>().Where(i => i <= period).Max();
-        var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
-          ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodTypeFXCM)periodToRun + "", startDate, endDate, int.MaxValue, true, true))
-          .Cast<FXCore.MarketRateAut>().ToArray();
-        var ret = mr.Select((r) => RateFromMarketRate(pair,r)).OrderBars().ToArray();
-        return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToArray();
+        try {
+          var d = DateTime.Now;
+          var mr = RunWithTimeout.WaitFor<FXCore.MarketRateAut[]>.Run(TimeSpan.FromMilliseconds(_historyTimeAverage.GetValueOrDefault(1000)*2), () =>
+            ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodTypeFXCM)periodToRun + "", startDate, endDate, int.MaxValue, true, true))
+            .Cast<FXCore.MarketRateAut>().ToArray());
+          var ms = (DateTime.Now - d).TotalMilliseconds;
+          _historyTimeAverage = Lib.CMA(_historyTimeAverage, 10, ms);
+          var ret = mr.Select((r) => RateFromMarketRate(pair, r)).OrderBars().ToArray();
+          return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToArray();
+        } catch (ThreadAbortException exc) {
+          RaiseError(new Exception("Pair:" + pair + ",period:" + period + ",startDate:" + startDate, exc));
+          return new Rate[0];
+        }
         //);
       }
     }
@@ -2133,6 +2140,7 @@ namespace Order2GoAddIn {
               limitRate = (trade.Buy ? order.SellRate : order.BuyRate) + takeProfit;
             else {
               var trades = GetTradesInternal(pair);
+
               limitRate = trades.NetOpen() + spreadToAdd + takeProfit;
             }
             if (order == null || Round(pair, order.Rate, -1) != Round(pair, limitRate, -1))
@@ -2189,6 +2197,7 @@ namespace Order2GoAddIn {
           }
           if (order == null || Round(pair, order.Rate, -1) != Round(pair, stopRate, -1)) {
             var trades = GetTradesInternal(pair);
+            if (trades.Length == 0) return;
             var netClose = trades.NetClose();
             if( isBuy && stopRate < trades.Min(t=>t.Close) || !isBuy && stopRate > trades.Max(t=>t.Close))
               try {
@@ -2598,7 +2607,7 @@ namespace Order2GoAddIn {
     #region FXCore Helpers
 
     #region Report
-    public string GetReport(DateTime dateFrom, DateTime dateTo) {
+    private string GetReport(DateTime dateFrom, DateTime dateTo) {
       var url = Desk.GetReportURL(AccountID, dateFrom, dateTo, "XLS", "", "", 0);
       var wc = new System.Net.WebClient();
       var s = wc.DownloadString(url);
@@ -2635,7 +2644,6 @@ namespace Order2GoAddIn {
       }
       return trades;
     }
-
     public Trade GetLastTrade(string pair) {
       var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
       if (trades.Length == 0)

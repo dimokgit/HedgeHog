@@ -166,7 +166,7 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web4", "..\..\..\..\..\Docu
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		VWDPort = "1186"
+		VWDPort = "3014"
 		DefaultWebSiteLanguage = "Visual C#"
 	EndProjectSection
 EndProject

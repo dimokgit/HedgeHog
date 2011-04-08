@@ -29,6 +29,7 @@ using System.Runtime.CompilerServices;
 using DigitalIdeaSolutions.Collections.Generic;
 using HedgeHog.Models;
 using HedgeHog.Schedulers;
+using System.Windows.Threading;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -534,7 +535,8 @@ namespace HedgeHog.Alice.Client {
     }
     void TradingMacro_ShowChart(object sender, EventArgs e) {
       var tm = sender as TradingMacro;
-      SCD.Add(tm);
+      //SCD.Add(tm);
+      AddShowChart(tm);
     }
 
     void TradingMacro_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
@@ -643,9 +645,40 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    System.Collections.Concurrent.ConcurrentQueue<TradingMacro> _showChartQueue = new System.Collections.Concurrent.ConcurrentQueue<TradingMacro>();
+    void AddShowChart(TradingMacro tm) {
+      if (ShowChartTimer.IsEnabled  && !_showChartQueue.Contains(tm)) 
+        _showChartQueue.Enqueue(tm);
+    }
+    DispatcherTimer _showChartTimer;
+    DispatcherTimer ShowChartTimer {
+      get {
+        if (_showChartTimer == null) {
+          _showChartTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(.1) };
+          _showChartTimer.Tick += ShowChartTimer_Tick;
+          _showChartTimer.Start();
+        }
+        return _showChartTimer;
+      }
+    }
+
+    void ShowChartTimer_Tick(object sender, EventArgs e) {
+      try {
+        (sender as DispatcherTimer).Stop();
+        if (_showChartQueue.Count > 0) {
+          TradingMacro tm;
+          if (_showChartQueue.TryDequeue(out tm))
+            ShowChart(tm);
+        }
+      } catch (Exception exc) {
+        Log = exc;
+      } finally {
+        (sender as DispatcherTimer).Start();
+      }
+    }
     void ShowChart(TradingMacro tm) {
       try {
-        Rate[] rates = tm.RatesArraySafe;
+        Rate[] rates = tm.RatesCopy();
         string pair = tm.Pair;
         var charter = GetCharter(tm);
         if (tm.IsCharterMinimized) return;
@@ -660,15 +693,17 @@ namespace HedgeHog.Alice.Client {
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         bool? trendHighlight = csFirst.TrendLevel == TrendLevel.None ? (bool?)null : csFirst.TrendLevel == TrendLevel.Resistance;
-        var priceBars = tm.GetPriceBars(true).OrderBars().Select(pb => pb.Clone() as PriceBar).ToArray();
-        if (tm.LimitBar > 0)
-          (from r in rates
-           join pb in priceBars on r.StartDate equals pb.StartDate
-           select new { pb, r.StartDateContinuous }
-          ).ToList().ForEach(a => a.pb.StartDateContinuous = a.StartDateContinuous);
-        var powerBars = priceBars.Select(pb => pb.Power).ToArray();
-        var stDevPower = priceBars.Average(pb => pb.Power);
-        var stAvgPower = priceBars.StDev(pb => pb.Power);
+        if (false) {
+          var priceBars = tm.GetPriceBars(true).OrderBars().Select(pb => pb.Clone() as PriceBar).ToArray();
+          if (tm.LimitBar > 0)
+            (from r in rates
+             join pb in priceBars on r.StartDate equals pb.StartDate
+             select new { pb, r.StartDateContinuous }
+            ).ToList().ForEach(a => a.pb.StartDateContinuous = a.StartDateContinuous);
+          var powerBars = priceBars.Select(pb => pb.Power).ToArray();
+          var stDevPower = priceBars.Average(pb => pb.Power);
+          var stAvgPower = priceBars.StDev(pb => pb.Power);
+        }
         var dateMin = rates.Min(r => r.StartDateContinuous);
         string[] info = new string[] { 
           "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tradesManager.InPips(pair, rates.Height()),tradesManager.ServerTime),
@@ -690,7 +725,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAnglesCount = tm.GannAnglesArray.Length;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
-            tm.PowerAverage, powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average(),
+            tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             timeHigh, timeCurr, timeLow,
