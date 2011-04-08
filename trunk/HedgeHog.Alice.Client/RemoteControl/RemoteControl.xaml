@@ -258,8 +258,10 @@
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />
+                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" ToolTip="Rates StDev" Margin="-3,0"/>
                 <LineBreak/>
-                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" ToolTip="Rates StDev" Margin="0,0,-3,0"/>
+                <TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}" ToolTip="Spread For Corridor"/>
+                <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long" Margin="-3,0,0,0"/>

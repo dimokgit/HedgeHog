@@ -16,7 +16,7 @@ namespace HedgeHog {
     public static Exception LogToFile(Exception exc,string fileName) {
       try {
         if (exc != null) {
-          var text = "**************** Exception ***************" + Environment.NewLine;
+          var text = DateTime.Now.ToString("[dd HH:mm:ss] ") +" **************** Exception ***************" + Environment.NewLine;
           while (exc != null) {
             text += exc.Message + Environment.NewLine + exc.StackTrace + Environment.NewLine;
             exc = exc.InnerException;
