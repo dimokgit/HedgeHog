@@ -17,7 +17,11 @@
       <RowDefinition/>
     </Grid.RowDefinitions>
     <StackPanel Orientation="Horizontal">
-      <hhui:AccountLoginView AccountLoginCommand="{Binding DataContext.LoginCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=Grid}}" />
+      <Border BorderThickness="1" CornerRadius="2" BorderBrush="Black"
+      Background="{Binding IsLoggedIn,Converter={x:Static Member=hhlib:CompareValueConverter.Default},ConverterParameter=False}"              >
+        <hhui:AccountLoginView 
+        AccountLoginCommand="{Binding DataContext.LoginCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=FrameworkElement}}" />
+      </Border>
       <ListBox>
       </ListBox>
     </StackPanel>
