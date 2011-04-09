@@ -102,7 +102,7 @@
       <Lcid>0</Lcid>
       <WrapperTool>tlbimp</WrapperTool>
       <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
   <ItemGroup>
@@ -132,6 +132,7 @@
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
       <Name>Order2GoAddIn</Name>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </ProjectReference>
     <ProjectReference Include="..\Persistancy\Persistance.csproj">
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>

@@ -67,10 +67,12 @@ namespace WpfPersist {
   public static class UserSettingsStorage {
     static string SettingsFileName { get { return AppDomain.CurrentDomain.BaseDirectory + "Settings.xml"; } }
     static UserSettingsStorage() {
-      Application.Current.MainWindow.Closing += new CancelEventHandler(MainWindow_Closing);
-      var usWindow = Application.Current.MainWindow as IUserSettingsStorage;
-      if (usWindow != null)
-        usWindow.Save = Save;
+      if (Application.Current != null && Application.Current.MainWindow != null) {
+        Application.Current.MainWindow.Closing += new CancelEventHandler(MainWindow_Closing);
+        var usWindow = Application.Current.MainWindow as IUserSettingsStorage;
+        if (usWindow != null)
+          usWindow.Save = Save;
+      }
     }
 
     static void Save() {
