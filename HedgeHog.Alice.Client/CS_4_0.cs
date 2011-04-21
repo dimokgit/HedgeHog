@@ -53,8 +53,14 @@ namespace HedgeHog.Alice.Client.FileMetadata.Metadata
             /// <summary>Represents x:Key="BoolToSrtingConverter"/></summary>
             public static string BoolToSrtingConverterKey { get { return "BoolToSrtingConverter"; } }
 
+            /// <summary>Represents x:Key="InvertBooleanConverter"/></summary>
+            public static string InvertBooleanConverterKey { get { return "InvertBooleanConverter"; } }
+
             /// <summary>Represents x:Key="PassThroughConverter"/></summary>
             public static string PassThroughConverterKey { get { return "PassThroughConverter"; } }
+
+            /// <summary>Represents x:Key="TemplatedParentDataContextConverter"/></summary>
+            public static string TemplatedParentDataContextConverterKey { get { return "TemplatedParentDataContextConverter"; } }
 
             /// <summary>Represents x:Key="ReadOnlyDataGridStyle"/></summary>
             public static string ReadOnlyDataGridStyleKey { get { return "ReadOnlyDataGridStyle"; } }
@@ -114,6 +120,47 @@ namespace HedgeHog.Alice.Client.FileMetadata.Metadata
 
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Dictionary1.xaml")); } }
+
+
+    }
+
+    /// <summary>Metadata for XAML DockingWindow.xaml</summary>
+    public static class DockingWindowXaml    {
+            /// <summary>Resource pack URI for XAML file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/DockingWindow.xaml", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/DockingWindow.xaml"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/DockingWindow.xaml")); } }
+
+            /// <summary>Represents x:Key="RadPaneContextMenu"/></summary>
+            public static string RadPaneContextMenuKey { get { return "RadPaneContextMenu"; } }
+
+            /// <summary>Represents x:Key="StopCellEditTemplate"/></summary>
+            public static string StopCellEditTemplateKey { get { return "StopCellEditTemplate"; } }
+
+            /// <summary>Represents x:Key="GrossCellTemplate"/></summary>
+            public static string GrossCellTemplateKey { get { return "GrossCellTemplate"; } }
+
+            /// <summary>Represents x:Key="TradesOnServer"/></summary>
+            public static string TradesOnServerKey { get { return "TradesOnServer"; } }
+
+            /// <summary>Represents x:Key="OpenTradesHeaderTemplate"/></summary>
+            public static string OpenTradesHeaderTemplateKey { get { return "OpenTradesHeaderTemplate"; } }
+
+            /// <summary>Represents x:Key="OpenTradesTitleTemplate"/></summary>
+            public static string OpenTradesTitleTemplateKey { get { return "OpenTradesTitleTemplate"; } }
+
+            /// <summary>Represents x:Key="OrdersOnServer"/></summary>
+            public static string OrdersOnServerKey { get { return "OrdersOnServer"; } }
+
+            /// <summary>Represents x:Key="DeleteAccountCellTemplate"/></summary>
+            public static string DeleteAccountCellTemplateKey { get { return "DeleteAccountCellTemplate"; } }
+
+            /// <summary>Represents x:Key="CloseServerTradeTemplate"/></summary>
+            public static string CloseServerTradeTemplateKey { get { return "CloseServerTradeTemplate"; } }
 
 
     }
@@ -416,6 +463,9 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.MasterAccount"/></summary>
         public const string MasterAccount = "MasterAccount";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.OnMasterTradeAccountChanged"/></summary>
+        public const string OnMasterTradeAccountChanged = "OnMasterTradeAccountChanged";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._stepForwarRequery"/></summary>
         public const string _stepForwarRequery = "_stepForwarRequery";
 
@@ -458,6 +508,12 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingMacrosCases"/></summary>
         public const string TradingMacrosCases = "TradingMacrosCases";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._IsAccountManagerExpanded"/></summary>
+        public const string _IsAccountManagerExpanded = "_IsAccountManagerExpanded";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsAccountManagerExpanded"/></summary>
+        public const string IsAccountManagerExpanded = "IsAccountManagerExpanded";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel.slaveAccounts"/></summary>
         public const string slaveAccounts = "slaveAccounts";
 
@@ -475,6 +531,9 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingAccountsList"/></summary>
         public const string TradingAccountsList = "TradingAccountsList";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel._tradingAccountsList_CurrentChanged"/></summary>
+        public const string _tradingAccountsList_CurrentChanged = "_tradingAccountsList_CurrentChanged";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.FilterTradingAccounts"/></summary>
         public const string FilterTradingAccounts = "FilterTradingAccounts";
@@ -584,8 +643,8 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.Log"/></summary>
         public const string Log = "Log";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.GetExceptionShort"/></summary>
-        public const string GetExceptionShort = "GetExceptionShort";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsLogPinned"/></summary>
+        public const string IsLogPinned = "IsLogPinned";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsLogExpanded"/></summary>
         public const string IsLogExpanded = "IsLogExpanded";
@@ -956,6 +1015,9 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsAliceActive"/></summary>
         public const string IsAliceActive = "IsAliceActive";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.OpenTrades"/></summary>
+        public const string OpenTrades = "OpenTrades";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.UpdateTrades"/></summary>
         public const string UpdateTrades = "UpdateTrades";
 
@@ -1095,6 +1157,9 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingMacrosCases"/></summary>
         public static PropertyPath TradingMacrosCasesPath { get { return new PropertyPath("TradingMacrosCases"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsAccountManagerExpanded"/></summary>
+        public static PropertyPath IsAccountManagerExpandedPath { get { return new PropertyPath("IsAccountManagerExpanded"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.SlaveAccounts"/></summary>
         public static PropertyPath SlaveAccountsPath { get { return new PropertyPath("SlaveAccounts"); } }
 
@@ -1166,6 +1231,9 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.Log"/></summary>
         public static PropertyPath LogPath { get { return new PropertyPath("Log"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsLogPinned"/></summary>
+        public static PropertyPath IsLogPinnedPath { get { return new PropertyPath("IsLogPinned"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsLogExpanded"/></summary>
         public static PropertyPath IsLogExpandedPath { get { return new PropertyPath("IsLogExpanded"); } }
@@ -1290,6 +1358,9 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsAliceActive"/></summary>
         public static PropertyPath IsAliceActivePath { get { return new PropertyPath("IsAliceActive"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.OpenTrades"/></summary>
+        public static PropertyPath OpenTradesPath { get { return new PropertyPath("OpenTrades"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.changeLimitScheduler"/></summary>
         public static PropertyPath changeLimitSchedulerPath { get { return new PropertyPath("changeLimitScheduler"); } }
 
@@ -1361,6 +1432,210 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TradingAccountModel.HasProfit"/></summary>
         public static PropertyPath HasProfitPath { get { return new PropertyPath("HasProfit"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.DockingWindow"/></summary>
+    public static class DockingWindowMetadata
+    {
+                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow.IsCharterContainerPropertyName"/></summary>
+        public const string IsCharterContainerPropertyName = "IsCharterContainerPropertyName";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.GetIsCharterContainer"/></summary>
+        public const string GetIsCharterContainer = "GetIsCharterContainer";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SetIsCharterContainer"/></summary>
+        public const string SetIsCharterContainer = "SetIsCharterContainer";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow.IsCharterContainerProperty"/></summary>
+        public const string IsCharterContainerProperty = "IsCharterContainerProperty";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow.ParentRadPaneGroupPropertyName"/></summary>
+        public const string ParentRadPaneGroupPropertyName = "ParentRadPaneGroupPropertyName";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.GetParentRadPaneGroup"/></summary>
+        public const string GetParentRadPaneGroup = "GetParentRadPaneGroup";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SetParentRadPaneGroup"/></summary>
+        public const string SetParentRadPaneGroup = "SetParentRadPaneGroup";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow.ParentRadPaneGroupProperty"/></summary>
+        public const string ParentRadPaneGroupProperty = "ParentRadPaneGroupProperty";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.CurrentDirectory"/></summary>
+        public const string CurrentDirectory = "CurrentDirectory";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.SettingsFileName"/></summary>
+        public const string SettingsFileName = "SettingsFileName";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow._originalLayout"/></summary>
+        public const string _originalLayout = "_originalLayout";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._hiddenCharters"/></summary>
+        public const string _hiddenCharters = "_hiddenCharters";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.Charters"/></summary>
+        public const string Charters = "Charters";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.AddCharterToHidden"/></summary>
+        public const string AddCharterToHidden = "AddCharterToHidden";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RemoveCharterFromHidden"/></summary>
+        public const string RemoveCharterFromHidden = "RemoveCharterFromHidden";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._canUserCloseDictionary"/></summary>
+        public const string _canUserCloseDictionary = "_canUserCloseDictionary";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.CanUserClose"/></summary>
+        public const string CanUserClose = "CanUserClose";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._Views"/></summary>
+        public const string _Views = "_Views";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.Views"/></summary>
+        public const string Views = "Views";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ViewModel"/></summary>
+        public const string ViewModel = "ViewModel";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RootVisual_Loaded"/></summary>
+        public const string RootVisual_Loaded = "RootVisual_Loaded";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RootVisual_ElementCleaning"/></summary>
+        public const string RootVisual_ElementCleaning = "RootVisual_ElementCleaning";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RootVisual_ElementLoaded"/></summary>
+        public const string RootVisual_ElementLoaded = "RootVisual_ElementLoaded";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RootVisual_PaneStateChange"/></summary>
+        public const string RootVisual_PaneStateChange = "RootVisual_PaneStateChange";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RootVisual_Close"/></summary>
+        public const string RootVisual_Close = "RootVisual_Close";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.DataContext_PropertyChanged"/></summary>
+        public const string DataContext_PropertyChanged = "DataContext_PropertyChanged";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.DockingWindow_Closing"/></summary>
+        public const string DockingWindow_Closing = "DockingWindow_Closing";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._TileChartsCommand"/></summary>
+        public const string _TileChartsCommand = "_TileChartsCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.TileChartsCommand"/></summary>
+        public const string TileChartsCommand = "TileChartsCommand";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.TileCharts"/></summary>
+        public const string TileCharts = "TileCharts";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._ResetLayoutCommand"/></summary>
+        public const string _ResetLayoutCommand = "_ResetLayoutCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ResetLayoutCommand"/></summary>
+        public const string ResetLayoutCommand = "ResetLayoutCommand";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.ResetLayout"/></summary>
+        public const string ResetLayout = "ResetLayout";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._ShowAllPanesCommand"/></summary>
+        public const string _ShowAllPanesCommand = "_ShowAllPanesCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ShowAllPanesCommand"/></summary>
+        public const string ShowAllPanesCommand = "ShowAllPanesCommand";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.ShowAllPanes"/></summary>
+        public const string ShowAllPanes = "ShowAllPanes";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._LoadLayoutCommand"/></summary>
+        public const string _LoadLayoutCommand = "_LoadLayoutCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.LoadLayoutCommand"/></summary>
+        public const string LoadLayoutCommand = "LoadLayoutCommand";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.DockingWindow._SaveLayoutAsCommand"/></summary>
+        public const string _SaveLayoutAsCommand = "_SaveLayoutAsCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.SaveLayoutAsCommand"/></summary>
+        public const string SaveLayoutAsCommand = "SaveLayoutAsCommand";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SaveLayoutAs"/></summary>
+        public const string SaveLayoutAs = "SaveLayoutAs";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.LoadLayoutFromFile"/></summary>
+        public const string LoadLayoutFromFile = "LoadLayoutFromFile";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.LoadLayout"/></summary>
+        public const string LoadLayout = "LoadLayout";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.LoadOriginalLayout"/></summary>
+        public const string LoadOriginalLayout = "LoadOriginalLayout";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SaveOriginalLayout"/></summary>
+        public const string SaveOriginalLayout = "SaveOriginalLayout";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SaveLayout"/></summary>
+        public const string SaveLayout = "SaveLayout";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.OpenLayoutPath"/></summary>
+        public const string OpenLayoutPath = "OpenLayoutPath";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SaveLayoutPath"/></summary>
+        public const string SaveLayoutPath = "SaveLayoutPath";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.RemoveCharter"/></summary>
+        public const string RemoveCharter = "RemoveCharter";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.AddCharter"/></summary>
+        public const string AddCharter = "AddCharter";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.GetCharterFromPane"/></summary>
+        public const string GetCharterFromPane = "GetCharterFromPane";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.IsCharterPane"/></summary>
+        public const string IsCharterPane = "IsCharterPane";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.SetCharterPaneBindings"/></summary>
+        public const string SetCharterPaneBindings = "SetCharterPaneBindings";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.FindChartPaneByName"/></summary>
+        public const string FindChartPaneByName = "FindChartPaneByName";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.DockingWindow.FindChartsSplitter"/></summary>
+        public const string FindChartsSplitter = "FindChartsSplitter";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.CurrentDirectory"/></summary>
+        public static PropertyPath CurrentDirectoryPath { get { return new PropertyPath("CurrentDirectory"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.SettingsFileName"/></summary>
+        public static PropertyPath SettingsFileNamePath { get { return new PropertyPath("SettingsFileName"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow._originalLayout"/></summary>
+        public static PropertyPath _originalLayoutPath { get { return new PropertyPath("_originalLayout"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.Charters"/></summary>
+        public static PropertyPath ChartersPath { get { return new PropertyPath("Charters"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.Views"/></summary>
+        public static PropertyPath ViewsPath { get { return new PropertyPath("Views"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ViewModel"/></summary>
+        public static PropertyPath ViewModelPath { get { return new PropertyPath("ViewModel"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.TileChartsCommand"/></summary>
+        public static PropertyPath TileChartsCommandPath { get { return new PropertyPath("TileChartsCommand"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ResetLayoutCommand"/></summary>
+        public static PropertyPath ResetLayoutCommandPath { get { return new PropertyPath("ResetLayoutCommand"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.ShowAllPanesCommand"/></summary>
+        public static PropertyPath ShowAllPanesCommandPath { get { return new PropertyPath("ShowAllPanesCommand"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.LoadLayoutCommand"/></summary>
+        public static PropertyPath LoadLayoutCommandPath { get { return new PropertyPath("LoadLayoutCommand"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.DockingWindow.SaveLayoutAsCommand"/></summary>
+        public static PropertyPath SaveLayoutAsCommandPath { get { return new PropertyPath("SaveLayoutAsCommand"); } }
 
     }
 
@@ -1478,14 +1753,14 @@ namespace HedgeHog.Alice.Client.Metadata
                 /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.profitToClose"/></summary>
         public const string profitToClose = "profitToClose";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.ratesLoader"/></summary>
-        public const string ratesLoader = "ratesLoader";
-
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.charters"/></summary>
         public const string charters = "charters";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.DeleteCharter"/></summary>
         public const string DeleteCharter = "DeleteCharter";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.RequestAddCharterToUI"/></summary>
+        public const string RequestAddCharterToUI = "RequestAddCharterToUI";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.GetCharter"/></summary>
         public const string GetCharter = "GetCharter";
@@ -1610,6 +1885,15 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowPropertiesDialog"/></summary>
         public const string ShowPropertiesDialog = "ShowPropertiesDialog";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._SetStrategiesCommand"/></summary>
+        public const string _SetStrategiesCommand = "_SetStrategiesCommand";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.SetStrategiesCommand"/></summary>
+        public const string SetStrategiesCommand = "SetStrategiesCommand";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.SetStrategies"/></summary>
+        public const string SetStrategies = "SetStrategies";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._HidePropertiesDialogCommand"/></summary>
         public const string _HidePropertiesDialogCommand = "_HidePropertiesDialogCommand";
 
@@ -1621,6 +1905,9 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CleanEntryOrders"/></summary>
         public const string CleanEntryOrders = "CleanEntryOrders";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.MasterModel_MasterTradeAccountChanged"/></summary>
+        public const string MasterModel_MasterTradeAccountChanged = "MasterModel_MasterTradeAccountChanged";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.InitializeModel"/></summary>
         public const string InitializeModel = "InitializeModel";
@@ -1634,8 +1921,20 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.Context_ObjectMaterialized"/></summary>
         public const string Context_ObjectMaterialized = "Context_ObjectMaterialized";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChartSchedulersDispenser"/></summary>
-        public const string ShowChartSchedulersDispenser = "ShowChartSchedulersDispenser";
+        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChartDispatcher"/></summary>
+        public static class ShowChartDispatcherMetadata
+        {
+            
+        }
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._scd"/></summary>
+        public const string _scd = "_scd";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.SCD"/></summary>
+        public const string SCD = "SCD";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.TradingMacro_ShowChart"/></summary>
+        public const string TradingMacro_ShowChart = "TradingMacro_ShowChart";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.TradingMacro_PropertyChanged"/></summary>
         public const string TradingMacro_PropertyChanged = "TradingMacro_PropertyChanged";
@@ -1648,6 +1947,21 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.fw_PriceChanged"/></summary>
         public const string fw_PriceChanged = "fw_PriceChanged";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._showChartQueue"/></summary>
+        public const string _showChartQueue = "_showChartQueue";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.AddShowChart"/></summary>
+        public const string AddShowChart = "AddShowChart";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._showChartTimer"/></summary>
+        public const string _showChartTimer = "_showChartTimer";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChartTimer"/></summary>
+        public const string ShowChartTimer = "ShowChartTimer";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChartTimer_Tick"/></summary>
+        public const string ShowChartTimer_Tick = "ShowChartTimer_Tick";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChart"/></summary>
         public const string ShowChart = "ShowChart";
@@ -1748,18 +2062,6 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.RunCorrelation"/></summary>
         public const string RunCorrelation = "RunCorrelation";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.reLogin"/></summary>
-        public const string reLogin = "reLogin";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.loginScheduler"/></summary>
-        public const string loginScheduler = "loginScheduler";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.AddCurrentTick"/></summary>
-        public const string AddCurrentTick = "AddCurrentTick";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.timersByPair"/></summary>
-        public const string timersByPair = "timersByPair";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CanTrade"/></summary>
         public const string CanTrade = "CanTrade";
 
@@ -1792,6 +2094,12 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.GetEntryOrderLimit"/></summary>
         public const string GetEntryOrderLimit = "GetEntryOrderLimit";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._changeOrderRateDispenser"/></summary>
+        public const string _changeOrderRateDispenser = "_changeOrderRateDispenser";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._changeOrderAmountDispenser"/></summary>
+        public const string _changeOrderAmountDispenser = "_changeOrderAmountDispenser";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.UpdateEntryOrder"/></summary>
         public const string UpdateEntryOrder = "UpdateEntryOrder";
@@ -1872,8 +2180,17 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowPropertiesDialogCommand"/></summary>
         public static PropertyPath ShowPropertiesDialogCommandPath { get { return new PropertyPath("ShowPropertiesDialogCommand"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.SetStrategiesCommand"/></summary>
+        public static PropertyPath SetStrategiesCommandPath { get { return new PropertyPath("SetStrategiesCommand"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.HidePropertiesDialogCommand"/></summary>
         public static PropertyPath HidePropertiesDialogCommandPath { get { return new PropertyPath("HidePropertiesDialogCommand"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.SCD"/></summary>
+        public static PropertyPath SCDPath { get { return new PropertyPath("SCD"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChartTimer"/></summary>
+        public static PropertyPath ShowChartTimerPath { get { return new PropertyPath("ShowChartTimer"); } }
 
     }
 
@@ -2175,6 +2492,20 @@ namespace HedgeHog.Alice.Client.FileMetadata.Properties.DataSources.Metadata
 
     }
 
+    /// <summary>Metadata for File HedgeHog.Bars.Rate.datasource</summary>
+    public static class HedgeHogBarsRateDatasource    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Properties/DataSources/HedgeHog.Bars.Rate.datasource", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Properties/DataSources/HedgeHog.Bars.Rate.datasource"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Properties/DataSources/HedgeHog.Bars.Rate.datasource")); } }
+
+
+    }
+
     /// <summary>Metadata for File HedgeHog.Shared.Account.datasource</summary>
     public static class HedgeHogSharedAccountDatasource    {
             /// <summary>Resource pack URI for file.</summary>
@@ -2437,6 +2768,156 @@ namespace HedgeHog.Alice.Client.RemoteControl.Metadata
     public static class ButtonImageMetadata
     {
         
+    }
+
+}
+
+namespace HedgeHog.Alice.Client.FileMetadata.ServiceReferences.PriceService.Metadata
+{
+    /// <summary>Metadata for File Arrays.xsd</summary>
+    public static class ArraysXsd    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/Arrays.xsd", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/Arrays.xsd"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/Arrays.xsd")); } }
+
+
+    }
+
+    /// <summary>Metadata for File configuration.svcinfo</summary>
+    public static class ConfigurationSvcinfo    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/configuration.svcinfo", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/configuration.svcinfo"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/configuration.svcinfo")); } }
+
+
+    }
+
+    /// <summary>Metadata for File configuration91.svcinfo</summary>
+    public static class Configuration91Svcinfo    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/configuration91.svcinfo", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/configuration91.svcinfo"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/configuration91.svcinfo")); } }
+
+
+    }
+
+    /// <summary>Metadata for File HedgeHog.Bars.xsd</summary>
+    public static class HedgeHogBarsXsd    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Bars.xsd", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Bars.xsd"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Bars.xsd")); } }
+
+
+    }
+
+    /// <summary>Metadata for File Reference.svcmap</summary>
+    public static class ReferenceSvcmap    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/Reference.svcmap", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/Reference.svcmap"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/Reference.svcmap")); } }
+
+
+    }
+
+    /// <summary>Metadata for File service.wsdl</summary>
+    public static class ServiceWsdl    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/service.wsdl", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service.wsdl"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service.wsdl")); } }
+
+
+    }
+
+    /// <summary>Metadata for File service.xsd</summary>
+    public static class ServiceXsd    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/service.xsd", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service.xsd"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service.xsd")); } }
+
+
+    }
+
+    /// <summary>Metadata for File service1.xsd</summary>
+    public static class Service1Xsd    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/service1.xsd", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service1.xsd"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service1.xsd")); } }
+
+
+    }
+
+}
+
+namespace HedgeHog.Alice.Client.PriceService.Metadata
+{
+    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.PriceService.IPriceService"/></summary>
+    public static class IPriceServiceMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.FillPrice"/></summary>
+        public const string FillPrice = "FillPrice";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.AddPair"/></summary>
+        public const string AddPair = "AddPair";
+
+
+    }
+
+    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.PriceService.IPriceServiceChannel"/></summary>
+    public static class IPriceServiceChannelMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient"/></summary>
+    public static class PriceServiceClientMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.FillPrice"/></summary>
+        public const string FillPrice = "FillPrice";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.AddPair"/></summary>
+        public const string AddPair = "AddPair";
+
+
     }
 
 }

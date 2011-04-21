@@ -18,8 +18,8 @@
   </DataTemplate>
   <DataTemplate x:Key="CombinedProfitCellTemplate">
     <WrapPanel>
-      <TextBlock Text="{Binding ProfitPercent,StringFormat=p1}"/>
-      <TextBlock Text="{Binding OriginalProfit,StringFormat=/{0:p1}}"/>
+      <TextBlock Text="{Binding ProfitPercent,StringFormat=p2}"/>
+      <TextBlock Text="{Binding OriginalProfit,StringFormat=/{0:p2}}"/>
     </WrapPanel>
   </DataTemplate>
 

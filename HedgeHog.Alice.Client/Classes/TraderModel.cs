@@ -19,6 +19,7 @@ using HedgeHog.Bars;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.Threading;
+using HedgeHog;
 using HedgeHog.Reports;
 using HedgeHog.Alice.Store;
 using System.Collections;
@@ -41,15 +42,15 @@ namespace HedgeHog.Alice.Client {
     }
   }
   [Export]
-  [Export(typeof(IMainModel))]
+  [Export(typeof(TraderModelBase))]
   [Export("MainWindowModel")]
-  public class TraderModel:HedgeHog.Models.ModelBase,IMainModel {
+  public class TraderModel:TraderModelBase {
     #region FXCM
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
-    public Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
+    public override Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
     FXW fwMaster;
 
-    public FXW FWMaster {
+    public override FXW FWMaster {
       get { return fwMaster; }
     }
     public bool IsLoggedIn { get { return CoreFX!= null && CoreFX.IsLoggedIn; } }
@@ -65,7 +66,7 @@ namespace HedgeHog.Alice.Client {
       get { return virtualTrader; }
       set { virtualTrader = value; }
     }
-    public ITradesManager TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
+    public override ITradesManager TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
 
     private string _SessionStatus;
     public string SessionStatus {
@@ -95,7 +96,7 @@ namespace HedgeHog.Alice.Client {
 
     #region Properties
     private bool _IsInVirtualTrading;
-    public bool IsInVirtualTrading {
+    public override bool IsInVirtualTrading {
       get { return _IsInVirtualTrading; }
       set {
         if (_IsInVirtualTrading != value) {
@@ -108,7 +109,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private DateTime _VirtualDateStart = DateTime.Now;
-    public DateTime VirtualDateStart {
+    public override DateTime VirtualDateStart {
       get { return _VirtualDateStart; }
       set {
         if (_VirtualDateStart != value) {
@@ -136,7 +137,7 @@ namespace HedgeHog.Alice.Client {
       set {
           _VirtualPause = value;
           this.BackTestEventArgs.Pause = value;
-          OnPropertyChanged(Metadata.TraderModelMetadata.VirtualPause);
+          RaisePropertyChanged(Metadata.TraderModelMetadata.VirtualPause);
           CommandManager.InvalidateRequerySuggested();
       }
     }
@@ -165,22 +166,12 @@ namespace HedgeHog.Alice.Client {
     }
 
 
-    RemoteControlModel _remoteController;
-    public RemoteControlModel RemoteController1 {
-      get {
-        if (_remoteController == null) {
-          _remoteController = new RemoteControlModel();
-          RaisePropertyChangedCore();
-        }
-        return _remoteController;
-      }
-    }
     public TradingAccount MasterAccount { get { return TradingMaster; } }
     #endregion
 
     #region Events
 
-    public event EventHandler MasterTradeAccountChanged;
+    public override event EventHandler MasterTradeAccountChanged;
     protected void OnMasterTradeAccountChanged() {
       if (MasterTradeAccountChanged != null)
         MasterTradeAccountChanged(this, EventArgs.Empty);
@@ -210,7 +201,7 @@ namespace HedgeHog.Alice.Client {
 
     void _StepForwardCommand_CanExecuteChanged(object sender, EventArgs e) {
     }
-    public event EventHandler<EventArgs> StepForward;
+    public override event EventHandler<EventArgs> StepForward;
     protected void OnStepForward() {
       if (StepForward != null) StepForward(this, new EventArgs());
     }
@@ -226,12 +217,12 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public event EventHandler<EventArgs> StepBack;
+    public override event EventHandler<EventArgs> StepBack;
     protected void OnStepBack() {
       if (StepBack != null) StepBack(this, new EventArgs());
     }
 
-    public event EventHandler<OrderEventArgs> OrderToNoLoss;
+    public override event EventHandler<OrderEventArgs> OrderToNoLoss;
     protected void OnOrderToNoLoss(Order order) {
       if (OrderToNoLoss != null) {
         try {
@@ -276,7 +267,7 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_IsAccountManagerExpanded != value) {
           _IsAccountManagerExpanded = value;
-          OnPropertyChanged("IsAccountManagerExpanded");
+          RaisePropertyChanged("IsAccountManagerExpanded");
         }
       }
     }
@@ -373,10 +364,23 @@ namespace HedgeHog.Alice.Client {
     public ObservableCollection<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
-    private TradingAccountModel _accountModel = new TradingAccountModel();
-    public TradingAccountModel AccountModel { get { return _accountModel; } }
+    private TradingAccountModel _accountModel;
+    public TradingAccountModel AccountModel {
+      get {
+        if (_accountModel == null) {
+          _accountModel = new TradingAccountModel();
+          AccountModel.CloseAllTrades += AccountModel_CloseAllTrades;
+        }
+        return _accountModel;
+      }
+    }
+
+    void AccountModel_CloseAllTrades(object sender, EventArgs e) {
+      TradesManager.GetTradesInternal("").Select(t => t.Pair).Distinct()
+        .ToList().ForEach(p => TradesManager.ClosePair(p));
+    }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
-    public double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
+    public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
 
     #region SlaveAccountInfos
     ObservableCollection<TradingAccountModel> SlaveAccountInfos = new ObservableCollection<TradingAccountModel>();
@@ -432,7 +436,7 @@ namespace HedgeHog.Alice.Client {
     }
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
-    public Exception Log {
+    public override Exception Log {
       get { return _log; }
       set {
         if (isInDesign) return;
@@ -443,9 +447,9 @@ namespace HedgeHog.Alice.Client {
         //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
         lock (_logQueue) {
           if (_logQueue.Count > 5) _logQueue.Dequeue();
-          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + GetExceptionShort(value) });
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + value.GetExceptionShort() });
           while (value.InnerException != null) {
-            messages.Add(GetExceptionShort(value.InnerException));
+            messages.Add(value.InnerException.GetExceptionShort());
             value = value.InnerException;
           }
           _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
@@ -456,11 +460,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-
-    string GetExceptionShort(Exception exc) {
-      return (exc.TargetSite == null ? "" : exc.TargetSite.DeclaringType.Name + "." +
-      exc.TargetSite.Name + ": ") + exc.Message;
-    }
 
     public bool IsLogPinned { get { return !IsLogExpanded; } }
     public bool IsLogExpanded {
@@ -873,7 +872,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region BackTestCommand
-    public event EventHandler<BackTestEventArgs> StartBackTesting;
+    public override event EventHandler<BackTestEventArgs> StartBackTesting;
 
     ICommand _BackTestCommand;
     public ICommand BackTestCommand {
@@ -1018,7 +1017,7 @@ namespace HedgeHog.Alice.Client {
       set {
         if (_DatabasePath != value) {
           _DatabasePath = value;
-          OnPropertyChanged("DatabasePath");
+          RaisePropertyChanged("DatabasePath");
         }
       }
     }
@@ -1078,7 +1077,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Trading Info
-    public TradingLogin LoginInfo { get { return new TradingLogin(TradingAccount, TradingPassword, TradingDemo); } }
+    public override TradingLogin LoginInfo { get { return new TradingLogin(TradingAccount, TradingPassword, TradingDemo); } }
 
     public string[] TradingAccounts { get { return GlobalStorage.Context.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct().ToArray(); } }
 
@@ -1142,7 +1141,7 @@ namespace HedgeHog.Alice.Client {
           if (account != null)
             GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
               try {
-                AccountModel.Update(account, 0, TradesManager.ServerTime);
+                UpdateTradingAccount(account);
                 InvokeSyncronize(account);
               } catch (Exception exc) { Log = exc; }
             }));
@@ -1179,6 +1178,10 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
+
+    private void UpdateTradingAccount(Account account) {
+      AccountModel.Update(account, 0, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+    }
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
@@ -1201,7 +1204,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    public event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
+    public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
     protected void OnMasterTradeRemoved(Trade trade) {
       if (MasterTradeRemoved != null) MasterTradeRemoved(this, new MasterTradeEventArgs(trade));
     }
@@ -1269,6 +1272,7 @@ namespace HedgeHog.Alice.Client {
       try {
         var fw = TradesManager as FXW;
         var a = e.Account;
+        a.Trades = TradesManager.GetTrades();
         if (a.Trades.Any(t => t.Pair == pair) || a.Trades.Length == 0) {
           a.Orders = fw == null ? TradesManager.GetOrders("") : fw.GetEntryOrders("");
           InvokeSyncronize(a);
@@ -1276,7 +1280,7 @@ namespace HedgeHog.Alice.Client {
       } catch (Exception exc) { Log = exc; }
     }
 
-    public event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
+    public override event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     protected void OnMasterTradeAdded(Trade trade) {
       if (MasterTradeAdded != null) 
         MasterTradeAdded(this, new MasterTradeEventArgs(trade));
@@ -1312,8 +1316,8 @@ namespace HedgeHog.Alice.Client {
       if (account.Error!= null)
         Log = account.Error;
       else {
-        var trades = account.Trades;
-        AccountModel.Update(account, 0, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+        var trades = TradesManager.GetTrades();
+        UpdateTradingAccount(account);
         RaiseMasterListChangedEvent(trades);
         ServerTradesList.Dispatcher.BeginInvoke(new Action(() => {
           UpdateTrades(account, trades.ToList(), ServerTrades);
@@ -1343,6 +1347,7 @@ namespace HedgeHog.Alice.Client {
           o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
           );
       }
+      RaisePropertyChanged(Metadata.TraderModelMetadata.ServerTradesList);
     }
     private void UpdateOrders(Account account,List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
       var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
@@ -1447,11 +1452,11 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
-    public string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
-    public double CommissionByTrade(Trade trade) { return MasterAccount == null ? 0 : trade.Lots / 10000.0 * MasterAccount.Commission; }
+    public override string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
+    override public double CommissionByTrade(Trade trade) { return MasterAccount == null ? 0 : trade.Lots / 10000.0 * MasterAccount.Commission; }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";
-    public void AddCosedTrade(Trade trade) {
+    public override void AddCosedTrade(Trade trade) {
       try {
         if (TradingMaster == null) MessageBox.Show("Trading Master account is not found.");
         else {

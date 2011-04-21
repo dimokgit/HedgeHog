@@ -68,7 +68,7 @@ namespace HedgeHog.Alice.Store {
       private set {
         if (_StartDate != value) {
           _StartDate = value;
-          OnPropertyChanged("StartDate");
+          RaisePropertyChanged("StartDate");
         }
       }
     }
@@ -80,10 +80,10 @@ namespace HedgeHog.Alice.Store {
 
     }
     public CorridorStatistics(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0);
+      Init(density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
     }
 
-    public void Init(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations) {
+    public void Init(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
       this.Density = density;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
@@ -96,12 +96,12 @@ namespace HedgeHog.Alice.Store {
       this.HeightUp0 = heightUp0;
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
-      //Corridornes = TradingMacro.CorridorCalcMethod == Models.CorridorCalculationMethod.Density ? Density : 1 / Density;
-      Corridornes = Density;
+      this.Corridornes = Density;
+      this.CorridorCrossesCount = corridorCrossesCount;
       // Must the last one
       this.StartDate = startDate;
-      OnPropertyChanged("Height");
-      OnPropertyChanged("HeightInPips");
+      RaisePropertyChanged("Height");
+      RaisePropertyChanged("HeightInPips");
     }
 
 
@@ -111,7 +111,7 @@ namespace HedgeHog.Alice.Store {
       get { return _buyStopByCorridor; }
       protected set {
         _buyStopByCorridor = value;
-        OnPropertyChanged("BuyStopByCorridor");
+        RaisePropertyChanged("BuyStopByCorridor");
       }
     }
 
@@ -120,7 +120,7 @@ namespace HedgeHog.Alice.Store {
       get { return _sellStopByCorridor; }
       protected set {
         _sellStopByCorridor = value;
-        OnPropertyChanged("SellStopByCorridor");
+        RaisePropertyChanged("SellStopByCorridor");
       }
     }
 
@@ -131,7 +131,7 @@ namespace HedgeHog.Alice.Store {
         if (_CorridorFibInstant != value) {
           _CorridorFibInstant = value;
           CorridorFib = value;
-          OnPropertyChanged("CorridorFibInstant");
+          RaisePropertyChanged("CorridorFibInstant");
         }
       }
     }
@@ -144,7 +144,7 @@ namespace HedgeHog.Alice.Store {
           //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
           _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, CorridorFibCmaPeriod, value);
           CorridorFibAverage = _CorridorFib;
-          OnPropertyChanged("CorridorFib");
+          RaisePropertyChanged("CorridorFib");
         }
       }
     }
@@ -155,7 +155,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (value != 0 && _CorridorFibAverage != value) {
           _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, CorridorFibCmaPeriod, value);
-          OnPropertyChanged("CorridorFibAverage");
+          RaisePropertyChanged("CorridorFibAverage");
         }
       }
     }
@@ -185,8 +185,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_corridornes == value) return;
         _corridornes = value;
-        OnPropertyChanged("Corridornes");
-        OnPropertyChanged("MinutesBack");
+        RaisePropertyChanged("Corridornes");
+        RaisePropertyChanged("MinutesBack");
       }
     }
 
@@ -198,7 +198,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_FibMinimum != value) {
           _FibMinimum = value;
-          OnPropertyChanged("FibMinimum");
+          RaisePropertyChanged("FibMinimum");
         }
       }
     }
@@ -215,8 +215,8 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_IsCurrent != value) {
           _IsCurrent = value;
-          OnPropertyChanged("IsCurrent");
-          OnPropertyChanged("IsCurrentInt");
+          RaisePropertyChanged("IsCurrent");
+          RaisePropertyChanged("IsCurrentInt");
         }
       }
     }
@@ -241,6 +241,17 @@ namespace HedgeHog.Alice.Store {
 
 
     public double[] Coeffs { get; set; }
+    private int _CorridorCrossesCount;
+    public int CorridorCrossesCount {
+      get { return _CorridorCrossesCount; }
+      set {
+        if (_CorridorCrossesCount != value) {
+          _CorridorCrossesCount = value;
+          RaisePropertyChanged("CorridorCrossesCount");
+        }
+      }
+    }
+
   }
 
   public enum TrendLevel { None, Resistance, Support }

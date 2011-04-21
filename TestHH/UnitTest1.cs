@@ -103,7 +103,7 @@ namespace TestHH {
         GlobalStorage.ForexContext.SaveChanges();
       }
     }
-    [TestMethod]
+    //[TestMethod]
     public void ShowDensities() {
       var pair = "EUR/JPY";
       var rates = new List<Rate>();

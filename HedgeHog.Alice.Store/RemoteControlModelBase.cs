@@ -28,9 +28,9 @@ namespace HedgeHog.Alice.Store {
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     protected Order2GoAddIn.FXCoreWrapper fwMaster { get { return MasterModel.FWMaster; } }
     
-    IMainModel _MasterModel;
+    TraderModelBase _MasterModel;
     [Import]
-    public IMainModel MasterModel {
+    public TraderModelBase MasterModel {
       get { return _MasterModel; }
       set {
         if (_MasterModel != value) {
@@ -63,8 +63,8 @@ namespace HedgeHog.Alice.Store {
       tm.ResetSessionId();
       tm.EnableTrading();
       tm.SuppResResetAllTradeCounts();
-      var minutesPerPeriod = tm.LimitBar;
-      VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * tm.LimitBar);
+      var minutesPerPeriod = (int)tm.BarPeriod;
+      VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * (int)tm.BarPeriod);
       var firstDate = GlobalStorage.ForexContext.t_Bar.Where(b => b.Pair == VirtualPair && b.Period == minutesPerPeriod).Select(b => b.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min();
       VirtualStartDate = new[] { VirtualStartDate, firstDate }.Max();
       var ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod).ToList();
@@ -117,7 +117,7 @@ namespace HedgeHog.Alice.Store {
             if (e.StepBack) {
               var dateStart = rates.Min(r => r.StartDate).AddHours(-1);
               rates.Clear();
-              ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, dateStart, tm.BarsCount, tm.LimitBar);
+              ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, dateStart, tm.BarsCount, (int)tm.BarPeriod);
               rates.AddRange(ratesBuffer.Take(tm.BarsCount));
               ratesBuffer.RemoveRange(0, tm.BarsCount);
               e.StepBack = false;
@@ -139,7 +139,7 @@ namespace HedgeHog.Alice.Store {
               rates.Add(rate);
               if(!tm.DoStreatchRates || (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
                 rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
-              OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
+              RaisePropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
             }
           }
           if (fwMaster.IsLoggedIn) {
@@ -222,7 +222,7 @@ namespace HedgeHog.Alice.Store {
       return TradingMacrosCopy.Where(tm1 => tm1.TradingGroup == tm.TradingGroup);
     }
     protected TradingMacro GetTradingMacro(string pair,int period) {
-      return GetTradingMacros(pair).Where(tm => tm.LimitBar == period).SingleOrDefault();
+      return GetTradingMacros(pair).Where(tm => (int)tm.BarPeriod == period).SingleOrDefault();
     }
     protected TradingMacro[] GetTradingMacros(string pair = "") {
       return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && TradingMacroFilter(tm) ).OrderBy(tm => tm.PairIndex).ToArray();
@@ -373,12 +373,12 @@ namespace HedgeHog.Alice.Store {
       //fw.GetBars(pair, fetchRates ? 1 : 0, startDate, DateTime.FromOADate(0), ref ticks);
       if (ratesList.Count() == 0) {
         if (periodMinutes > 0)
-          ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, DateTime.MinValue, endDate).Except(ratesList));
+          ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
         else ratesList.AddRange(fw.GetTicks(pair, periodsBack).Except(ratesList));
       }
       if (periodMinutes == 0) {
         var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)
-          .Select(r => r.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min();
+          .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
         ratesList.RemoveAll(r => r.StartDate >= d);
       }
       fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList,true);

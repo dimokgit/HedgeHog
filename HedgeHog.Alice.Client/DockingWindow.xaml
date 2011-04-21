@@ -146,6 +146,22 @@
         </Grid>
       </DataTemplate>
       <!--Open Trades Title Template-->
+      <DataTemplate x:Key="OpenTradesHeaderTemplate">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <ContentPresenter Content="{Binding}" Margin="0,0,5,0" />
+          <TextBlock Text="{Binding DataContext.ServerTradesList.Count,StringFormat=[{0:n0}],RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
+                     Grid.Column="1"/>
+          <Button Content="Close ALL" HorizontalAlignment="Left"
+            Command="{Binding DataContext.CloseAllServerTradesCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
+            Grid.Column="2" >
+          </Button>
+        </Grid>
+      </DataTemplate>
       <DataTemplate x:Key="OpenTradesTitleTemplate">
         <Grid>
           <Grid.ColumnDefinitions>
@@ -468,7 +484,7 @@
               </Grid>
             </telerik:RadPane>
             <telerik:RadPane IsSelected="{state:UserSettings}" telerik:RadDocking.SerializationTag="OpenedTrades" CanUserClose="False"
-                           Header="Open Trades" HeaderTemplate="{StaticResource OpenTradesTitleTemplate}"
+                           Header="Open Trades" HeaderTemplate="{StaticResource OpenTradesHeaderTemplate}"
                            Title="OpenTrades" TitleTemplate="{StaticResource OpenTradesTitleTemplate}"
                            ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" />
             <telerik:RadPane IsSelected="{state:UserSettings}" Header="Open Orders" Title="Open Orders" telerik:RadDocking.SerializationTag="OpenedOrders" Name="OpenedOrders" ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" CanUserClose="False"/>

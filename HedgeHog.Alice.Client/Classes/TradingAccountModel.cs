@@ -9,6 +9,22 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
+
+    event EventHandler CloseAllTradesEvent;
+    public event EventHandler CloseAllTrades {
+      add {
+        if (CloseAllTradesEvent == null || !CloseAllTradesEvent.GetInvocationList().Contains(value))
+          CloseAllTradesEvent += value;
+      }
+      remove {
+        CloseAllTradesEvent -= value;
+      }
+    }
+    void RaiseCloseAllTrades() {
+      if (CloseAllTradesEvent != null) 
+        CloseAllTradesEvent(this,EventArgs.Empty);
+    }
+
     public double TradingRatio { get; set; }
     public double ProfitPercent { get { return Equity / Balance - 1; } }
     private double _CurrentLoss;
@@ -18,6 +34,17 @@ namespace HedgeHog.Alice.Client {
         if (_CurrentLoss != value) {
           _CurrentLoss = value;
           OnPropertyChanged(() => CurrentLoss, () => OriginalBalance, () => OriginalProfit);
+        }
+      }
+    }
+
+    private double _TakePropfit;
+    public double TakePropfit {
+      get { return _TakePropfit; }
+      set {
+        if (_TakePropfit != value) {
+          _TakePropfit = value;
+          OnPropertyChanged(() => TakePropfit);
         }
       }
     }
@@ -63,6 +90,7 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.OriginalBalance,
       () => accountRow.OriginalProfit
         );
+      if (ProfitPercent >= 1) RaiseCloseAllTrades();
     }
 
     public bool HasProfit { get { return Gross > 0; } }

@@ -5,12 +5,15 @@ using System.Text;
 using HedgeHog.Shared;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.Serialization;
 [assembly:CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType {None = 0, Buy = -1, Sell = 1 };
   public enum OverlapType { None = 0, Up = 1, Down = -1 };
+  [DataContract]
   public abstract class BarBaseDate{
     DateTime _StartDate;
+    [DataMember]
     public DateTime StartDate {
       get { return _StartDate; }
       set {
@@ -18,6 +21,7 @@ namespace HedgeHog.Bars {
         _StartDate = StartDateContinuous = value;
       }
     }
+    [DataMember]
     public DateTime StartDateContinuous { get; set; }
     public virtual object Clone() {
       return MemberwiseClone();
@@ -26,30 +30,44 @@ namespace HedgeHog.Bars {
       return StartDate.ToString("MM/dd/yyyy HH:mm:ss");
     }
   }
+  [DataContract]
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>,IComparable<BarBase>, ICloneable {
+    [DataMember]
     public int Index { get; set; }
+    [DataMember]
     public readonly bool IsHistory;
 
     #region Bid/Ask
+    [DataMember]
     public double AskHigh { get; set; }
+    [DataMember]
     public double AskLow { get; set; }
+    [DataMember]
     private double? _askAvg = null;
     public double AskAvg {
       get { return _askAvg.HasValue ? _askAvg.Value : (AskHigh + AskLow) / 2; }
       set { _askAvg = value; }
     }
+    [DataMember]
     public double BidHigh { get; set; }
+    [DataMember]
     public double BidLow { get; set; }
+    [DataMember]
     private double? _bidAvg = null;
     public double BidAvg { 
       get { return _bidAvg.HasValue ? _bidAvg.Value : (BidHigh + BidLow) / 2; }
       set { _bidAvg = value; }
     }
+    [DataMember]
     public double AskClose { get; set; }
+    [DataMember]
     public double AskOpen { get; set; }
+    [DataMember]
     public double BidClose { get; set; }
+    [DataMember]
     public double BidOpen { get; set; }
 
+    [DataMember]
     public int Volume { get; set; }
     #endregion
 
@@ -70,13 +88,23 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region PriceAvgs
+    [DataMember]
     public double PriceAvg1 { get; set; }
+    [DataMember]
     public double PriceAvg2 { get; set; }
+    [DataMember]
     public double PriceAvg02 { get; set; }
+
     public double PriceHeight2 { get { return PriceAvg1 != 0 && PriceAvg2 != 0 ? PriceAvg2 - PriceAvg : 0; } }
+    
+    [DataMember]
     public double PriceAvg3 { get; set; }
+    [DataMember]
     public double PriceAvg03 { get; set; }
+
     public double PriceHeight3 { get { return PriceAvg1 != 0 && PriceAvg3 != 0 ? PriceAvg3 - PriceAvg : 0; } }
+    
+    [DataMember]
     public double PriceAvg4 { get; set; }
     #endregion
 
@@ -94,29 +122,43 @@ namespace HedgeHog.Bars {
     /// </summary>
     //public static int GannAngle1x1 = GannAngles.Length / 2;
     double[] _gannPrices = new double[0];
+    [DataMember]
     public double[] GannPrices {
       get { return _gannPrices; }
       set { _gannPrices = value; }
     }
     public double GannPrice1x1 { get { return GannPrices.Length == 0 ? 0 : GannPrices[GannPrices.Length / 2]; } }
+    [DataMember]
     public double TrendLine { get; set; }
     #endregion
 
 
     #region Price Indicators
+    [DataMember]
     public double? PriceSpeed { get; set; }
+    [DataMember]
     public double PriceWave { get; set; }
 
+    [DataMember]
     public double? PriceRsi { get; set; }
+    [DataMember]
     public double? PriceRsi1 { get; set; }
-    
+
+    [DataMember]
     public double PriceRsiP { get; set; }
+    [DataMember]
     public double PriceRsiN { get; set; }
+    [DataMember]
     public double? PriceRsiCR { get; set; }
+    [DataMember]
     public double? PriceRlw { get; set; }
+    [DataMember]
     public double? PriceTsi { get; set; }
+    [DataMember]
     public double? PriceTsiCR { get; set; }
+    [DataMember]
     public double[] PriceCMA { get; set; }
+    [DataMember]
     public double PriceStdDev { get; set; }
     #endregion
 
@@ -131,7 +173,9 @@ namespace HedgeHog.Bars {
         else FractalSell = value;
       }
     }
+    [DataMember]
     public FractalType FractalBuy { get; set; }
+    [DataMember]
     public FractalType FractalSell { get; set; }
     public double? FractalPrice {
       get {
@@ -148,12 +192,18 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Phycics
+    [DataMember]
     public double? Mass { get; set; }
 
-    public class PhClass:ICloneable {
+    [DataContract]
+    public class PhClass : ICloneable {
+      [DataMember]
       public double? Height { get; set; }
+      [DataMember]
       public TimeSpan? Time { get; set; }
+      [DataMember]
       public double? Mass { get; set; }
+      [DataMember]
       public double? Trades { get; set; }
       public double? TradesPerMinute { get { return Time.HasValue ? Trades / Time.Value.TotalMinutes : null; } }
       public double? MassByTradesPerMinute { get { return Mass * TradesPerMinute; } }
@@ -163,8 +213,10 @@ namespace HedgeHog.Bars {
       public double? Work { get { return _work ?? (Mass * Height); } set { 
         _work = value; 
       } }
+      [DataMember]
       double? _power = null;
       public double? Power { get { return _power ?? (Mass * Speed); } set { _power = value; } }
+      [DataMember]
       double? _k = null;
       public double? K { get { return _k ?? (Mass * Speed * Speed / 2); } set { _k = value; } }
 
@@ -175,6 +227,7 @@ namespace HedgeHog.Bars {
       }
       #endregion
     }
+    [DataMember]
     PhClass _Ph = null;
     public PhClass Ph {
       get {
@@ -188,13 +241,18 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Trend
+    [DataContract]
     public class TrendInfo {
+      [DataMember]
       public double? PriceAngle { get; set; }
+      [DataMember]
       public TimeSpan Period { get; set; }
       /// <summary>
       /// Ticks per minute
       /// </summary>
+      [DataMember]
       public int Volume { get; set; }
+      [DataMember]
       public double? VolumeAngle { get; set; }
       public TrendInfo() { }
       public TrendInfo(TimeSpan Period, double PriceAngle, int Volume, double VolumeAngle) {
@@ -204,6 +262,7 @@ namespace HedgeHog.Bars {
         this.VolumeAngle = VolumeAngle;
       }
     }
+    [DataMember]
     TrendInfo _trend;
 
     public TrendInfo Trend {
@@ -216,6 +275,7 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Overlap
+    [DataMember]
     public TimeSpan? Flatness;
     public OverlapType OverlapsWith(BarBase bar) {
       if (this.PriceLow.Between(bar.PriceLow, bar.PriceHigh)) return OverlapType.Up;
@@ -236,6 +296,7 @@ namespace HedgeHog.Bars {
       if (ret != OverlapType.None) Overlap = this.StartDate - bar.StartDate;
       return ret;
     }
+    [DataMember]
     public TimeSpan Overlap { get; set; }
 
     public void FillOverlap<TBar>(IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBase {
@@ -248,6 +309,7 @@ namespace HedgeHog.Bars {
     } 
     #endregion
 
+    [DataMember]
     public int Count { get; set; }
 
     public BarBase() { }
@@ -343,6 +405,7 @@ namespace HedgeHog.Bars {
   }
   public enum BarsPeriodTypeFXCM { t1 = 0, m1 = 1, m5 = 5, m15 = 15, m30 = 30, H1 = 60, D1 = 24 * H1, W1 = 7 * D1 }
   public enum BarsPeriodType { t1 = 0, m1 = 1,m2=2, m3 = 3, m5 = 5, m10 = 10, m15 = 15, m30 = 30, H1 = 60, H2 = H1 * 2, H3 = H1 * 3, H4 = H1 * 4, H6 = H1 * 6, H8 = H1 * 8, H12 = H6 * 2, D1 = 24 * H1, W1 = 7 * D1 }
+  [DataContract]
   public class Rate : BarBase {
     public Rate() { }
     public Rate(bool isHistory) : base(isHistory) { }

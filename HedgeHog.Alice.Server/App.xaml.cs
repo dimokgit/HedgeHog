@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.ServiceModel;
+using System.ServiceModel.Description;
 using System.Windows;
 
 namespace HedgeHog.Alice.Server {
@@ -11,14 +13,21 @@ namespace HedgeHog.Alice.Server {
   /// </summary>
   public partial class App : Application {
     public static Order2GoAddIn.CoreFX CoreFX = new Order2GoAddIn.CoreFX();
+    ServiceHost _priceServiceHost;
     public App() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
-      this.DispatcherUnhandledException += new System.Windows.Threading.DispatcherUnhandledExceptionEventHandler(App_DispatcherUnhandledException);
+      _priceServiceHost = new ServiceHost(new PriceService());
+      _priceServiceHost.Open();
     }
 
     void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
       MessageBox.Show(e.Exception + "");
       e.Handled = true;
+    }
+
+    private void Application_Exit(object sender, ExitEventArgs e) {
+      _priceServiceHost.Close();
+      CoreFX.Dispose();
     }
   }
 }

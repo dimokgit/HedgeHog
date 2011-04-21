@@ -258,7 +258,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("CorridorHeightsRatio");
         OnPropertyChanged("CorridorHeightByRegressionInPips");
         OnPropertyChanged("CorridorHeightByRegressionInPips0");
-        OnPropertyChanged("CorridorToRangeRatio");
         OnPropertyChanged("CorridorsRatio");
         OnPropertyChanged("OpenSignal");
 

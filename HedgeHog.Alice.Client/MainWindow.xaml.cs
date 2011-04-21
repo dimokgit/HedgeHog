@@ -51,7 +51,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void Window_Closed(object sender, EventArgs e) {
-      App.container.ReleaseExport(App.container.GetExport<IMainModel>());
+      App.container.ReleaseExport(App.container.GetExport<TraderModelBase>());
       foreach (var w in App.ChildWindows)
         w.Close();
     }
