@@ -25,7 +25,7 @@ namespace HedgeHog.Alice.Client {
 
     void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
       try {
-        var mm = container.GetExportedValue<IMainModel>();
+        var mm = container.GetExportedValue<TraderModelBase>();
         if (mm != null) mm.Log = e.Exception;
       } catch (ObjectDisposedException) {
         MessageBox.Show(e.Exception + "");

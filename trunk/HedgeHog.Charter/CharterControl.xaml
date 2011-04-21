@@ -60,7 +60,7 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <WrapPanel>
+    <WrapPanel Visibility="Collapsed">
       <TextBlock Text="Start:"/>
       <u:TextBox2 Text2="{Binding PlayStartDate,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text="{state:UserSettings}" Name="PlayStartDateBox" MinWidth="50" u:UseEnterKey.EnterKeyDirection="Right" />
       <TextBox u:UseEnterKey.EnterKeyDirection="Right" MinWidth="10"/>

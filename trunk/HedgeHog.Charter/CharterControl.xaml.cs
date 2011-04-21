@@ -175,15 +175,17 @@ namespace HedgeHog {
 
     #region Lines
     public LineGraph PriceLineGraph { get; set; }
+    public LineGraph PriceLineGraphBid { get; set; }
     static Color priceLineGraphColor = Colors.Black;
     static Color priceLineGraphColorBuy = Colors.DarkGreen;
     static Color priceLineGraphColorSell = Colors.DarkRed;
     bool? buySell;
     public void SetPriceLineColor(bool? buySell) {
-      if (this.buySell != buySell) {
+      if (PriceLineGraph!=null && this.buySell != buySell) {
+        var brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColor);
+        PriceLineGraph.LinePen.Brush = brush;
+        PriceLineGraphBid.LinePen.Brush = brush;
         this.buySell = buySell;
-        PriceLineGraph.LinePen.Brush =
-          new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColor);
       }
     }
 
@@ -619,8 +621,8 @@ namespace HedgeHog {
 
         animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
         animatedDataSourceBid.SetYMapping(y => y);
-        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColor, 1, "")
-          .Description.LegendItem.Visibility = Visibility.Collapsed;
+        this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColor, 1, "");
+        this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
 
         Border infoBorder = new Border() {
           BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1)

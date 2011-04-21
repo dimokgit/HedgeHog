@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:ser="http://schemas.microsoft.com/2003/10/Serialization/" xmlns:tns="http://schemas.datacontract.org/2004/07/HedgeHog.Bars" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/HedgeHog.Bars" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:complexType name="ArrayOfRate">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Rate" nillable="true" type="tns:Rate" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfRate" nillable="true" type="tns:ArrayOfRate" />
+  <xs:complexType name="Rate">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:BarBase">
+        <xs:sequence />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="Rate" nillable="true" type="tns:Rate" />
+  <xs:complexType name="BarBase">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:BarBaseDate">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="AskClose" type="xs:double" />
+          <xs:element minOccurs="0" name="AskHigh" type="xs:double" />
+          <xs:element minOccurs="0" name="AskLow" type="xs:double" />
+          <xs:element minOccurs="0" name="AskOpen" type="xs:double" />
+          <xs:element minOccurs="0" name="BidClose" type="xs:double" />
+          <xs:element minOccurs="0" name="BidHigh" type="xs:double" />
+          <xs:element minOccurs="0" name="BidLow" type="xs:double" />
+          <xs:element minOccurs="0" name="BidOpen" type="xs:double" />
+          <xs:element minOccurs="0" name="Count" type="xs:int" />
+          <xs:element minOccurs="0" name="Flatness" nillable="true" type="ser:duration" />
+          <xs:element minOccurs="0" name="FractalBuy" type="tns:FractalType" />
+          <xs:element minOccurs="0" name="FractalSell" type="tns:FractalType" />
+          <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GannPrices" nillable="true" type="q1:ArrayOfdouble" />
+          <xs:element minOccurs="0" name="Index" type="xs:int" />
+          <xs:element minOccurs="0" name="IsHistory" type="xs:boolean" />
+          <xs:element minOccurs="0" name="Mass" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="Overlap" type="ser:duration" />
+          <xs:element minOccurs="0" name="PriceAvg02" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceAvg03" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceAvg1" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceAvg2" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceAvg3" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceAvg4" type="xs:double" />
+          <xs:element xmlns:q2="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="PriceCMA" nillable="true" type="q2:ArrayOfdouble" />
+          <xs:element minOccurs="0" name="PriceRlw" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceRsi" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceRsi1" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceRsiCR" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceRsiN" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceRsiP" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceSpeed" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceStdDev" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceTsi" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceTsiCR" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="PriceWave" type="xs:double" />
+          <xs:element minOccurs="0" name="TrendLine" type="xs:double" />
+          <xs:element minOccurs="0" name="Volume" type="xs:int" />
+          <xs:element minOccurs="0" name="_Ph" nillable="true" type="tns:BarBase.PhClass" />
+          <xs:element minOccurs="0" name="_askAvg" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="_bidAvg" nillable="true" type="xs:double" />
+          <xs:element minOccurs="0" name="_trend" nillable="true" type="tns:BarBase.TrendInfo" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="BarBase" nillable="true" type="tns:BarBase" />
+  <xs:complexType name="BarBaseDate">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="StartDate" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="StartDateContinuous" type="xs:dateTime" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="BarBaseDate" nillable="true" type="tns:BarBaseDate" />
+  <xs:simpleType name="FractalType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="None" />
+      <xs:enumeration value="Buy">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">-1</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Sell">
+        <xs:annotation>
+          <xs:appinfo>
+            <EnumerationValue xmlns="http://schemas.microsoft.com/2003/10/Serialization/">1</EnumerationValue>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:enumeration>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="FractalType" nillable="true" type="tns:FractalType" />
+  <xs:complexType name="BarBase.PhClass">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Height" nillable="true" type="xs:double" />
+      <xs:element minOccurs="0" name="Mass" nillable="true" type="xs:double" />
+      <xs:element minOccurs="0" name="Time" nillable="true" type="ser:duration" />
+      <xs:element minOccurs="0" name="Trades" nillable="true" type="xs:double" />
+      <xs:element minOccurs="0" name="_k" nillable="true" type="xs:double" />
+      <xs:element minOccurs="0" name="_power" nillable="true" type="xs:double" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="BarBase.PhClass" nillable="true" type="tns:BarBase.PhClass" />
+  <xs:complexType name="BarBase.TrendInfo">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Period" type="ser:duration" />
+      <xs:element minOccurs="0" name="PriceAngle" nillable="true" type="xs:double" />
+      <xs:element minOccurs="0" name="Volume" type="xs:int" />
+      <xs:element minOccurs="0" name="VolumeAngle" nillable="true" type="xs:double" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="BarBase.TrendInfo" nillable="true" type="tns:BarBase.TrendInfo" />
+</xs:schema>

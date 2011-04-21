@@ -18,9 +18,9 @@ namespace HedgeHog.Alice.Client {
     #region Properties
     public ObjectSet<Store.OrderTemplate> OrderTemplates { get { return Store.GlobalStorage.Context.OrderTemplates; } }
 
-    IMainModel _MasterModel;
+    TraderModel _MasterModel;
     [Import]
-    public IMainModel MasterModel {
+    public TraderModel MasterModel {
       get { return _MasterModel; }
       set {
         if (_MasterModel != value) {

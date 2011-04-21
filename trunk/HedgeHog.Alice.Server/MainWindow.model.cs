@@ -6,7 +6,9 @@ using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Windows;
 using System.Diagnostics;
+using HedgeHog;
 using HedgeHog.UI;
+using System.Collections.ObjectModel;
 
 namespace HedgeHog.Alice.Server {
   public class MainWindowModel:HedgeHog.Models.ModelBase {
@@ -19,6 +21,42 @@ namespace HedgeHog.Alice.Server {
     }
 
     #region Properties
+
+    private string _LogText;
+    public string LogText {
+      get {
+        lock (_logQueue) {
+          return string.Join(Environment.NewLine, _logQueue.Reverse());
+        }
+      }
+    }
+
+    Queue<string> _logQueue = new Queue<string>();
+    Exception _log;
+    public Exception Log {
+      get { return _log; }
+      set {
+        if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return;
+        _log = value;
+        var exc = value is Exception ? value : null;
+        //var comExc = exc as System.Runtime.InteropServices.COMException;
+        //if (comExc != null && comExc.ErrorCode == -2147467259)
+        //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
+        lock (_logQueue) {
+          if (_logQueue.Count > 5) _logQueue.Dequeue();
+          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + value.GetExceptionShort() });
+          while (value.InnerException != null) {
+            messages.Add(value.InnerException.GetExceptionShort());
+            value = value.InnerException;
+          }
+          _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
+        }
+        exc = FileLogger.LogToFile(exc);
+        RaisePropertyChanged(() => LogText);
+      }
+    }
+
+    
     private FXCore.TradeDeskEventsSinkClass _mSink;
 
     private bool _IsLoggedIn;
@@ -27,7 +65,7 @@ namespace HedgeHog.Alice.Server {
       set {
         if (_IsLoggedIn != value) {
           _IsLoggedIn = value;
-          OnPropertyChanged("IsLoggedIn");
+          RaisePropertyChanged("IsLoggedIn");
         }
       }
     }
@@ -40,7 +78,7 @@ namespace HedgeHog.Alice.Server {
       set {
         if (_Title != value) {
           _Title = value;
-          OnPropertyChanged("Title");
+          RaisePropertyChanged("Title");
         }
       }
     }
@@ -51,7 +89,7 @@ namespace HedgeHog.Alice.Server {
       get {
         if (_coreFX == null) {
           _coreFX = App.CoreFX;
-          _coreFX.LoginError += exc => Log(exc);
+          _coreFX.LoginError += exc => Log = exc;
           _coreFX.LoggedInEvent += coreFX_LoggedInEvent;
           _coreFX.LoggedOffEvent += coreFX_LoggedOffEvent;
 
@@ -61,6 +99,10 @@ namespace HedgeHog.Alice.Server {
         return App.CoreFX;
       }
     }
+
+    ObservableCollection<PairInfo> _PairInfos = new ObservableCollection<PairInfo>();
+    public ObservableCollection<PairInfo> PairInfos { get { return _PairInfos; } }
+
 
     void coreFX_LoggedOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
       IsLoggedIn = coreFX.IsLoggedIn;
@@ -103,13 +145,10 @@ namespace HedgeHog.Alice.Server {
       try {
         coreFX.LogOn(li.Account,li.Password,li.IsDemo);
       } catch (Exception exc) {
-        Log(exc);
+        Log = exc;
       }
     }
 
     #endregion
-    void Log(object info) {
-      MessageBox.Show(info.ToString());
-    }
   }
 }

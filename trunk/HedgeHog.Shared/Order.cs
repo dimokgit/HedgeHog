@@ -93,7 +93,17 @@ namespace HedgeHog.Shared {
     [UpdateOnUpdate]
     public Double Limit { get; set; }
     [DataMember]
-    public DateTime Time { get; set; }
+    DateTime _Time;
+    public DateTime Time {
+      get { return _Time; }
+      set { 
+        _Time = value;
+        TimeLocal = TimeZoneInfo.ConvertTimeFromUtc(Time, TimeZoneInfo.Local);
+      }
+    }
+    [DataMember]
+    public DateTime TimeLocal { get; set; }
+
     [DataMember]
     public Boolean IsBuy { get; set; }
     [DataMember]

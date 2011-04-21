@@ -20,6 +20,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Collections.ObjectModel;
+using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>

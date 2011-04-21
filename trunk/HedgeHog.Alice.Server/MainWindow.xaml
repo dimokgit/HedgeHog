@@ -15,6 +15,7 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
+      <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <StackPanel Orientation="Horizontal">
       <Border BorderThickness="1" CornerRadius="2" BorderBrush="Black"
@@ -25,5 +26,16 @@
       <ListBox>
       </ListBox>
     </StackPanel>
+    <ListView ItemsSource="{Binding PairInfos}" Grid.Row="1">
+      <ListView.View>
+        <GridView>
+          <GridViewColumn Header="Pair" DisplayMemberBinding="{Binding Pair}" Width="Auto"/>
+          <GridViewColumn Header="Date" DisplayMemberBinding="{Binding LastDate}" Width="Auto"/>
+          <GridViewColumn Header="Count" DisplayMemberBinding="{Binding Count}" Width="Auto"/>
+          <GridViewColumn Header="Pull#" DisplayMemberBinding="{Binding PullsCount}" Width="Auto"/>
+        </GridView>
+      </ListView.View>
+    </ListView>
+      <Expander Header="Log" Content="{Binding LogText}" Grid.Row="2"/>
   </Grid>
 </Window>

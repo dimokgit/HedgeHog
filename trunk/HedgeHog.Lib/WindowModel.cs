@@ -30,7 +30,7 @@ namespace HedgeHog.Models {
         RaisePropertyChangedCore(member.Name);
       }
     }
-    protected void OnPropertyChanged(string propertyName) {
+    protected void RaisePropertyChanged(string propertyName) {
       RaisePropertyChangedCore(propertyName);
     }
     protected void RaisePropertyChangedCore(params string[] propertyNames) {
@@ -134,7 +134,7 @@ namespace HedgeHog.Models {
       set {
         if (_Value != null && _Value.Equals(value)) return;
         _Value = value;
-        OnPropertyChanged("Value");
+        RaisePropertyChanged("Value");
       }
     }
     public ObservableValue() {

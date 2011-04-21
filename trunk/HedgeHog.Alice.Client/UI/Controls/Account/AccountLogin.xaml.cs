@@ -19,8 +19,8 @@ namespace HedgeHog.Alice.Client.UI.Controls {
   /// Interaction logic for AccountLogin.xaml
   /// </summary>
   public partial class AccountLoginView : UserControl {
-    [Import(typeof(IMainModel))]
-    public IMainModel masterModel { get; set; }
+    [Import(typeof(TraderModel))]
+    public TraderModel masterModel { get; set; }
 
     #region Ctor
     public AccountLoginView() {

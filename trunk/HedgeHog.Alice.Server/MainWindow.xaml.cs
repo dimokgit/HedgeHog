@@ -19,6 +19,11 @@ namespace HedgeHog.Alice.Server {
   public partial class MainWindow : Window {
     public MainWindow() {
       InitializeComponent();
+      Closed += new EventHandler(MainWindow_Closed);
+    }
+
+    void MainWindow_Closed(object sender, EventArgs e) {
+      Application.Current.Shutdown();
     }
   }
 }

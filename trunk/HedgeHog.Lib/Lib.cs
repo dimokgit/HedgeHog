@@ -218,10 +218,10 @@ namespace HedgeHog {
           CmaArray[i] = Lib.CMA(CmaArray[i], cmaPeriod, value);
           value = CmaArray[i].Value;
         }
-        OnPropertyChanged("Difference");
-        OnPropertyChanged("Current");
-        OnPropertyChanged("Last");
-        OnPropertyChanged("Prev");
+        RaisePropertyChanged("Difference");
+        RaisePropertyChanged("Current");
+        RaisePropertyChanged("Last");
+        RaisePropertyChanged("Prev");
       }
       public void Clear() {
         for (var i = 0; i < CmaArray.Length; i++)
@@ -287,6 +287,12 @@ namespace HedgeHog {
     }
     public static int Max(this int v, int other) {
       return Math.Max(v, other);
+    }
+    public static double Min(this double v, double other) {
+      return Math.Min(v, other);
+    }
+    public static int Min(this int v, int other) {
+      return Math.Min(v, other);
     }
 
     public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }

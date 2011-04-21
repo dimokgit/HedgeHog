@@ -18,6 +18,7 @@
     <WarningLevel>4</WarningLevel>
     <ExpressionBlendVersion>4.0.20421.0</ExpressionBlendVersion>
     <IsWebBootstrapper>true</IsWebBootstrapper>
+    <Utf8Output>true</Utf8Output>
     <PublishUrl>http://localhost/HedgeHog.Alice.Client/</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
@@ -32,7 +33,6 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <Utf8Output>true</Utf8Output>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -79,6 +79,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Controls.DataVisualization.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Windows.Controls.Input.Toolkit.Design, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
@@ -188,6 +189,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
     <Compile Include="RemoteControl\RemoteControlModel.cs" />
+    <Compile Include="Service References\PriceService\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
     <Compile Include="Service References\TraderService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -342,6 +348,7 @@
       <LastGenOutput>CS_4_0.cs</LastGenOutput>
     </None>
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
+    <None Include="Properties\DataSources\HedgeHog.Bars.Rate.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.AccountInfo.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Trade.datasource" />
@@ -352,6 +359,19 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <None Include="Service References\PriceService\Arrays.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\PriceService\HedgeHog.Bars.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\PriceService\service.wsdl" />
+    <None Include="Service References\PriceService\service.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Service References\PriceService\service1.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Service References\TraderService\Arrays.xsd">
       <SubType>Designer</SubType>
     </None>
@@ -400,6 +420,10 @@
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
       <Name>HedgeHog.DB</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Extentions\HedgeHog.Extentions.csproj">
+      <Project>{1D8C77B9-0D28-4100-953A-E1F2EBB2F32D}</Project>
+      <Name>HedgeHog.Extentions</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.FXCM\HedgeHog.FXCM.csproj">
       <Project>{18E142A3-5835-4AD3-8462-DD2D8C725756}</Project>
@@ -499,9 +523,16 @@
     <Content Include="bin\DTurbo\Store\Alice.sdf" />
     <Resource Include="Images\DownArrow-32.png" />
     <Resource Include="Images\UpArrow-32.png" />
+    <None Include="Service References\PriceService\configuration91.svcinfo" />
+    <None Include="Service References\PriceService\configuration.svcinfo" />
+    <None Include="Service References\PriceService\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>
+    <WCFMetadataStorage Include="Service References\PriceService\" />
     <WCFMetadataStorage Include="Service References\TraderService\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

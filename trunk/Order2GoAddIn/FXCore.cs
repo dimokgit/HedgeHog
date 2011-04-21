@@ -174,6 +174,7 @@ namespace Order2GoAddIn {
 
     public void Dispose() {
       Logout();
+      mDesk = null;
     }
 
     #endregion

@@ -6,25 +6,36 @@ using HedgeHog.Shared;
 using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
-  public interface IMainModel : INotifyPropertyChanged {
-    event EventHandler MasterTradeAccountChanged;
-    event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
-    event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
-    event EventHandler<OrderEventArgs> OrderToNoLoss;
-    event EventHandler<BackTestEventArgs> StartBackTesting;
-    event EventHandler<EventArgs> StepBack;
-    event EventHandler<EventArgs> StepForward;
-    Order2GoAddIn.CoreFX CoreFX { get; }
-    Order2GoAddIn.FXCoreWrapper FWMaster { get; }
-    ITradesManager TradesManager { get; }
-    Exception Log { set; }
-    string TradingMacroName { get; }
-    double CurrentLoss { set; }
-    void AddCosedTrade(Trade trade);
-    double CommissionByTrade(Trade trades);
-    bool IsInVirtualTrading { get; set; }
-    DateTime VirtualDateStart { get; set; }
-    TradingLogin LoginInfo { get; }
+  public abstract class TraderModelBase : HedgeHog.Models.ModelBase {
+    public abstract event EventHandler MasterTradeAccountChanged;
+    public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
+    public abstract event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
+    public abstract event EventHandler<OrderEventArgs> OrderToNoLoss;
+    public abstract event EventHandler<BackTestEventArgs> StartBackTesting;
+    public abstract event EventHandler<EventArgs> StepBack;
+    public abstract event EventHandler<EventArgs> StepForward;
+    public abstract Order2GoAddIn.CoreFX CoreFX { get; }
+    public abstract Order2GoAddIn.FXCoreWrapper FWMaster { get; }
+    public abstract ITradesManager TradesManager { get; }
+    public abstract Exception Log { get; set; }
+    public abstract string TradingMacroName { get; }
+    public abstract double CurrentLoss { set; }
+    public abstract void AddCosedTrade(Trade trade);
+    public abstract double CommissionByTrade(Trade trades);
+    public abstract bool IsInVirtualTrading { get; set; }
+    public abstract DateTime VirtualDateStart { get; set; }
+    public abstract TradingLogin LoginInfo { get; }
+    private double _ActiveTakeProfit;
+    public double ActiveTakeProfit {
+      get { return _ActiveTakeProfit; }
+      set {
+        if (_ActiveTakeProfit != value) {
+          _ActiveTakeProfit = value;
+          RaisePropertyChanged("ActiveTakeProfit");
+        }
+      }
+    }
+
   }
   public class TradingLogin {
     public string AccountId { get; set; }
