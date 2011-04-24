@@ -2144,6 +2144,12 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoAdjustTimeframeByAllowedLot_"/></summary>
         public const string DoAdjustTimeframeByAllowedLot_ = "DoAdjustTimeframeByAllowedLot_";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentLoss_"/></summary>
+        public const string CurrentLoss_ = "CurrentLoss_";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingRatio_"/></summary>
+        public const string TradingRatio_ = "TradingRatio_";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.GannAngle1x1Index"/></summary>
         public const string GannAngle1x1Index = "GannAngle1x1Index";
 
@@ -2158,6 +2164,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsAutoSync"/></summary>
         public const string IsAutoSync = "IsAutoSync";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._IsSelectedInUI"/></summary>
+        public const string _IsSelectedInUI = "_IsSelectedInUI";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSelectedInUI"/></summary>
+        public const string IsSelectedInUI = "IsSelectedInUI";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.RaiseShowChart"/></summary>
         public const string RaiseShowChart = "RaiseShowChart";
@@ -2687,8 +2699,8 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SubscribeToTradeClosedEVent"/></summary>
         public const string SubscribeToTradeClosedEVent = "SubscribeToTradeClosedEVent";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CoreFX_LoggedOffEvent"/></summary>
-        public const string CoreFX_LoggedOffEvent = "CoreFX_LoggedOffEvent";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CoreFX_LoggingOffEvent"/></summary>
+        public const string CoreFX_LoggingOffEvent = "CoreFX_LoggingOffEvent";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager_OrderAdded"/></summary>
         public const string TradesManager_OrderAdded = "TradesManager_OrderAdded";
@@ -3304,6 +3316,24 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevelsQueue"/></summary>
         public const string SetEntryOrdersBySuppResLevelsQueue = "SetEntryOrdersBySuppResLevelsQueue";
+
+        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustDispatcher"/></summary>
+        public static class EntryOrdersAdjustDispatcherMetadata
+        {
+            
+        }
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustQueue"/></summary>
+        public const string EntryOrdersAdjustQueue = "EntryOrdersAdjustQueue";
+
+        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.SetStopLimitsDispatcher"/></summary>
+        public static class SetStopLimitsDispatcherMetadata
+        {
+            
+        }
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.SetStopLimitsQueue"/></summary>
+        public const string SetStopLimitsQueue = "SetStopLimitsQueue";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevels"/></summary>
         public const string SetEntryOrdersBySuppResLevels = "SetEntryOrdersBySuppResLevels";
@@ -4032,6 +4062,12 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoAdjustTimeframeByAllowedLot_"/></summary>
         public static PropertyPath DoAdjustTimeframeByAllowedLot_Path { get { return new PropertyPath("DoAdjustTimeframeByAllowedLot_"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentLoss_"/></summary>
+        public static PropertyPath CurrentLoss_Path { get { return new PropertyPath("CurrentLoss_"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingRatio_"/></summary>
+        public static PropertyPath TradingRatio_Path { get { return new PropertyPath("TradingRatio_"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.GannAngle1x1Index"/></summary>
         public static PropertyPath GannAngle1x1IndexPath { get { return new PropertyPath("GannAngle1x1Index"); } }
 
@@ -4043,6 +4079,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsAutoSync"/></summary>
         public static PropertyPath IsAutoSyncPath { get { return new PropertyPath("IsAutoSync"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSelectedInUI"/></summary>
+        public static PropertyPath IsSelectedInUIPath { get { return new PropertyPath("IsSelectedInUI"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SessionId"/></summary>
         public static PropertyPath SessionIdPath { get { return new PropertyPath("SessionId"); } }
@@ -5429,10 +5468,7 @@ namespace HedgeHog.Alice.Store.Metadata
     /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.RatesLoader"/></summary>
     public static class RatesLoaderMetadata
     {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.RatesLoader.fw"/></summary>
-        public const string fw = "fw";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.RatesLoader.LoadRates"/></summary>
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.RatesLoader.LoadRates"/></summary>
         public const string LoadRates = "LoadRates";
 
 

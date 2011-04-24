@@ -27,6 +27,8 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using HedgeHog.DB;
 using System.Threading.Tasks;
+using Order2GoAddIn;
+using System.Linq.Expressions;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -68,8 +70,8 @@ namespace HedgeHog.Alice.Client {
     }
     public override ITradesManager TradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)FWMaster; } }
 
-    private string _SessionStatus;
-    public string SessionStatus {
+    private TradingServerSessionStatus _SessionStatus = TradingServerSessionStatus.Disconnected;
+    public TradingServerSessionStatus SessionStatus {
       get { return _SessionStatus; }
       set {
         if (_SessionStatus != value) {
@@ -100,7 +102,7 @@ namespace HedgeHog.Alice.Client {
       get { return _IsInVirtualTrading; }
       set {
         if (_IsInVirtualTrading != value) {
-          if (!_IsInVirtualTrading) fwMaster.LogOff();
+          if (!_IsInVirtualTrading) CoreFX.Logout();
           _IsInVirtualTrading = value;
           RaisePropertyChangedCore();
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(value, typeof(VirtualTradesManager));
@@ -1114,13 +1116,19 @@ namespace HedgeHog.Alice.Client {
 
     #region Ctor
     ThreadScheduler.CommandDelegate Using_FetchServerTrades;
+    MvvmFoundation.Wpf.PropertyObserver<CoreFX> _coreFXObserver;
+
 
     public TraderModel() {
       Initialize();
       #region FXCM
       fwMaster = new FXW(this.CoreFX,CommissionByTrade);
       virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
-      CoreFX.LoggedInEvent += (s, e) => {
+      var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
+      this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
+      //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
+      //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
+      CoreFX.LoggedIn += (s, e) => {
         IsInLogin = false;
         TradesManager.Error += fwMaster_Error;
         TradesManager.TradeAdded += fwMaster_TradeAdded;
@@ -1128,7 +1136,6 @@ namespace HedgeHog.Alice.Client {
         TradesManager.PriceChanged += fwMaster_PriceChanged;
         fwMaster.OrderChanged += fwMaster_OrderChanged;
         fwMaster.OrderAdded += fwMaster_OrderAdded;
-        fwMaster.SessionStatusChanged += fwMaster_SessionStatusChanged;
 
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
@@ -1156,7 +1163,7 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
         RaisePropertyChanged(() => IsLoggedIn);
       };
-      CoreFX.LoggedOffEvent += (s, e) => {
+      CoreFX.LoggedOff += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
         TradesManager.TradeAdded -= fwMaster_TradeAdded;
@@ -1165,7 +1172,6 @@ namespace HedgeHog.Alice.Client {
         TradesManager.PriceChanged -= fwMaster_PriceChanged;
         fwMaster.OrderChanged -= fwMaster_OrderChanged;
         fwMaster.OrderAdded -= fwMaster_OrderAdded;
-        fwMaster.SessionStatusChanged -= fwMaster_SessionStatusChanged;
       };
       #endregion
 
@@ -1178,6 +1184,11 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
+
+    private void SubscribeToPropertyChanged<T1>(Func<O2G.CoreFX, object> func, Action<IEvent<PropertyChangedEventArgs>> action) {
+      throw new NotImplementedException();
+    }
+
 
     private void UpdateTradingAccount(Account account) {
       AccountModel.Update(account, 0, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
@@ -1194,14 +1205,6 @@ namespace HedgeHog.Alice.Client {
       OrdersList.SortDescriptions.Add(new SortDescription("Pair", ListSortDirection.Ascending));
       OrdersList.SortDescriptions.Add(new SortDescription("OrderId", ListSortDirection.Descending));
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
-    }
-
-    void fwMaster_SessionStatusChanged(object sender, FXW.SesstionStatusEventArgs e) {
-      SessionStatus = e.Status;
-      if (e.Status == "Disconnected") {
-        CoreFX.Logout();
-        CoreFX.LogOn();
-      }
     }
 
     public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;

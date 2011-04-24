@@ -151,4 +151,7 @@ namespace HedgeHog.Shared {
       return Math.Max(StartDate == TradesManagerStatic.FX_DATE_NOW ? 0 : Bars.Count(b => b.StartDate >= StartDate), periodsBack);
     }
   }
+  public enum TradingServerSessionStatus {
+    Disconnected, Connecting, Connected, Reconnecting, Disconnecting
+  }
 }

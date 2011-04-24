@@ -55,6 +55,7 @@
     <Compile Include="Offer.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="PendingOrder.cs" />
+    <Compile Include="PendingOrderInfo.cs" />
     <Compile Include="Price.cs" />
     <Compile Include="SummaryRow.cs" />
     <Compile Include="Trade.cs" />

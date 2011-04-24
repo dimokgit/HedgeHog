@@ -31,12 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GalaSoft.MvvmLight.Extras.WPF4">
-      <HintPath>..\..\..\..\..\..\Program Files\Laurent Bugnion (GalaSoft)\Mvvm Light Toolkit\Binaries\WPF4\GalaSoft.MvvmLight.Extras.WPF4.dll</HintPath>
-    </Reference>
-    <Reference Include="GalaSoft.MvvmLight.WPF4">
-      <HintPath>..\..\..\..\..\..\Program Files\Laurent Bugnion (GalaSoft)\Mvvm Light Toolkit\Binaries\WPF4\GalaSoft.MvvmLight.WPF4.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Office.Interop.Excel, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <EmbedInteropTypes>True</EmbedInteropTypes>
@@ -121,6 +115,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight %28NET4%29\GalaSoft.MvvmLight %28NET4%29.csproj">
+      <Project>{E8EF2656-7165-42D1-9C46-63E66679808D}</Project>
+      <Name>GalaSoft.MvvmLight %28NET4%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras %28NET4%29\GalaSoft.MvvmLight.Extras %28NET4%29.csproj">
+      <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
+      <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
       <Name>HedgeHog.DB</Name>

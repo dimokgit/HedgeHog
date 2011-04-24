@@ -12,6 +12,9 @@ using System.Windows.Threading;
 using System.Linq.Dynamic;
 using LE = System.Linq.Expressions;
 using System.Linq.Expressions;
+using System.Diagnostics;
+using System.Reflection;
+using System.ComponentModel;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -37,6 +40,36 @@ namespace HedgeHog {
       } finally {
         list.RemoveRange(position, count);
       }
+    }
+
+    public static IDisposable SubscribeToPropertyChanged<TPropertySource>(this TPropertySource source, Expression<Func<TPropertySource, object>> property, Action<TPropertySource> onNext) where TPropertySource : class, INotifyPropertyChanged {
+      var propertyName = Lib.GetLambda(property);
+      var propertyDelegate = new Func<TPropertySource, object>(property.Compile());
+      return (from e in Observable.FromEvent<PropertyChangedEventArgs>(source, "PropertyChanged")
+              where e.EventArgs.PropertyName == propertyName
+              select e.Sender as TPropertySource
+              ).DistinctUntilChanged(propertyDelegate).Subscribe(onNext);
+    }
+
+    public static string GetLambda<TPropertySource>(Expression<Func<TPropertySource, object>> expression) {
+      var lambda = expression as LambdaExpression;
+      MemberExpression memberExpression;
+      if (lambda.Body is UnaryExpression) {
+        var unaryExpression = lambda.Body as UnaryExpression;
+        memberExpression = unaryExpression.Operand as MemberExpression;
+      } else {
+        memberExpression = lambda.Body as MemberExpression;
+      }
+
+      Debug.Assert(memberExpression != null, "Please provide a lambda expression like 'n => n.PropertyName'");
+
+      if (memberExpression != null) {
+        var propertyInfo = memberExpression.Member as PropertyInfo;
+
+        return propertyInfo.Name;
+      }
+
+      return null;
     }
 
     public static string GetLambda(LE.Expression<Func<object>> func) { return func.Name(); }

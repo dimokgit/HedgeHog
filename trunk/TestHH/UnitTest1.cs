@@ -83,7 +83,7 @@ namespace TestHH {
     // Use TestCleanup to run code after each test has run
     [TestCleanup()]
     public void MyTestCleanup() {
-      o2g.LogOff();
+      o2g.CoreFX.Logout();
     }
     //
     #endregion
@@ -123,7 +123,7 @@ namespace TestHH {
         context.AcceptAllChanges();
       }
     }
-    [Timeout(TestTimeout.Infinite)]
+    //[Timeout(TestTimeout.Infinite)]
     public void LoadBars() {
       var pairsAvl = o2g.CoreFX.Instruments;
       var pairs = new ForexEntities().v_Pair.Select(p => p.Pair).ToArray();
@@ -233,7 +233,7 @@ namespace TestHH {
     }
     public void ClosedTrades() {
       var trades = o2g.GetClosedTrades("EUR/JPY");
-      o2g.LogOff();
+      o2g.CoreFX.Logout();
     }
     public void LoadTradeFromXml() {
       var fileName = @"C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_03\ClosedTrades.";

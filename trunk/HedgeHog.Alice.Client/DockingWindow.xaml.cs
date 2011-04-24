@@ -384,7 +384,9 @@ namespace HedgeHog.Alice.Client {
       }
       pane.IsHidden = false;
       pane.Content = charter;
-      SetCharterPaneBindings(pane);
+      //SetCharterPaneBindings(pane);
+      var ht = FindResource("CharterHeaderTemplate") as DataTemplate;
+      pane.HeaderTemplate = ht;
       createPane = pane.GetParent<RadSplitContainer>() == null;
       if (createPane) {
         var chartsSplitter = FindChartsSplitter();

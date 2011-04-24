@@ -29,6 +29,14 @@
       <Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}">
         <Setter Property="FontWeight" Value="Black"/>
       </Style>
+      <DataTemplate x:Key="CharterHeaderTemplate">
+        <TextBlock DataContext="{Binding Content,RelativeSource={RelativeSource AncestorType=telerik:RadPane}}">
+          <TextBlock Text="{Binding Header}"
+                     Foreground="{Binding IsActive,ConverterParameter=Black|DarkRed|DarkGreen,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
+                     FontWeight="{Binding IsSelected,ConverterParameter=Normal|Normal|Black,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
+                     />
+        </TextBlock>
+      </DataTemplate>
       <DataTemplate x:Key="RadPaneContextMenu">
         <telerik:RadContextMenu>
           <telerik:RadMenuItem Header="Floating" Command="telerik:RadDockingCommands.Floating" IsCheckable="True"/>
