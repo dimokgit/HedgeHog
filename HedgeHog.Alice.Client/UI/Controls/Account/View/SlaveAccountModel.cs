@@ -384,7 +384,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
 
       fwLocal = new FXW(this.CoreFX);
       tradeRequestManager = new TradeRequestManager(fwLocal);
-      CoreFX.LoggedInEvent += (s, e) => {
+      CoreFX.LoggedIn += (s, e) => {
         //fwLocal.TradeAdded += fw_TradeAded;
         fwLocal.PriceChanged += fwLocal_PriceChanged;
         fwLocal.OrderRemoved += DoOrderRemoved;
@@ -396,7 +396,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
         Log = exc;
         RaisePropertyChanged(() => IsLoggedIn);
       };
-      CoreFX.LoggedOffEvent += (s, e) => {
+      CoreFX.LoggedOff += (s, e) => {
         Log = new Exception("Account " + TradingAccount + " logged out.");
         RaisePropertyChanged(() => IsLoggedIn);
         //fwLocal.TradeAdded -= fw_TradeAded;

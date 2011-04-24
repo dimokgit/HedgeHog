@@ -104,6 +104,30 @@ namespace HedgeHog {
 
     public string Header { get { return Name + ":" + (BarsPeriodType)BarsPeriod + "×" + BarsCount; } }
 
+
+
+
+
+    public bool IsActive {
+      get { return (bool)GetValue(IsActiveProperty); }
+      set { SetValue(IsActiveProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for IsActive.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty IsActiveProperty =
+        DependencyProperty.Register("IsActive", typeof(bool), typeof(CharterControl), new UIPropertyMetadata(false));
+
+
+
+    public bool IsSelected {
+      get { return (bool)GetValue(IsSelectedProperty); }
+      set { SetValue(IsSelectedProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for IsSelected.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty IsSelectedProperty =
+        DependencyProperty.Register("IsSelected", typeof(bool), typeof(CharterControl), new UIPropertyMetadata(true));
+
     private bool _IsInPlay;
     public bool IsInPlay {
       get { return _IsInPlay; }

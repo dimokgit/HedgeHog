@@ -116,13 +116,13 @@
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras\GalaSoft.MvvmLight.Extras.csproj">
-      <Project>{78EECC01-BAE7-4914-BE2D-6BAB1059F29B}</Project>
-      <Name>GalaSoft.MvvmLight.Extras</Name>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight %28NET4%29\GalaSoft.MvvmLight %28NET4%29.csproj">
+      <Project>{E8EF2656-7165-42D1-9C46-63E66679808D}</Project>
+      <Name>GalaSoft.MvvmLight %28NET4%29</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\GalaSoft.MvvmLight.V3SP1\mvvmlight-source\GalaSoft.MvvmLight\GalaSoft.MvvmLight\GalaSoft.MvvmLight.csproj">
-      <Project>{ADB28C09-8DE9-4006-80D5-74856EB4A48B}</Project>
-      <Name>GalaSoft.MvvmLight</Name>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras %28NET4%29\GalaSoft.MvvmLight.Extras %28NET4%29.csproj">
+      <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
+      <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Extentions\HedgeHog.Extentions.csproj">
       <Project>{1D8C77B9-0D28-4100-953A-E1F2EBB2F32D}</Project>

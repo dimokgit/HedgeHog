@@ -533,11 +533,38 @@ namespace HedgeHog.Alice.Store {
       set {
         if (DoAdjustTimeframeByAllowedLot != value) {
           DoAdjustTimeframeByAllowedLot = value;
-          OnPropertyChanged(TradingMacroMetadata.DoAdjustTimeframeByAllowedLot);
           OnPropertyChanged(TradingMacroMetadata.DoAdjustTimeframeByAllowedLot_);
         }
       }
     }
+
+    [DisplayName("Current Loss")]
+    [Category(categoryTrading)]
+    public double CurrentLoss_ {
+      get { return CurrentLoss; }
+      set {
+        if (CurrentLoss != value) {
+          CurrentLoss = value;
+          OnPropertyChanged(TradingMacroMetadata.CurrentLoss_);
+          OnPropertyChanged(TradingMacroMetadata.CurrentGross);
+        }
+      }
+    }
+
+
+    [DisplayName("Trading Ratio")]
+    [Description("Lot Size By % from Account Balance[0.1] or N*1000")]
+    [Category(categoryTrading)]
+    public double TradingRatio_ {
+      get { return TradingRatio; }
+      set {
+        if (TradingRatio != value) {
+          TradingRatio = value;
+          OnPropertyChanged(TradingMacroMetadata.TradingRatio_);
+        }
+      }
+    }
+
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
@@ -556,6 +583,16 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    
+    private bool _IsSelectedInUI;
+
+    public bool IsSelectedInUI {
+      get { return _IsSelectedInUI; }
+      set {
+        if (_IsSelectedInUI == value) return;
+        _IsSelectedInUI = value;
+        OnPropertyChanged(TradingMacroMetadata.IsSelectedInUI);
+      }
+    }
+
   }
 }

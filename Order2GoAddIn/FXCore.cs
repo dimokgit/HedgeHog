@@ -3,22 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.CompilerServices;
+using HedgeHog.Shared;
+using System.Diagnostics;
 
 
 namespace Order2GoAddIn {
-  public class CoreFX :IDisposable{
+  public class CoreFX :GalaSoft.MvvmLight.ViewModelBase, IDisposable{
     public bool IsInVirtualTrading { get; set; }
     FXCore.CoreAut mCore = new FXCore.CoreAut();
-    public FXCore.TradeDeskAut mDesk = null;
+    public FXCore.TradeDeskAut _mDesk;
+    public FXCore.TradeDeskAut Desk {
+      get {
+        if (_mDesk == null)
+          _mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
+        return _mDesk;
+      }
+    }
     public delegate void LoginErrorHandler(Exception exc);
     public event LoginErrorHandler LoginError;
     private void RaiseLoginError(Exception exc) {
       if (LoginError != null) LoginError(exc);
     }
-    public event EventHandler<LoggedInEventArgs> LoggedInEvent;
+
+    #region LoggedIn Event
+    event EventHandler<LoggedInEventArgs> LoggedInEvent;
+    public event EventHandler<LoggedInEventArgs>  LoggedIn {
+      add {
+        if (LoggedInEvent == null || !LoggedInEvent.GetInvocationList().Contains(value))
+          LoggedInEvent += value;
+      }
+      remove {
+        LoggedInEvent -= value;
+      }
+    }
+
     private void RaiseLoggedIn() {
       if (LoggedInEvent != null) LoggedInEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
     }
+    #endregion
 
     //public event EventHandler<LoggedInEventArgs> LoggedOffEvent;
     //private void RaiseLoggedOff() {
@@ -26,24 +48,43 @@ namespace Order2GoAddIn {
     //}
 
 
-    event EventHandler<LoggedInEventArgs> LoggedOffEventEvent;
-    public event EventHandler<LoggedInEventArgs> LoggedOffEvent {
+    event EventHandler<LoggedInEventArgs> LoggedOffEvent;
+    public event EventHandler<LoggedInEventArgs> LoggedOff {
       add {
-        if (LoggedOffEventEvent == null || !LoggedOffEventEvent.GetInvocationList().Contains(value))
-          LoggedOffEventEvent += value;
+        if (LoggedOffEvent == null || !LoggedOffEvent.GetInvocationList().Contains(value))
+          LoggedOffEvent += value;
       }
       remove {
-        LoggedOffEventEvent -= value;
+        LoggedOffEvent -= value;
       }
     }
     void RaiseLoggedOff() {
-      if (LoggedOffEventEvent != null) LoggedOffEventEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+      if (LoggedOffEvent != null) LoggedOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+    }
+
+
+    event EventHandler<LoggedInEventArgs> LoggingOffEvent;
+    public event EventHandler<LoggedInEventArgs> LoggingOff {
+      add {
+        if (LoggingOffEvent == null || !LoggingOffEvent.GetInvocationList().Contains(value))
+          LoggingOffEvent += value;
+      }
+      remove {
+        LoggingOffEvent -= value;
+      }
+    }
+    void RaiseLoggingOff() {
+      if (LoggingOffEvent != null)
+        try {
+          LoggingOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
+        } catch(Exception exc) {
+          Debug.Fail(exc.Message, exc.ToString());
+        }
     }
 
 
     System.Threading.Timer timer;
     object _deskLocker = new object();
-    public FXCore.TradeDeskAut Desk { get { return mDesk; } }
     string user = "";
     string password = "";
     bool isDemo = true;
@@ -64,9 +105,11 @@ namespace Order2GoAddIn {
     }
 
     #region Ctor
+
     public CoreFX():this(true) { }
     public CoreFX(bool noTimer) {
       this.noTimer = noTimer;
+      Subscribe();
     }
     ~CoreFX() {
       try {
@@ -74,6 +117,42 @@ namespace Order2GoAddIn {
       } catch { }
     }
     #endregion
+
+    FXCore.TradeDeskEventsSinkClass mSink = new FXCore.TradeDeskEventsSinkClass();
+    int mSubscriptionId = -1;
+    bool isSubsribed = false;
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public void Subscribe() {
+      if (isSubsribed) return;
+      Unsubscribe();
+      mSink.ITradeDeskEvents_Event_OnSessionStatusChanged += SessionStatusChanged;
+      mSubscriptionId = Desk.Subscribe(mSink);
+      isSubsribed = true;
+    }
+
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public void Unsubscribe() {
+      if (mSubscriptionId != -1) {
+        try {
+          mSink.ITradeDeskEvents_Event_OnSessionStatusChanged -= SessionStatusChanged;
+        } catch { }
+        try {
+          Desk.Unsubscribe(mSubscriptionId);
+        } catch { }
+        isSubsribed = false;
+      }
+      mSubscriptionId = -1;
+    }
+
+
+    void SessionStatusChanged(string status) {
+      SessionStatus = (TradingServerSessionStatus)Enum.Parse(typeof(TradingServerSessionStatus),status);
+      if (SessionStatus == TradingServerSessionStatus.Disconnected) {
+        Logout();
+        LogOn();
+      }
+
+    }
 
     public enum Tables { Accounts, Orders, Offers, Trades, ClosedTrades, Summary, Messages };
 
@@ -140,10 +219,9 @@ namespace Order2GoAddIn {
         this.URL = url + "" != "" ? url : DefaultUrl;
         Logout();
         try {
-          mDesk = (FXCore.TradeDeskAut)mCore.CreateTradeDesk("trader");
-          mDesk.SetTimeout(mDesk.TIMEOUT_PRICEHISTORY, 30000);
-          mDesk.SetTimeout(mDesk.TIMEOUT_COMMON, 60*1000);
-          mDesk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
+          Desk.SetTimeout(Desk.TIMEOUT_PRICEHISTORY, 30000);
+          Desk.SetTimeout(Desk.TIMEOUT_COMMON, 60*1000);
+          Desk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
           InitTimer();
         } catch (Exception e) {
           RaiseLoginError(e);
@@ -151,17 +229,27 @@ namespace Order2GoAddIn {
         }
       }
       RaiseLoggedIn();
+      _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
+        if (!IsLoggedIn)
+          LogOn();
+      });
       return true;
     }
     public void Logout() {
+      if(_isLoggedInSubscription!=null)
+        _isLoggedInSubscription.Dispose();
       try {
+        RaiseLoggingOff();
         if (mCore != null) {
           if (IsLoggedIn)
-            try { mDesk.Logout(); } catch { }
+            try { Desk.Logout(); } catch { }
           try { RaiseLoggedOff(); } catch { }
         }
       } catch { }
     }
+
+    IObservable<long> _isLoggedInObserver = Observable.Interval(TimeSpan.FromMinutes(1));
+
     public bool IsLoggedIn { get { 
       lock(_deskLocker)
       try { return IsInVirtualTrading || Desk != null && Desk.IsLoggedIn(); } catch { return false; } } }
@@ -174,10 +262,32 @@ namespace Order2GoAddIn {
 
     public void Dispose() {
       Logout();
-      mDesk = null;
+      _mDesk = null;
+      this.mSink = null;
     }
 
     #endregion
+
+    public const string SessionStatusPropertyName = "SessionStatus";
+    private TradingServerSessionStatus _sessionStatus =  TradingServerSessionStatus.Disconnected;
+    private IDisposable _isLoggedInSubscription;
+    public TradingServerSessionStatus SessionStatus {
+      get { return _sessionStatus; }
+      set {
+        if (_sessionStatus == value) {
+          return;
+        }
+
+        var oldValue = _sessionStatus;
+        _sessionStatus = value;
+
+        // Update bindings, no broadcast
+        RaisePropertyChanged(SessionStatusPropertyName);
+
+        // Update bindings and broadcast change using GalaSoft.MvvmLight.Messenging
+        //RaisePropertyChanged(SessionStatusPropertyName, oldValue, value, true);
+      }
+    }
   }
   public class LoggedInEventArgs : EventArgs {
     public bool IsInVirtualTrading { get; set; }

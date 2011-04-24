@@ -1224,7 +1224,7 @@ namespace HedgeHog.Alice.Store {
       this.TradesManager.TradeAdded += TradesManager_TradeAddedGlobal;
       var fw = GetFXWraper();
       if (fw != null) {
-        fw.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
+        fw.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
         fw.OrderAdded += TradesManager_OrderAdded;
         fw.OrderRemoved += TradesManager_OrderRemoved;
         if (isLoggedIn)
@@ -1233,9 +1233,9 @@ namespace HedgeHog.Alice.Store {
       RaisePositionsChanged();
     }
 
-
-    void CoreFX_LoggedOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
-      var fw = sender as Order2GoAddIn.FXCoreWrapper;
+    void CoreFX_LoggingOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
+      var fw = GetFXWraper();
+      if (fw == null) return;
       fw.DeleteOrders(GetEntryOrders(fw));
     }
 
@@ -2484,6 +2484,20 @@ namespace HedgeHog.Alice.Store {
       public SetEntryOrdersBySuppResLevelsDispatcher():base(tm=>tm.SetEntryOrdersBySuppResLevels(true)) { }
     }
     static SetEntryOrdersBySuppResLevelsDispatcher SetEntryOrdersBySuppResLevelsQueue = new SetEntryOrdersBySuppResLevelsDispatcher();
+
+
+    class EntryOrdersAdjustDispatcher : BlockingConsumerBase<TradingMacro> {
+      public EntryOrdersAdjustDispatcher() : base(TradingMacro => TradingMacro.EntryOrdersAdjust()) { }
+    }
+    static EntryOrdersAdjustDispatcher EntryOrdersAdjustQueue = new EntryOrdersAdjustDispatcher();
+
+
+    class SetStopLimitsDispatcher : BlockingConsumerBase<TradingMacro> {
+      public SetStopLimitsDispatcher() : base(TradingMacro => TradingMacro.SetStopLimits()) { }
+    }
+    static SetStopLimitsDispatcher SetStopLimitsQueue = new SetStopLimitsDispatcher();
+
+    static event EventHandler<EventArgs> OnEntryOrdersAdjust;
     [MethodImpl(MethodImplOptions.Synchronized)]
     void SetEntryOrdersBySuppResLevels(bool runSync = false) {
       if (!isLoggedIn) return;
@@ -2494,13 +2508,12 @@ namespace HedgeHog.Alice.Store {
           SetEntryOrdersBySuppResLevelsQueue.Add(this);
         } else {
           if (CanDoEntryOrders) {
-            EntryOrdersAdjust();
+            EntryOrdersAdjustQueue.Add(this);
           } else {
             fw.GetEntryOrders(Pair)//.Where(o => o.TimeLocal > fw.ServerTime.AddMinutes(10))
               .ToList().ForEach(o => fw.DeleteOrder(o.OrderID));
           }
-
-          SetStopLimits();
+          SetStopLimitsQueue.Add(this);
         }
       } catch (Exception exc) {
         Log = exc;
@@ -2831,7 +2844,7 @@ namespace HedgeHog.Alice.Store {
           var rates = cs.GetRates(ratesForCorridor);
           var stDevLocal = ReverseStrategy ? heightUpDownLevel
             : (CalcSpreadForCorridor(rates) * CorridorHeightMultiplier).Max(heightUpDownLevel);
-          var isCorridorOk = cs.HeightUpDown0 >= stDevLocal && cs.HeightUpDown0 < RatesStDev && isCorCountOk;
+          var isCorridorOk = cs.HeightUpDown0 >= stDevLocal && cs.HeightUpDown0 < RatesStDev / CorridorHeightMultiplier && isCorCountOk;
           if (crossedCorridor == null && isCorridorOk) crossedCorridor = cs;
           if (crossedCorridor != null) {
             return true;

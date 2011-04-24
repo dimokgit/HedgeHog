@@ -64,6 +64,13 @@ namespace HedgeHog {
     }
   }
   public class DispatcherConsumer<T> : BlockingConsumerBase<T> {
+    private DispatcherPriority _priority = DispatcherPriority.Normal;
+
+    public DispatcherPriority Priority {
+      get { return _priority; }
+      set { _priority = value; }
+    }
+
     Dispatcher _dispatcher = Application.Current.Dispatcher;
     DispatcherOperation _dispatcherOperation;
     public override bool IsCompleted {
@@ -72,10 +79,13 @@ namespace HedgeHog {
       }
     }
 
+    public DispatcherConsumer(Action<T> action,DispatcherPriority priority) : base(action) {
+      this.Priority = priority;
+    }
     public DispatcherConsumer(Action<T> action) : base(action) { }
 
     protected override void RunQueue() {
-      _dispatcherOperation = _dispatcher.BeginInvoke(new Action(RunAction));
+      _dispatcherOperation = _dispatcher.BeginInvoke(new Action(RunAction),Priority);
     }
   }
 }

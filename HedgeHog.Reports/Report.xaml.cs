@@ -105,7 +105,7 @@ namespace HedgeHog.Reports {
         try {
 
           var trades = fw.GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);
-          if (logOff) fw.LogOff();
+          if (logOff) fw.CoreFX.Logout();
           // Load data by setting the CollectionViewSource.Source property:
           tradeViewSource.Source = trades;
         } catch (Exception exc) {

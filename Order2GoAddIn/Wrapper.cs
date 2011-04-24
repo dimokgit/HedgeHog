@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading.Tasks;
+using MvvmFoundation.Wpf;
 
 [assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
@@ -372,8 +373,8 @@ namespace Order2GoAddIn {
 
     #region SessionStatusChangedEvent
     public class SesstionStatusEventArgs : EventArgs {
-      public string Status { get; set; }
-      public SesstionStatusEventArgs(string status) {
+      public TradingServerSessionStatus Status { get; set; }
+      public SesstionStatusEventArgs(TradingServerSessionStatus status) {
         this.Status = status;
       }
     }
@@ -388,7 +389,7 @@ namespace Order2GoAddIn {
         SessionStatusChangedEvent -= value;
       }
     }
-    private void OnSessionStatusChanged(string status) {
+    private void RaiseSessionStatusChanged(TradingServerSessionStatus status) {
       if (SessionStatusChangedEvent != null) 
         SessionStatusChangedEvent(this, new SesstionStatusEventArgs(status));
     }
@@ -552,89 +553,64 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Constructor
-    CoreFX coreFX;
-
-    public CoreFX CoreFX {
-      get { return coreFX; }
-      set { coreFX = value; }
-    }
+    PropertyObserver<CoreFX> _coreFxObserver;
+    public CoreFX CoreFX { get; set; }
     public FXCoreWrapper() : this(new CoreFX(), null,null) { }
     public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null,null) { }
     public FXCoreWrapper(CoreFX coreFX, Func<Trade, double> commissionByTrade) : this(coreFX, null,commissionByTrade) { }
     public FXCoreWrapper(CoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
-      this.coreFX = coreFX;
+      if (coreFX == null) throw new NullReferenceException("coreFx parameter can npt be null.");
+      this.CoreFX = coreFX;
       if (pair != null) this.Pair = pair;
-      coreFX.LoggedInEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedInEvent);
-      coreFX.LoggedOffEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedOffEvent);
-      isWiredUp = true;
+      this.CoreFX.LoggedIn += coreFX_LoggedInEvent;
+      this.CoreFX.LoggedOff += coreFX_LoggedOffEvent;
+      this.CoreFX.LoggingOff += CoreFX_LoggingOff;
+      _coreFxObserver = new PropertyObserver<CoreFX>(this.CoreFX)
+        .RegisterHandler(cfx => cfx.SessionStatus, h => this.RaiseSessionStatusChanged(h.SessionStatus));
       PendingOrders.CollectionChanged += PendingOrders_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
+    }
+
+    void CoreFX_LoggingOff(object sender, LoggedInEventArgs e) {
+      if (e.IsInVirtualTrading) return;
+      try {
+        _accountID = "";
+        tableIndices.Clear();
+        Unsubscribe();
+      } catch (Exception exc) {
+        RaiseError(exc);
+      }
+    }
+
+    void coreFX_LoggedOffEvent(object sender, LoggedInEventArgs e) {
+      IsLoggedIn = false;
+    }
+
+    void coreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
+      IsLoggedIn = true;
+      if (e.IsInVirtualTrading) return;
+      try {
+        SetTrades();
+        Subscribe();
+      } catch (Exception exc) {
+        IsLoggedIn = false;
+        RaiseError(exc);
+      }
     }
 
     void PendingOrders_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
       switch (e.Action) {
         case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
           var po = e.OldItems[0] as PendingOrder;
-          if( po.Parent == null) RaisePendingOrderCompleted(po);
+          if (po.Parent == null) RaisePendingOrderCompleted(po);
           break;
       }
-    }
-    ~FXCoreWrapper() {
-      LogOff();
-      coreFX = null;
-    }
-    public bool LogOn(string pair,CoreFX core, string user, string password, bool isDemo) {
-      return LogOn(pair, core, user, password, new Uri(CoreFX.DefaultUrl), isDemo);
-    }
-    bool isWiredUp;
-    public bool LogOn(string pair, CoreFX core, string user, string password, string url, bool isDemo) {
-      return LogOn(pair, core, user, password, new Uri(url), isDemo);
-    }
-    public bool LogOn(string pair, CoreFX core, string user, string password, Uri url, bool isDemo) {
-      if (this.coreFX != null) 
-        throw new NotSupportedException(GetType().Name + ".LogOn is not supported when " + GetType().Name + ".coreFx is pre-set in cobstructor.");
-      coreFX = core;
-      if (!isWiredUp) {
-        core.LoggedInEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedInEvent);
-        core.LoggedOffEvent += new EventHandler<LoggedInEventArgs>(coreFX_LoggedOffEvent);
-        isWiredUp = true;
-      }
-      this.Pair = pair;
-      if (!core.IsLoggedIn) {
-        if (!core.LogOn(user, password, url.ToString(), isDemo))
-          return false;
-      } else {
-        Subscribe();
-      }
-      return true;
-    }
-
-    void coreFX_LoggedOffEvent(object sender, LoggedInEventArgs e) {
-      IsLoggedIn = false;
-      if (e.IsInVirtualTrading) return;
-      _accountID = "";
-      tableIndices.Clear();
-      Unsubscribe();
-    }
-
-    void coreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
-      IsLoggedIn = true;
-      if (e.IsInVirtualTrading) return;
-      SetTrades();
-      Subscribe();
-    }
-    public void LogOn() {
-      coreFX.LogOn();
     }
 
     public FXCore.TradeDeskAut Desk {
       get {
-        return coreFX == null ? null : coreFX.Desk;
+        return CoreFX == null ? null : CoreFX.Desk;
       }
-    }
-    public void LogOff() {
-      if( coreFX!=null)
-        coreFX.Logout();
     }
     #endregion
 
@@ -677,7 +653,7 @@ namespace Order2GoAddIn {
               endDate = endDate.AddSeconds(-3);
           } catch (Exception exc) {
             if (exc.Message.ToLower().Contains("timeout")) {
-              coreFX.LogOn();
+              //coreFX.LogOn();
               if (timeoutCount-- == 0) break;
             }
           }
@@ -1644,7 +1620,7 @@ namespace Order2GoAddIn {
         Ask = (double)Row.CellValue(FIELD_ASK), Bid = (double)Row.CellValue(FIELD_BID),
         AskChangeDirection = (int)Row.CellValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.CellValue(FIELD_BIDCHANGEDIRECTION),
-        Time = ((DateTime)Row.CellValue(FIELD_TIME)).AddHours(coreFX.ServerTimeOffset),
+        Time = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Row.CellValue(FIELD_TIME), TimeZoneInfo.Local),
         Pair = Row.CellValue(FIELD_INSTRUMENT) + ""
       };
     }
@@ -1695,7 +1671,7 @@ namespace Order2GoAddIn {
         //}
         var rateFlag = isStop ? Desk.SL_STOP : isLimit ? Desk.SL_LIMIT : Desk.SL_NONE;
         lock (globalOrderPending) {
-          coreFX.Desk.CreateFixOrderAsync(fixOrderKnd, tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag, out requestID);
+          Desk.CreateFixOrderAsync(fixOrderKnd, tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag, out requestID);
         }
         po.RequestId = requestID + "";
         return po;
@@ -1711,6 +1687,8 @@ namespace Order2GoAddIn {
         return null;
       }
     }
+
+
     [MethodImpl(MethodImplOptions.Synchronized)]
     public string CreateEntryOrder(string pair, bool isBuy, int amount, double rate, double stop, double limit) {
       try {
@@ -1804,10 +1782,10 @@ namespace Order2GoAddIn {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public bool DeleteOrder(string orderId) {
       try {
-        if (GetOrdersInternal("").Any(o => o.OrderID == orderId)) {
+        if (GetOrders("").Any(o => o.OrderID == orderId)) {
           object reqId;
           EntryOrders.Remove(orderId);
-          Desk.DeleteOrder(orderId);//, out reqId);
+          Desk.DeleteOrderAsync(orderId, out reqId);
         }
         return true;
       } catch (Exception exc) {
@@ -1838,7 +1816,7 @@ namespace Order2GoAddIn {
           var po = new PendingOrder(pair, buy, lots, rate, stop, limit, remark);
           if (!PendingOrders.Contains(po)) {
             var fixOrderKind = GetFixOrderKind(buy, GetPrice(pair), rate);
-            coreFX.Desk.CreateFixOrderAsync(fixOrderKind, "", rate, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
+            Desk.CreateFixOrderAsync(fixOrderKind, "", rate, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
             po.RequestId = requestID + "";
             PendingOrders.Add(po);
           }
@@ -1896,7 +1874,7 @@ namespace Order2GoAddIn {
             PendingOrders.Add(po);
           }
           lock (globalOrderPending) {
-            coreFX.Desk.CreateFixOrderAsync(coreFX.Desk.FIX_OPENMARKET, "", 0, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
+            Desk.CreateFixOrderAsync(Desk.FIX_OPENMARKET, "", 0, 0, "", AccountID, pair, buy, lots, remark, 0, out requestID);
           }
           //var iSLType = Desk.SL_NONE;
           //if (stopLoss > 0) iSLType += Desk.SL_STOP;
@@ -1990,7 +1968,7 @@ namespace Order2GoAddIn {
             if (PendingOrders.Contains(po)) return po;
             PendingOrders.Add(po);
           }
-          coreFX.Desk.CreateFixOrderAsync(coreFX.Desk.FIX_CLOSEMARKET, tradeId, 0, 0, "", "", "", true, lots, remark, 0, out requestID);
+          Desk.CreateFixOrderAsync(Desk.FIX_CLOSEMARKET, tradeId, 0, 0, "", "", "", true, lots, remark, 0, out requestID);
           po.RequestId = requestID + "";
           return po;
         } catch (Exception exc) {
@@ -2020,7 +1998,7 @@ namespace Order2GoAddIn {
       }
       return ordersList.ToArray();
     }
-    public object FixOrderClose(string tradeId) { return FixOrderClose(tradeId, coreFX.Desk.FIX_CLOSEMARKET, null as Price); }
+    public object FixOrderClose(string tradeId) { return FixOrderClose(tradeId, Desk.FIX_CLOSEMARKET, null as Price); }
     public bool ClosePair(string pair) {
       var b = ClosePair(pair, true);
       var s = ClosePair(pair, false);
@@ -2074,10 +2052,10 @@ namespace Order2GoAddIn {
         try {
           if (trade == null) return null;
           if (lot == 0) lot = trade.Lots;
-          var dRate = mode == coreFX.Desk.FIX_CLOSEMARKET || price == null ? 0 : trade.Buy? price.Bid : price.Ask;
+          var dRate = mode == Desk.FIX_CLOSEMARKET || price == null ? 0 : trade.Buy? price.Bid : price.Ask;
           if (Hedging) {
             //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(5), () => {
-            coreFX.Desk.CreateFixOrder(mode, tradeId, dRate, 0, "", "", "", true, lot, "", out psOrderID, out psDI);
+            Desk.CreateFixOrder(mode, tradeId, dRate, 0, "", "", "", true, lot, "", out psOrderID, out psDI);
             try {
               while (GetTrade(tradeId) != null)
                 Thread.Sleep(10);
@@ -2509,7 +2487,9 @@ namespace Order2GoAddIn {
     }
 
     Account accountInternal = null;
+    DateTime _rowChangeHeartbeatDateTime;
     void FxCore_RowChanged(object _table, string rowID, string rowText) {
+      _rowChangeHeartbeatDateTime = DateTime.Now;
       try {
         FXCore.TableAut table = _table as FXCore.TableAut;
         FXCore.RowAut row;
@@ -2561,9 +2541,15 @@ namespace Order2GoAddIn {
       OnRequestFailed(sRequestID, sError);
       RemovePendingOrder(PendingOrders.SingleOrDefault(po => po.RequestId == sRequestID));
     }
-
     void mSink_ITradeDeskEvents_Event_OnSessionStatusChanged(string sStatus) {
-      OnSessionStatusChanged(sStatus);
+      var status = (TradingServerSessionStatus)Enum.Parse(typeof(TradingServerSessionStatus), sStatus);
+      if (status == TradingServerSessionStatus.Connected) {
+        Unsubscribe();
+        Subscribe();
+        IsLoggedIn = true;
+      } else
+        IsLoggedIn = false;
+      RaiseSessionStatusChanged(status);
     }
 
 
@@ -2624,9 +2610,7 @@ namespace Order2GoAddIn {
     #region IDisposable Members
 
     public void Dispose() {
-      LogOff();
-      coreFX = null;
-      GC.SuppressFinalize(this);
+      //GC.SuppressFinalize(this);
     }
 
     #endregion
@@ -2751,7 +2735,7 @@ namespace Order2GoAddIn {
       }
     }
     public DateTime ServerTimeCached { get; set; }
-    public DateTime ServerTime { get { return ServerTimeCached = coreFX.ServerTime; } }
+    public DateTime ServerTime { get { return ServerTimeCached = CoreFX.ServerTime; } }
     static object converterLocker = new object();
     //[MethodImpl(MethodImplOptions.Synchronized)]
     DateTime ConvertDateToLocal(DateTime date) {

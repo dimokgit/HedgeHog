@@ -17,6 +17,7 @@ using System.ComponentModel;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
+using GalaSoft.MvvmLight.Command;
 
 namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
@@ -247,7 +248,7 @@ namespace HedgeHog.Alice.Store {
     public ICommand ToggleShowActiveMacroCommand {
       get {
         if (_ToggleShowActiveMacroCommand == null) {
-          _ToggleShowActiveMacroCommand = new Gala.RelayCommand(ToggleShowActiveMacro, () => true);
+          _ToggleShowActiveMacroCommand = new RelayCommand(ToggleShowActiveMacro, () => true);
         }
 
         return _ToggleShowActiveMacroCommand;
@@ -365,7 +366,6 @@ namespace HedgeHog.Alice.Store {
   }
   
   public class RatesLoader {
-    FXW fw = new FXW();
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() > 0 && (ratesList[0].StartDate - ratesList[1].StartDate).Duration() > TimeSpan.FromMinutes(Math.Max(1, periodMinutes)))

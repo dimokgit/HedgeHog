@@ -90,8 +90,8 @@ namespace HedgeHog.Alice.Server {
         if (_coreFX == null) {
           _coreFX = App.CoreFX;
           _coreFX.LoginError += exc => Log = exc;
-          _coreFX.LoggedInEvent += coreFX_LoggedInEvent;
-          _coreFX.LoggedOffEvent += coreFX_LoggedOffEvent;
+          _coreFX.LoggedIn += coreFX_LoggedInEvent;
+          _coreFX.LoggedOff += coreFX_LoggedOffEvent;
 
           _mSink = new FXCore.TradeDeskEventsSinkClass();
           _mSink.ITradeDeskEvents_Event_OnSessionStatusChanged += mSink_ITradeDeskEvents_Event_OnSessionStatusChanged;

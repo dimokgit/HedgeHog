@@ -69,6 +69,10 @@ namespace HedgeHog.Alice.Client {
         charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
         charterNew.BuySellAdded += charter_BuySellAdded;
         charterNew.BuySellRemoved += charter_BuySellRemoved;
+        var isSelectedBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
+        charterNew.SetBinding(CharterControl.IsSelectedProperty,isSelectedBinding);
+        var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.HasCorridor)) { Source = tradingMacro };
+        charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
         //charter.Show();
 
         /*
@@ -461,8 +465,8 @@ namespace HedgeHog.Alice.Client {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)false, SellOrderCommand);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)true, BuyOrderCommand);
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
-          MasterModel.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
-          MasterModel.CoreFX.LoggedOffEvent += CoreFX_LoggedOffEvent;
+          MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
+          MasterModel.CoreFX.LoggedOff += CoreFX_LoggedOffEvent;
           MasterModel.MasterTradeAccountChanged += new EventHandler(MasterModel_MasterTradeAccountChanged);
         }
       } catch (Exception exc) {
@@ -492,8 +496,8 @@ namespace HedgeHog.Alice.Client {
 
     ~RemoteControlModel() {
       if (MasterModel != null) {
-        MasterModel.CoreFX.LoggedInEvent -= CoreFX_LoggedInEvent;
-        MasterModel.CoreFX.LoggedOffEvent -= CoreFX_LoggedOffEvent;
+        MasterModel.CoreFX.LoggedIn -= CoreFX_LoggedInEvent;
+        MasterModel.CoreFX.LoggedOff -= CoreFX_LoggedOffEvent;
       }
     }
     #endregion
@@ -653,7 +657,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     class ShowChartDispatcher : DispatcherConsumer<TradingMacro> {
-      public ShowChartDispatcher(RemoteControlModel me) : base(tm => me.ShowChart(tm)) { }
+      public ShowChartDispatcher(RemoteControlModel me) : base(tm => me.ShowChart(tm),DispatcherPriority.Background) { }
     }
     static ShowChartDispatcher _showChartQueue;
     ShowChartDispatcher ShowChartQueue {

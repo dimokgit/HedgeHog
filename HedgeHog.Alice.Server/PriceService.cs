@@ -57,7 +57,7 @@ namespace HedgeHog.Alice.Server {
     public PriceService() {
       _fw = new FXCoreWrapper(App.CoreFX);
       _fw.PriceChanged += fw_PriceChanged;
-      App.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
+      App.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
       bl.PairLoaded += bl_PairLoaded;
     }
     ~PriceService() {

@@ -48,7 +48,7 @@ namespace HedgeHog.Alice.Client {
     public OrderTemplatesModel() {
       if (App.container != null) {
         App.container.SatisfyImportsOnce(this);
-        MasterModel.CoreFX.LoggedInEvent += CoreFX_LoggedInEvent;
+        MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
       }
     }
     #endregion

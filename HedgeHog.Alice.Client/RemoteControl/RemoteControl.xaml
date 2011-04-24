@@ -12,8 +12,8 @@
              xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
              xmlns:hhBars="clr-namespace:HedgeHog.Bars;assembly=HedgeHog.Shared"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
-             xmlns:gala="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight"
-             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras"
+             xmlns:gala="clr-namespace:GalaSoft.MvvmLight;assembly=GalaSoft.MvvmLight.WPF4" 
+             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4" 
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
@@ -206,6 +206,11 @@
     <Grid>
     <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}"
               FontWeight="Black" VerticalScrollBarVisibility="Auto" Background="#FFF7F3F7">
+      <DataGrid.RowStyle>
+        <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+          <Setter Property="IsSelected" Value="{Binding IsSelectedInUI,Mode=OneWayToSource}"/>
+        </Style>
+      </DataGrid.RowStyle>
       <DataGrid.CellStyle>
         <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
           <Setter Property="FontWeight" Value="Normal"/>
