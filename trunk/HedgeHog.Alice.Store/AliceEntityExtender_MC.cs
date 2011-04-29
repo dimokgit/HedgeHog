@@ -23,6 +23,7 @@ using System.Data.Objects.DataClasses;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Order2GoAddIn;
+using System.Concurrency;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -37,14 +38,21 @@ namespace HedgeHog.Alice.Store {
     //}
   }
   public partial class AliceEntities {
-    private object _saveChangesLock = new object();
+    static private object _saveChangesLock = new object();
     public override int SaveChanges(System.Data.Objects.SaveOptions options) {
       lock (_saveChangesLock) {
         try {
           InitGuidField<TradingAccount>(ta => ta.Id, (ta, g) => ta.Id = g);
           InitGuidField<TradingMacro>(ta => ta.UID, (ta, g) => ta.UID = g);
-        } catch { }
-        return base.SaveChanges(options);
+        } catch (Exception exc) {
+          Debug.Fail(exc + "");
+        }
+        try {
+          return base.SaveChanges(options);
+        } catch (Exception exc) {
+          Debug.Fail(exc + "");
+          return 0;
+        }
       }
     }
 
@@ -88,7 +96,7 @@ namespace HedgeHog.Alice.Store {
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
       if (fw != null && fw.IsLoggedIn)
-        fw.DeleteOrders(fw.GetEntryOrders(Pair));
+        fw.DeleteOrders(fw.GetEntryOrders(Pair,true));
       else if (Strategy == Strategies.Hot)
         MessageBox.Show("Account is already logged off. Unable to close Entry Orders.");
     }
@@ -121,7 +129,8 @@ namespace HedgeHog.Alice.Store {
       var fw = GetFXWraper();
       if (!string.IsNullOrWhiteSpace(e.OldId) && fw != null)
         try {
-          fw.DeleteOrder(e.OldId);
+          OnDeletingOrder(e.OldId);
+          //fw.DeleteOrder(e.OldId);
         } catch (Exception exc) {
           Log = exc;
         }
@@ -132,7 +141,8 @@ namespace HedgeHog.Alice.Store {
         var suppRes = (SuppRes)sender;
         var fw = GetFXWraper();
         if (fw != null && !suppRes.IsActive)
-          fw.DeleteOrders(fw.GetOrdersInternal(Pair).IsBuy(suppRes.IsBuy));
+          fw.GetEntryOrders(Pair,true).IsBuy(suppRes.IsBuy).ToList()
+            .ForEach(o => OnDeletingOrder(o.OrderID));
       } catch (Exception exc) {
         Log = exc;
       }
@@ -1217,7 +1227,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region TradesManager 'n Stuff
     Func<ITradesManager> _TradesManager = () => null;
-    ITradesManager TradesManager { get { return _TradesManager(); } }
+    public ITradesManager TradesManager { get { return _TradesManager(); } }
     public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager) {
       this._TradesManager = getTradesManager;
       this.TradesManager.TradeClosed += TradesManager_TradeClosed;
@@ -1236,7 +1246,7 @@ namespace HedgeHog.Alice.Store {
     void CoreFX_LoggingOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {
       var fw = GetFXWraper();
       if (fw == null) return;
-      fw.DeleteOrders(GetEntryOrders(fw));
+      fw.DeleteOrders(fw.GetEntryOrders(Pair, true));
     }
 
     void TradesManager_OrderAdded(object sender, OrderEventArgs e) {
@@ -1245,9 +1255,10 @@ namespace HedgeHog.Alice.Store {
         var order = e.Order;
         var fw = GetFXWraper();
         if (fw != null && !order.IsNetOrder) {
-          var orders = fw.GetEntryOrders(Pair);
-          orders.IsBuy(true).OrderBy(o => o.OrderID).Skip(1).ToList().ForEach(o => fw.DeleteOrder(o));
-          orders.IsBuy(false).OrderBy(o => o.OrderID).Skip(1).ToList().ForEach(o => fw.DeleteOrder(o));
+          var orders = GetEntryOrders();
+          orders.IsBuy(true).OrderBy(o => o.OrderID).Skip(1)
+            .Concat(orders.IsBuy(false).OrderBy(o => o.OrderID).Skip(1))
+            .ToList().ForEach(o => OnDeletingOrder(o.OrderID));
         }
         SetEntryOrdersBySuppResLevels();
       } catch (Exception exc) {
@@ -1258,7 +1269,7 @@ namespace HedgeHog.Alice.Store {
     void TradesManager_OrderRemoved(Order order) {
       if (!IsMyOrder(order)) return;
       SuppRes.Where(sr => sr.EntryOrderId == order.OrderID).ToList().ForEach(sr => sr.EntryOrderId = Store.SuppRes.RemovedOrderTag);
-      SetEntryOrdersBySuppResLevels(true);
+      SetEntryOrdersBySuppResLevels();
     }
 
     void TradesManager_TradeAddedGlobal(object sender, TradeEventArgs e) {
@@ -1519,7 +1530,7 @@ namespace HedgeHog.Alice.Store {
       try {
         var srs = (isSupport ? Supports : Resistances);
         var index = srs.Select(a => a.Index).DefaultIfEmpty(0).Max() + 1;
-        var sr = new SuppRes { Rate = rate, IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Max(a => a.TradesCount) };
+        var sr = new SuppRes { Rate = rate, IsSupport = isSupport, TradingMacroID = UID, UID = Guid.NewGuid(), TradingMacro = this, Index = index, TradesCount = srs.Select(a => a.TradesCount).DefaultIfEmpty().Max() };
         GlobalStorage.Context.SuppRes.AddObject(sr);
         GlobalStorage.Context.SaveChanges();
         return sr;
@@ -1606,7 +1617,7 @@ namespace HedgeHog.Alice.Store {
     static Func<Rate, double> centerOfMassSell = r => r.PriceLow;
 
     public double RatesStDevInPips { get { return InPips(RatesStDev); } }
-    private double _RatesStDev = double.MaxValue;
+    private double _RatesStDev = double.NaN;
     public double RatesStDev {
       get { return _RatesStDev; }
       set {
@@ -1964,8 +1975,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     class RatesAreNotReadyException : Exception { }
-    BackgroundWorkerDispenser<string> backgroundWorkers = new BackgroundWorkerDispenser<string>();
+    Schedulers.BackgroundWorkerDispenser<string> backgroundWorkers = new Schedulers.BackgroundWorkerDispenser<string>();
     Rate _rateFirst, _rateLast;
+
+    public Rate RateLast {
+      get { return _rateLast; }
+      set {
+        if (_rateLast != value) {
+          _rateLast = value;
+          OnPropertyChanged("RateLast");
+        }
+      }
+    }
+
     object _rateArrayLocker = new object();
     Rate[] _rateArray;
     public Rate[] RatesArraySafe {
@@ -1976,9 +1998,9 @@ namespace HedgeHog.Alice.Store {
               //Log = new RatesAreNotReadyException();
               return new Rate[0];
             }
-            if (RatesInternal[0] != _rateFirst || RatesInternal[RatesInternal.Count - 1] != _rateLast || _rateArray == null) {
+            if (RatesInternal[0] != _rateFirst || RatesInternal[RatesInternal.Count - 1] != RateLast || _rateArray == null) {
               _rateFirst = RatesInternal[0];
-              _rateLast = RatesInternal[RatesInternal.Count - 1];
+              RateLast = RatesInternal[RatesInternal.Count - 1];
               //_rateArray = GetRatesForStDev(GetRatesSafe()).ToArray();
               _rateArray = GetRatesSafe();
               SetRatesStDev(_rateArray);
@@ -2435,10 +2457,8 @@ namespace HedgeHog.Alice.Store {
     }
     public bool IsInPlayback { get { return Playback.Play; } }
 
-    ThreadScheduler ScanCorridorScheduler = new ThreadScheduler();
-
     enum workers { LoadRates, ScanCorridor, RunPrice };
-    BackgroundWorkerDispenser<workers> bgWorkers = new BackgroundWorkerDispenser<workers>();
+    Schedulers.BackgroundWorkerDispenser<workers> bgWorkers = new Schedulers.BackgroundWorkerDispenser<workers>();
 
     void AddCurrentTick(Price price) {
       if (!HasRates || price.IsPlayback) return;
@@ -2471,50 +2491,152 @@ namespace HedgeHog.Alice.Store {
       return AllowedLotSizeCore(Trades) + Trades.IsBuy(!isBuy).Lots().ToInt();
     }
 
-    Schedulers.TaskTimer _entryOrdersTasker;
-    Schedulers.TaskTimer EntryOrdersTasker {
+
+    static TradingMacro() {
+    }
+
+    #region Subjects
+    static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
+
+    #region LoadRates Subject
+    static object _LoadRatesSubjectLocker = new object();
+    static ISubject<TradingMacro> _LoadRatesSubject;
+    static ISubject<TradingMacro> LoadRatesSubject {
       get {
-        if (_entryOrdersTasker == null)
-          _entryOrdersTasker = new Schedulers.TaskTimer(1000, (s, e) => Log = e.Exception);
-        return _entryOrdersTasker;
+        lock (_LoadRatesSubjectLocker)
+          if (_LoadRatesSubject == null) {
+            _LoadRatesSubject = new Subject<TradingMacro>(Scheduler.TaskPool);
+            _LoadRatesSubject
+              .GroupByUntil(g => g.Pair, g => Observable.Timer(THROTTLE_INTERVAL))// g.First().TradesManager.ServerTime.Round().AddMinutes(1)))
+              .SelectMany(o => o.TakeLast(1))
+              .Subscribe(tm => tm.LoadRates());
+          }
+        return _LoadRatesSubject;
       }
     }
 
-    class SetEntryOrdersBySuppResLevelsDispatcher : BlockingConsumerBase<TradingMacro> {
-      public SetEntryOrdersBySuppResLevelsDispatcher():base(tm=>tm.SetEntryOrdersBySuppResLevels(true)) { }
+    public void OnLoadRates() {
+      LoadRatesSubject.OnNext(this);
     }
-    static SetEntryOrdersBySuppResLevelsDispatcher SetEntryOrdersBySuppResLevelsQueue = new SetEntryOrdersBySuppResLevelsDispatcher();
+    #endregion
 
 
-    class EntryOrdersAdjustDispatcher : BlockingConsumerBase<TradingMacro> {
-      public EntryOrdersAdjustDispatcher() : base(TradingMacro => TradingMacro.EntryOrdersAdjust()) { }
+    #region EntryOrdersAdjust Subject
+    static object _EntryOrdersAdjustSubjectLocker = new object();
+    static ISubject<TradingMacro> _EntryOrdersAdjustSubject;
+    static ISubject<TradingMacro> EntryOrdersAdjustSubject {
+      get {
+        lock (_EntryOrdersAdjustSubjectLocker)
+          if (_EntryOrdersAdjustSubject == null) {
+            _EntryOrdersAdjustSubject = new Subject<TradingMacro>();
+            _EntryOrdersAdjustSubject
+              .GroupByUntil(g => g.Pair, g => Observable.Timer(THROTTLE_INTERVAL))
+              .SelectMany(o => o.TakeLast(1))
+              .SubscribeOn(Scheduler.TaskPool)
+              .Subscribe(tm => tm.EntryOrdersAdjust());
+          }
+        return _EntryOrdersAdjustSubject;
+      }
     }
-    static EntryOrdersAdjustDispatcher EntryOrdersAdjustQueue = new EntryOrdersAdjustDispatcher();
-
-
-    class SetStopLimitsDispatcher : BlockingConsumerBase<TradingMacro> {
-      public SetStopLimitsDispatcher() : base(TradingMacro => TradingMacro.SetStopLimits()) { }
+    void OnEntryOrdersAdjust() {
+      EntryOrdersAdjustSubject.OnNext(this);
     }
-    static SetStopLimitsDispatcher SetStopLimitsQueue = new SetStopLimitsDispatcher();
+    #endregion
 
-    static event EventHandler<EventArgs> OnEntryOrdersAdjust;
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    void SetEntryOrdersBySuppResLevels(bool runSync = false) {
+
+    #region DeleteOrder Subject
+    static object _DeleteOrderSubjectLocker= new object();
+    static ISubject<string> _DeleteOrderSubject;
+    ISubject<string> DeleteOrderSubject {
+      get {
+        lock(_DeleteOrderSubjectLocker)
+          if (_DeleteOrderSubject == null) {
+            _DeleteOrderSubject = new Subject<string>();
+            _DeleteOrderSubject
+              .DistinctUntilChanged()
+              .Subscribe(s => {
+                try {
+                  GetFXWraper().DeleteOrder(s);
+                } catch (Exception exc) { Log = exc; }
+              }, exc => Log = exc);
+          }
+        return _DeleteOrderSubject;
+      }
+    }
+    protected void OnDeletingOrder(string orderId) {
+      DeleteOrderSubject.OnNext(orderId);
+    }
+    #endregion
+
+
+    #region SetNet Subject
+    static object _setNetSubjectLocker = new object();
+    static ISubject<TradingMacro> _SettingStopLimits;
+    static ISubject<TradingMacro> SettingStopLimits {
+      get {
+        lock (_setNetSubjectLocker)
+          if (_SettingStopLimits == null) {
+            _SettingStopLimits = new Subject<TradingMacro>();
+            _SettingStopLimits
+              //.Do(tm => Debug.WriteLine(tm.Pair + "[I]:SettingStopLimits @" + DateTime.Now.ToString("mm:ss.fff")))
+              .GroupByUntil(g => g.Pair, g => Observable.Timer(THROTTLE_INTERVAL))
+              .SelectMany(o=>o.TakeLast(1))
+              //.Do(tm=>Debug.WriteLine(tm.Pair+"[O]:SettingStopLimits @"+DateTime.Now.ToString("mm:ss.fff")))
+              .SubscribeOn(Scheduler.TaskPool)
+              .Subscribe(tm => tm.SetNetStopLimit(), exc => Debugger.Break(), () => Debugger.Break())
+              //.Subscribe(g => g.TakeLast(1).Subscribe(tm => tm.SetNetStopLimit(), exc => g.Last().Log = exc), exc => Debug.Fail(exc + ""))
+              ;
+          }
+        return _SettingStopLimits;
+      }
+    }
+    protected void OnSettingStopLimits() {
+      SettingStopLimits.OnNext(this);
+    }
+    #endregion
+
+
+    #region CreateEntryOrder Subject
+    class CreateEntryOrderHelper {
+      public string Pair { get; set; }
+      public bool IsBuy { get; set; }
+      public int Amount { get; set; }
+      public double Rate { get; set; }
+      public CreateEntryOrderHelper(string pair, bool isbuy, int amount, double rate) {
+        this.Pair = pair;
+        this.IsBuy = isbuy;
+        this.Amount = amount;
+        this.Rate = rate;
+      }
+    }
+    static ISubject<CreateEntryOrderHelper> _CreateEntryOrderSubject;
+    ISubject<CreateEntryOrderHelper> CreateEntryOrderSubject {
+      get {
+        if (_CreateEntryOrderSubject == null) {
+          _CreateEntryOrderSubject = new Subject<CreateEntryOrderHelper>();
+          _CreateEntryOrderSubject
+            .GroupByUntil(g => new { g.Pair, g.IsBuy }, g => Observable.Timer(THROTTLE_INTERVAL))
+              .SelectMany(o => o.TakeLast(1))
+              .SubscribeOn(Scheduler.TaskPool)
+              .Subscribe(s => GetFXWraper().CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0));
+        }
+        return _CreateEntryOrderSubject;
+      }
+    }
+    void OnCreateEntryOrder(bool isBuy,int amount,double rate) {
+      CreateEntryOrderSubject.OnNext(new CreateEntryOrderHelper(Pair, isBuy, amount, rate));
+    }
+    #endregion
+    #endregion
+
+    void SetEntryOrdersBySuppResLevels() {
       if (!isLoggedIn) return;
       try {
-        var fw = GetFXWraper();
-        if (fw == null) return;
-        if (!runSync) {
-          SetEntryOrdersBySuppResLevelsQueue.Add(this);
-        } else {
-          if (CanDoEntryOrders) {
-            EntryOrdersAdjustQueue.Add(this);
-          } else {
-            fw.GetEntryOrders(Pair)//.Where(o => o.TimeLocal > fw.ServerTime.AddMinutes(10))
-              .ToList().ForEach(o => fw.DeleteOrder(o.OrderID));
-          }
-          SetStopLimitsQueue.Add(this);
-        }
+        if (CanDoEntryOrders)
+          OnEntryOrdersAdjust();
+        else
+          GetEntryOrders().ToList().ForEach(o => OnDeletingOrder(o.OrderID));
+        OnSettingStopLimits();
       } catch (Exception exc) {
         Log = exc;
       }
@@ -2526,57 +2648,13 @@ namespace HedgeHog.Alice.Store {
       return TradesManager as Order2GoAddIn.FXCoreWrapper; 
     }
 
-    internal void SetStopLimits() {
+    internal void SetNetStopLimit() {
       Order2GoAddIn.FXCoreWrapper fw = GetFXWraper();
-      if (fw != null) {
-        SetNetStopLimit(fw, true);
-        SetNetStopLimit(fw, false);
-      }
-    }
-
-    class SetRateDispatcher : BlockingConsumerBase<Tuple<string, double, bool>> {
-      public SetRateDispatcher(Action<Tuple<string, double, bool>> action) {
-        Init(action);
-      }
-      public void Add(string tradeId, double rate, bool isInPips) {
-        Add(new Tuple<string, double, bool>(tradeId, rate, isInPips), (t1, t2) => t1.Item1 == t2.Item1 && t1.Item2 == t2.Item2);
-      }
-    }
-
-
-    static object _SSRDLock = new object();
-    static SetRateDispatcher _SSRD;
-    SetRateDispatcher SSRD {
-      get {
-        lock (_SSRDLock) {
-          if (_SSRD == null)
-            _SSRD = new SetRateDispatcher(t => {
-              try {
-                GetFXWraper().FixOrderSetStop(t.Item1, t.Item2,"");
-              } catch (Exception exc) {
-                Log = new Exception("NetStop:" + t.Item1 + " @ " + t.Item2, exc);
-              }
-            });
-        }
-        return _SSRD;
-      }
-    }
-    static object _SLRDLock = new object();
-    static SetRateDispatcher _SLRD;
-    SetRateDispatcher SLRD {
-      get {
-        lock (_SLRDLock) {
-          if (_SLRD == null)
-            _SLRD = new SetRateDispatcher(t => {
-              var fw = GetFXWraper();
-              if (fw == null)
-                FailTradesManager();
-              else
-                fw.FixOrderSetLimit(t.Item1, t.Item2, "");
-            });
-        }
-        return _SLRD;
-      }
+      if (fw != null)
+        try {
+          SetNetStopLimit(fw, true);
+          SetNetStopLimit(fw, false);
+        } catch (Exception exc) { Log = exc; }
     }
 
     private static void FailTradesManager() {
@@ -2587,62 +2665,62 @@ namespace HedgeHog.Alice.Store {
       if (fw == null /*|| !IsHot*/) return;
       var ps = fw.GetPipSize(Pair) / 2;
       var trades = Trades.IsBuy(isBuy);
+      var spreadToAdd = PriceSpreadToAdd(isBuy);
       trades.ToList().ForEach(trade => {
         var rateLast = RatesArraySafe.LastOrDefault(r => r.PriceAvg1 > 0);
-        var limitByCorridor = rateLast == null ? 0 : isBuy ? rateLast.PriceAvg02 : rateLast.PriceAvg03;
-        var spreadToAdd = (isBuy ? 1 : -1) * _priceSpreadAverage.GetValueOrDefault(0);
+
+        var limitByCorridor = rateLast == null || ReverseStrategy ? 0 : isBuy ? rateLast.PriceAvg02 : rateLast.PriceAvg03;
         var tp = RoundPrice((trade.IsBuy ? 1 : -1) *
           (CalculateCloseProfit()
           + (ReverseStrategy ? fw.InPoints(Pair, fw.MoneyAndLotToPips(-CurrentLoss, AllowedLotSize(Trades, isBuy), Pair)) : 0)));
+        if (double.IsNaN(tp)) return;
         var limitByTakeProfit = trades.NetOpen() + spreadToAdd + tp;
-        var limitRate = RoundPrice(isBuy ? limitByCorridor.Min(limitByTakeProfit) : limitByCorridor.Max(limitByTakeProfit));
+        var limitRate = RoundPrice(ReverseStrategy ? limitByTakeProfit 
+          : isBuy ? limitByCorridor.Min(limitByTakeProfit) : limitByCorridor.Max(limitByTakeProfit));
         if (isBuy && limitRate <= CurrentPrice.Bid || !isBuy && limitRate >= CurrentPrice.Ask)
           fw.ClosePair(Pair);
         var netLimitOrder = fw.GetNetLimitOrder(Pair);
         if (netLimitOrder == null || (RoundPrice(netLimitOrder.Rate) - limitRate).Abs() > ps)
           fw.FixOrderSetLimit(trade.Id, limitRate, "");
-        //SLRD.Add(trade.Id, limitRate, false);
+
+        var stopByCorridor = rateLast == null || !ReverseStrategy ? 0 : !isBuy ? rateLast.PriceAvg02 : rateLast.PriceAvg03;
         var sl = RoundPrice((trade.IsBuy ? 1 : -1) * CalculateCloseLoss());
-        var stopRate = RoundPrice(trades.NetOpen() + spreadToAdd + sl);
+        var stopRate = RoundPrice(ReverseStrategy ? stopByCorridor : trades.NetOpen() + spreadToAdd + sl);
         if (isBuy && stopRate >= CurrentPrice.Bid || !isBuy && stopRate <= CurrentPrice.Ask)
           fw.ClosePair(Pair);
         var netStopOrder = fw.GetNetStopOrder(Pair);
         if (netStopOrder == null || (stopRate - RoundPrice(netStopOrder.Rate)).Abs() > ps)
           fw.FixOrderSetStop(trade.Id, stopRate, "");
-          //SSRD.Add(trade.Id, sl, false);
       });
     }
 
-    class TradingMacroActionDispatcher : BlockingConsumerBase<TradingMacro> {
-      public TradingMacroActionDispatcher(Action<TradingMacro> action) : base(action) { }
+    private double PriceSpreadToAdd(bool isBuy) {
+      return (isBuy ? 1 : -1) * _priceSpreadAverage.GetValueOrDefault(0);
     }
-    static TradingMacroActionDispatcher EntryOrderAdjustQueue = new TradingMacroActionDispatcher(tm => tm.EntryOrdersAdjust());
-    static TradingMacroActionDispatcher SetNetStopLimitQueue = new TradingMacroActionDispatcher(tm => tm.SetStopLimits());
-
 
     internal void EntryOrdersAdjust() {
-      Order2GoAddIn.FXCoreWrapper fw = GetFXWraper();
-      if (fw == null || !CanDoEntryOrders) return;
-      //var eoDelete = (from eo in GetEntryOrders(fw)
-      //               join sr in EnsureActiveSuppReses() on eo.OrderID equals sr.EntryOrderId
-      //               into srGroup
-      //               from srItem in srGroup.DefaultIfEmpty()
-      //               where srItem == null
-      //               select eo).ToList();
-      //eoDelete.ForEach(eo => fw.DeleteOrder(eo));
       try {
-        foreach(var suppres in EnsureActiveSuppReses()){
+        Order2GoAddIn.FXCoreWrapper fw = GetFXWraper();
+        if (fw == null || !CanDoEntryOrders) return;
+        //var eoDelete = (from eo in GetEntryOrders(fw)
+        //               join sr in EnsureActiveSuppReses() on eo.OrderID equals sr.EntryOrderId
+        //               into srGroup
+        //               from srItem in srGroup.DefaultIfEmpty()
+        //               where srItem == null
+        //               select eo).ToList();
+        //eoDelete.ForEach(eo => fw.DeleteOrder(eo));
+        foreach (var suppres in EnsureActiveSuppReses()) {
           var isBuy = suppres.IsBuy;
           var allowedLot = EntryOrderAllowedLot(isBuy);
-          var rate = RoundPrice(suppres.Rate);
-          var orders = GetEntryOrders(fw, isBuy).OrderBy(o => (o.Rate - suppres.Rate).Abs()).ToList();
+          var rate = RoundPrice(suppres.Rate + (ReverseStrategy ? 0 : -1 * PriceSpreadToAdd(isBuy)));
+          var orders = GetEntryOrders(isBuy).OrderBy(o => (o.Rate - suppres.Rate).Abs()).ToList();
           orders.Skip(1).ToList().ForEach(o => {
-            fw.DeleteOrder(o);
+            OnDeletingOrder(o.OrderID);
             orders.Remove(o);
           });
           var order = orders.FirstOrDefault();//, suppres.EntryOrderId);
           if (order == null) {
-            fw.CreateEntryOrder(Pair, isBuy, allowedLot, rate, 0, 0);
+            OnCreateEntryOrder(isBuy, allowedLot, rate);
           } else {
             if ((RoundPrice(order.Rate) - rate).Abs() > PointSize / 2)
               fw.ChangeOrderRate(order, rate);
@@ -2651,107 +2729,25 @@ namespace HedgeHog.Alice.Store {
           }
         }
       } catch (Exception exc) {
-        fw.EnsureEntryOrders(Pair);
         Log = exc;
       }
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void EntryOrdersAddRemove(Order2GoAddIn.FXCoreWrapper fw, Store.SuppRes[] suppReses, bool isBuy) {
-      Func<SuppRes, Order> getOrder = suppRes => {
-        var order = GetEntryOrders(fw, isBuy).SingleOrDefault(o => o.OrderID == suppRes.EntryOrderId);
-        if (order == null) {
-          //fw.DeleteOrders(orders.Skip(1).ToArray());
-          order = fw.GetEntryOrders(Pair).IsBuy(suppRes.IsBuy).SingleOrDefault();
-          if (order != null)
-            suppRes.EntryOrderId = order.OrderID;
-        }
-        return order;
-      };
-      if (CanDoEntryOrders)
-        foreach (var suppRes in EnsureActiveSuppReses()) {
-          var order = getOrder(suppRes);
-          if (order == null) {
-            var allowedLot = EntryOrderAllowedLot(isBuy);
-            if (suppRes.IsActive)
-              suppRes.EntryOrderId = fw.CreateEntryOrder(Pair, isBuy, allowedLot, suppRes.Rate, 0, 0);
-            if (string.IsNullOrWhiteSpace(suppRes.EntryOrderId))
-              throw new Exception("Entry order was not created for Pair:" + Pair + ",Rate:" + suppRes.Rate);
-          }
-        }
     }
 
 
     #region GetEntryOrders
-    private Order[] GetEntryOrders(Order2GoAddIn.FXCoreWrapper fw) {
-      if (fw == null) throw new InvalidOperationException("Invalid use of " + MethodInfo.GetCurrentMethod().Name);
+    private Order[] GetEntryOrders() {
+      Order2GoAddIn.FXCoreWrapper fw = GetFXWraper();
+      if (fw == null) throw new NullReferenceException("FXWraper");
       return fw.GetEntryOrders(Pair);
     }
-    private Order[] GetEntryOrders(Order2GoAddIn.FXCoreWrapper fw, bool isBuy) {
-      return GetEntryOrders(fw).IsBuy(isBuy);
+    private Order[] GetEntryOrders( bool isBuy) {
+      return GetEntryOrders().IsBuy(isBuy);
     }
-    private Order GetEntryOrder(Order2GoAddIn.FXCoreWrapper fw, string orderId) {
-      return GetEntryOrders(fw).OrderById(orderId);
-    }
-    #endregion
-
-    class CreateEntryOrderHelper {
-      public string Pair { get; set; }
-      public bool IsBuy { get; set; }
-      public int Amount { get; set; }
-      public double Rate { get; set; }
-      public CreateEntryOrderHelper(string pair,bool isbuy,int amount,double rate) {
-        this.Pair = pair;
-        this.IsBuy = isbuy;
-        this.Amount = amount;
-        this.Rate = rate;
-      }
-    }
-
-    #region CreateEntryOrderDispatcher
-    class CreateEntryOrderDispatcher:BlockingConsumerBase<CreateEntryOrderHelper> {
-      public CreateEntryOrderDispatcher(FXCoreWrapper fw) {
-        Init(ceoh => fw.CreateEntryOrder(ceoh.Pair, ceoh.IsBuy, ceoh.Amount, ceoh.Rate, 0, 0));
-      }
-      public void Add(string pair, bool isbuy, int amount, double rate) {
-        Add(new CreateEntryOrderHelper(pair, isbuy, amount, rate), (c1, c2) => c1.Pair == c2.Pair && c1.IsBuy == c2.IsBuy);
-      }
-    }
-    static object _ceodLock = new object();
-    static CreateEntryOrderDispatcher _ceod;
-    CreateEntryOrderDispatcher CreateEntryOrderQueue {
-      get {
-        lock (_ceodLock) {
-          if (_ceod == null)
-            _ceod = new CreateEntryOrderDispatcher(GetFXWraper());
-        }
-        return _ceod;
-      }
+    private Order GetEntryOrder(string orderId) {
+      return GetEntryOrders().OrderById(orderId);
     }
     #endregion
 
-    #region DeleteOrderDispatcher
-    class DeleteOrderDispatcher : BlockingConsumerBase<String> {
-      public DeleteOrderDispatcher(FXCoreWrapper fw) {
-        Init(orderId => fw.DeleteOrder(orderId));
-      }
-      public new void Add(string orderId) {
-        base.Add(orderId);
-      }
-    }
-    static object _dodLock = new object();
-    static DeleteOrderDispatcher _dod;
-    DeleteOrderDispatcher DeleteOrderQueue {
-      get {
-        lock (_dodLock) {
-          if (_dod == null)
-            _dod = new DeleteOrderDispatcher(GetFXWraper());
-        }
-        return _dod;
-      }
-    }
-    #endregion
-
-    TasksDispenser<TradingMacro> afterScanTaskDispenser = new TasksDispenser<TradingMacro>();
     Schedulers.TaskTimer _runPriceChangedTasker = new Schedulers.TaskTimer(100);
     Schedulers.TaskTimer _runPriceTasker = new Schedulers.TaskTimer(100);
     public void RunPriceChanged(PriceChangedEventArgs e, Action<TradingMacro> doAfterScanCorridor) {
@@ -2783,17 +2779,24 @@ namespace HedgeHog.Alice.Store {
       try {
         if (TradesManager == null) return;
         Stopwatch sw = Stopwatch.StartNew();
+        var timeSpanDict = new Dictionary<string, long>();
         Price price = e.Price;
-        if (RatesArraySafe.Count() == 0 || LastRatePullTime.AddSeconds(Math.Max(1, (int)BarPeriod) * 60 / 1.1) <= TradesManager.ServerTime)
-          LoadRatesAsync();
+        if (RatesArraySafe.Count() == 0 || LastRatePullTime.AddMinutes(1.Min((int)BarPeriod / 2)) <= TradesManager.ServerTime) {
+          LastRatePullTime = TradesManager.ServerTime;
+          OnLoadRates();
+          timeSpanDict.Add("LoadRates", sw.ElapsedMilliseconds);
+        }
         if (RatesArraySafe.Count() < BarsCount) return;
         var lastCmaIndex = RatesArraySafe.ToList().FindLastIndex(r => r.PriceCMA != null) - 1;
         var lastCma = lastCmaIndex < 1 ? new double?[3] : RatesArraySafe[lastCmaIndex].PriceCMA.Select(c => new double?(c)).ToArray();
         RatesArraySafe.Skip(Math.Max(0, lastCmaIndex)).ToArray().SetCMA(PriceCmaPeriod, lastCma[0], lastCma[1], lastCma[2]);
         _runPriceTasker.Action = () => RunPrice(e.Price, e.Account, Trades);
         if (doAfterScanCorridor != null) doAfterScanCorridor.BeginInvoke(this, ar => { }, null);
-        if (sw.Elapsed > TimeSpan.FromSeconds(1)) {
-          Log = new Exception(string.Format("{0}:{1:n}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds));
+        timeSpanDict.Add("Other", sw.ElapsedMilliseconds);
+        if (sw.Elapsed > TimeSpan.FromSeconds(.1)) {
+          var s = string.Join(Environment.NewLine, timeSpanDict.Select(kv => " " + kv.Key + ":" + kv.Value));
+          Log = new Exception(string.Format("{0}[{2}]:{1:n}ms{3}{4}",
+            MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair, Environment.NewLine, s));
         }
       } catch (Exception exc) {
         Log = exc;
@@ -2837,14 +2840,12 @@ namespace HedgeHog.Alice.Store {
         var periodsLength = ratesForCorridor.Count();// periodsStart;
 
         CorridorStatistics crossedCorridor = null;
-        var heightUpDownLevel = this._priceSpreadAverage.GetValueOrDefault(double.NaN) * CorridorHeightMultiplier;
+        var heightByPriceSpread = this._priceSpreadAverage.GetValueOrDefault(double.NaN) * CorridorHeightMultiplier;
+        var heightMinimum = (SpreadForCorridor * CorridorHeightMultiplier).Max(heightByPriceSpread);
         Predicate<CorridorStatistics> exitCondition = cs => {
           cs.CorridorCrossesCount = CorridorCrossesCount(cs, r => r.AskHigh, r => r.BidLow);
           var isCorCountOk = cs.CorridorCrossesCount >= CorridorCrossesCountMinimum;
-          var rates = cs.GetRates(ratesForCorridor);
-          var stDevLocal = ReverseStrategy ? heightUpDownLevel
-            : (CalcSpreadForCorridor(rates) * CorridorHeightMultiplier).Max(heightUpDownLevel);
-          var isCorridorOk = cs.HeightUpDown0 >= stDevLocal && cs.HeightUpDown0 < RatesStDev / CorridorHeightMultiplier && isCorCountOk;
+          var isCorridorOk = cs.HeightUpDown0 >= heightMinimum && cs.HeightUpDown0 < RatesStDev / CorridorHeightMultiplier && isCorCountOk;
           if (crossedCorridor == null && isCorridorOk) crossedCorridor = cs;
           if (crossedCorridor != null) {
             return true;
@@ -3159,23 +3160,6 @@ namespace HedgeHog.Alice.Store {
         return Enum.GetValues(typeof(BarsPeriodTypeFXCM)).Cast<int>().Where(i => i <= (int)BarPeriod).Max();
       }
     }
-
-    Schedulers.TaskTimer _loadRatesTasker = new Schedulers.TaskTimer(100);
-    public void LoadRatesAsync() {
-      if (IsInPlayback)
-        LoadRates();
-      else {
-        bl.Add(this);
-        //_loadRatesTasker.Action = () => LoadRates();
-      }
-    }
-
-    class BlockingLoader : BlockingConsumerBase<TradingMacro> {
-      public BlockingLoader(Action<TradingMacro> action):base(action) {
-      }
-    }
-
-    static BlockingLoader bl = new BlockingLoader(tm => tm.LoadRates());
     public void LoadRates(bool dontStreachRates = false) {
       try {
         if (!IsInPlayback && isLoggedIn) {
@@ -3264,7 +3248,7 @@ namespace HedgeHog.Alice.Store {
           if (!_exceptionStrategies.Contains(Strategy))
             Strategy = Strategies.None;
           RatesInternal.Clear();
-          LoadRatesAsync();
+          OnLoadRates();
           break;
         case TradingMacroMetadata.RatesInternal:
           SetRatesStDev();
@@ -3316,14 +3300,14 @@ namespace HedgeHog.Alice.Store {
     }
     partial void OnLimitBarChanging(int newLimitBar) {
       if (newLimitBar == (int)BarPeriod) return;
-      LoadRatesAsync();
+      OnLoadRates();
     }
     Strategies[] _exceptionStrategies = new[] { Strategies.Massa, Strategies.Hot };
     partial void OnCorridorBarMinutesChanging(int value) {
       if (value == CorridorBarMinutes) return;
       if (!_exceptionStrategies.Contains(Strategy))
         Strategy = Strategies.None;
-      LoadRatesAsync();
+      OnLoadRates();
     }
     #endregion
 
@@ -3338,8 +3322,12 @@ namespace HedgeHog.Alice.Store {
     public void HideInfoTootipAsync(double delayInSeconds = 0) {
       ShowInfoTootipAsync("", delayInSeconds);
     }
+    void DefferedRun<T>(T value,double delayInSeconds , Action<T> run) {
+      Observable.Return(value).Throttle(TimeSpan.FromSeconds(delayInSeconds), Scheduler.Dispatcher).Subscribe(run, exc => Log = exc);
+    }
     public void ShowInfoTootipAsync(string text = "", double delayInSeconds = 0) {
-      new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(Math.Max(.01, delayInSeconds))).Command = () => InfoTooltip = text;
+      DefferedRun(text,delayInSeconds, t => InfoTooltip = t);
+      //new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(Math.Max(.01, delayInSeconds))).Command = () => InfoTooltip = text;
     }
 
     private Rate _rateGannCurrentLast;
@@ -3473,6 +3461,21 @@ namespace HedgeHog.Alice.Store {
 
     public override string ToString() {
       return string.Join(",", ActiveAngles.Select(a => string.Format("{0}/{1}", a.Price, a.Time)));
+    }
+  }
+  static class TradingMacroEx {
+    public static TradingMacro ToTradingMacro(this object o) { return o as TradingMacro; }
+    public static IDisposable SubscribeToTradingMacroEvent(this IObservable<IEvent<EventArgs>> io, Action<TradingMacro> onNext) {
+      return io
+        .Select(ie=>ie.Sender.ToTradingMacro())
+      .Timestamp()
+      .DistinctUntilChanged((ts1, ts2) => 
+        ts1.Value.Pair == ts2.Value.Pair &&
+        (ts1.Timestamp-ts2.Timestamp).Duration()<TimeSpan.FromSeconds(1)
+       )
+        //.Do(ts => Debug.WriteLine("Pair:{0},{1:mm:ss.fff}", (ts.Value.Sender as TradingMacro).Pair, ts.Timestamp))
+      .RemoveTimestamp()        //.Throttle(TimeSpan.FromSeconds(0.1))
+      .Subscribe(onNext);
     }
   }
 }

@@ -8,7 +8,7 @@ using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
 
-namespace HedgeHog {
+namespace HedgeHog.Schedulers {
   #region Schedulers
   public class Scheduler {
     public class TimerErrorException : EventArgs {

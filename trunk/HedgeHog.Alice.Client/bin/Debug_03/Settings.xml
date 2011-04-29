@@ -7,7 +7,7 @@
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="4" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVT]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDateStart]Text" value="4/24/2011 5:18:22 PM" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDateStart]Text" value="4/29/2011 11:37:09 AM" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="12" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDekay]Text" value="0" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVP]IsChecked" value="False" />
@@ -47,10 +47,10 @@
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.TextBox2[.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.10]IsChecked" value="True" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.11]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="False" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="644" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="38" />
-  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="1036" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="True" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="910" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="5" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="487" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Width" value="1147" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.11]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.50]IsSelected" value="True" />

@@ -19,8 +19,8 @@
         >
         <TextBlock Text="{Binding State}"/>
       </HierarchicalDataTemplate>
-      <HierarchicalDataTemplate DataType="{x:Type watin:Element}">
-        <TextBlock Text="{Binding Text}"/>
+      <HierarchicalDataTemplate DataType="{x:Type lvm:Auction}">
+        <TextBlock Text="{Binding Name}"/>
       </HierarchicalDataTemplate>
     </ResourceDictionary>
     </Window.Resources>
@@ -36,6 +36,19 @@
         <Button Command="{Binding PreSaleCommand}">PreSale</Button>
       </ToolBar>
     </ToolBarTray>
-    <TreeView HorizontalAlignment="Left" ItemsSource="{Binding States}" VerticalAlignment="Top" Grid.Row="1"/>
+    <StackPanel Grid.Row="1">
+      <ListBox ItemsSource="{Binding AuctionsToRun}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock>
+              <TextBlock Text="{Binding State}"/>:<TextBlock Text="{Binding Name}"/>
+            </TextBlock>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <TreeView Name="StateTree" HorizontalAlignment="Left" 
+                Tag="{Binding SelectedValue,RelativeSource={RelativeSource Self},Converter={x:Static Member=lvm:ToSelectedStateConverter.Default},ConverterParameter={StaticResource Locator}}"
+                ItemsSource="{Binding States}" VerticalAlignment="Top"/>
+    </StackPanel>
   </Grid>
 </Window>

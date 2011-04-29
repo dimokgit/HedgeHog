@@ -580,7 +580,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    Task _runPriceChangedInitial;
     void CoreFX_LoggedInEvent(object sender, EventArgs e) {
       try {
         if (TradingMacrosCopy.Length > 0) {
@@ -589,13 +588,19 @@ namespace HedgeHog.Alice.Client {
             vt.RatesByPair = () => GetTradingMacros().ToDictionary(tm => tm.Pair, tm => tm.RatesInternal);
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
-          tradesManager.PriceChanged += fw_PriceChanged;
+          //tradesManager.PriceChanged += fw_PriceChanged;
+          Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
+            h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
+            .GroupByUntil(g=>g.EventArgs.Pair,g=>Observable.Timer(TimeSpan.FromSeconds(1)))
+            .SubscribeOn(System.Concurrency.Scheduler.ThreadPool)
+            .Subscribe(g=>g.TakeLast(1).Subscribe(ie=>fw_PriceChanged(ie.Sender,ie.EventArgs),exc=>Log=exc),exc=>Log=exc);
           tradesManager.TradeRemoved += fw_TradeRemoved;
           tradesManager.TradeAdded += fw_TradeAdded;
           tradesManager.TradeClosed += fw_TradeClosed;
           tradesManager.OrderAdded += fw_OrderAdded;
           tradesManager.Error += fw_Error;
         }
+        List<Action> runPriceQueue = new List<Action>();
         foreach (var tm in TradingMacrosCopy) {
           InitTradingMacro(tm);
           if (!IsInVirtualTrading) {
@@ -604,17 +609,16 @@ namespace HedgeHog.Alice.Client {
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if (!IsInVirtualTrading) {
-            tm.LastTrade = tradesManager.GetLastTrade(tm.Pair);
-            tm.LoadRatesAsync();
-            Action runPrice = () =>
-              tm.RunPriceChanged(new PriceChangedEventArgs(tradesManager.GetPrice(tm.Pair), tradesManager.GetAccount(), tradesManager.GetTradesInternal(tm.Pair)), null);
-            if (_runPriceChangedInitial == null || _runPriceChangedInitial.Status == TaskStatus.RanToCompletion)
-              _runPriceChangedInitial = Task.Factory.StartNew(runPrice);
-            else
-              _runPriceChangedInitial.ContinueWith(t => runPrice);
+            var currTM = tm;
+            Task.Factory.StartNew(() => currTM.LastTrade = tradesManager.GetLastTrade(currTM.Pair));
+            tm.OnLoadRates();
+            runPriceQueue.Add(() => {
+              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, tradesManager.GetPrice(currTM.Pair), tradesManager.GetAccount(), tradesManager.GetTradesInternal(currTM.Pair)), null);
+            });
           }
           tm.SetLotSize(tradesManager.GetAccount());
         }
+        runPriceQueue.ToObservable(System.Concurrency.Scheduler.TaskPool).Subscribe(rp => rp());
         InitInstruments();
         MasterModel.CurrentLoss = CurrentLoss;
         var a = new Action(() => {

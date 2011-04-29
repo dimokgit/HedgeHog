@@ -299,8 +299,8 @@ namespace Order2GoAddIn {
         PriceChangedEvent -= value;
       }
     }
-    void OnPriceChanged(Price price,Account account,Trade[] trades) {
-      if (PriceChangedEvent != null) PriceChangedEvent(this, new PriceChangedEventArgs(price,account, trades));
+    void RaisePriceChanged(string pair, Price price,Account account,Trade[] trades) {
+      if (PriceChangedEvent != null) PriceChangedEvent(this, new PriceChangedEventArgs(pair, price, account, trades));
     }
     #endregion
 
@@ -590,7 +590,7 @@ namespace Order2GoAddIn {
       IsLoggedIn = true;
       if (e.IsInVirtualTrading) return;
       try {
-        SetTrades();
+        TradesReset();
         Subscribe();
       } catch (Exception exc) {
         IsLoggedIn = false;
@@ -674,7 +674,6 @@ namespace Order2GoAddIn {
         this.NewRates = newBars;
       }
     }
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     public void GetBarsBase<TBar>(string pair, int period, int periodsBack, DateTime startDate, DateTime endDate, List<TBar> ticks, Action<RateLoadingCallbackArgs<TBar>> callBack = null) where TBar : Rate {
       if (period >= 1) {
         startDate = startDate.Round(period);
@@ -849,11 +848,10 @@ namespace Order2GoAddIn {
     #endregion
 
     #region FX Tables
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     public Account GetAccount() {
       if (accountInternal == null) {
         accountInternal = GetAccount_Slow(false);
-        SetTrades();
+        TradesReset();
       }
       return accountInternal; 
     }
@@ -897,10 +895,10 @@ namespace Order2GoAddIn {
       accountInternal.Equity = (double)row.GetValue(FIELD_EQUITY);
       accountInternal.Hedging = row.GetValue("Hedging").ToString() == "Y";
       accountInternal.Trades = GetTrades();
-      accountInternal.StopAmount = trades.Sum(t => t.StopAmount);
-      accountInternal.LimitAmount = trades.Sum(t => t.LimitAmount);
+      accountInternal.StopAmount = accountInternal.Trades.Sum(t => t.StopAmount);
+      accountInternal.LimitAmount = accountInternal.Trades.Sum(t => t.LimitAmount);
       accountInternal.ServerTime = ServerTime;
-      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
+      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(accountInternal.Trades));
       return accountInternal;
     }
 
@@ -912,10 +910,10 @@ namespace Order2GoAddIn {
       accountInternal.Equity = row.GetDouble(FIELD_EQUITY);
       accountInternal.Hedging = row.Get("Hedging").ToString() == "Y";
       accountInternal.Trades = GetTrades();
-      accountInternal.StopAmount = trades.Sum(t => t.StopAmount);
-      accountInternal.LimitAmount = trades.Sum(t => t.LimitAmount);
+      accountInternal.StopAmount = accountInternal.Trades.Sum(t => t.StopAmount);
+      accountInternal.LimitAmount = accountInternal.Trades.Sum(t => t.LimitAmount);
       accountInternal.ServerTime = ServerTime;
-      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
+      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(accountInternal.Trades));
       return accountInternal;
     }
 
@@ -935,9 +933,7 @@ namespace Order2GoAddIn {
       var lastTrade = GetTrades().OrderBy(t => t.Id).LastOrDefault();
       if (lastTrade != null) ClosePositions(lastTrade.Buy ? 1 : 0, lastTrade.Buy ? 0 : 1);
     }
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     public void ClosePositions() { ClosePositions(0, 0); }
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     public void ClosePositions(int buyMin, int sellMin) {
       //DIMOK: Test ClosePositions(...)
       int errorCount = 3;
@@ -1135,7 +1131,6 @@ namespace Order2GoAddIn {
       return GetRows(tableName).Where(r => r.CellValue(FIELD_INSTRUMENT) + "" == pair).ToArray();
     }
     static object lockGetRows = new object();
-    [MethodImpl(MethodImplOptions.Synchronized)]
     private FXCore.RowAut[] GetRows(string tableName, bool updateTable = false) {
       if (!IsLoggedIn) return new FXCore.RowAut[0];
       //lock (lockGetRows) {
@@ -1154,27 +1149,19 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetTrades
-    object _getTradesLocker = new object();
-    Trade[] trades = new Trade[0];
-    Trade[] SetTrades() {
-      lock (_getTradesLocker) {
-        OpenTrades.Clear();
-        GetTradesInternal("").ToList().ForEach(t => OpenTrades[t.Id] = t);
-        return GetTrades();
-      }
+    public Trade[] GetTrades() {       
+      return OpenTrades.Values.ToArray(); 
     }
-    public Trade[] GetTrades() { return OpenTrades.Values.ToArray(); }
+    void TradesReset() { _OpenTrades = null; }
     public Trade GetTrade(string tradeId) { return GetTrades().Where(t => t.Id == tradeId).SingleOrDefault(); }
     public Trade GetTrade(bool buy, bool last) { return last ? GetTradeLast(buy) : GetTradeFirst(buy); }
     public Trade GetTradeFirst(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).FirstOrDefault(); }
     public Trade GetTradeLast(bool buy) { return GetTrades(buy).OrderBy(t => t.Id).LastOrDefault(); }
     public Trade[] GetTrades(bool buy) { return GetTrades().Where(t => t.Buy == buy).ToArray(); }
     public Trade[] GetTrades(string pair) { return GetTrades().ByPair(pair); }
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     public Trade[] GetTrades(string pair, bool buy) {
       return GetTrades().ByPair(pair).Where(t => t.Buy == buy).ToArray();
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
     public Trade[] GetTradesInternal(string Pair) {
       try {
         var trades = (from t in GetRows(TABLE_TRADES)
@@ -1358,7 +1345,6 @@ namespace Order2GoAddIn {
               orderby order.OrderID
               select order).ToArray();
     }
-    [MethodImpl(MethodImplOptions.Synchronized)]
     public Order[] GetOrdersInternal(string Pair) {
       try {
         return (from t in GetRows(TABLE_ORDERS)
@@ -1566,13 +1552,16 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetTables
+    static object _tablesManagerLocker = new object();
     FXCore.TablesManagerAut _tablesManager;
 
     public FXCore.TablesManagerAut TablesManager {
       get {
-        if (_tablesManager == null && IsLoggedIn)
-          _tablesManager = (FXCore.TablesManagerAut)Desk.TablesManager;
-        return IsLoggedIn ? _tablesManager : null;
+        if (!IsLoggedIn) return null;
+        lock (_tablesManagerLocker)
+          if (_tablesManager == null)
+            _tablesManager = (FXCore.TablesManagerAut)Desk.TablesManager;
+        return _tablesManager;
       }
     }
 //    Dictionary<string, int> tableIndices = new Dictionary<string, int>();
@@ -1730,12 +1719,11 @@ namespace Order2GoAddIn {
       }
     }
 
-    void FXCoreWrapper_RequestComplete(object sender, RequestEventArgs e) {
-      throw new NotImplementedException();
-    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeEntryOrderStopLimit(string orderId, double rate, bool isStop) {
       Desk.ChangeEntryOrderStopLimit(orderId, rate, isStop, 0);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderRate(Order order, double rate) {
       try {
         Desk.ChangeOrderRate(order.OrderID, rate, 0);
@@ -1752,9 +1740,11 @@ namespace Order2GoAddIn {
       } else
         Desk.ChangeOrderRate(order.OrderID, rate, 0);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderRate(string orderId, double rate) {
       Desk.ChangeOrderRate(orderId, rate, 0);
     }
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderAmount(string orderId, int lot) {
       Desk.ChangeEntryOrderAmount(orderId, lot);
     }
@@ -2128,20 +2118,29 @@ namespace Order2GoAddIn {
       try {
         object a = "", b;
         var trade = GetTrade(tradeId);
+        if (trade == null) return;
         var isBuy = trade.Buy;
         var pair = trade.Pair;
         double limitRate = takeProfit;
+        var prevRate = 0.0;
         var spreadToAdd = (isBuy ? 1 : -1) * GetCurrentPrice(pair).Spread;
+        Stopwatch sw = Stopwatch.StartNew();
         if (IsFIFO(trade.Pair)) {
           if (takeProfit == 0)
-            Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, false);
+            Desk.DeleteNetStopLimitAsync(trade.Pair, AccountID, trade.Buy, false,out a);
           else {
             try {
-              Desk.ChangeNetStopLimit(pair, AccountID, isBuy, limitRate, false, out a);
-              EntryOrdersReset();
-              Debug.WriteLine("ChangeNetLimit for " + pair);
+              var order = GetNetLimitOrder(pair);
+              if (order != null) prevRate = order.Rate;
+              else if (GetTrades(pair).Length == 0) return;
+              Desk.ChangeNetStopLimit2Async(pair, AccountID, isBuy, limitRate, false,0, out a);
             } catch (Exception exc) {
-              RaiseError(new Exception(new { pair, limitRate } + "", exc));
+              TradesReset();
+              EntryOrdersReset();
+              RaiseError(new Exception(new { pair, limitRate, prevRate } + "", exc));
+            } finally {
+              Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
+                , MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, limitRate);
             }
           }
         } else {
@@ -2155,7 +2154,6 @@ namespace Order2GoAddIn {
         }
       } catch (Exception exc) {
         RaiseError(new ErrorEventArgs(exc));
-        throw;
       }
     }
 
@@ -2168,31 +2166,43 @@ namespace Order2GoAddIn {
     /// <param name="addToCurrent"></param>
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void FixOrderSetStop(string tradeId, double stopLoss, string remark) {
-      object a = "", b;
-      var trade = GetTrade(tradeId);
-      var isBuy = trade.Buy;
-      var pair = trade.Pair;
-      var spreadToAdd = (isBuy ? -1 : 1) * GetCurrentPrice(pair).Spread;
-      double stopRate = stopLoss;
-      if (IsFIFO(trade.Pair)) {
-        if (stopLoss == 0)
-          Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, true);
-        else {
-          try {
-            Desk.ChangeNetStopLimit(pair, AccountID, isBuy, stopRate, true, out a);
-            EntryOrdersReset();
-            Debug.WriteLine("ChangeNetStop for " + pair);
-          } catch (Exception exc) {
-            RaiseError(new Exception(new { pair, stopRate } + "", exc));
+      try {
+        object a = "", b;
+        var trade = GetTrade(tradeId);
+        if (trade == null) return;
+        var isBuy = trade.Buy;
+        var pair = trade.Pair;
+        var spreadToAdd = (isBuy ? -1 : 1) * GetCurrentPrice(pair).Spread;
+        var prevRate = 0.0;
+        double stopRate = stopLoss;
+        Stopwatch sw = Stopwatch.StartNew();
+        if (IsFIFO(trade.Pair)) {
+          if (stopLoss == 0)
+            Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, true);
+          else {
+            try {
+              var prevOrder = GetNetStopOrder(pair);
+              if (prevOrder != null) prevRate = prevOrder.Rate;
+              Desk.ChangeNetStopLimit2Async(pair, AccountID, isBuy, stopRate, true, 0, out a);
+            } catch (Exception exc) {
+              TradesReset();
+              EntryOrdersReset();
+              RaiseError(new Exception(new { pair, stopRate, prevRate } + "", exc));
+            } finally {
+              Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
+                , MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, pair, prevRate, stopRate);
+            }
+          }
+        } else {
+          stopRate = GetTrades(pair).NetOpen() + spreadToAdd + stopLoss;
+          if (stopLoss == 0)
+            Desk.DeleteTradeStopLimit(tradeId, true);
+          else {
+            Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopRate, 0, "", "", "", true, 0, remark, out a, out b);
           }
         }
-      } else {
-        stopRate = GetTrades(pair).NetOpen() + spreadToAdd + stopLoss;
-        if (stopLoss == 0)
-          Desk.DeleteTradeStopLimit(tradeId, true);
-        else {
-          Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopRate, 0, "", "", "", true, 0, remark, out a, out b);
-        }
+      } catch (Exception exc) {
+        RaiseError(exc);
       }
     }
 
@@ -2365,24 +2375,30 @@ namespace Order2GoAddIn {
       _entryOrders = null;
       return GetEntryOrders(pair);
     }
+    static object _entryOrdersLocker = new object();
     Dictionary<string, Order> _entryOrders;
     Dictionary<string, Order> EntryOrders {
       get {
-        if (_entryOrders == null)
-          _entryOrders = new Dictionary<string, Order>(GetOrdersInternal("").ToDictionary(o => o.OrderID, o => o));
-        return _entryOrders;
+        lock (_entryOrdersLocker) {
+          if (_entryOrders == null)
+            _entryOrders = GetOrdersInternal("").ToDictionary(o => o.OrderID, o => o);
+          return _entryOrders;
+        }
       }
     }
     void EntryOrdersReset() {
       _entryOrders = null;
     }
 
+    static object _OpenTradesLocker = new object();
     Dictionary<string, Trade> _OpenTrades;
     Dictionary<string, Trade> OpenTrades {
       get {
-        if (_OpenTrades == null)
-          _OpenTrades = new Dictionary<string, Trade>(GetTradesInternal("").ToDictionary(o => o.Id, o => o));
-        return _OpenTrades;
+        lock (_OpenTradesLocker) {
+          if (_OpenTrades == null)
+            _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+          return _OpenTrades;
+        }
       }
     }
     void OpenTradesReset(){_OpenTrades = null;}
@@ -2404,8 +2420,8 @@ namespace Order2GoAddIn {
         switch (table.Type.ToLower()) {
           #region Trades
           case "trades": {
+              TradesReset();
               var tradeParsed = InitTrade(new NameValueParser(rowText));
-              OpenTrades[RowID] = tradeParsed;
               RaiseTradeAdded(tradeParsed);
               break;
               #region Pending Stuff
@@ -2442,9 +2458,9 @@ namespace Order2GoAddIn {
             break;
           #endregion
           #region Orders
-          case "orders":
+          case TABLE_ORDERS:
+            EntryOrdersReset();
             var order = InitOrder(rowText);
-            EntryOrders[RowID] = order;
             RaiseOrderAdded(order);
             var poOrder = PendingOrders.SingleOrDefault(o => o.RequestId == order.RequestID);
             if (poOrder != null) {
@@ -2471,8 +2487,7 @@ namespace Order2GoAddIn {
             break;
           #endregion
           case "closed trades": {
-              OpenTradesReset();
-              OpenTrades_Remove(RowID);
+              TradesReset();
               row = table.FindRow(FIELD_TRADEID, RowID, 0) as FXCore.RowAut;
               var trade = InitClosedTrade(row);
               RaiseTradeClosed(trade);
@@ -2498,7 +2513,7 @@ namespace Order2GoAddIn {
           case "offers":
             var price = GetPrice(new NameValueParser(rowText));
             SetCurrentPrice(price);
-            OnPriceChanged(price,GetAccount(),GetTrades());
+            RaisePriceChanged(price.Pair, price,GetAccount(),GetTrades());
             break;
           case TABLE_ACCOUNTS:
             GetAccount(new NameValueParser(rowText));
@@ -2525,7 +2540,7 @@ namespace Order2GoAddIn {
         //var po = PendingOrders.SingleOrDefault(o => o.RequestId == sRequestID);
         //if (po != null && !po.HasKids(PendingOrders)) 
         //  RemovePendingOrder(po);
-        OpenTradesReset();
+        TradesReset();
         EntryOrdersReset();
         var order = GetOrdersInternal("").SingleOrDefault(o => o.RequestID == sRequestID);
         if (order != null) EntryOrders[order.OrderID] = order;
@@ -2533,13 +2548,15 @@ namespace Order2GoAddIn {
       } catch (Exception exc) {
         RaiseError(exc);
       }
+      AsyncReset();
     }
 
     void mSink_ITradeDeskEvents_Event_OnRequestFailed(string sRequestID, string sError) {
-      OpenTradesReset();
+      TradesReset();
       EntryOrdersReset();
       OnRequestFailed(sRequestID, sError);
       RemovePendingOrder(PendingOrders.SingleOrDefault(po => po.RequestId == sRequestID));
+      AsyncReset();
     }
     void mSink_ITradeDeskEvents_Event_OnSessionStatusChanged(string sStatus) {
       var status = (TradingServerSessionStatus)Enum.Parse(typeof(TradingServerSessionStatus), sStatus);
@@ -2550,16 +2567,15 @@ namespace Order2GoAddIn {
       } else
         IsLoggedIn = false;
       RaiseSessionStatusChanged(status);
+      AsyncReset();
     }
 
 
     void mSink_ITradeDeskEvents_Event_OnRowBeforeRemoveEx(object _table, string RowID, string sExtInfo) {
       try {
-        OpenTradesReset();
+        TradesReset();
         EntryOrdersReset();
         FXCore.TableAut table = _table as FXCore.TableAut;
-        Dictionary<string, string> fields = parse(sExtInfo);
-        FXCore.ParserAut parser = Desk.GetParser() as FXCore.ParserAut;
         switch (table.Type.ToLower()) {
           case TABLE_TRADES:
             try {
@@ -2574,7 +2590,7 @@ namespace Order2GoAddIn {
             try {
               EntryOrders.Remove(RowID);
               var order = InitOrder(sExtInfo);
-              SetTrades();
+              TradesReset();
               RaiseOrderRemoved(order);
             } catch (Exception exc) {
               Debug.Fail(exc + "");
@@ -2584,6 +2600,14 @@ namespace Order2GoAddIn {
       } catch (Exception exc) {
         RaiseError(exc);
       }
+      AsyncReset();
+    }
+
+    private void AsyncReset() {
+      Task.Factory.StartNew(() => {
+        TradesReset();
+        EntryOrdersReset();
+      });
     }
     #endregion
 
@@ -2737,7 +2761,6 @@ namespace Order2GoAddIn {
     public DateTime ServerTimeCached { get; set; }
     public DateTime ServerTime { get { return ServerTimeCached = CoreFX.ServerTime; } }
     static object converterLocker = new object();
-    //[MethodImpl(MethodImplOptions.Synchronized)]
     DateTime ConvertDateToLocal(DateTime date) {
       return TimeZoneInfo.ConvertTimeFromUtc(date,TimeZoneInfo.Local);
     }

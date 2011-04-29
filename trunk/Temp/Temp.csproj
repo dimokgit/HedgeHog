@@ -59,7 +59,9 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.CoreEx, Version=1.0.2856.104, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Reactive, Version=1.0.2856.104, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.Xaml" />
@@ -207,6 +209,14 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight %28NET4%29\GalaSoft.MvvmLight %28NET4%29.csproj">
+      <Project>{E8EF2656-7165-42D1-9C46-63E66679808D}</Project>
+      <Name>GalaSoft.MvvmLight %28NET4%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras %28NET4%29\GalaSoft.MvvmLight.Extras %28NET4%29.csproj">
+      <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
+      <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DynamicDataDisplay\DynamicDataDisplay.csproj">
       <Project>{ECD37682-DF7E-409F-912D-0965634556B5}</Project>
       <Name>DynamicDataDisplay</Name>
