@@ -24,7 +24,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     private string logFileName = "Log.txt";
     protected bool isInDesign { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     public int TargetInPips { get; set; }
-    ThreadScheduler syncronizeScheduler;
+    Schedulers.ThreadScheduler syncronizeScheduler;
     #endregion
 
     TradingAccountModel _accountModel = new TradingAccountModel();
@@ -55,7 +55,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     }
 
     void value_SlaveLoginRequestEvent(object sender, EventArgs e) {
-      new ThreadScheduler((s, ev) => Log = ev.Exception).Command = () => Login();
+      new Schedulers.ThreadScheduler((s, ev) => Log = ev.Exception).Command = () => Login();
     }
 
     void value_MasterListChangedEvent(object sender, MasterListChangedEventArgs e) {
@@ -210,7 +210,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
               var locatTrade = localTrades().FirstOrDefault(lt => lt.MasterTradeId() == serverTrade.Id);
               if (locatTrade != null) {
                 var stop = GetMasterStop(serverTrade, AliceMode);
-                new ThreadScheduler().Command = () => fwLocal.FixOrderSetStop(locatTrade.Id, stop, serverTrade.Id);
+                new Schedulers.ThreadScheduler().Command = () => fwLocal.FixOrderSetStop(locatTrade.Id, stop, serverTrade.Id);
               }
             }
           }
@@ -232,7 +232,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
               var locatTrade = localTrades().FirstOrDefault(lt => lt.MasterTradeId() == serverTrade.Id);
               if (locatTrade != null) {
                 var limit = GetMasterLimit(serverTrade, AliceMode);
-                new ThreadScheduler().Command = () => fwLocal.FixOrderSetLimit(locatTrade.Id, limit, serverTrade.Id);
+                new Schedulers.ThreadScheduler().Command = () => fwLocal.FixOrderSetLimit(locatTrade.Id, limit, serverTrade.Id);
               }
             }
           }
@@ -307,7 +307,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       return aliceMode == AliceModes.Wonderland ? masterTrade.Limit : masterTrade.Stop;
     }
 
-    ThreadSchedulersDispenser OpenTradeSchedulers = new ThreadSchedulersDispenser();
+    Schedulers.ThreadSchedulersDispenser OpenTradeSchedulers = new Schedulers.ThreadSchedulersDispenser();
     void OpenTrade(FXW fw, string pair, bool buy, int lots, double limit, double stop, Trade masterTrade) {
       string serverTradeID = masterTrade.Id;
       Func<string, bool> tradeExists = id => fw.GetTrade(serverTradeID) != null;
@@ -377,7 +377,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     TradeRequestManager tradeRequestManager;
     SlaveAccountModel() {
       if (!isInDesign)
-        syncronizeScheduler = new ThreadScheduler((s, e) => Log = e.Exception);
+        syncronizeScheduler = new Schedulers.ThreadScheduler((s, e) => Log = e.Exception);
 
       LocalTradesList = new ListCollectionView(LocalTrades = new ObservableCollection<Trade>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());

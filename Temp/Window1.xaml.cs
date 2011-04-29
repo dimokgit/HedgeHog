@@ -28,7 +28,7 @@ namespace Temp {
   /// </summary>
   public partial class Window1 : HedgeHog.Models.WindowModel {
     FXW fw { get { return Temp.App.fw; } }
-  ThreadScheduler statsScheduler;
+    HedgeHog.Schedulers.ThreadScheduler statsScheduler;
     List<Rate> rates = new List<Rate>();
     ObservableCollection<string> instruments { get; set; }
     public ListCollectionView Instruments { get; set; }
@@ -58,7 +58,7 @@ namespace Temp {
       else {
         fw.PendingOrderCompleted += fw_PendingOrderCompleted;
         fw.TradeAdded += fw_TradeAdded;
-        statsScheduler = new ThreadScheduler(TimeSpan.FromSeconds(10),TimeSpan.FromMinutes(0.1), () => Corridor(), (s, e) => AddLog(e.Exception.Message));
+        statsScheduler = new HedgeHog.Schedulers.ThreadScheduler(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(0.1), () => Corridor(), (s, e) => AddLog(e.Exception.Message));
         fw.GetOffers().Select(o => o.Pair).ToList().ForEach(i => instruments.Add(i));
         Instruments.MoveCurrentToFirst();
         charter = new Corridors();
@@ -110,7 +110,7 @@ namespace Temp {
         CorridorStatistics corridorStats = null;// rates.ScanCorridornesses(CorridorIterations, rates.GetCorridornesses(UseStDev, 30, 180), CorridorIterations, 0);
         var corridorMinutes = corridorStats.Periods * Period;
         AddLog("Chart Corridor["+corridorStats.Periods+"] minutes.");
-        new Scheduler(charter.Dispatcher).Command = () =>
+        new HedgeHog.Schedulers.Scheduler(charter.Dispatcher).Command = () =>
           charter.AddTicks(null, rates, null, 0, 0, 0, 0, 0, 0, rates.Last().StartDate.AddMinutes(-corridorStats.Periods*Period), DateTime.MinValue, new double[0]);
       }
     }
@@ -136,7 +136,7 @@ namespace Temp {
         }
         var rsi = ratesToChart.Select(t => new Volt() { Volts = t.PriceRsi.GetValueOrDefault(), StartDate = t.StartDate }).ToList();
         AddLog("Chart.");
-        new Scheduler(charter.Dispatcher).Command = () =>
+        new HedgeHog.Schedulers.Scheduler(charter.Dispatcher).Command = () =>
           charter.AddTicks(null, ratesToChart, rsi, rsiStats.Sell, rsiStats.Buy, rsiStats.SellAverage, rsiStats.BuyAverage, 0, 0, DateTime.MinValue, DateTime.MinValue, new double[0]);
         AddLog("Done.");
         return;

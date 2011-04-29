@@ -77,6 +77,8 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
+    <Compile Include="KeyEqualityComparer.cs" />
+    <Compile Include="LambdaComparer.cs" />
     <Compile Include="MEF.cs" />
     <Compile Include="NameValueParser.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
@@ -84,6 +86,7 @@
     <Compile Include="DataPoint.cs" />
     <Compile Include="DateTimeExtender.cs" />
     <Compile Include="Lib.cs" />
+    <Compile Include="ObservableExtensions.cs" />
     <Compile Include="PropertyObserver.cs" />
     <Compile Include="Schedulers\TaskScheduler.cs" />
     <Compile Include="SimpleCommand.cs" />

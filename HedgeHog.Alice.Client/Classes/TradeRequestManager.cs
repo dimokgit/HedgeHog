@@ -19,11 +19,11 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Ctor
-    ThreadScheduler openQueueScheduler;
+    Schedulers.ThreadScheduler openQueueScheduler;
     public FXW fw { get; set; }
     public TradeRequestManager(FXW fw) {
       this.fw = fw;
-      openQueueScheduler = new ThreadScheduler((s, e) => RaiseTradeRequestManagerEvent(e.Exception));
+      openQueueScheduler = new Schedulers.ThreadScheduler((s, e) => RaiseTradeRequestManagerEvent(e.Exception));
     }
     #endregion
 

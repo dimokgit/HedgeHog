@@ -90,7 +90,7 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.OriginalBalance,
       () => accountRow.OriginalProfit
         );
-      if (ProfitPercent >= 1) RaiseCloseAllTrades();
+      if (OriginalProfit >= .001) RaiseCloseAllTrades();
     }
 
     public bool HasProfit { get { return Gross > 0; } }

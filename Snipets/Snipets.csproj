@@ -45,6 +45,7 @@
   <ItemGroup>
     <None Include="cmdrekay.snippet" />
     <None Include="dimokevent.snippet" />
+    <None Include="dimokSubject.snippet" />
     <None Include="dimoktrycatchlog.snippet" />
     <None Include="listcollview.snippet" />
     <None Include="mvvmInpcProperty.snippet" />

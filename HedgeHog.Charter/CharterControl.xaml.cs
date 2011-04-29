@@ -393,7 +393,7 @@ namespace HedgeHog {
       }
     }
 
-    Scheduler GannAngleChangedScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.1));
+    Schedulers.Scheduler GannAngleChangedScheduler = new Schedulers.Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.1));
     void _GannAngleOffsetPoint_PositionChanged(object sender, PositionChangedEventArgs e) {
       var offset = GannAngleOffsetPoint.GetAngleByPosition(e.Position, animatedTimeX.ToArray(), ConvertToDateTime);
       //GannAngleOffsetPoint.ToolTip = string.Format("Tangent:{0}", offset);
@@ -422,7 +422,7 @@ namespace HedgeHog {
           //_CorridorStartPointX.GotFocus += new RoutedEventHandler(_CorridorStartPointX_GotFocus);
           //_CorridorStartPointX.KeyDown += new KeyEventHandler(DraggablePoint_KeyDown);
 
-          corridorStartDateScheduler = new ThreadScheduler(OnCorridorStartPositionChanged, (s, e) => { });
+          corridorStartDateScheduler = new Schedulers.ThreadScheduler(OnCorridorStartPositionChanged, (s, e) => { });
         }
         return _CorridorStartPointX;
       }
@@ -809,7 +809,7 @@ namespace HedgeHog {
       var x = animatedTimeX.OrderBy(d => (d - startDateContinuous).Duration()).First();
       return animatedTime0X[animatedTimeX.IndexOf(x)];
     }
-    ThreadScheduler corridorStartDateScheduler;
+    Schedulers.ThreadScheduler corridorStartDateScheduler;
     void CorridorStartPointX_IsMouseCapturedChanged(object sender, DependencyPropertyChangedEventArgs e) {
       if ((bool)e.NewValue) CorridorStartPositionOld = GetPriceStartDate(dateAxis.ConvertFromDouble(CorridorStartPointX.Position.X));
       else if (CorridorStartPositionChanged != null && !corridorStartDateScheduler.IsRunning) {
@@ -850,7 +850,7 @@ namespace HedgeHog {
       CorridorStartPositionChanged(this, new CorridorPositionChangedEventArgs(x, CorridorStartPositionOld));
     }
 
-    Scheduler _suppResChangeScheduler = new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.3));
+    Schedulers.Scheduler _suppResChangeScheduler = new Schedulers.Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.3));
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
     protected void OnSupportResistanceChanged(DraggablePoint dp, Guid uid, Point positionOld, Point positionNew) {
       var isMouseCaptured = dp.IsMouseCaptured;

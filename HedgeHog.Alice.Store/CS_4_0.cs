@@ -1991,6 +1991,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SuppRes"/></summary>
         public const string SuppRes = "SuppRes";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaxLotByTakeProfitRatio_"/></summary>
+        public const string MaxLotByTakeProfitRatio_ = "MaxLotByTakeProfitRatio_";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCountMinimum_"/></summary>
         public const string CorridorCrossesCountMinimum_ = "CorridorCrossesCountMinimum_";
 
@@ -3284,9 +3287,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInPlayback"/></summary>
         public const string IsInPlayback = "IsInPlayback";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridorScheduler"/></summary>
-        public const string ScanCorridorScheduler = "ScanCorridorScheduler";
-
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.bgWorkers"/></summary>
         public const string bgWorkers = "bgWorkers";
 
@@ -3302,104 +3302,59 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrderAllowedLot"/></summary>
         public const string EntryOrderAllowedLot = "EntryOrderAllowedLot";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._entryOrdersTasker"/></summary>
-        public const string _entryOrdersTasker = "_entryOrdersTasker";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.THROTTLE_INTERVAL"/></summary>
+        public const string THROTTLE_INTERVAL = "THROTTLE_INTERVAL";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersTasker"/></summary>
-        public const string EntryOrdersTasker = "EntryOrdersTasker";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubjectLocker"/></summary>
+        public const string _LoadRatesSubjectLocker = "_LoadRatesSubjectLocker";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevelsDispatcher"/></summary>
-        public static class SetEntryOrdersBySuppResLevelsDispatcherMetadata
-        {
-            
-        }
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubject"/></summary>
+        public const string _LoadRatesSubject = "_LoadRatesSubject";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevelsQueue"/></summary>
-        public const string SetEntryOrdersBySuppResLevelsQueue = "SetEntryOrdersBySuppResLevelsQueue";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
+        public const string LoadRatesSubject = "LoadRatesSubject";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustDispatcher"/></summary>
-        public static class EntryOrdersAdjustDispatcherMetadata
-        {
-            
-        }
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._loadRatesInitialized"/></summary>
+        public const string _loadRatesInitialized = "_loadRatesInitialized";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustQueue"/></summary>
-        public const string EntryOrdersAdjustQueue = "EntryOrdersAdjustQueue";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnLoadRates"/></summary>
+        public const string OnLoadRates = "OnLoadRates";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.SetStopLimitsDispatcher"/></summary>
-        public static class SetStopLimitsDispatcherMetadata
-        {
-            
-        }
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubjectLocker"/></summary>
+        public const string _EntryOrdersAdjustSubjectLocker = "_EntryOrdersAdjustSubjectLocker";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.SetStopLimitsQueue"/></summary>
-        public const string SetStopLimitsQueue = "SetStopLimitsQueue";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubject"/></summary>
+        public const string _EntryOrdersAdjustSubject = "_EntryOrdersAdjustSubject";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevels"/></summary>
-        public const string SetEntryOrdersBySuppResLevels = "SetEntryOrdersBySuppResLevels";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
+        public const string EntryOrdersAdjustSubject = "EntryOrdersAdjustSubject";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetFXWraper"/></summary>
-        public const string GetFXWraper = "GetFXWraper";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnEntryOrdersAdjust"/></summary>
+        public const string OnEntryOrdersAdjust = "OnEntryOrdersAdjust";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetStopLimits"/></summary>
-        public const string SetStopLimits = "SetStopLimits";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubjectLocker"/></summary>
+        public const string _DeleteOrderSubjectLocker = "_DeleteOrderSubjectLocker";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.SetRateDispatcher"/></summary>
-        public static class SetRateDispatcherMetadata
-        {
-                        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetRateDispatcher.Add"/></summary>
-            public const string Add = "Add";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubject"/></summary>
+        public const string _DeleteOrderSubject = "_DeleteOrderSubject";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
+        public const string DeleteOrderSubject = "DeleteOrderSubject";
 
-        }
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnDeletingOrder"/></summary>
+        public const string OnDeletingOrder = "OnDeletingOrder";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SSRDLock"/></summary>
-        public const string _SSRDLock = "_SSRDLock";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._setNetSubjectLocker"/></summary>
+        public const string _setNetSubjectLocker = "_setNetSubjectLocker";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SSRD"/></summary>
-        public const string _SSRD = "_SSRD";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SettingStopLimits"/></summary>
+        public const string _SettingStopLimits = "_SettingStopLimits";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SSRD"/></summary>
-        public const string SSRD = "SSRD";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
+        public const string SettingStopLimits = "SettingStopLimits";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SLRDLock"/></summary>
-        public const string _SLRDLock = "_SLRDLock";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SLRD"/></summary>
-        public const string _SLRD = "_SLRD";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SLRD"/></summary>
-        public const string SLRD = "SLRD";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.FailTradesManager"/></summary>
-        public const string FailTradesManager = "FailTradesManager";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetNetStopLimit"/></summary>
-        public const string SetNetStopLimit = "SetNetStopLimit";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.TradingMacroActionDispatcher"/></summary>
-        public static class TradingMacroActionDispatcherMetadata
-        {
-            
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrderAdjustQueue"/></summary>
-        public const string EntryOrderAdjustQueue = "EntryOrderAdjustQueue";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.SetNetStopLimitQueue"/></summary>
-        public const string SetNetStopLimitQueue = "SetNetStopLimitQueue";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjust"/></summary>
-        public const string EntryOrdersAdjust = "EntryOrdersAdjust";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAddRemove"/></summary>
-        public const string EntryOrdersAddRemove = "EntryOrdersAddRemove";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrders"/></summary>
-        public const string GetEntryOrders = "GetEntryOrders";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrder"/></summary>
-        public const string GetEntryOrder = "GetEntryOrder";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnSettingStopLimits"/></summary>
+        public const string OnSettingStopLimits = "OnSettingStopLimits";
 
         /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper"/></summary>
         public static class CreateEntryOrderHelperMetadata
@@ -3431,44 +3386,35 @@ namespace HedgeHog.Alice.Store.Metadata
 
         }
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderDispatcher"/></summary>
-        public static class CreateEntryOrderDispatcherMetadata
-        {
-                        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderDispatcher.Add"/></summary>
-            public const string Add = "Add";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CreateEntryOrderSubject"/></summary>
+        public const string _CreateEntryOrderSubject = "_CreateEntryOrderSubject";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
+        public const string CreateEntryOrderSubject = "CreateEntryOrderSubject";
 
-        }
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnCreateEntryOrder"/></summary>
+        public const string OnCreateEntryOrder = "OnCreateEntryOrder";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ceodLock"/></summary>
-        public const string _ceodLock = "_ceodLock";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevels"/></summary>
+        public const string SetEntryOrdersBySuppResLevels = "SetEntryOrdersBySuppResLevels";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ceod"/></summary>
-        public const string _ceod = "_ceod";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetFXWraper"/></summary>
+        public const string GetFXWraper = "GetFXWraper";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderQueue"/></summary>
-        public const string CreateEntryOrderQueue = "CreateEntryOrderQueue";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetNetStopLimit"/></summary>
+        public const string SetNetStopLimit = "SetNetStopLimit";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderDispatcher"/></summary>
-        public static class DeleteOrderDispatcherMetadata
-        {
-                        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderDispatcher.Add"/></summary>
-            public const string Add = "Add";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.FailTradesManager"/></summary>
+        public const string FailTradesManager = "FailTradesManager";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjust"/></summary>
+        public const string EntryOrdersAdjust = "EntryOrdersAdjust";
 
-        }
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrders"/></summary>
+        public const string GetEntryOrders = "GetEntryOrders";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._dodLock"/></summary>
-        public const string _dodLock = "_dodLock";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._dod"/></summary>
-        public const string _dod = "_dod";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderQueue"/></summary>
-        public const string DeleteOrderQueue = "DeleteOrderQueue";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.afterScanTaskDispenser"/></summary>
-        public const string afterScanTaskDispenser = "afterScanTaskDispenser";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrder"/></summary>
+        public const string GetEntryOrder = "GetEntryOrder";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._runPriceChangedTasker"/></summary>
         public const string _runPriceChangedTasker = "_runPriceChangedTasker";
@@ -3632,21 +3578,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._limitBarToRateProvider"/></summary>
         public const string _limitBarToRateProvider = "_limitBarToRateProvider";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._loadRatesTasker"/></summary>
-        public const string _loadRatesTasker = "_loadRatesTasker";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesAsync"/></summary>
-        public const string LoadRatesAsync = "LoadRatesAsync";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.BlockingLoader"/></summary>
-        public static class BlockingLoaderMetadata
-        {
-            
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.bl"/></summary>
-        public const string bl = "bl";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRates"/></summary>
         public const string LoadRates = "LoadRates";
 
@@ -3685,6 +3616,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.HideInfoTootipAsync"/></summary>
         public const string HideInfoTootipAsync = "HideInfoTootipAsync";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.DefferedRun{T}"/></summary>
+        public const string DefferedRun = "DefferedRun";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ShowInfoTootipAsync"/></summary>
         public const string ShowInfoTootipAsync = "ShowInfoTootipAsync";
@@ -3920,6 +3854,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SuppRes"/></summary>
         public static PropertyPath SuppResPath { get { return new PropertyPath("SuppRes"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaxLotByTakeProfitRatio_"/></summary>
+        public static PropertyPath MaxLotByTakeProfitRatio_Path { get { return new PropertyPath("MaxLotByTakeProfitRatio_"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCountMinimum_"/></summary>
         public static PropertyPath CorridorCrossesCountMinimum_Path { get { return new PropertyPath("CorridorCrossesCountMinimum_"); } }
@@ -4551,20 +4488,20 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CanDoEntryOrders"/></summary>
         public static PropertyPath CanDoEntryOrdersPath { get { return new PropertyPath("CanDoEntryOrders"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersTasker"/></summary>
-        public static PropertyPath EntryOrdersTaskerPath { get { return new PropertyPath("EntryOrdersTasker"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
+        public static PropertyPath LoadRatesSubjectPath { get { return new PropertyPath("LoadRatesSubject"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SSRD"/></summary>
-        public static PropertyPath SSRDPath { get { return new PropertyPath("SSRD"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
+        public static PropertyPath EntryOrdersAdjustSubjectPath { get { return new PropertyPath("EntryOrdersAdjustSubject"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SLRD"/></summary>
-        public static PropertyPath SLRDPath { get { return new PropertyPath("SLRD"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
+        public static PropertyPath DeleteOrderSubjectPath { get { return new PropertyPath("DeleteOrderSubject"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderQueue"/></summary>
-        public static PropertyPath CreateEntryOrderQueuePath { get { return new PropertyPath("CreateEntryOrderQueue"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
+        public static PropertyPath SettingStopLimitsPath { get { return new PropertyPath("SettingStopLimits"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderQueue"/></summary>
-        public static PropertyPath DeleteOrderQueuePath { get { return new PropertyPath("DeleteOrderQueue"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
+        public static PropertyPath CreateEntryOrderSubjectPath { get { return new PropertyPath("CreateEntryOrderSubject"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.GannAnglesResetCommand"/></summary>
         public static PropertyPath GannAnglesResetCommandPath { get { return new PropertyPath("GannAnglesResetCommand"); } }
@@ -4685,6 +4622,18 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.ActiveAngles"/></summary>
         public static PropertyPath ActiveAnglesPath { get { return new PropertyPath("ActiveAngles"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacroEx"/></summary>
+    public static class TradingMacroExMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacroEx.ToTradingMacro"/></summary>
+        public const string ToTradingMacro = "ToTradingMacro";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacroEx.SubscribeToTradingMacroEvent"/></summary>
+        public const string SubscribeToTradingMacroEvent = "SubscribeToTradingMacroEvent";
+
 
     }
 

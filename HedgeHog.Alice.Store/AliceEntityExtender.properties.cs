@@ -115,6 +115,18 @@ namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
 
+
+    [DisplayName("MaxLot By TakeProfit Ratio")]
+    [Description("MaxLotSize < LotSize*N")]
+    [Category(categoryTrading)]
+    public double MaxLotByTakeProfitRatio_ {
+      get { return MaxLotByTakeProfitRatio; }
+      set {
+        MaxLotByTakeProfitRatio = value;
+        OnPropertyChanged(TradingMacroMetadata.MaxLotByTakeProfitRatio_);
+      }
+    }
+
     [DisplayName("Corridor Crosses Count")]
     [Description("Corridor Crosses Count Minimum")]
     [Category(categoryCorridor)]
@@ -122,7 +134,7 @@ namespace HedgeHog.Alice.Store {
       get { return CorridorCrossesCountMinimum; }
       set {
         CorridorCrossesCountMinimum = value;
-        OnPropertyChanged("CorridorCrossesCountMinimum_");
+        OnPropertyChanged(TradingMacroMetadata.CorridorCrossesCountMinimum_);
       }
     }
 
@@ -301,7 +313,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryTrading)]
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
-      set { ReverseStrategy = value; }
+      set {
+        if (ReverseStrategy == value) return;
+        ReverseStrategy = value;
+        OnPropertyChanged(Metadata.TradingMacroMetadata.ReverseStrategy_);
+      }
     }
 
 

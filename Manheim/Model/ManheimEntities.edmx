@@ -93,7 +93,7 @@
           <Property Name="Make" Type="varchar" Nullable="false" MaxLength="50" />
           <Property Name="Model" Type="varchar" Nullable="false" MaxLength="50" />
           <Property Name="BodyStyle" Type="varchar" MaxLength="50" />
-          <Property Name="TrimLevel" Type="varchar" MaxLength="10" />
+          <Property Name="TrimLevel" Type="varchar" MaxLength="50" />
           <Property Name="VehicleType" Type="varchar" MaxLength="50" />
           <Property Name="Doors" Type="int" />
           <Property Name="Color" Type="varchar" MaxLength="50" />
@@ -118,6 +118,7 @@
           <Property Name="Options" Type="varchar" MaxLength="1024" />
           <Property Name="StatusId" Type="int" Nullable="false" />
           <Property Name="MMR" Type="int" />
+          <Property Name="Grade" Type="float" />
         </EntityType>
         <EntityType Name="VehicleStatus">
           <Key>
@@ -344,6 +345,7 @@
           <Property Type="String" Name="WindowSticker" MaxLength="50" FixedLength="false" Unicode="false" />
           <Property Type="Int32" Name="Cylinders" />
           <Property Type="Int32" Name="MMR" />
+          <Property Type="Double" Name="Grade" />
         </EntityType>
         <EntityType Name="VehicleStatus">
           <Key>
@@ -460,6 +462,7 @@
           <EntitySetMapping Name="Vehicles">
             <EntityTypeMapping TypeName="ManheimModel.Vehicle">
               <MappingFragment StoreEntitySet="Vehicle">
+                <ScalarProperty Name="Grade" ColumnName="Grade" />
                 <ScalarProperty Name="MMR" ColumnName="MMR" />
                 <ScalarProperty Name="Cylinders" ColumnName="Cylinders" />
                 <ScalarProperty Name="WindowSticker" ColumnName="WindowSticker" />

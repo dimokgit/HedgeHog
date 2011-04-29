@@ -17,6 +17,7 @@
              mc:Ignorable="d" 
 >
   <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
       <Setter Property="VerticalAlignment" Value="Top"/>
       <Setter Property="HorizontalAlignment" Value="Left"/>
@@ -38,8 +39,10 @@
           </TextBlock.InputBindings>
           </TextBlock>
           <!--<LineBreak/>-->
-        <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
-          <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
+          <TextBlock Visibility="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource AncestorType=DataGrid},Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
+            <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
+          </TextBlock>
         </TextBlock>
         <Popup IsOpen="{Binding ShowProperties}">
           <Popup.InputBindings>
@@ -79,7 +82,7 @@
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}}"
+              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}"
                          FontWeight="{Binding IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -88,7 +91,7 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}}"
+              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}"
                          FontWeight="{Binding IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>

@@ -163,7 +163,7 @@ namespace HedgeHog.Shared {
         var newTrade = trade.Clone();
         newTrade.Lots = trade.Lots - lot;
         newTrade.Id = NewTradeId() + "";
-        var e = new PriceChangedEventArgs(price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
+        var e = new PriceChangedEventArgs(trade.Pair, price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
         newTrade.UpdateByPrice(this,e);
         tradesOpened.Add(newTrade);
         trade.Lots = lot;
@@ -264,10 +264,10 @@ namespace HedgeHog.Shared {
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair,Rate rate) {
-      RaisePriceChanged(new Price(pair, rate, ServerTime, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
+      RaisePriceChanged(pair,new Price(pair, rate, ServerTime, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
     }
-    public void RaisePriceChanged(Price price,Trade[] trades) {
-      if (PriceChanged != null) PriceChanged(this, new PriceChangedEventArgs(price,GetAccount(), trades));
+    public void RaisePriceChanged(string pair, Price price,Trade[] trades) {
+      if (PriceChanged != null) PriceChanged(this, new PriceChangedEventArgs(pair,price,GetAccount(), trades));
     }
 
     public event EventHandler<TradeEventArgs> TradeAdded;

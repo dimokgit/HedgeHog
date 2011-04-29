@@ -175,7 +175,7 @@ namespace Temp {
     void Waver_Loaded(object sender, RoutedEventArgs e) {
     }
     void Waver_Unloaded(object sender, RoutedEventArgs e) {
-      fw.LogOff();
+      fw.CoreFX.Logout();
       if (App.Current.ShutdownMode == ShutdownMode.OnExplicitShutdown)
         App.Current.Shutdown();
     }

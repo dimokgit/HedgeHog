@@ -12,13 +12,37 @@ using System.Linq;
 using System.Data.Objects.DataClasses;
 using HedgeHog;
 using System.Globalization;
+using System.Windows.Data;
+using System.Collections.Specialized;
+using System.Concurrency;
 namespace Manheim.ViewModel {
+  public class ToSelectedStateConverter : IValueConverter {
+    private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
+    public static ToSelectedStateConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      var vml = parameter as Manheim.ViewModel.ViewModelLocator;
+      if (vml != null)
+        vml.Main.SelectedAuction = value;
+      return value;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      var dc = parameter as Manheim.ViewModel.MainViewModel;
+      if(dc !=null)
+        dc.SelectedAuction = value;
+      return value;
+    }
+  }
   public class Auction {
+    public string State { get; set; }
     public string Name { get; set; }
     public string Url { get; set; }
-    public Auction(string name,string url) {
+    public Auction(string state,string name,string url) {
+      this.State = state;
       this.Name = name;
       this.Url = url;
+    }
+    public override string ToString() {
+      return State + ": " + Name;
     }
   }
   public class StateAuctions {
@@ -26,7 +50,7 @@ namespace Manheim.ViewModel {
     public List<Auction> Auctions { get; set; }
     public StateAuctions(string state,List<WC.ListItem> auctions) {
       this.State = state;
-      this.Auctions = auctions.Select(a => new Auction(a.Text.Trim(), a.Links.First().Url)).ToList();
+      this.Auctions = auctions.Select(a => new Auction(state,a.Text.Trim(), a.Links.First().Url)).ToList();
     }
   }
   /// <summary>
@@ -43,6 +67,25 @@ namespace Manheim.ViewModel {
   /// </summary>
   public class MainViewModel : ViewModelBase {
     #region Properties
+
+    #region UI
+
+    public object SelectedAuction {
+      set {
+        if (value is Auction) {
+          if (!_auctionsToRun.Contains(value))
+            _auctionsToRun.Add(value as Auction);
+        }
+        if (value is StateAuctions) {
+          foreach(var auction in (value as StateAuctions).Auctions)
+            if (!_auctionsToRun.Contains(auction))
+              _auctionsToRun.Add(auction);
+        }
+      }
+    }
+
+    #endregion
+
     #region Browser
     WC.Browser _browser;
     WC.Browser Browser {
@@ -59,6 +102,9 @@ namespace Manheim.ViewModel {
     private const string _manheimUserName = "afservices";
     private const string _manheimPassword = "password";
     private const string _manheimTabBuyPreSaleId = "tab_buy_pre_sale";
+
+    ObservableCollection<Auction> _auctionsToRun = new ObservableCollection<Auction>();
+    public ObservableCollection<Auction> AuctionsToRun { get { return _auctionsToRun; } }
     #endregion
 
     #region States
@@ -122,13 +168,16 @@ namespace Manheim.ViewModel {
           ulAuctions.Add(ulKid);
         States.Add(new StateAuctions(state,ulAuctions));
       }
-      foreach (var stateActions in States.Where(s=>s.State == "Florida")) {
-        var state = stateActions.State;
-        foreach (var auction in stateActions.Auctions)
-          GetAuctionPreSale(state, auction);
-      }
+      return;
       //var statAuction = States[0].Auctions[0] as WC.ListItem;
       //GetAuctionPreSale(States[0].State,statAuction);
+    }
+
+    void RunPresale() {
+      foreach (var auction in _auctionsToRun) {
+        var state = auction.State;
+          GetAuctionPreSale(state, auction);
+      }
     }
 
     private void GetAuctionPreSale(string state, Auction statAuction) {
@@ -244,8 +293,21 @@ namespace Manheim.ViewModel {
         if (addPresSale) {
           WC.IE vehicleInfoIE = OpenVehicleInfoWindow(tds);
           if (vehicleInfoIE == null) return;
+          var rightContent = vehicleInfoIE.Div("rightContent");
 
           #region Vehicle
+
+          #region Grade
+          var grade = 0.0;
+          var lastColumn = rightContent.Div(WC.Find.ByClass("lastColumn"));
+          if (lastColumn.Exists) {
+            var gradeLink = lastColumn.Link(WC.Find.ByText(new Regex("Grade")));
+            if (gradeLink.Exists)
+              double.TryParse(Regex.Replace(gradeLink.Text, @"[^\d.]", ""), out grade);
+          }
+          #endregion
+
+
           var mmrElement = vehicleInfoIE.Link("mmrHover");
           int mmrPrice = 0;
           if (mmrElement.Exists)
@@ -256,6 +318,7 @@ namespace Manheim.ViewModel {
           var vehicleEntity = manheimModel.Vehicles.SingleOrDefault(v => v.VIN == vin);
           if (vehicleEntity == null) {
             vehicleEntity = SetVehicle(table);
+            vehicleEntity.Grade = grade;
             manheimModel.AddToVehicles(vehicleEntity);
           } else {
             UpdateVehicle(vehicleEntity, table);
@@ -265,7 +328,7 @@ namespace Manheim.ViewModel {
           #endregion
 
           #region Seller
-          var sellerElement = vehicleInfoIE.Div("rightContent").Div(WC.Find.ByClass("firstColumn")).ElementWithTag("li", WC.Find.First());
+          var sellerElement = rightContent.Div(WC.Find.ByClass("firstColumn")).ElementWithTag("li", WC.Find.First());
           var sellerName = sellerElement.Exists ? sellerElement.Text : "";
           var sellerEntity = manheimModel.Sellers.SingleOrDefault(s => s.Name == sellerName);
           if (sellerEntity == null) {
@@ -294,25 +357,27 @@ namespace Manheim.ViewModel {
     }
 
     private WC.IE OpenVehicleInfoWindow(WC.TableCellCollection tds) {
-      var link = tds[2].Links.First();
-      var target = link.GetAttributeValue("target");
-      link.SetAttributeValue("target", _vehicleInfoTargetName);
-      link.Click();
-      WC.IE vehicleInfoIE = null;
-      var dateStart = DateTime.Now;
-      while (vehicleInfoIE == null && DateTime.Now < dateStart.AddSeconds(10)) {
-        foreach (var ie in WC.IE.InternetExplorers()) {
-          var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
-          if (doc.parentWindow.name == _vehicleInfoTargetName) {
-            vehicleInfoIE = ie;
-            break;
+      return Application.Current.Dispatcher.Invoke(new Func<WC.IE>(() => {
+        var link = tds[2].Links.First();
+        var target = link.GetAttributeValue("target");
+        link.SetAttributeValue("target", _vehicleInfoTargetName);
+        link.Click();
+        WC.IE vehicleInfoIE = null;
+        var dateStart = DateTime.Now;
+        while (vehicleInfoIE == null && DateTime.Now < dateStart.AddSeconds(10)) {
+          foreach (var ie in WC.IE.InternetExplorers()) {
+            var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
+            if (doc.parentWindow.name == _vehicleInfoTargetName) {
+              vehicleInfoIE = ie;
+              break;
+            }
           }
         }
-      }
-      if (vehicleInfoIE == null) {
-        Log = new Exception("VehicleInfo window not found.");
-      }
-      return vehicleInfoIE;
+        if (vehicleInfoIE == null) {
+          Log = new Exception("VehicleInfo window not found.");
+        }
+        return vehicleInfoIE;
+      })) as WC.IE;
     }
 
     private static Model.Vehicle SetVehicle(WC.Table table) {
@@ -402,7 +467,15 @@ namespace Manheim.ViewModel {
       if (IsInDesignMode) {
         // Code runs in Blend --> create design time data.
       } else {
-        // Code runs "for real"
+        Observable.FromEvent<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
+          h => new NotifyCollectionChangedEventHandler(h), h => _auctionsToRun.CollectionChanged += h, h => _auctionsToRun.CollectionChanged -= h)
+          .Where(ie => ie.EventArgs.Action == NotifyCollectionChangedAction.Add)
+          .ObserveOn(Scheduler.ThreadPool)
+          .SelectMany(ie => ie.EventArgs.NewItems.Cast<Auction>())
+          .Subscribe(auction => {
+            GetAuctionPreSale(auction.State, auction);
+            Application.Current.Dispatcher.Invoke(new Action(() => _auctionsToRun.Remove(auction)));
+          });
       }
     }
     #endregion

@@ -33,6 +33,20 @@ namespace HedgeHog {
   }
 
 
+  public class PerMilleConverter : IValueConverter {
+    private static readonly PerMilleConverter defaultInstance = new PerMilleConverter();
+    public static PerMilleConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      if (value is int || value is long) return (int)value / 1000;
+      var output = double.NaN;
+      double.TryParse(value + "", out output);
+      return output / 1000;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotImplementedException();
+    }
+  }
 
   public class InvertBooleanConverter : IValueConverter {
     private static readonly InvertBooleanConverter defaultInstance = new InvertBooleanConverter();
