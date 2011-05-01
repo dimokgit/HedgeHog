@@ -72,6 +72,9 @@
     <Compile Include="Class1.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="Dynamic.cs" />
+    <Compile Include="E:\Data\Dev\ParserCombinators.cs">
+      <Link>ParserCombinators.cs</Link>
+    </Compile>
     <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="Extensions.cs" />
