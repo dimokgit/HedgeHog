@@ -607,6 +607,7 @@ namespace HedgeHog.Alice.Client {
             (sender as CoreFX).SetOfferSubscription(tm.Pair);
             tm.CurrentPrice = tradesManager.GetPrice(tm.Pair) ?? tm.CurrentPrice;
           }
+          var aaa= "".Where(c=>c=='x');
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if (!IsInVirtualTrading) {
             var currTM = tm;
