@@ -1138,9 +1138,14 @@ namespace HedgeHog.Alice.Client {
         //TradesManager.PriceChanged += fwMaster_PriceChanged;
         Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
           .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
-          .GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
-          .Subscribe(g => g.TakeLast(1)
-            .Subscribe(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
+          .BufferWithTime(_throttleInterval)
+          .Subscribe(l => {
+            l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
+              .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
+          });
+          //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
+          //.Subscribe(g => g.TakeLast(1)
+          //  .Subscribe(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
         Observable.FromEvent<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
           .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
           .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });

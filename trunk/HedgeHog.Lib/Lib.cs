@@ -280,7 +280,7 @@ namespace HedgeHog {
     }
 
 
-    public static double CMA(double? MA, double Periods, double NewValue) {
+    public static double CMA(this double? MA, double Periods, double NewValue) {
       if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
     }

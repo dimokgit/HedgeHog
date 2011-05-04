@@ -1721,7 +1721,6 @@ namespace HedgeHog.Alice.Store
         /// <param name="tradeByAngle">Initial value of the TradeByAngle property.</param>
         /// <param name="profitToLossExitRatio">Initial value of the ProfitToLossExitRatio property.</param>
         /// <param name="powerRowOffset">Initial value of the PowerRowOffset property.</param>
-        /// <param name="powerVolatilityMinimum">Initial value of the PowerVolatilityMinimum property.</param>
         /// <param name="rangeRatioForTradeStop">Initial value of the RangeRatioForTradeStop property.</param>
         /// <param name="reversePower">Initial value of the ReversePower property.</param>
         /// <param name="correlationTreshold">Initial value of the CorrelationTreshold property.</param>
@@ -1738,8 +1737,6 @@ namespace HedgeHog.Alice.Store
         /// <param name="gannAngles">Initial value of the GannAngles property.</param>
         /// <param name="isGannAnglesManual">Initial value of the IsGannAnglesManual property.</param>
         /// <param name="spreadShortToLongTreshold">Initial value of the SpreadShortToLongTreshold property.</param>
-        /// <param name="levelType">Initial value of the LevelType property.</param>
-        /// <param name="iterationsForSuppResLevels">Initial value of the IterationsForSuppResLevels property.</param>
         /// <param name="suppResLevelsCount">Initial value of the SuppResLevelsCount property.</param>
         /// <param name="doStreatchRates">Initial value of the DoStreatchRates property.</param>
         /// <param name="isSuppResManual">Initial value of the IsSuppResManual property.</param>
@@ -1748,7 +1745,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="doAdjustTimeframeByAllowedLot">Initial value of the DoAdjustTimeframeByAllowedLot property.</param>
         /// <param name="isColdOnTrades">Initial value of the IsColdOnTrades property.</param>
         /// <param name="corridorCrossesCountMinimum">Initial value of the CorridorCrossesCountMinimum property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double powerVolatilityMinimum, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 levelType, global::System.Int32 iterationsForSuppResLevels, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum)
+        /// <param name="stDevToSpreadRatio">Initial value of the StDevToSpreadRatio property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1788,7 +1786,6 @@ namespace HedgeHog.Alice.Store
             tradingMacro.TradeByAngle = tradeByAngle;
             tradingMacro.ProfitToLossExitRatio = profitToLossExitRatio;
             tradingMacro.PowerRowOffset = powerRowOffset;
-            tradingMacro.PowerVolatilityMinimum = powerVolatilityMinimum;
             tradingMacro.RangeRatioForTradeStop = rangeRatioForTradeStop;
             tradingMacro.ReversePower = reversePower;
             tradingMacro.CorrelationTreshold = correlationTreshold;
@@ -1805,8 +1802,6 @@ namespace HedgeHog.Alice.Store
             tradingMacro.GannAngles = gannAngles;
             tradingMacro.IsGannAnglesManual = isGannAnglesManual;
             tradingMacro.SpreadShortToLongTreshold = spreadShortToLongTreshold;
-            tradingMacro.LevelType = levelType;
-            tradingMacro.IterationsForSuppResLevels = iterationsForSuppResLevels;
             tradingMacro.SuppResLevelsCount = suppResLevelsCount;
             tradingMacro.DoStreatchRates = doStreatchRates;
             tradingMacro.IsSuppResManual = isSuppResManual;
@@ -1815,6 +1810,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.DoAdjustTimeframeByAllowedLot = doAdjustTimeframeByAllowedLot;
             tradingMacro.IsColdOnTrades = isColdOnTrades;
             tradingMacro.CorridorCrossesCountMinimum = corridorCrossesCountMinimum;
+            tradingMacro.StDevToSpreadRatio = stDevToSpreadRatio;
             return tradingMacro;
         }
 
@@ -2765,30 +2761,6 @@ namespace HedgeHog.Alice.Store
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Double PowerVolatilityMinimum
-        {
-            get
-            {
-                return _PowerVolatilityMinimum;
-            }
-            set
-            {
-                OnPowerVolatilityMinimumChanging(value);
-                ReportPropertyChanging("PowerVolatilityMinimum");
-                _PowerVolatilityMinimum = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("PowerVolatilityMinimum");
-                OnPowerVolatilityMinimumChanged();
-            }
-        }
-        private global::System.Double _PowerVolatilityMinimum;
-        partial void OnPowerVolatilityMinimumChanging(global::System.Double value);
-        partial void OnPowerVolatilityMinimumChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.Double RangeRatioForTradeStop
         {
             get
@@ -3317,54 +3289,6 @@ namespace HedgeHog.Alice.Store
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.Int32 LevelType
-        {
-            get
-            {
-                return _LevelType;
-            }
-            set
-            {
-                OnLevelTypeChanging(value);
-                ReportPropertyChanging("LevelType");
-                _LevelType = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("LevelType");
-                OnLevelTypeChanged();
-            }
-        }
-        private global::System.Int32 _LevelType;
-        partial void OnLevelTypeChanging(global::System.Int32 value);
-        partial void OnLevelTypeChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
-        public global::System.Int32 IterationsForSuppResLevels
-        {
-            get
-            {
-                return _IterationsForSuppResLevels;
-            }
-            set
-            {
-                OnIterationsForSuppResLevelsChanging(value);
-                ReportPropertyChanging("IterationsForSuppResLevels");
-                _IterationsForSuppResLevels = StructuralObject.SetValidValue(value);
-                ReportPropertyChanged("IterationsForSuppResLevels");
-                OnIterationsForSuppResLevelsChanged();
-            }
-        }
-        private global::System.Int32 _IterationsForSuppResLevels;
-        partial void OnIterationsForSuppResLevelsChanging(global::System.Int32 value);
-        partial void OnIterationsForSuppResLevelsChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
-        [DataMemberAttribute()]
         public global::System.Int32 SuppResLevelsCount
         {
             get
@@ -3551,6 +3475,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Int32 _CorridorCrossesCountMinimum;
         partial void OnCorridorCrossesCountMinimumChanging(global::System.Int32 value);
         partial void OnCorridorCrossesCountMinimumChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double StDevToSpreadRatio
+        {
+            get
+            {
+                return _StDevToSpreadRatio;
+            }
+            set
+            {
+                OnStDevToSpreadRatioChanging(value);
+                ReportPropertyChanging("StDevToSpreadRatio");
+                _StDevToSpreadRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StDevToSpreadRatio");
+                OnStDevToSpreadRatioChanged();
+            }
+        }
+        private global::System.Double _StDevToSpreadRatio;
+        partial void OnStDevToSpreadRatioChanging(global::System.Double value);
+        partial void OnStDevToSpreadRatioChanged();
 
         #endregion
     

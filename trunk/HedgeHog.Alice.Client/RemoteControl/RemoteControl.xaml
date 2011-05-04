@@ -267,14 +267,13 @@
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />
-                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" Margin="-3,0">
+                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" Margin="-3,0" ToolTipService.ShowDuration="3000">
                   <TextBlock.ToolTip>
                     <StackPanel>
-                      <TextBlock>ToolTip="Rates StDev"</TextBlock>
                       <TextBlock>
-                        CorridorCrossesCount:
-                      <TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"></TextBlock>
-                      </TextBlock>
+                        CorridorCrossesCount :<TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/></TextBlock>
+                      <TextBlock>
+                        RateStDev/SpreadRatio:<TextBlock Text="{Binding StDevToSpreadRatioReal,StringFormat=n1}"/></TextBlock>
                     </StackPanel>
                   </TextBlock.ToolTip>
                 </TextBlock>
