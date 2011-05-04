@@ -231,12 +231,12 @@ namespace HedgeHog.Alice.Client {
         false,tm.TradingMacroName, tm.LimitCorridorByBarHeight, tm.MaxLotByTakeProfitRatio, tm.BarPeriodsLow, tm.BarPeriodsHigh,
         tm.StrictTradeClose, tm.BarPeriodsLowHighRatio, tm.LongMAPeriod, tm.CorridorAverageDaysBack, tm.CorridorPeriodsStart,
         tm.CorridorPeriodsLength, tm.CorridorRatioForRange, tm.CorridorRatioForBreakout, tm.RangeRatioForTradeLimit,
-        tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset,tm.PowerVolatilityMinimum,tm.RangeRatioForTradeStop,
+        tm.TradeByAngle, tm.ProfitToLossExitRatio, tm.PowerRowOffset,tm.RangeRatioForTradeStop,
         tm.ReversePower,tm.CorrelationTreshold,tm.CloseOnProfitOnly,tm.CloseOnProfit,tm.CloseOnOpen,tm.StreachTradingDistance,
         tm.CloseAllOnProfit,tm.ReverseStrategy,tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,
-        tm.GannAngles,tm.IsGannAnglesManual,tm.SpreadShortToLongTreshold,tm.LevelType,tm.IterationsForSuppResLevels,
+        tm.GannAngles,tm.IsGannAnglesManual,tm.SpreadShortToLongTreshold,
         tm.SuppResLevelsCount,tm.DoStreatchRates,tm.IsSuppResManual,tm.TradeOnCrossOnly,tm.TakeProfitFunctionInt,
-        tm.DoAdjustTimeframeByAllowedLot,tm.IsColdOnTrades,tm.CorridorCrossesCountMinimum);
+        tm.DoAdjustTimeframeByAllowedLot,tm.IsColdOnTrades,tm.CorridorCrossesCountMinimum,tm.StDevToSpreadRatio);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -580,6 +580,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    IDisposable _priceChangedSubscribsion;
     void CoreFX_LoggedInEvent(object sender, EventArgs e) {
       try {
         if (TradingMacrosCopy.Length > 0) {
@@ -589,11 +590,16 @@ namespace HedgeHog.Alice.Client {
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           //tradesManager.PriceChanged += fw_PriceChanged;
-          Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
+          _priceChangedSubscribsion = Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
             h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-            .GroupByUntil(g=>g.EventArgs.Pair,g=>Observable.Timer(TimeSpan.FromSeconds(1)))
-            .SubscribeOn(System.Concurrency.Scheduler.ThreadPool)
-            .Subscribe(g=>g.TakeLast(1).Subscribe(ie=>fw_PriceChanged(ie.Sender,ie.EventArgs),exc=>Log=exc),exc=>Log=exc);
+            .BufferWithTime(TimeSpan.FromSeconds(1))
+            .Subscribe(el => {
+              el.GroupBy(e2 => e2.EventArgs.Pair).Select(e2 => e2.Last()).ToList()
+                .ForEach(ie => fw_PriceChanged(ie.Sender, ie.EventArgs));
+            });
+            //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1)))
+            //.SubscribeOn(System.Concurrency.Scheduler.ThreadPool)
+            //.Subscribe(g => g.TakeLast(1).Subscribe(ie => fw_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc), exc => Log = exc);
           tradesManager.TradeRemoved += fw_TradeRemoved;
           tradesManager.TradeAdded += fw_TradeAdded;
           tradesManager.TradeClosed += fw_TradeClosed;
@@ -607,7 +613,6 @@ namespace HedgeHog.Alice.Client {
             (sender as CoreFX).SetOfferSubscription(tm.Pair);
             tm.CurrentPrice = tradesManager.GetPrice(tm.Pair) ?? tm.CurrentPrice;
           }
-          var aaa= "".Where(c=>c=='x');
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if (!IsInVirtualTrading) {
             var currTM = tm;
@@ -635,7 +640,10 @@ namespace HedgeHog.Alice.Client {
 
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (tradesManager != null) {
-        tradesManager.PriceChanged -= fw_PriceChanged;
+        if (_priceChangedSubscribsion != null) {
+          _priceChangedSubscribsion.Dispose();
+          _priceChangedSubscribsion = null;
+        }
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.TradeRemoved -= fw_TradeRemoved;
         tradesManager.OrderAdded -= fw_OrderAdded;

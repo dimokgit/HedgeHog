@@ -227,13 +227,6 @@ namespace HedgeHog.Alice.Store {
       set { SpreadShortToLongTreshold = value; }
     }
 
-    [DisplayName("SuppRes Level Type")]
-    [Category(categoryTrading)]
-    public LevelType LevelType_ {
-      get { return (LevelType)LevelType; }
-      set { LevelType = (int)value; }
-    }
-
     [DisplayName("SuppRes Levels Count")]
     [Category(categoryCorridor)]
     public int SuppResLevelsCount_ {
@@ -241,13 +234,16 @@ namespace HedgeHog.Alice.Store {
       set { SuppResLevelsCount = value; }
     }
 
-    [DisplayName("SuppRes Level Type Iterations")]
-    [Category(categoryTrading)]
-    public int IterationsForSuppResLevels_ {
-      get { return IterationsForSuppResLevels; }
-      set { 
-        IterationsForSuppResLevels = value;
-        OnPropertyChanged(TradingMacroMetadata.IterationsForSuppResLevels_);
+    [DisplayName("StDev To Spread Ratio")]
+    [Category(categoryCorridor)]
+    [Description("RateStDev / Spread Minimum")]
+    public double StDevToSpreadRatio_ {
+      get { return StDevToSpreadRatio; }
+      set {
+        if (StDevToSpreadRatio != value) {
+          StDevToSpreadRatio = value;
+          OnPropertyChanged(TradingMacroMetadata.StDevToSpreadRatio_);
+        }
       }
     }
 
@@ -299,14 +295,6 @@ namespace HedgeHog.Alice.Store {
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
       set { CloseOnProfitOnly = value; }
-    }
-
-    [DisplayName("Power Volatility Minimum")]
-    [Category(categoryTrading)]
-    [Description("Ex: CanTrade = Power > (Power-Avg)/StDev")]
-    public double PowerVolatilityMinimum_ {
-      get { return PowerVolatilityMinimum; }
-      set { PowerVolatilityMinimum = value; }
     }
 
     [DisplayName("Reverse Strategy")]

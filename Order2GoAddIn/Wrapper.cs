@@ -775,12 +775,12 @@ namespace Order2GoAddIn {
       //lock (lockHistory) {
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         if (startDate != TradesManagerStatic.FX_DATE_NOW) startDate = ConvertDateToUTC(startDate);
-        var periodToRun = Enum.GetValues(typeof(BarsPeriodTypeFXCM)).Cast<int>().Where(i => i <= period).Max();
+        var periodToRun = period;// Enum.GetValues(typeof(BarsPeriodTypeFXCM)).Cast<int>().Where(i => i <= period).Max();
         try {
           var d = DateTime.Now;
           var mr =
             //RunWithTimeout.WaitFor<FXCore.MarketRateAut[]>.Run(TimeSpan.FromMilliseconds(_historyTimeAverage.GetValueOrDefault(1000)*2), () =>
-            ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodTypeFXCM)periodToRun + "", startDate, endDate, int.MaxValue, true, true))
+            ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)periodToRun + "", startDate, endDate, int.MaxValue, true, true))
             .Cast<FXCore.MarketRateAut>().ToArray();
             //);
           var ms = (DateTime.Now - d).TotalMilliseconds;
@@ -1568,6 +1568,7 @@ namespace Order2GoAddIn {
     C.ConcurrentDictionary<string, FXCore.TableAut> tableIndices = new C.ConcurrentDictionary<string, FXCore.TableAut>();
     [CLSCompliant(false)]
     public FXCore.TableAut GetTable(string TableName,bool updateTable = false) {
+      return CoreFX.Table(TableName);
       if (!IsLoggedIn) return null;
       if (updateTable && tableIndices.ContainsKey(TableName)) {
         FXCore.TableAut t;
@@ -1583,7 +1584,6 @@ namespace Order2GoAddIn {
         throw new Exception("Table "+TableName+" not found in FXCM.");
       };
       return tableIndices.GetOrAdd(TableName,addTable);
-      return CoreFX.Table(TableName);
     }
     #endregion
 
@@ -1660,7 +1660,7 @@ namespace Order2GoAddIn {
         //}
         var rateFlag = isStop ? Desk.SL_STOP : isLimit ? Desk.SL_LIMIT : Desk.SL_NONE;
         lock (globalOrderPending) {
-          Desk.CreateFixOrderAsync(fixOrderKnd, tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag, out requestID);
+          Desk.CreateFixOrder3Async(fixOrderKnd, tradeId, rate, 0, "", "", "", true, 0, remark, rateFlag,0,Desk.TIF_GTC, out requestID);
         }
         po.RequestId = requestID + "";
         return po;
@@ -1683,7 +1683,7 @@ namespace Order2GoAddIn {
       try {
         object psRequestId = "";
         object psOrderId = "";
-        Desk.CreateEntryOrder(AccountID, pair, isBuy, amount, rate,  stop, limit, 0,out psOrderId, out psRequestId);
+        Desk.CreateEntryOrder3(AccountID, pair, isBuy, amount, rate, 0, 0, stop, limit, 0, 0, out psOrderId, out psRequestId);
         return psOrderId + "";
 
         string orderId = "";
@@ -1704,7 +1704,7 @@ namespace Order2GoAddIn {
         });
         RequestFailed += rf;
         RequestComplete += rc;
-        Desk.CreateEntryOrderAsync(AccountID, pair, isBuy, amount, rate, slType, stop, limit, 0, out psRequestId);
+        Desk.CreateEntryOrder3Async(AccountID, pair, isBuy, amount, rate, 0, slType, stop, limit, 0, 0, out psRequestId);
         Task.Factory.StartNew(() => {
           while (!orderDone) {
             Thread.Sleep(100);
@@ -1721,7 +1721,8 @@ namespace Order2GoAddIn {
 
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeEntryOrderStopLimit(string orderId, double rate, bool isStop) {
-      Desk.ChangeEntryOrderStopLimit(orderId, rate, isStop, 0);
+      object psRequestId;
+      Desk.ChangeEntryOrderStopLimit3Async(orderId, rate, isStop ? Desk.SL_STOP : Desk.SL_LIMIT, 0, out psRequestId);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderRate(Order order, double rate) {
@@ -1742,11 +1743,13 @@ namespace Order2GoAddIn {
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderRate(string orderId, double rate) {
-      Desk.ChangeOrderRate(orderId, rate, 0);
+      object psRequestId;
+      Desk.ChangeOrderRate2Async(orderId, rate, 0,out psRequestId);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void ChangeOrderAmount(string orderId, int lot) {
-      Desk.ChangeEntryOrderAmount(orderId, lot);
+      object psRequestId;
+      Desk.ChangeEntryOrderAmountAsync(orderId, lot, out psRequestId);
     }
     public void ChangeOrderAmount(Order order, int lot) {
       ChangeOrderAmount(order.OrderID, lot);
@@ -2068,25 +2071,6 @@ namespace Order2GoAddIn {
     #endregion
 
     #region Stop/Loss
-    public void FixOrderSetNetLimits(double takeProfit, bool buy) {
-      object a, b;
-      var dg = Digits(); var ps = GetPipSize(Pair);
-      takeProfit = Math.Round(takeProfit, dg);
-      var ret = from t in GetRows(TABLE_TRADES)
-                where (t.CellValue(FIELD_INSTRUMENT) + "") == Pair &&
-                  IsBuy(t.CellValue("BS")) == buy &&
-                  Math.Abs(Math.Round((double)t.CellValue(FIELD_LIMIT), dg) - takeProfit) > ps / 10
-                select new {
-                  TradeID = t.CellValue("TradeID") + ""
-                };
-      foreach (var t in ret) {
-        try {
-          Desk.CreateFixOrder(Desk.FIX_LIMIT, t.TradeID, takeProfit, 0, "", "", "", true, 0, "", out a, out b);
-        } catch (Exception) {
-          FixOrderSetNetLimits(takeProfit, buy);
-        }
-      }
-    }
 
     C.ConcurrentDictionary<string, bool> IsFifoDictionary = new C.ConcurrentDictionary<string, bool>();
     public bool IsFIFO(string pair) {

@@ -134,7 +134,6 @@
           <Property Name="ProfitToLossExitRatio" Type="float" Nullable="false" />
           <Property Name="TradeByFirstWave" Type="bit" />
           <Property Name="PowerRowOffset" Type="int" Nullable="false" />
-          <Property Name="PowerVolatilityMinimum" Type="float" Nullable="false" />
           <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
           <Property Name="ReversePower" Type="bit" Nullable="false" />
           <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
@@ -157,8 +156,6 @@
           <Property Name="SpreadShortToLongTreshold" Type="float" Nullable="false" />
           <Property Name="SupportPriceStore" Type="float" />
           <Property Name="ResistancePriceStore" Type="float" />
-          <Property Name="LevelType" Type="int" Nullable="false" />
-          <Property Name="IterationsForSuppResLevels" Type="int" Nullable="false" />
           <Property Name="SuppResLevelsCount" Type="int" Nullable="false" />
           <Property Name="DoStreatchRates" Type="bit" Nullable="false" />
           <Property Name="IsSuppResManual" Type="bit" Nullable="false" />
@@ -167,6 +164,7 @@
           <Property Name="DoAdjustTimeframeByAllowedLot" Type="bit" Nullable="false" />
           <Property Name="IsColdOnTrades" Type="bit" Nullable="false" />
           <Property Name="CorridorCrossesCountMinimum" Type="int" Nullable="false" />
+          <Property Name="StDevToSpreadRatio" Type="float" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -256,7 +254,6 @@
           <Property Type="Double" Name="ProfitToLossExitRatio" Nullable="false" />
           <Property Type="Boolean" Name="TradeByFirstWave" Nullable="true" />
           <Property Type="Int32" Name="PowerRowOffset" Nullable="false" />
-          <Property Type="Double" Name="PowerVolatilityMinimum" Nullable="false" />
           <Property Type="Double" Name="RangeRatioForTradeStop" Nullable="false" />
           <Property Type="Boolean" Name="ReversePower" Nullable="false" />
           <Property Type="Double" Name="CorrelationTreshold" Nullable="false" />
@@ -280,8 +277,6 @@
           <Property Type="Double" Name="SupportPriceStore" />
           <Property Type="Double" Name="ResistancePriceStore" />
           <NavigationProperty Name="SuppRes" Relationship="AliceModel.TradingMacro_SuppRes" FromRole="TradingMacro" ToRole="SuppRes" />
-          <Property Type="Int32" Name="LevelType" Nullable="false" />
-          <Property Type="Int32" Name="IterationsForSuppResLevels" Nullable="false" />
           <Property Type="Int32" Name="SuppResLevelsCount" Nullable="false" />
           <Property Type="Boolean" Name="DoStreatchRates" Nullable="false" />
           <Property Type="Boolean" Name="IsSuppResManual" Nullable="false" />
@@ -290,6 +285,7 @@
           <Property Type="Boolean" Name="DoAdjustTimeframeByAllowedLot" Nullable="false" />
           <Property Type="Boolean" Name="IsColdOnTrades" Nullable="false" />
           <Property Type="Int32" Name="CorridorCrossesCountMinimum" Nullable="false" />
+          <Property Type="Double" Name="StDevToSpreadRatio" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -382,7 +378,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="CorridorCrossesCountMinimum" ColumnName="CorridorCrossesCountMinimum" />
+            <ScalarProperty Name="StDevToSpreadRatio" ColumnName="StDevToSpreadRatio" />
+                <ScalarProperty Name="CorridorCrossesCountMinimum" ColumnName="CorridorCrossesCountMinimum" />
                 <ScalarProperty Name="IsColdOnTrades" ColumnName="IsColdOnTrades" />
                 <ScalarProperty Name="DoAdjustTimeframeByAllowedLot" ColumnName="DoAdjustTimeframeByAllowedLot" />
                 <ScalarProperty Name="TakeProfitFunctionInt" ColumnName="TakeProfitFunctionInt" />
@@ -390,8 +387,6 @@
                 <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
                 <ScalarProperty Name="DoStreatchRates" ColumnName="DoStreatchRates" />
                 <ScalarProperty Name="SuppResLevelsCount" ColumnName="SuppResLevelsCount" />
-                <ScalarProperty Name="IterationsForSuppResLevels" ColumnName="IterationsForSuppResLevels" />
-                <ScalarProperty Name="LevelType" ColumnName="LevelType" />
                 <ScalarProperty Name="ResistancePriceStore" ColumnName="ResistancePriceStore" />
                 <ScalarProperty Name="SupportPriceStore" ColumnName="SupportPriceStore" />
                 <ScalarProperty Name="SpreadShortToLongTreshold" ColumnName="SpreadShortToLongTreshold" />
@@ -414,7 +409,6 @@
                 <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
                 <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
                 <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
-                <ScalarProperty Name="PowerVolatilityMinimum" ColumnName="PowerVolatilityMinimum" />
                 <ScalarProperty Name="PowerRowOffset" ColumnName="PowerRowOffset" />
                 <ScalarProperty Name="TradeByFirstWave" ColumnName="TradeByFirstWave" />
                 <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
@@ -538,16 +532,16 @@
     </Options>
     <!-- Diagram content (shape and connector positions) -->
     <Diagrams>
-      <Diagram Name="Alice">
+      <Diagram Name="Alice" ZoomLevel="111">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="1.0992643229166665" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="12.603577473958332" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="9.375" PointY="3.125" Height="3.4001269531249996" />
         <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
         <EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="3.875" Height="1.7566536458333317" />
         <AssociationConnector Association="AliceModel.TradingMacro_SuppRes" >
-          <ConnectorPoint PointX="4.625" PointY="4.7533268229166659" />
-          <ConnectorPoint PointX="5.375" PointY="4.7533268229166659" />
+          <ConnectorPoint PointX="4.625" PointY="4.83550048828125" />
+          <ConnectorPoint PointX="5.375" PointY="4.83550048828125" />
         </AssociationConnector>
       </Diagram>
     </Diagrams>
