@@ -23,7 +23,9 @@ using System.Data.Objects.DataClasses;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Order2GoAddIn;
-using System.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Subjects;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
@@ -2491,7 +2493,7 @@ namespace HedgeHog.Alice.Store {
           if (_LoadRatesSubject == null) {
             _LoadRatesSubject = new Subject<TradingMacro>();
             _LoadRatesSubject
-              .BufferWithTime(THROTTLE_INTERVAL)
+              .Buffer(THROTTLE_INTERVAL)
               .Subscribe(tml => {
                 tml.GroupBy(tm => tm.Pair).ToList().ForEach(tm => {
                   tm.Last().LoadRates();
@@ -2521,9 +2523,9 @@ namespace HedgeHog.Alice.Store {
       get {
         lock (_EntryOrdersAdjustSubjectLocker)
           if (_EntryOrdersAdjustSubject == null) {
-            _EntryOrdersAdjustSubject = new Subject<TradingMacro>(Scheduler.TaskPool);
+            _EntryOrdersAdjustSubject = new Subject<TradingMacro>();
             _EntryOrdersAdjustSubject
-              .BufferWithTime(THROTTLE_INTERVAL)
+              .Buffer(THROTTLE_INTERVAL)
               .Subscribe(tml => {
                 tml.GroupBy(tm => tm.Pair).ToList().ForEach(tm => {
                   tm.Last().EntryOrdersAdjust();
@@ -2578,7 +2580,7 @@ namespace HedgeHog.Alice.Store {
             _SettingStopLimits
               //.Do(tm => Debug.WriteLine(tm.Pair + "[I]:SettingStopLimits @" + DateTime.Now.ToString("mm:ss.fff")))
 
-              .BufferWithTime(THROTTLE_INTERVAL)
+              .Buffer(THROTTLE_INTERVAL)
               //.GroupByUntil(g => g.Pair, g => Observable.Timer(THROTTLE_INTERVAL))
               //.SelectMany(o=>o.TakeLast(1))
 
@@ -3334,11 +3336,12 @@ namespace HedgeHog.Alice.Store {
     public void HideInfoTootipAsync(double delayInSeconds = 0) {
       ShowInfoTootipAsync("", delayInSeconds);
     }
-    void DefferedRun<T>(T value,double delayInSeconds , Action<T> run) {
-      Observable.Return(value).Throttle(TimeSpan.FromSeconds(delayInSeconds), Scheduler.Dispatcher).Subscribe(run, exc => Log = exc);
+
+    void DefferedRun<T>(T value, double delayInSeconds, Action<T> run) {
+      Observable.Return(value).Throttle(TimeSpan.FromSeconds(delayInSeconds)).SubscribeOnDispatcher().Subscribe(run, exc => Log = exc);
     }
     public void ShowInfoTootipAsync(string text = "", double delayInSeconds = 0) {
-      DefferedRun(text,delayInSeconds, t => InfoTooltip = t);
+      DefferedRun(text, delayInSeconds, t => InfoTooltip = t);
       //new Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(Math.Max(.01, delayInSeconds))).Command = () => InfoTooltip = text;
     }
 
@@ -3479,17 +3482,5 @@ namespace HedgeHog.Alice.Store {
   }
   static class TradingMacroEx {
     public static TradingMacro ToTradingMacro(this object o) { return o as TradingMacro; }
-    public static IDisposable SubscribeToTradingMacroEvent(this IObservable<IEvent<EventArgs>> io, Action<TradingMacro> onNext) {
-      return io
-        .Select(ie=>ie.Sender.ToTradingMacro())
-      .Timestamp()
-      .DistinctUntilChanged((ts1, ts2) => 
-        ts1.Value.Pair == ts2.Value.Pair &&
-        (ts1.Timestamp-ts2.Timestamp).Duration()<TimeSpan.FromSeconds(1)
-       )
-        //.Do(ts => Debug.WriteLine("Pair:{0},{1:mm:ss.fff}", (ts.Value.Sender as TradingMacro).Pair, ts.Timestamp))
-      .RemoveTimestamp()        //.Throttle(TimeSpan.FromSeconds(0.1))
-      .Subscribe(onNext);
-    }
   }
 }

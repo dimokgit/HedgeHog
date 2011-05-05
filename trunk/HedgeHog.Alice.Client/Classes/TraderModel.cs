@@ -1,36 +1,28 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using O2G = Order2GoAddIn;
-using FXW = Order2GoAddIn.FXCoreWrapper;
-using System.ServiceModel;
-using System.Windows.Data;
-using System.Windows.Input;
-using Gala = GalaSoft.MvvmLight.Command;
-using HedgeHog.Shared;
-using System.Windows;
-using System.Windows.Controls;
-using HedgeHog.Alice.Client.UI.Controls;
-using System.Data.Objects;
-using HedgeHog.Bars;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.IO;
+using System.Linq;
+using System.ServiceModel;
 using System.Threading;
-using HedgeHog;
-using HedgeHog.Reports;
-using HedgeHog.Alice.Store;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using HedgeHog.DB;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using HedgeHog.Alice.Client.UI.Controls;
+using HedgeHog.Alice.Store;
+using HedgeHog.DB;
+using HedgeHog.Shared;
 using Order2GoAddIn;
-using System.Linq.Expressions;
-using System.Windows.Threading;
-using System.Concurrency;
+using FXW = Order2GoAddIn.FXCoreWrapper;
+using Gala = GalaSoft.MvvmLight.Command;
+using O2G = Order2GoAddIn;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -1136,9 +1128,9 @@ namespace HedgeHog.Alice.Client {
         TradesManager.TradeAdded += fwMaster_TradeAdded;
         TradesManager.TradeRemoved += fwMaster_TradeRemoved;
         //TradesManager.PriceChanged += fwMaster_PriceChanged;
-        Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
+        Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
           .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
-          .BufferWithTime(_throttleInterval)
+          .Buffer(_throttleInterval)
           .Subscribe(l => {
             l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
               .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
@@ -1146,7 +1138,7 @@ namespace HedgeHog.Alice.Client {
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
           //.Subscribe(g => g.TakeLast(1)
           //  .Subscribe(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
-        Observable.FromEvent<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
+        Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
           .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
           .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
         //fwMaster.OrderChanged += fwMaster_OrderChanged;
@@ -1200,9 +1192,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private void SubscribeToPropertyChanged<T1>(Func<O2G.CoreFX, object> func, Action<IEvent<PropertyChangedEventArgs>> action) {
-      throw new NotImplementedException();
-    }
 
 
     private void UpdateTradingAccount(Account account) {
@@ -1336,8 +1325,9 @@ namespace HedgeHog.Alice.Client {
     event EventHandler<InvokeSyncronizeEventArgs> InvokeSyncronizeEvent;
     protected void OnInvokeSyncronize(Account account) {
       if (InvokeSyncronizeEvent == null) {
-        Observable.FromEvent<EventHandler<InvokeSyncronizeEventArgs>, InvokeSyncronizeEventArgs>(h => h, h => InvokeSyncronizeEvent += h, h => InvokeSyncronizeEvent -= h)
-          .Throttle(TimeSpan.FromSeconds(1),Scheduler.Dispatcher)
+        Observable.FromEventPattern<EventHandler<InvokeSyncronizeEventArgs>, InvokeSyncronizeEventArgs>(h => h, h => InvokeSyncronizeEvent += h, h => InvokeSyncronizeEvent -= h)
+          .Throttle(TimeSpan.FromSeconds(1))
+          .SubscribeOnDispatcher()
           .Subscribe(ie => InvokeSyncronize(ie.EventArgs.Account),exc=>Log=exc);
       }
       InvokeSyncronizeEvent(this, new InvokeSyncronizeEventArgs(account));
@@ -1367,9 +1357,9 @@ namespace HedgeHog.Alice.Client {
       var oldIds = tradesCollection.Select(t => t.Id).ToArray();
       var newIds = tradesList.Select(t => t.Id);
       var deleteIds = oldIds.Except(newIds).ToList();
-      deleteIds.ToObservable(Scheduler.Dispatcher).Subscribe(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d)));
+      deleteIds.ToObservable().SubscribeOnDispatcher().Subscribe(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d)));
       var addIds = newIds.Except(oldIds).ToList();
-      addIds.ToObservable(Scheduler.Dispatcher).Subscribe(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
+      addIds.ToObservable().SubscribeOnDispatcher().Subscribe(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
       foreach (var trade in tradesList) {
         var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
         if (trd != null)
@@ -1384,11 +1374,12 @@ namespace HedgeHog.Alice.Client {
       var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
       var newIds = ordersList.Select(t => t.OrderID);
       var deleteIds = oldIds.Except(newIds).ToList();
-      deleteIds.ToObservable(Scheduler.Dispatcher).Subscribe(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)), exc => Log = exc);
+      deleteIds.ToObservable().SubscribeOnDispatcher().Subscribe(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)), exc => Log = exc);
       var addIds = newIds.Except(oldIds).ToList();
-      addIds.ToObservable().Subscribe(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
+      addIds.ToObservable().SubscribeOnDispatcher().Subscribe(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
       foreach (var order in ordersList) {
-        var odr = ordersCollection.Single(t => t.OrderID == order.OrderID);
+        var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
+        if (odr == null) break;
         var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
         odr.Update(order,
           o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
