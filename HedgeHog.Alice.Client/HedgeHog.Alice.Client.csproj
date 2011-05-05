@@ -73,11 +73,19 @@
     </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.configuration" />
-    <Reference Include="System.CoreEx, Version=1.0.2856.104, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Data.Linq" />
-    <Reference Include="System.Reactive, Version=1.0.2856.104, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Reactive, Version=1.1.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Providers, Version=1.0.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.Providers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Windows.Threading, Version=1.0.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.Windows.Threading.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
@@ -349,6 +357,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CS_4_0.cs</LastGenOutput>
     </None>
+    <None Include="packages.config" />
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Bars.Rate.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />

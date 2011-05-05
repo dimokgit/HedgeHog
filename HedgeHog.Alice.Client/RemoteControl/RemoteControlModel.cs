@@ -1,36 +1,27 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Collections.ObjectModel;
-using Gala = GalaSoft.MvvmLight.Command;
-using FXW = Order2GoAddIn.FXCoreWrapper;
-using System.Windows.Data;
-using System.Data.Objects;
-using System.Windows.Input;
-using System.Windows;
-using HedgeHog.Shared;
-using HedgeHog.Bars;
-using System.IO;
-using System.Xml.Linq;
+using System.ComponentModel;
 using System.ComponentModel.Composition;
-using System.Threading;
-using HedgeHog.Alice.Store;
-using System.Runtime.Serialization;
-using System.Data.Objects.DataClasses;
-using System.Collections.Specialized;
-using Order2GoAddIn;
-using System.Reflection;
-using System.Windows.Controls.Primitives;
-using HedgeHog.Alice.Store.Metadata;
-using System.Threading.Tasks;
+using System.Data.Objects;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
-using DigitalIdeaSolutions.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Input;
+using System.Windows.Threading;
+using HedgeHog.Alice.Store;
+using HedgeHog.Alice.Store.Metadata;
+using HedgeHog.Bars;
 using HedgeHog.Models;
 using HedgeHog.Schedulers;
-using System.Windows.Threading;
-using System.ComponentModel;
+using HedgeHog.Shared;
+using Order2GoAddIn;
+using Gala = GalaSoft.MvvmLight.Command;
+using System.Reactive.Linq;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -590,9 +581,9 @@ namespace HedgeHog.Alice.Client {
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           //tradesManager.PriceChanged += fw_PriceChanged;
-          _priceChangedSubscribsion = Observable.FromEvent<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
+          _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
             h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-            .BufferWithTime(TimeSpan.FromSeconds(1))
+            .Buffer(TimeSpan.FromSeconds(1))
             .Subscribe(el => {
               el.GroupBy(e2 => e2.EventArgs.Pair).Select(e2 => e2.Last()).ToList()
                 .ForEach(ie => fw_PriceChanged(ie.Sender, ie.EventArgs));
@@ -624,7 +615,7 @@ namespace HedgeHog.Alice.Client {
           }
           tm.SetLotSize(tradesManager.GetAccount());
         }
-        runPriceQueue.ToObservable(System.Concurrency.Scheduler.TaskPool).Subscribe(rp => rp());
+        runPriceQueue.ToObservable(System.Reactive.Concurrency.Scheduler.TaskPool).Subscribe(rp => rp());
         InitInstruments();
         MasterModel.CurrentLoss = CurrentLoss;
         var a = new Action(() => {

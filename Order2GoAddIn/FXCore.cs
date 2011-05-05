@@ -5,6 +5,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using HedgeHog.Shared;
 using System.Diagnostics;
+using System.Reactive.Linq;
 
 
 namespace Order2GoAddIn {

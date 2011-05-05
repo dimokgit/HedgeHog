@@ -15,6 +15,7 @@ using System.Linq.Expressions;
 using System.Diagnostics;
 using System.Reflection;
 using System.ComponentModel;
+using System.Reactive.Linq;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -45,7 +46,7 @@ namespace HedgeHog {
     public static IDisposable SubscribeToPropertyChanged<TPropertySource>(this TPropertySource source, Expression<Func<TPropertySource, object>> property, Action<TPropertySource> onNext) where TPropertySource : class, INotifyPropertyChanged {
       var propertyName = Lib.GetLambda(property);
       var propertyDelegate = new Func<TPropertySource, object>(property.Compile());
-      return (from e in Observable.FromEvent<PropertyChangedEventArgs>(source, "PropertyChanged")
+      return (from e in Observable.FromEventPattern<PropertyChangedEventArgs>(source, "PropertyChanged")
               where e.EventArgs.PropertyName == propertyName
               select e.Sender as TPropertySource
               ).DistinctUntilChanged(propertyDelegate).Subscribe(onNext);

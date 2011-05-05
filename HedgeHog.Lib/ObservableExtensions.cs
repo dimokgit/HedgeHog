@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Concurrency;
+using System.Reactive.Linq;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
@@ -10,7 +11,7 @@ namespace HedgeHog {
       return o.DistinctUntilChanged(new LambdaComparer<T>(comparer));
     }
     public static IObservable<T> IntervalThrottle<T>(this IObservable<T> source, TimeSpan interval) {
-      return Observable.CreateWithDisposable<T>(o => {
+      return Observable.Create<T>(o => {
         DateTimeOffset last = DateTimeOffset.MinValue;
         return source.Subscribe(x => {
           DateTimeOffset now = DateTimeOffset.Now;
