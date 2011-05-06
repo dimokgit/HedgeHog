@@ -263,7 +263,8 @@
             <DataTemplate>
               <StackPanel>
                 <TextBlock Name="CorridorBlock" Background="PapayaWhip">
-                <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance"/>
+                <TextBlock Text="{Binding CorridorAngle,StringFormat=[{0:n0}}" ToolTip="Corridor Angle"/>
+                <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=|{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-2,0"/>
                 <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
                 <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />

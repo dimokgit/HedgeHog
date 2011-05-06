@@ -7,6 +7,7 @@ using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   public abstract class TraderModelBase : HedgeHog.Models.ModelBase {
+    public virtual event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     public abstract event EventHandler MasterTradeAccountChanged;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;

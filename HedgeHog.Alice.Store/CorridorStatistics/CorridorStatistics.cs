@@ -231,7 +231,7 @@ namespace HedgeHog.Alice.Store {
     bool IsAngleOk(bool buy) {
       var tm = TradingMacro;
       var a = TradingMacro.TradingAngleRange;
-      if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() < a;
+      if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() <= a;
       return (tm.TradeAndAngleSynced? buy:!buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
     }
 
@@ -252,6 +252,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+    public Rate[] Rates { get; set; }
   }
 
   public enum TrendLevel { None, Resistance, Support }

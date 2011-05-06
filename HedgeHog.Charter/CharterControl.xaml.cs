@@ -42,6 +42,7 @@ namespace HedgeHog {
       this.Name = name.Replace("/", "");
       InitializeComponent();
       OnPropertyChanged("Header");
+      var a = FindName("PART_AdditionalLabelsCanvas");
     }
     #region Attached Properties
     #region IsInteractive
@@ -101,12 +102,25 @@ namespace HedgeHog {
       }
     }
 
+    private double _CorridorAngle;
+    public double CorridorAngle {
+      get { return _CorridorAngle; }
+      set {
+        if (_CorridorAngle != value) {
+          _CorridorAngle = value;
+          OnPropertyChanged("CorridorAngle");
+          OnPropertyChanged("Header");
+        }
+      }
+    }
 
-    public string Header { get { return Name + ":" + (BarsPeriodType)BarsPeriod + "×" + BarsCount; } }
 
-
-
-
+    public string Header {
+      get {
+        return
+          string.Format("{0}:{1}×{2}:{3:n0}°", Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle);
+      }
+    }
 
     public bool IsActive {
       get { return (bool)GetValue(IsActiveProperty); }
@@ -237,7 +251,7 @@ namespace HedgeHog {
 
     private bool _DoShowCenterOfMass;
     public bool DoShowCenterOfMass {
-      get { return _DoShowCenterOfMass; }
+      get { return true|| _DoShowCenterOfMass; }
       set {
         if (_DoShowCenterOfMass != value) {
           _DoShowCenterOfMass = value;
@@ -295,13 +309,17 @@ namespace HedgeHog {
     double LineNetSell { set { lineNetSell.Value = value; } }
 
     HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 2, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = new SolidColorBrush(Colors.DarkGreen) };
-    double LineNetBuy { set { lineNetBuy.Value = value; } }
+    double LineNetBuy { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineNetBuy.Value = value); } }
 
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
-    double LineAvgAsk { set { lineAvgAsk.Value = value; } }
+    public double LineAvgAsk { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineAvgAsk.Value = value); } }
 
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
-    public double LineAvgBid { set { lineAvgBid.Value = value; } }
+    public double LineAvgBid {
+      set {
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineAvgBid.Value = value);
+      }
+    }
 
     #region TimeLines
     VerticalLine _lineTimeMax;
@@ -622,6 +640,9 @@ namespace HedgeHog {
     Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
+      dateAxis.MayorLabelProvider = null;
+      var a = FindName("PART_AdditionalLabelsCanvas");
+
       plotter.KeyUp += (s, e) => {
         if (e.Key == Key.RightShift || e.Key == Key.LeftShift)
           _isShiftDown = false;

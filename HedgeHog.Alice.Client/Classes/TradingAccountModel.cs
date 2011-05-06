@@ -38,13 +38,15 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private double _TakePropfit;
-    public double TakePropfit {
-      get { return _TakePropfit; }
+    private double _TakeProfit;
+    public double TakeProfit {
+      get { return _TakeProfit; }
       set {
-        if (_TakePropfit != value) {
-          _TakePropfit = value;
-          OnPropertyChanged(() => TakePropfit);
+        if (_TakeProfit != value) {
+          _TakeProfit = value;
+          OnPropertyChanged(() => TakeProfit);
+          if (value > 0 && PL >= value)
+            RaiseCloseAllTrades();
         }
       }
     }
@@ -53,7 +55,7 @@ namespace HedgeHog.Alice.Client {
     public double OriginalBalance { get { return Balance - CurrentLoss; } }
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
-    public void Update(Account account,double tradingRatio,DateTime serverTime) {
+    public void Update(Account account,double tradingRatio,double takeProfitInPipsAverage,DateTime serverTime) {
       TradingAccountModel accountRow = this;
       accountRow.Balance = account.Balance;
       accountRow.Equity = account.Equity;
@@ -67,6 +69,7 @@ namespace HedgeHog.Alice.Client {
       accountRow.ServerTime = serverTime;
       accountRow.StopAmount = account.StopAmount;
       accountRow.LimitAmount = account.LimitAmount;
+      accountRow.TakeProfit = takeProfitInPipsAverage;
       accountRow.OnPropertyChanged(
       () => accountRow.Balance,
       () => accountRow.Equity,
@@ -90,7 +93,7 @@ namespace HedgeHog.Alice.Client {
       () => accountRow.OriginalBalance,
       () => accountRow.OriginalProfit
         );
-      if (OriginalProfit >= .001) RaiseCloseAllTrades();
+      //if (OriginalProfit >= .001) RaiseCloseAllTrades();
     }
 
     public bool HasProfit { get { return Gross > 0; } }
@@ -147,5 +150,6 @@ namespace HedgeHog.Alice.Client {
     public event PropertyChangedEventHandler PropertyChanged;
 
     #endregion
+
   }
 }

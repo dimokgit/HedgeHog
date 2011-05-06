@@ -2664,12 +2664,17 @@ namespace Order2GoAddIn {
       return trades;
     }
     public Trade GetLastTrade(string pair) {
-      var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
-      if (trades.Length == 0)
-        trades = GetClosedTrades(pair);
-      if (trades.Length == 0)
-        trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
-      return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();
+      try {
+        var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
+        if (trades.Length == 0)
+          trades = GetClosedTrades(pair);
+        if (trades.Length == 0)
+          trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
+        return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();
+      } catch (Exception exc) {
+        RaiseError(exc);
+        return null;
+      }
     }
     #endregion
 
@@ -2684,6 +2689,7 @@ namespace Order2GoAddIn {
     }
     public int MinimumQuantity {
       get {
+        if (!IsLoggedIn) return 0;
         if (TradingSettingsProvider == null) return 10000;
         if (_minimumQuantity == 0){
           _minimumQuantity = TradingSettingsProvider.GetMinQuantity("EUR/USD", AccountID);

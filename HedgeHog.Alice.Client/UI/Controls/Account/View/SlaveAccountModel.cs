@@ -129,7 +129,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     private void InvokeSyncronize() {
       if (IsLoggedIn && !syncronizeScheduler.IsRunning) {
         syncronizeScheduler.Command = () => {
-          AccountModel.Update(fwLocal.GetAccount(), ServerToLocalRatio, fwLocal.ServerTime);
+          AccountModel.Update(fwLocal.GetAccount(), ServerToLocalRatio,0, fwLocal.ServerTime);
           Syncronize(MasterModel.AccountModel, AccountModel);
           RaisePropertyChanged(() => IsLogExpanded);
         };
