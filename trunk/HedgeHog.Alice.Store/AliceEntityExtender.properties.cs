@@ -5,6 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using HedgeHog.Bars;
 using HedgeHog.Alice.Store.Metadata;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
@@ -421,9 +422,13 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Trading Angle Range")]
     [Category(categoryTrading)]
-    public double IterationsForPower_ {
+    public double TradingAngleRange_ {
       get { return TradingAngleRange; }
-      set { TradingAngleRange = value; }
+      set {
+        if (TradingAngleRange == value) return;
+        TradingAngleRange = value;
+        OnPropertyChanged(TradingMacroMetadata.TradingAngleRange_);
+      }
     }
 
     [DisplayName("Trade By Rate Direction")]
@@ -466,12 +471,16 @@ namespace HedgeHog.Alice.Store {
       set { CorridorIterationsIn = value; }
     }
 
-    [DisplayName("Iterations For Corridor Heights")]
-    [Description("Ex: highs.AverageByIteration(N)")]
+    [DisplayName("Iterations For Center of Mass")]
+    [Description("Ex: CentersOfMass = rates.Overlaps(X)")]
     [Category(categoryXXX)]
-    public int IterationsForCorridorHeights {
+    public int IterationsForCenterOfMass {
       get { return CorridorIterationsOut; }
-      set { CorridorIterationsOut = value; }
+      set {
+        if (CorridorIterationsOut == value) return;
+        CorridorIterationsOut = value;
+        OnPropertyChanged(TradingMacroMetadata.IterationsForCenterOfMass);
+      }
     }
 
 
@@ -583,12 +592,188 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_IsAutoSync != value) {
           _IsAutoSync = value;
-          OnPropertyChanged("IsAutoSync");
+          OnPropertyChanged(TradingMacroMetadata.IsAutoSync);
         }
       }
     }
-    private bool _IsSelectedInUI;
 
+    private double _TradeDistanceInPips;
+    double TradeDistanceInPips {
+      get { return _TradeDistanceInPips; }
+      set {
+        if (_TradeDistanceInPips != value) {
+          _TradeDistanceInPips = value;
+          OnPropertyChanged(TradingMacroMetadata.TradeDistanceInPips);
+        }
+      }
+    }
+
+    private int _CalculatedLotSize;
+    public int CalculatedLotSize {
+      get { return _CalculatedLotSize; }
+      set {
+        if (_CalculatedLotSize != value) {
+          _CalculatedLotSize = value;
+          OnPropertyChanged(TradingMacroMetadata.CalculatedLotSize);
+        }
+      }
+    }
+
+    public Freezing FreezeType {
+      get { return (Freezing)this.FreezLimit; }
+      set {
+        if (this.FreezLimit != (int)value) {
+          this.FreezLimit = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.FreezeType);
+        }
+      }
+    }
+
+    public Freezing FreezeStopType {
+      get { return (Freezing)this.FreezeStop; }
+      set {
+        if (this.FreezeStop != (int)value) {
+          this.FreezeStop = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.FreezeStopType);
+        }
+      }
+    }
+
+    private double _VolumeShort;
+    public double VolumeShort {
+      get { return _VolumeShort; }
+      set {
+        if (_VolumeShort != value) {
+          _VolumeShort = value;
+          OnPropertyChanged(TradingMacroMetadata.VolumeShort);
+          VolumeShortToLongRatio = VolumeShort / VolumeLong;
+        }
+      }
+    }
+
+    private double _VolumeLong;
+    public double VolumeLong {
+      get { return _VolumeLong; }
+      set {
+        if (_VolumeLong != value) {
+          _VolumeLong = value;
+          OnPropertyChanged(TradingMacroMetadata.VolumeLong);
+          VolumeShortToLongRatio = VolumeShort / VolumeLong;
+        }
+      }
+    }
+
+    private double _VolumeShortToLongRatio;
+    public double VolumeShortToLongRatio {
+      get { return _VolumeShortToLongRatio; }
+      set {
+        if (_VolumeShortToLongRatio != value) {
+          _VolumeShortToLongRatio = value;
+          OnPropertyChanged(TradingMacroMetadata.VolumeShortToLongRatio);
+        }
+      }
+    }
+
+    public bool IsCharterMinimized { get; set; }
+    private bool _ShowProperties;
+    public bool ShowProperties {
+      get { return _ShowProperties; }
+      set {
+        if (_ShowProperties != value) {
+          _ShowProperties = value;
+          OnPropertyChanged(TradingMacroMetadata.ShowProperties);
+        }
+      }
+    }
+
+
+    DateTime _lastRatePullTime;
+    public DateTime LastRatePullTime {
+      get { return _lastRatePullTime; }
+      set {
+        if (_lastRatePullTime == value) return;
+        _lastRatePullTime = value;
+        OnPropertyChanged(TradingMacroMetadata.LastRatePullTime);
+      }
+    }
+
+    public double AngleInRadians { get { return Math.Atan(Angle) * (180 / Math.PI); } }
+    double _angle;
+    public double Angle {
+      get { return _angle; }
+      set {
+        if (_angle == value) return;
+        _angle = value;
+        OnPropertyChanged(TradingMacroMetadata.Angle);
+        OnPropertyChanged(TradingMacroMetadata.AngleInRadians);
+      }
+    }
+
+
+
+    private double _BarHeightHigh;
+    public double BarHeightHigh {
+      get { return _BarHeightHigh; }
+      set {
+        if (_BarHeightHigh != value) {
+          _BarHeightHigh = value;
+          OnPropertyChanged(TradingMacroMetadata.BarHeightHigh);
+        }
+      }
+    }
+
+    double? _StopAmount;
+    public double? StopAmount {
+      get { return _StopAmount; }
+      set {
+        if (_StopAmount == value) return;
+        _StopAmount = value;
+        OnPropertyChanged(TradingMacroMetadata.StopAmount);
+      }
+    }
+    double? _LimitAmount;
+    public double? LimitAmount {
+      get { return _LimitAmount; }
+      set {
+        if (_LimitAmount == value) return;
+        _LimitAmount = value;
+        OnPropertyChanged(TradingMacroMetadata.LimitAmount);
+      }
+    }
+
+    double? _netInPips;
+    public double? NetInPips {
+      get { return _netInPips; }
+      set {
+        if (_netInPips == value) return;
+        _netInPips = value;
+        OnPropertyChanged(TradingMacroMetadata.NetInPips);
+      }
+    }
+
+    private double _SlackInPips;
+    public double SlackInPips {
+      get { return _SlackInPips; }
+      set {
+        if (_SlackInPips != value) {
+          _SlackInPips = value;
+          OnPropertyChanged(TradingMacroMetadata.SlackInPips);
+        }
+      }
+    }
+
+    private double _CurrentLossPercent;
+    public double CurrentLossPercent {
+      get { return _CurrentLossPercent; }
+      set {
+        if (_CurrentLossPercent != value) {
+          _CurrentLossPercent = value;
+          OnPropertyChanged(TradingMacroMetadata.CurrentLossPercent);
+        }
+      }
+    }
+
+    private bool _IsSelectedInUI;
     public bool IsSelectedInUI {
       get { return _IsSelectedInUI; }
       set {
@@ -597,6 +782,36 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.IsSelectedInUI);
       }
     }
+
+    Price _currentPrice;
+    public Price CurrentPrice {
+      get { return _currentPrice; }
+      set {
+        _currentPrice = value;
+        OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
+      }
+    }
+
+    double _balanceOnStop;
+    public double BalanceOnStop {
+      get { return _balanceOnStop; }
+      set {
+        if (_balanceOnStop == value) return;
+        _balanceOnStop = value;
+        OnPropertyChanged(TradingMacroMetadata.BalanceOnStop);
+      }
+    }
+
+    double _balanceOnLimit;
+    public double BalanceOnLimit {
+      get { return _balanceOnLimit; }
+      set {
+        if (_balanceOnLimit == value) return;
+        _balanceOnLimit = value;
+        OnPropertyChanged(TradingMacroMetadata.BalanceOnLimit);
+      }
+    }
+
 
   }
 }

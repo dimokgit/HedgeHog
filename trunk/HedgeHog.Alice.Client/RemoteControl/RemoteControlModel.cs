@@ -206,7 +206,7 @@ namespace HedgeHog.Alice.Client {
     public ICommand CopyTradingMacroCommand {
       get {
         if (_CopyTradingMacroCommand == null) {
-          _CopyTradingMacroCommand = new Gala.RelayCommand<object>(CopyTradingMacro, (tm) => tm is TradingMacro);
+          _CopyTradingMacroCommand = new Gala.RelayCommand<object>(CopyTradingMacro, (tm) => true || tm is TradingMacro);
         }
 
         return _CopyTradingMacroCommand;
@@ -458,10 +458,20 @@ namespace HedgeHog.Alice.Client {
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
           MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
           MasterModel.CoreFX.LoggedOff += CoreFX_LoggedOffEvent;
-          MasterModel.MasterTradeAccountChanged += new EventHandler(MasterModel_MasterTradeAccountChanged);
+          MasterModel.MasterTradeAccountChanged += MasterModel_MasterTradeAccountChanged;
+          MasterModel.NeedTradingStatistics += MasterModel_NeedTradingStatistics;
         }
       } catch (Exception exc) {
         Log = exc;
+      }
+    }
+
+    void MasterModel_NeedTradingStatistics(object sender, TradingStatisticsEventArgs e) {
+      if (GetTradingMacros().Any(tm => tm.RatesArraySafe.Length == 0)) return;
+      var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 ).ToArray();
+      if (tms.Length > 0) {
+        var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
+        e.TakeProfitInPipsAverage = tp;
       }
     }
 
@@ -529,6 +539,12 @@ namespace HedgeHog.Alice.Client {
         if (e.PropertyName == TradingMacroMetadata.IsActive) {
           InitTradingMacro(tm);
         }
+        if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
+          var charter = GetCharter(tm);
+          charter.LineAvgAsk = tm.CurrentPrice.Ask;
+          charter.LineAvgBid = tm.CurrentPrice.Bid;
+        }
+
 
         if (e.PropertyName == TradingMacroMetadata.GannAngles_) {
           tm.SetGannAngles();
@@ -722,6 +738,7 @@ namespace HedgeHog.Alice.Client {
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Length;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
+          charter.CorridorAngle = tm.CorridorAngle;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,

@@ -116,7 +116,10 @@ namespace HedgeHog.Bars {
 
     public static Rate[][] Overlaps(this ICollection<Rate> rates,int iterationsForSpread = 0) {
       if (iterationsForSpread > 0) {
-        var spreadAverage = rates.Select(r => r.Spread).ToArray().AverageByIterations(iterationsForSpread, true).Average();
+        var spreadAverage = rates.Select(r => r.Spread).ToArray()
+          .AverageByIterations(iterationsForSpread, true)
+          .AverageByIterations(iterationsForSpread, false)
+          .Average();
         rates = rates.Where(r => r.Spread <= spreadAverage).ToArray();
       }
       return rates.AsParallel().Select(rate => rates.Where(r => r.OverlapsWith(rate) != OverlapType.None).ToArray()).ToArray();

@@ -27,4 +27,11 @@ namespace HedgeHog.Alice.Store {
       this.MasterTrade = trade;
     }
   }
+  public class TradingStatisticsEventArgs : EventArgs {
+    public double RateStDevAverage { get; set; }
+    public TradingStatisticsEventArgs() {
+    }
+
+    public double TakeProfitInPipsAverage { get; set; }
+  }
 }

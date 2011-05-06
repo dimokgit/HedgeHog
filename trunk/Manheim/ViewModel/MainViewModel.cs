@@ -367,9 +367,13 @@ namespace Manheim.ViewModel {
         while (vehicleInfoIE == null && DateTime.Now < dateStart.AddSeconds(10)) {
           foreach (var ie in WC.IE.InternetExplorers()) {
             var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
-            if (doc.parentWindow.name == _vehicleInfoTargetName) {
-              vehicleInfoIE = ie;
-              break;
+            try {
+              if (doc.parentWindow.name == _vehicleInfoTargetName) {
+                vehicleInfoIE = ie;
+                break;
+              }
+            } catch (Exception exc) {
+              continue;
             }
           }
         }

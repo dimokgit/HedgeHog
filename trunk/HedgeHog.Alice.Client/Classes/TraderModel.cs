@@ -166,6 +166,13 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Events
+    TradingStatisticsEventArgs _tradingStatistics = new TradingStatisticsEventArgs();
+    public override event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
+    protected void OnNeedTradingStatistics() {
+      if (NeedTradingStatistics != null) {
+        NeedTradingStatistics(this, _tradingStatistics);
+      }
+    }
 
     public override event EventHandler MasterTradeAccountChanged;
     protected void OnMasterTradeAccountChanged() {
@@ -1195,7 +1202,8 @@ namespace HedgeHog.Alice.Client {
 
 
     private void UpdateTradingAccount(Account account) {
-      AccountModel.Update(account, 0, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      OnNeedTradingStatistics();
+      AccountModel.Update(account, 0,_tradingStatistics.TakeProfitInPipsAverage, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
     }
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
@@ -1206,9 +1214,21 @@ namespace HedgeHog.Alice.Client {
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
       OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
+      orders.CollectionChanged += new NotifyCollectionChangedEventHandler(orders_CollectionChanged);
       OrdersList.SortDescriptions.Add(new SortDescription("Pair", ListSortDirection.Ascending));
       OrdersList.SortDescriptions.Add(new SortDescription("OrderId", ListSortDirection.Descending));
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
+    }
+
+    void orders_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+      if (e.Action == NotifyCollectionChangedAction.Add)
+        lock(orders)
+          CleanUpOrders(orders);
+    }
+
+    private void CleanUpOrders(ObservableCollection<Order> orders) {
+      orders.GroupBy(o => new { o.OrderID, o.IsBuy }).SelectMany(g => g.Skip(1)).ToList()
+      .ForEach(o => orders.Remove(o));
     }
 
     public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
@@ -1264,7 +1284,6 @@ namespace HedgeHog.Alice.Client {
     void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
       try {
         Price Price = e.Price;
-        e.Account.Equity = e.Account.Balance + e.Trades.Sum(t => t.GrossPL);
         RunPriceChanged(e);
       } catch (Exception exc) {
         Log = exc;
@@ -1327,7 +1346,6 @@ namespace HedgeHog.Alice.Client {
       if (InvokeSyncronizeEvent == null) {
         Observable.FromEventPattern<EventHandler<InvokeSyncronizeEventArgs>, InvokeSyncronizeEventArgs>(h => h, h => InvokeSyncronizeEvent += h, h => InvokeSyncronizeEvent -= h)
           .Throttle(TimeSpan.FromSeconds(1))
-          .SubscribeOnDispatcher()
           .Subscribe(ie => InvokeSyncronize(ie.EventArgs.Account),exc=>Log=exc);
       }
       InvokeSyncronizeEvent(this, new InvokeSyncronizeEventArgs(account));
@@ -1354,40 +1372,53 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void UpdateTrades(Account account, List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
-      var oldIds = tradesCollection.Select(t => t.Id).ToArray();
-      var newIds = tradesList.Select(t => t.Id);
-      var deleteIds = oldIds.Except(newIds).ToList();
-      deleteIds.ToObservable().SubscribeOnDispatcher().Subscribe(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d)));
-      var addIds = newIds.Except(oldIds).ToList();
-      addIds.ToObservable().SubscribeOnDispatcher().Subscribe(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
-      foreach (var trade in tradesList) {
-        var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
-        if (trd != null)
-          trd.Update(trade,
-            o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
-            o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
-            );
+      try {
+        var oldIds = tradesCollection.Select(t => t.Id).ToArray();
+        var newIds = tradesList.Select(t => t.Id);
+        var deleteIds = oldIds.Except(newIds).ToList();
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
+          () => deleteIds.ForEach(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d))));
+        var addIds = newIds.Except(oldIds).ToList();
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
+          () => addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a))));
+        foreach (var trade in tradesList) {
+          var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
+          if (trd != null)
+            trd.Update(trade,
+              o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
+              o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
+              );
+        }
+        RaisePropertyChanged(Metadata.TraderModelMetadata.ServerTradesList);
+      } catch (Exception exc) {
+        Log = exc;
       }
-      RaisePropertyChanged(Metadata.TraderModelMetadata.ServerTradesList);
     }
-    private void UpdateOrders(Account account,List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
-      var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
-      var newIds = ordersList.Select(t => t.OrderID);
-      var deleteIds = oldIds.Except(newIds).ToList();
-      deleteIds.ToObservable().SubscribeOnDispatcher().Subscribe(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)), exc => Log = exc);
-      var addIds = newIds.Except(oldIds).ToList();
-      addIds.ToObservable().SubscribeOnDispatcher().Subscribe(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
-      foreach (var order in ordersList) {
-        var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
-        if (odr == null) break;
-        var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
-        odr.Update(order,
-          o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
-          o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
-          o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades,odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
-          o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount/stopBalance ; },
-          o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount/stopBalance ; }
-          );
+    private void UpdateOrders(Account account, List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
+      try {
+        var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
+        var newIds = ordersList.Select(t => t.OrderID);
+        var deleteIds = oldIds.Except(newIds).ToList();
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
+          deleteIds.ForEach(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d))));
+        var addIds = newIds.Except(oldIds).ToList();
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
+          addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a))));
+        CleanUpOrders(ordersCollection);
+        foreach (var order in ordersList) {
+          var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
+          if (odr == null) break;
+          var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
+          odr.Update(order,
+            o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
+            o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
+            o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades, odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
+            o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount / stopBalance; },
+            o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount / stopBalance; }
+            );
+        }
+      } catch (Exception exc) {
+        Log = exc;
       }
     }
     private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {

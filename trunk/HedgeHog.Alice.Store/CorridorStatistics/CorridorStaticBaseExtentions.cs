@@ -18,10 +18,10 @@ namespace HedgeHog.Alice.Store {
     }
   }
   public static class CorridorStaticBaseExtentions {
-    public static Dictionary<int, CorridorStatistics> GetCorridornesses(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights,Predicate<CorridorStatistics> exitCondition, bool useRegression = true) {
-      return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength, iterationsForHeights, exitCondition, useRegression);
+    public static Dictionary<int, CorridorStatistics> GetCorridornesses(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, Predicate<CorridorStatistics> exitCondition, bool useRegression = true) {
+      return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength, exitCondition, useRegression);
     }
-    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, int iterationsForHeights, Predicate<CorridorStatistics> exitCondition, bool useRegression = true) {
+    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength, Predicate<CorridorStatistics> exitCondition, bool useRegression = true) {
       var corridornesses = new Dictionary<int, CorridorStatistics>();
       if (rates.Count() > 2) {
         try {
@@ -33,8 +33,10 @@ namespace HedgeHog.Alice.Store {
             var periodsEnd = Math.Min(rates.Count(), periodsStart + periodsLength);
             periodsStart = Math.Min(rates.Count() - 1, periodsStart);
             for (var i = periodsStart; i < periodsEnd; i++ /*= i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()*/) {
-              var cs = rates.Take(i).ToArray().ScanCorridorWithAngle(priceHigh, priceLow, iterationsForHeights, useRegression);
+              var ratesForCorr = rates.Take(i).ToArray();
+              var cs = ratesForCorr.ScanCorridorWithAngle(priceHigh, priceLow, useRegression);
               if (cs != null) {
+                cs.Rates = ratesForCorr;
                 corridornesses.Add(i, cs);
                 if (exitCondition(cs)) break;
               }
@@ -49,7 +51,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static Func<double, double, bool> priceHeightComparer = (d1, d2) => d1 >= d2;
 
-    public static CorridorStatistics ScanCorridorWithAngle(this IEnumerable<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int iterationsForHeights, bool userRegression = true) {
+    public static CorridorStatistics ScanCorridorWithAngle(this IEnumerable<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, bool userRegression = true) {
       try {
         #region Funcs
         Func<Rate, double> priceGet = rate => rate.PriceAvg4;
@@ -110,7 +112,7 @@ namespace HedgeHog.Alice.Store {
           var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
           height0 = ratesForHeight.StDev();
           height = height0 * 2;
-          //rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, iterationsForHeights, out heightUp, out heightDown);
+          //rates.GetCorridorHeights(new Rate[0], new Rate[0], priceGet, priceHigh, priceLow, priceHeightComparer, 2, out heightUp, out heightDown);
           density = (heightDown + heightUp) / periods;
         }
         rates.ToList().ForEach(r => priceSet(r, 0));

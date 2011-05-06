@@ -47,7 +47,17 @@
                     </DataTemplate>
                   </DataGridTextColumn.HeaderTemplate>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="Pips">
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <TextBlock>
+                        <TextBlock Text="{Binding PL,StringFormat=n1}"/>
+                        <TextBlock Margin="-2">></TextBlock>
+                        <TextBlock Text="{Binding TakeProfit,StringFormat=n1}"/>
+                      </TextBlock>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="S/B" Binding="{Binding StopToBalanceRatio,StringFormat=p0}" IsReadOnly="True">
                   <DataGridTextColumn.HeaderTemplate>
