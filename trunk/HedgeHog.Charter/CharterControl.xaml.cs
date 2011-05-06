@@ -41,8 +41,7 @@ namespace HedgeHog {
       if (container != null) container.SatisfyImportsOnce(this);
       this.Name = name.Replace("/", "");
       InitializeComponent();
-      OnPropertyChanged("Header");
-      var a = FindName("PART_AdditionalLabelsCanvas");
+      OnPropertyChanged(Metadata.CharterControlMetadata.Header);
     }
     #region Attached Properties
     #region IsInteractive
@@ -86,7 +85,7 @@ namespace HedgeHog {
         if (_barsPeriod == value) return;
         _barsPeriod = value;
         OnPropertyChanged("BarsPeriod");
-        OnPropertyChanged("Header");
+        OnPropertyChanged(Metadata.CharterControlMetadata.Header);
       }
     }
 
@@ -97,7 +96,7 @@ namespace HedgeHog {
         if (_BarsCount != value) {
           _BarsCount = value;
           OnPropertyChanged("BarsCount");
-          OnPropertyChanged("Header");
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
@@ -109,16 +108,64 @@ namespace HedgeHog {
         if (_CorridorAngle != value) {
           _CorridorAngle = value;
           OnPropertyChanged("CorridorAngle");
-          OnPropertyChanged("Header");
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
 
+    private double _HeightInPips;
+    public double HeightInPips {
+      get { return _HeightInPips; }
+      set {
+        if (_HeightInPips != value) {
+          _HeightInPips = value;
+          OnPropertyChanged("HeightInPips");
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
+
+    private double _StDev;
+    public double StDev {
+      get { return _StDev; }
+      set {
+        if (_StDev != value) {
+          _StDev = value;
+          OnPropertyChanged("StDev");
+        }
+      }
+    }
+
+    private double _CorridorHeight0;
+    public double CorridorHeight0 {
+      get { return _CorridorHeight0; }
+      set {
+        if (_CorridorHeight0 != value) {
+          _CorridorHeight0 = value;
+          OnPropertyChanged("CorridorHeight0");
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
+
+    private double _SpreadForCorridor;
+    public double SpreadForCorridor {
+      get { return _SpreadForCorridor; }
+      set {
+        if (_SpreadForCorridor != value) {
+          _SpreadForCorridor = value;
+          OnPropertyChanged("SpreadForCorridor");
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
 
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°", Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle);
+          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}↨{5:n0}‡{6:n0}∆{7:n0}├"
+          , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
+          ,HeightInPips,CorridorHeight0,StDev,SpreadForCorridor);
       }
     }
 

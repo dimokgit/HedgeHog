@@ -1143,6 +1143,7 @@ namespace HedgeHog.Alice.Store {
           //if (trade.Buy && trade.Open < ResistancePrice) SupportPrice = trade.Open - offsetBySpread;
           //if (!trade.Buy && trade.Open > SupportPrice) ResistancePrice = trade.Open + offsetBySpread;
         }
+        RaiseShowChart();
       } catch (Exception exc) {
         Log = exc;
       }
@@ -1165,6 +1166,7 @@ namespace HedgeHog.Alice.Store {
       if (!IsMyTrade(e.Trade)) return;
       SetEntryOrdersBySuppResLevels();
       RaisePositionsChanged();
+      RaiseShowChart();
     }
 
     private void RaisePositionsChanged() {

@@ -32,6 +32,21 @@ namespace HedgeHog {
     #endregion
   }
 
+  public class NullableValueConverter : IValueConverter {
+    #region IValueConverter Members
+    private static readonly NullableValueConverter defaultInstance = new NullableValueConverter();
+    public static NullableValueConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      if (string.IsNullOrEmpty(value+""))
+        return null;
+      return value;
+    }
+    #endregion
+  }
 
   public class PerMilleConverter : IValueConverter {
     private static readonly PerMilleConverter defaultInstance = new PerMilleConverter();

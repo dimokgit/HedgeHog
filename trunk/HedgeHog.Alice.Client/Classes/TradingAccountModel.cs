@@ -25,6 +25,29 @@ namespace HedgeHog.Alice.Client {
         CloseAllTradesEvent(this,EventArgs.Empty);
     }
 
+    private double _TakeProfit;
+    public double TakeProfit {
+      get { return PipsToExit.GetValueOrDefault(_TakeProfit); }
+      set {
+        if (_TakeProfit != value) {
+          _TakeProfit = value;
+          OnPropertyChanged(() => TakeProfit);
+        }
+      }
+    }
+    private double? _PipsToExit;
+    public double? PipsToExit {
+      get { return _PipsToExit; }
+      set {
+        if (_PipsToExit != value) {
+          _PipsToExit = value;
+          RaisePropertyChanged(() => TakeProfit);
+          RaisePropertyChanged(() => PipsToExit);
+        }
+      }
+    }
+
+
     public double TradingRatio { get; set; }
     public double ProfitPercent { get { return Equity / Balance - 1; } }
     private double _CurrentLoss;
@@ -37,20 +60,6 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
-
-    private double _TakeProfit;
-    public double TakeProfit {
-      get { return _TakeProfit; }
-      set {
-        if (_TakeProfit != value) {
-          _TakeProfit = value;
-          OnPropertyChanged(() => TakeProfit);
-          if (value > 0 && PL >= value)
-            RaiseCloseAllTrades();
-        }
-      }
-    }
-
 
     public double OriginalBalance { get { return Balance - CurrentLoss; } }
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
@@ -70,6 +79,10 @@ namespace HedgeHog.Alice.Client {
       accountRow.StopAmount = account.StopAmount;
       accountRow.LimitAmount = account.LimitAmount;
       accountRow.TakeProfit = takeProfitInPipsAverage;
+      if (accountRow.TakeProfit != 0 && accountRow.PL >= accountRow.TakeProfit) {
+        PipsToExit = null;
+        RaiseCloseAllTrades();
+      }
       accountRow.OnPropertyChanged(
       () => accountRow.Balance,
       () => accountRow.Equity,

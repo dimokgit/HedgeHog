@@ -90,6 +90,7 @@
           <Property Name="Commission" Type="float" Nullable="false" />
           <Property Name="IsActive" Type="bit" Nullable="false" />
           <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="PipsToExit" Type="float" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -210,6 +211,7 @@
           <Property Name="Commission" Type="Double" Nullable="false" />
           <Property Type="Boolean" Name="IsActive" Nullable="false" />
           <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
+          <Property Type="Double" Name="PipsToExit" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -366,7 +368,8 @@
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
           <EntitySetMapping Name="TradingAccounts"><EntityTypeMapping TypeName="AliceModel.TradingAccount"><MappingFragment StoreEntitySet="TradingAccount">
-            <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+            <ScalarProperty Name="PipsToExit" ColumnName="PipsToExit" />
+                <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
                 <ScalarProperty Name="Password" ColumnName="Password" />
             <ScalarProperty Name="MasterId" ColumnName="MasterId" />
