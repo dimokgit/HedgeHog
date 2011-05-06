@@ -1666,6 +1666,30 @@ namespace HedgeHog.Alice.Store
         private global::System.String _TradingMacroName;
         partial void OnTradingMacroNameChanging(global::System.String value);
         partial void OnTradingMacroNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> PipsToExit
+        {
+            get
+            {
+                return _PipsToExit;
+            }
+            set
+            {
+                OnPipsToExitChanging(value);
+                ReportPropertyChanging("PipsToExit");
+                _PipsToExit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PipsToExit");
+                OnPipsToExitChanged();
+            }
+        }
+        private Nullable<global::System.Double> _PipsToExit;
+        partial void OnPipsToExitChanging(Nullable<global::System.Double> value);
+        partial void OnPipsToExitChanged();
 
         #endregion
     

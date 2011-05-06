@@ -14,6 +14,83 @@ using System.Linq.Expressions;
 
 
 #pragma warning disable 
+
+namespace HedgeHog.Charter.Metadata
+{
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.AttachedProperties"/></summary>
+    public static class AttachedPropertiesMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.ColoredSegment"/></summary>
+    public static class ColoredSegmentMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Charter.ColoredSegment.OnInitialized"/></summary>
+        public const string OnInitialized = "OnInitialized";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.originalColor"/></summary>
+        public const string originalColor = "originalColor";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedColor"/></summary>
+        public const string SelectedColor = "SelectedColor";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectedColorProperty"/></summary>
+        public const string SelectedColorProperty = "SelectedColorProperty";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Charter.ColoredSegment.OnPropertyChanged"/></summary>
+        public const string OnPropertyChanged = "OnPropertyChanged";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.MyPropertyProperty"/></summary>
+        public const string MyPropertyProperty = "MyPropertyProperty";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedValue"/></summary>
+        public const string SelectedValue = "SelectedValue";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectedValueProperty"/></summary>
+        public const string SelectedValueProperty = "SelectedValueProperty";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectValue"/></summary>
+        public const string SelectValue = "SelectValue";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectValueProperty"/></summary>
+        public const string SelectValueProperty = "SelectValueProperty";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedColor"/></summary>
+        public static PropertyPath SelectedColorPath { get { return new PropertyPath("SelectedColor"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedValue"/></summary>
+        public static PropertyPath SelectedValuePath { get { return new PropertyPath("SelectedValue"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectValue"/></summary>
+        public static PropertyPath SelectValuePath { get { return new PropertyPath("SelectValue"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.CursorH"/></summary>
+    public static class CursorHMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.DraggableManager"/></summary>
+    public static class DraggableManagerMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Charter.DraggableManager.SetHorizontalAnchor"/></summary>
+        public const string SetHorizontalAnchor = "SetHorizontalAnchor";
+
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.GraggableLine"/></summary>
+    public static class GraggableLineMetadata
+    {
+        
+    }
+
+}
+
 namespace HedgeHog.Charter.FileMetadata.Metadata
 {
     /// <summary>Metadata for File ChartElements</summary>
@@ -126,9 +203,14 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
 
 }
 
-
 namespace HedgeHog.Metadata
 {
+    /// <summary>Metadata for class <see cref="HedgeHog.CharterControlMessage"/></summary>
+    public static class CharterControlMessageMetadata
+    {
+        
+    }
+
     /// <summary>Metadata for class <see cref="HedgeHog.CharterControl"/></summary>
     public static class CharterControlMetadata
     {
@@ -149,6 +231,51 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.FriendProperty"/></summary>
         public const string FriendProperty = "FriendProperty";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._barsPeriod"/></summary>
+        public const string _barsPeriod = "_barsPeriod";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.BarsPeriod"/></summary>
+        public const string BarsPeriod = "BarsPeriod";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._BarsCount"/></summary>
+        public const string _BarsCount = "_BarsCount";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.BarsCount"/></summary>
+        public const string BarsCount = "BarsCount";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorAngle"/></summary>
+        public const string _CorridorAngle = "_CorridorAngle";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorAngle"/></summary>
+        public const string CorridorAngle = "CorridorAngle";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._HeightInPips"/></summary>
+        public const string _HeightInPips = "_HeightInPips";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.HeightInPips"/></summary>
+        public const string HeightInPips = "HeightInPips";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._StDev"/></summary>
+        public const string _StDev = "_StDev";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.StDev"/></summary>
+        public const string StDev = "StDev";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
+        public const string Header = "Header";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.IsActive"/></summary>
+        public const string IsActive = "IsActive";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.IsActiveProperty"/></summary>
+        public const string IsActiveProperty = "IsActiveProperty";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.IsSelected"/></summary>
+        public const string IsSelected = "IsSelected";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.IsSelectedProperty"/></summary>
+        public const string IsSelectedProperty = "IsSelectedProperty";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._IsInPlay"/></summary>
         public const string _IsInPlay = "_IsInPlay";
@@ -228,6 +355,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceFunc"/></summary>
         public const string GetPriceFunc = "GetPriceFunc";
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceHigh"/></summary>
+        public const string GetPriceHigh = "GetPriceHigh";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceLow"/></summary>
+        public const string GetPriceLow = "GetPriceLow";
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassBuy"/></summary>
         public const string CenterOfMassBuy = "CenterOfMassBuy";
 
@@ -236,6 +369,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraph"/></summary>
         public const string PriceLineGraph = "PriceLineGraph";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraphBid"/></summary>
+        public const string PriceLineGraphBid = "PriceLineGraphBid";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColor"/></summary>
         public const string priceLineGraphColor = "priceLineGraphColor";
@@ -652,6 +788,30 @@ namespace HedgeHog.Metadata
         public const string SelectedGannAngleIndex = "SelectedGannAngleIndex";
 
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.BarsPeriod"/></summary>
+        public static PropertyPath BarsPeriodPath { get { return new PropertyPath("BarsPeriod"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.BarsCount"/></summary>
+        public static PropertyPath BarsCountPath { get { return new PropertyPath("BarsCount"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorAngle"/></summary>
+        public static PropertyPath CorridorAnglePath { get { return new PropertyPath("CorridorAngle"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.HeightInPips"/></summary>
+        public static PropertyPath HeightInPipsPath { get { return new PropertyPath("HeightInPips"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.StDev"/></summary>
+        public static PropertyPath StDevPath { get { return new PropertyPath("StDev"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
+        public static PropertyPath HeaderPath { get { return new PropertyPath("Header"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.IsActive"/></summary>
+        public static PropertyPath IsActivePath { get { return new PropertyPath("IsActive"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.IsSelected"/></summary>
+        public static PropertyPath IsSelectedPath { get { return new PropertyPath("IsSelected"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.IsInPlay"/></summary>
         public static PropertyPath IsInPlayPath { get { return new PropertyPath("IsInPlay"); } }
 
@@ -670,6 +830,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceFunc"/></summary>
         public static PropertyPath GetPriceFuncPath { get { return new PropertyPath("GetPriceFunc"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceHigh"/></summary>
+        public static PropertyPath GetPriceHighPath { get { return new PropertyPath("GetPriceHigh"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceLow"/></summary>
+        public static PropertyPath GetPriceLowPath { get { return new PropertyPath("GetPriceLow"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CenterOfMassBuy"/></summary>
         public static PropertyPath CenterOfMassBuyPath { get { return new PropertyPath("CenterOfMassBuy"); } }
 
@@ -678,6 +844,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraph"/></summary>
         public static PropertyPath PriceLineGraphPath { get { return new PropertyPath("PriceLineGraph"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraphBid"/></summary>
+        public static PropertyPath PriceLineGraphBidPath { get { return new PropertyPath("PriceLineGraphBid"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineMax"/></summary>
         public static PropertyPath LineMaxPath { get { return new PropertyPath("LineMax"); } }
@@ -1540,76 +1709,6 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.PositionChangedBaseEventArgs{T}.OldPosition"/></summary>
         public static PropertyPath OldPositionPath { get { return new PropertyPath("OldPosition"); } }
 
-    }
-
-}
-
-namespace HedgeHog.Charter.Metadata
-{
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.ColoredSegment"/></summary>
-    public static class ColoredSegmentMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Charter.ColoredSegment.OnInitialized"/></summary>
-        public const string OnInitialized = "OnInitialized";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.originalColor"/></summary>
-        public const string originalColor = "originalColor";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedColor"/></summary>
-        public const string SelectedColor = "SelectedColor";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectedColorProperty"/></summary>
-        public const string SelectedColorProperty = "SelectedColorProperty";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Charter.ColoredSegment.OnPropertyChanged"/></summary>
-        public const string OnPropertyChanged = "OnPropertyChanged";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.MyPropertyProperty"/></summary>
-        public const string MyPropertyProperty = "MyPropertyProperty";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedValue"/></summary>
-        public const string SelectedValue = "SelectedValue";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectedValueProperty"/></summary>
-        public const string SelectedValueProperty = "SelectedValueProperty";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectValue"/></summary>
-        public const string SelectValue = "SelectValue";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Charter.ColoredSegment.SelectValueProperty"/></summary>
-        public const string SelectValueProperty = "SelectValueProperty";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedColor"/></summary>
-        public static PropertyPath SelectedColorPath { get { return new PropertyPath("SelectedColor"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectedValue"/></summary>
-        public static PropertyPath SelectedValuePath { get { return new PropertyPath("SelectedValue"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Charter.ColoredSegment.SelectValue"/></summary>
-        public static PropertyPath SelectValuePath { get { return new PropertyPath("SelectValue"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.CursorH"/></summary>
-    public static class CursorHMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.DraggableManager"/></summary>
-    public static class DraggableManagerMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Charter.DraggableManager.SetHorizontalAnchor"/></summary>
-        public const string SetHorizontalAnchor = "SetHorizontalAnchor";
-
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Charter.GraggableLine"/></summary>
-    public static class GraggableLineMetadata
-    {
-        
     }
 
 }

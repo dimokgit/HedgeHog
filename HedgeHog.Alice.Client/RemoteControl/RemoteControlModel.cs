@@ -739,6 +739,10 @@ namespace HedgeHog.Alice.Client {
           charter.GannAnglesCount = tm.GannAnglesArray.Length;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.CorridorAngle = tm.CorridorAngle;
+          charter.HeightInPips = tm.TradingDistanceInPips;
+          charter.CorridorHeight0 = tm.CorridorHeightByRegressionInPips0;
+          charter.StDev = tm.RatesStDevInPips;
+          charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,

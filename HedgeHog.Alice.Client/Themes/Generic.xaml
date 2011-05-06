@@ -57,6 +57,11 @@
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>
+                  <DataGridTemplateColumn.CellEditingTemplate>
+                    <DataTemplate>
+                      <TextBox Text="{Binding PipsToExit,Converter={x:Static hh:NullableValueConverter.Default}}"/>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=c0}" IsReadOnly="True"/>
                 <DataGridTextColumn Header="S/B" Binding="{Binding StopToBalanceRatio,StringFormat=p0}" IsReadOnly="True">
