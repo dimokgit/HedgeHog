@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using HedgeHog;
+using System.Reactive.Linq;
 
 namespace Rx {
   class GroupBy_Simple {

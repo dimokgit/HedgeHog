@@ -469,7 +469,7 @@ namespace HedgeHog.Alice.Client {
     void MasterModel_NeedTradingStatistics(object sender, TradingStatisticsEventArgs e) {
       if (GetTradingMacros().Any(tm => tm.RatesArraySafe.Length == 0)) return;
       var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 ).ToArray();
-      if (tms.Length > 0) {
+      if (tms.Length > 0 && tms.All(tm => tm.TakeProfitDistance > 0)) {
         var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
         e.TakeProfitInPipsAverage = tp;
       }
@@ -540,9 +540,11 @@ namespace HedgeHog.Alice.Client {
           InitTradingMacro(tm);
         }
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
-          var charter = GetCharter(tm);
-          charter.LineAvgAsk = tm.CurrentPrice.Ask;
-          charter.LineAvgBid = tm.CurrentPrice.Bid;
+          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+            var charter = GetCharter(tm);
+            charter.LineAvgAsk = tm.CurrentPrice.Ask;
+            charter.LineAvgBid = tm.CurrentPrice.Bid;
+          });
         }
 
 
@@ -588,6 +590,12 @@ namespace HedgeHog.Alice.Client {
     }
 
     IDisposable _priceChangedSubscribsion;
+    private void PriceChangeSubscriptionDispose() {
+      if (_priceChangedSubscribsion != null) {
+        _priceChangedSubscribsion.Dispose();
+        _priceChangedSubscribsion = null;
+      }
+    }
     void CoreFX_LoggedInEvent(object sender, EventArgs e) {
       try {
         if (TradingMacrosCopy.Length > 0) {
@@ -596,7 +604,7 @@ namespace HedgeHog.Alice.Client {
             vt.RatesByPair = () => GetTradingMacros().ToDictionary(tm => tm.Pair, tm => tm.RatesInternal);
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
-          //tradesManager.PriceChanged += fw_PriceChanged;
+          PriceChangeSubscriptionDispose();
           _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
             h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
             .Buffer(TimeSpan.FromSeconds(1))
@@ -647,10 +655,7 @@ namespace HedgeHog.Alice.Client {
 
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (tradesManager != null) {
-        if (_priceChangedSubscribsion != null) {
-          _priceChangedSubscribsion.Dispose();
-          _priceChangedSubscribsion = null;
-        }
+        PriceChangeSubscriptionDispose();
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.TradeRemoved -= fw_TradeRemoved;
         tradesManager.OrderAdded -= fw_OrderAdded;
