@@ -2445,8 +2445,10 @@ namespace HedgeHog.Alice.Store {
       var spreadToAdd = PriceSpreadToAdd(isBuy);
       trades.ToList().ForEach(trade => {
         var rateLast = RatesArraySafe.LastOrDefault(r => r.PriceAvg1 > 0);
+        if (rateLast == null) return;
         var netOpen = trades.NetOpen();
-        var limitByCorridor = rateLast == null || ReverseStrategy ? 0 : isBuy ? rateLast.PriceAvg02 : rateLast.PriceAvg03;
+        var cp = (rateLast.PriceAvg2 - rateLast.PriceAvg3) * .6;
+        var limitByCorridor = ReverseStrategy ? 0 : isBuy ? rateLast.PriceAvg3 + cp : rateLast.PriceAvg2 - cp;
         var tp = RoundPrice((trade.IsBuy ? 1 : -1) *
           (CalculateCloseProfit()
           + (ReverseStrategy ? fw.InPoints(Pair, fw.MoneyAndLotToPips(-CurrentLoss, AllowedLotSize(Trades, isBuy), Pair)) : 0)));

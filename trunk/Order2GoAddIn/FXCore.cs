@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using HedgeHog.Shared;
 using System.Diagnostics;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 
 namespace Order2GoAddIn {
@@ -98,7 +99,7 @@ namespace Order2GoAddIn {
     private DateTime serverTimeLast = DateTime.MaxValue;
     public DateTime ServerTime {
       get {
-        if (Desk == null) return DateTime.Now;
+        if (_mDesk == null) return DateTime.Now;
         if (_serverTimeOffset == TimeSpan.Zero)
           _serverTimeOffset = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Desk.ServerTime, TimeZoneInfo.Local) - DateTime.Now;
         return serverTimeLast = DateTime.Now + _serverTimeOffset;
@@ -126,7 +127,7 @@ namespace Order2GoAddIn {
     public void Subscribe() {
       if (isSubsribed) return;
       Unsubscribe();
-      mSink.ITradeDeskEvents_Event_OnSessionStatusChanged += SessionStatusChanged;
+      mSink.ITradeDeskEvents_Event_OnSessionStatusChanged += OnSessionStatusChanged;
       mSubscriptionId = Desk.Subscribe(mSink);
       isSubsribed = true;
     }
@@ -135,7 +136,7 @@ namespace Order2GoAddIn {
     public void Unsubscribe() {
       if (mSubscriptionId != -1) {
         try {
-          mSink.ITradeDeskEvents_Event_OnSessionStatusChanged -= SessionStatusChanged;
+          mSink.ITradeDeskEvents_Event_OnSessionStatusChanged -= OnSessionStatusChanged;
         } catch { }
         try {
           Desk.Unsubscribe(mSubscriptionId);
@@ -145,6 +146,20 @@ namespace Order2GoAddIn {
       mSubscriptionId = -1;
     }
 
+    ISubject<string> _sessionStatusSubject;
+    ISubject<string> SessionStatusSubject {
+      get {
+        if (_sessionStatusSubject == null) {
+          _sessionStatusSubject = new Subject<string>();
+          _sessionStatusSubject.Throttle(TimeSpan.FromSeconds(1)).Subscribe(s => SessionStatusChanged(s));
+        }
+        return _sessionStatusSubject;
+      }
+    }
+
+    protected void OnSessionStatusChanged(string status) {
+      SessionStatusSubject.OnNext(status);
+    }
 
     void SessionStatusChanged(string status) {
       SessionStatus = (TradingServerSessionStatus)Enum.Parse(typeof(TradingServerSessionStatus),status);
@@ -242,8 +257,10 @@ namespace Order2GoAddIn {
       try {
         RaiseLoggingOff();
         if (mCore != null) {
-          if (IsLoggedIn)
+          if (IsLoggedIn) {
             try { Desk.Logout(); } catch { }
+            _mDesk = null;
+          }
           try { RaiseLoggedOff(); } catch { }
         }
       } catch { }
