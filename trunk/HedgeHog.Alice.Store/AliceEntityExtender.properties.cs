@@ -235,15 +235,15 @@ namespace HedgeHog.Alice.Store {
       set { SuppResLevelsCount = value; }
     }
 
-    [DisplayName("StDev To Spread Ratio")]
+    [DisplayName("StDev To Corridor Height0")]
     [Category(categoryCorridor)]
-    [Description("RateStDev / Spread Minimum")]
-    public double StDevToSpreadRatio_ {
+    [Description("RateStDev / CorridorHeight0")]
+    public double StDevToCorridorHeight0 {
       get { return StDevToSpreadRatio; }
       set {
         if (StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
-          OnPropertyChanged(TradingMacroMetadata.StDevToSpreadRatio_);
+          OnPropertyChanged(TradingMacroMetadata.StDevToCorridorHeight0);
         }
       }
     }

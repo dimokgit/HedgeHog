@@ -84,8 +84,8 @@ namespace HedgeHog {
       set {
         if (_barsPeriod == value) return;
         _barsPeriod = value;
-        OnPropertyChanged("BarsPeriod");
-        OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        OnPropertyChanged(CharterControlMetadata.BarsPeriod);
+        OnPropertyChanged(CharterControlMetadata.Header);
       }
     }
 
@@ -95,7 +95,7 @@ namespace HedgeHog {
       set {
         if (_BarsCount != value) {
           _BarsCount = value;
-          OnPropertyChanged("BarsCount");
+          OnPropertyChanged(CharterControlMetadata.BarsCount);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -107,7 +107,7 @@ namespace HedgeHog {
       set {
         if (_CorridorAngle != value) {
           _CorridorAngle = value;
-          OnPropertyChanged("CorridorAngle");
+          OnPropertyChanged(CharterControlMetadata.CorridorAngle);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -119,7 +119,7 @@ namespace HedgeHog {
       set {
         if (_HeightInPips != value) {
           _HeightInPips = value;
-          OnPropertyChanged("HeightInPips");
+          OnPropertyChanged(CharterControlMetadata.HeightInPips);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -131,7 +131,8 @@ namespace HedgeHog {
       set {
         if (_StDev != value) {
           _StDev = value;
-          OnPropertyChanged("StDev");
+          OnPropertyChanged(CharterControlMetadata.StDev);
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
@@ -142,7 +143,7 @@ namespace HedgeHog {
       set {
         if (_CorridorHeight0 != value) {
           _CorridorHeight0 = value;
-          OnPropertyChanged("CorridorHeight0");
+          OnPropertyChanged(CharterControlMetadata.CorridorHeight0);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -154,18 +155,43 @@ namespace HedgeHog {
       set {
         if (_SpreadForCorridor != value) {
           _SpreadForCorridor = value;
-          OnPropertyChanged("SpreadForCorridor");
+          OnPropertyChanged(CharterControlMetadata.SpreadForCorridor);
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
+    private double _HeightToStDevRatio;
+    public double HeightToStDevRatio {
+      get { return _HeightToStDevRatio; }
+      set {
+        if (_HeightToStDevRatio != value) {
+          _HeightToStDevRatio = value;
+          OnPropertyChanged(CharterControlMetadata.HeightToStDevRatio);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
 
+    private double _TrendNessRatio;
+    public double TrendNessRatio {
+      get { return _TrendNessRatio; }
+      set {
+        if (_TrendNessRatio != value) {
+          _TrendNessRatio = value;
+          OnPropertyChanged(CharterControlMetadata.CorridorHeight0ToSpreadRatio);
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
+
+
+    //†‡∆
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}↨{5:n0}‡{6:n0}∆{7:n0}├"
+          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}/{5:n0}:{6:n1}∆{7:n0}‡{8:0}s{9:p0}t"
           , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
-          ,HeightInPips,CorridorHeight0,StDev,SpreadForCorridor);
+          , HeightInPips, StDev,HeightToStDevRatio, CorridorHeight0, SpreadForCorridor,TrendNessRatio);
       }
     }
 

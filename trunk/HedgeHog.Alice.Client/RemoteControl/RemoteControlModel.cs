@@ -469,7 +469,7 @@ namespace HedgeHog.Alice.Client {
     void MasterModel_NeedTradingStatistics(object sender, TradingStatisticsEventArgs e) {
       if (GetTradingMacros().Any(tm => tm.RatesArraySafe.Length == 0)) return;
       var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 ).ToArray();
-      if (tms.Length > 0 && tms.All(tm => tm.TakeProfitDistance > 0)) {
+      if (tms.Length > 0 && tms.All(tm => tm.RatesArraySafe.Length > 0)) {
         var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
         e.TakeProfitInPipsAverage = tp;
       }
@@ -748,6 +748,8 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeight0 = tm.CorridorHeightByRegressionInPips0;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
+          charter.HeightToStDevRatio = tm.HeightToStDevRatio;
+          charter.TrendNessRatio = tm.TrendNessRatio;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
@@ -1060,8 +1062,6 @@ namespace HedgeHog.Alice.Client {
           var tm = GetTradingMacros(pair).First();
           System.IO.File.AppendAllText("ClosedTrades_new.xml", Environment.NewLine + trade);
           var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics(tm.GetTradeStatistics(trade));
-          ts.CorridorStDev = tm.CorridorStDevRatio.Current;
-          ts.CorridorStDevCma = tm.CorridorStDevRatio.Difference;
           ts.SessionId = TradingMacro.SessionId;
           MasterModel.AddCosedTrade(trade);
         } catch (Exception exc) { Log = exc; }

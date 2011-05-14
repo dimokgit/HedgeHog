@@ -9,7 +9,11 @@ using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
-
+    Exception Log {
+      set {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(value);
+      }
+    }
     event EventHandler CloseAllTradesEvent;
     public event EventHandler CloseAllTrades {
       add {
@@ -47,6 +51,17 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+    private double? _DayTakeProfit;
+    public double? DayTakeProfit {
+      get { return _DayTakeProfit; }
+      set {
+        if (_DayTakeProfit != value) {
+          _DayTakeProfit = value;
+          OnPropertyChanged(() => DayTakeProfit);
+        }
+      }
+    }
+
 
     public double TradingRatio { get; set; }
     public double ProfitPercent { get { return Equity / Balance - 1; } }
@@ -65,48 +80,58 @@ namespace HedgeHog.Alice.Client {
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
     public void Update(Account account,double tradingRatio,double takeProfitInPipsAverage,DateTime serverTime) {
-      TradingAccountModel accountRow = this;
-      accountRow.Balance = account.Balance;
-      accountRow.Equity = account.Equity;
-      accountRow.Hedging = account.Hedging;
-      accountRow.ID = account.ID;
-      accountRow.IsMarginCall = account.IsMarginCall;
-      accountRow.PipsToMC = account.PipsToMC;
-      accountRow.UsableMargin = account.UsableMargin;
-      accountRow.Trades = account.Trades;
-      accountRow.TradingRatio = tradingRatio;
-      accountRow.ServerTime = serverTime;
-      accountRow.StopAmount = account.StopAmount;
-      accountRow.LimitAmount = account.LimitAmount;
-      accountRow.TakeProfit = takeProfitInPipsAverage;
-      if (accountRow.TakeProfit != 0 && accountRow.PL >= accountRow.TakeProfit) {
-        PipsToExit = null;
-        RaiseCloseAllTrades();
+      try {
+        TradingAccountModel accountRow = this;
+        accountRow.Balance = account.Balance;
+        accountRow.Equity = account.Equity;
+        accountRow.Hedging = account.Hedging;
+        accountRow.DayPL = account.DayPL;
+        accountRow.ID = account.ID;
+        accountRow.IsMarginCall = account.IsMarginCall;
+        accountRow.PipsToMC = account.PipsToMC;
+        accountRow.UsableMargin = account.UsableMargin;
+        accountRow.Trades = account.Trades;
+        accountRow.TradingRatio = tradingRatio;
+        accountRow.ServerTime = serverTime;
+        accountRow.StopAmount = account.StopAmount;
+        accountRow.LimitAmount = account.LimitAmount;
+        accountRow.TakeProfit = takeProfitInPipsAverage;
+        if (accountRow.TakeProfit != 0 && accountRow.PL >= accountRow.TakeProfit) {
+          PipsToExit = null;
+          RaiseCloseAllTrades();
+        }
+        if (DayTakeProfit.HasValue && account.DayPL >= DayTakeProfit) {
+          RaiseCloseAllTrades();
+          DayTakeProfit = DayTakeProfit > 0 ? DayTakeProfit * 2 : null;
+        }
+        accountRow.OnPropertyChanged(
+        () => accountRow.Balance,
+        () => accountRow.Equity,
+        () => accountRow.DayPL,
+        () => accountRow.Hedging,
+        () => accountRow.ID,
+        () => accountRow.IsMarginCall,
+        () => accountRow.PipsToMC,
+        () => accountRow.PL,
+        () => accountRow.Gross,
+        () => accountRow.UsableMargin,
+        () => accountRow.Trades,
+        () => accountRow.HasProfit,
+        () => accountRow.TradingRatio,
+        () => accountRow.StopAmount,
+        () => accountRow.BalanceOnStop,
+        () => accountRow.LimitAmount,
+        () => accountRow.BalanceOnLimit,
+        () => accountRow.StopToBalanceRatio,
+        () => accountRow.ProfitPercent,
+        () => accountRow.ServerTime,
+        () => accountRow.OriginalBalance,
+        () => accountRow.OriginalProfit
+          );
+        //if (OriginalProfit >= .001) RaiseCloseAllTrades();
+      } catch (Exception exc) {
+        Log = exc;
       }
-      accountRow.OnPropertyChanged(
-      () => accountRow.Balance,
-      () => accountRow.Equity,
-      () => accountRow.Hedging,
-      () => accountRow.ID,
-      () => accountRow.IsMarginCall,
-      () => accountRow.PipsToMC,
-      () => accountRow.PL,
-      () => accountRow.Gross,
-      () => accountRow.UsableMargin,
-      () => accountRow.Trades,
-      () => accountRow.HasProfit,
-      () => accountRow.TradingRatio,
-      () => accountRow.StopAmount,
-      () => accountRow.BalanceOnStop,
-      () => accountRow.LimitAmount,
-      () => accountRow.BalanceOnLimit,
-      () => accountRow.StopToBalanceRatio,
-      () => accountRow.ProfitPercent,
-      () => accountRow.ServerTime,
-      () => accountRow.OriginalBalance,
-      () => accountRow.OriginalProfit
-        );
-      //if (OriginalProfit >= .001) RaiseCloseAllTrades();
     }
 
     public bool HasProfit { get { return Gross > 0; } }

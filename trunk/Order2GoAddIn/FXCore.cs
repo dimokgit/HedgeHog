@@ -111,7 +111,6 @@ namespace Order2GoAddIn {
     public CoreFX():this(true) { }
     public CoreFX(bool noTimer) {
       this.noTimer = noTimer;
-      Subscribe();
     }
     ~CoreFX() {
       try {
@@ -251,10 +250,13 @@ namespace Order2GoAddIn {
       });
       return true;
     }
+    bool _isInLogOut = false;
     public void Logout() {
-      if(_isLoggedInSubscription!=null)
-        _isLoggedInSubscription.Dispose();
+      _isInLogOut = true;
       try {
+        Unsubscribe();
+        if (_isLoggedInSubscription != null)
+          _isLoggedInSubscription.Dispose();
         RaiseLoggingOff();
         if (mCore != null) {
           if (IsLoggedIn) {
@@ -263,7 +265,7 @@ namespace Order2GoAddIn {
           }
           try { RaiseLoggedOff(); } catch { }
         }
-      } catch { }
+      } catch { } finally { _isInLogOut = false; }
     }
 
     IObservable<long> _isLoggedInObserver = Observable.Interval(TimeSpan.FromMinutes(1));
@@ -292,7 +294,7 @@ namespace Order2GoAddIn {
     public TradingServerSessionStatus SessionStatus {
       get { return _sessionStatus; }
       set {
-        if (_sessionStatus == value) {
+        if (_isInLogOut || _sessionStatus == value) {
           return;
         }
 

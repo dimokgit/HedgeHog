@@ -64,13 +64,23 @@
                   </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=c0}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="S/B" Binding="{Binding StopToBalanceRatio,StringFormat=p0}" IsReadOnly="True">
-                  <DataGridTextColumn.HeaderTemplate>
+                <DataGridTemplateColumn Header="DPL$">
+                  <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                      <TextBlock Text="S/B %" ToolTip="Stop to Balance Ratio"/>
+                      <TextBlock HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding DayPL,StringFormat=c0}" />
+                        <TextBlock Margin="-2" 
+                                   Visibility="{Binding DayTakeProfit,Converter={x:Static hh:DoubleToColorConverter.Default},ConverterParameter=Collapsed|Collapsed|Visible}">></TextBlock>
+                        <TextBlock Text="{Binding DayTakeProfit,StringFormat=c0}"/>
+                      </TextBlock>
                     </DataTemplate>
-                  </DataGridTextColumn.HeaderTemplate>
-                </DataGridTextColumn>
+                  </DataGridTemplateColumn.CellTemplate>
+                  <DataGridTemplateColumn.CellEditingTemplate>
+                    <DataTemplate>
+                      <TextBox Text="{Binding DayTakeProfit,Converter={x:Static hh:NullableValueConverter.Default}}"/>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Limit ∑">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -82,6 +92,13 @@
                   </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
+                <DataGridTextColumn Header="S/B" Binding="{Binding StopToBalanceRatio,StringFormat=p0}" IsReadOnly="True">
+                  <DataGridTextColumn.HeaderTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="S/B %" ToolTip="Stop to Balance Ratio"/>
+                    </DataTemplate>
+                  </DataGridTextColumn.HeaderTemplate>
+                </DataGridTextColumn>
                 <DataGridTemplateColumn Header="Stop ∑">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
