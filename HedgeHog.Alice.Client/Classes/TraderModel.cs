@@ -364,6 +364,9 @@ namespace HedgeHog.Alice.Client {
     public ObservableCollection<Trade> ServerTrades { get; set; }
     public ListCollectionView ServerTradesList { get; set; }
 
+    public ObservableCollection<Trade> ClosedTrades { get; set; }
+    public ListCollectionView ClosedTradesList { get; set; }
+
     public ObservableCollection<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
@@ -1122,6 +1125,7 @@ namespace HedgeHog.Alice.Client {
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     public TraderModel() {
       Initialize();
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
       #region FXCM
       fwMaster = new FXW(this.CoreFX,CommissionByTrade);
       virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
@@ -1150,6 +1154,14 @@ namespace HedgeHog.Alice.Client {
           .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
         //fwMaster.OrderChanged += fwMaster_OrderChanged;
         fwMaster.OrderAdded += fwMaster_OrderAdded;
+        
+        Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
+          .SubscribeOnDispatcher()
+          .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+          ClosedTrades.Clear();
+          fwMaster.GetClosedTrades("").ToList().ForEach(ct => ClosedTrades.Add(ct));
+        });
 
         RaisePropertyChanged(() => IsLoggedIn);
         Log = new Exception("Account " + TradingAccount + " logged in.");
@@ -1210,14 +1222,19 @@ namespace HedgeHog.Alice.Client {
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
       if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
       else DatabasePath = GlobalStorage.DatabasePath;
+
       ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Pair), ListSortDirection.Ascending));
-      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda(() => new Trade().Time), ListSortDirection.Descending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Pair), ListSortDirection.Ascending));
+      ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Time), ListSortDirection.Descending));
+      
       OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
       orders.CollectionChanged += new NotifyCollectionChangedEventHandler(orders_CollectionChanged);
-      OrdersList.SortDescriptions.Add(new SortDescription("Pair", ListSortDirection.Ascending));
-      OrdersList.SortDescriptions.Add(new SortDescription("OrderId", ListSortDirection.Descending));
+      OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.Pair), ListSortDirection.Ascending));
+      OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.IsBuy), ListSortDirection.Descending));
+
+      ClosedTradesList = new ListCollectionView(ClosedTrades = new ObservableCollection<Trade>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
+
     }
 
     void orders_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
@@ -1227,8 +1244,10 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void CleanUpOrders(ObservableCollection<Order> orders) {
-      orders.GroupBy(o => new { o.OrderID, o.IsBuy }).SelectMany(g => g.Skip(1)).ToList()
-      .ForEach(o => orders.Remove(o));
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
+        orders.GroupBy(o => new { o.OrderID, o.IsBuy }).SelectMany(g => g.Skip(1)).ToList()
+          .ForEach(o => orders.Remove(o))
+      );
     }
 
     public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;

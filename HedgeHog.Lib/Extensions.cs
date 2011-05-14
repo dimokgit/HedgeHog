@@ -4,8 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace HedgeHog {
+  public static class DispatcherEx {
+    public static void Invoke(this Dispatcher d, Action action) {
+      d.Invoke(action);
+    }
+  }
   public static class DependencyObjectExtensions {
     public static TParent GetParent<TParent>(this DependencyObject dp) where TParent : DependencyObject {
       if (dp == null) return null;

@@ -84,7 +84,6 @@
     <None Include="AliceEntityExtender.cs">
       <SubType>Code</SubType>
     </None>
-    <None Include="Class1.cs" />
     <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />
     <Compile Include="CorridorStatistics\CorridorStatistics.cs" />
     <Compile Include="CS_4_0.cs">

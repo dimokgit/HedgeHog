@@ -274,7 +274,7 @@
                       <TextBlock>
                         CorridorCrossesCount :<TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/></TextBlock>
                       <TextBlock>
-                        RateStDev/SpreadRatio:<TextBlock Text="{Binding StDevToSpreadRatioReal,StringFormat=n1}"/></TextBlock>
+                        RateStDev/CorridorHeight0:<TextBlock Text="{Binding StDevToCorridorHeight0Real,StringFormat=n1}"/></TextBlock>
                     </StackPanel>
                   </TextBlock.ToolTip>
                 </TextBlock>
@@ -289,12 +289,6 @@
                 <TextBlock Text="{Binding VolumeLong,StringFormat=n0}" ToolTip="Volume Long"/>
                 <TextBlock Margin="-3">=</TextBlock>
                 <TextBlock Text="{Binding VolumeShortToLongRatio,StringFormat={}{0:n1}]}" ToolTip="Volume Short/Long"/>
-
-                  <!--FontWeight="{Binding IsBarHeightToPriceSpreadRatioOk,Converter={StaticResource ProfitToColorConverter},ConverterParameter=Normal|Normal|Black}" />-->
-                <!--<LineBreak/>
-                <TextBlock Text="{Binding CorridorStDevRatioPrevInPips,StringFormat=n0}" ToolTip="Rates StDev Prev"/>
-                <TextBlock>/</TextBlock>
-                <TextBlock Text="{Binding CorridorStDevRatioLastInPips,StringFormat=n0}" ToolTip="Rates StDev Last"/>-->
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">

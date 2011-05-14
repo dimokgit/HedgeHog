@@ -21,6 +21,8 @@ namespace HedgeHog.Shared {
     [DataMember]
     public int PipsToMC { get; set; }
     [DataMember]
+    public double DayPL { get; set; }
+    [DataMember]
     public bool Hedging { get; set; }
     [DataMember]
     Trade[] _trades = new Trade[] { };
@@ -48,6 +50,7 @@ namespace HedgeHog.Shared {
     public double Gross { get { return Math.Round(Equity - Balance, 1); } }
 
     public double StopToBalanceRatio { get { return StopAmount / Balance; } }
+
 
   }
 }

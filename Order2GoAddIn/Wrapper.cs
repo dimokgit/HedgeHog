@@ -193,6 +193,7 @@ namespace Order2GoAddIn {
     const string FIELD_USABLEMARGIN = "UsableMargin";
     const string FIELD_MARGINCALL = "MarginCall";
     const string FIELD_EQUITY = "Equity";
+    const string FIELD_DAYPL = "DayPL";
     const string FIELD_BIDCHANGEDIRECTION = "BidChangeDirection";
     const string FIELD_ASKCHANGEDIRECTION = "AskChangeDirection";
     const string FIELD_GROSSPL = "GrossPL";
@@ -908,6 +909,7 @@ namespace Order2GoAddIn {
       accountInternal.UsableMargin = row.GetDouble(FIELD_USABLEMARGIN);
       accountInternal.IsMarginCall = row.Get(FIELD_MARGINCALL) == "W";
       accountInternal.Equity = row.GetDouble(FIELD_EQUITY);
+      accountInternal.DayPL = row.GetDouble(FIELD_DAYPL);
       accountInternal.Hedging = row.Get("Hedging").ToString() == "Y";
       accountInternal.Trades = GetTrades();
       accountInternal.StopAmount = accountInternal.Trades.Sum(t => t.StopAmount);

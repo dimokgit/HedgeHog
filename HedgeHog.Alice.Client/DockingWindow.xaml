@@ -52,7 +52,7 @@
       </DataTemplate>
       <DataTemplate x:Key="GrossCellTemplate">
         <!--<Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" Background="{Binding GrossPL,Converter={StaticResource DoubleToColorConverter},ConverterParameter=Transparent|LightSalmon|LightGreen}" />-->
-        <Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" />
+        <Label Content="{Binding GrossPL,StringFormat=c0}" ContentStringFormat="c0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right" VerticalAlignment="Center" />
       </DataTemplate>
 
       <!--TradesOnServer-->
@@ -153,6 +153,34 @@
           </DataGrid>
         </Grid>
       </DataTemplate>
+      <!--Closed Tradesr-->
+      <DataTemplate x:Key="ClosedTradesTemplate">
+        <Grid Background="#FFF7F3F7">
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ClosedTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
+              <DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+              <DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
+              <DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
+                <DataGridTextColumn.ElementStyle>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                  </Style>
+                </DataGridTextColumn.ElementStyle>
+              </DataGridTextColumn>
+              <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
+                <DataGridTextColumn.CellStyle>
+                  <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                    <Setter Property="Background" Value="{Binding PL,Converter={StaticResource ProfitToColorConverter}}"/>
+                  </Style>
+                </DataGridTextColumn.CellStyle>
+              </DataGridTextColumn>
+              <DataGridTemplateColumn Header="$$$" CellTemplate="{StaticResource GrossCellTemplate}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </DataTemplate>
+
       <!--Open Trades Title Template-->
       <DataTemplate x:Key="OpenTradesHeaderTemplate">
         <Grid>
@@ -495,6 +523,7 @@
                            Header="Open Trades" HeaderTemplate="{StaticResource OpenTradesHeaderTemplate}"
                            Title="OpenTrades" TitleTemplate="{StaticResource OpenTradesTitleTemplate}"
                            ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" />
+            <telerik:RadPane Header="Closed Trades" ContentTemplate="{StaticResource ClosedTradesTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="ClosedTrades" CanUserClose="False"/>
             <telerik:RadPane IsSelected="{state:UserSettings}" Header="Open Orders" Title="Open Orders" telerik:RadDocking.SerializationTag="OpenedOrders" Name="OpenedOrders" ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" CanUserClose="False"/>
           </telerik:RadPaneGroup>
           <telerik:RadSplitContainer Name="ChartsSplitter" Orientation="Horizontal" telerik:RadDocking.SerializationTag="ChartsSplitter">
