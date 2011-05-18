@@ -134,15 +134,21 @@ namespace HedgeHog.Alice.Client {
       get { return _Views; }
     }
 
+    object _MainWindowModel;
     [Import("MainWindowModel")]
-    public object ViewModel { set { RootVisual.DataContext = value; } }
+    public object MainWindowModel {
+      get { return _MainWindowModel; }
+      set {
+        _MainWindowModel = value;
+      }
+    }
     #endregion
 
     #region Ctor
     public DockingWindow() {
+      App.container.SatisfyImportsOnce(this);
       StyleManager.ApplicationTheme = new VistaTheme();
       InitializeComponent();
-      App.container.SatisfyImportsOnce(this);
       this.Title = "HedgeHog in " + CurrentDirectory.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries).Last();
       ((INotifyPropertyChanged)RootVisual.DataContext).PropertyChanged += DataContext_PropertyChanged;
       #region Window Events

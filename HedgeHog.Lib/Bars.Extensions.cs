@@ -35,6 +35,10 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    public static bool IsReversed(this IEnumerable<BarBase> bars) {
+      return bars.Last().StartDate < bars.First().StartDate;
+    }
+
     public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
       var period = bars.GetPeriod();
       if (period == TimeSpan.Zero)
@@ -75,18 +79,34 @@ namespace HedgeHog.Bars {
       return coeffs;
     }
 
-    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, double heightUp0, double heightDown0, double heightUp, double heightDown,
-      Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
+    public static void SetCorridorPrices(this IEnumerable<Rate> rates,double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown
+      , Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
+      , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
+      , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
+      ) {
+      rates.SetRegressionPrice(coeffs, setPriceLine);
+      rates.AsParallel().ForAll(r => {
+        var pl = getPriceLine(r);
+        setPriceHigh0(r, pl + heightUp0);
+        setPriceLow0(r, pl - heightDown0);
+        setPriceHigh(r, pl + heightUp);
+        setPriceLow(r, pl - heightDown);
+      });
+    }
+
+
+    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, double heightUp0, double heightDown0, double heightUp, double heightDown
+      , Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
       , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
       , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
       ) {
       var coeffs = rates.SetRegressionPrice(1, getPriceForLine, setPriceLine);
-      //var stDev = rates.Select(r => (getPriceForLine(r) - getPriceLine(r)).Abs()).ToArray().StdDev();
-      rates.ToList().ForEach(r => {
-        setPriceHigh0(r, r.PriceAvg1 + heightUp0);
-        setPriceLow0(r, r.PriceAvg1 - heightDown0);
-        setPriceHigh(r, r.PriceAvg1 + heightUp);
-        setPriceLow(r, r.PriceAvg1 - heightDown);
+      rates.AsParallel().ForAll(r => {
+        var pl = getPriceLine(r);
+        setPriceHigh0(r, pl + heightUp0);
+        setPriceLow0(r, pl - heightDown0);
+        setPriceHigh(r, pl + heightUp);
+        setPriceLow(r, pl - heightDown);
       });
       return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
     }

@@ -408,12 +408,13 @@
         <telerik:RadMenuItem Header="_Tile" Command="{Binding TileChartsCommand}"/>
       </telerik:RadMenuItem>
     </telerik:RadMenu>
-    <telerik:RadDocking Grid.Row="1" Name="RootVisual" Background="{Binding IsLoggedIn,Converter={StaticResource ProfitToColorConverter}}">
+    <telerik:RadDocking Grid.Row="1" Name="RootVisual" DataContext="{x:Static l:TraderModel.Default}"
+                        Background="{Binding IsLoggedIn,Converter={StaticResource ProfitToColorConverter}}">
       <telerik:RadDocking.DocumentHost>
         <telerik:RadSplitContainer Orientation="Vertical">
           <telerik:RadPaneGroup SelectedIndex="{state:UserSettings}">
             <telerik:RadPane Header="Master" IsSelected="{state:UserSettings Default=true}" Title="Master Title" telerik:RadDocking.SerializationTag="RadPaneMain" Name="MasterPanel" CanUserClose="False">
-              <WrapPanel>
+              <WrapPanel DataContext="{x:Static l:TraderModel.Default}">
                 <u:TextBox2 Text2="{Binding DatabasePath,Mode=TwoWay}" Text="{state:UserSettings}" Name="DatabasePath" MinWidth="30" MaxWidth="100" />
                 <Button Command="{Binding OpenDataBaseCommand}" Content="Database">
                   <Button.ToolTip>

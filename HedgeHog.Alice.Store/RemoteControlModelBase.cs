@@ -138,6 +138,7 @@ namespace HedgeHog.Alice.Store {
             if (rate == null) break;
             lock (rates) {
               rates.Add(rate);
+              tm.RatesArraySafe.Count();
               if(!tm.DoStreatchRates || (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
                 rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
               RaisePropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
@@ -203,7 +204,8 @@ namespace HedgeHog.Alice.Store {
         } else {
           if (_tradingMacrosCopy.Count == 0)
             _tradingMacrosCopy = TradingMacros.ToList();
-          return _tradingMacrosCopy.Where(tm => TradingMacroFilter(tm) || ShowAllMacrosFilter).ToArray();
+          var isAnySelected = _tradingMacrosCopy.Any(tm => tm.IsSelectedInUI);
+          return _tradingMacrosCopy.Where(tm => IsInVirtualTrading && isAnySelected  ? tm.IsSelectedInUI : (TradingMacroFilter(tm) || ShowAllMacrosFilter)).ToArray();
         }
       }
     }

@@ -39,9 +39,17 @@ namespace HedgeHog {
       }
     }
 
-    public static double Angle(this double tangent) { return Math.Atan(tangent) * (180 / Math.PI); }
+    public static double Angle(this double tangent, double divideBy = 1) { return Math.Atan(tangent / divideBy) * (180 / Math.PI); }
     public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
 
+    public static double LineSlope(this double[] coeffs) {
+      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
+      return coeffs[1];
+    }
+    public static double LineValue(this double[] coeffs) {
+      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
+      return coeffs[0];
+    }
     public static double RegressionValue(this double[] coeffs, int i) {
       double y = 0; int j = 0;
       coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
@@ -64,6 +72,18 @@ namespace HedgeHog {
         if (vs.Length == 0) break;
         values = vs;
         avg = values.Average();
+      }
+      return values.ToArray();
+    }
+
+    public static T[] AverageByIterations<T>(this ICollection<T> values,Func<T,double> getValue, Func<T, double, bool> compare, double iterations) {
+      var avg = values.DefaultIfEmpty().Average(getValue);
+      if (values.Count == 0) return values.ToArray();
+      for (int i = 1; i < iterations; i++) {
+        var vs = values.Where(r => compare(r, avg)).ToArray();
+        if (vs.Length == 0) break;
+        values = vs;
+        avg = values.Average(getValue);
       }
       return values.ToArray();
     }

@@ -41,6 +41,16 @@ namespace HedgeHog.Alice.Client {
   [Export(typeof(TraderModelBase))]
   [Export("MainWindowModel")]
   public class TraderModel:TraderModelBase {
+    static object _defaultLocker = new object();
+    static private TraderModel _default;
+    static public TraderModel Default {
+      get {
+        lock (_defaultLocker)
+          if (_default == null) _default = new TraderModel();
+        return _default;
+      }
+    }
+
     #region FXCM
     private Order2GoAddIn.CoreFX _coreFX = new Order2GoAddIn.CoreFX();
     public override Order2GoAddIn.CoreFX CoreFX { get { return _coreFX; } }
@@ -1123,90 +1133,94 @@ namespace HedgeHog.Alice.Client {
     MvvmFoundation.Wpf.PropertyObserver<CoreFX> _coreFXObserver;
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
-    public TraderModel() {
-      Initialize();
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
-      #region FXCM
-      fwMaster = new FXW(this.CoreFX,CommissionByTrade);
-      virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
-      var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
-      this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
-      //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
-      //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
-      CoreFX.LoggedIn += (s, e) => {
-        IsInLogin = false;
-        TradesManager.Error += fwMaster_Error;
-        TradesManager.TradeAdded += fwMaster_TradeAdded;
-        TradesManager.TradeRemoved += fwMaster_TradeRemoved;
-        //TradesManager.PriceChanged += fwMaster_PriceChanged;
-        Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
-          .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
-          .Buffer(_throttleInterval)
-          .Subscribe(l => {
-            l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
-              .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
-          });
+    TraderModel() {
+      lock (_defaultLocker) {
+        if (_default != null) throw new InvalidOperationException();
+        _default = this;
+        Initialize();
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
+        #region FXCM
+        fwMaster = new FXW(this.CoreFX, CommissionByTrade);
+        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
+        var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
+        this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
+        //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
+        //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
+        CoreFX.LoggedIn += (s, e) => {
+          IsInLogin = false;
+          TradesManager.Error += fwMaster_Error;
+          TradesManager.TradeAdded += fwMaster_TradeAdded;
+          TradesManager.TradeRemoved += fwMaster_TradeRemoved;
+          //TradesManager.PriceChanged += fwMaster_PriceChanged;
+          Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
+            .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
+            .Buffer(_throttleInterval)
+            .Subscribe(l => {
+              l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
+                .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
+            });
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
           //.Subscribe(g => g.TakeLast(1)
           //  .Subscribe(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
-        Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
-          .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
-          .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
-        //fwMaster.OrderChanged += fwMaster_OrderChanged;
-        fwMaster.OrderAdded += fwMaster_OrderAdded;
-        
-        Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
-          .SubscribeOnDispatcher()
-          .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-          ClosedTrades.Clear();
-          fwMaster.GetClosedTrades("").ToList().ForEach(ct => ClosedTrades.Add(ct));
-        });
+          Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
+            .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
+            .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
+          //fwMaster.OrderChanged += fwMaster_OrderChanged;
+          fwMaster.OrderAdded += fwMaster_OrderAdded;
 
-        RaisePropertyChanged(() => IsLoggedIn);
-        Log = new Exception("Account " + TradingAccount + " logged in.");
-        try {
-          var account = TradesManager.GetAccount();
-          if (account == null) {
-            Thread.Sleep(1000);
-            account = TradesManager.GetAccount();
+          Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
+            .SubscribeOnDispatcher()
+            .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
+          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+            ClosedTrades.Clear();
+            fwMaster.GetClosedTrades("").ToList().ForEach(ct => ClosedTrades.Add(ct));
+          });
+
+          RaisePropertyChanged(() => IsLoggedIn);
+          Log = new Exception("Account " + TradingAccount + " logged in.");
+          try {
+            var account = TradesManager.GetAccount();
+            if (account == null) {
+              Thread.Sleep(1000);
+              account = TradesManager.GetAccount();
+            }
+            if (account != null)
+              GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+                try {
+                  UpdateTradingAccount(account);
+                  OnInvokeSyncronize(account);
+                } catch (Exception exc) { Log = exc; }
+              }));
+          } catch (Exception exc) {
+            Log = exc;
+            MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
           }
-          if (account != null)
-            GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
-              try {
-                UpdateTradingAccount(account);
-                OnInvokeSyncronize(account);
-              } catch (Exception exc) { Log = exc; }
-            }));
-        } catch (Exception exc) {
+          IsAccountManagerExpanded = false;
+        };
+        CoreFX.LoginError += exc => {
+          IsInLogin = false;
           Log = exc;
-          MessageBox.Show(exc.ToString(), "GetAccount", MessageBoxButton.OK, MessageBoxImage.Exclamation, MessageBoxResult.None, MessageBoxOptions.ServiceNotification);
-        }
-        IsAccountManagerExpanded = false;
-      };
-      CoreFX.LoginError += exc => {
-        IsInLogin = false;
-        Log = exc;
-        RaisePropertyChanged(() => IsLoggedIn);
-      };
-      CoreFX.LoggedOff += (s, e) => {
-        Log = new Exception("Account " + TradingAccount + " logged out.");
-        RaisePropertyChanged(() => IsLoggedIn);
-        TradesManager.TradeAdded -= fwMaster_TradeAdded;
-        TradesManager.TradeRemoved -= fwMaster_TradeRemoved;
-        TradesManager.Error -= fwMaster_Error;
-        //TradesManager.PriceChanged -= fwMaster_PriceChanged;
-        //fwMaster.OrderChanged -= fwMaster_OrderChanged;
-        fwMaster.OrderAdded -= fwMaster_OrderAdded;
-      };
-      #endregion
+          RaisePropertyChanged(() => IsLoggedIn);
+        };
+        CoreFX.LoggedOff += (s, e) => {
+          Log = new Exception("Account " + TradingAccount + " logged out.");
+          RaisePropertyChanged(() => IsLoggedIn);
+          TradesManager.TradeAdded -= fwMaster_TradeAdded;
+          TradesManager.TradeRemoved -= fwMaster_TradeRemoved;
+          TradesManager.Error -= fwMaster_Error;
+          //TradesManager.PriceChanged -= fwMaster_PriceChanged;
+          //fwMaster.OrderChanged -= fwMaster_OrderChanged;
+          fwMaster.OrderAdded -= fwMaster_OrderAdded;
+        };
+        #endregion
 
-      if (false) {
-        Using_FetchServerTrades = () => Using(FetchServerTrades);
-        if (!isInDesign) {
-          GetTradesScheduler = new Schedulers.ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
-          Using_FetchServerTrades,
-          (s, e) => { Log = e.Exception; });
+        if (false) {
+          Using_FetchServerTrades = () => Using(FetchServerTrades);
+          if (!isInDesign) {
+            GetTradesScheduler = new Schedulers.ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+            Using_FetchServerTrades,
+            (s, e) => { Log = e.Exception; });
+          }
         }
       }
     }
@@ -1402,7 +1416,7 @@ namespace HedgeHog.Alice.Client {
           () => addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a))));
         foreach (var trade in tradesList) {
           tradesCollection.Where(t => t.Id == trade.Id).Skip(1).ToList().ForEach(t =>
-            GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(() => tradesCollection.Remove(t)))
+            GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(new Action(() => tradesCollection.Remove(t)))
           );
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
           if (trd != null)
@@ -1556,8 +1570,6 @@ namespace HedgeHog.Alice.Client {
 
     #endregion
 
-  }
-  public class TraderModelDesign : TraderModel {
   }
   public enum AliceModes {Neverland = 0, Wonderland = 1, Mirror = 2 }
 }

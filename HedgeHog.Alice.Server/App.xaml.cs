@@ -12,7 +12,13 @@ namespace HedgeHog.Alice.Server {
   /// Interaction logic for App.xaml
   /// </summary>
   public partial class App : Application {
-    public static Order2GoAddIn.CoreFX CoreFX = new Order2GoAddIn.CoreFX();
+    static Order2GoAddIn.CoreFX _CoreFX;
+    public static Order2GoAddIn.CoreFX CoreFX {
+      get {
+        if (_CoreFX == null) _CoreFX = new Order2GoAddIn.CoreFX();
+        return _CoreFX;
+      }
+    }
     ServiceHost _priceServiceHost;
     public App() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
