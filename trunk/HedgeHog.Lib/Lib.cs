@@ -128,7 +128,7 @@ namespace HedgeHog {
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
-    public static double[] Regress(double[] prices, int polyOrder) {
+    public static double[] Regress(this double[] prices, int polyOrder) {
       var coeffs = new[] { 0.0, 0.0 };
       Lib.LinearRegression(prices, out coeffs[1], out coeffs[0]);
       return coeffs;

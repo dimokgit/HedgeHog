@@ -236,6 +236,7 @@ namespace Order2GoAddIn {
         try {
           Desk.SetTimeout(Desk.TIMEOUT_PRICEHISTORY, 30000);
           Desk.SetTimeout(Desk.TIMEOUT_COMMON, 60*1000);
+          Desk.SetRowsFilterType(Desk.ROWSFILTER_EXTENDED);
           Desk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
           InitTimer();
         } catch (Exception e) {

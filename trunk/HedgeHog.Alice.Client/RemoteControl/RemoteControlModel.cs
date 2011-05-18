@@ -132,7 +132,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       if (tm.CorridorStartDate == e.NewPosition) return;
       tm.CorridorStartDate = e.NewPosition;
-      if( !IsInVirtualTrading && tm.Strategy != Strategies.Massa && !tm.IsHot)
+      if( !IsInVirtualTrading && tm.Strategy != Strategies.Massa && !tm.IsHotStrategy)
         tm.Strategy = Strategies.None;
       tm.ScanCorridor();
       ShowChart(tm);
@@ -605,6 +605,7 @@ namespace HedgeHog.Alice.Client {
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           PriceChangeSubscriptionDispose();
+          if(!IsInVirtualTrading)
           _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
             h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
             .Buffer(TimeSpan.FromSeconds(1))
@@ -612,6 +613,8 @@ namespace HedgeHog.Alice.Client {
               el.GroupBy(e2 => e2.EventArgs.Pair).Select(e2 => e2.Last()).ToList()
                 .ForEach(ie => fw_PriceChanged(ie.Sender, ie.EventArgs));
             });
+          else
+            tradesManager.PriceChanged += fw_PriceChanged;
             //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1)))
             //.SubscribeOn(System.Concurrency.Scheduler.ThreadPool)
             //.Subscribe(g => g.TakeLast(1).Subscribe(ie => fw_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc), exc => Log = exc);
@@ -656,6 +659,7 @@ namespace HedgeHog.Alice.Client {
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (tradesManager != null) {
         PriceChangeSubscriptionDispose();
+        tradesManager.PriceChanged -= fw_PriceChanged;
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.TradeRemoved -= fw_TradeRemoved;
         tradesManager.OrderAdded -= fw_OrderAdded;
@@ -672,8 +676,8 @@ namespace HedgeHog.Alice.Client {
         var sw = Stopwatch.StartNew();
         if (price != null) SetCurrentPrice(price);
         var pair = price.Pair;
-        foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading && t.IsInPlayback)) {
-          tm.RunPriceChanged(e,OpenTradeByStop);
+        foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading /*&& t.IsInPlayback*/)) {
+          tm.RunPriceChanged(e, null/*OpenTradeByStop*/);
         }
         CheckTrades(e.Trades.ByPair(price.Pair));
       } catch (Exception exc) {
@@ -693,6 +697,9 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AddShowChart(TradingMacro tm) {
+      if (IsInVirtualTrading)
+        ShowChart(tm);
+      else
         ShowChartQueue.Add(tm);
     }
     void ShowChart(TradingMacro tm) {
@@ -761,7 +768,7 @@ namespace HedgeHog.Alice.Client {
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s.Rate, s.TradesCount, false));
           charter.SetSellRates(dic);
           charter.SetTradeLines(tm.Trades,tm.CurrentPrice.Spread/2);
-          charter.SuppResMinimumDistance = tm.Strategy == Strategies.Hot ? tm.SuppResMinimumDistance : 0;
+          charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
         } catch (Exception exc) {
           Log = exc;
         }

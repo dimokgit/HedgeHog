@@ -581,7 +581,8 @@ namespace HedgeHog.Alice.Store {
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
-    public bool IsHot { get { return Strategy == Strategies.Hot; } }
+    public bool IsHotStrategy { get { return Strategy.HasFlag(Strategies.Hot); } }
+    public bool IsAutoStrategy { get { return Strategy.HasFlag(Strategies.Auto); } }
     public bool IsCold { get { return IsColdOnTrades && Trades.Length > 0; } }
 
     private bool _IsAutoSync;

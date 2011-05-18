@@ -4,10 +4,83 @@ using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
 using System.Diagnostics;
+using HedgeHog;
 using HedgeHog.Shared;
+using System.Reactive.Subjects;
 
 namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
+    public class LegInfo {
+      public double Slope { get; set; }
+      public double Angle { get; set; }
+      public Rate Rate1 { get; set; }
+      public Rate Rate2 { get; set; }
+      public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval, double pointSize)
+        : this(rateBase, new[] { rateOther }, interval, pointSize) {
+      }
+      public LegInfo(Rate rateBase, Rate[] ratesOther, TimeSpan interval, double pointSize) {
+        this.Rate1 = rateBase;
+        Rate rate2;
+        this.Slope = CalculateSlope(rateBase, ratesOther, interval, out rate2);
+        this.Rate2 = rate2;
+        if (false) {
+          var rates = new[] { rateBase, ratesOther[0] }.OrderBars().ToArray();
+          var y = rates[1].PriceAvg > rates[0].PriceAvg ? rates[1].PriceHigh - rates[0].PriceLow : rates[1].PriceLow - rates[0].PriceHigh;
+          var x = (rates[1].StartDate - rates[0].StartDate).TotalMinutes / interval.TotalMinutes;
+          this.Slope = y / x;
+        }
+        this.Angle = this.Slope.Angle(pointSize);
+      }
+      static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval,out Rate rate) {
+        var slopes = new List<Tuple<Rate,double>>();
+        rates2.ToList().ForEach(r => {
+          slopes.Add(new Tuple<Rate, double>(r, CalculateSlope(rate1, r, interval)));
+        });
+        var t = slopes.OrderByDescending(s => s.Item2.Abs()).First();
+        rate = t.Item1;
+        return t.Item2;
+      }
+      static double CalculateSlope(Rate rate1, Rate rate2, TimeSpan interval) {
+        var rates = new[] { rate1, rate2 }.OrderBars().ToArray();
+        var y = rates[1].PriceAvg > rates[0].PriceAvg ? rates[1].PriceHigh - rates[0].PriceLow : rates[1].PriceLow - rates[0].PriceHigh;
+        var x = (rates[1].StartDate - rates[0].StartDate).TotalMinutes / interval.TotalMinutes;
+        return y / x;
+
+      }
+    }
+    System.Collections.ObjectModel.ObservableCollection<LegInfo> _LegInfos = new System.Collections.ObjectModel.ObservableCollection<LegInfo>();
+    public System.Collections.ObjectModel.ObservableCollection<LegInfo> LegInfos {
+      get {
+        if (_LegInfos == null) {
+          _LegInfos = new System.Collections.ObjectModel.ObservableCollection<LegInfo>();
+          _LegInfos.CollectionChanged += LegInfos_CollectionChanged;
+        }
+        return _LegInfos;
+      }
+    }
+    ~CorridorStatistics() {
+      if (_LegInfos != null)
+        _LegInfos.CollectionChanged -= LegInfos_CollectionChanged;
+    }
+    void LegInfos_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
+      RaisePropertyChanged(() => LegsAngleStDevR);
+    }
+    public void LegInfosClear() {
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Clear());
+    }
+    public LegInfo LegInfosAdd(Rate rate1, Rate rate2, TimeSpan interval, double pointSize) {
+      var li = new LegInfo(rate1, rate2, interval, pointSize);
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Add(li));
+      return li;
+    }
+
+    public double LegsAngleStDevR {
+      get {
+        if (LegInfos.Count == 0) return double.NaN;
+        var angles = LegInfos.Select(li => li.Angle.Abs()).ToArray();
+        return angles.StDev() / angles.Average();
+      }
+    }
 
     public Func<Rate,double> priceLine { get; set; }
     public Func<Rate,double> priceHigh { get; set; }
@@ -58,7 +131,11 @@ namespace HedgeHog.Alice.Store {
       set { _HeightDown = value; }
     }
     public double HeightUpDown0 { get { return HeightUp0 + HeightDown0; } }
+    public double HeightUpDown0InPips { get { return TradesManagerStatic.InPips(HeightUpDown0,_pipSize) ; } }
     public double HeightUpDown { get { return HeightUp + HeightDown; } }
+    public double HeightUpDownInPips { get { return TradesManagerStatic.InPips(HeightUpDown, _pipSize); } }
+
+    public double HeightUpDown0ToSpreadRatio { get { return HeightUpDown0 / Spread; } }
 
     public DateTime EndDate { get; private set; }
 
@@ -79,17 +156,30 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
+    public CorridorStatistics(Rate[] rates, double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(rates,density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
     }
 
-    public void Init(double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
+    public void Init(CorridorStatistics cs,double pipSize) {
+      this._pipSize = pipSize;
+      Init(cs.Rates, cs.Density, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.LineHigh, cs.LineLow, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
+      this.Spread = cs.Spread;
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        LegInfos.Clear();
+        LegInfos.AddRange(cs.LegInfos);
+      });
+      RaisePropertyChanged(
+        () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
+    }
+
+    public void Init(Rate[] rates, double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
+      this.Rates = rates;
       this.Density = density;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
       this.EndDate = endDate;
       this.Coeffs = coeffs;
-      this.Slope = coeffs[1];
+      this.Slope = rates.IsReversed() ? -coeffs[1] : coeffs[1];
       this.Periods = periods;
       this.Iterations = iterations;
       this.HeightUp = heightUp;
@@ -254,6 +344,20 @@ namespace HedgeHog.Alice.Store {
 
 
     public Rate[] Rates { get; set; }
+
+    private double _Spread;
+    private double _pipSize;
+    public double Spread {
+      get { return _Spread; }
+      set {
+        if (_Spread != value) {
+          _Spread = value;
+          RaisePropertyChanged(() => Spread, () => SpreadInPips);
+        }
+      }
+    }
+    public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
+
   }
 
   public enum TrendLevel { None, Resistance, Support }

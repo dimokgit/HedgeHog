@@ -1246,10 +1246,10 @@ namespace Order2GoAddIn {
         trade.Limit = (double)t.CellValue("Limit");
         trade.Stop = (double)t.CellValue("Stop");
       } else {
-        var netLimit = GetNetLimitOrder(trade.Pair);
+        var netLimit = GetNetLimitOrder(trade);
         if (netLimit != null)
           trade.Limit = netLimit.Rate; ;
-        var netStop = GetNetStopOrder(trade.Pair);
+        var netStop = GetNetStopOrder(trade);
         if (netStop != null)
           trade.Stop = netStop.Rate;
       }
@@ -1305,10 +1305,10 @@ namespace Order2GoAddIn {
         Remark = new TradeRemark(t.Get("QTXT"))
       };
       if (IsFIFO(trade.Pair)) {
-        var netLimit = GetNetLimitOrder(trade.Pair);
+        var netLimit = GetNetLimitOrder(trade);
         if (netLimit != null)
           trade.Limit = netLimit.Rate; ;
-        var netStop = GetNetStopOrder(trade.Pair);
+        var netStop = GetNetStopOrder(trade);
         if (netStop != null)
           trade.Stop = netStop.Rate;
       }
@@ -1320,7 +1320,8 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetOrders
-    bool IsNetOrderFilter(Order order) { return order.IsNetOrder; }
+    string[] _stopLimitOrderTypes = new[] { "S", "L" };
+    bool IsNetOrderFilter(Order order) { return IsFIFO(order.Pair) ? order.IsNetOrder : _stopLimitOrderTypes.Contains(order.Type); }
     bool IsEntryOrderFilter(Order order) { return !IsNetOrderFilter(order); }
     public double GetOffer(bool buy) {
       if (!IsLoggedIn) return double.NaN;
@@ -1328,14 +1329,20 @@ namespace Order2GoAddIn {
       return offer == null ? double.NaN : buy ? offer.Ask : offer.Bid;
     }
     Func<Order, string> _ordersOrderBy = o => o.OrderID;
-    public Order GetNetStopOrder(string Pair, bool getFromInternal = false) {
-      return GetNetOrders(Pair, getFromInternal).SingleOrDefault(o => o.Type == "SE");
+    public Order GetNetStopOrder(Trade trade, bool getFromInternal = false) {
+      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).SingleOrDefault(o => o.Type.StartsWith("S"));
     }
-    public Order GetNetLimitOrder(string Pair, bool getFromInternal = false) {
-      return GetNetOrders(Pair, getFromInternal).SingleOrDefault(o => o.Type == "LE");
+    public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
+      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).SingleOrDefault(o => o.Type.StartsWith("L"));
     }
-    public Order[] GetNetOrders(string Pair, bool getFromInternal = false) {
-      return GetOrders(Pair, getFromInternal).Where(IsNetOrderFilter).ToArray();
+    public Order[] GetNetOrders(Trade trade, bool getFromInternal = false) {
+      var pair = trade.Pair;
+      var orders = GetOrders(pair, getFromInternal);
+      return orders.Where(IsNetOrderFilter).ToArray();
+      if (IsFIFO(pair))
+        return orders.Where(IsNetOrderFilter).ToArray();
+      var orderIds = new[]{trade.LimitOrderID,trade.StopOrderID};
+      return orders.Where(o => orderIds.Contains(o.OrderID)).ToArray();
     }
     public Order[] GetEntryOrders(string Pair, bool getFromInternal = false) {
       return GetOrders(Pair, getFromInternal).Where(IsEntryOrderFilter).ToArray();
@@ -1775,12 +1782,15 @@ namespace Order2GoAddIn {
       DeleteOrder(order.OrderID);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public bool DeleteOrder(string orderId) {
+    public bool DeleteOrder(string orderId,bool async = true) {
       try {
         if (GetOrders("").Any(o => o.OrderID == orderId)) {
           object reqId;
           EntryOrders.Remove(orderId);
-          Desk.DeleteOrderAsync(orderId, out reqId);
+          if (async)
+            Desk.DeleteOrderAsync(orderId, out reqId);
+          else
+            Desk.DeleteOrder(orderId);
         }
         return true;
       } catch (Exception exc) {
@@ -2089,6 +2099,7 @@ namespace Order2GoAddIn {
 
     private bool GetFifo(string pair) {
       FXCore.PermissionCheckerAut ps = (FXCore.PermissionCheckerAut)Desk.PermissionChecker;
+      int can_net = ps.CanCreateNetStopLimitOrder(pair);
       int can_close = ps.CanCreateMarketCloseOrder(pair);
       return can_close == ps.PERMISSION_HIDDEN;
     }
@@ -2116,7 +2127,7 @@ namespace Order2GoAddIn {
             Desk.DeleteNetStopLimitAsync(trade.Pair, AccountID, trade.Buy, false,out a);
           else {
             try {
-              var order = GetNetLimitOrder(pair);
+              var order = GetNetLimitOrder(trade);
               if (order != null) prevRate = order.Rate;
               else if (GetTrades(pair).Length == 0) return;
               Desk.ChangeNetStopLimit2Async(pair, AccountID, isBuy, limitRate, false,0, out a);
@@ -2131,11 +2142,10 @@ namespace Order2GoAddIn {
           }
         } else {
           //if (/*trade.Limit == 0 && */InPips(trade.Pair, takeProfit).Abs() < 500)
-          limitRate = GetTrades(pair).NetOpen() + spreadToAdd + takeProfit;
           if (takeProfit == 0)
             Desk.DeleteTradeStopLimit(tradeId, false);
           else {
-            Desk.CreateFixOrder(Desk.FIX_LIMIT, tradeId, limitRate, 0, "", "", "", true, 0, remark, out a, out b);
+            Desk.ChangeTradeStopLimit3(tradeId, limitRate, false, 0, out b);
           }
         }
       } catch (Exception exc) {
@@ -2167,10 +2177,12 @@ namespace Order2GoAddIn {
             Desk.DeleteNetStopLimit(trade.Pair, AccountID, trade.Buy, true);
           else {
             try {
-              var prevOrder = GetNetStopOrder(pair);
+              var prevOrder = GetNetStopOrder(trade);
               if (prevOrder != null) prevRate = prevOrder.Rate;
               Desk.ChangeNetStopLimit2Async(pair, AccountID, isBuy, stopRate, true, 0, out a);
             } catch (Exception exc) {
+              if (exc.Message.Contains("This command is disabled."))
+                new Action(() => CoreFX.LogOn()).BeginInvoke(ac => { }, null);
               TradesReset();
               EntryOrdersReset();
               RaiseError(new Exception(new { pair, stopRate, prevRate } + "", exc));
@@ -2180,11 +2192,10 @@ namespace Order2GoAddIn {
             }
           }
         } else {
-          stopRate = GetTrades(pair).NetOpen() + spreadToAdd + stopLoss;
           if (stopLoss == 0)
             Desk.DeleteTradeStopLimit(tradeId, true);
           else {
-            Desk.CreateFixOrder(Desk.FIX_STOP, tradeId, stopRate, 0, "", "", "", true, 0, remark, out a, out b);
+            Desk.ChangeTradeStopLimit3(tradeId, stopRate, true, 0, out b);
           }
         }
       } catch (Exception exc) {
