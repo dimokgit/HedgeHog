@@ -227,7 +227,8 @@ namespace HedgeHog.Alice.Client {
         tm.CloseAllOnProfit,tm.ReverseStrategy,tm.TradeAndAngleSynced,tm.TradingAngleRange,tm.CloseByMomentum,tm.TradeByRateDirection,
         tm.GannAngles,tm.IsGannAnglesManual,tm.SpreadShortToLongTreshold,
         tm.SuppResLevelsCount,tm.DoStreatchRates,tm.IsSuppResManual,tm.TradeOnCrossOnly,tm.TakeProfitFunctionInt,
-        tm.DoAdjustTimeframeByAllowedLot,tm.IsColdOnTrades,tm.CorridorCrossesCountMinimum,tm.StDevToSpreadRatio);
+        tm.DoAdjustTimeframeByAllowedLot,tm.IsColdOnTrades,tm.CorridorCrossesCountMinimum,tm.StDevToSpreadRatio,
+        loadRatesSecondsWarning:tm.LoadRatesSecondsWarning);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)

@@ -20,6 +20,7 @@ using System.Reactive.Concurrency;
 using System.Reactive.Subjects;
 using System.Web;
 using System.Web.Caching;
+using System.IO;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -2134,7 +2135,7 @@ namespace HedgeHog.Alice.Store {
       var spreadLow = spreads.AverageByIterations(3, true);
       var spreadHight = spreads.AverageByIterations(3, false);
       var sa = spreads.Except(spreadLow.Concat(spreadHight)).Average();
-      var sstdev = rates.StDev(r => r.Spread);
+      var sstdev = spreads.StDev();
       return sa + sstdev;
     }
 
@@ -2188,17 +2189,21 @@ namespace HedgeHog.Alice.Store {
     enum workers { LoadRates, ScanCorridor, RunPrice };
     Schedulers.BackgroundWorkerDispenser<workers> bgWorkers = new Schedulers.BackgroundWorkerDispenser<workers>();
 
-    void AddCurrentTick(Price price) {
-      if (!HasRates || price.IsPlayback) return;
-      var isTick = RatesInternal.First() is Tick;
-      if (BarPeriod == 0) {
-        RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
-      } else {
-        if (price.Time > RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod)) {
-          RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod), price.Ask, price.Bid, false));
-        } else RatesInternal.Last().AddTick(price.Time, price.Ask, price.Bid);
-      }
-      SetRatesStDev();
+    void AddCurrentTick(Price priceOuter) {
+      new Action<Price>(price => {
+        if (!HasRates || price.IsPlayback) return;
+        lock (_Rates) {
+          var isTick = RatesInternal.First() is Tick;
+          if (BarPeriod == 0) {
+            RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
+          } else {
+            if (price.Time > RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod)) {
+              RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod), price.Ask, price.Bid, false));
+            } else RatesInternal.Last().AddTick(price.Time, price.Ask, price.Bid);
+          }
+        }
+        SetRatesStDev();
+      }).BeginInvoke(priceOuter, ia => { }, null);
     }
 
 
@@ -2443,12 +2448,14 @@ namespace HedgeHog.Alice.Store {
       var ps = fw.GetPipSize(Pair) / 2;
       var trades = Trades.IsBuy(isBuy);
       var spreadToAdd = PriceSpreadToAdd(isBuy);
+      var ratesForStDevLimit = RatesArraySafe.Reverse().Take(RatesArraySafe.Length / 6).ToArray();
       trades.ToList().ForEach(trade => {
         var rateLast = RatesArraySafe.LastOrDefault(r => r.PriceAvg1 > 0);
         if (rateLast == null) return;
         var netOpen = trades.NetOpen();
         var cp = (rateLast.PriceAvg2 - rateLast.PriceAvg3) * .6;
         var limitByCorridor = ReverseStrategy ? 0 : isBuy ? rateLast.PriceAvg3 + cp : rateLast.PriceAvg2 - cp;
+        var limitByStDev = isBuy ? ratesForStDevLimit.Min(r => r.PriceAvg) + RatesStDev : ratesForStDevLimit.Max(r => r.PriceAvg) - RatesStDev;
         var tp = RoundPrice((trade.IsBuy ? 1 : -1) *
           (CalculateCloseProfit()
           + (ReverseStrategy ? fw.InPoints(Pair, fw.MoneyAndLotToPips(-CurrentLoss, AllowedLotSize(Trades, isBuy), Pair)) : 0)));
@@ -2456,7 +2463,7 @@ namespace HedgeHog.Alice.Store {
 
         var limitByTakeProfit = netOpen + spreadToAdd + tp;
         var limitRate = RoundPrice(ReverseStrategy ? limitByTakeProfit
-          : isBuy ? limitByCorridor.Min(limitByTakeProfit) : limitByCorridor.Max(limitByTakeProfit));
+          : isBuy ? limitByCorridor.Min(limitByTakeProfit, limitByStDev) : limitByCorridor.Max(limitByTakeProfit, limitByStDev));
         if (limitRate > 0) {
           if (isBuy && limitRate <= CurrentPrice.Bid || !isBuy && limitRate >= CurrentPrice.Ask)
             fw.ClosePair(Pair);
@@ -3019,51 +3026,58 @@ namespace HedgeHog.Alice.Store {
     }
     public void LoadRates(bool dontStreachRates = false) {
       try {
-        if (TradesManager!=null && !TradesManager.IsInTest && isLoggedIn) {
+        if (TradesManager != null && !TradesManager.IsInTest && isLoggedIn) {
           InfoTooltip = "Loading Rates";
-          Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, TradesManager.ServerTime, (BarsPeriodType)BarPeriod);
-          var sw = Stopwatch.StartNew();
-          var serverTime = TradesManager.ServerTime;
-          var periodsBack = BarsCount;
-          var useDefaultInterval = !DoStreatchRates || dontStreachRates || CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
-          var startDate = TradesManagerStatic.FX_DATE_NOW;
-          if (!useDefaultInterval) {
-            var intervalToAdd = Math.Max(5, RatesInternal.Count / 10);
-            if (CorridorStartDate.HasValue)
-              startDate = CorridorStartDate.Value;
-            else if (CorridorStats == null)
-              startDate = TradesManagerStatic.FX_DATE_NOW;
-            else {
-              startDate = CorridorStats.StartDate.AddMinutes(-(int)BarPeriod * intervalToAdd);
-              var periodsByStartDate = RatesInternal.Count(r => r.StartDate >= startDate) + intervalToAdd;
-              periodsBack = periodsBack.Max(periodsByStartDate);
+          lock (_Rates) {
+            Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, TradesManager.ServerTime, (BarsPeriodType)BarPeriod);
+            var sw = Stopwatch.StartNew();
+            var serverTime = TradesManager.ServerTime;
+            var periodsBack = BarsCount;
+            var useDefaultInterval = !DoStreatchRates || dontStreachRates || CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
+            var startDate = TradesManagerStatic.FX_DATE_NOW;
+            if (!useDefaultInterval) {
+              var intervalToAdd = Math.Max(5, RatesInternal.Count / 10);
+              if (CorridorStartDate.HasValue)
+                startDate = CorridorStartDate.Value;
+              else if (CorridorStats == null)
+                startDate = TradesManagerStatic.FX_DATE_NOW;
+              else {
+                startDate = CorridorStats.StartDate.AddMinutes(-(int)BarPeriod * intervalToAdd);
+                var periodsByStartDate = RatesInternal.Count(r => r.StartDate >= startDate) + intervalToAdd;
+                periodsBack = periodsBack.Max(periodsByStartDate);
+              }
             }
-          }
-          RatesInternal.RemoveAll(r => !r.IsHistory);
-          if (RatesInternal.Count != RatesInternal.Distinct().Count()) {
-            var ri = RatesInternal.ToArray();
-            RatesInternal.Clear();
-            RatesInternal.AddRange(ri);
-          }
+            RatesInternal.RemoveAll(r => !r.IsHistory);
+            if (RatesInternal.Count != RatesInternal.Distinct().Count()) {
+              var ri = RatesInternal.ToArray();
+              RatesInternal.Clear();
+              RatesInternal.AddRange(ri);
+            }
 
-          bool wereRatesPulled = false;
-          using (var ps = new PriceService.PriceServiceClient()) {
-            try {
-              //var ratesPulled = ps.FillPrice(Pair, RatesInternal.Select(r => r.StartDate).DefaultIfEmpty().Max());
-              //RatesInternal.AddRange(ratesPulled);
-              //wereRatesPulled = true;
-            } catch (Exception exc) {
-              Log = exc;
-            } finally {
-              if (!wereRatesPulled)
-                RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
+            bool wereRatesPulled = false;
+            using (var ps = new PriceService.PriceServiceClient()) {
+              try {
+                //var ratesPulled = ps.FillPrice(Pair, RatesInternal.Select(r => r.StartDate).DefaultIfEmpty().Max());
+                //RatesInternal.AddRange(ratesPulled);
+                //wereRatesPulled = true;
+              } catch (Exception exc) {
+                Log = exc;
+              } finally {
+                if (!wereRatesPulled)
+                  RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
+              }
             }
+            OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
+            RatesArraySafe.SetCMA(PriceCmaPeriod);
+            if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
+              Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
+            LastRatePullTime = TradesManager.ServerTime;
           }
-          OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
-          RatesArraySafe.SetCMA(PriceCmaPeriod);
-          if (sw.Elapsed > TimeSpan.FromSeconds(1))
-            Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
-          LastRatePullTime = TradesManager.ServerTime;
+          {
+            var path = AppDomain.CurrentDomain.BaseDirectory + "\\CSV";
+            Directory.CreateDirectory(path);
+            File.WriteAllText(path + "\\" + Pair.Replace("/", "") + ".csv", RatesArraySafe.Csv());
+          }
           //if (!HasCorridor) ScanCorridor();
         }
       } catch (Exception exc) {

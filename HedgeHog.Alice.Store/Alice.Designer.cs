@@ -1770,7 +1770,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="isColdOnTrades">Initial value of the IsColdOnTrades property.</param>
         /// <param name="corridorCrossesCountMinimum">Initial value of the CorridorCrossesCountMinimum property.</param>
         /// <param name="stDevToSpreadRatio">Initial value of the StDevToSpreadRatio property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio)
+        /// <param name="loadRatesSecondsWarning">Initial value of the LoadRatesSecondsWarning property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio, global::System.Int32 loadRatesSecondsWarning)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1835,6 +1836,7 @@ namespace HedgeHog.Alice.Store
             tradingMacro.IsColdOnTrades = isColdOnTrades;
             tradingMacro.CorridorCrossesCountMinimum = corridorCrossesCountMinimum;
             tradingMacro.StDevToSpreadRatio = stDevToSpreadRatio;
+            tradingMacro.LoadRatesSecondsWarning = loadRatesSecondsWarning;
             return tradingMacro;
         }
 
@@ -3523,6 +3525,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _StDevToSpreadRatio;
         partial void OnStDevToSpreadRatioChanging(global::System.Double value);
         partial void OnStDevToSpreadRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 LoadRatesSecondsWarning
+        {
+            get
+            {
+                return _LoadRatesSecondsWarning;
+            }
+            set
+            {
+                OnLoadRatesSecondsWarningChanging(value);
+                ReportPropertyChanging("LoadRatesSecondsWarning");
+                _LoadRatesSecondsWarning = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LoadRatesSecondsWarning");
+                OnLoadRatesSecondsWarningChanged();
+            }
+        }
+        private global::System.Int32 _LoadRatesSecondsWarning;
+        partial void OnLoadRatesSecondsWarningChanging(global::System.Int32 value);
+        partial void OnLoadRatesSecondsWarningChanged();
 
         #endregion
     

@@ -35,6 +35,9 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    public static string Csv<TBar>(this ICollection<TBar> bars) where TBar :BarBase{
+      return string.Join(Environment.NewLine, bars.Select(b => string.Format("{0},{1},{2}",b.StartDate,b.PriceHigh,b.PriceLow)));
+    }
     public static bool IsReversed(this IEnumerable<BarBase> bars) {
       return bars.Last().StartDate < bars.First().StartDate;
     }
