@@ -35,7 +35,7 @@ namespace HedgeHog.Bars {
     [DataMember]
     public int Index { get; set; }
     [DataMember]
-    public readonly bool IsHistory;
+    public bool IsHistory;
 
     #region Bid/Ask
     [DataMember]
@@ -338,6 +338,7 @@ namespace HedgeHog.Bars {
       }
       AskClose = ask;
       BidClose = bid;
+      IsHistory = false;
     }
 
 

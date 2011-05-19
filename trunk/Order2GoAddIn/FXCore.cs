@@ -220,6 +220,10 @@ namespace Order2GoAddIn {
     public bool LogOn(string user, string password, bool isDemo) {
       return LogOn(user, password, "", isDemo);
     }
+    public bool ReLogin() {
+      Logout();
+      return LogOn();
+    }
     object loginLocker = new object();
     public bool LogOn() {
       lock (loginLocker) {
@@ -243,12 +247,12 @@ namespace Order2GoAddIn {
           RaiseLoginError(e);
           return false;
         }
+        RaiseLoggedIn();
+        _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
+          if (!IsLoggedIn)
+            LogOn();
+        });
       }
-      RaiseLoggedIn();
-      _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
-        if (!IsLoggedIn)
-          LogOn();
-      });
       return true;
     }
     bool _isInLogOut = false;

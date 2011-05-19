@@ -319,14 +319,26 @@ namespace HedgeHog {
     public static double Max(this double v, double other) {
       return Math.Max(v, other);
     }
+    public static double Max(this double v, params double[] other) {
+      return other.Aggregate(v, (p, n) => p.Max(n));
+    }
     public static int Max(this int v, int other) {
       return Math.Max(v, other);
+    }
+    public static int Max(this int v, params int[] other) {
+      return other.Aggregate(v, (p, n) => p.Max(n));
     }
     public static double Min(this double v, double other) {
       return Math.Min(v, other);
     }
+    public static double Min(this double v,params double[] other) {
+      return other.Aggregate(v, (p, n) => p.Min(n));
+    }
     public static int Min(this int v, int other) {
       return Math.Min(v, other);
+    }
+    public static int Min(this int v, params int[] other) {
+      return other.Aggregate(v, (p, n) => p.Min(n));
     }
 
     public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }

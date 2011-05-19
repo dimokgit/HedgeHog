@@ -2134,6 +2134,7 @@ namespace Order2GoAddIn {
             } catch (Exception exc) {
               TradesReset();
               EntryOrdersReset();
+              ReLoginIfCommandIsDisabled(exc);
               RaiseError(new Exception(new { pair, limitRate, prevRate } + "", exc));
             } finally {
               Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
@@ -2181,10 +2182,9 @@ namespace Order2GoAddIn {
               if (prevOrder != null) prevRate = prevOrder.Rate;
               Desk.ChangeNetStopLimit2Async(pair, AccountID, isBuy, stopRate, true, 0, out a);
             } catch (Exception exc) {
-              if (exc.Message.Contains("This command is disabled."))
-                new Action(() => CoreFX.LogOn()).BeginInvoke(ac => { }, null);
               TradesReset();
               EntryOrdersReset();
+              ReLoginIfCommandIsDisabled(exc);
               RaiseError(new Exception(new { pair, stopRate, prevRate } + "", exc));
             } finally {
               Debug.WriteLine("{0}:{1:n1}ms for {2} from {3} to {4} @ " + DateTime.Now.ToString("mm:ss.fff")
@@ -2201,6 +2201,11 @@ namespace Order2GoAddIn {
       } catch (Exception exc) {
         RaiseError(exc);
       }
+    }
+
+    private void ReLoginIfCommandIsDisabled(Exception exc) {
+      if (exc.Message.Contains("This command is disabled."))
+        Task.Factory.StartNew(() => CoreFX.ReLogin());
     }
 
 

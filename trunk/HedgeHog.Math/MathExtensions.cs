@@ -65,15 +65,7 @@ namespace HedgeHog {
       return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations);
     }
     public static double[] AverageByIterations(this ICollection<double> values, Func<double, double, bool> compare, double iterations) {
-      var avg = values.DefaultIfEmpty().Average();
-      if (values.Count == 0) return values.ToArray();
-      for (int i = 1; i < iterations; i++) {
-        var vs = values.Where(r => compare(r, avg)).ToArray();
-        if (vs.Length == 0) break;
-        values = vs;
-        avg = values.Average();
-      }
-      return values.ToArray();
+      return values.AverageByIterations<double>(v => v, compare, iterations);
     }
 
     public static T[] AverageByIterations<T>(this ICollection<T> values,Func<T,double> getValue, Func<T, double, bool> compare, double iterations) {

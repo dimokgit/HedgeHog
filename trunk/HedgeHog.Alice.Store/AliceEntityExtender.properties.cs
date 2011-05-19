@@ -598,6 +598,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("LoadRates Seconds Warning")]
+    [Category(categoryXXX)]
+    public int LoadRatesSecondsWarning_ {
+      get { return LoadRatesSecondsWarning; }
+      set {
+        if (LoadRatesSecondsWarning != value) {
+          LoadRatesSecondsWarning = value;
+          OnPropertyChanged(() => LoadRatesSecondsWarning_);
+        }
+      }
+    }
+
     private double _TradeDistanceInPips;
     double TradeDistanceInPips {
       get { return _TradeDistanceInPips; }
