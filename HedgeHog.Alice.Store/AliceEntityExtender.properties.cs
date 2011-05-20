@@ -663,7 +663,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
     private double _VolumeLong;
     public double VolumeLong {
       get { return _VolumeLong; }
@@ -796,12 +795,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    double? _currentSpread;
     Price _currentPrice;
     public Price CurrentPrice {
       get { return _currentPrice; }
       set {
         _currentPrice = value;
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
+        var currentSpread = RoundPrice(Lib.CMA(this._currentSpread, 10, this._currentPrice.Spread));
+        if (currentSpread == this._currentSpread) return;
+        this._currentSpread = currentSpread;
+        SetPriceSpreadOk();
       }
     }
 

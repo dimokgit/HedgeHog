@@ -160,38 +160,38 @@ namespace HedgeHog {
         }
       }
     }
-    private double _HeightToStDevRatio;
-    public double HeightToStDevRatio {
-      get { return _HeightToStDevRatio; }
+    private double _RatesStDevToRatesHeightRatio;
+    public double RatesStDevToRatesHeightRatio {
+      get { return _RatesStDevToRatesHeightRatio; }
       set {
-        if (_HeightToStDevRatio != value) {
-          _HeightToStDevRatio = value;
-          OnPropertyChanged(CharterControlMetadata.HeightToStDevRatio);
+        if (_RatesStDevToRatesHeightRatio != value) {
+          _RatesStDevToRatesHeightRatio = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
 
-    private double _TrendNessRatio;
-    public double TrendNessRatio {
-      get { return _TrendNessRatio; }
+    #region VolumeRatio
+    private double _VolumeRatio;
+    public double VolumeRatio {
+      get { return _VolumeRatio; }
       set {
-        if (_TrendNessRatio != value) {
-          _TrendNessRatio = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorHeight0ToSpreadRatio);
+        if (_VolumeRatio != value) {
+          _VolumeRatio = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
 
+    #endregion
 
     //†‡∆
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}/{5:n0}:{6:n1}∆{7:n0}‡{8:0}s{9:p0}t"
+          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}/{5:n0}:{6:n0}∆{7:n0}‡{8:0}s{9:0}v"
           , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
-          , HeightInPips, StDev,HeightToStDevRatio, CorridorHeight0, SpreadForCorridor,TrendNessRatio);
+          , HeightInPips, StDev, RatesStDevToRatesHeightRatio * 100, CorridorHeight0, SpreadForCorridor, VolumeRatio * 100);
       }
     }
 

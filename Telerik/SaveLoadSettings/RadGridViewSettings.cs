@@ -452,11 +452,11 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 {
                     Settings.SortSettings.Clear();
 
-                    foreach (Telerik.Windows.Data.SortDescriptor d in grid.SortDescriptors)
+                    foreach (ColumnSortDescriptor d in grid.SortDescriptors)
                     {
                         SortSetting setting = new SortSetting();
 
-                        setting.PropertyName = d.Member;
+                        setting.PropertyName = d.Column.SortMemberPath ?? d.Column.UniqueName;
                         setting.SortDirection = d.SortDirection;
 
                         Settings.SortSettings.Add(setting);
@@ -467,11 +467,11 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 {
                     Settings.GroupSettings.Clear();
 
-                    foreach (Telerik.Windows.Data.GroupDescriptor d in grid.GroupDescriptors)
+                    foreach (ColumnGroupDescriptor d in grid.GroupDescriptors)
                     {
                         GroupSetting setting = new GroupSetting();
 
-                        setting.PropertyName = d.Member;
+                        setting.PropertyName = d.Column.GroupMemberPath ?? d.Column.UniqueName;
                         setting.SortDirection = d.SortDirection;
                         setting.DisplayContent = d.DisplayContent;
 

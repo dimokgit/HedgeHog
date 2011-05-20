@@ -514,10 +514,22 @@
               <Grid Background="#FFF7F3F7">
                 <Grid.RowDefinitions>
                   <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
                   <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <ui:AccountInfo DataContext="{Binding ServerAccountRow}"/>
-                <l:RemoteControlView Grid.Row="1"/>
+                <TextBlock DataContext="{Binding TradingStatistics}" Grid.Row="1">
+                  TPInPipsA:<TextBlock Text="{Binding TakeProfitInPipsAverage,StringFormat=n1}" ToolTip="TakeProfitInPipsAverage"/>
+                  VolRatio:
+                    <TextBlock Text="{Binding VolumeRatioL,StringFormat=p0}" ToolTip="VolumeRatioL"/>
+                    <TextBlock>/</TextBlock>
+                    <TextBlock Text="{Binding VolumeRatioH,StringFormat=p0}" ToolTip="VolumeRatioH"/>
+                  StDev/Hght:
+                    <TextBlock Text="{Binding RatesStDevToRatesHeightRatioL,StringFormat=p0}" ToolTip="RatesStDevToRatesHeightRatioL"/>
+                    <TextBlock>/</TextBlock>
+                    <TextBlock Text="{Binding RatesStDevToRatesHeightRatioH,StringFormat=p0}" ToolTip="RatesStDevToRatesHeightRatioH"/>
+                </TextBlock>
+                <l:RemoteControlView Grid.Row="2"/>
               </Grid>
             </telerik:RadPane>
             <telerik:RadPane IsSelected="{state:UserSettings}" telerik:RadDocking.SerializationTag="OpenedTrades" CanUserClose="False"
