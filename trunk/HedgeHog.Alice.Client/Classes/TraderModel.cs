@@ -177,6 +177,9 @@ namespace HedgeHog.Alice.Client {
 
     #region Events
     TradingStatisticsEventArgs _tradingStatistics = new TradingStatisticsEventArgs();
+    public TradingStatisticsEventArgs TradingStatistics {
+      get { return _tradingStatistics; }
+    }
     public override event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     protected void OnNeedTradingStatistics() {
       if (NeedTradingStatistics != null) {
@@ -1431,31 +1434,31 @@ namespace HedgeHog.Alice.Client {
       }
     }
     private void UpdateOrders(Account account, List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
-      try {
-        var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
-        var newIds = ordersList.Select(t => t.OrderID);
-        var deleteIds = oldIds.Except(newIds).ToList();
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
-          deleteIds.ForEach(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d))));
-        var addIds = newIds.Except(oldIds).ToList();
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
-          addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a))));
-        CleanUpOrders(ordersCollection);
-        foreach (var order in ordersList) {
-          var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
-          if (odr == null) break;
-          var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
-          odr.Update(order,
-            o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
-            o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
-            o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades, odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
-            o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount / stopBalance; },
-            o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount / stopBalance; }
-            );
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        try {
+          var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
+          var newIds = ordersList.Select(t => t.OrderID);
+          var deleteIds = oldIds.Except(newIds).ToList();
+          deleteIds.ForEach(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)));
+          var addIds = newIds.Except(oldIds).ToList();
+          addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
+          CleanUpOrders(ordersCollection);
+          foreach (var order in ordersList) {
+            var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
+            if (odr == null) break;
+            var stopBalance = account.Balance + account.Trades.Where(t => t.Pair == odr.Pair && t.IsBuy != odr.IsBuy).Sum(t => t.StopAmount);
+            odr.Update(order,
+              o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnLimit = odr.Limit == 0 ? 0 : stopBalance + odr.LimitAmount; },
+              o => { odr.InitUnKnown<OrderUnKnown>().BalanceOnStop = stopBalance + odr.StopAmount; },
+              o => { odr.InitUnKnown<OrderUnKnown>().NoLossLimit = Static.GetEntryOrderLimit(TradesManager, account.Trades, odr.Lot, false, AccountModel.CurrentLoss).Round(1); },
+              o => { odr.InitUnKnown<OrderUnKnown>().PercentOnStop = odr.StopAmount / stopBalance; },
+              o => { odr.InitUnKnown<OrderUnKnown>().PercentOnLimit = odr.LimitAmount / stopBalance; }
+              );
+          }
+        } catch (Exception exc) {
+          Log = exc;
         }
-      } catch (Exception exc) {
-        Log = exc;
-      }
+      });
     }
     private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {
       tradesCollection.Clear();

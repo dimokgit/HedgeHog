@@ -474,6 +474,10 @@ namespace HedgeHog.Alice.Client {
         var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
         e.TakeProfitInPipsAverage = tp;
       }
+      e.VolumeRatioH = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, false).Average();
+      e.VolumeRatioL = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
+      e.RatesStDevToRatesHeightRatioH = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, false).Average();
+      e.RatesStDevToRatesHeightRatioL = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
     }
 
     void MasterModel_MasterTradeAccountChanged(object sender, EventArgs e) {
@@ -756,8 +760,8 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeight0 = tm.CorridorHeightByRegressionInPips0;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
-          charter.HeightToStDevRatio = tm.HeightToStDevRatio;
-          charter.TrendNessRatio = tm.TrendNessRatio;
+          charter.RatesStDevToRatesHeightRatio = tm.RatesStDevToRatesHeightRatio;
+          charter.VolumeRatio = tm.VolumeShortToLongRatio;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
