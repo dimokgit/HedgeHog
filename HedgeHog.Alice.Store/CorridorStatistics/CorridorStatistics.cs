@@ -162,6 +162,9 @@ namespace HedgeHog.Alice.Store {
 
     public void Init(CorridorStatistics cs,double pipSize) {
       this._pipSize = pipSize;
+      this.priceLine = cs.priceLine;
+      this.priceHigh = cs.priceHigh;
+      this.priceLow = cs.priceLow;
       Init(cs.Rates, cs.Density, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.LineHigh, cs.LineLow, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
