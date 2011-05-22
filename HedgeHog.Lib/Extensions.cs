@@ -9,7 +9,11 @@ using System.Windows.Threading;
 namespace HedgeHog {
   public static class DispatcherEx {
     public static void Invoke(this Dispatcher d, Action action) {
-      d.Invoke(action);
+      if (d.CheckAccess()) {
+        action();
+      } else {
+        d.Invoke(action);
+      }
     }
   }
   public static class DependencyObjectExtensions {

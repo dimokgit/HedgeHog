@@ -1786,11 +1786,11 @@ namespace Order2GoAddIn {
       try {
         if (GetOrders("").Any(o => o.OrderID == orderId)) {
           object reqId;
-          EntryOrders.Remove(orderId);
           if (async)
             Desk.DeleteOrderAsync(orderId, out reqId);
           else
             Desk.DeleteOrder(orderId);
+          EntryOrders.Remove(orderId);
         }
         return true;
       } catch (Exception exc) {

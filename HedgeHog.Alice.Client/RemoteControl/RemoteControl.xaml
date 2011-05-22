@@ -285,7 +285,7 @@
                         :<TextBlock Text="{Binding CorridorStats.HeightUpDown0ToSpreadRatio,StringFormat=n1}"/>
                       </TextBlock>
                       <TextBlock>
-                        Legs Angle StDev Ratio:<TextBlock Text="{Binding CorridorStats.LegsAngleStDevR,StringFormat=p0}"/></TextBlock>
+                        Legs Angle StDev Ratio:<TextBlock Text="{Binding CorridorStats.LegsAngleAverage,StringFormat=n0}"/></TextBlock>
                       <ListBox ItemsSource="{Binding CorridorStats.LegInfos}">
                         <ListBox.ItemTemplate>
                           <DataTemplate>

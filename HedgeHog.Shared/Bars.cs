@@ -33,8 +33,6 @@ namespace HedgeHog.Bars {
   [DataContract]
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>,IComparable<BarBase>, ICloneable {
     [DataMember]
-    public int Index { get; set; }
-    [DataMember]
     public bool IsHistory;
 
     #region Bid/Ask

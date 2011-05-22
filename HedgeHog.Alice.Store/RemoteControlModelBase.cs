@@ -302,7 +302,6 @@ namespace HedgeHog.Alice.Store {
       var isLong = dateStart == DateTime.MinValue;
       var rs = tradingMacro.RatesArraySafe.Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
-      ratesForDensity.Index();
       SetPriceBars(tradingMacro,isLong, ratesForDensity.GetPriceBars(tradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
       return GetPriceBars(tradingMacro,isLong);
     }
