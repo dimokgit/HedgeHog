@@ -164,6 +164,9 @@ namespace HedgeHog {
       var range = values.Max() - values.Min();
       return stDev / range;
     }
+    public static double StDev<T>(this ICollection<T> values, Func<T,int, double> value) {
+      return values.Select((v,i) => value(v,i)).ToArray().StDev();
+    }
     public static double StDev<T>(this ICollection<T> values, Func<T, double> value) {
       return values.Select(v => value(v)).ToArray().StDev();
     }
@@ -281,6 +284,9 @@ namespace HedgeHog {
     }
 
 
+    public static TimeSpan FromMinutes(this int i) { return TimeSpan.FromMinutes(i); }
+    public static TimeSpan FromMinutes(this double i) { return TimeSpan.FromMinutes(i); }
+
     public static double CMA(this double? MA, double Periods, double NewValue) {
       if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
@@ -301,11 +307,11 @@ namespace HedgeHog {
     public static decimal Min3(decimal n1, decimal n2, decimal n3) {
       return Math.Min(Math.Min(n1, n2), n3);
     }
-    public static DateTime Max(DateTime d1, DateTime d2) {
-      return d1 > d2 ? d1 : d2;
+    public static DateTime Max(this DateTime d1, DateTime d2) {
+      return d1 >= d2 ? d1 : d2;
     }
-    public static DateTime Min(DateTime d1, DateTime d2) {
-      return d1 < d2 ? d1 : d2;
+    public static DateTime Min(this DateTime d1, DateTime d2) {
+      return d1 <= d2 ? d1 : d2;
     }
     public static double? Abs(this double? v) {
       return v.HasValue ? v.Value.Abs() : (double?)null;
@@ -349,7 +355,6 @@ namespace HedgeHog {
     }
 
 
-    public static TimeSpan FromMinutes(this double number){ return TimeSpan.FromMinutes(number); }
     static double GetTextBoxTextDouble(TextBox TextBox) { return double.Parse("0" + GetTextBoxText(TextBox)); }
     public static int GetTextBoxTextInt(TextBox TextBox) {
       var t = GetTextBoxText(TextBox);
@@ -410,8 +415,14 @@ namespace HedgeHog {
     public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
       return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
     }
+    public static TimeSpan Multiply(this TimeSpan span, TimeSpan d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d.TotalMilliseconds);
+    }
     public static TimeSpan Multiply(this TimeSpan span, double d) {
       return TimeSpan.FromMilliseconds(span.TotalMilliseconds * d);
+    }
+    public static TimeSpan Divide(this TimeSpan span, TimeSpan d) {
+      return TimeSpan.FromMilliseconds(span.TotalMilliseconds / d.TotalMilliseconds);
     }
     #endregion
 

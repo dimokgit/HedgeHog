@@ -1003,47 +1003,6 @@ namespace HedgeHog {
         dest.AddMany(src.OrderBy(t => t.Time));
       }
     }
-    void UpdateTicks(ObservableCollection<Point> dest, List<Point> src, TimeSpan periodSpan) {
-      if (true) {
-        if (dest.Count() == 0)
-          dest.AddMany(src);
-        else {
-          var lastPeriod = (dateAxis.ConvertFromDouble(dest.Last().X) - dateAxis.ConvertFromDouble(src.Last().X)).Duration();
-          if (lastPeriod > periodSpan.Multiply(5)) {
-            dest.Clear();
-            UpdateTicks(dest, src, periodSpan);
-          } else {
-            dest.RemoveAt(0);
-            dest.Add(src.Last());
-          }
-        }
-        return;
-      }
-      //var srcDict = new Dictionary<double, Point>();
-      //src.ForEach(s => srcDict.Add(s.X, s));
-      //dest.ToList().ForEach(d => {
-      //  if (srcDict.ContainsKey(d.X)) d.Y = srcDict[d.X].Y;
-      //});
-      if (((double)dest.Count / src.Count).Between(0.95, 1.05)) {
-        var delete = dest.Except(src).ToList();
-        delete.ForEach(d => dest.Remove(d));
-        if (dest.Count > 0) {
-          var time = dateAxis.ConvertToDouble(dateAxis.ConvertFromDouble(dest.Max(t => t.X)).AddMinutes(-1));
-          dest.Where(t => t.X > time).ToList().ForEach(t => dest.Remove(t));
-        }
-        delete = src.Intersect(dest).ToList();
-        delete.ForEach(d => src.Remove(d));
-        if (dest.Count > 0) {
-          var time = dest.Min(t => t.X);
-          src.Where(t => t.X < time).OrderByDescending(t => t.X).ToList().ForEach(s => dest.Insert(0, s));
-          time = dest.Max(t => t.X);
-          src.Where(t => t.X > time).OrderBy(t => t.X).ToList().ForEach(s => dest.Add(s));
-        } else dest.AddMany(src);
-      } else {
-        dest.Clear();
-        dest.AddMany(src.OrderBy(t => t.X));
-      }
-    }
     #endregion
 
     bool inRendering;

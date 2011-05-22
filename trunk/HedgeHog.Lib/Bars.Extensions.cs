@@ -76,6 +76,18 @@ namespace HedgeHog.Bars {
         a(tick, y1);// *poly2Wieght + y2 * (1 - poly2Wieght);
       }
     }
+    static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<int, double> a) {
+      int i1 = 0;
+      ticks.ToList().ForEach(tick => {
+        double y1 = coeffs.RegressionValue(i1);
+        a(i1++, y1);
+      });
+    }
+    public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<int, double> writeTo) {
+      var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      ticks.SetRegressionPrice(coeffs, writeTo);
+      return coeffs;
+    }
     public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
       var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
@@ -238,48 +250,11 @@ namespace HedgeHog.Bars {
       pds.Sort((l1, l2) => l2.Count.CompareTo(l1.Count));
       return pds[0][0].price1;
     }
-    public static void GetCorridorHeights(this IEnumerable<Rate> rates, Func<Rate, double> priceLine, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, Func<double, double, bool> avgCompare, int minimumCount, int iterations, out double heightAvgUp, out double heightAvgDown) {
-      rates.GetCorridorHeights(new Rate[0], new Rate[0], priceLine, priceHigh, priceLow, avgCompare, minimumCount, iterations, out heightAvgUp, out heightAvgDown);
-    }
-    public static void GetCorridorHeights(this IEnumerable<Rate> rates, Rate[] lineHigh, Rate[] lineLow, Func<Rate, double> priceLine, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, Func<double, double, bool> avgCompare, int minimumCount, int iterations, out double heightAvgUp, out double heightAvgDown) {
-      Func<Rate, double> getHeightHigh = r => priceHigh(r) - priceLine(r);
-      Func<Rate, double> getHeightLow = r => priceLine(r) - priceLow(r);
-      //var treshold = .1;
-      var heightsUp = (lineHigh.Length > 0 ? lineHigh : rates.Where(r => getHeightHigh(r) > 0))
-        .Where(r => priceLine(r) > 0).ToArray();
-      //.AverageByPercantage(getHeightHigh, treshold, minimumCount);
-      heightAvgUp = iterations > 5
-      ? heightsUp.AverageByPercantage(getHeightHigh, iterations/100.0, 3).Average(getHeightHigh)
-      : heightsUp.Select(getHeightHigh).ToArray().AverageByIterations(avgCompare, iterations).Average();
-      //heightAvgUp = heightsUp.Min();
 
-      var heightsDown = (lineLow.Length > 0 ? lineLow : rates.Where(r => getHeightLow(r) > 0))
-        .Where(r => priceLine(r) > 0).ToArray();
-      //.AverageByPercantage(getHeightLow, treshold, minimumCount);
-      heightAvgDown = iterations > 5
-        ? heightsDown.AverageByPercantage(getHeightLow, iterations/100.0, 3).Average(getHeightLow)
-        : heightsDown.Select(getHeightLow).ToArray().AverageByIterations(avgCompare, iterations).Average();
-    }
-    public static void Index(this Rate[] rates) {
-      rates[0].Index = 0;
-      rates.Aggregate((rp, rn) => { rn.Index = rp.Index + 1; return rn; });
+    public static double Slope(Rate rate1, Rate rate2,TimeSpan interval) {
+      return (rate2.PriceAvg - rate1.PriceAvg) / (rate2.StartDate - rate1.StartDate).Divide(interval).TotalMinutes;
     }
 
-    public static double[] FindLine<TBar>(this TBar[] bars, Func<TBar, double> getPtice, double[] defaultCoefs) where TBar : BarBase {
-      if (bars.Count() < 2) return defaultCoefs;
-      if (bars.Count() == 2) {
-        return new[] { bars.First().PriceAvg, RateSlope(bars.First(), bars.Last()) };
-      }
-      return MathExtensions.Linear(bars.Select(r => (double)r.Index).ToArray(), bars.Select(getPtice).ToArray());
-    }
-
-    private static double RateSlope<TBar>(TBar r1, TBar r2) where TBar : BarBase {
-      return Slope(new Point(r1.Index, r1.PriceAvg), new Point(r2.Index, r2.PriceAvg));
-    }
-
-    private static double Slope(Point p1, Point p2) {
-      return (p1.Y - p2.Y) / (p2.X - p1.X);
-    }
     public static TBar[] FindExtreams<TBar>(this TBar[] bars, Func<TBar, TBar, TBar> aggregate, int margin = 2) where TBar : BarBase {
       if (bars.Length == 0) return new TBar[0];
       var count = bars.Length - margin * 2;

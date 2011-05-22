@@ -12,13 +12,25 @@ namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
     public class LegInfo {
       public double Slope { get; set; }
-      public double Angle { get; set; }
+      public double _pointSize = double.NaN;
+      private double _angle = double.NaN;
+      public double Angle {
+        get { return _angle; }
+        set { _angle = value; }
+      }
+      public double CalcAngle(double pointSize) {
+        if (double.IsNaN(pointSize)) throw new ArgumentException("Must be positive number.", "pointSize");
+        if (pointSize == _pointSize) return _angle;
+        _pointSize = pointSize;
+        Angle = Slope.Angle(pointSize);
+        return Angle;
+      }
       public Rate Rate1 { get; set; }
       public Rate Rate2 { get; set; }
-      public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval, double pointSize)
-        : this(rateBase, new[] { rateOther }, interval, pointSize) {
+      public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval,double pointSize = double.NaN)
+        : this(rateBase, new[] { rateOther }, interval,pointSize) {
       }
-      public LegInfo(Rate rateBase, Rate[] ratesOther, TimeSpan interval, double pointSize) {
+      public LegInfo(Rate rateBase, Rate[] ratesOther, TimeSpan interval, double pointSize = double.NaN) {
         this.Rate1 = rateBase;
         Rate rate2;
         this.Slope = CalculateSlope(rateBase, ratesOther, interval, out rate2);
@@ -29,7 +41,8 @@ namespace HedgeHog.Alice.Store {
           var x = (rates[1].StartDate - rates[0].StartDate).TotalMinutes / interval.TotalMinutes;
           this.Slope = y / x;
         }
-        this.Angle = this.Slope.Angle(pointSize);
+        if (!double.IsNaN(pointSize))
+          CalcAngle(pointSize);
       }
       static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval,out Rate rate) {
         var slopes = new List<Tuple<Rate,double>>();
@@ -63,26 +76,25 @@ namespace HedgeHog.Alice.Store {
         _LegInfos.CollectionChanged -= LegInfos_CollectionChanged;
     }
     void LegInfos_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
-      RaisePropertyChanged(() => LegsAngleStDevR);
+      RaisePropertyChanged(() => LegsAngleAverage);
     }
     public void LegInfosClear() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Clear());
     }
-    public LegInfo LegInfosAdd(Rate rate1, Rate rate2, TimeSpan interval, double pointSize) {
-      var li = new LegInfo(rate1, rate2, interval, pointSize);
+    public LegInfo LegInfosAdd(Rate rate1, Rate rate2, TimeSpan interval) {
+      var li = new LegInfo(rate1, rate2, interval);
       GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Add(li));
       return li;
     }
 
-    public double LegsAngleStDevR {
+    public double LegsAngleAverage {
       get {
         if (LegInfos.Count == 0) return double.NaN;
-        var angles = LegInfos.Select(li => li.Angle.Abs()).ToArray();
-        return angles.StDev() / angles.Average();
+        return LegInfos.Average(li => li.Angle.Abs());
       }
     }
 
-    public Func<Rate,double> priceLine { get; set; }
+    public double[] priceLine { get; set; }
     public Func<Rate,double> priceHigh { get; set; }
     public Func<Rate,double> priceLow { get; set; }
 
@@ -99,15 +111,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     public Rate[] GetRates(IEnumerable<Rate> rates) { return rates.Skip(rates.Count() - Periods).ToArray(); }
-
-    public bool AdjustHeight(IEnumerable<Rate> rates, Func<CorridorStatistics, bool> filter, int iterationsStart, int iterationsEnd = 10) {
-      while (!filter(this)) {
-        GetRates(rates).GetCorridorHeights(
-          priceLine, priceHigh, priceLow, CorridorStaticBaseExtentions.priceHeightComparer, 1, ++iterationsStart, out _HeightUp, out _HeightDown);
-        if (iterationsStart > iterationsEnd) break;
-      }
-      return filter(this);
-    }
 
     double _HeightUp0;
     public double HeightUp0 {

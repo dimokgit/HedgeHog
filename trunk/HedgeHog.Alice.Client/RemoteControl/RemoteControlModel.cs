@@ -746,9 +746,9 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeightMultiplier = csFirst.HeightUpDown0 / csFirst.HeightUpDown;// tm.CorridorHeightMultiplier;
           charter.PriceBarValue = pb => pb.Power;
           charter.SetPriceLineColor(tm.Trades.HaveBuy() ? true : tm.Trades.HaveSell() ? false : (bool?)null);
-          charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.GetPriceHigh(r) : tm.GetPriceLow(r);
-          charter.GetPriceHigh = tm.GetPriceHigh;
-          charter.GetPriceLow = tm.GetPriceLow;
+          charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
+          charter.GetPriceHigh = tm.CorridorStats.priceHigh;
+          charter.GetPriceLow = tm.CorridorStats.priceLow;
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
