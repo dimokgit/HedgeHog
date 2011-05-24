@@ -120,8 +120,9 @@ namespace HedgeHog.Alice.Store {
         double height0;
         double height;
         #endregion
-          var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
-          height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
+          //var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
+        //height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
+        height0 = rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
           height = height0 * 2;
           density = (heightDown + heightUp) / periods;
         return new CorridorStatistics(rates.ToArray(),density, coeffs, height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
