@@ -35,13 +35,40 @@ namespace HedgeHog.Alice.Store {
   }
 
   public class TradingStatisticsEventArgs : EventArgs, INotifyPropertyChanged {
-    private double _TakeProfitInPipsAverage;
-    [DataMember]
-    public double TakeProfitInPipsAverage {
-      get { return _TakeProfitInPipsAverage; }
+
+    #region CorridorHeightToRatesHeightRatio
+    private double _CorridorHeightToRatesHeightRatio;
+    public double CorridorHeightToRatesHeightRatio {
+      get { return _CorridorHeightToRatesHeightRatio; }
       set {
-        if (_TakeProfitInPipsAverage != value) {
-          _TakeProfitInPipsAverage = value;
+        if (_CorridorHeightToRatesHeightRatio != value) {
+          _CorridorHeightToRatesHeightRatio = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    #endregion
+    #region TakeProfitPips
+    private double _TakeProfitPips;
+    public double TakeProfitPips {
+      get { return _TakeProfitPips; }
+      set {
+        if (_TakeProfitPips != value) {
+          _TakeProfitPips = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    #endregion
+    private double _TakeProfitDistanceInPips;
+    [DataMember]
+    public double TakeProfitDistanceInPips {
+      get { return _TakeProfitDistanceInPips; }
+      set {
+        if (_TakeProfitDistanceInPips != value) {
+          _TakeProfitDistanceInPips = value;
           RaisePropertyChanged();
         }
       }

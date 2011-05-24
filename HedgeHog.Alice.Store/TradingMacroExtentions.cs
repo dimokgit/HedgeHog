@@ -21,6 +21,7 @@ using System.Reactive.Subjects;
 using System.Web;
 using System.Web.Caching;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -290,6 +291,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [MethodImpl(MethodImplOptions.Synchronized)]
     private void SetGannAngleOffset(CorridorStatistics cs) {
       GannAnglesOffset = cs.Slope.Abs() / GannAngle1x1;
     }
@@ -325,21 +327,22 @@ namespace HedgeHog.Alice.Store {
         var datePrev = _CorridorStats == null ? DateTime.MinValue : _CorridorStats.StartDate;
         _CorridorStats = value;
         //CorridorStatsArray.ToList().ForEach(cs => cs.IsCurrent = cs == value);
+        lock (_rateArrayLocker) {
+          RatesArraySafe.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = 0);
+          if (value != null) {
+            CorridorStats.Rates
+              .SetCorridorPrices(CorridorStats.Coeffs, CorridorStats.HeightUp0, CorridorStats.HeightDown0, CorridorStats.HeightUp, CorridorStats.HeightDown,
+                r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
+                , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
+                , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
+              );
 
-        RatesArraySafe.ToList().ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = 0);
-        if (value != null) {
-          CorridorStats.Rates
-            .SetCorridorPrices(CorridorStats.Coeffs, CorridorStats.HeightUp0, CorridorStats.HeightDown0, CorridorStats.HeightUp, CorridorStats.HeightDown,
-              r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
-              , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
-              , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
-            );
-
-          CorridorAngle = CorridorStats.Slope;
-          CalculateCorridorHeightToRatesHeight();
-          if (!IsGannAnglesManual)
-            SetGannAngleOffset(value);
-          UpdateTradingGannAngleIndex();
+            CorridorAngle = CorridorStats.Slope;
+            CalculateCorridorHeightToRatesHeight();
+            if (false && !IsGannAnglesManual)
+              SetGannAngleOffset(value);
+            UpdateTradingGannAngleIndex();
+          }
         }
 
         #region PropertyChanged
@@ -351,16 +354,16 @@ namespace HedgeHog.Alice.Store {
       return cs.HeightUpDown / RatesHeight;
     }
     void CalculateCorridorHeightToRatesHeight() {
-      CorridorHeightToRatesHeight = CalculateCorridorHeightToRatesHeight(CorridorStats);
+      CorridorHeightToRatesHeightRatio = CalculateCorridorHeightToRatesHeight(CorridorStats);
     }
 
-    private double _CorridorHeightToRatesHeight;
-    public double CorridorHeightToRatesHeight {
-      get { return _CorridorHeightToRatesHeight; }
+    private double _CorridorHeightToRatesHeightRatio;
+    public double CorridorHeightToRatesHeightRatio {
+      get { return _CorridorHeightToRatesHeightRatio; }
       set {
-        if (_CorridorHeightToRatesHeight != value) {
-          _CorridorHeightToRatesHeight = value;
-          OnPropertyChanged(() => CorridorHeightToRatesHeight);
+        if (_CorridorHeightToRatesHeightRatio != value) {
+          _CorridorHeightToRatesHeightRatio = value;
+          OnPropertyChanged(() => CorridorHeightToRatesHeightRatio);
         }
       }
     }
@@ -2484,7 +2487,7 @@ namespace HedgeHog.Alice.Store {
         foreach (var suppres in EnsureActiveSuppReses()) {
           var isBuy = suppres.IsBuy;
           var allowedLot = EntryOrderAllowedLot(isBuy);
-          var rate = RoundPrice(suppres.Rate + (ReverseStrategy ? 0 : PriceSpreadToAdd(isBuy)));
+          var rate = RoundPrice(suppres.Rate);// + (ReverseStrategy ? 0 : PriceSpreadToAdd(isBuy)));
           var orders = GetEntryOrders(isBuy).OrderBy(o => (o.Rate - suppres.Rate).Abs()).ToList();
           orders.Skip(1).ToList().ForEach(o => {
             OnDeletingOrder(o.OrderID);
@@ -2545,7 +2548,9 @@ namespace HedgeHog.Alice.Store {
     private SuppRes[] EnsureActiveSuppReses(bool isBuy) {
       var hasTrades = Trades.IsBuy(isBuy).Length > 0;
       var isActiveCommon = !IsCold && IsHotStrategy && (ReverseStrategy || HasCorridor);
-      SuppRes.IsBuy(isBuy).ToList().ForEach(sr => sr.IsActive = !hasTrades && isActiveCommon);
+      var rateLast = RatesArraySafe.LastOrDefault();
+      var isActiveByBuy = true;//rateLast == null ? true : !isBuy ? rateLast.PriceAvg < rateLast.PriceAvg1 : rateLast.PriceAvg > rateLast.PriceAvg1;
+      SuppRes.IsBuy(isBuy).ToList().ForEach(sr => sr.IsActive = !hasTrades && isActiveByBuy && isActiveCommon);
       return SuppRes.Active(isBuy);
     }
     static double? _runPriceMillisecondsAverage;
@@ -2635,7 +2640,7 @@ namespace HedgeHog.Alice.Store {
           return crossedCorridor != null;
         };
 
-        var corridornesses = ratesForCorridor.GetCorridornesses(r => r.AskHigh, r => r.BidLow, periodsStart, periodsLength,((int)BarPeriod).FromMinutes(),PointSize, cs => {
+        var corridornesses = ratesForCorridor.GetCorridornesses(r => r.BidHigh, r => r.AskLow, periodsStart, periodsLength,((int)BarPeriod).FromMinutes(),PointSize, cs => {
           cs.CorridorCrossesCount = CorridorCrossesCount(cs);
           return exitCondition(cs);
         })
@@ -2658,7 +2663,7 @@ namespace HedgeHog.Alice.Store {
               var distance = distanceUp.Min(distancedown);
               return new { cs, distance, LegsAngleStDevR = cs.LegsAngleAverage };
             })
-          .OrderBy(cs => cs.cs.CorridorCrossesCount)
+          .OrderByDescending(cs => cs.cs.CorridorCrossesCount)
           .ThenByDescending(cs => cs.cs.HeightUpDown)
           //.ThenBy(cs => double.IsNaN(cs.LegsAngleStDevR) ? double.MaxValue : cs.LegsAngleStDevR)
           //.ThenBy(cs => cs.distance)
@@ -2724,7 +2729,7 @@ namespace HedgeHog.Alice.Store {
       return IsCorridorCountOk(cs.CorridorCrossesCount, corridorCrossesCountMinimum);
     }
     private static bool IsCorridorCountOk(int crossesCount, double corridorCrossesCountMinimum) {
-      return double.IsNaN(corridorCrossesCountMinimum) || crossesCount >= corridorCrossesCountMinimum;
+      return double.IsNaN(corridorCrossesCountMinimum) || crossesCount <= corridorCrossesCountMinimum;
     }
     #endregion
 

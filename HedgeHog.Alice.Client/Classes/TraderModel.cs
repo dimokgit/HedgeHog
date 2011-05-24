@@ -1232,7 +1232,7 @@ namespace HedgeHog.Alice.Client {
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
-      AccountModel.Update(account, 0,_tradingStatistics.TakeProfitInPipsAverage, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      AccountModel.Update(account, 0,_tradingStatistics.TakeProfitDistanceInPips, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
     }
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;

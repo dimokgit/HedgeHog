@@ -80,7 +80,7 @@ namespace Order2GoAddIn {
         try {
           LoggingOffEvent(this, new LoggedInEventArgs(IsInVirtualTrading));
         } catch(Exception exc) {
-          Debug.Fail(exc.Message, exc.ToString());
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         }
     }
 
