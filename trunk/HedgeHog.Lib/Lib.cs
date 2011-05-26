@@ -227,6 +227,7 @@ namespace HedgeHog {
       double v2 = 0;
       for (int x = 0; x < values.Length; x++) {
         v1 += (x - xAvg) * (values[x] - yAvg);
+        v2 += (x - xAvg) * (x - xAvg);
         v2 += Math.Pow(x - xAvg, 2);
       }
       a = v1 / v2;

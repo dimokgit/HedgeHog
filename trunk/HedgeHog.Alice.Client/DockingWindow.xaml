@@ -521,15 +521,11 @@
 								<TextBlock DataContext="{Binding TradingStatistics}" Grid.Row="1">
 									TPD:<TextBlock Text="{Binding TakeProfitDistanceInPips,StringFormat=n1}" ToolTip="TakeProfitDistanceInPips"/>
 									TP:<TextBlock Text="{Binding TakeProfitPips,StringFormat=n1}" ToolTip="TakeProfitPips"/>
-									CH/RH:<TextBlock Text="{Binding CorridorHeightToRatesHeightRatio,StringFormat=n1}" ToolTip="CorridorHeightToRatesHeightRatio"/>
+									CH/RH:<TextBlock Text="{Binding CorridorHeightToRatesHeightRatio,StringFormat=n2}" ToolTip="CorridorHeightToRatesHeightRatio"/>
 									VR:
 										<TextBlock Text="{Binding VolumeRatioL,StringFormat=p0}" ToolTip="VolumeRatioL"/>
 										<TextBlock>/</TextBlock>
 										<TextBlock Text="{Binding VolumeRatioH,StringFormat=p0}" ToolTip="VolumeRatioH"/>
-									StD/H:
-										<TextBlock Text="{Binding RatesStDevToRatesHeightRatioL,StringFormat=p0}" ToolTip="RatesStDevToRatesHeightRatioL"/>
-										<TextBlock>/</TextBlock>
-										<TextBlock Text="{Binding RatesStDevToRatesHeightRatioH,StringFormat=p0}" ToolTip="RatesStDevToRatesHeightRatioH"/>
 								</TextBlock>
 								<l:RemoteControlView Grid.Row="2"/>
 							</Grid>

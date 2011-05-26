@@ -69,6 +69,13 @@ namespace HedgeHog.Bars {
       //return period;
     }
 
+    public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<TBar, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow)where TBar:BarBase {
+      return rates.Select(r => r.PriceAvg > lineGet(r) ? priceHigh(r) : priceLow(r));
+    }
+    public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<int, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
+      return rates.Select((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));
+    }
+
     static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
       int i1 = 0;
       foreach (var tick in ticks) {
@@ -413,6 +420,9 @@ namespace HedgeHog.Bars {
     }
     public static Rate Low(this ICollection<Rate> rates) {
       return rates.OrderBy(r => r.PriceAvg).First();
+    }
+    public static double Height(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      return rates.Max(priceHigh) - rates.Min(priceLow);
     }
     public static double Height(this ICollection<Rate> rates) {
       return rates.Max(r => r.PriceAvg) - rates.Min(r => r.PriceAvg);

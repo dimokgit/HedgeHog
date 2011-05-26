@@ -18,7 +18,6 @@ namespace HedgeHog.Alice.Server {
     #region Members
     static FXCoreWrapper _fw;
     ConcurrentDictionary<string, List<Rate>> _pairs = new ConcurrentDictionary<string, List<Rate>>();
-    TaskTimerDispenser<string> _loadRatesTaskTimer;
     Exception Log { set { MainWindowModel.Default.Log = value; } }
     ObservableCollection<PairInfo> PairInfos { get { return MainWindowModel.Default.PairInfos; } }
     #endregion
@@ -76,8 +75,6 @@ namespace HedgeHog.Alice.Server {
       _pairs.Clear();
       foreach (var pair in App.CoreFX.Instruments)
         _pairs[pair] = new List<Rate>();
-      if (_loadRatesTaskTimer == null)
-        _loadRatesTaskTimer = new TaskTimerDispenser<string>(100, (s, ea) => Log = ea.Exception);
     }
     void fw_PriceChanged(object sender, PriceChangedEventArgs e) {
       List<Rate> pairList;

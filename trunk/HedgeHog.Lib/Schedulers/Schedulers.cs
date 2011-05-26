@@ -241,17 +241,6 @@ namespace HedgeHog.Schedulers {
 
   }
   #endregion
-  public class ThreadSchedulersDispenser : Dictionary<string, ThreadScheduler> {
-    public ThreadScheduler Get(string key) {
-      if (!this.ContainsKey(key)) this.Add(key, new ThreadScheduler());
-      return this[key];
-    }
-    public void Run(string key, Action runner) {
-      var ts = Get(key);
-      if (ts.IsRunning) return;// ts.SetFinished((s, ea) => runner());
-      else ts.Command = () => runner();
-    }
-  }
 
   public class BackgroundWorkerDispenser<T> : Dictionary<T, BackgroundWorker> {
     TaskStatus[] done = new[] { TaskStatus.RanToCompletion, TaskStatus.Created, TaskStatus.Faulted };
@@ -300,23 +289,4 @@ namespace HedgeHog.Schedulers {
     }
   }
 
-  public class TasksDispenser<T> : Dictionary<T, Task> {
-    object locker = new object();
-    public void Run(T key, Action runner) {
-      Run(key, runner, e => { });
-    }
-    public void Run(T key, Action runner, Action<Exception> log) {
-      lock (locker) {
-        if (this.ContainsKey(key)) {
-          var done = this[key].Wait(0);
-          if (!done) return;
-        }
-        this[key] = Task.Factory.StartNew(() => {
-          try {
-            runner();
-          } catch (Exception exc) { log(exc); }
-        });
-      }
-    }
-  }
 }

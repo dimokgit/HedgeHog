@@ -307,7 +307,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       return aliceMode == AliceModes.Wonderland ? masterTrade.Limit : masterTrade.Stop;
     }
 
-    Schedulers.ThreadSchedulersDispenser OpenTradeSchedulers = new Schedulers.ThreadSchedulersDispenser();
+    Schedulers.BackgroundWorkerDispenser<string> OpenTradeSchedulers = new Schedulers.BackgroundWorkerDispenser<string>();
     void OpenTrade(FXW fw, string pair, bool buy, int lots, double limit, double stop, Trade masterTrade) {
       string serverTradeID = masterTrade.Id;
       Func<string, bool> tradeExists = id => fw.GetTrade(serverTradeID) != null;

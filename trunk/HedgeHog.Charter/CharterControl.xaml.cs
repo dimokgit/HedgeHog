@@ -137,13 +137,13 @@ namespace HedgeHog {
       }
     }
 
-    private double _CorridorHeight0;
-    public double CorridorHeight0 {
-      get { return _CorridorHeight0; }
+    private double _CorridorHeight;
+    public double CorridorHeight {
+      get { return _CorridorHeight; }
       set {
-        if (_CorridorHeight0 != value) {
-          _CorridorHeight0 = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorHeight0);
+        if (_CorridorHeight != value) {
+          _CorridorHeight = value;
+          OnPropertyChanged(CharterControlMetadata.CorridorHeight);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -160,12 +160,12 @@ namespace HedgeHog {
         }
       }
     }
-    private double _RatesStDevToRatesHeightRatio;
-    public double RatesStDevToRatesHeightRatio {
-      get { return _RatesStDevToRatesHeightRatio; }
+    private double _CorridorHeightToRatesHeightRatio;
+    public double CorridorHeightToRatesHeightRatio {
+      get { return _CorridorHeightToRatesHeightRatio; }
       set {
-        if (_RatesStDevToRatesHeightRatio != value) {
-          _RatesStDevToRatesHeightRatio = value;
+        if (_CorridorHeightToRatesHeightRatio != value) {
+          _CorridorHeightToRatesHeightRatio = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -189,9 +189,9 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}/{5:n0}:{6:n0}∆{7:n0}‡{8:0}s{9:0}v"
+          string.Format("{0}:{1}×{2}:{3:n0}°:{4:n0}/{5:n0}:{6:n2}‡{7:n0}∆{8:0}s{9:0}v"
           , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
-          , HeightInPips, StDev, RatesStDevToRatesHeightRatio * 100, CorridorHeight0, SpreadForCorridor, VolumeRatio * 100);
+          , HeightInPips, CorridorHeight, CorridorHeightToRatesHeightRatio, StDev, SpreadForCorridor, VolumeRatio * 100);
       }
     }
 

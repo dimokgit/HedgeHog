@@ -488,12 +488,12 @@ namespace HedgeHog.Alice.Client {
         var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
         e.TakeProfitDistanceInPips = tp;
       }
-      e.TakeProfitPips = GetTradingMacros().Select(tm => tm.TakeProfitPips).ToArray().AverageByIterations(2, false).Average();
-      e.VolumeRatioH = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, false).Average();
+      e.TakeProfitPips = GetTradingMacros().Select(tm => tm.TakeProfitPips).ToArray().AverageByIterations(2).Average();
+      e.VolumeRatioH = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
       e.VolumeRatioL = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
-      e.RatesStDevToRatesHeightRatioH = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, false).Average();
+      e.RatesStDevToRatesHeightRatioH = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       e.RatesStDevToRatesHeightRatioL = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
-      e.CorridorHeightToRatesHeightRatio = GetTradingMacros().Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
+      e.CorridorHeightToRatesHeightRatio = GetTradingMacros().Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
     }
 
     void MasterModel_MasterTradeAccountChanged(object sender, EventArgs e) {
@@ -753,7 +753,7 @@ namespace HedgeHog.Alice.Client {
         }
         var dateMin = rates.Min(r => r.StartDateContinuous);
         string[] info = new string[] { 
-          "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tm.InPips(rates.Height()),tradesManager.ServerTime),
+          "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tm.RatesHeight,tradesManager.ServerTime),
           "Spred:" + string.Format("{2:00.0}/{0:00.0}={1:n1}",tm.SpreadLongInPips,tm.CorridorHeightToSpreadRatio,tm.CorridorHeightByRegressionInPips)
         };
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
@@ -772,11 +772,11 @@ namespace HedgeHog.Alice.Client {
           charter.GannAnglesCount = tm.GannAnglesArray.Length;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.CorridorAngle = tm.CorridorAngle;
-          charter.HeightInPips = tm.TradingDistanceInPips;
-          charter.CorridorHeight0 = tm.CorridorHeightByRegressionInPips0;
+          charter.HeightInPips = tm.RatesHeightInPips;
+          charter.CorridorHeight = tm.CorridorHeightByRegressionInPips;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
-          charter.RatesStDevToRatesHeightRatio = tm.RatesStDevToRatesHeightRatio;
+          charter.CorridorHeightToRatesHeightRatio = tm.CorridorHeightToRatesHeightRatio;
           charter.VolumeRatio = tm.VolumeShortToLongRatio;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
