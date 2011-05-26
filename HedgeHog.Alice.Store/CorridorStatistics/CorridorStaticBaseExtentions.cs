@@ -5,6 +5,7 @@ using System.Text;
 using HedgeHog.Bars;
 using System.Diagnostics;
 using System.Windows;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   public class LineInfo {
@@ -104,11 +105,11 @@ namespace HedgeHog.Alice.Store {
         rates = rates.ToArray();
         #region Funcs
         double[] linePrices = new double[rates.Count()];
-        Func<int, double> lineGet = index => linePrices[index];
+        Func<int, double> priceLine = index => linePrices[index];
         Action<int, double> lineSet = (index, d) => linePrices[index] = d;
         var coeffs = rates.SetRegressionPrice(1, rate => rate.PriceAvg, lineSet);
-        Func<Rate,int, double> heightHigh = (rate,index) => priceHigh(rate) - lineGet(index);
-        Func<Rate,int, double> heightLow = (rate,index) => lineGet(index) - priceLow(rate);
+        Func<Rate,int, double> heightHigh = (rate,index) => priceHigh(rate) - priceLine(index);
+        Func<Rate,int, double> heightLow = (rate,index) => priceLine(index) - priceLow(rate);
         #endregion
         #region Locals
         var heightUp = 0.0;
@@ -122,7 +123,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
           //var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
         //height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
-        height0 = rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
+        height0 = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToArray().StDev();// ratesForHeight.StDev();
           height = height0 * 2;
           density = (heightDown + heightUp) / periods;
         return new CorridorStatistics(rates.ToArray(),density, coeffs, height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
@@ -135,6 +136,7 @@ namespace HedgeHog.Alice.Store {
       } finally {
       }
     }
+
   }
 
 }

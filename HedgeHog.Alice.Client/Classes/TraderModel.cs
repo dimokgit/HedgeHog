@@ -1024,7 +1024,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void LoginAsync(string account, string password, bool isDemo) {
-      new Schedulers.ThreadScheduler((s, e) => Log = e.Exception).Command = () => Login(account, password, isDemo);
+      Task.Factory.StartNew(() => Login(account, password, isDemo));
     }
 
     #endregion

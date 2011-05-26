@@ -52,7 +52,9 @@ namespace HedgeHog {
     }
     public static double RegressionValue(this double[] coeffs, int i) {
       double y = 0; int j = 0;
-      coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
+      for (var ii = 0; ii < coeffs.Length; ii++)
+        y += coeffs[ii] * Math.Pow(i, ii);
+        //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
     }
 
