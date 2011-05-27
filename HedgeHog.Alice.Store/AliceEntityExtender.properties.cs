@@ -115,6 +115,11 @@ namespace HedgeHog.Alice.Store {
   }
   public partial class TradingMacro {
 
+    TradingStatistics _tradingStatistics = new TradingStatistics();
+    public TradingStatistics TradingStatistics {
+      get { return _tradingStatistics; }
+      set { _tradingStatistics = value; }
+    }
 
 
     [DisplayName("MaxLot By TakeProfit Ratio")]

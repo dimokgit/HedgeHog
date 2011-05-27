@@ -176,14 +176,23 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Events
-    TradingStatisticsEventArgs _tradingStatistics = new TradingStatisticsEventArgs();
-    public TradingStatisticsEventArgs TradingStatistics {
-      get { return _tradingStatistics; }
+    TradingStatistics _tradingStatistics;
+    public TradingStatistics TradingStatistics {
+      get {
+        return _tradingStatistics; 
+      }
+      set {
+        if (_tradingStatistics == value) return;
+        _tradingStatistics = value;
+        RaisePropertyChanged(() => TradingStatistics);
+      }
     }
     public override event EventHandler<TradingStatisticsEventArgs> NeedTradingStatistics;
     protected void OnNeedTradingStatistics() {
-      if (NeedTradingStatistics != null) {
-        NeedTradingStatistics(this, _tradingStatistics);
+      if (NeedTradingStatistics != null && TradingStatistics == null) {
+        var tse = new TradingStatisticsEventArgs();
+        NeedTradingStatistics(this, tse);
+        TradingStatistics = tse.TradingStatistics;
       }
     }
 
@@ -395,6 +404,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void AccountModel_CloseAllTrades(object sender, EventArgs e) {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
       TradesManager.GetTradesInternal("").Select(t => t.Pair).Distinct()
         .ToList().ForEach(p => TradesManager.ClosePair(p));
     }
@@ -1232,7 +1242,7 @@ namespace HedgeHog.Alice.Client {
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
-      AccountModel.Update(account, 0,_tradingStatistics.TakeProfitDistanceInPips, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      AccountModel.Update(account, 0,TradingStatistics.TakeProfitDistanceInPips, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
     }
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;

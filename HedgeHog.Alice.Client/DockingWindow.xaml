@@ -526,6 +526,10 @@
 										<TextBlock Text="{Binding VolumeRatioL,StringFormat=p0}" ToolTip="VolumeRatioL"/>
 										<TextBlock>/</TextBlock>
 										<TextBlock Text="{Binding VolumeRatioH,StringFormat=p0}" ToolTip="VolumeRatioH"/>
+									Gross:
+										<TextBlock Text="{Binding CurrentGrossAverage,StringFormat=c0}" ToolTip="CurrentGrossAverage"/>
+										<TextBlock>/</TextBlock>
+										<TextBlock Text="{Binding CurrentGross,StringFormat=c0}" ToolTip="CurrentGross"/>
 								</TextBlock>
 								<l:RemoteControlView Grid.Row="2"/>
 							</Grid>

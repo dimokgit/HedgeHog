@@ -32,6 +32,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region members
+    TradingStatistics _tradingStatistics = new TradingStatistics();
     Dictionary<TradingMacro, CharterControl> charters = new Dictionary<TradingMacro, CharterControl>();
     void DeleteCharter(TradingMacro tradingMacro) {
       if (charters.ContainsKey(tradingMacro)) {
@@ -481,25 +482,33 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
+
     void MasterModel_NeedTradingStatistics(object sender, TradingStatisticsEventArgs e) {
-      if (GetTradingMacros().Any(tm => tm.RatesArraySafe.Length == 0)) return;
-      var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 ).ToArray();
-      if (tms.Length > 0 && tms.All(tm => tm.RatesArraySafe.Length > 0)) {
-        var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
-        e.TakeProfitDistanceInPips = tp;
-      }
-      e.TakeProfitPips = GetTradingMacros().Select(tm => tm.TakeProfitPips).ToArray().AverageByIterations(2).Average();
-      e.VolumeRatioH = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
-      e.VolumeRatioL = GetTradingMacros().Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
-      e.RatesStDevToRatesHeightRatioH = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
-      e.RatesStDevToRatesHeightRatioL = GetTradingMacros().Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
-      e.CorridorHeightToRatesHeightRatio = GetTradingMacros().Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
+      e.TradingStatistics = _tradingStatistics;
     }
 
     void MasterModel_MasterTradeAccountChanged(object sender, EventArgs e) {
       RaisePropertyChanged(() => TradingMacrosCopy);
     }
 
+    void UpdateTradingStatistics() {
+      if (GetTradingMacros().Any(tm => tm.RatesArraySafe.Length == 0)) return;
+      var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0).ToArray();
+      if (tms.Length > 0 && tms.All(tm => tm.RatesArraySafe.Length > 0)) {
+        var tp = (tms.Sum(tm => tm.TakeProfitDistanceInPips * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
+        _tradingStatistics.TakeProfitDistanceInPips = tp;
+      }
+      tms = GetTradingMacros();
+      _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.TakeProfitPips).ToArray().AverageByIterations(2).Average();
+      _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
+      _tradingStatistics.VolumeRatioL = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
+      _tradingStatistics.RatesStDevToRatesHeightRatioH = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
+      _tradingStatistics.RatesStDevToRatesHeightRatioL = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
+      _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
+      _tradingStatistics.CurrentGross = tms.Sum(tm => tm.CurrentGross);
+      _tradingStatistics.CurrentGrossAverage = tms.Where(tm => tm.CurrentGross < 0).Average(tm => tm.CurrentGross);
+
+    }
     private void InitializeModel() {
       GlobalStorage.Context.ObjectMaterialized += new ObjectMaterializedEventHandler(Context_ObjectMaterialized);
       GlobalStorage.Context.ObjectStateManager.ObjectStateManagerChanged += new System.ComponentModel.CollectionChangeEventHandler(ObjectStateManager_ObjectStateManagerChanged);
@@ -700,6 +709,7 @@ namespace HedgeHog.Alice.Client {
         foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading /*&& t.IsInPlayback*/)) {
           tm.RunPriceChanged(e, null/*OpenTradeByStop*/);
         }
+        UpdateTradingStatistics();
         CheckTrades(e.Trades.ByPair(price.Pair));
       } catch (Exception exc) {
         Log = exc;
@@ -1475,6 +1485,7 @@ namespace HedgeHog.Alice.Client {
     private void InitTradingMacro(TradingMacro tm,bool unwind = false) {
       var isFilterOk = TradingMacroFilter(tm);
       if (!unwind && isFilterOk ) {
+        tm.TradingStatistics = _tradingStatistics;
         if (tm.CorridorStatsArray.Count == 0)
           foreach (var i in tm.CorridorIterationsArray)
             tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });

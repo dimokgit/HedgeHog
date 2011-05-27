@@ -489,7 +489,7 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._tradingStatistics"/></summary>
         public const string _tradingStatistics = "_tradingStatistics";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingStatistics"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingStatisticsEventArgs"/></summary>
         public const string TradingStatistics = "TradingStatistics";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.OnNeedTradingStatistics"/></summary>
@@ -1204,7 +1204,7 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.MasterAccount"/></summary>
         public static PropertyPath MasterAccountPath { get { return new PropertyPath("MasterAccount"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingStatistics"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.TradingStatisticsEventArgs"/></summary>
         public static PropertyPath TradingStatisticsPath { get { return new PropertyPath("TradingStatistics"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.stepForwarRequery"/></summary>

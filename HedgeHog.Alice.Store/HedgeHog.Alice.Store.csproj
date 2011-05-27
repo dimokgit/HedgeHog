@@ -86,6 +86,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacroExtentions.cs" />
+    <Compile Include="TradingStatistics.cs" />
     <None Include="AliceEntityExtender.cs">
       <SubType>Code</SubType>
     </None>
