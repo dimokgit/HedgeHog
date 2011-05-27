@@ -49,6 +49,7 @@
     <Compile Include="Account.cs" />
     <Compile Include="AccountInfo.cs" />
     <Compile Include="Bars.cs" />
+    <Compile Include="CloseAllTradesMessage.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
     <Compile Include="ITradesManager.cs" />
@@ -66,6 +67,10 @@
     <Compile Include="VirtualTradesManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight %28NET4%29\GalaSoft.MvvmLight %28NET4%29.csproj">
+      <Project>{E8EF2656-7165-42D1-9C46-63E66679808D}</Project>
+      <Name>GalaSoft.MvvmLight %28NET4%29</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
       <Name>HedgeHog.DB</Name>

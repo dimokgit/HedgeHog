@@ -48,6 +48,9 @@ namespace HedgeHog.Alice.Store {
 
     public TradingMacro() {
       SuppRes.AssociationChanged += new CollectionChangeEventHandler(SuppRes_AssociationChanged);
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CloseAllTradesMessage>(this, a => {
+        this.CurrentLoss = 0;
+      });
     }
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
@@ -2209,8 +2212,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private int EntryOrderAllowedLot(bool isBuy) {
-      return AllowedLotSizeCore(Trades) + Trades.IsBuy(!isBuy).Lots().ToInt();
+    private int EntryOrderAllowedLot(bool isBuy, double? takeProfitPips = null) {
+      return AllowedLotSizeCore(Trades.IsBuy(isBuy),takeProfitPips) + Trades.IsBuy(!isBuy).Lots().ToInt();
     }
 
 
@@ -2432,8 +2435,7 @@ namespace HedgeHog.Alice.Store {
       var trades = Trades.IsBuy(isBuy);
       if (trades.Length == 0) return;
       var spreadToAdd = PriceSpreadToAdd(isBuy);
-      var lastTradeDate = trades.OrderByDescending(t => t.Time).First().Time;
-      var ratesForStDevLimit = RatesArraySafe.Reverse().TakeWhile(r=>r.StartDate >=lastTradeDate).ToArray();
+      var ratesForStDevLimit = RatesForTakeProfit(trades);
       foreach (var trade in trades) {
         var currentLimit = trade.Limit;
         if (currentLimit == 0) {
@@ -2456,14 +2458,14 @@ namespace HedgeHog.Alice.Store {
           if (double.IsNaN(tp)) return;
 
           var limitByTakeProfit = netOpen + spreadToAdd + tp;
-          var limitRate = RoundPrice(ReverseStrategy ? limitByTakeProfit
+          _limitRate = RoundPrice(ReverseStrategy ? limitByTakeProfit
             : limitByStDev//isBuy ? limitByCorridor.Min(limitByTakeProfit/*, limitByStDev*/) : limitByCorridor.Max(limitByTakeProfit/*, limitByStDev*/)
           );
-          if (limitRate > 0) {
-            if (isBuy && limitRate <= CurrentPrice.Bid || !isBuy && limitRate >= CurrentPrice.Ask)
+          if (_limitRate > 0) {
+            if (isBuy && _limitRate <= CurrentPrice.Bid || !isBuy && _limitRate >= CurrentPrice.Ask)
               fw.ClosePair(Pair);
-            if ((RoundPrice(currentLimit) - limitRate).Abs() > ps) {
-              fw.FixOrderSetLimit(trade.Id, limitRate, "");
+            if ((RoundPrice(currentLimit) - _limitRate).Abs() > ps) {
+              fw.FixOrderSetLimit(trade.Id, _limitRate, "");
             }
           }
         }
@@ -2485,6 +2487,12 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    private Rate[] RatesForTakeProfit(Trade[] trades) {
+      var lastTradeDate = trades.OrderByDescending(t => t.Time).Select(t=>t.Time).FirstOrDefault();
+      var ratesForStDevLimit = RatesArraySafe.Reverse().TakeWhile(r => r.StartDate >= lastTradeDate).ToArray();
+      return ratesForStDevLimit;
+    }
+
     private double PriceSpreadToAdd(bool isBuy) {
       return (isBuy ? 1 : -1) * PriceSpreadAverage.GetValueOrDefault(0);
     }
@@ -2502,8 +2510,9 @@ namespace HedgeHog.Alice.Store {
         //eoDelete.ForEach(eo => fw.DeleteOrder(eo));
         foreach (var suppres in EnsureActiveSuppReses()) {
           var isBuy = suppres.IsBuy;
-          var allowedLot = EntryOrderAllowedLot(isBuy);
           var rate = RoundPrice(suppres.Rate);// + (ReverseStrategy ? 0 : PriceSpreadToAdd(isBuy)));
+          var pips = InPips(isBuy ? _limitRate - rate : rate - _limitRate);
+          var allowedLot = /*Trades.Length==0?LotSize:*/ EntryOrderAllowedLot(isBuy);
           var orders = GetEntryOrders(isBuy).OrderBy(o => (o.Rate - suppres.Rate).Abs()).ToList();
           orders.Skip(1).ToList().ForEach(o => {
             OnDeletingOrder(o.OrderID);
@@ -2901,11 +2910,11 @@ namespace HedgeHog.Alice.Store {
       return lotSize;
     }
 
-    public int AllowedLotSizeCore(ICollection<Trade> trades) {
+    public int AllowedLotSizeCore(ICollection<Trade> trades, double? takeProfitPips = null) {
       if (RatesArraySafe.Count() == 0) return 0;
-      var calcLot = CalculateLot(trades);
+      var calcLot = CalculateLot(trades,takeProfitPips);
       if (DoAdjustTimeframeByAllowedLot && calcLot > MaxLotSize && Strategy.HasFlag(Strategies.Hot)) {
-        while (CalculateLot(Trades) > MaxLotSize) {
+        while (CalculateLot(Trades, takeProfitPips) > MaxLotSize) {
           var nextLimitBar = Enum.GetValues(typeof(BarsPeriodType)).Cast<int>().Where(bp => bp > (int)BarPeriod).Min();
           BarPeriod = (BarsPeriodType)nextLimitBar;
           RatesInternal.Clear();
@@ -2914,8 +2923,8 @@ namespace HedgeHog.Alice.Store {
       }
       return Math.Min(MaxLotSize, calcLot);
     }
-    public int AllowedLotSize(ICollection<Trade> trades, bool isBuy) {
-      return AllowedLotSizeCore(trades.IsBuy(isBuy));
+    public int AllowedLotSize(ICollection<Trade> trades, bool isBuy, double? takeProfitPips = null) {
+      return AllowedLotSizeCore(trades.IsBuy(isBuy),takeProfitPips);
       if (Strategy == Strategies.Massa || Strategy == Strategies.Range) {
         var tc = GetTradesCountFromSuppRes(isBuy);
         if (tc > MaximumPositions) {
@@ -2931,14 +2940,19 @@ namespace HedgeHog.Alice.Store {
       return tc;
     }
 
-    private int CalculateLot(ICollection<Trade> trades) {
+    private int CalculateLot(ICollection<Trade> trades, double? takeProfitPips = null) {
+      if (Strategy.HasFlag(Strategies.Hot) && takeProfitPips!=null && trades.Count == 0) return LotSize;
       Func<int, int> returnLot = d => Math.Max(LotSize, d);
       if (FreezeStopType == Freezing.Freez)
         return returnLot(trades.Sum(t => t.Lots) * 2);
-      return returnLot(CalculateLotCore(CurrentGross - InPips(CalculateTakeProfit() * LotSize / 10000)));
+      var tp = (IsHotStrategy ? TradingStatistics.TakeProfitPips:  InPips(CalculateTakeProfit())) * LotSize / 10000;
+      var currentGross = IsHotStrategy ? TradingStatistics.CurrentGrossAverage : CurrentGross;
+      if (double.IsNaN(currentGross)) return 0;
+      return returnLot(CalculateLotCore(currentGross-tp,takeProfitPips));
     }
-    private int CalculateLotCore(double totalGross) {
-      return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), TakeProfitPips, Pair);
+    private int CalculateLotCore(double totalGross, double? takeProfitPips = null) {
+      //return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TakeProfitPips), Pair);
+      return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TradingStatistics.TakeProfitPips), Pair);
     }
 
     #region Commands
@@ -3295,6 +3309,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double _CorridorHeightMinimum;
+    private double _limitRate;
     public double CorridorHeightMinimum {
       get { return _CorridorHeightMinimum; }
       set {
