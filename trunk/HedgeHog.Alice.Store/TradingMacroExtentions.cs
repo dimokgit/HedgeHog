@@ -897,6 +897,9 @@ namespace HedgeHog.Alice.Store {
 
     public double CorridorHeightToSpreadRatio { get { return CorridorStats.HeightUpDown / SpreadForCorridor; } }
     public double CorridorHeight0ToSpreadRatio { get { return CorridorStats.HeightUpDown0 / SpreadForCorridor; } }
+    public double CorridorStDevToRatesStDevRatio { get { return CalcCorridorStDevToRatesStDevRatio(CorridorStats); } }
+    public double CalcCorridorStDevToRatesStDevRatio(CorridorStatistics cs) { return (cs.HeightUp0 / RatesStDev).Round(2); }
+
     public bool? CloseSignal {
       get {
         if (CorridorStats == null || CloseOnOpen) return null;
@@ -2668,8 +2671,7 @@ namespace HedgeHog.Alice.Store {
           new[] { powerBar.StartDate, CorridorStats == null ? DateTime.MinValue : CorridorStats.StartDate }.Max());
         var ratesForCorridor = RatesForTrades();
         var periodsStart = CorridorStartDate == null
-          ? CorridorCrossesCountMinimum == 0 ? BarsCount : BarsCount / 10
-          : ratesForCorridor.Count(r => r.StartDate >= CorridorStartDate.Value);
+          ? BarsCount / 10 : ratesForCorridor.Count(r => r.StartDate >= CorridorStartDate.Value);
         if (periodsStart == 1) return;
         var periodsLength = CorridorStartDate.HasValue ? 1 : ratesForCorridor.Count();// periodsStart;
 
@@ -2699,19 +2701,10 @@ namespace HedgeHog.Alice.Store {
           var rateLast = ratesForCorridor.Last();
           var cc = corridornesses
             .Where(cs=>IsCorridorOk(cs,double.NaN,double.NaN,CorridorHeightMultiplier,0))
-            .Select(cs => {
-              var levelUp = cs.Coeffs[0] + cs.HeightUp;
-              var levelDown = cs.Coeffs[0] - cs.HeightDown;
-              var distanceUp = (rateLast.PriceHigh - levelUp).Abs();
-              var distancedown = (rateLast.PriceLow - levelDown).Abs();
-              var distance = distanceUp.Min(distancedown);
-              return new { cs, distance, LegsAngleStDevR = cs.LegsAngleAverage };
-            })
-          .OrderByDescending(cs => cs.cs.CorridorCrossesCount)
-          .ThenByDescending(cs => cs.cs.HeightUpDown)
+          .OrderBy(cs => cs.CorridorCrossesCount)
+          .ThenByDescending(cs => cs.HeightUpDown)
           //.ThenBy(cs => double.IsNaN(cs.LegsAngleStDevR) ? double.MaxValue : cs.LegsAngleStDevR)
           //.ThenBy(cs => cs.distance)
-          .Select(cs => cs.cs)
           .ToArray();
 
           var cc0 = cc;//.Where(cs => cs.LegsAngleStDevR <= .25).ToArray();
@@ -2749,7 +2742,7 @@ namespace HedgeHog.Alice.Store {
         if (cs.HeightUpDown0 < CurrentPrice.Spread * 2) return false;
         var crossesCount = CorridorCrossesCount(cs);
         var isCorCountOk = IsCorridorCountOk(crossesCount, corridorCrossesCountMinimum);
-        var isCorridorAngleOk = !(corridorCrossesCountMinimum > 0)
+        var isCorridorAngleOk =true|| !(corridorCrossesCountMinimum > 0)
         || (corridorCrossesCountMinimum == 0 && crossesCount == 0)
         || double.IsNaN(tradingAngleRange)
         || cs.LegInfos.Count == 0 
@@ -2759,7 +2752,7 @@ namespace HedgeHog.Alice.Store {
       var isCorridorOk = isCorCountOk 
         && isCorridorAngleOk
         && corridorHeightToRatesHeight >= corridorHeightMultiplier
-        && cs.HeightUpDown0ToSpreadRatio >= stDevToCorridorHeight0;
+        && CalcCorridorStDevToRatesStDevRatio(cs) >= stDevToCorridorHeight0;
       return isCorridorOk;
     }
 

@@ -274,10 +274,10 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SpreadForCorridor"/></summary>
         public const string SpreadForCorridor = "SpreadForCorridor";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorStDevToRatesStDevRatio"/></summary>
         public const string _CorridorHeightToRatesHeightRatio = "_CorridorHeightToRatesHeightRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStDevToRatesStDevRatio"/></summary>
         public const string CorridorHeightToRatesHeightRatio = "CorridorHeightToRatesHeightRatio";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._VolumeRatio"/></summary>
@@ -833,7 +833,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SpreadForCorridor"/></summary>
         public static PropertyPath SpreadForCorridorPath { get { return new PropertyPath("SpreadForCorridor"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStDevToRatesStDevRatio"/></summary>
         public static PropertyPath CorridorHeightToRatesHeightRatioPath { get { return new PropertyPath("CorridorHeightToRatesHeightRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.VolumeRatio"/></summary>
