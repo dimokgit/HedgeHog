@@ -7,7 +7,7 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Share
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\obj\Debug\HedgeHog.Shared.pdb
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.DB.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.DB.pdb
-C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Shared.XML
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.pdb
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.xml
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.Shared.XML

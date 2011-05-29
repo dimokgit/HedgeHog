@@ -506,8 +506,7 @@ namespace HedgeHog.Alice.Client {
       _tradingStatistics.RatesStDevToRatesHeightRatioL = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
       _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.CurrentGross = tms.Sum(tm => tm.CurrentGross);
-      _tradingStatistics.CurrentGrossAverage = tms.Where(tm => tm.CurrentGross < 0).Average(tm => tm.CurrentGross);
-
+      _tradingStatistics.CurrentGrossAverage = tms.Select(tm => tm.CurrentGross).Where(cg => cg < 0).DefaultIfEmpty().Average();
     }
     private void InitializeModel() {
       GlobalStorage.Context.ObjectMaterialized += new ObjectMaterializedEventHandler(Context_ObjectMaterialized);
@@ -786,7 +785,7 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeight = tm.CorridorHeightByRegressionInPips;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
-          charter.CorridorHeightToRatesHeightRatio = tm.CorridorHeightToRatesHeightRatio;
+          charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
           charter.VolumeRatio = tm.VolumeShortToLongRatio;
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             tm.PowerAverage, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
