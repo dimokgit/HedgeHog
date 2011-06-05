@@ -36,8 +36,8 @@ namespace HedgeHog.Alice.Client {
 
     private void Application_Exit(object sender, ExitEventArgs e) {
       if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return;
-      GlobalStorage.Context.SaveChanges();
-      var Connection = GlobalStorage.Context.Connection;
+      GlobalStorage.UseAliceContext(c => c.SaveChanges());
+      var Connection = GlobalStorage.UseAliceContext(c => c.Connection);
       var newName = Path.Combine(
         Path.GetDirectoryName(Connection.DataSource),
         Path.GetFileNameWithoutExtension(Connection.DataSource)

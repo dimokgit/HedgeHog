@@ -278,7 +278,7 @@ namespace HedgeHog.Alice.Client {
     public string[] TradingMacrosCases {
       get {
         try {
-          return GlobalStorage.Context.TradingMacroes.Select(tm=>tm.TradingMacroName).Distinct().ToArray();
+          return GlobalStorage.UseAliceContext(c => c.TradingMacroes.Select(tm => tm.TradingMacroName).Distinct()).ToArray();
         } catch (Exception exc) {
           Log = exc;
           return null;
@@ -323,7 +323,7 @@ namespace HedgeHog.Alice.Client {
     public ListCollectionView TradingAccountsList {
       get {
         if (_tradingAccountsList == null) {
-          _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.Context.TradingAccounts);
+          _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.UseAliceContext(c => c.TradingAccounts));
           _TradingAccountsSet.CollectionChanged += _TradingAccountsSet_CollectionChanged;
           _tradingAccountsList = new ListCollectionView(_TradingAccountsSet);
           _tradingAccountsList.Filter = FilterTradingAccounts;
@@ -360,9 +360,9 @@ namespace HedgeHog.Alice.Client {
       var ta = e.NewItems[0] as TradingAccount;
       switch (e.Action) {
         case NotifyCollectionChangedAction.Add:
-          GlobalStorage.Context.TradingAccounts.AddObject(ta); break;
+          GlobalStorage.UseAliceContext(c=>c.TradingAccounts.AddObject(ta)); break;
         case NotifyCollectionChangedAction.Remove:
-          GlobalStorage.Context.TradingAccounts.DeleteObject(ta); break;
+          GlobalStorage.UseAliceContext(c=>c.TradingAccounts.DeleteObject(ta)); break;
       }
     }
     
@@ -404,9 +404,9 @@ namespace HedgeHog.Alice.Client {
     }
 
     void AccountModel_CloseAllTrades(object sender, EventArgs e) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
       TradesManager.GetTradesInternal("").Select(t => t.Pair).Distinct()
         .ToList().ForEach(p => TradesManager.ClosePair(p));
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
@@ -752,7 +752,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void DeleteTradingAccount(object ta) {
-      GlobalStorage.Context.TradingAccounts.DeleteObject(ta as TradingAccount);
+      GlobalStorage.UseAliceContext(c => c.TradingAccounts.DeleteObject(ta as TradingAccount));
       SaveTradingSlaves();
     }
 
@@ -772,7 +772,7 @@ namespace HedgeHog.Alice.Client {
     }
     void SaveTradingSlaves() {
       try {
-        GlobalStorage.Context.SaveChanges();
+        GlobalStorage.UseAliceContextSaveChanges();
         Log = new Exception("Slave accounts were saved");
       } catch (Exception exc) { 
         Log = exc;
@@ -823,8 +823,8 @@ namespace HedgeHog.Alice.Client {
     void AddNewSlaveAccount() {
       string account, password;
       FXCM.Lib.GetNewAccount(out account, out password);
-      GlobalStorage.Context.TradingAccounts.AddObject(
-        new TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" });
+      GlobalStorage.UseAliceContext(c => c.TradingAccounts.AddObject(
+        new TradingAccount() { AccountId = account, Password = password, IsDemo = true, IsMaster = false, TradeRatio = "1:1" }));
       SaveTradingSlaves();
     }
     #endregion
@@ -1108,7 +1108,11 @@ namespace HedgeHog.Alice.Client {
     #region Trading Info
     public override TradingLogin LoginInfo { get { return new TradingLogin(TradingAccount, TradingPassword, TradingDemo); } }
 
-    public string[] TradingAccounts { get { return GlobalStorage.Context.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct().ToArray(); } }
+    public string[] TradingAccounts {
+      get {
+        return GlobalStorage.UseAliceContext(c => c.TradingAccounts.Select(ta => ta.AccountId).ToArray().Distinct()).ToArray();
+      }
+    }
 
     string _tradingAccount;
     public string TradingAccount {
@@ -1242,7 +1246,7 @@ namespace HedgeHog.Alice.Client {
 
     private void UpdateTradingAccount(Account account) {
       OnNeedTradingStatistics();
-      AccountModel.Update(account, 0,TradingStatistics.TakeProfitDistanceInPips, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
+      AccountModel.Update(account, 0,TradingStatistics, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
     }
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
@@ -1423,10 +1427,14 @@ namespace HedgeHog.Alice.Client {
         var newIds = tradesList.Select(t => t.Id);
         var deleteIds = oldIds.Except(newIds).ToList();
         GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
-          () => deleteIds.ForEach(d => tradesCollection.Remove(tradesCollection.Single(t => t.Id == d))));
+          () => {
+            deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
+          });
         var addIds = newIds.Except(oldIds).ToList();
         GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
-          () => addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a))));
+          () => {
+            addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
+          });
         foreach (var trade in tradesList) {
           tradesCollection.Where(t => t.Id == trade.Id).Skip(1).ToList().ForEach(t =>
             GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(new Action(() => tradesCollection.Remove(t)))
@@ -1570,12 +1578,14 @@ namespace HedgeHog.Alice.Client {
           var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.CorridorStDev, tradeStats.CorridorStDevCma, tradeStats.SessionId, trade.Open, trade.Close);
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
-          GlobalStorage.ForexContext.t_Trade.AddObject(ct);
-          try {
-            GlobalStorage.ForexContext.SaveChanges();
-          } catch {
-            GlobalStorage.ForexContext.DeleteObject(ct);
-            throw;
+          using (var context = new ForexEntities()) {
+            context.t_Trade.AddObject(ct);
+            try {
+              context.SaveChanges();
+            } catch {
+              context.DeleteObject(ct);
+              throw;
+            }
           }
         }
       } catch (Exception exc) { Log = exc; }

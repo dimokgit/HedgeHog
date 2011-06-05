@@ -89,19 +89,21 @@ namespace TestHH {
     #endregion
 
     public void LoadOffersInfo() {
-      foreach (var offer in o2g.GetOffers()) {
-        var pair = offer.Pair;
-        var dbOffer = GlobalStorage.ForexContext.t_Offer.SingleOrDefault(o => o.Pair == pair);
-        if (dbOffer == null)
-          GlobalStorage.ForexContext.t_Offer.AddObject(new t_Offer() {
-            Pair = pair, Digits = o2g.GetDigits(pair), PipCost = offer.PipCost, MMR = offer.MMR, PipSize = o2g.GetPipSize(pair)
-          });
-        else {
-          dbOffer.PipCost = offer.PipCost;
-          dbOffer.MMR = offer.MMR;
+      GlobalStorage.UseForexContext(context => {
+        foreach (var offer in o2g.GetOffers()) {
+          var pair = offer.Pair;
+          var dbOffer = context.t_Offer.SingleOrDefault(o => o.Pair == pair);
+          if (dbOffer == null)
+            context.t_Offer.AddObject(new t_Offer() {
+              Pair = pair, Digits = o2g.GetDigits(pair), PipCost = offer.PipCost, MMR = offer.MMR, PipSize = o2g.GetPipSize(pair)
+            });
+          else {
+            dbOffer.PipCost = offer.PipCost;
+            dbOffer.MMR = offer.MMR;
+          }
+          context.SaveChanges();
         }
-        GlobalStorage.ForexContext.SaveChanges();
-      }
+      });
     }
     //[TestMethod]
     public void ShowDensities() {

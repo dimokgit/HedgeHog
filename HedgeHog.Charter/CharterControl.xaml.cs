@@ -171,13 +171,26 @@ namespace HedgeHog {
       }
     }
 
-    #region VolumeRatio
-    private double _VolumeRatio;
-    public double VolumeRatio {
-      get { return _VolumeRatio; }
+    #region Density
+    private double _Density;
+    public double Density {
+      get { return _Density; }
       set {
-        if (_VolumeRatio != value) {
-          _VolumeRatio = value;
+        if (_Density != value) {
+          _Density = value;
+          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        }
+      }
+    }
+    #endregion
+
+    #region DensityCorridor
+    private double _DensityCorridor;
+    public double DensityCorridor {
+      get { return _DensityCorridor; }
+      set {
+        if (_DensityCorridor != value) {
+          _DensityCorridor = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -189,9 +202,9 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:0}s{9:0}v"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:0}s{10:n2}d{9:n2}D"
           , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
-          , HeightInPips, CorridorHeight, CorridorStDevToRatesStDevRatio, StDev, SpreadForCorridor, VolumeRatio * 100);
+          , HeightInPips, CorridorHeight, CorridorStDevToRatesStDevRatio, StDev, SpreadForCorridor, Density,DensityCorridor);
       }
     }
 
@@ -287,15 +300,15 @@ namespace HedgeHog {
     #region Lines
     public LineGraph PriceLineGraph { get; set; }
     public LineGraph PriceLineGraphBid { get; set; }
-    static Color priceLineGraphColor = Colors.Black;
+    static Color priceLineGraphColorAsk = Colors.Maroon;
+    static Color priceLineGraphColorBid = Colors.Navy;
     static Color priceLineGraphColorBuy = Colors.DarkGreen;
     static Color priceLineGraphColorSell = Colors.DarkRed;
     bool? buySell;
     public void SetPriceLineColor(bool? buySell) {
       if (PriceLineGraph!=null && this.buySell != buySell) {
-        var brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColor);
-        PriceLineGraph.LinePen.Brush = brush;
-        PriceLineGraphBid.LinePen.Brush = brush;
+        PriceLineGraph.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
+        PriceLineGraphBid.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorBid);
         this.buySell = buySell;
       }
     }
@@ -429,12 +442,24 @@ namespace HedgeHog {
       }
     }
 
+    public void SetTrendLines(Rate[] rates) {
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = rates;
+        var timeHigh = rates[0].StartDateContinuous;
+        var corridorTime = rates[0].StartDate;
+        lineTimeMax.ToolTip = corridorTime;
+        if (!CorridorStartPointX.IsMouseCaptured) {
+          CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), rates.Min(r => r.PriceAvg) + rates.Height() / 2);
+          CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
+        }
+      });
+    }
 
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
     Rate[] TrendLine {
       set {
         trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg1);
-        trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg1);
+        trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg1);
       }
     }
 
@@ -442,16 +467,15 @@ namespace HedgeHog {
     Rate[] TrendLine1 {
       set {
         trendLine1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
-        trendLine1.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg2);
+        trendLine1.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg2);
       }
     }
 
     Segment trendLine11 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine11 {
       set {
-        var height = CorridorHeightMultiplier * (value[0].PriceAvg2 - value[0].PriceAvg3);
         trendLine11.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg02);
-        trendLine11.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg02);
+        trendLine11.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg02);
       }
     }
 
@@ -459,16 +483,15 @@ namespace HedgeHog {
     Rate[] TrendLine2 {
       set {
         trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
-        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg3);
+        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg3);
       }
     }
 
     Segment trendLine22 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine22 {
       set {
-        var height = CorridorHeightMultiplier * (value[0].PriceAvg2 - value[0].PriceAvg3);
         trendLine22.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg03);
-        trendLine22.EndPoint = new Point(dateAxis.ConvertToDouble(value[1].StartDateContinuous), value[1].PriceAvg03);
+        trendLine22.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg03);
       }
     }
     #endregion
@@ -729,7 +752,7 @@ namespace HedgeHog {
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedDataSource = new EnumerableDataSource<double>(animatedPriceY);
         animatedDataSource.SetYMapping(y => y);
-        this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColor, 1, "");
+        this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColorAsk, 1, "");
         this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
 
         animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
@@ -739,7 +762,7 @@ namespace HedgeHog {
 
         animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
         animatedDataSourceBid.SetYMapping(y => y);
-        this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColor, 1, "");
+        this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
         this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
 
         Border infoBorder = new Border() {
@@ -1128,7 +1151,6 @@ namespace HedgeHog {
           plotter.FitToView();
           throw new InvalidOperationException(errorMessage, exc);
         } finally {
-          TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = ratesForCorridor;
           //GannLine = ratesforTrend;
           infoBox.Text = string.Join(Environment.NewLine, info);
           //var up = animatedPriceY.Last() < (animatedPriceY.Max() + animatedPriceY.Min()) / 2;
@@ -1160,12 +1182,6 @@ namespace HedgeHog {
           //SetFibLevels(priceMaxAvg, priceMinAvg);
 
           LineTimeMax = timeHigh;
-          var corridorTime = ticks.First(r => r.StartDateContinuous == timeHigh).StartDate;
-          lineTimeMax.ToolTip = corridorTime;
-          if (!CorridorStartPointX.IsMouseCaptured) {
-            CorridorStartPointX.Position = new Point(dateAxis.ConvertToDouble(timeHigh), ticks.Min(r => r.PriceAvg) + ticks.Height() / 2);
-            CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
-          }
           LineTimeMin = timeCurr;
           LineTimeAvg = timeLow;
           LineNetSell = netSell;

@@ -23,11 +23,11 @@ namespace HedgeHog.Alice.Store {
     static Task saveTicksTask;
     public static void AddTicks(FXCoreWrapper fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
-        var context = GlobalStorage.ForexContext;
         #region callback
         Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
           if (progressCallback != null) progressCallback(args.Message);
           else Debug.WriteLine("{0}", args.Message);
+          var context = new ForexEntities();
           foreach (var t in args.NewRates) {
             var bar = context.CreateObject<t_Bar>();
             FillBar(period, pair, bar, t);
@@ -38,6 +38,7 @@ namespace HedgeHog.Alice.Store {
           Action a = new Action(() => {
             try {
               context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+              context.Dispose();
             } catch (Exception exc) {
               if (progressCallback != null) progressCallback(exc);
             }
@@ -47,10 +48,12 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         var offset = TimeSpan.FromMinutes(period);
-        var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset);
-        fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+        using (var context = new ForexEntities()) {
+          var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset);
+          fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
 
-        dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max().Add(offset);
+          dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max().Add(offset);
+        }
         fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
       } catch (Exception exc) {
         Debug.WriteLine(exc.ToString());

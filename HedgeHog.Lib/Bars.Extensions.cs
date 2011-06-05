@@ -43,11 +43,12 @@ namespace HedgeHog.Bars {
     }
 
     public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
-      var period = bars.GetPeriod();
-      if (period == TimeSpan.Zero)
-        bars.AsParallel().ForAll(b => b.StartDateContinuous = b.StartDate);
-      else {
-        var rateLast = bars.OrderBars().Last();
+      bars.SetStartDateForChart(bars.GetPeriod());
+    }
+    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBaseDate {
+      if (period > TimeSpan.Zero) {
+        bars = bars.OrderBarsDescending();
+        var rateLast = bars.First();
         rateLast.StartDateContinuous = rateLast.StartDate;
         bars.OrderBarsDescending().Aggregate((bp, bn) => {
           bn.StartDateContinuous = bp.StartDateContinuous - period;
@@ -427,6 +428,10 @@ namespace HedgeHog.Bars {
     public static double Height(this ICollection<Rate> rates) {
       return rates.Max(r => r.PriceAvg) - rates.Min(r => r.PriceAvg);
     }
+    public static double Density(this ICollection<Rate> rates) {
+      return rates.Average(r => r.BidHigh- r.AskLow);
+    }
+
     public static TimeSpan Duration(this ICollection<Rate> rates) {
       return rates.Max(r => r.StartDate) - rates.Min(r => r.StartDate);
     }

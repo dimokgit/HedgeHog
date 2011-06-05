@@ -23,8 +23,9 @@ namespace HedgeHog.Alice.Store {
   public class RemoteControlModelBase : HedgeHog.Models.ModelBase {
 
     static string[] defaultInstruments = new string[] { "EUR/USD", "USD/JPY", "GBP/USD", "USD/CHF", "USD/CAD", "USD/SEK","EUR/JPY" };
-    ObservableCollection<string> _Instruments = new ObservableCollection<string>(defaultInstruments);
-    public ObservableCollection<string> Instruments { get { return _Instruments; } }
+    public ObservableCollection<string> Instruments {
+      get { return GlobalStorage.Instruments; }
+    }
 
     protected bool IsInDesigh { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     protected Order2GoAddIn.FXCoreWrapper fwMaster { get { return MasterModel.FWMaster; } }
@@ -66,7 +67,7 @@ namespace HedgeHog.Alice.Store {
       tm.SuppResResetAllTradeCounts();
       var minutesPerPeriod = (int)tm.BarPeriod;
       VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * (int)tm.BarPeriod);
-      var firstDate = GlobalStorage.ForexContext.t_Bar.Where(b => b.Pair == VirtualPair && b.Period == minutesPerPeriod).Select(b => b.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min();
+      var firstDate = GlobalStorage.UseForexContext(context => context.t_Bar.Where(b => b.Pair == VirtualPair && b.Period == minutesPerPeriod).Select(b => b.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min());
       VirtualStartDate = new[] { VirtualStartDate, firstDate }.Max();
       var ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod).ToList();
       if (ratesBuffer.Count < tm.BarsCount)
@@ -186,8 +187,8 @@ namespace HedgeHog.Alice.Store {
     public IQueryable<TradingMacro> TradingMacros {
       get {
         try {
-          if( _TradingMacros == null)
-          _TradingMacros = !IsInDesigh ? GlobalStorage.Context.TradingMacroes.OrderBy(tm => tm.TradingGroup).ThenBy(tm => tm.PairIndex) : new[] { new TradingMacro() }.AsQueryable();
+          if (_TradingMacros == null)
+            _TradingMacros = !IsInDesigh ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes.OrderBy(tm => tm.TradingGroup).ThenBy(tm => tm.PairIndex)) : new[] { new TradingMacro() }.AsQueryable();
           return _TradingMacros;
         } catch (Exception exc) {
           Debug.Fail(exc.ToString());

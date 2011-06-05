@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
+  public enum CorridorHighLowMethod { AskBid = 0, Average = 1, BidAskd = 2 }
   public partial class AliceEntities {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public override int SaveChanges(System.Data.Objects.SaveOptions options) {
@@ -32,7 +33,7 @@ namespace HedgeHog.Alice.Store {
     public double NetPL { get { return GrossPL - Commission; } }
   }
 
-  public enum TradingMacroTakeProfitFunction { Corridor = 1, Corridor0 = 2, RatesHeight = 4, RatesStDev = 8, Corr0_RStd = 9 }
+  public enum TradingMacroTakeProfitFunction { Corridor = 1, Corridor0 = 2, RatesHeight = 4, StDev = 8, Corr0_CorrB0 = 9 }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
   [Flags]

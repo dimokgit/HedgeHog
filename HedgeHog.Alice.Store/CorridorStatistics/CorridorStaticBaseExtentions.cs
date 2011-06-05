@@ -65,13 +65,37 @@ namespace HedgeHog.Alice.Store {
     private static double GetRateRegressionHeight(double[] coeffs, bool isUp, Rate rate, int index) {
       return isUp ? rate.AskHigh - coeffs.RegressionValue(index) : coeffs.RegressionValue(index) - rate.BidLow;
     }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="rates"></param>
+    /// <param name="priceHigh"></param>
+    /// <param name="priceLow"></param>
+    /// <param name="periodsStart">Must be >= 1</param>
+    /// <param name="periodsLength"></param>
+    /// <param name="barsInterval"></param>
+    /// <param name="pointSize"></param>
+    /// <param name="exitCondition"></param>
+    /// <returns></returns>
     public static Dictionary<int, CorridorStatistics> GetCorridornesses(
       this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength
       ,TimeSpan barsInterval,double pointSize, Predicate<CorridorStatistics> exitCondition) {
       return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength,barsInterval,pointSize, exitCondition);
     }
-    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="rates"></param>
+    /// <param name="priceHigh"></param>
+    /// <param name="priceLow"></param>
+    /// <param name="periodsStart">Must be >= 1</param>
+    /// <param name="periodsLength"></param>
+    /// <param name="barsInterval"></param>
+    /// <param name="pointSize"></param>
+    /// <param name="exitCondition"></param>
+    /// <returns></returns>
+    static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates
+      , Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength
       , TimeSpan barsInterval, double pointSize, Predicate<CorridorStatistics> exitCondition) {
       var corridornesses = new Dictionary<int, CorridorStatistics>();
       if (rates.Count() > 2) {
@@ -79,10 +103,12 @@ namespace HedgeHog.Alice.Store {
           if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
           else rates = rates.ToArray();
           {
-            //Stopwatch sw = Stopwatch.StartNew(); int swCount = 1;            /*sw.Stop();*/ Debug.WriteLine("ScanCorridorWithAngle " + (swCount) + ":" + sw.ElapsedMilliseconds + " ms."); //sw.Restart();
-            var periodsEnd = Math.Min(rates.Count(), periodsStart + periodsLength);
-            periodsStart = Math.Min(rates.Count() - 1, periodsStart);
-            for (var i = periodsStart; i < periodsEnd; i++ /*= i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()*/) {
+            ////Stopwatch sw = Stopwatch.StartNew(); int swCount = 1;            /*sw.Stop();*/ Debug.WriteLine("ScanCorridorWithAngle " + (swCount) + ":" + sw.ElapsedMilliseconds + " ms."); //sw.Restart();
+            //var periodsEnd = Math.Min(rates.Count(), periodsStart + periodsLength);
+            //periodsStart = Math.Min(rates.Count() - 1, periodsStart);
+            //for (var i = periodsStart; i < periodsEnd; i++ /*= i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()*/) {
+            periodsLength = periodsLength.Min(rates.Count - periodsStart + 1);
+            foreach(var i in Enumerable.Range(periodsStart, periodsLength)){
               var ratesForCorr = rates.Take(i).ToArray();
               var cs = ratesForCorr.ScanCorridorWithAngle(priceHigh, priceLow, barsInterval, pointSize);
               if (cs != null) {
@@ -112,21 +138,17 @@ namespace HedgeHog.Alice.Store {
         Func<Rate,int, double> heightLow = (rate,index) => priceLine(index) - priceLow(rate);
         #endregion
         #region Locals
-        var heightUp = 0.0;
-        var heightDown = 0.0;
-        var density = 0.0;
         var periods = rates.Count();
         var lineLow = new LineInfo(new Rate[0], 0, 0);
         var lineHigh = new LineInfo(new Rate[0], 0, 0);
-        double height0;
+        double stDev;
         double height;
         #endregion
           //var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
         //height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
-        height0 = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToArray().StDev();// ratesForHeight.StDev();
-          height = height0 * 2;
-          density = (heightDown + heightUp) / periods;
-        return new CorridorStatistics(rates.ToArray(),density, coeffs, height0, height0, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToArray().StDev();// ratesForHeight.StDev();
+        height = stDev * 2;
+        return new CorridorStatistics(rates.ToArray(),stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {

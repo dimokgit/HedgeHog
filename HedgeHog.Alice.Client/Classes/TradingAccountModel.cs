@@ -6,9 +6,19 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using HedgeHog.Shared;
+using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Client {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
+    TradingStatistics _tradingStatistics;
+    public TradingStatistics TradingStatistics {
+      get { return _tradingStatistics; }
+      set {
+        if (_tradingStatistics == value) return;
+        _tradingStatistics = value;
+        RaisePropertyChanged(() => TradingStatistics);
+      }
+    }
     Exception Log {
       set {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(value);
@@ -79,7 +89,7 @@ namespace HedgeHog.Alice.Client {
     public double OriginalBalance { get { return Balance - CurrentLoss; } }
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
-    public void Update(Account account,double tradingRatio,double takeProfitInPipsAverage,DateTime serverTime) {
+    public void Update(Account account,double tradingRatio,TradingStatistics tradingStatistics,DateTime serverTime) {
       try {
         TradingAccountModel accountRow = this;
         accountRow.Balance = account.Balance;
@@ -95,8 +105,11 @@ namespace HedgeHog.Alice.Client {
         accountRow.ServerTime = serverTime;
         accountRow.StopAmount = account.StopAmount;
         accountRow.LimitAmount = account.LimitAmount;
-        accountRow.TakeProfit = takeProfitInPipsAverage;
-        if (accountRow.TakeProfit != 0 && accountRow.PL >= accountRow.TakeProfit) {
+        accountRow.TradingStatistics = tradingStatistics;
+        if (TradingStatistics != null 
+          && !double.IsNaN(TradingStatistics.TakeProfitDistanceInPips)
+          && accountRow.PL >= TradingStatistics.TakeProfitDistanceInPips) 
+        {
           PipsToExit = null;
           RaiseCloseAllTrades();
         }
