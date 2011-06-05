@@ -53,7 +53,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     #region TakeProfitPips
-    private double _TakeProfitPips;
+    private double _TakeProfitPips = double.NaN;
     public double TakeProfitPips {
       get { return _TakeProfitPips; }
       set {
@@ -65,7 +65,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    private double _TakeProfitDistanceInPips;
+    private double _TakeProfitDistanceInPips = double.NaN;
     [DataMember]
     public double TakeProfitDistanceInPips {
       get { return _TakeProfitDistanceInPips; }

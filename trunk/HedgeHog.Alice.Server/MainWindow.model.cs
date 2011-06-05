@@ -12,15 +12,44 @@ using System.Collections.ObjectModel;
 
 namespace HedgeHog.Alice.Server {
   public class MainWindowModel:HedgeHog.Models.ModelBase {
+    #region singleton
+    MainWindowModel() {}
     static MainWindowModel _Default;
     public static MainWindowModel Default {
-      get { 
-        if( _Default == null)_Default = new MainWindowModel();
+      get {
+        if (_Default == null) _Default = new MainWindowModel();
         return _Default;
       }
     }
+    #endregion
 
     #region Properties
+
+    #region Period
+    private int _Period = 1;
+    public int Period {
+      get { return _Period; }
+      set {
+        if (_Period != value) {
+          _Period = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+    #endregion
+
+    #region Periods
+    private int _Periods = 180;
+    public int Periods {
+      get { return _Periods; }
+      set {
+        if (_Periods != value) {
+          _Periods = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+    #endregion
 
     private string _LogText;
     public string LogText {

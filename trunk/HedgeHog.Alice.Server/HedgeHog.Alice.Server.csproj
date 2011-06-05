@@ -11,7 +11,8 @@
     <RootNamespace>HedgeHog.Alice.Server</RootNamespace>
     <AssemblyName>HedgeHog.Alice.Server</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -77,6 +78,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MetadataGeneration.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MetadataGeneration.tt</DependentUpon>
+    </Compile>
     <Compile Include="PriceService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
@@ -96,6 +102,10 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="MetadataGeneration.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>MetadataGeneration.cs</LastGenOutput>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -125,6 +135,10 @@
       <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
       <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
+      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Name>HedgeHog.Alice.Store</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Extentions\HedgeHog.Extentions.csproj">
       <Project>{1D8C77B9-0D28-4100-953A-E1F2EBB2F32D}</Project>
       <Name>HedgeHog.Extentions</Name>
@@ -153,6 +167,9 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

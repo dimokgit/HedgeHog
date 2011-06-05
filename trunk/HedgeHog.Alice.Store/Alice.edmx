@@ -167,6 +167,8 @@
           <Property Name="CorridorCrossesCountMinimum" Type="int" Nullable="false" />
           <Property Name="StDevToSpreadRatio" Type="float" Nullable="false" />
           <Property Name="LoadRatesSecondsWarning" Type="int" Nullable="false" />
+          <Property Name="CorridorHighLowMethodInt" Type="int" Nullable="false" />
+          <Property Name="CorridorStDevRatioMax" Type="float" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -290,6 +292,8 @@
           <Property Type="Int32" Name="CorridorCrossesCountMinimum" Nullable="false" />
           <Property Type="Double" Name="StDevToSpreadRatio" Nullable="false" />
           <Property Type="Int32" Name="LoadRatesSecondsWarning" Nullable="false" />
+          <Property Type="Int32" Name="CorridorHighLowMethodInt" Nullable="false" />
+          <Property Type="Double" Name="CorridorStDevRatioMax" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -383,7 +387,9 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="LoadRatesSecondsWarning" ColumnName="LoadRatesSecondsWarning" />
+            <ScalarProperty Name="CorridorStDevRatioMax" ColumnName="CorridorStDevRatioMax" />
+                <ScalarProperty Name="CorridorHighLowMethodInt" ColumnName="CorridorHighLowMethodInt" />
+                <ScalarProperty Name="LoadRatesSecondsWarning" ColumnName="LoadRatesSecondsWarning" />
                 <ScalarProperty Name="StDevToSpreadRatio" ColumnName="StDevToSpreadRatio" />
                 <ScalarProperty Name="CorridorCrossesCountMinimum" ColumnName="CorridorCrossesCountMinimum" />
                 <ScalarProperty Name="IsColdOnTrades" ColumnName="IsColdOnTrades" />

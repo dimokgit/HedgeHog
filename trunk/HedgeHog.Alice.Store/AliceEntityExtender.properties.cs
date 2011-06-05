@@ -121,6 +121,31 @@ namespace HedgeHog.Alice.Store {
       set { _tradingStatistics = value; }
     }
 
+    #region MonthsOfHistory
+    private int _MonthsOfHistory;
+    [DisplayName("MonthsOfHistory")]
+    [Category(categoryXXX)]
+    public int MonthsOfHistory {
+      get { return _MonthsOfHistory; }
+      set {
+        if (_MonthsOfHistory != value) {
+          _MonthsOfHistory = value;
+          OnPropertyChanged(TradingMacroMetadata.MonthsOfHistory);
+        }
+      }
+    }
+
+    #endregion
+
+    [DisplayName("High/Low Method")]
+    [Category(categoryCorridor)]
+    public CorridorHighLowMethod CorridorHighLowMethod {
+      get { return (CorridorHighLowMethod)CorridorHighLowMethodInt; }
+      set {
+        CorridorHighLowMethodInt = (int)value;
+        OnPropertyChanged(TradingMacroMetadata.CorridorHighLowMethod);
+      }
+    }
 
     [DisplayName("MaxLot By TakeProfit Ratio")]
     [Description("MaxLotSize < LotSize*N")]
@@ -203,14 +228,6 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("StDev Levels")]
-    [Description("StDev Levels - .5,2,2.5")]
-    [Category(categoryCorridor)]
-    public string FibMax_ {
-      get { return FibMax; }
-      set { FibMax = value; }
-    }
-
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
     [Category(categoryCorridor)]
@@ -226,11 +243,15 @@ namespace HedgeHog.Alice.Store {
       set { StrictTradeClose = value; }
     }
 
-    [DisplayName("Spread Short/Long Treshold")]
-    [Category(categoryXXX)]
-    public double SpreadShortToLongTreshold_ {
+    [DisplayName("Density Min")]
+    [Category(categoryCorridor)]
+    public double DensityMin {
       get { return SpreadShortToLongTreshold; }
-      set { SpreadShortToLongTreshold = value; }
+      set {
+        if (SpreadShortToLongTreshold == value) return;
+        SpreadShortToLongTreshold = value;
+        OnPropertyChanged(TradingMacroMetadata.DensityMin);
+      }
     }
 
     [DisplayName("SuppRes Levels Count")]
@@ -240,18 +261,32 @@ namespace HedgeHog.Alice.Store {
       set { SuppResLevelsCount = value; }
     }
 
-    [DisplayName("StDev To Corridor Height0")]
+    [DisplayName("StDev Ratio Min")]
     [Category(categoryCorridor)]
-    [Description("RateStDev / CorridorHeight0")]
-    public double StDevToCorridorHeight0 {
+    [Description("BigCorr.StDev / CurrCorr.StDev")]
+    public double CorridorStDevRatioMin {
       get { return StDevToSpreadRatio; }
       set {
         if (StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
-          OnPropertyChanged(TradingMacroMetadata.StDevToCorridorHeight0);
+          OnPropertyChanged(TradingMacroMetadata.CorridorStDevRatioMin);
         }
       }
     }
+
+    [DisplayName("StDev Ratio Max")]
+    [Category(categoryCorridor)]
+    [Description("BigCorr.StDev / CurrCorr.StDev")]
+    public double CorridorStDevRatioMax_ {
+      get { return CorridorStDevRatioMax; }
+      set {
+        if (CorridorStDevRatioMax != value) {
+          CorridorStDevRatioMax = value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorStDevRatioMax_);
+        }
+      }
+    }
+
 
 
     [DisplayName("Corridor Height Multiplier")]
@@ -283,7 +318,7 @@ namespace HedgeHog.Alice.Store {
       get { return CloseOnOpen; }
       set { 
         CloseOnOpen = value;
-        OnPropertyChanged(TradingMacroMetadata.CloseOnOpen);
+        OnPropertyChanged(TradingMacroMetadata.CloseOnOpen_);
       }
     }
 
@@ -300,7 +335,11 @@ namespace HedgeHog.Alice.Store {
     [Description("Ex: if( PL > Limit) OpenTrade()")]
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
-      set { CloseOnProfitOnly = value; }
+      set {
+        if(CloseOnProfitOnly == value)return;
+        CloseOnProfitOnly = value;
+        OnPropertyChanged(Metadata.TradingMacroMetadata.CloseOnProfitOnly_);
+      }
     }
 
     [DisplayName("Reverse Strategy")]
@@ -516,9 +555,14 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryTrading)]
     public bool IsColdOnTrades_ {
       get { return IsColdOnTrades; }
-      set { IsColdOnTrades = value; }
+      set {
+        if (IsColdOnTrades == value) return;
+        IsColdOnTrades = value;
+        OnPropertyChanged(TradingMacroMetadata.IsColdOnTrades_);
+      }
     }
 
+    public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryCorridor)]
     public BarsPeriodType BarPeriod {

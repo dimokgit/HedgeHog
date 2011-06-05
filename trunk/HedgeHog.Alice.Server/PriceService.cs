@@ -8,8 +8,11 @@ using Order2GoAddIn;
 using HedgeHog.Shared;
 using HedgeHog.Bars;
 using System.Collections.Concurrent;
-using HedgeHog.Schedulers;
+//using HedgeHog.Schedulers;
 using System.Collections.ObjectModel;
+using System.Reactive.Subjects;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Alice.Server {
   // NOTE: You can use the "Rename" command on the "Refactor" menu to change the class name "PriceService" in both code and config file together.
@@ -17,9 +20,9 @@ namespace HedgeHog.Alice.Server {
   public class PriceService : IPriceService {
     #region Members
     static FXCoreWrapper _fw;
-    ConcurrentDictionary<string, List<Rate>> _pairs = new ConcurrentDictionary<string, List<Rate>>();
+    static ConcurrentDictionary<string, List<Rate>> _pairs = new ConcurrentDictionary<string, List<Rate>>();
     Exception Log { set { MainWindowModel.Default.Log = value; } }
-    ObservableCollection<PairInfo> PairInfos { get { return MainWindowModel.Default.PairInfos; } }
+    static ObservableCollection<PairInfo> PairInfos { get { return MainWindowModel.Default.PairInfos; } }
     #endregion
 
     #region Price Loader
@@ -49,15 +52,47 @@ namespace HedgeHog.Alice.Server {
       }
     }
 
-    static BlockingLoader bl= new BlockingLoader();
+    static BlockingLoader bl_= new BlockingLoader();
     #endregion
+
+    #region LoadRates Subject
+    static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
+    static object _LoadRatesSubjectLocker = new object();
+    static ISubject<string> _LoadRatesSubject;
+    static ISubject<string> LoadRatesSubject {
+      get {
+        lock (_LoadRatesSubjectLocker)
+          if (_LoadRatesSubject == null) {
+            _LoadRatesSubject = new Subject<string>();
+            _LoadRatesSubject
+              .ObserveOn(Scheduler.ThreadPool)
+              //.SubscribeOn(Scheduler.NewThread)
+              .Subscribe(pair => {
+                _fw.GetBars(pair, MainWindowModel.Default.Period, MainWindowModel.Default.Periods, TradesManagerStatic.FX_DATE_NOW, TradesManagerStatic.FX_DATE_NOW, _pairs[pair]);
+                  AfterPairLoaded(pair);
+              });
+          }
+        return _LoadRatesSubject;
+      }
+    }
+
+    public void OnLoadRates(string pair) {
+      LoadRatesSubject.OnNext(pair);
+    }
+    #endregion
+
+
 
     #region Ctor
     public PriceService() {
       _fw = new FXCoreWrapper(App.CoreFX);
       _fw.PriceChanged += fw_PriceChanged;
       App.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
-      bl.PairLoaded += bl_PairLoaded;
+      MainWindowModel.Default.PropertyChanged += MainWindowModel_PropertyChanged;
+      //bl.PairLoaded += bl_PairLoaded;
+    }
+
+    void MainWindowModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
     }
     ~PriceService() {
       _fw.Dispose();
@@ -66,26 +101,36 @@ namespace HedgeHog.Alice.Server {
 
     #region Event handlers
     void bl_PairLoaded(object sender, PriceService.BlockingLoader.PairLoadedEventArgs e) {
-      var pairRates = _pairs[e.Pair];
-      var pairInfo = GetOrAddPairInfo(e.Pair);
+      var pair = e.Pair;
+      AfterPairLoaded(pair);
+    }
+
+    private static void AfterPairLoaded(string pair) {
+      var pairRates = _pairs[pair];
+      var pairInfo = GetOrAddPairInfo(pair);
       pairInfo.LastDate = pairRates.Select(r => r.StartDate).DefaultIfEmpty().Max();
       pairInfo.Count = pairRates.Count;
     }
     void CoreFX_LoggedInEvent(object sender, LoggedInEventArgs e) {
       _pairs.Clear();
-      foreach (var pair in App.CoreFX.Instruments)
+      foreach (var pair in HedgeHog.Alice.Store.GlobalStorage.Instruments) {
+        App.CoreFX.SetOfferSubscription(pair);
         _pairs[pair] = new List<Rate>();
+        OnLoadRates(pair);
+        //bl.Add(pair, _pairs[pair]);
+      }
     }
     void fw_PriceChanged(object sender, PriceChangedEventArgs e) {
       List<Rate> pairList;
       var pair = e.Price.Pair;
       if (!_pairs.TryGetValue(pair, out pairList)) return;
-      bl.Add(pair, pairList);
+      OnLoadRates(pair);
+      //bl.Add(pair, pairList);
     }
     #endregion
 
     #region Helpers
-    private PairInfo GetOrAddPairInfo(string pair) {
+    private static PairInfo GetOrAddPairInfo(string pair) {
       var pairInfo = PairInfos.SingleOrDefault(pi => pi.Pair == pair);
       if (pairInfo == null) {
         AddPair(pair);
@@ -119,7 +164,7 @@ namespace HedgeHog.Alice.Server {
       }
     }
 
-    public bool AddPair(string pair) {
+    public static bool AddPair(string pair) {
       App.CoreFX.SetOfferSubscription(pair);
       return true;
     }

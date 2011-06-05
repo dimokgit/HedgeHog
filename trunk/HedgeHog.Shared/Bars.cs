@@ -73,6 +73,7 @@ namespace HedgeHog.Bars {
     public double Spread { get { return (AskHigh - AskLow + BidHigh - BidLow) / 2; } }
     public double SpreadMax { get { return Math.Max(AskHigh - AskLow, BidHigh - BidLow); } }
     public double SpreadMin { get { return Math.Min(AskHigh - AskLow, BidHigh - BidLow); } }
+    public double PriceSpread { get { return (AskHigh - BidHigh + AskLow - BidLow) / 2; } }
     #endregion
 
     #region Price

@@ -16,7 +16,7 @@ namespace HedgeHog.Alice.Client {
   class OrderTemplatesModel :HedgeHog.Models.ModelBase {
 
     #region Properties
-    public ObjectSet<Store.OrderTemplate> OrderTemplates { get { return Store.GlobalStorage.Context.OrderTemplates; } }
+    public ObjectSet<Store.OrderTemplate> OrderTemplates { get { return GlobalStorage.UseAliceContext(c=>c.OrderTemplates); } }
 
     TraderModel _MasterModel;
     [Import]

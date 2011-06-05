@@ -5,23 +5,34 @@
         xmlns:settings="clr-namespace:WpfPersist;assembly=Persistance"
         xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         xmlns:hhlib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+        xmlns:Metadata="clr-namespace:HedgeHog.Alice.Server.Metadata"
         DataContext="{x:Static Member=m:MainWindowModel.Default}"
         Title="{Binding Title}" 
         Top="{settings:UserSettings Default=300}" Left="{settings:UserSettings Default=200}"
         Height="{settings:UserSettings Default=200}" Width="{settings:UserSettings Default=400}"
         >
     <Grid>
-      
-    <Grid.RowDefinitions>
+    <Grid.Resources>
+      <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+      </Style>
+    </Grid.Resources>
+      <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <StackPanel Orientation="Horizontal">
       <Border BorderThickness="1" CornerRadius="2" BorderBrush="Black"
-      Background="{Binding IsLoggedIn,Converter={x:Static Member=hhlib:CompareValueConverter.Default},ConverterParameter=False}"              >
-        <hhui:AccountLoginView 
-        AccountLoginCommand="{Binding DataContext.LoginCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=FrameworkElement}}" />
+      Background="{Binding IsLoggedIn,Converter={x:Static Member=hhlib:CompareValueConverter.Default},ConverterParameter=False}" VerticalAlignment="Center">
+        <WrapPanel>
+          <TextBlock>Period:</TextBlock>
+          <hhui:TextBox Text="{Binding Period,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text2="{settings:UserSettings}"/>
+          <TextBlock>Periods:</TextBlock>
+          <hhui:TextBox Text="{Binding Periods,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text2="{settings:UserSettings}"/>
+          <hhui:AccountLoginView 
+            AccountLoginCommand="{Binding DataContext.LoginCommand,RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=FrameworkElement}}" />
+        </WrapPanel>
       </Border>
       <ListBox>
       </ListBox>

@@ -98,7 +98,15 @@ namespace HedgeHog.Alice.Store {
     public Func<Rate,double> priceHigh { get; set; }
     public Func<Rate,double> priceLow { get; set; }
 
-    public double Density { get; private set; }
+    private double _StDev = double.NaN;
+    public double StDev {
+      get { return _StDev; }
+      set {
+        if (_StDev == value) return;
+        _StDev = value;
+        RaisePropertyChanged(() => StDev);
+      }
+    }
     public double Slope { get; private set; }
     public LineInfo LineLow { get; private set; }
     public LineInfo LineHigh { get; private set; }
@@ -112,23 +120,23 @@ namespace HedgeHog.Alice.Store {
 
     public Rate[] GetRates(IEnumerable<Rate> rates) { return rates.Skip(rates.Count() - Periods).ToArray(); }
 
-    double _HeightUp0;
+    double _HeightUp0= double.NaN;
     public double HeightUp0 {
       get { return _HeightUp0; }
       private set { _HeightUp0 = value; }
     }
-    double _HeightUp;
+    double _HeightUp = double.NaN;
     public double HeightUp {
       get { return _HeightUp; }
       set { _HeightUp = value; }
     }
 
-    double _HeightDown0;
+    double _HeightDown0 = double.NaN;
     public double HeightDown0 {
       get { return _HeightDown0; }
       private set { _HeightDown0 = value; }
     }
-    double _HeightDown;
+    double _HeightDown = double.NaN;
     public double HeightDown {
       get { return _HeightDown; }
       set { _HeightDown = value; }
@@ -159,8 +167,8 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(Rate[] rates, double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(rates,density, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
+    public CorridorStatistics(Rate[] rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
+      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
     }
 
     public void Init(CorridorStatistics cs,double pipSize) {
@@ -168,7 +176,7 @@ namespace HedgeHog.Alice.Store {
       this.priceLine = cs.priceLine;
       this.priceHigh = cs.priceHigh;
       this.priceLow = cs.priceLow;
-      Init(cs.Rates, cs.Density, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.LineHigh, cs.LineLow, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
+      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.LineHigh, cs.LineLow, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         LegInfos.Clear();
@@ -178,9 +186,9 @@ namespace HedgeHog.Alice.Store {
         () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
     }
 
-    public void Init(Rate[] rates, double density, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
+    public void Init(Rate[] rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
       this.Rates = rates;
-      this.Density = density;
+      this.StDev = stDev;
       this.LineHigh = lineHigh;
       this.LineLow = lineLow;
       this.EndDate = endDate;
@@ -192,8 +200,9 @@ namespace HedgeHog.Alice.Store {
       this.HeightUp0 = heightUp0;
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
-      this.Corridornes = Density;
       this.CorridorCrossesCount = corridorCrossesCount;
+      this.Corridornes = rates.Select(r => r.Spread).ToArray().AverageByIterations(2, low: true).Average() / rates.Height();
+      this.Density = rates.Density();
       // Must the last one
       this.StartDate = startDate;
       RaisePropertyChanged("Height");
@@ -364,6 +373,8 @@ namespace HedgeHog.Alice.Store {
     }
     public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
 
+
+    public double Density { get; set; }
   }
 
   public enum TrendLevel { None, Resistance, Support }

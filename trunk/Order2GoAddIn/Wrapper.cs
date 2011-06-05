@@ -2399,7 +2399,12 @@ namespace Order2GoAddIn {
       get {
         lock (_OpenTradesLocker) {
           if (_OpenTrades == null)
-            _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+            try {
+              _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+            } catch (Exception exc) {
+              RaiseError(exc);
+              _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+            }
           return _OpenTrades;
         }
       }
