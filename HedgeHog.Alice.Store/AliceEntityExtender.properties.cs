@@ -137,6 +137,51 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region ForceOpenTrade
+    private bool? _ForceOpenTrade;
+    [DisplayName("Force Open Trade")]
+    [Category(categoryTrading)]
+    public bool? ForceOpenTrade {
+      get { return _ForceOpenTrade; }
+      set {
+        if (_ForceOpenTrade != value) {
+          _ForceOpenTrade = value;
+          OnPropertyChanged("ForceOpenTrade");
+        }
+      }
+    }
+
+    #endregion
+
+    #region CorridorCrossHighLowMethod
+    [DisplayName("High/Low(Cross)Method")]
+    [Category(categoryCorridor)]
+    public CorridorHighLowMethod CorridorCrossHighLowMethod {
+      get { return (CorridorHighLowMethod)CorridorCrossHighLowMethodInt; }
+      set {
+        if (CorridorCrossHighLowMethodInt != (int)value) {
+          CorridorCrossHighLowMethodInt = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorCrossHighLowMethod);
+        }
+      }
+    }
+
+    #endregion
+
+    #region CorridorLengthMinimum
+    [DisplayName("Length Min")]
+    [Category(categoryCorridor)]
+    public double CorridorLengthMinimum_ {
+      get { return CorridorLengthMinimum; }
+      set {
+        if (CorridorLengthMinimum != value) {
+          CorridorLengthMinimum = value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorLengthMinimum_);
+        }
+      }
+    }
+
+    #endregion
     [DisplayName("High/Low Method")]
     [Category(categoryCorridor)]
     public CorridorHighLowMethod CorridorHighLowMethod {
@@ -178,34 +223,7 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.TakeProfitFunction);
       }
     }
-
-    [DisplayName("Trades Count Buy")]
-    [Description("Reset TradesCount Buy")]
-    [Category(categoryCorridor)]
-    public double TradesCountBuy {
-      get { return GetTradesCountFromSuppRes(true); }
-      set {
-        if (GetTradesCountFromSuppRes(true) != value) {
-          SuppResResetTradeCounts(Resistances, value);
-          OnPropertyChanged(Metadata.TradingMacroMetadata.TradesCountBuy);
-        }
-      }
-    }
-
     
-    [DisplayName("Trades Count Sell")]
-    [Description("Reset TradesCount Sell")]
-    [Category(categoryCorridor)]
-    public double TradesCountSell {
-      get { return GetTradesCountFromSuppRes(false); }
-      set {
-        if (GetTradesCountFromSuppRes(true) != value) {
-          SuppResResetTradeCounts(Supports, value);
-          OnPropertyChanged(Metadata.TradingMacroMetadata.TradesCountSell);
-        }
-      }
-    }
-
     [DisplayName("Trade On Cross Only")]
     [Category(categoryTrading)]
     public bool TradeOnCrossOnly_ {
@@ -461,7 +479,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryXXX)]
     public int PriceCmaPeriod {
       get { return LongMAPeriod; }
-      set { LongMAPeriod = value; }
+      set {
+        if (LongMAPeriod == value) return;
+        LongMAPeriod = value;
+        OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriod);
+      }
     }
 
     [DisplayName("Trading Angle Range")]
@@ -851,7 +873,7 @@ namespace HedgeHog.Alice.Store {
       set {
         _currentPrice = value;
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
-        var currentSpread = RoundPrice(Lib.CMA(this._currentSpread, 10, this._currentPrice.Spread));
+        var currentSpread = RoundPrice(Lib.Cma(this._currentSpread, 10, this._currentPrice.Spread));
         if (currentSpread == this._currentSpread) return;
         this._currentSpread = currentSpread;
         SetPriceSpreadOk();

@@ -169,6 +169,8 @@
           <Property Name="LoadRatesSecondsWarning" Type="int" Nullable="false" />
           <Property Name="CorridorHighLowMethodInt" Type="int" Nullable="false" />
           <Property Name="CorridorStDevRatioMax" Type="float" Nullable="false" />
+          <Property Name="CorridorLengthMinimum" Type="float" Nullable="false" />
+          <Property Name="CorridorCrossHighLowMethodInt" Type="int" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -294,6 +296,8 @@
           <Property Type="Int32" Name="LoadRatesSecondsWarning" Nullable="false" />
           <Property Type="Int32" Name="CorridorHighLowMethodInt" Nullable="false" />
           <Property Type="Double" Name="CorridorStDevRatioMax" Nullable="false" />
+          <Property Type="Double" Name="CorridorLengthMinimum" Nullable="false" />
+          <Property Type="Int32" Name="CorridorCrossHighLowMethodInt" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -387,7 +391,9 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
-            <ScalarProperty Name="CorridorStDevRatioMax" ColumnName="CorridorStDevRatioMax" />
+                <ScalarProperty Name="CorridorCrossHighLowMethodInt" ColumnName="CorridorCrossHighLowMethodInt" />
+                <ScalarProperty Name="CorridorLengthMinimum" ColumnName="CorridorLengthMinimum" />
+                <ScalarProperty Name="CorridorStDevRatioMax" ColumnName="CorridorStDevRatioMax" />
                 <ScalarProperty Name="CorridorHighLowMethodInt" ColumnName="CorridorHighLowMethodInt" />
                 <ScalarProperty Name="LoadRatesSecondsWarning" ColumnName="LoadRatesSecondsWarning" />
                 <ScalarProperty Name="StDevToSpreadRatio" ColumnName="StDevToSpreadRatio" />
@@ -546,7 +552,7 @@
     <Diagrams>
       <Diagram Name="Alice" ZoomLevel="111">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="12.603577473958332" IsExpanded="true" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="13.096619466145832" IsExpanded="true" />
         <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="9.375" PointY="3.125" Height="3.4001269531249996" />
         <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />

@@ -94,6 +94,7 @@
     <Compile Include="PropertyObserver.cs" />
     <Compile Include="Schedulers\TaskScheduler.cs" />
     <Compile Include="SimpleCommand.cs" />
+    <Compile Include="SmartObservableCollection.cs" />
     <Compile Include="TBar.cs" />
     <Compile Include="UI\GroupFilter.cs" />
     <Compile Include="MarkupExtemssions.cs" />

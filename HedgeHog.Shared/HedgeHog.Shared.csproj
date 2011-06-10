@@ -53,6 +53,7 @@
     <Compile Include="Exception.cs" />
     <Compile Include="Extenssions.cs" />
     <Compile Include="ITradesManager.cs" />
+    <Compile Include="LogMessage.cs" />
     <Compile Include="Offer.cs" />
     <Compile Include="Order.cs" />
     <Compile Include="PendingOrder.cs" />

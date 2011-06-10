@@ -36,12 +36,22 @@ namespace HedgeHog.Alice.Store {
     }
 
     public static void UseForexContext(Action<ForexEntities> action) {
-      using (var context = new ForexEntities())
-        action(context);
+      try {
+        using (var context = new ForexEntities())
+          action(context);
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        throw;
+      }
     }
     public static T UseForexContext<T>(Func<ForexEntities,T> action) {
-      using (var context = new ForexEntities())
-        return action(context);
+      try {
+        using (var context = new ForexEntities())
+          return action(context);
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        throw;
+      }
     }
 
     static AliceEntities Context {
@@ -61,15 +71,25 @@ namespace HedgeHog.Alice.Store {
       UseAliceContext(c => { }, true);
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public static void UseAliceContext(Action<AliceEntities> action,bool saveChanges = false) {
-      action(Context);
-      if (saveChanges) Context.SaveChanges();
+    public static void UseAliceContext(Action<AliceEntities> action, bool saveChanges = false) {
+      try {
+        action(Context);
+        if (saveChanges) Context.SaveChanges();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        throw;
+      }
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     public static T UseAliceContext<T>(Func<AliceEntities, T> action, bool saveChanges = false) {
-      var r = action(Context);
-      if (saveChanges) Context.SaveChanges();
-      return r;
+      try {
+        var r = action(Context);
+        if (saveChanges) Context.SaveChanges();
+        return r;
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        throw;
+      }
     }
     private static AliceEntities InitAliceEntityContext() {
       var path = DatabasePath;

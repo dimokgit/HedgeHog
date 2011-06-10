@@ -7,6 +7,8 @@ using System.Diagnostics;
 using HedgeHog;
 using HedgeHog.Shared;
 using System.Reactive.Subjects;
+using NotifyCollectionChangedWrapper;
+using System.Collections.ObjectModel;
 
 namespace HedgeHog.Alice.Store {
   public class CorridorStatistics : HedgeHog.Models.ModelBase {
@@ -61,11 +63,11 @@ namespace HedgeHog.Alice.Store {
 
       }
     }
-    System.Collections.ObjectModel.ObservableCollection<LegInfo> _LegInfos = new System.Collections.ObjectModel.ObservableCollection<LegInfo>();
-    public System.Collections.ObjectModel.ObservableCollection<LegInfo> LegInfos {
+    NotifyCollectionChangedWrapper<LegInfo> _LegInfos;
+    public NotifyCollectionChangedWrapper<LegInfo> LegInfos {
       get {
         if (_LegInfos == null) {
-          _LegInfos = new System.Collections.ObjectModel.ObservableCollection<LegInfo>();
+          _LegInfos = new NotifyCollectionChangedWrapper<LegInfo>(new ObservableCollection<LegInfo>());
           _LegInfos.CollectionChanged += LegInfos_CollectionChanged;
         }
         return _LegInfos;
@@ -241,25 +243,25 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private double _CorridorFib;
+    private double _CorridorFib = double.NaN;
     public double CorridorFib {
       get { return _CorridorFib; }
       set {
         if (value != 0 && _CorridorFib != value) {
           //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
-          _CorridorFib = Lib.CMA(_CorridorFib, double.MinValue, CorridorFibCmaPeriod, value);
+          _CorridorFib = Lib.Cma(_CorridorFib, CorridorFibCmaPeriod, value);
           CorridorFibAverage = _CorridorFib;
           RaisePropertyChanged("CorridorFib");
         }
       }
     }
 
-    private double _CorridorFibAverage;
+    private double _CorridorFibAverage = double.NaN;
     public double CorridorFibAverage {
       get { return _CorridorFibAverage; }
       set {
         if (value != 0 && _CorridorFibAverage != value) {
-          _CorridorFibAverage = Lib.CMA(_CorridorFibAverage, double.MinValue, CorridorFibCmaPeriod, value);
+          _CorridorFibAverage = Lib.Cma(_CorridorFibAverage, CorridorFibCmaPeriod, value);
           RaisePropertyChanged("CorridorFibAverage");
         }
       }

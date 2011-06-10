@@ -374,6 +374,12 @@
     <None Include="Service References\PriceService\Arrays.xsd">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Service References\PriceService\HedgeHog.Alice.Client.PriceService.PriceStatistics.datasource">
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </None>
+    <None Include="Service References\PriceService\HedgeHog.Alice.Server.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Service References\PriceService\HedgeHog.Bars.xsd">
       <SubType>Designer</SubType>
     </None>

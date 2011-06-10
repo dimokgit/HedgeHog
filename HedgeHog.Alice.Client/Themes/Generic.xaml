@@ -53,7 +53,7 @@
                       <TextBlock>
                         <TextBlock Text="{Binding PL,StringFormat=n1}"/>
                         <TextBlock Margin="-2">></TextBlock>
-                        <TextBlock Text="{Binding TradingStatistics.TakeProfitDistanceInPips,StringFormat=n1}"/>
+                        <TextBlock Text="{Binding TakeProfit,StringFormat=n1}"/>
                       </TextBlock>
                     </DataTemplate>
                   </DataGridTemplateColumn.CellTemplate>

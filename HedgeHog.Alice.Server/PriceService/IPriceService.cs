@@ -12,5 +12,7 @@ namespace HedgeHog.Alice.Server {
   public interface IPriceService {
     [OperationContract]
     Rate[] FillPrice(string pair, DateTime startDate);
+    [OperationContract]
+    PriceStatistics PriceStatistics(string pair);
   }
 }
