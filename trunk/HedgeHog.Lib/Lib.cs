@@ -253,7 +253,7 @@ namespace HedgeHog {
       public void Add(double value, double cmaPeriod) {
         Current = value;
         for (var i = 0; i < CmaArray.Length; i++) {
-          CmaArray[i] = Lib.CMA(CmaArray[i], cmaPeriod, value);
+          CmaArray[i] = Lib.Cma(CmaArray[i], cmaPeriod, value);
           value = CmaArray[i].Value;
         }
         RaisePropertyChanged("Difference");
@@ -285,16 +285,21 @@ namespace HedgeHog {
     }
 
 
+    public static TimeSpan FromSeconds(this int i) { return TimeSpan.FromSeconds(i); }
     public static TimeSpan FromMinutes(this int i) { return TimeSpan.FromMinutes(i); }
     public static TimeSpan FromMinutes(this double i) { return TimeSpan.FromMinutes(i); }
 
-    public static double CMA(this double? MA, double Periods, double NewValue) {
+    public static double Cma(this double? MA, double Periods, double NewValue) {
       if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return MA.Value + (NewValue - MA.Value) / (Periods + 1);
     }
-    public static double CMA(double MA,double zeroValue, double Periods, double NewValue) {
+    public static double Cma(this double MA, double Periods, double NewValue) {
+      if (double.IsNaN(MA)) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      return MA + (NewValue - MA) / (Periods + 1);
+    }
+    static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
       if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
-      return CMA((double?)MA, Periods, NewValue);
+      return Cma(MA, Periods, NewValue);
     }
     public static double Max3(double n1, double n2, double n3) {
       return Math.Max(Math.Max(n1, n2), n3);
@@ -437,7 +442,6 @@ namespace HedgeHog {
     public static double Position(this double Price,double Up,double Down){
       return (Price-Down)/(Up-Down);
     }
-    public static double? Cma(this double? d, int period, double? newValue) { return Lib.CMA(d, period, newValue.Value); }
   }
 
   #endregion

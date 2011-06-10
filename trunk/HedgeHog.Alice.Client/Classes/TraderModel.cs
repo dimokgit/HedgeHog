@@ -1437,7 +1437,7 @@ namespace HedgeHog.Alice.Client {
           });
         foreach (var trade in tradesList) {
           tradesCollection.Where(t => t.Id == trade.Id).Skip(1).ToList().ForEach(t =>
-            GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(new Action(() => tradesCollection.Remove(t)))
+            GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => tradesCollection.Remove(t))
           );
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
           if (trd != null)

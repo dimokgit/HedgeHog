@@ -9,6 +9,8 @@ using System.Diagnostics;
 using HedgeHog;
 using HedgeHog.UI;
 using System.Collections.ObjectModel;
+using NCCW = NotifyCollectionChangedWrapper;
+using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Server {
   public class MainWindowModel:HedgeHog.Models.ModelBase {
@@ -129,8 +131,16 @@ namespace HedgeHog.Alice.Server {
       }
     }
 
-    ObservableCollection<PairInfo> _PairInfos = new ObservableCollection<PairInfo>();
-    public ObservableCollection<PairInfo> PairInfos { get { return _PairInfos; } }
+    NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>> _PairInfos;
+    public NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>> PairInfos {
+      get {
+        if (_PairInfos == null) {
+          var oc = new ObservableCollection<PairInfo<Rate>>();
+          _PairInfos = new NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>>(oc);
+        }
+        return _PairInfos; 
+      }
+    }
 
 
     void coreFX_LoggedOffEvent(object sender, Order2GoAddIn.LoggedInEventArgs e) {

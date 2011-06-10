@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
-  public enum CorridorHighLowMethod { AskBid = 0, Average = 1, BidAskd = 2 }
+  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4 }
   public partial class AliceEntities {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public override int SaveChanges(System.Data.Objects.SaveOptions options) {

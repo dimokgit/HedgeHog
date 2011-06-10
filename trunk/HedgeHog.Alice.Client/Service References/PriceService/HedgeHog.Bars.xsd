@@ -33,7 +33,6 @@
           <xs:element minOccurs="0" name="FractalBuy" type="tns:FractalType" />
           <xs:element minOccurs="0" name="FractalSell" type="tns:FractalType" />
           <xs:element xmlns:q1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="GannPrices" nillable="true" type="q1:ArrayOfdouble" />
-          <xs:element minOccurs="0" name="Index" type="xs:int" />
           <xs:element minOccurs="0" name="IsHistory" type="xs:boolean" />
           <xs:element minOccurs="0" name="Mass" nillable="true" type="xs:double" />
           <xs:element minOccurs="0" name="Overlap" type="ser:duration" />

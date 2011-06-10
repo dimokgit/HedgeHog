@@ -26,6 +26,7 @@
     <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="89efe66a-d3df-4dad-849a-b951e6e1f2f8" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
     <MetadataFile FileName="HedgeHog.Bars.xsd" MetadataType="Schema" ID="efb1ec56-800b-4da7-bd8a-64d0b50e444a" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
     <MetadataFile FileName="Arrays.xsd" MetadataType="Schema" ID="c82c7436-0765-413d-b078-ca00231d24d8" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="HedgeHog.Alice.Server.xsd" MetadataType="Schema" ID="6f15f74f-43c6-4909-a646-2d4b5cf89e43" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
   </Metadata>
   <Extensions>
     <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />

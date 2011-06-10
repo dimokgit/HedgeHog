@@ -6,6 +6,33 @@ using System.Text;
 namespace HedgeHog {
   public static class MathExtensions {
 
+    public static SortedList<T, double> MovingAverage<T>(this SortedList<T, double> series, int period) {
+      var result = new SortedList<T, double>();
+      double total = 0;
+      for (int i = 0; i < series.Count(); i++) {
+        if (i >= period) {
+          total -= series.Values[i - period];
+        }
+        total += series.Values[i];
+        if (i >= period - 1) {
+          double average = total / period;
+          result.Add(series.Keys[i], average);
+        }
+      } return result;
+    }
+    public static SortedList<T, double> MovingAverage_<T>(this SortedList<T, double> series, int period) {
+      var result = new SortedList<T, double>();
+      for (int i = 0; i < series.Count(); i++) {
+        if (i >= period - 1) {
+          double total = 0;
+          for (int x = i; x > (i - period); x--)
+            total += series.Values[x];
+          double average = total / period;
+          result.Add(series.Keys[i], average);
+        }
+      } 
+      return result;
+    }
     public static double[] Linear(double[] x, double[] y) {
       double [,] m = new double[x.Length,2];
       for (int i = 0; i < x.Length; i++) {

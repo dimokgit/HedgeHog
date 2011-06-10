@@ -100,7 +100,7 @@ namespace HedgeHog.Alice.Store {
       var corridornesses = new Dictionary<int, CorridorStatistics>();
       if (rates.Count() > 2) {
         try {
-          if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToArray();
+          if (rates.Last().StartDate > rates.First().StartDate) rates = rates.Reverse().ToList();
           else rates = rates.ToArray();
           {
             ////Stopwatch sw = Stopwatch.StartNew(); int swCount = 1;            /*sw.Stop();*/ Debug.WriteLine("ScanCorridorWithAngle " + (swCount) + ":" + sw.ElapsedMilliseconds + " ms."); //sw.Restart();
@@ -109,7 +109,7 @@ namespace HedgeHog.Alice.Store {
             //for (var i = periodsStart; i < periodsEnd; i++ /*= i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()*/) {
             periodsLength = periodsLength.Min(rates.Count - periodsStart + 1);
             foreach(var i in Enumerable.Range(periodsStart, periodsLength)){
-              var ratesForCorr = rates.Take(i).ToArray();
+              var ratesForCorr = rates.Take(i).ToList();
               var cs = ratesForCorr.ScanCorridorWithAngle(priceHigh, priceLow, barsInterval, pointSize);
               if (cs != null) {
                 corridornesses.Add(i, cs);
@@ -128,7 +128,7 @@ namespace HedgeHog.Alice.Store {
 
     public static CorridorStatistics ScanCorridorWithAngle(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, bool userRegression = true) {
       try {
-        rates = rates.ToArray();
+        //rates = rates.ToArray();
         #region Funcs
         double[] linePrices = new double[rates.Count()];
         Func<int, double> priceLine = index => linePrices[index];
@@ -146,7 +146,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
           //var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
         //height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
-        stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToArray().StDev();// ratesForHeight.StDev();
+        stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
         height = stDev * 2;
         return new CorridorStatistics(rates.ToArray(),stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow

@@ -70,7 +70,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\PairInfo.cs" />
-    <Compile Include="IPriceService.cs" />
+    <Compile Include="PriceService\IPriceService.cs" />
     <Compile Include="MainWindow.model.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -83,7 +83,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>MetadataGeneration.tt</DependentUpon>
     </Compile>
-    <Compile Include="PriceService.cs" />
+    <Compile Include="PriceService\PriceService.cs" />
+    <Compile Include="PriceService\PriceStatistics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -135,6 +136,10 @@
       <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
       <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
+      <Project>{8883734D-B6B0-4210-9746-108A126EB84A}</Project>
+      <Name>NotifyCollectionChangedWrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
       <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
       <Name>HedgeHog.Alice.Store</Name>
@@ -146,6 +151,10 @@
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>

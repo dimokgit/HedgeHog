@@ -162,7 +162,7 @@ namespace Temp {
       //return;
     }
 
-    private static double[] GetBarsAndRatios(Rate[] rates,int barMax, out List<double> ratios) {
+    private static double[] GetBarsAndRatios(IList<Rate> rates,int barMax, out List<double> ratios) {
       var bars = new List<double>();
       ratios = new List<double>();
       for (var i = 1; i <= barMax; i++)

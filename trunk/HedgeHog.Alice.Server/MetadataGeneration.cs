@@ -319,7 +319,7 @@ namespace HedgeHog.Alice.Server.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.FillPrice"/></summary>
         public const string FillPrice = "FillPrice";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.AddPair"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.AddOfferPair"/></summary>
         public const string AddPair = "AddPair";
 
 

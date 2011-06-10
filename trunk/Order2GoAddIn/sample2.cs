@@ -67,7 +67,7 @@ namespace Order2GoAddIn {
       instance.Update(true);
       return output.Cast<double>().Select((d, i) => new IndicatorPoint(rates[i].StartDate, d));
     }
-    public static IEnumerable<IndicatorPoint> TSI(Rate[] rates) {
+    public static IEnumerable<IndicatorPoint> TSI(IList<Rate> rates) {
       Indicore.BarSourceAut source = CreateBarsData(rates);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("TSI", source, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
@@ -142,7 +142,7 @@ namespace Order2GoAddIn {
       instance2.Update(true);
       return output2.Cast<double>().Select((d, i) => new IndicatorPoint2(rates[i].StartDate, output1[i], d));
     }
-    public static IEnumerable<IndicatorPoint> RSI(Rate[] rates, Func<Rate, double> price, int period) {
+    public static IEnumerable<IndicatorPoint> RSI(IList<Rate> rates, Func<Rate, double> price, int period) {
       Indicore.TickSourceAut source = CreateTicksData(rates, price);
       Indicore.IndicatorInstanceAut instance = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RSI", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance.Output)[0];
@@ -157,7 +157,7 @@ namespace Order2GoAddIn {
       var i = 0;
       output.Cast<T>().ToList().ForEach(d => destinationLambda(rates[i++], d));
     }
-    public static IEnumerable<IndicatorPoint2> RSI_CR(Rate[] rates, Func<Rate, double> price, int period) {
+    public static IEnumerable<IndicatorPoint2> RSI_CR(IList<Rate> rates, Func<Rate, double> price, int period) {
       Indicore.TickSourceAut source = CreateTicksData(rates, price);
       Indicore.IndicatorInstanceAut instance1 = (Indicore.IndicatorInstanceAut)core.CreateIndicatorInstance("RSI", source, period, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
       Indicore.IndicatorOutputAut output1 = (Indicore.IndicatorOutputAut)((Indicore.IndicatorOutputCollectionAut)instance1.Output)[0];
@@ -287,13 +287,13 @@ namespace Order2GoAddIn {
       }
     }
 
-    private static Indicore.BarSourceAut CreateBarsData(Rate[] rates ) {
+    private static Indicore.BarSourceAut CreateBarsData(IList<Rate> rates ) {
       Indicore.BarSourceAut ticks = (Indicore.BarSourceAut)core.CreateBarSource("AAPL", "M1", false, 0.01);
       foreach (var rate in rates)
         ticks.AddLast(rate.StartDate, rate.PriceOpen, rate.PriceHigh, rate.PriceLow, rate.PriceClose, 1);
       return ticks;
     }
-    private static Indicore.TickSourceAut CreateTicksData(Rate[] rates, Func<Rate, double> price) {
+    private static Indicore.TickSourceAut CreateTicksData(IList<Rate> rates, Func<Rate, double> price) {
       Indicore.TickSourceAut ticks = (Indicore.TickSourceAut)core.CreateTickSource("XXX",.01);
       foreach (var r in rates) 
         ticks.AddLast(r.StartDate, price(r));

@@ -68,9 +68,9 @@ namespace Order2GoAddIn {
       IndicatorPoint dpPrevious = new IndicatorPoint();
       ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
         if (!priceDestination(t).HasValue) {
-          Rate[] ticksLocal = ticks
+          var ticksLocal = ticks
             .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
-            .ToArray().GetMinuteTicks(1);
+            .ToList().GetMinuteTicks(1);
           if (ticksLocal.Count() >= period) {
             var dp = Indicators.RSI(ticksLocal, priceSource, period).Last();
             if (dp.Point == 0) dp.Point = dpPrevious.Point;
@@ -88,7 +88,7 @@ namespace Order2GoAddIn {
       IndicatorPoint dpPrevious = new IndicatorPoint();
       rates.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
         if (!priceDestination(t).HasValue) {
-          Rate[] ticksLocal = rates
+          var ticksLocal = rates
             .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
             .ToArray().GetMinuteTicks(1);
           if (ticksLocal.Count() >= period) {
@@ -686,7 +686,7 @@ namespace Order2GoAddIn {
         try {
           var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
           if (t.Count() == 0) break;
-          var ticksNew = t.Except(ticks).ToArray();
+          var ticksNew = t.Except(ticks).ToList();
           ticks.AddRange(ticksNew);
           var msg = "Bars[" + pair + "]<" + period + ">:" + ticks.Count() + " @ " + endDate;
           if (callBack != null) callBack(new RateLoadingCallbackArgs<TBar>(msg, ticksNew));
@@ -737,11 +737,11 @@ namespace Order2GoAddIn {
     //  rates.RemoveRange(0, rates.Count() - periodsBack);
     //}
     readonly int maxTicks = 300;
-    TBar[] GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar:Rate {
+    IList<TBar> GetBarsBase_<TBar>(string pair, int period, DateTime startDate, DateTime endDate) where TBar:Rate {
       try {
         return period == 0 ?
-          GetTicks(pair,startDate, endDate).Cast<TBar>().ToArray() :
-          GetBarsFromHistory(pair, period, startDate, endDate).Cast<TBar>().ToArray();
+          GetTicks(pair,startDate, endDate).Cast<TBar>().ToList() :
+          GetBarsFromHistory(pair, period, startDate, endDate).Cast<TBar>().ToList();
       } catch (Exception exc) {
         var empty = (period == 0 ? new Tick[] { }.Cast<TBar>() : new TBar[] { }).ToArray();
         var e = new Exception("StartDate:" + startDate + ",EndDate:" + endDate + ":" + Environment.NewLine + "\t" + exc.Message, exc);
@@ -753,7 +753,7 @@ namespace Order2GoAddIn {
       }
     }
 
-    public Rate[] GetBarsFromHistory(string pair, int period, DateTime startDate) {
+    public IList<Rate> GetBarsFromHistory(string pair, int period, DateTime startDate) {
       return GetBarsFromHistory(pair, period, startDate, TradesManagerStatic.FX_DATE_NOW);
     }
     static object rateFromMarketRateLocker = new object();
@@ -772,7 +772,7 @@ namespace Order2GoAddIn {
     }
     double? _historyTimeAverage;
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public Rate[] GetBarsFromHistory(string pair, int period, DateTime startDate, DateTime endDate) {
+    public IList<Rate> GetBarsFromHistory(string pair, int period, DateTime startDate, DateTime endDate) {
       //lock (lockHistory) {
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
         if (startDate != TradesManagerStatic.FX_DATE_NOW) startDate = ConvertDateToUTC(startDate);
@@ -782,12 +782,12 @@ namespace Order2GoAddIn {
           var mr =
             //RunWithTimeout.WaitFor<FXCore.MarketRateAut[]>.Run(TimeSpan.FromMilliseconds(_historyTimeAverage.GetValueOrDefault(1000)*2), () =>
             ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, (BarsPeriodType)periodToRun + "", startDate, endDate, int.MaxValue, true, true))
-            .Cast<FXCore.MarketRateAut>().ToArray();
+            .Cast<FXCore.MarketRateAut>().ToList();
             //);
           var ms = (DateTime.Now - d).TotalMilliseconds;
-          _historyTimeAverage = Lib.CMA(_historyTimeAverage, 10, ms);
-          var ret = mr.Select((r) => RateFromMarketRate(pair, r)).OrderBars().ToArray();
-          return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToArray();
+          _historyTimeAverage = Lib.Cma(_historyTimeAverage, 10, ms);
+          var ret = mr.Select((r) => RateFromMarketRate(pair, r)).OrderBars().ToList();
+          return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToList();
         } catch (ThreadAbortException exc) {
           RaiseError(new Exception("Pair:" + pair + ",period:" + period + ",startDate:" + startDate, exc));
           return new Rate[0];
@@ -1336,13 +1336,15 @@ namespace Order2GoAddIn {
       return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).SingleOrDefault(o => o.Type.StartsWith("L"));
     }
     public Order[] GetNetOrders(Trade trade, bool getFromInternal = false) {
-      var pair = trade.Pair;
+      return GetNetOrders(trade.Pair, getFromInternal);
+    }
+    public Order[] GetNetOrders(string pair, bool getFromInternal = false) {
       var orders = GetOrders(pair, getFromInternal);
       return orders.Where(IsNetOrderFilter).ToArray();
-      if (IsFIFO(pair))
-        return orders.Where(IsNetOrderFilter).ToArray();
-      var orderIds = new[]{trade.LimitOrderID,trade.StopOrderID};
-      return orders.Where(o => orderIds.Contains(o.OrderID)).ToArray();
+      //if (IsFIFO(pair))
+      //  return orders.Where(IsNetOrderFilter).ToArray();
+      //var orderIds = new[]{trade.LimitOrderID,trade.StopOrderID};
+      //return orders.Where(o => orderIds.Contains(o.OrderID)).ToArray();
     }
     public Order[] GetEntryOrders(string Pair, bool getFromInternal = false) {
       return GetOrders(Pair, getFromInternal).Where(IsEntryOrderFilter).ToArray();
@@ -1866,8 +1868,15 @@ namespace Order2GoAddIn {
     }
     static private object globalOrderPending = new object();
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      return OpenTrade(pair, buy, lots, takeProfit, stopLoss, price == null ? 0 : buy ? price.Ask : price.Bid, remark);
+    }
+    public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss,double rate, string remark) {
       object orderId, DI;
-      Desk.OpenTrade2(AccountID, pair, buy, lots, 0, "", 0, Desk.SL_NONE, 0, 0, 0, out orderId, out DI);
+      try {
+        Desk.OpenTrade2(AccountID, pair, buy, lots, rate, "", 0, Desk.SL_NONE, 0, 0, 0, out orderId, out DI);
+      } catch (Exception exc) {
+        RaiseError(exc);
+      }
       return null;
       return FixOrderOpen(pair, buy, lots, takeProfit, stopLoss, remark);
     }

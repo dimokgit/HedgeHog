@@ -67,6 +67,13 @@ namespace HedgeHog.Bars {
 
     [DataMember]
     public int Volume { get; set; }
+
+    public double BidHighAskLowDiference { get { return BidHigh - AskLow; } }
+    private double _BidHighAskLowDifferenceMA = double.NaN;
+    public double BidHighAskLowDifferenceMA {
+      get { return _BidHighAskLowDifferenceMA; }
+      set { _BidHighAskLowDifferenceMA = value; }
+    }
     #endregion
 
     #region Spread
@@ -157,6 +164,7 @@ namespace HedgeHog.Bars {
     public double? PriceTsiCR { get; set; }
     [DataMember]
     public double[] PriceCMA { get; set; }
+    public double PriceCMALast { get { return PriceCMA == null ? double.NaN : PriceCMA.DefaultIfEmpty(double.NaN).Last(); } }
     [DataMember]
     public double PriceStdDev { get; set; }
     #endregion

@@ -39,6 +39,7 @@
       <xsd:import namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
       <xsd:import namespace="http://schemas.datacontract.org/2004/07/HedgeHog.Bars" />
       <xsd:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+      <xsd:import namespace="http://schemas.datacontract.org/2004/07/HedgeHog.Alice.Server" />
     </xsd:schema>
   </wsdl:types>
   <wsdl:message name="IPriceService_FillPrice_InputMessage">
@@ -47,20 +48,20 @@
   <wsdl:message name="IPriceService_FillPrice_OutputMessage">
     <wsdl:part name="parameters" element="tns:FillPriceResponse" />
   </wsdl:message>
-  <wsdl:message name="IPriceService_AddPair_InputMessage">
-    <wsdl:part name="parameters" element="tns:AddPair" />
+  <wsdl:message name="IPriceService_PriceStatistics_InputMessage">
+    <wsdl:part name="parameters" element="tns:PriceStatistics" />
   </wsdl:message>
-  <wsdl:message name="IPriceService_AddPair_OutputMessage">
-    <wsdl:part name="parameters" element="tns:AddPairResponse" />
+  <wsdl:message name="IPriceService_PriceStatistics_OutputMessage">
+    <wsdl:part name="parameters" element="tns:PriceStatisticsResponse" />
   </wsdl:message>
   <wsdl:portType name="IPriceService">
     <wsdl:operation name="FillPrice">
       <wsdl:input wsaw:Action="http://tempuri.org/IPriceService/FillPrice" message="tns:IPriceService_FillPrice_InputMessage" />
       <wsdl:output wsaw:Action="http://tempuri.org/IPriceService/FillPriceResponse" message="tns:IPriceService_FillPrice_OutputMessage" />
     </wsdl:operation>
-    <wsdl:operation name="AddPair">
-      <wsdl:input wsaw:Action="http://tempuri.org/IPriceService/AddPair" message="tns:IPriceService_AddPair_InputMessage" />
-      <wsdl:output wsaw:Action="http://tempuri.org/IPriceService/AddPairResponse" message="tns:IPriceService_AddPair_OutputMessage" />
+    <wsdl:operation name="PriceStatistics">
+      <wsdl:input wsaw:Action="http://tempuri.org/IPriceService/PriceStatistics" message="tns:IPriceService_PriceStatistics_InputMessage" />
+      <wsdl:output wsaw:Action="http://tempuri.org/IPriceService/PriceStatisticsResponse" message="tns:IPriceService_PriceStatistics_OutputMessage" />
     </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="NetTcpBinding_IPriceService" type="tns:IPriceService">
@@ -76,8 +77,8 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="AddPair">
-      <soap12:operation soapAction="http://tempuri.org/IPriceService/AddPair" style="document" />
+    <wsdl:operation name="PriceStatistics">
+      <soap12:operation soapAction="http://tempuri.org/IPriceService/PriceStatistics" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>

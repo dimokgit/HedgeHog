@@ -39,7 +39,7 @@ namespace HedgeHog.Alice.Client {
         CloseAllTradesEvent(this,EventArgs.Empty);
     }
 
-    private double _TakeProfit;
+    private double _TakeProfit = double.NaN;
     public double TakeProfit {
       get { return PipsToExit.GetValueOrDefault(_TakeProfit); }
       set {
@@ -106,12 +106,10 @@ namespace HedgeHog.Alice.Client {
         accountRow.StopAmount = account.StopAmount;
         accountRow.LimitAmount = account.LimitAmount;
         accountRow.TradingStatistics = tradingStatistics;
-        if (TradingStatistics != null 
-          && !double.IsNaN(TradingStatistics.TakeProfitDistanceInPips)
-          && accountRow.PL >= TradingStatistics.TakeProfitDistanceInPips) 
-        {
-          PipsToExit = null;
+        accountRow.TakeProfit = tradingStatistics.TakeProfitDistanceInPips;
+        if (accountRow.PL >= accountRow.TakeProfit) {
           RaiseCloseAllTrades();
+          PipsToExit = null;
         }
         if (DayTakeProfit.HasValue && account.DayPL >= DayTakeProfit) {
           RaiseCloseAllTrades();

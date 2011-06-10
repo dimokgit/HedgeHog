@@ -41,9 +41,11 @@
       <ListView.View>
         <GridView>
           <GridViewColumn Header="Pair" DisplayMemberBinding="{Binding Pair}" Width="Auto"/>
-          <GridViewColumn Header="Date" DisplayMemberBinding="{Binding LastDate}" Width="Auto"/>
+          <GridViewColumn Header="Date" DisplayMemberBinding="{Binding LastDate,StringFormat=HH:mm}" Width="Auto"/>
           <GridViewColumn Header="Count" DisplayMemberBinding="{Binding Count}" Width="Auto"/>
           <GridViewColumn Header="Pull#" DisplayMemberBinding="{Binding PullsCount}" Width="Auto"/>
+          <GridViewColumn Header="B/A(MA)" DisplayMemberBinding="{Binding BidHighToAskLowRatioMA,StringFormat=n1}" Width="Auto"/>
+          <GridViewColumn Header="B/A" DisplayMemberBinding="{Binding BidHighToAskLowRatio,StringFormat=n1}" Width="Auto"/>
         </GridView>
       </ListView.View>
     </ListView>

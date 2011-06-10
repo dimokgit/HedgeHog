@@ -373,7 +373,7 @@ namespace HedgeHog.Shared {
     #region ITradesManager Members
 
 
-    public Rate[] GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate) {
+    public IList<Rate> GetBarsFromHistory(string pair, int periodMinutes, DateTime dateTime, DateTime endDate) {
       throw new NotImplementedException();
     }
 
