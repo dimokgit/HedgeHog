@@ -630,7 +630,7 @@ namespace HedgeHog.Alice.Store {
         if (CurrentLoss != value) {
           CurrentLoss = value;
           OnPropertyChanged(TradingMacroMetadata.CurrentLoss_);
-          OnPropertyChanged(TradingMacroMetadata.CurrentGross);
+          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => OnPropertyChanged(TradingMacroMetadata.CurrentGross));
         }
       }
     }

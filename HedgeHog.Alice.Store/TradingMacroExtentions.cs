@@ -2682,6 +2682,7 @@ namespace HedgeHog.Alice.Store {
     public void SetLotSize(Account account=null) {
       if (TradesManager == null) return;
       if (account == null) account = TradesManager.GetAccount();
+      if (account == null) return;
       Trade[] trades = Trades;
       LotSize = TradingRatio <= 0 ? 0 : TradingRatio >= 1 ? (TradingRatio * 1000).ToInt()
         : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, TradesManager.MinimumQuantity);
