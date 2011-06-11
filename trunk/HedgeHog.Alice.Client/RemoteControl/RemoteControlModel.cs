@@ -22,6 +22,8 @@ using HedgeHog.Shared;
 using Order2GoAddIn;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reflection;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -513,6 +515,7 @@ namespace HedgeHog.Alice.Client {
       _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.CurrentGross = tms.Sum(tm => tm.CurrentGross);
       _tradingStatistics.CurrentGrossAverage = tms.Select(tm => tm.CurrentGross).DefaultIfEmpty().Average();
+      OnRunCorrelations("");
     }
     private void InitializeModel() {
       GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
@@ -716,6 +719,8 @@ namespace HedgeHog.Alice.Client {
         }
         UpdateTradingStatistics();
         CheckTrades(e.Trades.ByPair(price.Pair));
+
+        OnRunCorrelations("");
       } catch (Exception exc) {
         Log = exc;
       }
@@ -740,6 +745,7 @@ namespace HedgeHog.Alice.Client {
     }
     void ShowChart(TradingMacro tm) {
       try {
+        OnRunCorrelations("");
         Rate[] rates = tm.RatesArraySafe.ToArray();//.RatesCopy();
         string pair = tm.Pair;
         var charter = GetCharter(tm);
@@ -1143,14 +1149,78 @@ namespace HedgeHog.Alice.Client {
     #region Rate Loading
     Dictionary<string, double> Correlations = new Dictionary<string, double>();
 
+    public class PairCorrelation {
+      public string Pair1 { get; set; }
+      public string Pair2 { get; set; }
+      public double Correlation { get; set; }
+      public PairCorrelation(string pair1,string pair2,double correlation) {
+        this.Pair1 = pair1;
+        this.Pair2 = pair2;
+        this.Correlation = correlation;
+      }
+      public override string ToString() {
+        return Pair1 + "," + Pair2 + "," + Correlation;
+      }
+    }
+
+    #region RunCorrelations Subject
+    object _RunCorrelationsSubjectLocker = new object();
+    ISubject<string> _RunCorrelationsSubject;
+    ISubject<string> RunCorrelationsSubject {
+      get {
+        lock (_RunCorrelationsSubjectLocker)
+          if (_RunCorrelationsSubject == null) {
+            _RunCorrelationsSubject = new Subject<string>();
+            _RunCorrelationsSubject
+              .Buffer(1.FromSeconds())
+              .Select(g => g.First())
+              .Subscribe(s => RunCorrelations(), exc => Log = exc);
+          }
+        return _RunCorrelationsSubject;
+      }
+    }
+    void OnRunCorrelations(string p) {
+      RunCorrelationsSubject.OnNext(p);
+    }
+    #endregion
+
+    List<PairCorrelation> _CorrelationsByPair = new List<PairCorrelation>();
+    public List<PairCorrelation> CorrelationsByPair {
+      get { return _CorrelationsByPair; }
+      set { _CorrelationsByPair = value; }
+    }
+
     void RunCorrelations() {
+      Stopwatch sw = Stopwatch.StartNew();
       var currencies = new List<string>();
       foreach (var tm in TradingMacrosCopy.Where(t => t.LotSize > 0))
         currencies.AddRange(tm.Pair.Split('/'));
       currencies = currencies.Distinct().ToList();
+      CorrelationsByPair.Clear();
       foreach (var currency in currencies)
-        Correlations[currency] = RunCorrelation(currency);
+        CorrelationsByPair.AddRange(RunPairCorrelation(currency));
+        //Correlations[currency] = RunCorrelation(currency);
+      Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
     }
+
+    private ICollection<PairCorrelation> RunPairCorrelation(string currency) {
+      Func<string, double[]> getRatesForCorrelation = pair =>
+        GetRatesForCorridor(GetTradingMacros(pair).First()).Select(r => r.PriceAvg).ToArray();
+      var correlations = new List<PairCorrelation>();
+      var pairs = TradingMacrosCopy.Where(tm => tm.LotSize > 0 && tm.Pair.Contains(currency)).Select(tm => tm.Pair).ToArray();
+      if (pairs.Any())
+        foreach (var pair in pairs) {
+          var price1 = getRatesForCorrelation(pair);
+          foreach (var pc in pairs.Where(p => p != pair)) {
+            var price2 = getRatesForCorrelation(pc);
+            var correlation = alglib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs();
+            correlations.Add(new PairCorrelation(pair, pc, correlation));
+          }
+        }
+      return correlations;
+    }
+
+
 
     private double RunCorrelation(string currency) {
       Func<string, double[]> getRatesForCorrelation = pair =>
