@@ -65,10 +65,8 @@
     <Compile Include="CharterControl.xaml.cs">
       <DependentUpon>CharterControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Classes.cs" />
     <Compile Include="ColoredSegment.cs" />
-    <Compile Include="Corridors.xaml.cs">
-      <DependentUpon>Corridors.xaml</DependentUpon>
-    </Compile>
     <Compile Include="CS_4_0.cs">
       <DependentUpon>CS_4_0.tt</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -155,12 +153,6 @@
     <Page Include="CharterControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Corridors.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
     </Page>
     <Page Include="CursorH.xaml">
       <SubType>Designer</SubType>

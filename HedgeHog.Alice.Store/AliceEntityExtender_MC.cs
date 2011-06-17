@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
   public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4 }
+  public enum MovingAverageType { Cma = 0, Trima = 1 }
   public partial class AliceEntities {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public override int SaveChanges(System.Data.Objects.SaveOptions options) {
@@ -17,7 +18,7 @@ namespace HedgeHog.Alice.Store {
         try {
           return base.SaveChanges(options);
         } catch (Exception exc) {
-          //Debug.Fail(exc + "");
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
           return 0;
         }
     }

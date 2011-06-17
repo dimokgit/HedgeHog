@@ -460,7 +460,8 @@ namespace HedgeHog.Bars {
       return rates.Max(priceHigh) - rates.Min(priceLow);
     }
     public static double Height(this ICollection<Rate> rates) {
-      var rs = rates.Select(r => r.PriceAvg).OrderBy(d => d).ToList();
+      var rs = rates.Select(r => r.PriceAvg).ToList();
+      rs.Sort();
       return rs.Last() - rs.First();
     }
     public static double Density(this ICollection<Rate> rates) {
@@ -1104,30 +1105,42 @@ namespace HedgeHog.Bars {
       double? cma2 = null;
       double? cma3 = null;
       foreach (var bar in bars) {
-        bar.PriceCMA = new double[3];
-        bar.PriceCMA[2] = (cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, cmaSource(bar))).Value)).Value)).Value;
-        bar.PriceCMA[1] = cma2.Value;
-        bar.PriceCMA[0] = cma1.Value;
+        bar.PriceCMA = new List<double>(3);
+        cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, cmaSource(bar))).Value)).Value);
+        bar.PriceCMA.Add(cma1.Value);
+        bar.PriceCMA.Add(cma2.Value);
+        bar.PriceCMA.Add(cma3.Value);
       }
     }
     public static void SetCMA<TBars>(this ICollection<TBars> ticks, int cmaPeriod
       , double? cma1 = null, double? cma2 = null, double? cma3 = null) where TBars : BarBase {
       foreach (var t in ticks) {
-        t.PriceCMA = new double[3];
-        t.PriceCMA[2] = (cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, t.PriceAvg)).Value)).Value)).Value;
-        t.PriceCMA[1] = cma2.Value;
-        t.PriceCMA[0] = cma1.Value;
+        t.PriceCMA = new List<double>(3);
+        cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, t.PriceAvg)).Value)).Value);
+        t.PriceCMA.Add(cma1.Value);
+        t.PriceCMA.Add(cma2.Value);
+        t.PriceCMA.Add(cma3.Value);
       }
     }
-    public static void SetCma<TBars>(this ICollection<TBars> ticks, int cmaPeriod
-      , double cma1 = double.NaN, double cma2 = double.NaN, double cma3 = double.NaN) where TBars : BarBase {
+    public static void SetCma<TBars>(this ICollection<TBars> ticks, double cmaPeriod, int cmaLevels = 3) where TBars : BarBase {
+      var cmas = new List<double>(cmaLevels);
+      for (var i = 0; i < cmaLevels; i++)
+        cmas.Add(double.NaN);
       foreach (var t in ticks) {
-        if (t.PriceCMA == null || t.PriceCMA.Length != 3)
-        t.PriceCMA = new double[3];
-        t.PriceCMA[2] = cma3 = cma3.Cma(cmaPeriod, (cma2 = cma2.Cma(cmaPeriod, (cma1 = cma1.Cma(cmaPeriod, t.PriceAvg)))));
-        t.PriceCMA[1] = cma2;
-        t.PriceCMA[0] = cma1;
+        if (t.PriceCMA != null) t.PriceCMA.Clear();
+        else  t.PriceCMA = new List<double>(cmaLevels);
+        t.PriceCMA.Add(cmas[0] = cmas[0].Cma(cmaPeriod, t.PriceAvg));
+        for (var i = 1; i < cmaLevels; i++) {
+          t.PriceCMA.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
+        }
       }
+    }
+    public static void SetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
+      int outBegIdx, outNBElement;
+      var outTrima = ticks.Select(t => t.PriceAvg).ToArray().Trima(period, out outBegIdx, out outNBElement);
+      var up = ticks.Count;
+      for (; outBegIdx < up; outBegIdx++)
+        ticks[outBegIdx].PriceTrima = outTrima[outBegIdx + 1 - period];
     }
     public static DataPoint[] GetCurve(IEnumerable<BarBase> ticks, int cmaPeriod) {
       double? cma1 = null;

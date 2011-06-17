@@ -22,12 +22,19 @@
       <Setter Property="VerticalAlignment" Value="Top"/>
       <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
+    <DataTemplate x:Key="SmallButtonTemplate">
+      <TextBlock Text="{Binding}" Margin="0,-4" Padding="0"></TextBlock>
+    </DataTemplate>
     <DataTemplate x:Key="DeleteAccountCellTemplate">
       <StackPanel Orientation="Horizontal">
         <Button Content="X" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Top" HorizontalAlignment="Left"
-            Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"/>
+                Command="{Binding DataContext.DeleteTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                ContentTemplate="{StaticResource SmallButtonTemplate}"
+                />
         <Button Content="C" CommandParameter="{Binding BindsDirectlyToSource=True}" 
-            Command="{Binding DataContext.CopyTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"/>
+                Command="{Binding DataContext.CopyTradingMacroCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                ContentTemplate="{StaticResource SmallButtonTemplate}"
+                />
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="InstrumentTemplate">
@@ -82,7 +89,7 @@
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}"
+              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0"
                          FontWeight="{Binding IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -91,7 +98,7 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}"
+              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0"
                          FontWeight="{Binding IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -126,11 +133,11 @@
           <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
           <TextBlock Text="{Binding PipsPerPosition,StringFormat=[{0:n0}}" ToolTip="Pips Per Position"/>
           <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}K],Converter={x:Static lib:PerMilleConverter.Default}}" ToolTip="Total Lot"/>
-          <LineBreak/>
+          <!--<LineBreak/>
           <TextBlock Text="{Binding Profitability,StringFormat={}{0:c0}}" ToolTip="Profitability Per Month"/>
           <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
           <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
-          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />
+          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />-->
         </TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
@@ -141,11 +148,9 @@
             <TextBlock Text="{Binding CurrentGrossInPips,StringFormat=[{0:n0}]}" ToolTip="Current Gross In Pips"  />
             <!--<TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}" ToolTip="Current Loss Percent" />-->
           </TextBlock>
-          <LineBreak/>
-          <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
-            Text="{Binding RunningBalance,StringFormat=c2}" ToolTip="Running Balance"  />
           <!--<LineBreak/>
-          <TextBlock Text="{Binding StrategyScoresText}" />-->
+          <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
+            Text="{Binding RunningBalance,StringFormat=c2}" ToolTip="Running Balance"  />-->
         </TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="LossEditCellTemplate">
@@ -159,7 +164,8 @@
     </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
       <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
-            Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+              Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
+              ContentTemplate="{StaticResource SmallButtonTemplate}"/>
     </DataTemplate>
     <DataTemplate x:Key="ReverseCellTemplate">
       <Button Content="Reverse" CommandParameter="{Binding BindsDirectlyToSource=True}" 
@@ -275,6 +281,9 @@
                         CorridorCrossesCount :<TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/>
                       </TextBlock>
                       <TextBlock>
+                        SpreadForTrade :<TextBlock Text="{Binding SpreadForTradeInPips,StringFormat=n1}"/>
+                      </TextBlock>
+                      <TextBlock>
                         RateStDev[<TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}"/>]
                         /CorridorHeight0[<TextBlock Text="{Binding CorridorStats.HeightUpDown0InPips,StringFormat=n1}"/>]
                         :<TextBlock Text="{Binding StDevToCorridorHeight0Real,StringFormat=n1}"/>
@@ -296,17 +305,13 @@
                     </StackPanel>
                   </TextBlock.ToolTip>
                 </TextBlock>
-                <LineBreak/>
+                <!--<LineBreak/>
                 <TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}" ToolTip="Spread For Corridor"/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long" Margin="-3,0,0,0"/>
-                <TextBlock Text="{Binding VolumeShort,StringFormat=[{0:n0}}" ToolTip="Volume Short"/>
-                <TextBlock Margin="-3">/</TextBlock>
-                <TextBlock Text="{Binding VolumeLong,StringFormat=n0}" ToolTip="Volume Long"/>
-                <TextBlock Margin="-3">=</TextBlock>
-                <TextBlock Text="{Binding VolumeShortToLongRatio,StringFormat={}{0:n1}]}" ToolTip="Volume Short/Long"/>
+                <TextBlock Text="{Binding PriceCmaPeriodByStDevRatio,StringFormat=n1}" ToolTip="Price Cma Period By StDev Ratio"/>-->
               </TextBlock>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">
@@ -342,7 +347,7 @@
         <DataGridTemplateColumn>
           <DataGridTemplateColumn.HeaderTemplate>
             <DataTemplate>
-              <ComboBox SelectedValue="{Binding Strategy,Mode=TwoWay}" ItemsSource="{Binding Source={StaticResource StrategyValues}}">
+              <ComboBox SelectedValue="{Binding Strategy,Mode=TwoWay}" Text="" ItemsSource="{Binding Source={StaticResource StrategyValues}}">
                 <i:Interaction.Triggers>
                   <i:EventTrigger EventName="SelectionChanged">
             <galaCmd:EventToCommand 
@@ -368,18 +373,18 @@
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
         <DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>
-        <DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />
+        <!--<DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />-->
         <DataGridTemplateColumn Header="RateTime">
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
-              <StackPanel>
+              <StackPanel VerticalAlignment="Center">
                 <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}"
                          Background="{Binding HasCorridor,Converter={StaticResource BoolToColorConverter},ConverterParameter=White|Pink|White}" >
               
               <TextBlock Text="{Binding RatesInternal.Count}"/>
                 <TextBlock Text="{Binding LimitBar,StringFormat=[{0}]}"/>
               <TextBlock Text="{Binding LastRatePullTime,StringFormat=HH:mm}"/>
-                <LineBreak/>
+                <TextBlock>|</TextBlock>
               <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:dd HH:mm}}"/>
               </TextBlock>
               </StackPanel>

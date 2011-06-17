@@ -24,6 +24,7 @@ using Gala = GalaSoft.MvvmLight.Command;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reflection;
+using HedgeHog.Charter;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -247,7 +248,8 @@ namespace HedgeHog.Alice.Client {
         tm.DoAdjustTimeframeByAllowedLot,tm.IsColdOnTrades,tm.CorridorCrossesCountMinimum,tm.StDevToSpreadRatio,
         loadRatesSecondsWarning:tm.LoadRatesSecondsWarning, corridorHighLowMethodInt: tm.CorridorHighLowMethodInt,
         corridorStDevRatioMax:tm.CorridorStDevRatioMax,
-        corridorLengthMinimum:tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt:tm.CorridorCrossHighLowMethodInt);
+        corridorLengthMinimum:tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt:tm.CorridorCrossHighLowMethodInt,
+        priceCmaLevels:tm.PriceCmaLevels);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -514,8 +516,8 @@ namespace HedgeHog.Alice.Client {
       _tradingStatistics.RatesStDevToRatesHeightRatioL = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
       _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.CurrentGross = tms.Sum(tm => tm.CurrentGross);
-      _tradingStatistics.CurrentGrossAverage = tms.Select(tm => tm.CurrentGross).DefaultIfEmpty().Average();
-      OnRunCorrelations("");
+      var grossAvgMin = tms.Select(tm => tm.CurrentGross).Where(cg => cg < 0).ToList().AverageByIterations(2, true).Average();
+      _tradingStatistics.CurrentGrossAverage = tms.Select(tm => tm.CurrentGross).Where(cg => cg >= grossAvgMin).DefaultIfEmpty().Average();
     }
     private void InitializeModel() {
       GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
@@ -719,8 +721,6 @@ namespace HedgeHog.Alice.Client {
         }
         UpdateTradingStatistics();
         CheckTrades(e.Trades.ByPair(price.Pair));
-
-        OnRunCorrelations("");
       } catch (Exception exc) {
         Log = exc;
       }
@@ -745,7 +745,6 @@ namespace HedgeHog.Alice.Client {
     }
     void ShowChart(TradingMacro tm) {
       try {
-        OnRunCorrelations("");
         Rate[] rates = tm.RatesArraySafe.ToArray();//.RatesCopy();
         string pair = tm.Pair;
         var charter = GetCharter(tm);
@@ -791,6 +790,8 @@ namespace HedgeHog.Alice.Client {
           charter.Density = tm.DensityInPips;
           charter.DensityCorridor = tm.CorridorDensityInPips;
           charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
+          charter.GetPriceMA = tm.GetPriceMA();
+          charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : "White";
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             0, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
@@ -1055,7 +1056,7 @@ namespace HedgeHog.Alice.Client {
 
 
 
-    void AdjustCurrentLosses(TradingMacro tradingMacro) {
+    void AdjustCurrentLosses_(TradingMacro tradingMacro) {
       var tmGroup = GetTradingMacrosByGroup(tradingMacro);
       double profit = tmGroup.Where(tm => tm.CurrentLoss > 0).Sum(tm => tm.CurrentLoss);
       foreach (var tm in tmGroup.Where(t => t.CurrentLoss < 0).OrderBy(t => t.CurrentLoss)) {
@@ -1067,7 +1068,17 @@ namespace HedgeHog.Alice.Client {
         .ForEach(tm => tm.CurrentLoss = 0);
       MasterModel.CurrentLoss = Math.Min(0, CurrentLoss);
     }
-
+    void AdjustCurrentLosses(TradingMacro tradingMacro) {
+      if (tradingMacro.CurrentLoss <= 0) return;
+      var tmWithLoss = GetTradingMacrosByGroup(tradingMacro).Where(tm=>tm.CurrentLoss<0).ToList();
+      var lossSum = tmWithLoss.Sum(tm => tm.CurrentLoss).Abs();
+      var profit = tradingMacro.CurrentLoss.Min(lossSum.Abs());
+      tradingMacro.CurrentLoss -= profit;
+      var tmByLoss = tmWithLoss
+        .Select(tm => new { tm, lossRatio = tm.CurrentLoss / lossSum, profit = profit * tm.CurrentLoss.Abs() / lossSum })
+        .ToList();
+      tmByLoss.ForEach(tm => tm.tm.CurrentLoss += tm.profit);
+    }
     void fw_TradeClosed(object sender, TradeEventArgs e) {
       var trade = e.Trade;
       try {
@@ -1179,6 +1190,17 @@ namespace HedgeHog.Alice.Client {
         return _RunCorrelationsSubject;
       }
     }
+
+    System.Threading.Tasks.Dataflow.BroadcastBlock<string> _runCorrelationBlock;
+
+    public System.Threading.Tasks.Dataflow.BroadcastBlock<string> RunCorrelationBlock {
+      get {
+        if (_runCorrelationBlock == null)
+          _runCorrelationBlock = new System.Threading.Tasks.Dataflow.BroadcastBlock<string>(s => { RunCorrelations(); return s; });
+        return _runCorrelationBlock;
+      }
+    }
+
     void OnRunCorrelations(string p) {
       RunCorrelationsSubject.OnNext(p);
     }

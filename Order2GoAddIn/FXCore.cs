@@ -239,19 +239,21 @@ namespace Order2GoAddIn {
         Logout();
         try {
           Desk.SetTimeout(Desk.TIMEOUT_PRICEHISTORY, 30000);
-          Desk.SetTimeout(Desk.TIMEOUT_COMMON, 60*1000);
+          Desk.SetTimeout(Desk.TIMEOUT_COMMON, 60 * 1000);
           Desk.SetRowsFilterType(Desk.ROWSFILTER_EXTENDED);
           Desk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
           InitTimer();
+          RaiseLoggedIn();
+          return true;
         } catch (Exception e) {
           RaiseLoginError(e);
           return false;
+        } finally {
+          _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
+            if (!IsLoggedIn)
+              LogOn();
+          });
         }
-        RaiseLoggedIn();
-        _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
-          if (!IsLoggedIn)
-            LogOn();
-        });
       }
       return true;
     }

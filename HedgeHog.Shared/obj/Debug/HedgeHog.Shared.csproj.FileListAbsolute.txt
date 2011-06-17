@@ -10,3 +10,4 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\HedgeHog.DB.pd
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.pdb
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\GalaSoft.MvvmLight.WPF4.xml
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Shared\bin\Debug\TA-Lib-Core.dll

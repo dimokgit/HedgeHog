@@ -262,6 +262,19 @@ namespace HedgeHog {
       }
     }
 
+    #region PlotterColor
+    private string _PlotterColor;
+    public string PlotterColor {
+      get { return _PlotterColor ?? "#FFF7F3F7"; }
+      set {
+        if (_PlotterColor != value) {
+          _PlotterColor = value;
+          RaisePropertyChangedCore();
+        }
+      }
+    }
+
+    #endregion
     public double SuppResMinimumDistance { get; set; }
 
     List<DateTime> animatedTimeX = new List<DateTime>();
@@ -598,10 +611,6 @@ namespace HedgeHog {
 
     #region DataSources
     EnumerableDataSource<Point> ds = null;
-    EnumerableDataSource<ChartTick> dsAvg1 = null;
-    EnumerableDataSource<ChartTick> dsAvg2 = null;
-    EnumerableDataSource<ChartTick> dsAvg3 = null;
-    EnumerableDataSource<ChartTick> dsVolts = null;
     EnumerableDataSource<Volt> dsVoltsPoly = null;
     #endregion
 
@@ -990,42 +999,6 @@ namespace HedgeHog {
     #endregion
 
     #region Update Ticks
-    void UpdateTicks(ObservableCollection<ChartTick> dest, List<ChartTick> src) {
-      var srcDict = new Dictionary<DateTime, ChartTick>();
-      src.ForEach(s => srcDict.Add(s.Time, s));
-      dest.ToList().ForEach(d => {
-        if (srcDict.ContainsKey(d.Time)) d.Price = srcDict[d.Time].Price;
-      });
-      if (((double)dest.Count / src.Count).Between(0.5, 1.5)) {
-        //var ddd = dest.Except(src,new Tick()).ToArray();
-        var delete = dest.Except(src, new ChartTick()).ToList();
-        //(from d in dest
-        // join s in src on d.Time equals s.Time into grp
-        // from g in grp.DefaultIfEmpty()
-        // where g == null
-        // select d).ToArray();
-        delete.ForEach(d => dest.Remove(d));
-        if (dest.Count > 0) {
-          var time = dest.Max(t => t.Time).AddMinutes(-1);
-          dest.Where(t => t.Time > time).ToList().ForEach(t => dest.Remove(t));
-        }
-        //var ddd = src.Intersect(dest,new Tick()).ToArray();
-        delete = src.Intersect(dest, new ChartTick()).ToList();
-        //(from s in src
-        //        join d in dest on s.Time equals d.Time
-        //        select s).ToList();
-        delete.ForEach(d => src.Remove(d));
-        if (dest.Count > 0) {
-          var time = dest.Min(t => t.Time);
-          src.Where(t => t.Time < time).OrderByDescending(t => t.Time).ToList().ForEach(s => dest.Insert(0, s));
-          time = dest.Max(t => t.Time);
-          src.Where(t => t.Time > time).OrderBy(t => t.Time).ToList().ForEach(s => dest.Add(s));
-        } else dest.AddMany(src);
-      } else {
-        dest.Clear();
-        dest.AddMany(src.OrderBy(t => t.Time));
-      }
-    }
     #endregion
 
     bool inRendering;
@@ -1042,7 +1015,6 @@ namespace HedgeHog {
       if (inRendering) return;
       var voltsByTick = voltsByTicks[0];
       #region Conversion Functions
-      var rateToTick = new Func<Rate, ChartTick>(t => new ChartTick() { Price = t.PriceAvg, Time = t.StartDateContinuous });
       var roundTo = lastPrice.Digits - 1;
       var rateToPoint = new Func<Rate, Point>(t =>
         new Point(dateAxis.ConvertToDouble(t.StartDateContinuous), t.PriceAvg.Round(roundTo)));
@@ -1080,10 +1052,10 @@ namespace HedgeHog {
           {
             var i = 0;
             var lastRate = ticks.Aggregate((rp, rn) => {
-              SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, rp.PriceCMA, rp);
+              SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
               return rn;
             });
-            SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), lastRate.PriceCMA, lastRate);
+            SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), lastRate);
           }
           for (var i = 100000; i < ticks.Count(); i++) {
             animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
@@ -1203,10 +1175,10 @@ namespace HedgeHog {
         }), DispatcherPriority.ContextIdle);
     }
 
-    private void SetPoint(int i, double high, double low, double[] cma, Rate rateLast) {
+    private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
       animatedPriceY[i] = high;
       animatedPriceBidY[i] = low;
-      animatedPrice1Y[i] = cma == null ? (high + low) / 2 : cma[2];
+      animatedPrice1Y[i] = double.IsNaN(ma) ? (high + low) / 2 : ma;
       animatedTimeX[i] = rateLast.StartDateContinuous;
       animatedTime0X[i] = rateLast.StartDate;
     }
@@ -1291,5 +1263,7 @@ namespace HedgeHog {
     public int SelectedGannAngleIndex { get; set; }
 
 
+
+    public Func<Rate, double> GetPriceMA { get; set; }
   }
 }
