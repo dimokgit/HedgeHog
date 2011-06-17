@@ -163,8 +163,15 @@ namespace HedgeHog.Bars {
     [DataMember]
     public double? PriceTsiCR { get; set; }
     [DataMember]
-    public double[] PriceCMA { get; set; }
+    public List<double> PriceCMA { get; set; }
     public double PriceCMALast { get { return PriceCMA == null ? double.NaN : PriceCMA.DefaultIfEmpty(double.NaN).Last(); } }
+
+    double _PriceTrima = double.NaN;
+    [DataMember]
+    public double PriceTrima {
+      get { return _PriceTrima; }
+      set { _PriceTrima = value; }
+    }
     [DataMember]
     public double PriceStdDev { get; set; }
     #endregion

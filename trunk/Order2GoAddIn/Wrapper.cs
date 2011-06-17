@@ -1330,10 +1330,10 @@ namespace Order2GoAddIn {
     }
     Func<Order, string> _ordersOrderBy = o => o.OrderID;
     public Order GetNetStopOrder(Trade trade, bool getFromInternal = false) {
-      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).SingleOrDefault(o => o.Type.StartsWith("S"));
+      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).LastOrDefault(o => o.Type.StartsWith("S"));
     }
     public Order GetNetLimitOrder(Trade trade, bool getFromInternal = false) {
-      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).SingleOrDefault(o => o.Type.StartsWith("L"));
+      return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).LastOrDefault(o => o.Type.StartsWith("L"));
     }
     public Order[] GetNetOrders(Trade trade, bool getFromInternal = false) {
       return GetNetOrders(trade.Pair, getFromInternal);

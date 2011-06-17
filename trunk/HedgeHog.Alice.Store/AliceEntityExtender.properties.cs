@@ -137,6 +137,36 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region PriceCmaLevels
+    [DisplayName("Price Cma Levels")]
+    [Category(categoryXXX)]
+    public int PriceCmaLevels_ {
+      get { return PriceCmaLevels; }
+      set {
+        if (PriceCmaLevels != value) {
+          PriceCmaLevels = value;
+          OnPropertyChanged(TradingMacroMetadata.PriceCmaLevels_);
+        }
+      }
+    }
+
+    #endregion
+    #region MovingAverageType
+    int _movingAverageTypeDefault = 0;
+    [DisplayName("Moving Average Type")]
+    [Category(categoryXXX)]
+    public MovingAverageType MovingAverageType {
+      get { return (MovingAverageType)MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault); }
+      set {
+        if (_MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault) != (int)value) {
+          MovingAverageTypeInt = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.MovingAverageType);
+        }
+      }
+    }
+
+    #endregion
+
     #region ForceOpenTrade
     private bool? _ForceOpenTrade;
     [DisplayName("Force Open Trade")]
@@ -146,12 +176,14 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_ForceOpenTrade != value) {
           _ForceOpenTrade = value;
-          OnPropertyChanged("ForceOpenTrade");
+          OnPropertyChanged(TradingMacroMetadata.ForceOpenTrade);
         }
       }
     }
 
     #endregion
+
+
 
     #region CorridorCrossHighLowMethod
     [DisplayName("High/Low(Cross)Method")]

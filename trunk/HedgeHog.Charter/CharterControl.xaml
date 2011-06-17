@@ -70,7 +70,7 @@
       <u:CheckBox2 IsChecked2="{Binding DoShowFibLines,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Content="Fib" ToolTip="Show Fibonacci"/>
       <u:CheckBox2 IsChecked2="{Binding DoShowCenterOfMass,Mode=TwoWay}" IsChecked="{state:UserSettings Default=false}" Content="CoM" ToolTip="Show Center Of Mass"/>
     </WrapPanel>
-    <d3:ChartPlotter Name="plotter" Grid.Row="1" Background="#FFF7F3F7">
+    <d3:ChartPlotter Name="plotter" Grid.Row="1" Background="{Binding PlotterColor}">
       <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="True" IsDefaultAxis="True" ShowMinorTicks="True" Visibility="Visible" />
       <d3:InjectedPlotter Name="innerPlotter" Background="Aqua">
         <d3:VerticalAxis Placement="Right"/>

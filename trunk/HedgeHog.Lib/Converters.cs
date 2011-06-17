@@ -154,6 +154,8 @@ namespace HedgeHog {
 
   [ValueConversion(typeof(bool?), typeof(Color))]
   public class BoolToColorConverter : IValueConverter {
+    private static readonly BoolToColorConverter defaultInstance = new BoolToColorConverter();
+    public static BoolToColorConverter Default { get { return defaultInstance; } }
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
       var colors = (parameter + "").Split('|');//.Select(r => (Colors)Enum.Parse(typeof(Colors), r, true)).ToArray();
       var color = value == null ? colors[0] : (bool)value ? colors[2] : colors[1];

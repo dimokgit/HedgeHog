@@ -15,6 +15,8 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Collections.Specialized;
 using System.Concurrency;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -292,6 +294,8 @@ namespace Manheim.ViewModel {
         }
         if (addPresSale) {
           WC.IE vehicleInfoIE = OpenVehicleInfoWindow(tds);
+          //VehicleInfoWindowBlock.Post(tds);
+          //WC.IE vehicleInfoIE = VehicleInfoWindowBlock.Receive();
           if (vehicleInfoIE == null) return;
           var rightContent = vehicleInfoIE.Div("rightContent");
 
@@ -356,8 +360,19 @@ namespace Manheim.ViewModel {
       });
     }
 
-    private WC.IE OpenVehicleInfoWindow(WC.TableCellCollection tds) {
-      return Application.Current.Dispatcher.Invoke(new Func<WC.IE>(() => {
+    TransformBlock<WC.TableCellCollection, WC.IE> _vehicleInfoWindowBlock;
+    public TransformBlock<WC.TableCellCollection, WC.IE> VehicleInfoWindowBlock {
+      get {
+        if (_vehicleInfoWindowBlock == null) {
+          //var options = new ExecutionDataflowBlockOptions() { TaskScheduler = TaskScheduler.FromCurrentSynchronizationContext() };
+          _vehicleInfoWindowBlock = new TransformBlock<WC.TableCellCollection, WC.IE>(tds => OpenVehicleInfoWindow(tds));
+        }
+        return _vehicleInfoWindowBlock; 
+      }
+    }
+
+    private WC.IE OpenVehicleInfoWindow(WC.TableCellCollection tdsInput) {
+      Func<WC.TableCellCollection, WC.IE> f = (tds) => {
         var link = tds[2].Links.First();
         var target = link.GetAttributeValue("target");
         link.SetAttributeValue("target", _vehicleInfoTargetName);
@@ -381,7 +396,12 @@ namespace Manheim.ViewModel {
           Log = new Exception("VehicleInfo window not found.");
         }
         return vehicleInfoIE;
-      })) as WC.IE;
+      };
+      if (Application.Current.Dispatcher.CheckAccess())
+        return f(tdsInput);
+      var d = Application.Current.Dispatcher.BeginInvoke(f,tdsInput);
+      d.Wait(TimeSpan.FromSeconds(30));
+      return d.Result as WC.IE;
     }
 
     private static Model.Vehicle SetVehicle(WC.Table table) {

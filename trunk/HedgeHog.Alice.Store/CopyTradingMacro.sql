@@ -1,5 +1,5 @@
 ﻿INSERT INTO TradingMacro
-SELECT     Pair,
+SELECT     "NZD/CAD",
 TradingRatio,
 NewId(),
 LimitBar,
@@ -75,4 +75,4 @@ CorridorStDevRatioMax,
 CorridorLengthMinimum,
 CorridorCrossHighLowMethodInt
 FROM         TradingMacro
-WHERE     (TradingMacroName = N'RM 03')AND IsActive = 1
+WHERE     (TradingMacroName = N'RM 05')AND IsActive = 1 AND Pair="GBP/AUD"

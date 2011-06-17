@@ -77,14 +77,14 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURGBP_1.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURGBP_1.10]IsChecked" value="True" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURGBP_1.11]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="-1" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="-1" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="889" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1203" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="1" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="4" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="834" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1150" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.MasterPanel]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="2" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.TradingAccount]SelectedIndex" value="5" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVT]IsChecked" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualDateStart]Text" value="1/1/2000" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.VitrualMonthsToTest]Text" value="0" />
@@ -100,4 +100,8 @@
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.TextBox2[.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.10]IsChecked" value="True" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.11]IsChecked" value="False" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="NaN" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="NaN" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="1401" />
+  <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Width" value="900" />
 </dictionary>

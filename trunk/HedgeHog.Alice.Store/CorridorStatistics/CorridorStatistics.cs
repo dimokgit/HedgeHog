@@ -360,7 +360,12 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public Rate[] Rates { get; set; }
+    Rate[] _Rates = new Rate[0];
+
+    public Rate[] Rates {
+      get { return _Rates; }
+      set { _Rates = value; }
+    }
 
     private double _Spread;
     private double _pipSize;
