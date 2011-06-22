@@ -137,6 +137,18 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    [DisplayName("Calc Method")]
+    [Category(categoryCorridor)]
+    public CorridorCalculationMethod CorridorCalcMethod {
+      get { return (CorridorCalculationMethod)this.CorridorMethod; }
+      set {
+        if (this.CorridorMethod != (int)value) {
+          this.CorridorMethod = (int)value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorCalcMethod);
+        }
+      }
+    }
+
     #region PriceCmaLevels
     [DisplayName("Price Cma Levels")]
     [Category(categoryXXX)]

@@ -13,7 +13,7 @@ namespace HedgeHog.Alice.Store {
   public class TradingStatistics : INotifyPropertyChanged{
 
     #region CurrentGrossAverage
-    private double _CurrentGrossAverage;
+    private double _CurrentGrossAverage = double.NaN;
     public double CurrentGrossAverage {
       get { return _CurrentGrossAverage; }
       set {

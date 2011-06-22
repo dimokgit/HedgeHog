@@ -2046,8 +2046,8 @@ namespace Order2GoAddIn {
     public bool ClosePair(string pair, bool buy) {
       try {
         if (GetTrades(buy).ByPair(pair).Count() > 0) {
-          object o1, o2;
-          Desk.CloseTradesByInstrument(pair, AccountID, buy, 0, "", 0, out o1, out o2);
+          object o1;
+          Desk.CloseTradesByInstrument2Async(pair, AccountID, buy, 0, "", 0, Desk.TIF_GTC, out o1);
         }
       } catch (Exception exc) {
         RaiseError(new ErrorEventArgs(exc));

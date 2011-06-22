@@ -1563,7 +1563,10 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     public override string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
-    override public double CommissionByTrade(Trade trade) { return MasterAccount == null ? 0 : trade.Lots / 10000.0 * MasterAccount.Commission; }
+    override public double CommissionByTrade(Trade trade) {
+      return MasterAccount == null ? 0 
+        : (trade == null ? 1 : trade.Lots / 10000.0) * MasterAccount.Commission;
+    }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";
     public override void AddCosedTrade(Trade trade) {

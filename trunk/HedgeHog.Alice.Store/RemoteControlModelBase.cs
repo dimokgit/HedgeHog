@@ -222,14 +222,17 @@ namespace HedgeHog.Alice.Store {
       _tradingMacrosCopy.Remove(tm);
       ResetTradingMacros();
     }
+    protected IEnumerable<TradingMacro> GetTradingMacrosByGroup(TradingMacro tm,Func<TradingMacro,bool> predicate) {
+      return GetTradingMacrosByGroup(tm).Where(predicate);
+    }
     protected IEnumerable<TradingMacro> GetTradingMacrosByGroup(TradingMacro tm) {
       return TradingMacrosCopy.Where(tm1 => tm1.TradingGroup == tm.TradingGroup);
     }
     protected TradingMacro GetTradingMacro(string pair,int period) {
       return GetTradingMacros(pair).Where(tm => (int)tm.BarPeriod == period).SingleOrDefault();
     }
-    protected TradingMacro[] GetTradingMacros(string pair = "") {
-      return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && TradingMacroFilter(tm) ).OrderBy(tm => tm.PairIndex).ToArray();
+    protected List<TradingMacro> GetTradingMacros(string pair = "") {
+      return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && TradingMacroFilter(tm) ).OrderBy(tm => tm.PairIndex).ToList();
     }
     #endregion
 
