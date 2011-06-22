@@ -36,7 +36,7 @@ namespace HedgeHog.Alice.Store {
 
   public enum TradingMacroTakeProfitFunction { Corridor = 1, Corridor0 = 2, RatesHeight = 4, StDev = 8, Corr0_CorrB0 = 9 }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
-  public enum CorridorCalculationMethod { StDev = 1, Density = 2 }
+  public enum CorridorCalculationMethod { Height = 1, Price = 2 }
   [Flags]
   public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
   [Flags]

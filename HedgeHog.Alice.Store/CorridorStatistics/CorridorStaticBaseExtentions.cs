@@ -79,8 +79,8 @@ namespace HedgeHog.Alice.Store {
     /// <returns></returns>
     public static Dictionary<int, CorridorStatistics> GetCorridornesses(
       this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength
-      ,TimeSpan barsInterval,double pointSize, Predicate<CorridorStatistics> exitCondition) {
-      return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength,barsInterval,pointSize, exitCondition);
+      , TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod, Predicate<CorridorStatistics> exitCondition) {
+        return rates.GetCorridornessesCore(priceHigh, priceLow, periodsStart, periodsLength, barsInterval, pointSize, corridorMethod, exitCondition);
     }
     /// <summary>
     /// 
@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Store {
     /// <returns></returns>
     static Dictionary<int, CorridorStatistics> GetCorridornessesCore(this ICollection<Rate> rates
       , Func<Rate, double> priceHigh, Func<Rate, double> priceLow, int periodsStart, int periodsLength
-      , TimeSpan barsInterval, double pointSize, Predicate<CorridorStatistics> exitCondition) {
+      , TimeSpan barsInterval, double pointSize,CorridorCalculationMethod corridorMethod, Predicate<CorridorStatistics> exitCondition) {
       var corridornesses = new Dictionary<int, CorridorStatistics>();
       if (rates.Count() > 2) {
         try {
@@ -110,7 +110,7 @@ namespace HedgeHog.Alice.Store {
             periodsLength = periodsLength.Min(rates.Count - periodsStart + 1);
             foreach(var i in Enumerable.Range(periodsStart, periodsLength)){
               var ratesForCorr = rates.Take(i).ToList();
-              var cs = ratesForCorr.ScanCorridorWithAngle(priceHigh, priceLow, barsInterval, pointSize);
+              var cs = ratesForCorr.ScanCorridorWithAngle(priceHigh, priceLow, barsInterval, pointSize, corridorMethod);
               if (cs != null) {
                 corridornesses.Add(i, cs);
                 if (exitCondition(cs)) break;
@@ -126,9 +126,8 @@ namespace HedgeHog.Alice.Store {
     }
     public static Func<double, double, bool> priceHeightComparer = (d1, d2) => d1 >= d2;
 
-    public static CorridorStatistics ScanCorridorWithAngle(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, bool userRegression = true) {
+    public static CorridorStatistics ScanCorridorWithAngle(this List<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       try {
-        //rates = rates.ToArray();
         #region Funcs
         double[] linePrices = new double[rates.Count()];
         Func<int, double> priceLine = index => linePrices[index];
@@ -144,11 +143,15 @@ namespace HedgeHog.Alice.Store {
         double stDev;
         double height;
         #endregion
-          //var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToArray();
-        //height0 = rates.StDev(r => r.PriceAvg);// rates.StDev((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));// ratesForHeight.StDev();
-        stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
+
+        if (corridorMethod == CorridorCalculationMethod.Height) {
+          var ratesForHeight = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
+          stDev = ratesForHeight.StDev();
+        } else {
+          stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
+        }
         height = stDev * 2;
-        return new CorridorStatistics(rates.ToArray(),stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {

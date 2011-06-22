@@ -92,6 +92,7 @@
     <Compile Include="ObservableExtensions.cs" />
     <Compile Include="ParserCombinators.cs" />
     <Compile Include="PropertyObserver.cs" />
+    <Compile Include="RingQueue.cs" />
     <Compile Include="Schedulers\TaskScheduler.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="SmartObservableCollection.cs" />
