@@ -521,6 +521,7 @@
 								<TextBlock DataContext="{Binding TradingStatistics}" Grid.Row="1">
 									TPD:<TextBlock Text="{Binding TakeProfitDistanceInPips,StringFormat=n1}" ToolTip="TakeProfitDistanceInPips"/>
 									TP:<TextBlock Text="{Binding TakeProfitPips,StringFormat=n1}" ToolTip="TakeProfitPips"/>
+									StD:<TextBlock Text="{Binding StDevPips,StringFormat=n1}" ToolTip="StDevPips"/>
 									CH/RH:<TextBlock Text="{Binding CorridorHeightToRatesHeightRatio,StringFormat=n2}" ToolTip="CorridorHeightToRatesHeightRatio"/>
 									VR:
 										<TextBlock Text="{Binding VolumeRatioL,StringFormat=p0}" ToolTip="VolumeRatioL"/>

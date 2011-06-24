@@ -52,6 +52,20 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    #region StDev
+    private double _StDevPips;
+    public double StDevPips {
+      get { return _StDevPips; }
+      set {
+        if (_StDevPips != value) {
+          _StDevPips = value;
+          RaisePropertyChanged();
+        }
+      }
+    }
+
+    #endregion
     #region TakeProfitPips
     private double _TakeProfitPips = double.NaN;
     public double TakeProfitPips {

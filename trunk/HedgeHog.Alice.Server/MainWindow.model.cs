@@ -135,8 +135,7 @@ namespace HedgeHog.Alice.Server {
     public NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>> PairInfos {
       get {
         if (_PairInfos == null) {
-          var oc = new ObservableCollection<PairInfo<Rate>>();
-          _PairInfos = new NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>>(oc);
+          _PairInfos = new NCCW.NotifyCollectionChangedWrapper<PairInfo<Rate>>(new ObservableCollection<PairInfo<Rate>>());
         }
         return _PairInfos; 
       }

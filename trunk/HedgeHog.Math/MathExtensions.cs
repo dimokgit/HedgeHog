@@ -108,14 +108,14 @@ namespace HedgeHog {
     }
 
 
-    public static double[] AverageByIterations(this ICollection< double> values, double iterations,bool low = false) {
+    public static IList<double> AverageByIterations(this IList<double> values, double iterations,bool low = false) {
       return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations);
     }
-    public static double[] AverageByIterations(this ICollection<double> values, Func<double, double, bool> compare, double iterations) {
+    public static IList<double> AverageByIterations(this IList<double> values, Func<double, double, bool> compare, double iterations) {
       return values.AverageByIterations<double>(v => v, compare, iterations);
     }
 
-    public static T[] AverageByIterations<T>(this ICollection<T> values,Func<T,double> getValue, Func<T, double, bool> compare, double iterations) {
+    public static IList<T> AverageByIterations<T>(this IList<T> values,Func<T,double> getValue, Func<T, double, bool> compare, double iterations) {
       var avg = values.DefaultIfEmpty().Average(getValue);
       if (values.Count == 0) return values.ToArray();
       for (int i = 1; i < iterations; i++) {
@@ -124,7 +124,7 @@ namespace HedgeHog {
         values = vs;
         avg = values.Average(getValue);
       }
-      return values.ToArray();
+      return values;
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }
