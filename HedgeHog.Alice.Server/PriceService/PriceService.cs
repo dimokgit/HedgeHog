@@ -91,7 +91,6 @@ namespace HedgeHog.Alice.Server {
       _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
         h => h, h => _fw.PriceChanged += h, h => _fw.PriceChanged -= h)
         .GroupByUntil(pca=>pca.EventArgs.Pair,(d)=>Observable.Timer(55.FromSeconds()))
-        .ObserveOn(Scheduler.ThreadPool)
         .Select(go=>go.TakeLast(1))
         .Subscribe(go => go.Subscribe(pce=> fw_PriceChanged(pce.Sender, pce.EventArgs)))
         //.Subscribe(el => {

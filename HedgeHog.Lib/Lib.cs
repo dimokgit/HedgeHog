@@ -286,6 +286,7 @@ namespace HedgeHog {
 
 
     public static TimeSpan FromSeconds(this int i) { return TimeSpan.FromSeconds(i); }
+    public static TimeSpan FromSeconds(this double i) { return TimeSpan.FromSeconds(i); }
     public static TimeSpan FromMinutes(this int i) { return TimeSpan.FromMinutes(i); }
     public static TimeSpan FromMinutes(this double i) { return TimeSpan.FromMinutes(i); }
 

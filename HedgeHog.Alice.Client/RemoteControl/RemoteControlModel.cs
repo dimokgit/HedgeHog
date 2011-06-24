@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
@@ -510,15 +511,16 @@ namespace HedgeHog.Alice.Client {
         _tradingStatistics.TakeProfitDistanceInPips = double.NaN;
       }
       tms = GetTradingMacros();
-      _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips(true)).ToList().AverageByIterations(2).Average();
+      _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(2).Average();
+      _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
       _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.VolumeRatioL = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
       _tradingStatistics.RatesStDevToRatesHeightRatioH = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.RatesStDevToRatesHeightRatioL = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
       _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
-      var grosses = tms.Select(tm => tm.CurrentGross).ToList();
+      var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
       _tradingStatistics.CurrentGross = grosses.Sum(g => g);
-      _tradingStatistics.CurrentGrossAverage = grosses.Where(g => g < 0).ToList().AverageByIterations(2, true).DefaultIfEmpty().Average();
+      _tradingStatistics.CurrentGrossAverage = grosses.Average();
     }
     private void InitializeModel() {
       GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
@@ -656,15 +658,10 @@ namespace HedgeHog.Alice.Client {
             //  });
             _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
               h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-              .Where(pce => GetTradingMacros(pce.EventArgs.Pair).Any())
-              .GroupByUntil(pca => pca.EventArgs.Pair, d => Observable.Timer(1.FromSeconds()))
-              .ObserveOn(Scheduler.ThreadPool)
-              .Select(g => g.TakeLast(1))
-              .Subscribe(g =>
-                g.Subscribe(pce => {
-                  GetTradingMacros(pce.EventArgs.Pair).ForEach(tm => tm.RunPriceChanged(pce.EventArgs, null));
+              .Sample(1.FromSeconds())
+                .Subscribe(pce => {
                   UpdateTradingStatistics();
-                }));
+                }, exc => Log = exc);
           else
             tradesManager.PriceChanged += fw_PriceChanged;
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1)))
@@ -703,7 +700,7 @@ namespace HedgeHog.Alice.Client {
         //  a();
         //else
         //  Application.Current.Dispatcher.BeginInvoke(a);
-      } catch (Exception exc) { MessageBox.Show(exc + ""); }
+      } catch (Exception exc) { Log = exc; }
     }
 
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
@@ -881,6 +878,25 @@ namespace HedgeHog.Alice.Client {
 
 
     void AdjustCurrentLosses() {
+      var tms = GetTradingMacros();
+      var tmsWithProfit = tms.Where(tm => tm.CurrentLoss > 0 && !tm.Trades.Any()).ToList();
+      if (tmsWithProfit.Any()) {
+        var tmWithLoss = tms.Where(tm => tm.CurrentLoss < 0).ToList();
+        var lossSum = tmWithLoss.Sum(tm => tm.CurrentLoss).Abs();
+        var profitTotal = tmsWithProfit.Sum(tm => tm.CurrentLoss);
+        var profitToSpread = profitTotal.Min(lossSum);
+        var tmByLoss = tmWithLoss.Select(tm => new { tm, profit = profitToSpread * tm.CurrentLoss.Abs() / lossSum }).ToList();
+        tmByLoss.ForEach(tm => tm.tm.CurrentLoss += tm.profit);
+        tmsWithProfit.ForEach(tm => tm.CurrentLoss = 0);
+        if (tms.Any(tm => tm.Trades.Any())) {
+          var tmsByProfit = tmsWithProfit.Select(tm => new { tm, profit = profitToSpread * tm.CurrentLoss / profitTotal }).ToList();
+          tmsByProfit.ForEach(tmbp => tmbp.tm.CurrentLoss -= tmbp.profit);
+        } else
+          tms.Where(tm => tm.CurrentLoss > -0.1).ToList().ForEach(tm => tm.CurrentLoss = 0);
+        try { GlobalStorage.UseAliceContextSaveChanges(); } catch { }
+      }
+    }
+    void AdjustCurrentLosses_Old() {
       var tmsWithProfit = GetTradingMacros().Where(tm => tm.CurrentLoss > 0).ToList();
       var tmWithLoss = GetTradingMacros().Where(tm => tm.CurrentLoss < 0).ToList();
       var lossSum = tmWithLoss.Sum(tm => tm.CurrentLoss).Abs();
@@ -1093,26 +1109,24 @@ namespace HedgeHog.Alice.Client {
     }
     private void InitTradingMacro(TradingMacro tm,bool unwind = false) {
       var isFilterOk = TradingMacroFilter(tm);
-      if (!unwind && isFilterOk ) {
+      if (!unwind && isFilterOk) {
         tm.TradingStatistics = _tradingStatistics;
         if (tm.CorridorStatsArray.Count == 0)
           foreach (var i in tm.CorridorIterationsArray)
             tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });
-        Application.Current.Dispatcher.BeginInvoke(new Action(() => {
-          try {
-            tm.SubscribeToTradeClosedEVent(() => tradesManager);
-            GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-              GetCharter(tm);
-            });
-          } catch (Exception exc) {
-            Log = exc;
-          }
-        }));
+        try {
+          tm.SubscribeToTradeClosedEVent(() => tradesManager);
+          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+            GetCharter(tm);
+          });
+        } catch (Exception exc) {
+          Log = exc;
+        }
       } else
         Application.Current.Dispatcher.BeginInvoke(new Action(() => {
           try {
             tm.UnSubscribeToTradeClosedEVent(tradesManager);
-            if(!isFilterOk) DeleteCharter(tm);
+            if (!isFilterOk) DeleteCharter(tm);
           } catch (Exception exc) {
             Log = exc;
           }

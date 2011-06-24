@@ -81,12 +81,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.dll</HintPath>
     </Reference>
-    <Reference Include="System.Reactive.Providers, Version=1.0.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.Providers.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Windows.Threading, Version=1.0.10425.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\AllInOne\packages\Rx-Main.1.1.10425\lib\Net4\System.Reactive.Windows.Threading.dll</HintPath>
-    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
@@ -429,6 +423,10 @@
     <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight.Extras %28NET4%29\GalaSoft.MvvmLight.Extras %28NET4%29.csproj">
       <Project>{4934C525-4BC4-400C-B5C8-E5B6CF7CBF7A}</Project>
       <Name>GalaSoft.MvvmLight.Extras %28NET4%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
+      <Project>{8883734D-B6B0-4210-9746-108A126EB84A}</Project>
+      <Name>NotifyCollectionChangedWrapper</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
       <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>

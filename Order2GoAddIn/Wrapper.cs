@@ -19,6 +19,7 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading.Tasks;
 using MvvmFoundation.Wpf;
+using System.Threading.Tasks.Dataflow;
 
 [assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
@@ -290,6 +291,16 @@ namespace Order2GoAddIn {
     #endregion
 
     #region PriceChangedEvent
+    BroadcastBlock<PriceChangedEventArgs> _PriceChangedBroadcast;
+    public BroadcastBlock<PriceChangedEventArgs> PriceChangedBroadcast {
+      get { 
+        if(_PriceChangedBroadcast == null)
+          _PriceChangedBroadcast = new BroadcastBlock<PriceChangedEventArgs>(e => e);
+        return _PriceChangedBroadcast; 
+      }
+      set { _PriceChangedBroadcast = value; }
+    }
+
     event EventHandler<PriceChangedEventArgs> PriceChangedEvent;
     public event EventHandler<PriceChangedEventArgs> PriceChanged {
       add {
@@ -301,7 +312,10 @@ namespace Order2GoAddIn {
       }
     }
     void RaisePriceChanged(string pair, Price price,Account account,Trade[] trades) {
-      if (PriceChangedEvent != null) PriceChangedEvent(this, new PriceChangedEventArgs(pair, price, account, trades));
+      var e = new PriceChangedEventArgs(pair, price, account, trades);
+      if (_PriceChangedBroadcast != null)
+        PriceChangedBroadcast.SendAsync(e);
+      if (PriceChangedEvent != null) PriceChangedEvent(this, e);
     }
     #endregion
 
@@ -1151,8 +1165,15 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetTrades
-    public Trade[] GetTrades() {       
-      return OpenTrades.Values.ToArray(); 
+    Trade[] _emptyTrades = new Trade[0];
+    public Trade[] GetTrades() {
+      try {
+        return OpenTrades.Any() ? OpenTrades.Values.ToArray() : _emptyTrades;
+      } catch (Exception exc) {
+        RaiseError(exc);
+        TradesReset();
+        return IsLoggedIn ? GetTrades() : _emptyTrades;
+      }
     }
     void TradesReset() { _OpenTrades = null; }
     public Trade GetTrade(string tradeId) { return GetTrades().Where(t => t.Id == tradeId).SingleOrDefault(); }

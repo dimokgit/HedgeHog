@@ -23,6 +23,7 @@ using Gala = GalaSoft.MvvmLight.Command;
 using O2G = Order2GoAddIn;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
+using NotifyCollectionChangedWrapper;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -380,16 +381,16 @@ namespace HedgeHog.Alice.Client {
     }
 
 
-    public ObservableCollection<Order> orders { get; set; }
+    public NotifyCollectionChangedWrapper<Order> orders { get; set; }
     public ListCollectionView OrdersList { get; set; }
 
-    public ObservableCollection<Trade> ServerTrades { get; set; }
+    public NotifyCollectionChangedWrapper<Trade> ServerTrades { get; set; }
     public ListCollectionView ServerTradesList { get; set; }
 
-    public ObservableCollection<Trade> ClosedTrades { get; set; }
+    public NotifyCollectionChangedWrapper<Trade> ClosedTrades { get; set; }
     public ListCollectionView ClosedTradesList { get; set; }
 
-    public ObservableCollection<Trade> AbsentTrades { get; set; }
+    public NotifyCollectionChangedWrapper<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
     private TradingAccountModel _accountModel;
@@ -1186,7 +1187,6 @@ namespace HedgeHog.Alice.Client {
           fwMaster.OrderAdded += fwMaster_OrderAdded;
 
           Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
-            .SubscribeOnDispatcher()
             .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
             ClosedTrades.Clear();
@@ -1254,31 +1254,17 @@ namespace HedgeHog.Alice.Client {
       if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
       else DatabasePath = GlobalStorage.DatabasePath;
 
-      ServerTradesList = new ListCollectionView(ServerTrades = new ObservableCollection<Trade>());
+      ServerTradesList = new ListCollectionView(ServerTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Pair), ListSortDirection.Ascending));
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Time), ListSortDirection.Descending));
-      
-      OrdersList = new ListCollectionView(orders = new ObservableCollection<Order>());
-      orders.CollectionChanged += new NotifyCollectionChangedEventHandler(orders_CollectionChanged);
+
+      OrdersList = new ListCollectionView(orders = new NotifyCollectionChangedWrapper<Order>(new ObservableCollection<Order>()));
       OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.Pair), ListSortDirection.Ascending));
       OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.IsBuy), ListSortDirection.Descending));
 
-      ClosedTradesList = new ListCollectionView(ClosedTrades = new ObservableCollection<Trade>());
-      AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
+      ClosedTradesList = new ListCollectionView(ClosedTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
+      AbsentTradesList = new ListCollectionView(AbsentTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
 
-    }
-
-    void orders_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-      if (e.Action == NotifyCollectionChangedAction.Add)
-        lock(orders)
-          CleanUpOrders(orders);
-    }
-
-    private void CleanUpOrders(ObservableCollection<Order> orders) {
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() =>
-        orders.GroupBy(o => new { o.OrderID, o.IsBuy }).SelectMany(g => g.Skip(1)).ToList()
-          .ForEach(o => orders.Remove(o))
-      );
     }
 
     public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
@@ -1421,24 +1407,15 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private void UpdateTrades(Account account, List<Trade> tradesList, ObservableCollection<Trade> tradesCollection) {
+    private void UpdateTrades(Account account, List<Trade> tradesList, NotifyCollectionChangedWrapper<Trade> tradesCollection) {
       try {
         var oldIds = tradesCollection.Select(t => t.Id).ToArray();
         var newIds = tradesList.Select(t => t.Id);
         var deleteIds = oldIds.Except(newIds).ToList();
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
-          () => {
-            deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
-          });
+        deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
         var addIds = newIds.Except(oldIds).ToList();
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(
-          () => {
-            addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
-          });
+        addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
         foreach (var trade in tradesList) {
-          tradesCollection.Where(t => t.Id == trade.Id).Skip(1).ToList().ForEach(t =>
-            GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => tradesCollection.Remove(t))
-          );
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
           if (trd != null)
             trd.Update(trade,
@@ -1451,7 +1428,7 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
       }
     }
-    private void UpdateOrders(Account account, List<Order> ordersList, ObservableCollection<Order> ordersCollection) {
+    private void UpdateOrders(Account account, List<Order> ordersList, NotifyCollectionChangedWrapper<Order> ordersCollection) {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         try {
           var oldIds = ordersCollection.Select(t => t.OrderID).ToArray();
@@ -1460,7 +1437,6 @@ namespace HedgeHog.Alice.Client {
           deleteIds.ForEach(d => ordersCollection.Remove(ordersCollection.Single(t => t.OrderID == d)));
           var addIds = newIds.Except(oldIds).ToList();
           addIds.ForEach(a => ordersCollection.Add(ordersList.Single(t => t.OrderID == a)));
-          CleanUpOrders(ordersCollection);
           foreach (var order in ordersList) {
             var odr = ordersCollection.SingleOrDefault(t => t.OrderID == order.OrderID);
             if (odr == null) break;
