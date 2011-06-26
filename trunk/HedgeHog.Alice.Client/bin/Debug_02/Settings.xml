@@ -92,7 +92,7 @@
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVP]IsChecked" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.ServerAddress]Text" value="localhost:9200/" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.AliceMode]SelectedIndex" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.AccountsManager]IsSelected" value="False" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.AccountsManager]IsSelected" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.TradingMacros]IsSelected" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.64]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="False" />

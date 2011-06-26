@@ -47,7 +47,7 @@
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.TextBox2[.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.10]IsChecked" value="True" />
   <item key="/HedgeHog.Charter;component/chartercontrol.xaml.CheckBox2[.11]IsChecked" value="False" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="False" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Top" value="910" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="5" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="487" />
@@ -63,4 +63,5 @@
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.54]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.64]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.61]IsSelected" value="False" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.65]IsSelected" value="False" />
 </dictionary>

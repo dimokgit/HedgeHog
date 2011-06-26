@@ -24,6 +24,7 @@ using O2G = Order2GoAddIn;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using NotifyCollectionChangedWrapper;
+using HedgeHog.Alice.Store.Metadata;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -325,6 +326,8 @@ namespace HedgeHog.Alice.Client {
       get {
         if (_tradingAccountsList == null) {
           _TradingAccountsSet = new ObservableCollection<Store.TradingAccount>(GlobalStorage.UseAliceContext(c => c.TradingAccounts));
+          foreach(var ta in _TradingAccountsSet)
+            ta.PropertyChanged += new PropertyChangedEventHandler(ta_PropertyChanged);
           _TradingAccountsSet.CollectionChanged += _TradingAccountsSet_CollectionChanged;
           _tradingAccountsList = new ListCollectionView(_TradingAccountsSet);
           _tradingAccountsList.Filter = FilterTradingAccounts;
@@ -333,6 +336,30 @@ namespace HedgeHog.Alice.Client {
             //new Predicate<TradingAccount>(ta => new[] { ta.AccountId, ta.MasterId }.Contains(TradingAccount) || ShowAllAccountsFilter) as Predicate<object>;
         }
         return _tradingAccountsList; 
+      }
+    }
+
+    #region TradingMacroNameChanged Event
+    event EventHandler<EventArgs> TradingMacroNameChangedEvent;
+    public override event EventHandler<EventArgs> TradingMacroNameChanged {
+      add {
+        if (TradingMacroNameChangedEvent == null || !TradingMacroNameChangedEvent.GetInvocationList().Contains(value))
+          TradingMacroNameChangedEvent += value;
+      }
+      remove {
+        TradingMacroNameChangedEvent -= value;
+      }
+    }
+    protected void RaiseTradingMacroNameChanged() {
+      if (TradingMacroNameChangedEvent != null) TradingMacroNameChangedEvent(this, new EventArgs());
+    }
+    #endregion
+
+
+    void ta_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if (sender == TradingMaster) {
+        if (e.PropertyName == TradingAccountMetadata.TradingMacroName)
+          RaiseTradingMacroNameChanged();
       }
     }
 

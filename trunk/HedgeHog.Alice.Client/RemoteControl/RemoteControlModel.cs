@@ -486,10 +486,15 @@ namespace HedgeHog.Alice.Client {
           MasterModel.CoreFX.LoggedOff += CoreFX_LoggedOffEvent;
           MasterModel.MasterTradeAccountChanged += MasterModel_MasterTradeAccountChanged;
           MasterModel.NeedTradingStatistics += MasterModel_NeedTradingStatistics;
+          MasterModel.TradingMacroNameChanged += new EventHandler<EventArgs>(MasterModel_TradingMacroNameChanged);
         }
       } catch (Exception exc) {
         Log = exc;
       }
+    }
+
+    void MasterModel_TradingMacroNameChanged(object sender, EventArgs e) {
+      RaisePropertyChanged(() => TradingMacrosCopy);
     }
 
 
