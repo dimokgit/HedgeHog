@@ -53,6 +53,7 @@
     </Reference>
     <Reference Include="System.CoreEx, Version=1.0.2856.104, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Reactive, Version=1.0.10605.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Threading.Tasks.Dataflow, Version=0.0.4098.29463, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -104,6 +105,7 @@
     <Compile Include="RSI.cs" />
     <Compile Include="Schedulers\Schedulers.cs" />
     <Compile Include="Volt.cs" />
+    <Compile Include="YieldingProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bars.Extensions.cs" />

@@ -80,16 +80,16 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Alice.edmx</DependentUpon>
     </Compile>
-    <Compile Include="AliceEntityExtender.properties.cs" />
-    <Compile Include="AliceEntityExtender_MC.cs" />
+    <Compile Include="TradingMacro\AliceEntityExtender.properties.cs" />
+    <Compile Include="TradingMacro\AliceEntityExtender_MC.cs" />
     <Compile Include="Service References\PriceService\Reference.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
-    <Compile Include="TradingMacroExtentions.cs" />
-    <Compile Include="TradingStatistics.cs" />
-    <None Include="AliceEntityExtender.cs">
+    <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
+    <Compile Include="TradingMacro\TradingStatistics.cs" />
+    <None Include="TradingMacro\AliceEntityExtender.cs">
       <SubType>Code</SubType>
     </None>
     <Compile Include="CorridorStatistics\CorridorStaticBaseExtentions.cs" />

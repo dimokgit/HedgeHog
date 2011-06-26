@@ -145,7 +145,8 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         if (corridorMethod == CorridorCalculationMethod.Height) {
-          var ratesForHeight = rates.Select((r, i) => r.PriceAvg > priceLine(i) ? heightHigh(r, i) : heightLow(r, i)).ToList();// rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
+          //var ratesForHeight = rates.Select((r, i) => r.PriceAvg > priceLine(i) ? heightHigh(r, i) : heightLow(r, i)).ToList();// rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
+          var ratesForHeight = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList();
           stDev = ratesForHeight.StDev();
         } else {
           stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
