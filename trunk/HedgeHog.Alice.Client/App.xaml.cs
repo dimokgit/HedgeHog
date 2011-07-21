@@ -23,6 +23,13 @@ namespace HedgeHog.Alice.Client {
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
     }
 
+
+    public ResourceDictionary Resources
+    {
+        get { return base.Resources; }
+        set { base.Resources = value; }
+    }
+
     void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
       try {
         var mm = container.GetExportedValue<TraderModelBase>();

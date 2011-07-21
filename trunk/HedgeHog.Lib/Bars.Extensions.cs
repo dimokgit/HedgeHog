@@ -36,6 +36,17 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
+    public static TBar Next<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
+      if (rates[rates.Count - 1] == rate) return null;
+      var index = rates.IndexOf(rate);
+      return rates[index + 1];
+    }
+    public static TBar Previous<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
+      if (rates[0] == rate) return null;
+      var index = rates.IndexOf(rate);
+      return rates[index - 1];
+    }
+
     public static void SavePairCsv<TBar>(this ICollection<TBar> bars,string pair) where TBar : Bars.BarBase {
       var path = AppDomain.CurrentDomain.BaseDirectory + "\\CSV";
       Directory.CreateDirectory(path);

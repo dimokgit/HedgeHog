@@ -943,7 +943,5 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.BalanceOnLimit);
       }
     }
-
-
   }
 }

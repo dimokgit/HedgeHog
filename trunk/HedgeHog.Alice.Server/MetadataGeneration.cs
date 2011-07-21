@@ -43,51 +43,108 @@ namespace HedgeHog.Alice.Server.Metadata
 
     }
 
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PairInfo"/></summary>
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PairInfo<TBar>"/></summary>
     public static class PairInfoMetadata
     {
-                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.Pair"/></summary>
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.RaiseReLoadRates"/></summary>
+        public const string RaiseReLoadRates = "RaiseReLoadRates";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Rates"/></summary>
+        public const string _Rates = "_Rates";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Rates"/></summary>
+        public const string Rates = "Rates";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._BidHighToAskLowRatio"/></summary>
+        public const string _BidHighToAskLowRatio = "_BidHighToAskLowRatio";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatio"/></summary>
+        public const string BidHighToAskLowRatio = "BidHighToAskLowRatio";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._BidHighToAskLowRatioMA"/></summary>
+        public const string _BidHighToAskLowRatioMA = "_BidHighToAskLowRatioMA";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatioMA"/></summary>
+        public const string BidHighToAskLowRatioMA = "BidHighToAskLowRatioMA";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._StatsFramePeriods"/></summary>
+        public const string _StatsFramePeriods = "_StatsFramePeriods";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.StatsFramePeriods"/></summary>
+        public const string StatsFramePeriods = "StatsFramePeriods";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Period"/></summary>
+        public const string _Period = "_Period";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Period"/></summary>
+        public const string Period = "Period";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Periods"/></summary>
+        public const string _Periods = "_Periods";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Periods"/></summary>
+        public const string Periods = "Periods";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Pair"/></summary>
         public const string Pair = "Pair";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo._LastDate"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._LastDate"/></summary>
         public const string _LastDate = "_LastDate";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.LastDate"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.LastDate"/></summary>
         public const string LastDate = "LastDate";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo._Count"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._Count"/></summary>
         public const string _Count = "_Count";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.Count"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Count"/></summary>
         public const string Count = "Count";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo._PullsCount"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PairInfo{}._PullsCount"/></summary>
         public const string _PullsCount = "_PullsCount";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.PullsCount"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.PullsCount"/></summary>
         public const string PullsCount = "PullsCount";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.UpdateStatistics"/></summary>
+        public const string UpdateStatistics = "UpdateStatistics";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.Pair"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.InPips"/></summary>
+        public const string InPips = "InPips";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Rates"/></summary>
+        public static PropertyPath RatesPath { get { return new PropertyPath("Rates"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatio"/></summary>
+        public static PropertyPath BidHighToAskLowRatioPath { get { return new PropertyPath("BidHighToAskLowRatio"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.BidHighToAskLowRatioMA"/></summary>
+        public static PropertyPath BidHighToAskLowRatioMAPath { get { return new PropertyPath("BidHighToAskLowRatioMA"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.StatsFramePeriods"/></summary>
+        public static PropertyPath StatsFramePeriodsPath { get { return new PropertyPath("StatsFramePeriods"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Period"/></summary>
+        public static PropertyPath PeriodPath { get { return new PropertyPath("Period"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Periods"/></summary>
+        public static PropertyPath PeriodsPath { get { return new PropertyPath("Periods"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Pair"/></summary>
         public static PropertyPath PairPath { get { return new PropertyPath("Pair"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.LastDate"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.LastDate"/></summary>
         public static PropertyPath LastDatePath { get { return new PropertyPath("LastDate"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.Count"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.Count"/></summary>
         public static PropertyPath CountPath { get { return new PropertyPath("Count"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo.PullsCount"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.PullsCount"/></summary>
         public static PropertyPath PullsCountPath { get { return new PropertyPath("PullsCount"); } }
 
-    }
-
-    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Server.IPriceService"/></summary>
-    public static class IPriceServiceMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.IPriceService.FillPrice"/></summary>
-        public const string FillPrice = "FillPrice";
-
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PairInfo{TBar}.InPips"/></summary>
+        public static PropertyPath InPipsPath { get { return new PropertyPath("InPips"); } }
 
     }
 
@@ -241,47 +298,29 @@ namespace HedgeHog.Alice.Server.Metadata
 
     }
 
+    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Server.IPriceService"/></summary>
+    public static class IPriceServiceMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.IPriceService.FillPrice"/></summary>
+        public const string FillPrice = "FillPrice";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.IPriceService.PriceStatistics"/></summary>
+        public const string PriceStatistics = "PriceStatistics";
+
+
+    }
+
     /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PriceService"/></summary>
     public static class PriceServiceMetadata
     {
                 /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService._fw"/></summary>
         public const string _fw = "_fw";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService._pairs"/></summary>
-        public const string _pairs = "_pairs";
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.Log"/></summary>
         public const string Log = "Log";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.PairInfos"/></summary>
         public const string PairInfos = "PairInfos";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader"/></summary>
-        public static class BlockingLoaderMetadata
-        {
-                        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader.PairLoadedEventArgs"/></summary>
-            public static class PairLoadedEventArgsMetadata
-            {
-                                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader.PairLoadedEventArgs.Pair"/></summary>
-                public const string Pair = "Pair";
-
-
-                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader.PairLoadedEventArgs.Pair"/></summary>
-                public static PropertyPath PairPath { get { return new PropertyPath("Pair"); } }
-
-            }
-
-            /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader.RaisePairLoaded"/></summary>
-            public const string RaisePairLoaded = "RaisePairLoaded";
-
-            /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.BlockingLoader.Add"/></summary>
-            public const string Add = "Add";
-
-
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService.bl_"/></summary>
-        public const string bl_ = "bl_";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService.THROTTLE_INTERVAL"/></summary>
         public const string THROTTLE_INTERVAL = "THROTTLE_INTERVAL";
@@ -292,17 +331,23 @@ namespace HedgeHog.Alice.Server.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService._LoadRatesSubject"/></summary>
         public const string _LoadRatesSubject = "_LoadRatesSubject";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Server.PriceService._priceChangedSubscribsion"/></summary>
+        public const string _priceChangedSubscribsion = "_priceChangedSubscribsion";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.LoadRatesSubject"/></summary>
         public const string LoadRatesSubject = "LoadRatesSubject";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.OnLoadRates"/></summary>
         public const string OnLoadRates = "OnLoadRates";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.LoadRates"/></summary>
+        public const string LoadRates = "LoadRates";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.MainWindowModel_PropertyChanged"/></summary>
         public const string MainWindowModel_PropertyChanged = "MainWindowModel_PropertyChanged";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.bl_PairLoaded"/></summary>
-        public const string bl_PairLoaded = "bl_PairLoaded";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.RriceInfo_ReLoadRates"/></summary>
+        public const string RriceInfo_ReLoadRates = "RriceInfo_ReLoadRates";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.AfterPairLoaded"/></summary>
         public const string AfterPairLoaded = "AfterPairLoaded";
@@ -316,11 +361,14 @@ namespace HedgeHog.Alice.Server.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.GetOrAddPairInfo"/></summary>
         public const string GetOrAddPairInfo = "GetOrAddPairInfo";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.AddOfferPair"/></summary>
+        public const string AddOfferPair = "AddOfferPair";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.FillPrice"/></summary>
         public const string FillPrice = "FillPrice";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.AddOfferPair"/></summary>
-        public const string AddPair = "AddPair";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.PriceService.PriceStatistics"/></summary>
+        public const string PriceStatistics = "PriceStatistics";
 
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.Log"/></summary>
@@ -331,6 +379,18 @@ namespace HedgeHog.Alice.Server.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceService.LoadRatesSubject"/></summary>
         public static PropertyPath LoadRatesSubjectPath { get { return new PropertyPath("LoadRatesSubject"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.PriceStatistics"/></summary>
+    public static class PriceStatisticsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceStatistics.BidHighAskLowSpread"/></summary>
+        public const string BidHighAskLowSpread = "BidHighAskLowSpread";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.PriceStatistics.BidHighAskLowSpread"/></summary>
+        public static PropertyPath BidHighAskLowSpreadPath { get { return new PropertyPath("BidHighAskLowSpread"); } }
 
     }
 

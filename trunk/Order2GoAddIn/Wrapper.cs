@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using MvvmFoundation.Wpf;
 using System.Threading.Tasks.Dataflow;
+using System.Collections.Concurrent;
 
 [assembly: CLSCompliant(true)]
 namespace Order2GoAddIn {
@@ -170,6 +171,34 @@ namespace Order2GoAddIn {
     public Func<Trade, double> CommissionByTrade { get; set; }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(CommissionByTrade); }
 
+    #region Replay
+    KeyValuePair<string, bool> _replayPair;
+    bool IsInReplay() { return _replayPair.Value; }
+    bool IsInReplay(string pair) { return _replayPair.Key == pair && _replayPair.Value; }
+
+    public void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
+      if (IsInReplay())
+        RaiseError(new Exception("Is a;ready in Replay."));
+      else {
+        _replayPair = new KeyValuePair<string, bool>(pair, true);
+        try {
+          var rates = GetBarsFromHistory(pair, period, dateStart.DateTime);
+          while (rates.Any() && rates[0].StartDate <= dateEnd) {
+            var rate = rates[0];
+            RaisePriceChanged(pair, new Price(pair, rate, ServerTime, GetPipSize(pair), GetDigits(pair), true), GetAccount(), GetTrades(pair));
+            rates.Remove(rate);
+            if (!rates.Any())
+              rates = GetBarsFromHistory(pair, period, dateStart.DateTime);
+          }
+        } catch (Exception exc) {
+          RaiseError(exc);
+        } finally {
+          _replayPair = new KeyValuePair<string, bool>(); ;
+        }
+      }
+    }
+    #endregion
+
     #region Constants
     public const string TABLE_ACCOUNTS = "accounts";
     public const string TABLE_OFFERS = "offers";
@@ -312,6 +341,7 @@ namespace Order2GoAddIn {
       }
     }
     void RaisePriceChanged(string pair, Price price,Account account,Trade[] trades) {
+      if (IsInReplay(pair) != price.IsPlayback) return;
       var e = new PriceChangedEventArgs(pair, price, account, trades);
       if (_PriceChangedBroadcast != null)
         PriceChangedBroadcast.SendAsync(e);
@@ -1117,7 +1147,7 @@ namespace Order2GoAddIn {
         s.BuyLotsFirst = rowFirst.Lots;
         s.BuyTradeID_First = rowFirst.Id;
 
-        var rowLast = rows.Last();
+        var rowLast = rows.LastTrade();
         s.BuyPriceLast = rowLast.Open;
         s.BuyLotsLast = rowLast.Lots;
         s.BuyTradeID_Last = rowLast.Id;
@@ -1131,7 +1161,7 @@ namespace Order2GoAddIn {
         s.SellLotsFirst = rowFirst.Lots;
         s.SellTradeID_First = rowFirst.Id;
 
-        var rowLast = rows.Last();
+        var rowLast = rows.LastTrade();
         s.SellTradeID_Last = rowLast.Id;
         s.SellPriceLast = rowLast.Open;
         s.SellLotsLast = rowLast.Lots;
@@ -2424,24 +2454,28 @@ namespace Order2GoAddIn {
     }
 
     static object _OpenTradesLocker = new object();
-    Dictionary<string, Trade> _OpenTrades;
-    Dictionary<string, Trade> OpenTrades {
+    ConcurrentDictionary<string, Trade> _OpenTrades;
+    ConcurrentDictionary<string, Trade> OpenTrades {
       get {
         lock (_OpenTradesLocker) {
           if (_OpenTrades == null)
             try {
-              _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+              _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
             } catch (Exception exc) {
               RaiseError(exc);
-              _OpenTrades = GetTradesInternal("").ToDictionary(o => o.Id, o => o);
+              _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
             }
           return _OpenTrades;
         }
       }
     }
-    void OpenTradesReset(){_OpenTrades = null;}
+    void OpenTradesReset(){
+      lock (_OpenTradesLocker)
+        _OpenTrades = null;
+    }
     void OpenTrades_Remove(string tradeId) {
-      if (OpenTrades.ContainsKey(tradeId)) OpenTrades.Remove(tradeId);
+      Trade t;
+      if (OpenTrades.ContainsKey(tradeId)) OpenTrades.TryRemove(tradeId, out t);
     }
 
     void mSink_ITradeDeskEvents_Event_OnRowAddedEx(object _table, string RowID,string rowText) {

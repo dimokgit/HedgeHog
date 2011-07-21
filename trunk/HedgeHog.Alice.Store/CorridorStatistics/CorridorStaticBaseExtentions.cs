@@ -140,26 +140,29 @@ namespace HedgeHog.Alice.Store {
         var periods = rates.Count();
         var lineLow = new LineInfo(new Rate[0], 0, 0);
         var lineHigh = new LineInfo(new Rate[0], 0, 0);
-        double stDev;
+        double stDev = double.NaN;
         double height;
         #endregion
 
-        if (corridorMethod == CorridorCalculationMethod.Height) {
-          //var ratesForHeight = rates.Select((r, i) => r.PriceAvg > priceLine(i) ? heightHigh(r, i) : heightLow(r, i)).ToList();// rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
-          var ratesForHeight = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList();
-          stDev = ratesForHeight.StDev();
-        } else {
-          stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
+        switch (corridorMethod) {
+          case CorridorCalculationMethod.HeightUD:
+            stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDev();
+            break;
+          case CorridorCalculationMethod.Height:
+            //var ratesForHeight = rates.Select((r, i) => r.PriceAvg > priceLine(i) ? heightHigh(r, i) : heightLow(r, i)).ToList();// rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
+            stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDev();
+            break;
+          case CorridorCalculationMethod.Price:
+            stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
+            break;
         }
         height = stDev * 2;
         return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {
-        return null;
-        Debug.Fail(exc + "");
+        Debug.WriteLine(exc);
         throw;
-      } finally {
       }
     }
 

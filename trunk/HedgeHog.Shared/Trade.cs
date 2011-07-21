@@ -40,6 +40,9 @@ namespace HedgeHog.Shared {
     public static Trade[] IsBuy(this ICollection<Trade> trades, bool isBuy) {
       return trades.Where(t => t.Buy == isBuy).ToArray();
     }
+    public static Trade LastTrade(this ICollection<Trade> trades) {
+      return trades.OrderByDescending(t => t.Time).FirstOrDefault();
+    }
   }
   public class TradeEventArgs : EventArgs {
     public Trade Trade { get; set; }

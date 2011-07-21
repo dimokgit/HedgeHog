@@ -17,3 +17,8 @@ C:\Data\Dev\Forex_Old\Projects\HedgeHog\ElementStateLogic\bin\Debug\Tomers.WPF.S
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\ResolveAssemblyReference.cache
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\Tomers.WPF.State.dll
 C:\Data\Dev\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\Tomers.WPF.State.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ElementStateLogic\bin\Debug\Tomers.WPF.State.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ElementStateLogic\bin\Debug\Tomers.WPF.State.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\Tomers.WPF.State.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ElementStateLogic\obj\Debug\Tomers.WPF.State.pdb

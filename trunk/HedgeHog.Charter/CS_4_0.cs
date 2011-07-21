@@ -23,6 +23,108 @@ namespace HedgeHog.Charter.Metadata
         
     }
 
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.BuySellRateRemovedEventArgs"/></summary>
+    public static class BuySellRateRemovedEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateRemovedEventArgs.UID"/></summary>
+        public const string UID = "UID";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateRemovedEventArgs.UID"/></summary>
+        public static PropertyPath UIDPath { get { return new PropertyPath("UID"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.BuySellRateAddedEventArgs"/></summary>
+    public static class BuySellRateAddedEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateAddedEventArgs.IsBuy"/></summary>
+        public const string IsBuy = "IsBuy";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateAddedEventArgs.Rate"/></summary>
+        public const string Rate = "Rate";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateAddedEventArgs.IsBuy"/></summary>
+        public static PropertyPath IsBuyPath { get { return new PropertyPath("IsBuy"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.BuySellRateAddedEventArgs.Rate"/></summary>
+        public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.PlayEventArgs"/></summary>
+    public static class PlayEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.Play"/></summary>
+        public const string Play = "Play";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.StartDate"/></summary>
+        public const string StartDate = "StartDate";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.Delay"/></summary>
+        public const string Delay = "Delay";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.Play"/></summary>
+        public static PropertyPath PlayPath { get { return new PropertyPath("Play"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.StartDate"/></summary>
+        public static PropertyPath StartDatePath { get { return new PropertyPath("StartDate"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PlayEventArgs.Delay"/></summary>
+        public static PropertyPath DelayPath { get { return new PropertyPath("Delay"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.GannAngleOffsetChangedEventArgs"/></summary>
+    public static class GannAngleOffsetChangedEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.GannAngleOffsetChangedEventArgs.Offset"/></summary>
+        public const string Offset = "Offset";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.GannAngleOffsetChangedEventArgs.Offset"/></summary>
+        public static PropertyPath OffsetPath { get { return new PropertyPath("Offset"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.SupportResistanceChangedEventArgs"/></summary>
+    public static class SupportResistanceChangedEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.SupportResistanceChangedEventArgs.UID"/></summary>
+        public const string UID = "UID";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.SupportResistanceChangedEventArgs.UID"/></summary>
+        public static PropertyPath UIDPath { get { return new PropertyPath("UID"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.CorridorPositionChangedEventArgs"/></summary>
+    public static class CorridorPositionChangedEventArgsMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Charter.PositionChangedBaseEventArgs<T>"/></summary>
+    public static class PositionChangedBaseEventArgsMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Charter.PositionChangedBaseEventArgs{T}.NewPosition"/></summary>
+        public const string NewPosition = "NewPosition";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PositionChangedBaseEventArgs{T}.OldPosition"/></summary>
+        public const string OldPosition = "OldPosition";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PositionChangedBaseEventArgs{T}.NewPosition"/></summary>
+        public static PropertyPath NewPositionPath { get { return new PropertyPath("NewPosition"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Charter.PositionChangedBaseEventArgs{T}.OldPosition"/></summary>
+        public static PropertyPath OldPositionPath { get { return new PropertyPath("OldPosition"); } }
+
+    }
+
     /// <summary>Metadata for class <see cref="HedgeHog.Charter.ColoredSegment"/></summary>
     public static class ColoredSegmentMetadata
     {
@@ -133,32 +235,6 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
 
     }
 
-    /// <summary>Metadata for XAML Corridors.xaml</summary>
-    public static class CorridorsXaml    {
-            /// <summary>Resource pack URI for XAML file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Charter;component/Corridors.xaml", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Charter;component/Corridors.xaml"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/Corridors.xaml")); } }
-
-            /// <summary>Represents x:Key="DraggArrowUp"/></summary>
-            public static string DraggArrowUpKey { get { return "DraggArrowUp"; } }
-
-            /// <summary>Represents x:Key="DraggArrowDown"/></summary>
-            public static string DraggArrowDownKey { get { return "DraggArrowDown"; } }
-
-            /// <summary>Represents x:Key="BoolToSrtingConverter"/></summary>
-            public static string BoolToSrtingConverterKey { get { return "BoolToSrtingConverter"; } }
-
-            /// <summary>Represents x:Key="PlayButtonStyle"/></summary>
-            public static string PlayButtonStyleKey { get { return "PlayButtonStyle"; } }
-
-
-    }
-
     /// <summary>Metadata for File CS_4_0.tt</summary>
     public static class CS_4_0Tt    {
             /// <summary>Resource pack URI for file.</summary>
@@ -205,12 +281,6 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
 
 namespace HedgeHog.Metadata
 {
-    /// <summary>Metadata for class <see cref="HedgeHog.CharterControlMessage"/></summary>
-    public static class CharterControlMessageMetadata
-    {
-        
-    }
-
     /// <summary>Metadata for class <see cref="HedgeHog.CharterControl"/></summary>
     public static class CharterControlMetadata
     {
@@ -275,16 +345,22 @@ namespace HedgeHog.Metadata
         public const string SpreadForCorridor = "SpreadForCorridor";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorStDevToRatesStDevRatio"/></summary>
-        public const string _CorridorHeightToRatesHeightRatio = "_CorridorHeightToRatesHeightRatio";
+        public const string _CorridorStDevToRatesStDevRatio = "_CorridorStDevToRatesStDevRatio";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStDevToRatesStDevRatio"/></summary>
-        public const string CorridorHeightToRatesHeightRatio = "CorridorHeightToRatesHeightRatio";
+        public const string CorridorStDevToRatesStDevRatio = "CorridorStDevToRatesStDevRatio";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._Density"/></summary>
-        public const string _VolumeRatio = "_VolumeRatio";
+        public const string _Density = "_Density";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Density"/></summary>
-        public const string VolumeRatio = "VolumeRatio";
+        public const string Density = "Density";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._DensityCorridor"/></summary>
+        public const string _DensityCorridor = "_DensityCorridor";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DensityCorridor"/></summary>
+        public const string DensityCorridor = "DensityCorridor";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public const string Header = "Header";
@@ -318,6 +394,12 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PlayStartDate"/></summary>
         public const string PlayStartDate = "PlayStartDate";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._PlotterColor"/></summary>
+        public const string _PlotterColor = "_PlotterColor";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PlotterColor"/></summary>
+        public const string PlotterColor = "PlotterColor";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SuppResMinimumDistance"/></summary>
         public const string SuppResMinimumDistance = "SuppResMinimumDistance";
@@ -397,8 +479,11 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PriceLineGraphBid"/></summary>
         public const string PriceLineGraphBid = "PriceLineGraphBid";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColor"/></summary>
-        public const string priceLineGraphColor = "priceLineGraphColor";
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColorAsk"/></summary>
+        public const string priceLineGraphColorAsk = "priceLineGraphColorAsk";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColorBid"/></summary>
+        public const string priceLineGraphColorBid = "priceLineGraphColorBid";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColorBuy"/></summary>
         public const string priceLineGraphColorBuy = "priceLineGraphColorBuy";
@@ -520,6 +605,9 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GannLine"/></summary>
         public const string GannLine = "GannLine";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetTrendLines"/></summary>
+        public const string SetTrendLines = "SetTrendLines";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine"/></summary>
         public const string trendLine = "trendLine";
 
@@ -603,18 +691,6 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.ds"/></summary>
         public const string ds = "ds";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsAvg1"/></summary>
-        public const string dsAvg1 = "dsAvg1";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsAvg2"/></summary>
-        public const string dsAvg2 = "dsAvg2";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsAvg3"/></summary>
-        public const string dsAvg3 = "dsAvg3";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsVolts"/></summary>
-        public const string dsVolts = "dsVolts";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.dsVoltsPoly"/></summary>
         public const string dsVoltsPoly = "dsVoltsPoly";
@@ -775,9 +851,6 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnSupportResistanceChanged"/></summary>
         public const string OnSupportResistanceChanged = "OnSupportResistanceChanged";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.UpdateTicks"/></summary>
-        public const string UpdateTicks = "UpdateTicks";
-
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.inRendering"/></summary>
         public const string inRendering = "inRendering";
 
@@ -811,6 +884,9 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SelectedGannAngleIndex"/></summary>
         public const string SelectedGannAngleIndex = "SelectedGannAngleIndex";
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA"/></summary>
+        public const string GetPriceMA = "GetPriceMA";
+
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.BarsPeriod"/></summary>
         public static PropertyPath BarsPeriodPath { get { return new PropertyPath("BarsPeriod"); } }
@@ -834,10 +910,13 @@ namespace HedgeHog.Metadata
         public static PropertyPath SpreadForCorridorPath { get { return new PropertyPath("SpreadForCorridor"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStDevToRatesStDevRatio"/></summary>
-        public static PropertyPath CorridorHeightToRatesHeightRatioPath { get { return new PropertyPath("CorridorHeightToRatesHeightRatio"); } }
+        public static PropertyPath CorridorStDevToRatesStDevRatioPath { get { return new PropertyPath("CorridorStDevToRatesStDevRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Density"/></summary>
-        public static PropertyPath VolumeRatioPath { get { return new PropertyPath("VolumeRatio"); } }
+        public static PropertyPath DensityPath { get { return new PropertyPath("Density"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.DensityCorridor"/></summary>
+        public static PropertyPath DensityCorridorPath { get { return new PropertyPath("DensityCorridor"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public static PropertyPath HeaderPath { get { return new PropertyPath("Header"); } }
@@ -856,6 +935,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PlayStartDate"/></summary>
         public static PropertyPath PlayStartDatePath { get { return new PropertyPath("PlayStartDate"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.PlotterColor"/></summary>
+        public static PropertyPath PlotterColorPath { get { return new PropertyPath("PlotterColor"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SuppResMinimumDistance"/></summary>
         public static PropertyPath SuppResMinimumDistancePath { get { return new PropertyPath("SuppResMinimumDistance"); } }
@@ -977,773 +1059,8 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SelectedGannAngleIndex"/></summary>
         public static PropertyPath SelectedGannAngleIndexPath { get { return new PropertyPath("SelectedGannAngleIndex"); } }
 
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Corridors"/></summary>
-    public static class CorridorsMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Corridors.GetIsInteractive"/></summary>
-        public const string GetIsInteractive = "GetIsInteractive";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetIsInteractive"/></summary>
-        public const string SetIsInteractive = "SetIsInteractive";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.IsInteractiveProperty"/></summary>
-        public const string IsInteractiveProperty = "IsInteractiveProperty";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.GetFriend"/></summary>
-        public const string GetFriend = "GetFriend";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetFriend"/></summary>
-        public const string SetFriend = "SetFriend";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.FriendProperty"/></summary>
-        public const string FriendProperty = "FriendProperty";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._IsInPlay"/></summary>
-        public const string _IsInPlay = "_IsInPlay";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.IsInPlay"/></summary>
-        public const string IsInPlay = "IsInPlay";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._DelayInSeconds"/></summary>
-        public const string _DelayInSeconds = "_DelayInSeconds";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DelayInSeconds"/></summary>
-        public const string DelayInSeconds = "DelayInSeconds";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._PlayStartDate"/></summary>
-        public const string _PlayStartDate = "_PlayStartDate";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.PlayStartDate"/></summary>
-        public const string PlayStartDate = "PlayStartDate";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.SuppResMinimumDistance"/></summary>
-        public const string SuppResMinimumDistance = "SuppResMinimumDistance";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedTimeX"/></summary>
-        public const string animatedTimeX = "animatedTimeX";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedTime0X"/></summary>
-        public const string animatedTime0X = "animatedTime0X";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedPriceY"/></summary>
-        public const string animatedPriceY = "animatedPriceY";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedDataSource"/></summary>
-        public const string animatedDataSource = "animatedDataSource";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedPriceBidY"/></summary>
-        public const string animatedPriceBidY = "animatedPriceBidY";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedDataSourceBid"/></summary>
-        public const string animatedDataSourceBid = "animatedDataSourceBid";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedPrice1Y"/></summary>
-        public const string animatedPrice1Y = "animatedPrice1Y";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedDataSource1"/></summary>
-        public const string animatedDataSource1 = "animatedDataSource1";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVoltTimeX"/></summary>
-        public const string animatedVoltTimeX = "animatedVoltTimeX";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVoltValueY"/></summary>
-        public const string animatedVoltValueY = "animatedVoltValueY";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVoltDataSource"/></summary>
-        public const string animatedVoltDataSource = "animatedVoltDataSource";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVolt1TimeX"/></summary>
-        public const string animatedVolt1TimeX = "animatedVolt1TimeX";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVolt1ValueY"/></summary>
-        public const string animatedVolt1ValueY = "animatedVolt1ValueY";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.animatedVolt1DataSource"/></summary>
-        public const string animatedVolt1DataSource = "animatedVolt1DataSource";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.infoBox"/></summary>
-        public const string infoBox = "infoBox";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.viewPortContainer"/></summary>
-        public const string viewPortContainer = "viewPortContainer";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CorridorHeightMultiplier"/></summary>
-        public const string CorridorHeightMultiplier = "CorridorHeightMultiplier";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.PriceBarValue"/></summary>
-        public const string PriceBarValue = "PriceBarValue";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GetPriceFunc"/></summary>
-        public const string GetPriceFunc = "GetPriceFunc";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassBuy"/></summary>
-        public const string CenterOfMassBuy = "CenterOfMassBuy";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassSell"/></summary>
-        public const string CenterOfMassSell = "CenterOfMassSell";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.PriceLineGraph"/></summary>
-        public const string PriceLineGraph = "PriceLineGraph";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.priceLineGraphColor"/></summary>
-        public const string priceLineGraphColor = "priceLineGraphColor";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.priceLineGraphColorBuy"/></summary>
-        public const string priceLineGraphColorBuy = "priceLineGraphColorBuy";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.priceLineGraphColorSell"/></summary>
-        public const string priceLineGraphColorSell = "priceLineGraphColorSell";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.buySell"/></summary>
-        public const string buySell = "buySell";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetPriceLineColor"/></summary>
-        public const string SetPriceLineColor = "SetPriceLineColor";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineMax"/></summary>
-        public const string lineMax = "lineMax";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMax"/></summary>
-        public const string LineMax = "LineMax";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineMaxAvg"/></summary>
-        public const string lineMaxAvg = "lineMaxAvg";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMaxAvg"/></summary>
-        public const string LineMaxAvg = "LineMaxAvg";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineMin"/></summary>
-        public const string lineMin = "lineMin";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMin"/></summary>
-        public const string LineMin = "LineMin";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineMinAvg"/></summary>
-        public const string lineMinAvg = "lineMinAvg";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMinAvg"/></summary>
-        public const string LineMinAvg = "LineMinAvg";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._DoShowCenterOfMass"/></summary>
-        public const string _DoShowCenterOfMass = "_DoShowCenterOfMass";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DoShowCenterOfMass"/></summary>
-        public const string DoShowCenterOfMass = "DoShowCenterOfMass";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.centerOfMassBrush"/></summary>
-        public const string centerOfMassBrush = "centerOfMassBrush";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._centerOfMassHLineHigh"/></summary>
-        public const string _centerOfMassHLineHigh = "_centerOfMassHLineHigh";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.centerOfMassHLineHigh"/></summary>
-        public const string centerOfMassHLineHigh = "centerOfMassHLineHigh";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassHLineHigh"/></summary>
-        public const string CenterOfMassHLineHigh = "CenterOfMassHLineHigh";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._centerOfMassHLineLow"/></summary>
-        public const string _centerOfMassHLineLow = "_centerOfMassHLineLow";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.centerOfMassHLineLow"/></summary>
-        public const string centerOfMassHLineLow = "centerOfMassHLineLow";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassHLineLow"/></summary>
-        public const string CenterOfMassHLineLow = "CenterOfMassHLineLow";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.magnetPrice"/></summary>
-        public const string magnetPrice = "magnetPrice";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.MagnetPrice"/></summary>
-        public const string MagnetPrice = "MagnetPrice";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineNetSell"/></summary>
-        public const string lineNetSell = "lineNetSell";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineNetSell"/></summary>
-        public const string LineNetSell = "LineNetSell";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineNetBuy"/></summary>
-        public const string lineNetBuy = "lineNetBuy";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineNetBuy"/></summary>
-        public const string LineNetBuy = "LineNetBuy";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineAvgAsk"/></summary>
-        public const string lineAvgAsk = "lineAvgAsk";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineAvgAsk"/></summary>
-        public const string LineAvgAsk = "LineAvgAsk";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineAvgBid"/></summary>
-        public const string lineAvgBid = "lineAvgBid";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineAvgBid"/></summary>
-        public const string LineAvgBid = "LineAvgBid";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._lineTimeMax"/></summary>
-        public const string _lineTimeMax = "_lineTimeMax";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.lineTimeMax"/></summary>
-        public const string lineTimeMax = "lineTimeMax";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeMax"/></summary>
-        public const string LineTimeMax = "LineTimeMax";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineTimeMin"/></summary>
-        public const string lineTimeMin = "lineTimeMin";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeMin"/></summary>
-        public const string LineTimeMin = "LineTimeMin";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.lineTimeAvg"/></summary>
-        public const string lineTimeAvg = "lineTimeAvg";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeAvg"/></summary>
-        public const string LineTimeAvg = "LineTimeAvg";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.gannLine"/></summary>
-        public const string gannLine = "gannLine";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannLine"/></summary>
-        public const string GannLine = "GannLine";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.trendLine"/></summary>
-        public const string trendLine = "trendLine";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine"/></summary>
-        public const string TrendLine = "TrendLine";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.trendLine1"/></summary>
-        public const string trendLine1 = "trendLine1";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine1"/></summary>
-        public const string TrendLine1 = "TrendLine1";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.trendLine11"/></summary>
-        public const string trendLine11 = "trendLine11";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine11"/></summary>
-        public const string TrendLine11 = "TrendLine11";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.trendLine2"/></summary>
-        public const string trendLine2 = "trendLine2";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine2"/></summary>
-        public const string TrendLine2 = "TrendLine2";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.trendLine22"/></summary>
-        public const string trendLine22 = "trendLine22";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine22"/></summary>
-        public const string TrendLine22 = "TrendLine22";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._GannAngleOffsetPoint"/></summary>
-        public const string _GannAngleOffsetPoint = "_GannAngleOffsetPoint";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAngleOffsetPoint"/></summary>
-        public const string GannAngleOffsetPoint = "GannAngleOffsetPoint";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.GannAngleChangedScheduler"/></summary>
-        public const string GannAngleChangedScheduler = "GannAngleChangedScheduler";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors._GannAngleOffsetPoint_PositionChanged"/></summary>
-        public const string _GannAngleOffsetPoint_PositionChanged = "_GannAngleOffsetPoint_PositionChanged";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnGannAngleChanged"/></summary>
-        public const string OnGannAngleChanged = "OnGannAngleChanged";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._CorridorStartPointX"/></summary>
-        public const string _CorridorStartPointX = "_CorridorStartPointX";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CorridorStartPointX"/></summary>
-        public const string CorridorStartPointX = "CorridorStartPointX";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors._CorridorStartPointX_PreviewMouseUp"/></summary>
-        public const string _CorridorStartPointX_PreviewMouseUp = "_CorridorStartPointX_PreviewMouseUp";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors._CorridorStartPointX_GotFocus"/></summary>
-        public const string _CorridorStartPointX_GotFocus = "_CorridorStartPointX_GotFocus";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors._CorridorStartPointX_PreviewMouseLeftButtonDown"/></summary>
-        public const string _CorridorStartPointX_PreviewMouseLeftButtonDown = "_CorridorStartPointX_PreviewMouseLeftButtonDown";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.DraggablePoint_MouseLeftButtonDown"/></summary>
-        public const string DraggablePoint_MouseLeftButtonDown = "DraggablePoint_MouseLeftButtonDown";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.DraggablePoint_KeyDown"/></summary>
-        public const string DraggablePoint_KeyDown = "DraggablePoint_KeyDown";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._ActiveDraggablePoint"/></summary>
-        public const string _ActiveDraggablePoint = "_ActiveDraggablePoint";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.ActiveDraggablePoint"/></summary>
-        public const string ActiveDraggablePoint = "ActiveDraggablePoint";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.otherHLines"/></summary>
-        public const string otherHLines = "otherHLines";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.otherVLines"/></summary>
-        public const string otherVLines = "otherVLines";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.Corridors_Closing"/></summary>
-        public const string Corridors_Closing = "Corridors_Closing";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.ds"/></summary>
-        public const string ds = "ds";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.dsAvg1"/></summary>
-        public const string dsAvg1 = "dsAvg1";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.dsAvg2"/></summary>
-        public const string dsAvg2 = "dsAvg2";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.dsAvg3"/></summary>
-        public const string dsAvg3 = "dsAvg3";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.dsVolts"/></summary>
-        public const string dsVolts = "dsVolts";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.dsVoltsPoly"/></summary>
-        public const string dsVoltsPoly = "dsVoltsPoly";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Corridors.DraggablePointInfo"/></summary>
-        public static class DraggablePointInfoMetadata
-        {
-                        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DraggablePointInfo.DraggablePoint"/></summary>
-            public const string DraggablePoint = "DraggablePoint";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.DraggablePointInfo.TradesCount"/></summary>
-            public const string TradesCount = "TradesCount";
-
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.DraggablePointInfo.DraggablePoint"/></summary>
-            public static PropertyPath DraggablePointPath { get { return new PropertyPath("DraggablePoint"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.DraggablePointInfo.TradesCount"/></summary>
-            public static PropertyPath TradesCountPath { get { return new PropertyPath("TradesCount"); } }
-
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.BuyRates"/></summary>
-        public const string BuyRates = "BuyRates";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.SellRates"/></summary>
-        public const string SellRates = "SellRates";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Corridors.BuySellLevel"/></summary>
-        public static class BuySellLevelMetadata
-        {
-                        /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.Rate"/></summary>
-            public const string Rate = "Rate";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.CrossCount"/></summary>
-            public const string CrossCount = "CrossCount";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.IsBuy"/></summary>
-            public const string IsBuy = "IsBuy";
-
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.Rate"/></summary>
-            public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.CrossCount"/></summary>
-            public static PropertyPath CrossCountPath { get { return new PropertyPath("CrossCount"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Corridors.BuySellLevel.IsBuy"/></summary>
-            public static PropertyPath IsBuyPath { get { return new PropertyPath("IsBuy"); } }
-
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.StrokeArrayForTrades"/></summary>
-        public const string StrokeArrayForTrades = "StrokeArrayForTrades";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.tradeLines"/></summary>
-        public const string tradeLines = "tradeLines";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetTradeLines"/></summary>
-        public const string SetTradeLines = "SetTradeLines";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetBuyRates"/></summary>
-        public const string SetBuyRates = "SetBuyRates";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetSellRates"/></summary>
-        public const string SetSellRates = "SetSellRates";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.CleanSuppResRates"/></summary>
-        public const string CleanSuppResRates = "CleanSuppResRates";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._isShiftDown"/></summary>
-        public const string _isShiftDown = "_isShiftDown";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetBuySellRates"/></summary>
-        public const string SetBuySellRates = "SetBuySellRates";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.CreatePointY"/></summary>
-        public const string CreatePointY = "CreatePointY";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.FibLevels"/></summary>
-        public const string FibLevels = "FibLevels";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.GannAngles"/></summary>
-        public const string GannAngles = "GannAngles";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.LineToPoint"/></summary>
-        public const string LineToPoint = "LineToPoint";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.CreateCurrencyDataSource"/></summary>
-        public const string CreateCurrencyDataSource = "CreateCurrencyDataSource";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._gannAnglesCount"/></summary>
-        public const string _gannAnglesCount = "_gannAnglesCount";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAnglesCount"/></summary>
-        public const string GannAnglesCount = "GannAnglesCount";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._GannAngle1x1Index"/></summary>
-        public const string _GannAngle1x1Index = "_GannAngle1x1Index";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAngle1x1Index"/></summary>
-        public const string GannAngle1x1Index = "GannAngle1x1Index";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.InsertGannLines"/></summary>
-        public const string InsertGannLines = "InsertGannLines";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._DoShowFibLines"/></summary>
-        public const string _DoShowFibLines = "_DoShowFibLines";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DoShowFibLines"/></summary>
-        public const string DoShowFibLines = "DoShowFibLines";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.InsertFibLines"/></summary>
-        public const string InsertFibLines = "InsertFibLines";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.GuessPipSize"/></summary>
-        public const string GuessPipSize = "GuessPipSize";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.plotter_PreviewKeyDown"/></summary>
-        public const string plotter_PreviewKeyDown = "plotter_PreviewKeyDown";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.AdjustDraggablePointByPip"/></summary>
-        public const string AdjustDraggablePointByPip = "AdjustDraggablePointByPip";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.plotter_KeyDown"/></summary>
-        public const string plotter_KeyDown = "plotter_KeyDown";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.CorridorStartPositionOld"/></summary>
-        public const string CorridorStartPositionOld = "CorridorStartPositionOld";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.GetPriceStartDate"/></summary>
-        public const string GetPriceStartDate = "GetPriceStartDate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.corridorStartDateScheduler"/></summary>
-        public const string corridorStartDateScheduler = "corridorStartDateScheduler";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.CorridorStartPointX_IsMouseCapturedChanged"/></summary>
-        public const string CorridorStartPointX_IsMouseCapturedChanged = "CorridorStartPointX_IsMouseCapturedChanged";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.CorridorStartPointX_PositionChanged"/></summary>
-        public const string CorridorStartPointX_PositionChanged = "CorridorStartPointX_PositionChanged";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnBuySellRemoved"/></summary>
-        public const string OnBuySellRemoved = "OnBuySellRemoved";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnBuySellAdded"/></summary>
-        public const string OnBuySellAdded = "OnBuySellAdded";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnPlay"/></summary>
-        public const string OnPlay = "OnPlay";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnCorridorStartPositionChanged"/></summary>
-        public const string OnCorridorStartPositionChanged = "OnCorridorStartPositionChanged";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors._suppResChangeScheduler"/></summary>
-        public const string _suppResChangeScheduler = "_suppResChangeScheduler";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.OnSupportResistanceChanged"/></summary>
-        public const string OnSupportResistanceChanged = "OnSupportResistanceChanged";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.UpdateTicks"/></summary>
-        public const string UpdateTicks = "UpdateTicks";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.inRendering"/></summary>
-        public const string inRendering = "inRendering";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.IsPlotterInitialised"/></summary>
-        public const string IsPlotterInitialised = "IsPlotterInitialised";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.AddTicks"/></summary>
-        public const string AddTicks = "AddTicks";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetPoint"/></summary>
-        public const string SetPoint = "SetPoint";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Corridors.hasGannAnglesFilter"/></summary>
-        public const string hasGannAnglesFilter = "hasGannAnglesFilter";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetGannAngles"/></summary>
-        public const string SetGannAngles = "SetGannAngles";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.SetFibLevels"/></summary>
-        public const string SetFibLevels = "SetFibLevels";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.ReAdjustXY"/></summary>
-        public const string ReAdjustXY = "ReAdjustXY";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.ConvertToDateTime"/></summary>
-        public const string ConvertToDateTime = "ConvertToDateTime";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Corridors.ConvertToDouble"/></summary>
-        public const string ConvertToDouble = "ConvertToDouble";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.SelectedGannAngleIndex"/></summary>
-        public const string SelectedGannAngleIndex = "SelectedGannAngleIndex";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.IsInPlay"/></summary>
-        public static PropertyPath IsInPlayPath { get { return new PropertyPath("IsInPlay"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DelayInSeconds"/></summary>
-        public static PropertyPath DelayInSecondsPath { get { return new PropertyPath("DelayInSeconds"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.PlayStartDate"/></summary>
-        public static PropertyPath PlayStartDatePath { get { return new PropertyPath("PlayStartDate"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.SuppResMinimumDistance"/></summary>
-        public static PropertyPath SuppResMinimumDistancePath { get { return new PropertyPath("SuppResMinimumDistance"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CorridorHeightMultiplier"/></summary>
-        public static PropertyPath CorridorHeightMultiplierPath { get { return new PropertyPath("CorridorHeightMultiplier"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GetPriceFunc"/></summary>
-        public static PropertyPath GetPriceFuncPath { get { return new PropertyPath("GetPriceFunc"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassBuy"/></summary>
-        public static PropertyPath CenterOfMassBuyPath { get { return new PropertyPath("CenterOfMassBuy"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassSell"/></summary>
-        public static PropertyPath CenterOfMassSellPath { get { return new PropertyPath("CenterOfMassSell"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.PriceLineGraph"/></summary>
-        public static PropertyPath PriceLineGraphPath { get { return new PropertyPath("PriceLineGraph"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMax"/></summary>
-        public static PropertyPath LineMaxPath { get { return new PropertyPath("LineMax"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMaxAvg"/></summary>
-        public static PropertyPath LineMaxAvgPath { get { return new PropertyPath("LineMaxAvg"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMin"/></summary>
-        public static PropertyPath LineMinPath { get { return new PropertyPath("LineMin"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineMinAvg"/></summary>
-        public static PropertyPath LineMinAvgPath { get { return new PropertyPath("LineMinAvg"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DoShowCenterOfMass"/></summary>
-        public static PropertyPath DoShowCenterOfMassPath { get { return new PropertyPath("DoShowCenterOfMass"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.centerOfMassHLineHigh"/></summary>
-        public static PropertyPath centerOfMassHLineHighPath { get { return new PropertyPath("centerOfMassHLineHigh"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassHLineHigh"/></summary>
-        public static PropertyPath CenterOfMassHLineHighPath { get { return new PropertyPath("CenterOfMassHLineHigh"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.centerOfMassHLineLow"/></summary>
-        public static PropertyPath centerOfMassHLineLowPath { get { return new PropertyPath("centerOfMassHLineLow"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CenterOfMassHLineLow"/></summary>
-        public static PropertyPath CenterOfMassHLineLowPath { get { return new PropertyPath("CenterOfMassHLineLow"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.MagnetPrice"/></summary>
-        public static PropertyPath MagnetPricePath { get { return new PropertyPath("MagnetPrice"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineNetSell"/></summary>
-        public static PropertyPath LineNetSellPath { get { return new PropertyPath("LineNetSell"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineNetBuy"/></summary>
-        public static PropertyPath LineNetBuyPath { get { return new PropertyPath("LineNetBuy"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineAvgAsk"/></summary>
-        public static PropertyPath LineAvgAskPath { get { return new PropertyPath("LineAvgAsk"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineAvgBid"/></summary>
-        public static PropertyPath LineAvgBidPath { get { return new PropertyPath("LineAvgBid"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.lineTimeMax"/></summary>
-        public static PropertyPath lineTimeMaxPath { get { return new PropertyPath("lineTimeMax"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeMax"/></summary>
-        public static PropertyPath LineTimeMaxPath { get { return new PropertyPath("LineTimeMax"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeMin"/></summary>
-        public static PropertyPath LineTimeMinPath { get { return new PropertyPath("LineTimeMin"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.LineTimeAvg"/></summary>
-        public static PropertyPath LineTimeAvgPath { get { return new PropertyPath("LineTimeAvg"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannLine"/></summary>
-        public static PropertyPath GannLinePath { get { return new PropertyPath("GannLine"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine"/></summary>
-        public static PropertyPath TrendLinePath { get { return new PropertyPath("TrendLine"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine1"/></summary>
-        public static PropertyPath TrendLine1Path { get { return new PropertyPath("TrendLine1"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine11"/></summary>
-        public static PropertyPath TrendLine11Path { get { return new PropertyPath("TrendLine11"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine2"/></summary>
-        public static PropertyPath TrendLine2Path { get { return new PropertyPath("TrendLine2"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.TrendLine22"/></summary>
-        public static PropertyPath TrendLine22Path { get { return new PropertyPath("TrendLine22"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAngleOffsetPoint"/></summary>
-        public static PropertyPath GannAngleOffsetPointPath { get { return new PropertyPath("GannAngleOffsetPoint"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.CorridorStartPointX"/></summary>
-        public static PropertyPath CorridorStartPointXPath { get { return new PropertyPath("CorridorStartPointX"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.ActiveDraggablePoint"/></summary>
-        public static PropertyPath ActiveDraggablePointPath { get { return new PropertyPath("ActiveDraggablePoint"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAnglesCount"/></summary>
-        public static PropertyPath GannAnglesCountPath { get { return new PropertyPath("GannAnglesCount"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.GannAngle1x1Index"/></summary>
-        public static PropertyPath GannAngle1x1IndexPath { get { return new PropertyPath("GannAngle1x1Index"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.DoShowFibLines"/></summary>
-        public static PropertyPath DoShowFibLinesPath { get { return new PropertyPath("DoShowFibLines"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Corridors.SelectedGannAngleIndex"/></summary>
-        public static PropertyPath SelectedGannAngleIndexPath { get { return new PropertyPath("SelectedGannAngleIndex"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.ChartTick"/></summary>
-    public static class ChartTickMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.ChartTick.price"/></summary>
-        public const string price = "price";
-
-        /// <summary>Refers to property <see cref="HedgeHog.ChartTick.Price"/></summary>
-        public const string Price = "Price";
-
-        /// <summary>Refers to property <see cref="HedgeHog.ChartTick.Time"/></summary>
-        public const string Time = "Time";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.ChartTick.Price"/></summary>
-        public static PropertyPath PricePath { get { return new PropertyPath("Price"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.ChartTick.Time"/></summary>
-        public static PropertyPath TimePath { get { return new PropertyPath("Time"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.BuySellRateRemovedEventArgs"/></summary>
-    public static class BuySellRateRemovedEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.BuySellRateRemovedEventArgs.UID"/></summary>
-        public const string UID = "UID";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.BuySellRateRemovedEventArgs.UID"/></summary>
-        public static PropertyPath UIDPath { get { return new PropertyPath("UID"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.BuySellRateAddedEventArgs"/></summary>
-    public static class BuySellRateAddedEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.BuySellRateAddedEventArgs.IsBuy"/></summary>
-        public const string IsBuy = "IsBuy";
-
-        /// <summary>Refers to property <see cref="HedgeHog.BuySellRateAddedEventArgs.Rate"/></summary>
-        public const string Rate = "Rate";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.BuySellRateAddedEventArgs.IsBuy"/></summary>
-        public static PropertyPath IsBuyPath { get { return new PropertyPath("IsBuy"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.BuySellRateAddedEventArgs.Rate"/></summary>
-        public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.PlayEventArgs"/></summary>
-    public static class PlayEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.Play"/></summary>
-        public const string Play = "Play";
-
-        /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.StartDate"/></summary>
-        public const string StartDate = "StartDate";
-
-        /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.Delay"/></summary>
-        public const string Delay = "Delay";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.Play"/></summary>
-        public static PropertyPath PlayPath { get { return new PropertyPath("Play"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.StartDate"/></summary>
-        public static PropertyPath StartDatePath { get { return new PropertyPath("StartDate"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.PlayEventArgs.Delay"/></summary>
-        public static PropertyPath DelayPath { get { return new PropertyPath("Delay"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.GannAngleOffsetChangedEventArgs"/></summary>
-    public static class GannAngleOffsetChangedEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.GannAngleOffsetChangedEventArgs.Offset"/></summary>
-        public const string Offset = "Offset";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.GannAngleOffsetChangedEventArgs.Offset"/></summary>
-        public static PropertyPath OffsetPath { get { return new PropertyPath("Offset"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.SupportResistanceChangedEventArgs"/></summary>
-    public static class SupportResistanceChangedEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.SupportResistanceChangedEventArgs.UID"/></summary>
-        public const string UID = "UID";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.SupportResistanceChangedEventArgs.UID"/></summary>
-        public static PropertyPath UIDPath { get { return new PropertyPath("UID"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.CorridorPositionChangedEventArgs"/></summary>
-    public static class CorridorPositionChangedEventArgsMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.PositionChangedBaseEventArgs<T>"/></summary>
-    public static class PositionChangedBaseEventArgsMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.PositionChangedBaseEventArgs{T}.NewPosition"/></summary>
-        public const string NewPosition = "NewPosition";
-
-        /// <summary>Refers to property <see cref="HedgeHog.PositionChangedBaseEventArgs{T}.OldPosition"/></summary>
-        public const string OldPosition = "OldPosition";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.PositionChangedBaseEventArgs{T}.NewPosition"/></summary>
-        public static PropertyPath NewPositionPath { get { return new PropertyPath("NewPosition"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.PositionChangedBaseEventArgs{T}.OldPosition"/></summary>
-        public static PropertyPath OldPositionPath { get { return new PropertyPath("OldPosition"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GetPriceMA"/></summary>
+        public static PropertyPath GetPriceMAPath { get { return new PropertyPath("GetPriceMA"); } }
 
     }
 
