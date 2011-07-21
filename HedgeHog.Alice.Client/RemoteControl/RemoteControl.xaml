@@ -213,7 +213,7 @@
     </Style>
   </UserControl.Resources>
     <Grid>
-    <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}"
+    <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}" FontSize="12"
               FontWeight="Black" VerticalScrollBarVisibility="Auto" Background="#FFF7F3F7">
       <DataGrid.RowStyle>
         <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
@@ -372,7 +372,7 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
         </DataGridTemplateColumn>
-        <DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>
+        <!--<DataGridComboBoxColumn Header="U/D" SelectedValueBinding="{Binding TradeDirection}" ItemsSource="{Binding Source={StaticResource TradeDirectionValues}}"/>-->
         <!--<DataGridCheckBoxColumn Header="ROP" Binding="{Binding ReverseOnProfit}" ToolTipService.ToolTip="Reverse on profit" />-->
         <DataGridTemplateColumn Header="RateTime">
           <DataGridTemplateColumn.CellTemplate>
@@ -401,6 +401,26 @@
               </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Expander ExpandDirection="Right" Margin="0,-2,0,-7">
+                <Expander.Content>
+                  <TextBlock>
+                    D:<TextBox Text="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
+              <CheckBox Content="■" IsChecked="{Binding DataContext.ReplayArguments.MustStop,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+              <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
+                      Command="{Binding DataContext.StartReplayCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                      CommandParameter="{Binding BindsDirectlyToSource=True}" />
+              <CheckBox Content="||" IsChecked="{Binding DataContext.ReplayArguments.InPause,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+              <CheckBox Content="&lt;" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+              <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                  </TextBlock>
+                </Expander.Content>
+              </Expander>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>

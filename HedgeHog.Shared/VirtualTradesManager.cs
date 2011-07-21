@@ -399,6 +399,15 @@ namespace HedgeHog.Shared {
     }
 
     #endregion
+
+    #region ITradesManager Members
+
+
+    public void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
+      throw new NotImplementedException();
+    }
+
+    #endregion
   }
 
 }

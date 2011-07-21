@@ -79,8 +79,8 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURGBP_1.11]IsChecked" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="-2" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="-3" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="1202" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1200" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="1900" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1208" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.MasterPanel]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Data\Dev\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />
@@ -92,7 +92,7 @@
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.CheckBox2[.chkVP]IsChecked" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.ServerAddress]Text" value="localhost:9200/" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.ComboBox[.AliceMode]SelectedIndex" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.AccountsManager]IsSelected" value="True" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.AccountsManager]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.TradingMacros]IsSelected" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.64]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.OpenedOrders]IsSelected" value="False" />

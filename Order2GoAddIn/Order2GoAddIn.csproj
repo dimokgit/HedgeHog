@@ -39,11 +39,20 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="GalaSoft.MvvmLight.Extras.WPF4">
+      <HintPath>..\packages\MvvmLight.3.0.3\lib\net40\GalaSoft.MvvmLight.Extras.WPF4.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight.WPF4, Version=3.0.0.32852, Culture=neutral, PublicKeyToken=63eb5c012e0b3c1c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\MvvmLight.3.0.3\lib\net40\GalaSoft.MvvmLight.WPF4.dll</HintPath>
+    </Reference>
     <Reference Include="Interop.Indicore, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files\CandleWorks\FXOrder2Go\IndicoreComWrapperSamples\Interop.Indicore.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -54,6 +63,10 @@
     <Reference Include="System.Reactive, Version=1.0.10605.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Threading.Tasks.Dataflow, Version=0.0.4098.29463, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
+    <Reference Include="System.Windows.Interactivity">
+      <HintPath>..\packages\MvvmLight.3.0.3\lib\net40\System.Windows.Interactivity.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
@@ -75,13 +88,11 @@
     <None Include="Tick.cs" />
     <Compile Include="sample1.cs" />
     <Compile Include="sample2.cs" />
+    <Compile Include="ViewModel\MainViewModel.cs" />
+    <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="Wrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\GalaSoft\GalaSoft.MvvmLight\GalaSoft.MvvmLight %28NET4%29\GalaSoft.MvvmLight %28NET4%29.csproj">
-      <Project>{E8EF2656-7165-42D1-9C46-63E66679808D}</Project>
-      <Name>GalaSoft.MvvmLight %28NET4%29</Name>
-    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>

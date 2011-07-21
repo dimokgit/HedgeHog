@@ -17,7 +17,7 @@ namespace HedgeHog.Alice.Store {
     static string _databasePath;
     public static string DatabasePath {
       get {
-        if (string.IsNullOrWhiteSpace(_databasePath)) {
+        if (string.IsNullOrWhiteSpace(_databasePath) || !System.IO.Directory.Exists(_databasePath)) {
           _databasePath = OpenDataBasePath();
           if (string.IsNullOrWhiteSpace(_databasePath)) throw new Exception("No database path ptovided for AliceEntities");
         }
@@ -49,7 +49,7 @@ namespace HedgeHog.Alice.Store {
         using (var context = new ForexEntities())
           return action(context);
       } catch (Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         throw;
       }
     }
@@ -113,10 +113,12 @@ namespace HedgeHog.Alice.Store {
       return Context.TradingAccounts.ToArray();
     }
     public static List<Rate> GetRateFromDB(string pair, DateTime startDate, int barsCount, int minutesPerBar) {
-      var bars = GlobalStorage.UseForexContext(c => c.t_Bar).
-        Where(b => b.Pair == pair && b.Period == minutesPerBar && b.StartDate >= startDate)
+      return GlobalStorage.UseForexContext(c => {
+        var q = c.t_Bar
+          .Where(b => b.Pair == pair && b.Period == minutesPerBar && b.StartDate >= startDate)
         .OrderBy(b => b.StartDate).Take(barsCount);
-      return GetRatesFromDBBars(bars);
+        return GetRatesFromDBBars(q);
+      });
     }
 
     public static List<Rate> GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {

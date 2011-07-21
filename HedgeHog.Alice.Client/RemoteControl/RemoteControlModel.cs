@@ -308,7 +308,27 @@ namespace HedgeHog.Alice.Client {
 
     }
 
+    #region StartReplayCommand
+    ICommand _StartReplayCommand;
+    public ICommand StartReplayCommand {
+      get {
+        if (_StartReplayCommand == null) {
+          _StartReplayCommand = new Gala.RelayCommand<TradingMacro>(StartReplay, tm => true);
+        }
+        return _StartReplayCommand;
+      }
+    }
+    ReplayArguments _replayArguments = new ReplayArguments() { DelayInSeconds = .5 };
+    public ReplayArguments ReplayArguments {
+      get { return _replayArguments; }
+    }
 
+    void StartReplay(TradingMacro tm) {
+      Task.Factory.StartNew(() =>
+        tm.Replay(ReplayArguments)
+      );
+    }
+    #endregion
 
     Task loadHistoryTast;
     bool isLoadHistoryTaskRunning { get { return loadHistoryTast != null && loadHistoryTast.Status == TaskStatus.Running; } }
@@ -516,7 +536,7 @@ namespace HedgeHog.Alice.Client {
         _tradingStatistics.TakeProfitDistanceInPips = double.NaN;
       }
       tms = GetTradingMacros();
-      _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(2).Average();
+      _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(1).Average();
       _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
       _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.VolumeRatioL = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
@@ -800,7 +820,7 @@ namespace HedgeHog.Alice.Client {
           charter.DensityCorridor = tm.CorridorDensityInPips;
           charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
-          charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : "White";
+          charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.AddTicks(price, rates, new PriceBar[1][] { null/*priceBars*/ }, info, trendHighlight,
             0, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,

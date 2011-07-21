@@ -54,7 +54,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region StDev
-    private double _StDevPips;
+    private double _StDevPips = double.NaN;
     public double StDevPips {
       get { return _StDevPips; }
       set {

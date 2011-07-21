@@ -36,7 +36,7 @@ namespace HedgeHog.Alice.Server {
       set {
         if (_BidHighToAskLowRatio != value) {
           _BidHighToAskLowRatio = value;
-          RaisePropertyChanged(() => BidHighToAskLowRatio);
+          RaisePropertyChanged("BidHighToAskLowRatio");
         }
       }
     }
@@ -49,7 +49,7 @@ namespace HedgeHog.Alice.Server {
       set {
         if (_BidHighToAskLowRatioMA != value) {
           _BidHighToAskLowRatioMA = value;
-          RaisePropertyChanged(() => BidHighToAskLowRatioMA);
+          RaisePropertyChanged("BidHighToAskLowRatioMA");
         }
       }
     }

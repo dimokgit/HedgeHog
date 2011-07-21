@@ -91,6 +91,7 @@ namespace HedgeHog.Shared {
     void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool doTrim);
 
     //void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList);
+    void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd);
   }
   public class ErrorEventArgs : EventArgs {
     public string Pair { get; set; }

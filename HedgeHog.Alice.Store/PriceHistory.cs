@@ -49,9 +49,10 @@ namespace HedgeHog.Alice.Store {
 
         var offset = TimeSpan.FromMinutes(period);
         using (var context = new ForexEntities()) {
-          var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset);
-          fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
-
+          if (dateStart > DateTime.MinValue) {
+            var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset);
+            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+          }
           dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max().Add(offset);
         }
         fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
