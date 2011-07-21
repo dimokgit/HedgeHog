@@ -23,7 +23,6 @@ namespace HedgeHog.Alice.Client {
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
     }
 
-
     public ResourceDictionary Resources
     {
         get { return base.Resources; }
