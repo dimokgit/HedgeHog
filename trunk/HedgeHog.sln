@@ -190,6 +190,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Extentions", "HedgeHog.Extentions\HedgeHog.Extentions.csproj", "{1D8C77B9-0D28-4100-953A-E1F2EBB2F32D}"
 EndProject
 Global
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
+	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = HedgeHog.vsmdi
 	EndGlobalSection
