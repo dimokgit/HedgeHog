@@ -5,6 +5,19 @@ using System.Text;
 
 namespace HedgeHog.Shared {
   public class ReplayArguments:GalaSoft.MvvmLight.ViewModelBase {
+    #region CurrentPosition
+    private int _CurrentPosition;
+    public int CurrentPosition {
+      get { return _CurrentPosition; }
+      set {
+        if (_CurrentPosition != value) {
+          _CurrentPosition = value;
+          RaisePropertyChanged("CurrentPosition");
+        }
+      }
+    }
+    #endregion
+
     private double _DelayInSeconds;
     public double DelayInSeconds {
       get { return _DelayInSeconds; }

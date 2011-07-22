@@ -1398,7 +1398,16 @@ namespace HedgeHog.Alice.Store {
         var rates = GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, BarsCount*framesBack, BarPeriodInt);
         RatesInternal.Clear();
         var pointer = 0;
+        var currentPosition = -1;
         while (!args.MustStop) {
+          if (currentPosition > 0 && currentPosition != args.CurrentPosition) {
+            //cp= 100*(i-BarsCount)/(rates.Count-BarsCount)
+            //cp*(rates.Count-BarsCount)/100 +BarsCount= i
+            //i = cp*(rates.Count-BarsCount)+BarsCount
+            var index = (args.CurrentPosition * (rates.Count - BarsCount) / 100.0 ).ToInt();
+            RatesInternal.Clear();
+            RatesInternal.AddRange(rates.Skip(index).Take(BarsCount-1));
+          }
           Rate rate;
           if (args.StepBack) {
             rate = rates.Previous(RatesInternal[0]);
@@ -1410,6 +1419,7 @@ namespace HedgeHog.Alice.Store {
           LastRatePullTime = RatesInternal.Last().StartDate;
           if (RatesInternal.Count == BarsCount) {
             if (rate != null) {
+              args.CurrentPosition = currentPosition = (100.0 *(rates.IndexOf(RatesInternal.Last()) - BarsCount) / (rates.Count - BarsCount)).ToInt();
               var price = new Price(Pair, RatesInternal.Last(), RatesInternal.Last().StartDate, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
               RunPriceChanged(new PriceChangedEventArgs(Pair, price, TradesManager.GetAccount(), new Trade[0]), null);
               RatesArraySafe.Count();
