@@ -302,7 +302,7 @@ namespace Telerik.Windows.Controls.GridView.Settings
                                              select c).FirstOrDefault();
 
                 if (column != null) {
-                  if (currentSetting.DisplayIndex != null) {
+                  if (currentSetting.DisplayIndex != null && currentSetting.DisplayIndex.Value < grid.Columns.Count) {
                     column.DisplayIndex = currentSetting.DisplayIndex.Value;
                   }
 
@@ -452,12 +452,16 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 {
                     Settings.SortSettings.Clear();
 
-                    foreach (ColumnSortDescriptor d in grid.SortDescriptors)
+                    foreach (var d in grid.SortDescriptors)
                     {
                         SortSetting setting = new SortSetting();
 
-                        setting.PropertyName = d.Column.SortMemberPath ?? d.Column.UniqueName;
-                        setting.SortDirection = d.SortDirection;
+                        if (d is ColumnSortDescriptor) {
+                          var dg = d as ColumnSortDescriptor;
+                          setting.PropertyName = dg.Column.SortMemberPath ?? dg.Column.UniqueName;
+                        } else
+                          setting.PropertyName = (d as SortDescriptor).Member;
+                          setting.SortDirection = d.SortDirection;
 
                         Settings.SortSettings.Add(setting);
                     }
@@ -467,14 +471,21 @@ namespace Telerik.Windows.Controls.GridView.Settings
                 {
                     Settings.GroupSettings.Clear();
 
-                    foreach (ColumnGroupDescriptor d in grid.GroupDescriptors)
+                    foreach (var d in grid.GroupDescriptors)
                     {
                         GroupSetting setting = new GroupSetting();
 
-                        setting.PropertyName = d.Column.GroupMemberPath ?? d.Column.UniqueName;
-                        setting.SortDirection = d.SortDirection;
-                        setting.DisplayContent = d.DisplayContent;
-
+                        if (d is ColumnGroupDescriptor) {
+                          var gd = d as ColumnGroupDescriptor;
+                          setting.PropertyName = gd.Column.GroupMemberPath ?? gd.Column.UniqueName;
+                          setting.SortDirection = gd.SortDirection;
+                          setting.DisplayContent = gd.DisplayContent;
+                        } else {
+                          var gd = d as GroupDescriptor;
+                          setting.PropertyName = gd.Member;
+                          setting.SortDirection = gd.SortDirection;
+                          setting.DisplayContent = gd.DisplayContent;
+                        }
                         Settings.GroupSettings.Add(setting);
                     }
                 }
