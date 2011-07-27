@@ -14,9 +14,10 @@ using HedgeHog;
 using System.Globalization;
 using System.Windows.Data;
 using System.Collections.Specialized;
-using System.Concurrency;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -371,6 +372,10 @@ namespace Manheim.ViewModel {
       }
     }
 
+    Predicate<WC.IE> p = ie => {
+      var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
+      return false;
+    };
     private WC.IE OpenVehicleInfoWindow(WC.TableCellCollection tdsInput) {
       Func<WC.TableCellCollection, WC.IE> f = (tds) => {
         var link = tds[2].Links.First();
@@ -378,19 +383,14 @@ namespace Manheim.ViewModel {
         link.SetAttributeValue("target", _vehicleInfoTargetName);
         link.Click();
         WC.IE vehicleInfoIE = null;
-        var dateStart = DateTime.Now;
-        while (vehicleInfoIE == null && DateTime.Now < dateStart.AddSeconds(10)) {
-          foreach (var ie in WC.IE.InternetExplorers()) {
-            var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
-            try {
-              if (doc.parentWindow.name == _vehicleInfoTargetName) {
-                vehicleInfoIE = ie;
-                break;
-              }
-            } catch (Exception exc) {
-              continue;
-            }
-          }
+        var counter = 2;
+        while (counter-- > 0) {
+          try {
+            vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
+              return t == "Manheim - PowerSearch - Vehicle Details";
+            }));
+            break;
+          } catch { }
         }
         if (vehicleInfoIE == null) {
           Log = new Exception("VehicleInfo window not found.");
@@ -491,8 +491,8 @@ namespace Manheim.ViewModel {
       if (IsInDesignMode) {
         // Code runs in Blend --> create design time data.
       } else {
-        Observable.FromEvent<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
-          h => new NotifyCollectionChangedEventHandler(h), h => _auctionsToRun.CollectionChanged += h, h => _auctionsToRun.CollectionChanged -= h)
+        Observable.FromEventPattern<NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
+          h => _auctionsToRun.CollectionChanged += h, h => _auctionsToRun.CollectionChanged -= h)
           .Where(ie => ie.EventArgs.Action == NotifyCollectionChangedAction.Add)
           .ObserveOn(Scheduler.ThreadPool)
           .SelectMany(ie => ie.EventArgs.NewItems.Cast<Auction>())
