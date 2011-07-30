@@ -90,6 +90,9 @@
     <Reference Include="WatiN.Core.UnitTests">
       <HintPath>E:\Data\Install\Tools\WatiN-2.0.20.1089-net-2.0\Bin\WatiN.Core.UnitTests.dll</HintPath>
     </Reference>
+    <Reference Include="WebActivator">
+      <HintPath>..\AllInOne\packages\WebActivator.1.4.1\lib\net40\WebActivator.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -102,6 +105,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="AuthoringTests.txt" />
+    <Content Include="Database1.sdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
