@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
     private static AliceEntities InitAliceEntityContext() {
       var path = DatabasePath;
       var context = new AliceEntities();
-      var storeConn = ((System.Data.SqlServerCe.SqlCeConnection)(((System.Data.EntityClient.EntityConnection)(((System.Data.Objects.ObjectContext)(context)).Connection)).StoreConnection));
+      var storeConn = ((System.Data.EntityClient.EntityConnection)(context.Connection)).StoreConnection;
       storeConn.ConnectionString = "Data Source=" + path;// +"\\Store\\Alice.sdf";
       return context;
     }
