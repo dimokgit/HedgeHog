@@ -86,52 +86,56 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Telerik.Windows.Controls, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Charting, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Charting, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Charting.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Charting.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Data, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Data, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Data.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Data.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.DataVisualization, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.DataVisualization, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.DataVisualization.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.DataVisualization.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Docking, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Docking, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Docking.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Docking.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.GridView, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.GridView, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.GridView.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.GridView.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Input, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Input, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Input.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Input.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Navigation, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Navigation, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Navigation.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Navigation.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.RibbonBar, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.RibbonBar, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.RibbonBar.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.RibbonBar.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.Scheduler, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.Scheduler, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Scheduler.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Scheduler.dll</HintPath>
     </Reference>
-    <Reference Include="Telerik.Windows.Controls.ScheduleView">
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.ScheduleView.dll</HintPath>
-    </Reference>
-    <Reference Include="Telerik.Windows.Data, Version=2010.3.1314.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+    <Reference Include="Telerik.Windows.Controls.ScheduleView, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\Documents and Settings\dimon\Application Data\Telerik\Updates\RadControls_for_WPF40_2010_3_1314_Trial_hotfix\Binaries\WPF\Telerik.Windows.Data.dll</HintPath>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.ScheduleView.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Data, Version=2011.2.712.40, Culture=neutral, PublicKeyToken=5803cfa389c90ce7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="WebActivator">
+      <HintPath>..\AllInOne\packages\WebActivator.1.4.1\lib\net40\WebActivator.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
@@ -179,8 +183,6 @@
       <DependentUpon>StatisticsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="StatisticsModel.cs" />
-    <Compile Include="ViewModel\MainViewModel.cs" />
-    <Compile Include="ViewModel\ViewModelLocator.cs" />
     <Compile Include="Waver.xaml.cs">
       <DependentUpon>Waver.xaml</DependentUpon>
     </Compile>
