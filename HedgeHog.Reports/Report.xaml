@@ -45,7 +45,7 @@
               <tk:AverageFunction Caption="GPL Ǻ:" SourceField="GrossPL" ResultFormatString="{}{0:c1}"/>
             </tk:GridViewDataColumn.AggregateFunctions>
           </tk:GridViewDataColumn>
-          <tk:GridViewDataColumn DataMemberBinding="{Binding Commission}" IsReadOnly="True" TextAlignment="Right" >
+        <tk:GridViewDataColumn DataMemberBinding="{Binding Commission}" IsReadOnly="True" TextAlignment="Right" >
             <tk:GridViewDataColumn.AggregateFunctions>
               <tk:SumFunction Caption="Com Σ:" SourceField="Commission" ResultFormatString="{}{0:c0}"/>
               <tk:AverageFunction Caption="Com Ǻ:" SourceField="Commission" ResultFormatString="{}{0:c1}"/>
