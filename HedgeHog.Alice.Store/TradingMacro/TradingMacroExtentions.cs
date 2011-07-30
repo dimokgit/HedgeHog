@@ -279,7 +279,7 @@ namespace HedgeHog.Alice.Store {
     bool CanTradeByMAFilter(Rate rate, bool isBuy, DateTimeOffset time) {
       return PriceCmaPeriod > 0
         ? (isBuy ? rate.PriceAvg > GetPriceMA(rate) : rate.PriceAvg < GetPriceMA(rate))
-        : (isBuy ? CorridorCrossLowPrice(rate) > rate.PriceAvg3 : CorridorCrossHighPrice(rate) < rate.PriceAvg2);
+        : (isBuy ? CorridorCrossLowPrice(rate) > rate.PriceAvg03 : CorridorCrossHighPrice(rate) < rate.PriceAvg02);
     }
     void DisposeOpenTradeByMASubject() {
       LockPriceCmaPeriod(true);
@@ -1748,14 +1748,14 @@ namespace HedgeHog.Alice.Store {
         var rateLast = CorridorStats.Rates.FirstOrDefault();
         if (rateLast != null && rateLast.PriceAvg1 > 0) {
           try {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
+            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg02;
           } catch {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
+            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg02;
           }
           try {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
+            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg03;
           } catch {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
+            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg03;
           }
           MagnetPrice = RatesArraySafe.Sum(r => r.PriceAvg * r.Volume) / RatesArraySafe.Sum(r => r.Volume);
           return;
@@ -2361,6 +2361,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private double GetLimitRate(Order2GoAddIn.FXCoreWrapper fw, bool isBuy) {
+      return this.RateLast.PriceAvg1;
       Trade[] trades = Trades.IsBuy(isBuy);
       var closeProfit = CalculateCloseProfit();
       var ratesForStDevLimit = RatesForTakeProfit(trades);
@@ -2491,7 +2492,7 @@ namespace HedgeHog.Alice.Store {
         Price price = e.Price;
         #region LoadRates
         if (!TradesManager.IsInTest
-          && (!RatesArraySafe.Any() || LastRatePullTime.AddMinutes(1.0.Max((double)BarPeriod / 2)) <= TradesManager.ServerTime)) {
+          && (!RatesInternal.Any() || LastRatePullTime.AddMinutes(1.0.Max((double)BarPeriod / 2)) <= TradesManager.ServerTime)) {
           LastRatePullTime = TradesManager.ServerTime;
           OnLoadRates();
           timeSpanDict.Add("LoadRates", sw.ElapsedMilliseconds);
