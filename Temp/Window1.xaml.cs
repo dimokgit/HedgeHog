@@ -18,7 +18,6 @@ using HedgeHog.Alice.Store;
 using FXW = Order2GoAddIn.FXCoreWrapper;
 using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;
-using Temp.Models;
 using HedgeHog.Shared;
 using HedgeHog.DB;
 
@@ -54,7 +53,7 @@ namespace Temp {
       Instruments = new ListCollectionView(instruments = new ObservableCollection<string>(new string[] { "" }));
       Instruments.CurrentChanged += Instruments_CurrentChanged;
       InitializeComponent();
-      if (!fw.CoreFX.LogOn("MICR498120001", "6648", true)) System.Diagnostics.Debug.Fail("Login");
+      if (!fw.CoreFX.LogOn("FX1256627001", "8730", true)) System.Diagnostics.Debug.Fail("Login");
       else {
         fw.PendingOrderCompleted += fw_PendingOrderCompleted;
         fw.TradeAdded += fw_TradeAdded;
