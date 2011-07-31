@@ -372,7 +372,9 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CS_4_0.cs</LastGenOutput>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Bars.Rate.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />
