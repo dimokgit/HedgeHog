@@ -13,6 +13,7 @@
     <RootNamespace>HedgeHog.WCF</RootNamespace>
     <AssemblyName>HedgeHog.WCF</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseIISExpress>true</UseIISExpress>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -90,7 +91,9 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>1963</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost/HedgeHog.WCF</IISUrl>
+          <IISUrl>http://localhost:1963/</IISUrl>
+          <OverrideIISAppRootUrl>True</OverrideIISAppRootUrl>
+          <IISAppRootUrl>http://localhost/HedgeHog.WCF</IISAppRootUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>
