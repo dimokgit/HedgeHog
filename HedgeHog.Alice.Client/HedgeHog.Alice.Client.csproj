@@ -54,6 +54,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>HedgeHog.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DigitalIdeaSolutions.Collections">
       <HintPath>..\..\DigitalIdeaSolutions.Collections.dll</HintPath>
@@ -554,6 +557,7 @@
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
+    <Resource Include="HedgeHog.ico" />
     <Content Include="Store\Alice.sdf" />
   </ItemGroup>
   <ItemGroup>
