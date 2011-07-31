@@ -23,7 +23,10 @@
           </Function>
         </Literal>
       </Declarations>
-      <Code Language="csharp"><![CDATA[    ICommand _$login$Command;
+      <Code Language="csharp">
+        <![CDATA[    
+      #region $login$
+      ICommand _$login$Command;
     public ICommand $login$Command {
       get {
         if (_$login$Command== null) {
@@ -34,6 +37,7 @@
       }
     }
 		void $login$(){}
+    #endregion
 ]]></Code>
     </Snippet>
   </CodeSnippet>
