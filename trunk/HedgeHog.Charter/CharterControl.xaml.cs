@@ -754,6 +754,9 @@ namespace HedgeHog {
       };
       IsPlotterInitialised = true;
       plotter.Children.RemoveAt(0);
+      var verticalAxis = plotter.Children.OfType<VerticalAxis>().First();
+      verticalAxis.FontSize = 9;
+      verticalAxis.FontWeight = FontWeights.Black;
 
       #region Add Main Graph
       {
@@ -810,7 +813,7 @@ namespace HedgeHog {
         lg.Description.LegendItem.Visibility = Visibility.Collapsed;
         lg.Opacity = .25;
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
-        plotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Right;
+        verticalAxis.Placement = AxisPlacement.Right;
         innerPlotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Left;
       } else {
         innerPlotter.Children.Remove(innerPlotter.Children.OfType<VerticalAxis>().Single());
