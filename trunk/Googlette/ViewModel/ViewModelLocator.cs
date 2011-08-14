@@ -22,7 +22,7 @@ namespace Googlette.ViewModel
     /// </summary>
     public class ViewModelLocator
     {
-        private static MainViewModel _main;
+        private static GoggletteMainViewModel _main;
 
         /// <summary>
         /// Initializes a new instance of the ViewModelLocator class.
@@ -38,7 +38,7 @@ namespace Googlette.ViewModel
             ////    // Create run time services and view models
             ////}
 
-            _main = new MainViewModel();
+            _main = new GoggletteMainViewModel();
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Googlette.ViewModel
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance",
             "CA1822:MarkMembersAsStatic",
             Justification = "This non-static member is needed for data binding purposes.")]
-        public MainViewModel Main
+        public GoggletteMainViewModel Main
         {
             get
             {
