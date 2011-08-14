@@ -50,8 +50,8 @@
       <!--<Style TargetType="{x:Type Button}" BasedOn="{StaticResource Office2010SilverButtonStyle}"/>-->
       <!---->
       <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/PresentationFramework.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL;component/themes/aero.normalcolor.xaml" />
-        <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml" />
+        <!--<ResourceDictionary Source="/PresentationFramework.Aero, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=MSIL;component/themes/aero.normalcolor.xaml" />
+        <ResourceDictionary Source="UI/Style/WhistlerBlue.xaml" />-->
         <!--<ResourceDictionary Source="pack://application:,,,/WPFToolkit;component/Themes/Aero.NormalColor.xaml" />-->
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
