@@ -130,6 +130,8 @@ namespace HedgeHog {
     public static int Floor(this double d) { return (int)Math.Floor(d); }
     public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
+    public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
+    public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
     public enum RoundTo { Second, Minute, Hour, Day }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
