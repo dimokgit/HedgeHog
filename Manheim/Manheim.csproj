@@ -37,7 +37,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Interop.SHDocVw, Version=1.1.0.0, Culture=neutral, PublicKeyToken=db7cfd3acb5ad44e, processorArchitecture=MSIL">
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
       <Private>True</Private>
       <HintPath>..\AllInOne\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
     </Reference>
@@ -85,10 +85,41 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Model\Auction.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\Manager.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\ManheimEDM.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManheimEDM.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\ManheimEDM.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
     <Compile Include="Model\ManheimEntities.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ManheimEntities.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Model\PreSale.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\Seller.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\State.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\Vehicle.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Model\VehicleStatus.cs">
+      <DependentUpon>ManheimEDM.tt</DependentUpon>
     </Compile>
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="ViewModel\ToDataContextValueConverter.cs" />
@@ -133,6 +164,14 @@
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>ManheimEntities.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <None Include="Model\ManheimEDM.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ManheimEDM.Context.cs</LastGenOutput>
+    </None>
+    <None Include="Model\ManheimEDM.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ManheimEDM.cs</LastGenOutput>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\DataSources\Manheim.Model.ManheimEntities.datasource" />
     <None Include="Properties\Settings.settings">
@@ -158,6 +197,9 @@
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
       <Name>Persistance</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
