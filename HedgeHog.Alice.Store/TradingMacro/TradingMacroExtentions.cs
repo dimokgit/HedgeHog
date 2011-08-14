@@ -277,6 +277,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     bool CanTradeByMAFilter(Rate rate, bool isBuy, DateTimeOffset time) {
+      if (!EnsureActiveSuppReses(isBuy).Any()) return false;
       return PriceCmaPeriod > 0
         ? (isBuy ? rate.PriceAvg > GetPriceMA(rate) : rate.PriceAvg < GetPriceMA(rate))
         : (isBuy ? CorridorCrossLowPrice(rate) > rate.PriceAvg03 : CorridorCrossHighPrice(rate) < rate.PriceAvg02);
@@ -1393,9 +1394,11 @@ namespace HedgeHog.Alice.Store {
         if (isLoggedIn)
           UnSubscribeToTradeClosedEVent(TradesManager);
         var framesBack = 3;
-        var dateStart = TradesManager.ServerTime.AddMinutes(BarPeriodInt * BarsCount * framesBack * 2);
-        Store.PriceHistory.AddTicks(GetFXWraper(), BarPeriodInt, Pair, dateStart, m => Log = new Exception(m + ""));
-        var rates = GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, BarsCount*framesBack, BarPeriodInt);
+        var barsCountTotal = BarsCount * framesBack;
+        var actionBlock = new ActionBlock<Action>(a=>a());
+        GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, TradesManagerStatic.FX_DATE_NOW, TradesManagerStatic.FX_DATE_NOW, new List<Rate>()
+          , callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs));
+        var rates = GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
         RatesInternal.Clear();
         var pointer = 0;
         var currentPosition = -1;
@@ -2403,7 +2406,7 @@ namespace HedgeHog.Alice.Store {
             if (CheckPendingKey("OT") && EnsureActiveSuppReses().Contains(suppres)) {
               ForceOpenTrade = null;
               DisposeOpenTradeByMASubject();
-              OnOpenTradeBroadcast(() => fw.OpenTrade(Pair, isBuy, allowedLot, 0, 0, 0, ""), isBuy, TradesManager.ServerTime);
+              OnOpenTradeBroadcast(() => fw.OpenTrade(Pair, isBuy, EntryOrderAllowedLot(isBuy), 0, 0, 0, ""), isBuy, TradesManager.ServerTime);
             }
           }
           if (false) {
@@ -3078,9 +3081,11 @@ namespace HedgeHog.Alice.Store {
           RatesArraySafe.Count();
           OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
           break;
+        case TradingMacroMetadata.Strategy:
+          DisposeOpenTradeByMASubject();
+          goto case TradingMacroMetadata.IsSuppResManual;
         case TradingMacroMetadata.IsSuppResManual:
         case TradingMacroMetadata.TakeProfitFunction:
-        case TradingMacroMetadata.Strategy:
           OnScanCorridor();
           goto case TradingMacroMetadata.RangeRatioForTradeLimit;
         case TradingMacroMetadata.RangeRatioForTradeLimit:
