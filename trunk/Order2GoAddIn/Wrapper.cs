@@ -871,17 +871,17 @@ namespace Order2GoAddIn {
       } else {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
-          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
+          GetBarsBase<Rate>(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
         var maximumDate = Bars.Max(b => b.StartDate);
         if (EndDate == TradesManagerStatic.FX_DATE_NOW || EndDate > maximumDate) {
-          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
+          GetBarsBase<Rate>(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
         }
       }
       if (EndDate != TradesManagerStatic.FX_DATE_NOW)
         foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
           Bars.Remove(bar);
       if( Bars.Count < periodsBack)
-        GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
+        GetBarsBase<Rate>(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
       Bars.Sort();
       if (doTrim) {
         var countMaximum = TradesManagerStatic.GetMaxBarCount(periodsBack, StartDate, Bars);
@@ -2913,6 +2913,10 @@ namespace Order2GoAddIn {
     }
 
     public Rate[] GetBarsBase(string pair, int period, DateTime dateTime, DateTime dateStart, Action<string> showProgress) {
+      throw new NotImplementedException();
+    }
+
+    public void GetBarsBase(string Pair, int BarPeriodInt, int barsCountTotal, DateTime dateTime, DateTime dateTime_2, List<Rate> list, Action<RateLoadingCallbackArgs<Rate>> action) {
       throw new NotImplementedException();
     }
   }
