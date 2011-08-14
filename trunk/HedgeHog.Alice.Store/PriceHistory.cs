@@ -7,6 +7,8 @@ using HedgeHog.Bars;
 using System.Diagnostics;
 using Order2GoAddIn;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
+using System.Reactive;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
@@ -24,26 +26,9 @@ namespace HedgeHog.Alice.Store {
     public static void AddTicks(FXCoreWrapper fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
       try {
         #region callback
+        ActionBlock<Action> saveTickActionBlock = new ActionBlock<Action>(a => a());
         Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
-          if (progressCallback != null) progressCallback(args.Message);
-          else Debug.WriteLine("{0}", args.Message);
-          var context = new ForexEntities();
-          foreach (var t in args.NewRates) {
-            var bar = context.CreateObject<t_Bar>();
-            FillBar(period, pair, bar, t);
-            context.t_Bar.AddObject(bar);
-          }
-          if (saveTicksTask != null)
-            Task.WaitAll(saveTicksTask);
-          Action a = new Action(() => {
-            try {
-              context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
-              context.Dispose();
-            } catch (Exception exc) {
-              if (progressCallback != null) progressCallback(exc);
-            }
-          });
-          saveTicksTask = Task.Factory.StartNew(a);
+          SaveTickCallBack(period, pair, progressCallback, saveTickActionBlock, args);
         };
         #endregion
 
@@ -59,6 +44,26 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         Debug.WriteLine(exc.ToString());
       }
+    }
+
+    public static void SaveTickCallBack(int period, string pair, Action<object> progressCallback, ActionBlock<Action> saveTickActionBlock, FXCoreWrapper.RateLoadingCallbackArgs<Rate> args) {
+      if (progressCallback != null) progressCallback(args.Message);
+      else Debug.WriteLine("{0}", args.Message);
+      var context = new ForexEntities();
+      foreach (var t in args.NewRates) {
+        var bar = context.CreateObject<t_Bar>();
+        FillBar(period, pair, bar, t);
+        context.t_Bar.AddObject(bar);
+      }
+      Action a = new Action(() => {
+        try {
+          context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          context.Dispose();
+        } catch (Exception exc) {
+          if (progressCallback != null) progressCallback(exc);
+        }
+      });
+      saveTickActionBlock.Post(a);
     }
     private static void FillBar(int period, string pair, t_Bar bar, Rate t) {
       bar.Pair = pair;
