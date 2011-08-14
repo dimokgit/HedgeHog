@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
+using System.Threading;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -235,14 +236,14 @@ namespace Manheim.ViewModel {
             Fax = fax,
             Email = email
           };
-          manheimModel.AddToManagers(managerEntity);
+          manheimModel.Managers.AddObject(managerEntity);
           manheimModel.SaveChanges();
         }
       } else {
         managerEntity = manheimModel.Managers.SingleOrDefault(m => m.Name == "");
         if (managerEntity == null) {
           managerEntity = new Model.Manager() { Email = "", Fax = "", Phone = "", Title = "", Name = "" };
-          manheimModel.AddToManagers(managerEntity);
+          manheimModel.Managers.AddObject(managerEntity);
           manheimModel.SaveChanges();
         }
       }
@@ -256,7 +257,7 @@ namespace Manheim.ViewModel {
           State = stateEntity,
           PreSaleManager = managerEntity
         };
-        manheimModel.AddToAuctions(auctionEntity);
+        manheimModel.Auctions.AddObject(auctionEntity);
         manheimModel.SaveChanges();
       }
       #endregion
@@ -324,7 +325,7 @@ namespace Manheim.ViewModel {
           if (vehicleEntity == null) {
             vehicleEntity = SetVehicle(table);
             vehicleEntity.Grade = grade;
-            manheimModel.AddToVehicles(vehicleEntity);
+            manheimModel.Vehicles.AddObject(vehicleEntity);
           } else {
             UpdateVehicle(vehicleEntity, table);
           }
@@ -338,7 +339,7 @@ namespace Manheim.ViewModel {
           var sellerEntity = manheimModel.Sellers.SingleOrDefault(s => s.Name == sellerName);
           if (sellerEntity == null) {
             sellerEntity = new Model.Seller() { Name = sellerName };
-            manheimModel.AddToSellers(sellerEntity);
+            manheimModel.Sellers.AddObject(sellerEntity);
             manheimModel.SaveChanges();
           }
           #endregion
@@ -353,7 +354,7 @@ namespace Manheim.ViewModel {
             preSale.Vehicle = vehicleEntity;
             preSale.Auction = auctionEntity;
             preSale.Seller = sellerEntity;
-            manheimModel.AddToPreSales(preSale);
+            manheimModel.PreSales.AddObject(preSale);
           }
           #endregion
           manheimModel.SaveChanges();
@@ -497,8 +498,12 @@ namespace Manheim.ViewModel {
           .ObserveOn(Scheduler.ThreadPool)
           .SelectMany(ie => ie.EventArgs.NewItems.Cast<Auction>())
           .Subscribe(auction => {
-            GetAuctionPreSale(auction.State, auction);
-            Application.Current.Dispatcher.Invoke(new Action(() => _auctionsToRun.Remove(auction)));
+            var t = new Thread(new ThreadStart(() => {
+              GetAuctionPreSale(auction.State, auction);
+              Application.Current.Dispatcher.Invoke(new Action(() => _auctionsToRun.Remove(auction)));
+            }));
+            t.SetApartmentState(ApartmentState.STA);
+            t.Start();
           });
       }
     }
