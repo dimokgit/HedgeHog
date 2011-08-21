@@ -157,12 +157,6 @@ namespace Order2GoAddIn {
   }
   #endregion
 
-  public class FXWraper {
-    public FXWraper() {
-
-    }
-  }
-
   [ClassInterface(ClassInterfaceType.AutoDual), ComSourceInterfaces(typeof(IOrder2GoEvents))]
   [Guid("2EC43CB6-ED3D-465c-9AF3-C0BBC622663E")]
   [ComVisible(true)]
@@ -2896,14 +2890,6 @@ namespace Order2GoAddIn {
 
     #region ITradesManager Members
 
-
-
-    #endregion
-
-    #region ITradesManager Members
-
-    #endregion
-
     public Rate[] GetBarsBase(string pair, int period, DateTime dateStart) {
       throw new NotImplementedException();
     }
@@ -2919,6 +2905,7 @@ namespace Order2GoAddIn {
     public void GetBarsBase(string Pair, int BarPeriodInt, int barsCountTotal, DateTime dateTime, DateTime dateTime_2, List<Rate> list, Action<RateLoadingCallbackArgs<Rate>> action) {
       throw new NotImplementedException();
     }
+    #endregion
   }
 
   #region Data Classes
