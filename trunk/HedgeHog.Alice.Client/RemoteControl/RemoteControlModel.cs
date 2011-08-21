@@ -1084,8 +1084,6 @@ namespace HedgeHog.Alice.Client {
     #region OpenTrade
 
     private PendingOrder OpenTrade(bool buy, string pair, int lot, double limitInPips, double stopInPips, double stop, string remark) {
-      foreach(var tm in GetTradingMacros(pair))
-        tm.ResetTradeReady();
       var price = tradesManager.GetPrice(pair);
       var limit = limitInPips == 0 ? 0 : buy ? price.Ask + tradesManager.InPoints(pair, limitInPips) : price.Bid - tradesManager.InPoints(pair, limitInPips);
       if (stop == 0 && stopInPips != 0)
