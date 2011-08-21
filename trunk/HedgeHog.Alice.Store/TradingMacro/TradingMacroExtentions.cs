@@ -1017,26 +1017,6 @@ namespace HedgeHog.Alice.Store {
       public bool IsActive { get; set; }
     }
 
-    public void ResetTradeReady() { BuyWhenReady = SellWhenReady = false; }
-    bool _buyWhenReady;
-    public bool BuyWhenReady {
-      get { return _buyWhenReady; }
-      set {
-        if (_buyWhenReady == value) return;
-        _buyWhenReady = value;
-        if (value) SellWhenReady = false;
-      }
-    }
-    bool _sellWhenReady;
-    public bool SellWhenReady {
-      get { return _sellWhenReady; }
-      set {
-        if (_sellWhenReady == value) return;
-        _sellWhenReady = value;
-        if (value) BuyWhenReady = false;
-      }
-    }
-
     public void DisableTrading() {
       switch (Strategy) {
         case Strategies.SuppRes:
