@@ -92,8 +92,7 @@
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0"
-                         FontWeight="{Binding IsSellLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
+              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
@@ -101,8 +100,7 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0"
-                         FontWeight="{Binding IsBuyLock,Converter={StaticResource BoolToColorConverter},ConverterParameter=Normal|Normal|Black}" />
+              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
@@ -421,8 +419,12 @@
               <CheckBox Content="&lt;" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
               <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                      <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
                     <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value="{Binding DataContext.ReplayArguments.CurrentPosition,Mode=TwoWay,RelativeSource={RelativeSource AncestorType=DataGrid}}"
                             Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickPlacement="TopLeft" TickFrequency="10" />
+                      
+                    </StackPanel>
                   </StackPanel>
                 </Expander.Content>
               </Expander>
