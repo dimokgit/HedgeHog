@@ -52,8 +52,17 @@ namespace HedgeHog.Bars {
       Directory.CreateDirectory(path);
       File.WriteAllText(path + "\\" + pair.Replace("/", "") + ".csv", bars.Csv());
     }
+    public static void SavePairCsv<TBar>(this ICollection<TBar> bars, string pair, string format, params Func<TBar, object>[] foos) where TBar : Bars.BarBase {
+      var path = AppDomain.CurrentDomain.BaseDirectory + "\\CSV";
+      Directory.CreateDirectory(path);
+      File.WriteAllText(path + "\\" + pair.Replace("/", "") + ".csv", bars.Csv(format,foos));
+    }
     public static string Csv<TBar>(this ICollection<TBar> bars) where TBar : BarBase {
-      return string.Join(Environment.NewLine, bars.Select(b => string.Format("{0},{1},{2}",b.StartDate,b.PriceHigh,b.PriceLow)));
+      return string.Join(Environment.NewLine, bars.Select(b => string.Format("{0},{1},{2}", b.StartDate, b.PriceHigh, b.PriceLow)));
+    }
+    public static string Csv<TBar>(this ICollection<TBar> bars,string format,params Func<TBar,object>[] foos ) where TBar : BarBase {
+      Func<TBar,object[]> parms = bar=> foos.Select(foo=>foo(bar)).ToArray();
+      return string.Join(Environment.NewLine, bars.Select(b => string.Format(format, parms(b))));
     }
     public static bool IsReversed(this IEnumerable<BarBase> bars) {
       return bars.Last().StartDate < bars.First().StartDate;
@@ -129,7 +138,7 @@ namespace HedgeHog.Bars {
         a(tick, y1);// *poly2Wieght + y2 * (1 - poly2Wieght);
       }
     }
-    static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<int, double> a) {
+    public static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<int, double> a) {
       int i1 = 0;
       ticks.ToList().ForEach(tick => {
         double y1 = coeffs.RegressionValue(i1);
@@ -137,12 +146,12 @@ namespace HedgeHog.Bars {
       });
     }
     public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<int, double> writeTo) {
-      var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
     public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
-      var coeffs = Lib.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
@@ -616,7 +625,7 @@ namespace HedgeHog.Bars {
       foreach (var rate in ticks) {
         var period = TimeSpan.FromMinutes(5);
         var ticksToRegress = ticks.Where(period, rate).ToArray();
-        var coeffs = Lib.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
+        var coeffs = Regression.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
         if (!double.IsNaN(coeffs[1])) {
           var wd = (WaveDirection)Math.Sign(coeffs[1]);
           if (waveDirection != WaveDirection.None) {
@@ -693,9 +702,7 @@ namespace HedgeHog.Bars {
     /// <param name="bar">bar to fill with speed</param>
     /// <param name="pricer">lambda with price source</param>
     private static void FillSpeed<TBar>(this IEnumerable<TBar> bars, TBar bar, Func<TBar, double> price) where TBar : BarBase {
-      double a, b;
-      Lib.LinearRegression(bars.Select(price).ToArray(), out b, out a);
-      bar.PriceSpeed = b;
+      bar.PriceSpeed = HedgeHog.Regression.Regress(bars.Select(price).ToArray(),1)[1];
     }
 
     public static void AddUp<TBar>(this List<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {
