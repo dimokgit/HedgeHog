@@ -128,13 +128,6 @@ namespace HedgeHog {
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
-    public static double[] Regress(this double[] prices, int polyOrder) {
-      var coeffs = new[] { 0.0, 0.0 };
-      Lib.LinearRegression(prices, out coeffs[1], out coeffs[0]);
-      return coeffs;
-      //return Regression.Regress(prices, polyOrder);
-    }
-
     public static double Deviation(IEnumerable<double> Values, DeviationType CalculationType) {
       double SumOfValuesSquared = 0;
       double SumOfValues = 0;
@@ -191,7 +184,7 @@ namespace HedgeHog {
       return Math.Sqrt(sumOfDerivationAverage - Math.Pow(average, 2));
     }
 
-    public static void LinearRegression(double[] valuesX, double[] valuesY, out double a, out double b) {
+    public static void LinearRegression_(double[] valuesX, double[] valuesY, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
       for (int x = 0; x < valuesY.Length; x++) {
@@ -214,7 +207,7 @@ namespace HedgeHog {
 
     }
 
-    public static void LinearRegression(double[] values, out double a, out double b) {
+    public static void LinearRegression_(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
       for (int x = 0; x < values.Length; x++) {
