@@ -151,8 +151,8 @@ namespace HedgeHog {
                          where v1.PriceAvg >= v2.PriceAvg && v2.PriceAvg <= v3.PriceAvg
                          select v1).ToArray();
       var pairOfVolts = new List<PairOfVolts>();
-      double a = 0, b = 0;
-      Lib.LinearRegression(ticks.Select(t => t.PriceAvg).Reverse().ToArray(), out a, out b);
+      var coeffs = Regression.Regress(ticks.Select(t => t.PriceAvg).Reverse().ToArray(),1);
+      double a = coeffs[1];
       DateTime dateMin = ticks.Min(t => t.StartDate), dateMax = ticks.Max(t => t.StartDate);
       var borderDate = dateMin.AddSeconds((dateMax - dateMin).TotalSeconds / 2);
       var peakLambda = new Func<Volt, bool>(
@@ -289,11 +289,11 @@ namespace HedgeHog {
       d = DateTime.Now;
       var ii = 0;
       //var avg = regression == RegressionMode.Average ? ticks_3.Average(t => (t.AskAvg + t.BidAvg) / 2) : 0;
-      double a = 0, b = 0;
       double? cma1 = null, cma2 = null, cma3 = null;
       double? ccma1 = null;
       double? vcma1 = null, vcma2 = null, vcma3 = null;
-      Lib.LinearRegression(ticks_3.Select(t => t.PriceAvg).Reverse().ToArray(), out a, out b);
+      var coeffs = Regression.Regress(ticks_3.Select(t => t.PriceAvg).Reverse().ToArray(), 1);
+      double a = coeffs[1], b = coeffs[0];
       //var coeffs = Regression.Regress(ticks_3.Select((t, i) => (double)i).ToArray(), ticks_3.Select(t => t.PriceAvg).Reverse().ToArray());
       try {
         var volts = (from t in ticks_3
@@ -314,7 +314,7 @@ namespace HedgeHog {
                        //avg == null ? 0 : avg.Average(ta => ta == null ? 0 : (ta.AskAvg + ta.BidAvg) / 2)
                        )).ToArray();
         //Y = A + BX + CX2 + DX3
-        var coeffs = Regression.Regress(volts.Select(t => t.Volts).ToArray(), 2);
+        coeffs = Regression.Regress(volts.Select(t => t.Volts).ToArray(), 2);
         int i1 = 0;
         foreach (var volt in volts) {
           double y1 = 0; int j = 0;
