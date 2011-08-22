@@ -68,7 +68,7 @@ namespace HedgeHog.Alice.Store {
       var minutesPerPeriod = (int)tm.BarPeriod;
       VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * (int)tm.BarPeriod);
       var firstDate = GlobalStorage.UseForexContext(context => context.t_Bar.Where(b => b.Pair == VirtualPair && b.Period == minutesPerPeriod).Select(b => b.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min());
-      VirtualStartDate = new[] { VirtualStartDate, firstDate }.Max();
+      VirtualStartDate = new[] { VirtualStartDate, firstDate }.Max().DateTime;
       var ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod).ToList();
       if (ratesBuffer.Count < tm.BarsCount)
         ratesBuffer = GlobalStorage.GetRateFromDB(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod);
