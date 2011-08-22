@@ -153,10 +153,10 @@ namespace TestHH {
           };
           #endregion
 
-          var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min();
+          var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().DateTime;
           o2g.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
 
-          dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max();
+          dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max().DateTime;
           o2g.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
         }
       } catch (Exception exc) {
@@ -185,7 +185,7 @@ namespace TestHH {
           .Max().AddMinutes(period);
         Action<string> showProgress = msg => { };// Console.WriteLine(msg);
         var ticks = new List<Rate>();
-        o2g.GetBarsBase(pair, period, 0, dateStart, TradesManagerStatic.FX_DATE_NOW, ticks);
+        o2g.GetBarsBase(pair, period, 0, dateStart.DateTime, TradesManagerStatic.FX_DATE_NOW, ticks);
         if (ticks.Count() == 0) return;
         var lastDate = ticks.Min(t => t.StartDate);
         var a = typeof(t_Bar).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>();
@@ -227,11 +227,32 @@ namespace TestHH {
       var dateTo = DateTime.Today.AddHours(10);// DateTime.Parse("4/2/2010 10:33:27");
       for (int i = 0; i < 10; i++) {
         var dateFrom = dateTo.AddHours(-3);// DateTime.Parse("4/2/2010 10:13:16");
-        var ticks = o2g.GetBarsBase("EUR/JPY",0,dateFrom, dateTo);//.Where(dateFrom, dateTo).ToArray();
+        var ticks = o2g.GetBarsBase("EUR/JPY", 0, dateFrom, dateTo);//.Where(dateFrom, dateTo).ToArray();
         Debug.WriteLine("TicksPerMinute:{0:MM/dd HH:mm:ss} -{1:MM/dd HH:mm:ss}={2:n0}",
           ticks.First().StartDate, ticks.Last().StartDate, ticks.TradesPerMinute());
         dateTo = dateTo.AddDays(-7);
       }
+    }
+    [TestMethod]
+    public void LinearRegression() {
+      var rates = new List<Rate>();
+      o2g.GetBarsBase<Rate>("EUR/USD", 1,500,DateTime.FromOADate(0),DateTime.FromOADate(0),rates,null);
+      rates.SetRegressionPrice(1, r => r.PriceAvg, new Action<Rate, double>((r, d) => r.PriceAvg1 = d));
+      
+      var coeffs = HedgeHog.Regression.Regress(rates.Select(r => r.PriceAvg).ToArray(), 1);
+      rates.SetRegressionPrice(coeffs, (i, d) => rates[i].PriceAvg2 = d);
+
+      //double[] linePrices = new double[rates.Count()];
+      //Func<int, double> priceLine = index => linePrices[index];
+      //Action<int, double> lineSet = (index, d) => linePrices[index] = d;
+      //rates.SetRegressionPrice(1, r => r.PriceAvg, lineSet);
+      //var i=0;
+      //rates.ForEach(r=>r.PriceAvg2 = linePrices[i++]);
+
+      var format = "{0},{1},{2},{3}";// "{0:MM/dd/yyyy HH:mm},{1},{2}";
+      var foos = new Func<Rate, object>[] { b => b.StartDate, b => b.PriceAvg, b => b.PriceAvg1, b => b.PriceAvg2 };
+      Debug.WriteLine(rates.Csv("{0},{1},{2}", foos));
+      rates.SavePairCsv("EUR/USD", format, foos);
     }
     public void ClosedTrades() {
       var trades = o2g.GetClosedTrades("EUR/JPY");
