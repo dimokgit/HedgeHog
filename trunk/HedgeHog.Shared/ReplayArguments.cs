@@ -18,6 +18,19 @@ namespace HedgeHog.Shared {
     }
     #endregion
 
+    #region StartDate
+    private DateTime? _DateStart;
+    public DateTime? DateStart {
+      get { return _DateStart; }
+      set {
+        if (_DateStart != value) {
+          _DateStart = value;
+          RaisePropertyChanged("DateStart");
+        }
+      }
+    }
+    #endregion
+
     private double _DelayInSeconds;
     public double DelayInSeconds {
       get { return _DelayInSeconds; }
