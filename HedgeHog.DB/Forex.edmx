@@ -24,7 +24,7 @@
           </Key>
           <Property Name="Pair" Type="nchar" Nullable="false" MaxLength="10" />
           <Property Name="Period" Type="int" Nullable="false" />
-          <Property Name="StartDate" Type="datetime" Nullable="false" />
+          <Property Name="StartDate" Type="datetimeoffset" Nullable="false" />
           <Property Name="AskHigh" Type="real" Nullable="false" />
           <Property Name="AskLow" Type="real" Nullable="false" />
           <Property Name="AskOpen" Type="real" Nullable="false" />
@@ -33,6 +33,7 @@
           <Property Name="BidLow" Type="real" Nullable="false" />
           <Property Name="BidOpen" Type="real" Nullable="false" />
           <Property Name="BidClose" Type="real" Nullable="false" />
+          <Property Name="Volume" Type="int" Nullable="false" />
           <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
         </EntityType>
         <EntityType Name="t_Offer">
@@ -145,9 +146,9 @@
             <Parameter Name="BarsCount" Mode="In" Type="Int32" />
           </FunctionImport>
           <EntitySet Name="v_Pair" EntityType="ForexModel.v_Pair" />
-          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.t_Offer" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
+          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
         </EntityContainer>
         <EntityType Name="t_Trade">
           <Key>
@@ -197,23 +198,6 @@
           <Property Type="Int32" Name="Weight1" Nullable="false" />
           <Property Type="Int32" Name="Weight2" Nullable="false" />
         </EntityType>
-        <EntityType Name="t_Bar">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="10" FixedLength="true" Unicode="true" />
-          <Property Type="Int32" Name="Period" Nullable="false" />
-          <Property Type="DateTime" Name="StartDate" Nullable="false" />
-          <Property Type="Single" Name="AskHigh" Nullable="false" />
-          <Property Type="Single" Name="AskLow" Nullable="false" />
-          <Property Type="Single" Name="AskOpen" Nullable="false" />
-          <Property Type="Single" Name="AskClose" Nullable="false" />
-          <Property Type="Single" Name="BidHigh" Nullable="false" />
-          <Property Type="Single" Name="BidLow" Nullable="false" />
-          <Property Type="Single" Name="BidOpen" Nullable="false" />
-          <Property Type="Single" Name="BidClose" Nullable="false" />
-          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-        </EntityType>
         <EntityType Name="t_Offer">
           <Key>
             <PropertyRef Name="Pair" />
@@ -235,6 +219,24 @@
           <Property Type="Double" Name="Value2" Nullable="false" />
           <Property Type="Double" Name="Value3" Nullable="false" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="10" FixedLength="true" Unicode="true" />
+          <Property Type="Int32" Name="Period" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="StartDate" Nullable="false" />
+          <Property Type="Single" Name="AskHigh" Nullable="false" />
+          <Property Type="Single" Name="AskLow" Nullable="false" />
+          <Property Type="Single" Name="AskOpen" Nullable="false" />
+          <Property Type="Single" Name="AskClose" Nullable="false" />
+          <Property Type="Single" Name="BidHigh" Nullable="false" />
+          <Property Type="Single" Name="BidLow" Nullable="false" />
+          <Property Type="Single" Name="BidOpen" Nullable="false" />
+          <Property Type="Single" Name="BidClose" Nullable="false" />
+          <Property Type="Int32" Name="Volume" Nullable="false" />
+          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -299,24 +301,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="t_Bar">
-            <EntityTypeMapping TypeName="ForexModel.t_Bar">
-              <MappingFragment StoreEntitySet="t_Bar">
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
-                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
-                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
-                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
-                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
-                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
-                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
-                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
-                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
-                <ScalarProperty Name="Period" ColumnName="Period" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="t_Offer">
             <EntityTypeMapping TypeName="ForexModel.t_Offer">
               <MappingFragment StoreEntitySet="t_Offer">
@@ -338,6 +322,25 @@
                 <ScalarProperty Name="Price" ColumnName="Price" />
                 <ScalarProperty Name="Time" ColumnName="Time" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="t_Bar">
+            <EntityTypeMapping TypeName="ForexModel.t_Bar">
+              <MappingFragment StoreEntitySet="t_Bar">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Volume" ColumnName="Volume" />
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -364,9 +367,9 @@
       <Diagram Name="Forex">
         <EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="3.375" PointY="0.75" Height="3.4001269531249996" />
         <EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="5.375" PointY="0.75" Height="1.4279589843749996" />
-        <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" Height="2.9070849609374996" />
         <EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.375" PointY="3.75" Height="1.7566536458333317" />
         <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916674" />
+        <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.5" PointY="0.5" Height="3.5186979166666674" />
       </Diagram>
     </Diagrams>
   </Designer>
