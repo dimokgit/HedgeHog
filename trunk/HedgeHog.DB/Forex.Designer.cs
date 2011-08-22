@@ -100,22 +100,6 @@ namespace HedgeHog.DB
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        public ObjectSet<t_Bar> t_Bar
-        {
-            get
-            {
-                if ((_t_Bar == null))
-                {
-                    _t_Bar = base.CreateObjectSet<t_Bar>("t_Bar");
-                }
-                return _t_Bar;
-            }
-        }
-        private ObjectSet<t_Bar> _t_Bar;
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
         public ObjectSet<t_Offer> t_Offer
         {
             get
@@ -144,6 +128,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<t_Stat> _t_Stat;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Bar> t_Bar
+        {
+            get
+            {
+                if ((_t_Bar == null))
+                {
+                    _t_Bar = base.CreateObjectSet<t_Bar>("t_Bar");
+                }
+                return _t_Bar;
+            }
+        }
+        private ObjectSet<t_Bar> _t_Bar;
 
         #endregion
         #region AddTo Methods
@@ -165,14 +165,6 @@ namespace HedgeHog.DB
         }
     
         /// <summary>
-        /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
-        /// </summary>
-        public void AddTot_Bar(t_Bar t_Bar)
-        {
-            base.AddObject("t_Bar", t_Bar);
-        }
-    
-        /// <summary>
         /// Deprecated Method for adding a new object to the t_Offer EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
         /// </summary>
         public void AddTot_Offer(t_Offer t_Offer)
@@ -186,6 +178,14 @@ namespace HedgeHog.DB
         public void AddTot_Stat(t_Stat t_Stat)
         {
             base.AddObject("t_Stat", t_Stat);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Bar EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Bar(t_Bar t_Bar)
+        {
+            base.AddObject("t_Bar", t_Bar);
         }
 
         #endregion
@@ -401,8 +401,9 @@ namespace HedgeHog.DB
         /// <param name="bidLow">Initial value of the BidLow property.</param>
         /// <param name="bidOpen">Initial value of the BidOpen property.</param>
         /// <param name="bidClose">Initial value of the BidClose property.</param>
+        /// <param name="volume">Initial value of the Volume property.</param>
         /// <param name="id">Initial value of the ID property.</param>
-        public static t_Bar Createt_Bar(global::System.String pair, global::System.Int32 period, global::System.DateTime startDate, global::System.Single askHigh, global::System.Single askLow, global::System.Single askOpen, global::System.Single askClose, global::System.Single bidHigh, global::System.Single bidLow, global::System.Single bidOpen, global::System.Single bidClose, global::System.Int32 id)
+        public static t_Bar Createt_Bar(global::System.String pair, global::System.Int32 period, global::System.DateTimeOffset startDate, global::System.Single askHigh, global::System.Single askLow, global::System.Single askOpen, global::System.Single askClose, global::System.Single bidHigh, global::System.Single bidLow, global::System.Single bidOpen, global::System.Single bidClose, global::System.Int32 volume, global::System.Int32 id)
         {
             t_Bar t_Bar = new t_Bar();
             t_Bar.Pair = pair;
@@ -416,6 +417,7 @@ namespace HedgeHog.DB
             t_Bar.BidLow = bidLow;
             t_Bar.BidOpen = bidOpen;
             t_Bar.BidClose = bidClose;
+            t_Bar.Volume = volume;
             t_Bar.ID = id;
             return t_Bar;
         }
@@ -476,7 +478,7 @@ namespace HedgeHog.DB
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
         [DataMemberAttribute()]
-        public global::System.DateTime StartDate
+        public global::System.DateTimeOffset StartDate
         {
             get
             {
@@ -491,8 +493,8 @@ namespace HedgeHog.DB
                 OnStartDateChanged();
             }
         }
-        private global::System.DateTime _StartDate;
-        partial void OnStartDateChanging(global::System.DateTime value);
+        private global::System.DateTimeOffset _StartDate;
+        partial void OnStartDateChanging(global::System.DateTimeOffset value);
         partial void OnStartDateChanged();
     
         /// <summary>
@@ -686,6 +688,30 @@ namespace HedgeHog.DB
         private global::System.Single _BidClose;
         partial void OnBidCloseChanging(global::System.Single value);
         partial void OnBidCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Volume
+        {
+            get
+            {
+                return _Volume;
+            }
+            set
+            {
+                OnVolumeChanging(value);
+                ReportPropertyChanging("Volume");
+                _Volume = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Volume");
+                OnVolumeChanged();
+            }
+        }
+        private global::System.Int32 _Volume;
+        partial void OnVolumeChanging(global::System.Int32 value);
+        partial void OnVolumeChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
