@@ -384,18 +384,32 @@ namespace Manheim.ViewModel {
         link.SetAttributeValue("target", _vehicleInfoTargetName);
         link.Click();
         WC.IE vehicleInfoIE = null;
-        var counter = 2;
-        while (counter-- > 0) {
           try {
             vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
               return t == "Manheim - PowerSearch - Vehicle Details";
             }));
-            break;
           } catch { }
-        }
-        if (vehicleInfoIE == null) {
-          Log = new Exception("VehicleInfo window not found.");
-        }
+          if (vehicleInfoIE == null)
+            try {
+              vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
+                return t == "Manheim - PowerSearch - Search Results";
+              }));
+              if (vehicleInfoIE != null) {
+                var vehicle_detail_row = vehicleInfoIE.TableRow(WC.Find.ByClass("vehicle_detail_row "));
+                if (vehicle_detail_row.Exists) {
+                  var link1 = vehicle_detail_row.Link("vehicleDetailsLink_0");
+                  if (link1 != null) {
+                    link1.Click();
+                    try {
+                      return WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
+                        return t == "Manheim - PowerSearch - Vehicle Details";
+                      }));
+                    } catch { }
+                  }
+                }
+                Log = new Exception("VehicleInfo window not found.");
+              }
+            } catch { }
         return vehicleInfoIE;
       };
       if (Application.Current.Dispatcher.CheckAccess())
