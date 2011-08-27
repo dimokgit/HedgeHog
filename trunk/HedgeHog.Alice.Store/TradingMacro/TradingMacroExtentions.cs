@@ -1728,14 +1728,14 @@ namespace HedgeHog.Alice.Store {
         var rateLast = CorridorStats.Rates.FirstOrDefault();
         if (rateLast != null && rateLast.PriceAvg1 > 0) {
           try {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg02;
+            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
           } catch {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg02;
+            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
           }
           try {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg03;
+            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
           } catch {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg03;
+            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
           }
           return;
         } else {
@@ -2538,7 +2538,7 @@ namespace HedgeHog.Alice.Store {
         var periodsStart = CorridorStartDate == null
           ? (BarsCount * CorridorLengthMinimum).Max(5).ToInt() : ratesForCorridor.Count(r => r.StartDate >= CorridorStartDate.Value);
         if (periodsStart == 1) return;
-        var periodsLength = CorridorStartDate.HasValue ? 1 : int.MaxValue;// periodsStart;
+        var periodsLength = CorridorStartDate.HasValue ? 1 : CorridorStats.Periods > 0 ? CorridorStats.Periods : int.MaxValue;// periodsStart;
 
         CorridorStatistics crossedCorridor = null;
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
@@ -2555,6 +2555,7 @@ namespace HedgeHog.Alice.Store {
           var cc = corridornesses
             .Where(cs=>IsCorridorOk(cs,double.NaN))
           .OrderBy(cs => cs.CorridorCrossesCount)
+          .ThenBy(cs => cs.Coeffs[1].Abs())
           .ThenByDescending(cs => cs.HeightUpDown)
           //.ThenBy(cs => double.IsNaN(cs.LegsAngleStDevR) ? double.MaxValue : cs.LegsAngleStDevR)
           //.ThenBy(cs => cs.distance)
