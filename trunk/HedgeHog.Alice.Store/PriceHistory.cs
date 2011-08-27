@@ -36,11 +36,11 @@ namespace HedgeHog.Alice.Store {
         using (var context = new ForexEntities()) {
           if (dateStart > DateTime.MinValue) {
             var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset).DateTime;
-            fw.GetBarsBase(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
+            fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
           }
           dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Max().Add(offset).DateTime;
         }
-        fw.GetBarsBase(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
+        fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
       } catch (Exception exc) {
         Debug.WriteLine(exc.ToString());
       }
