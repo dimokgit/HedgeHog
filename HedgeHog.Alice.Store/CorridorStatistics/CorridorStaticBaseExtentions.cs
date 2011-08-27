@@ -144,18 +144,12 @@ namespace HedgeHog.Alice.Store {
         double height;
         #endregion
 
-        switch (corridorMethod) {
-          case CorridorCalculationMethod.HeightUD:
-            stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDev();
-            break;
-          case CorridorCalculationMethod.Height:
-            //var ratesForHeight = rates.Select((r, i) => r.PriceAvg > priceLine(i) ? heightHigh(r, i) : heightLow(r, i)).ToList();// rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList();
-            stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDev();
-            break;
-          case CorridorCalculationMethod.Price:
-            stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev();// ratesForHeight.StDev();
-            break;
-        }
+        var stDevDict = new Dictionary<CorridorCalculationMethod, double>(){
+          {CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDev()},
+            {CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDev()},
+            {CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev()}
+        };
+        stDev = stDevDict.Values.Max();
         height = stDev * 2;
         return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
