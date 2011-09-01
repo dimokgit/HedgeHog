@@ -25,6 +25,7 @@ using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using NotifyCollectionChangedWrapper;
 using HedgeHog.Alice.Store.Metadata;
+using System.Threading.Tasks.Dataflow;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -1198,6 +1199,7 @@ namespace HedgeHog.Alice.Client {
           TradesManager.TradeRemoved += fwMaster_TradeRemoved;
           //TradesManager.PriceChanged += fwMaster_PriceChanged;
           Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
+            .Do(ie=> UpdateTradingAccountTargetBlock.Post(ie.EventArgs.Account))
             .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
             .Buffer(_throttleInterval)
             .Subscribe(l => {
@@ -1275,6 +1277,22 @@ namespace HedgeHog.Alice.Client {
       OnNeedTradingStatistics();
       AccountModel.Update(account, 0,TradingStatistics, TradesManager.IsLoggedIn ? TradesManager.ServerTime : DateTime.Now);
     }
+    private ITargetBlock<Account> _UpdateTradingAccountTargetBlock;
+    public ITargetBlock<Account> UpdateTradingAccountTargetBlock {
+      get { 
+        return (_UpdateTradingAccountTargetBlock 
+        ?? (_UpdateTradingAccountTargetBlock = DataFlowProcessors.CreateYieldingTargetBlock<Account>(a => UpdateTradingAccount(a)))); 
+      }
+    }
+
+    private ITargetBlock<Account> _InvokeSyncronizeTargetBlock;
+    public ITargetBlock<Account> InvokeSyncronizeTargetBlock {
+      get {
+        return (_InvokeSyncronizeTargetBlock
+        ?? (_InvokeSyncronizeTargetBlock = DataFlowProcessors.CreateYieldingTargetBlock<Account>(a => InvokeSyncronize(a))));
+      }
+    }
+
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
@@ -1404,14 +1422,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    event EventHandler<InvokeSyncronizeEventArgs> InvokeSyncronizeEvent;
     protected void OnInvokeSyncronize(Account account) {
-      if (InvokeSyncronizeEvent == null) {
-        Observable.FromEventPattern<EventHandler<InvokeSyncronizeEventArgs>, InvokeSyncronizeEventArgs>(h => h, h => InvokeSyncronizeEvent += h, h => InvokeSyncronizeEvent -= h)
-          .Throttle(TimeSpan.FromSeconds(1))
-          .Subscribe(ie => InvokeSyncronize(ie.EventArgs.Account),exc=>Log=exc);
-      }
-      InvokeSyncronizeEvent(this, new InvokeSyncronizeEventArgs(account));
+      InvokeSyncronizeTargetBlock.Post(account);
     }
 
     void InvokeSyncronize(Account account) {
@@ -1421,7 +1433,6 @@ namespace HedgeHog.Alice.Client {
       else {
         var trades = TradesManager.GetTrades();
         RaiseMasterListChangedEvent(trades);
-        UpdateTradingAccount(account);
         UpdateTrades(account, trades.ToList(), ServerTrades);
         UpdateOrders(account, (account.Orders ?? new Order[0]).ToList(), orders);
       }
