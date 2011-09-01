@@ -107,6 +107,7 @@ namespace HedgeHog.Alice.Store {
             //var periodsEnd = Math.Min(rates.Count(), periodsStart + periodsLength);
             //periodsStart = Math.Min(rates.Count() - 1, periodsStart);
             //for (var i = periodsStart; i < periodsEnd; i++ /*= i + Math.Max(1, i / 100.0).Ceiling() * Math.Max(1, i / 1000.0).Ceiling()*/) {
+            periodsStart = periodsStart.Min(rates.Count);
             periodsLength = periodsLength.Min(rates.Count - periodsStart + 1);
             foreach(var i in Enumerable.Range(periodsStart, periodsLength)){
               var ratesForCorr = rates.Take(i).ToList();
