@@ -757,6 +757,7 @@ namespace HedgeHog {
       var verticalAxis = plotter.Children.OfType<VerticalAxis>().First();
       verticalAxis.FontSize = 9;
       verticalAxis.FontWeight = FontWeights.Black;
+      verticalAxis.ShowMinorTicks = false;
 
       #region Add Main Graph
       {
