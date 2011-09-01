@@ -758,11 +758,11 @@ namespace HedgeHog.Alice.Client {
     class ShowChartDispatcher : DispatcherConsumer<TradingMacro> {
       public ShowChartDispatcher(RemoteControlModel me) : base(tm => me.ShowChart(tm),DispatcherPriority.Background) { }
     }
-    static ShowChartDispatcher _showChartQueue;
-    ShowChartDispatcher ShowChartQueue {
+    static ITargetBlock<TradingMacro> _showChartQueue;
+    ITargetBlock<TradingMacro> ShowChartQueue {
       get {
         if (_showChartQueue == null)
-          _showChartQueue = new ShowChartDispatcher(this);
+          _showChartQueue = new Action<TradingMacro>(tm => Dispatcher.CurrentDispatcher.Invoke(() => ShowChart(tm))).CreateYieldingTargetBlock();
         return _showChartQueue;
       }
     }
@@ -770,7 +770,7 @@ namespace HedgeHog.Alice.Client {
       if (IsInVirtualTrading)
         ShowChart(tm);
       else
-        ShowChartQueue.Add(tm);
+        ShowChartQueue.Post(tm);
     }
     void ShowChart(TradingMacro tm) {
       try {
