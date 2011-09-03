@@ -208,22 +208,7 @@ namespace HedgeHog.Alice.Store {
 
 
     #region ScanCorridor Broadcast
-    BroadcastBlock<Unit> _ScannCorridorBroadcast;
-    public BroadcastBlock<Unit> ScannCorridorBroadcast {
-      [MethodImpl(MethodImplOptions.Synchronized)]
-      get {
-        if (_ScannCorridorBroadcast == null) {
-          _ScannCorridorBroadcast = new BroadcastBlock<Unit>(s => s);
-          _ScannCorridorBroadcast.AsObservable()
-            .Subscribe(s => {
-              ScanCorridor();
-            });
-        }
-        return _ScannCorridorBroadcast;
-      }
-    }
-    void OnScanCorridor() { ScanCorridor(); }
-
+    void OnScanCorridor(ICollection<Rate> rates) { ScanCorridor(rates); }
     #endregion
 
     #region OpenTrade Subject
@@ -628,7 +613,6 @@ namespace HedgeHog.Alice.Store {
       var cs = (sender as CorridorStatistics);
       if (e.PropertyName == Metadata.CorridorStatisticsMetadata.StartDate) {
         if (!IsGannAnglesManual) SetGannAngleOffset(cs);
-        OnScanCorridor();
       }
     }
 
@@ -681,7 +665,7 @@ namespace HedgeHog.Alice.Store {
           if (value != null) {
             if (RatesArray.LastOrDefault() != _CorridorStats.Rates.FirstOrDefault()) {
               Log = new Exception(Pair + ": LastCorridorRate:" + _CorridorStats.Rates.FirstOrDefault() + ",LastRate:" + RatesArray.LastOrDefault());
-              Task.Factory.StartNew(() => ScanCorridor());
+              Task.Factory.StartNew(() => OnScanCorridor(RatesArray));
               return;
             }
             CorridorStats.Rates
@@ -1749,7 +1733,8 @@ namespace HedgeHog.Alice.Store {
     #region MagnetPrice
     private void SetMagnetPrice() {
       try {
-        MagnetPrice = _rateArray.Sum(r => r.PriceAvg/ r.Volume) / _rateArray.Sum(r => 1.0/r.Volume);
+        var rates = _rateArray.Where(r => r.Volume > 0).ToList();
+        MagnetPrice = rates.Sum(r => r.PriceAvg / r.Volume) / rates.Sum(r => 1.0 / r.Volume);
       } catch { }
     }
     private double _MagnetPrice;
@@ -1826,7 +1811,7 @@ namespace HedgeHog.Alice.Store {
 
               OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriodByStDevRatio);
               SetMA();
-              OnScanCorridor();
+              OnScanCorridor(_rateArray);
               this.DensityInPips = InPips(_rateArray.Density());
             }
             return _rateArray;
@@ -2542,12 +2527,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public void ScanCorridor(Action action = null) {
+    public void ScanCorridor(ICollection<Rate> ratesForCorridor) {
       try {
         if (!IsActive || !isLoggedIn || !RatesArraySafe.Any() /*|| !IsTradingHours(tm.Trades, rates.Last().StartDate)*/) return;
         var showChart = CorridorStats == null || CorridorStats.Periods == 0;
         #region Prepare Corridor
-        var ratesForCorridor = RatesArraySafe.ToList();
         var periodsStart = CorridorStartDate == null
           ? (BarsCount * CorridorLengthMinimum).Max(5).ToInt() : ratesForCorridor.Count(r => r.StartDate >= CorridorStartDate.Value);
         if (periodsStart == 1) return;
@@ -2595,10 +2579,7 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         Log = exc;
         //PopupText = exc.Message;
-      } finally {
-        if (action != null)
-          action();
-      }
+      } 
       //Debug.WriteLine("{0}[{2}]:{1:n1}ms @ {3:mm:ss.fff}", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair,DateTime.Now);
     }
 
@@ -3077,7 +3058,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.CorridorStDevRatioMax:
         case TradingMacroMetadata.IterationsForCenterOfMass:
         case TradingMacroMetadata.TradingAngleRange:
-          OnScanCorridor();
+          OnScanCorridor(RatesArray);
           break;
         case TradingMacroMetadata.Pair:
           _pointSize = double.NaN;
@@ -3100,7 +3081,7 @@ namespace HedgeHog.Alice.Store {
           goto case TradingMacroMetadata.IsSuppResManual;
         case TradingMacroMetadata.IsSuppResManual:
         case TradingMacroMetadata.TakeProfitFunction:
-          OnScanCorridor();
+          OnScanCorridor(RatesArray);
           goto case TradingMacroMetadata.RangeRatioForTradeLimit;
         case TradingMacroMetadata.RangeRatioForTradeLimit:
         case TradingMacroMetadata.RangeRatioForTradeStop:
