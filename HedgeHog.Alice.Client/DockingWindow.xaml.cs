@@ -164,6 +164,10 @@ namespace HedgeHog.Alice.Client {
       RootVisual.PaneStateChange += RootVisual_PaneStateChange;
       RootVisual.ElementCleaning += RootVisual_ElementCleaning;
       RootVisual.ElementLoaded += RootVisual_ElementLoaded;
+      var cs = FindChartsSplitter();
+      var pg = new RadPaneGroup();
+      cs.Items.Add(pg);
+      pg.RemoveFromParent();
       #endregion
     }
     #endregion
@@ -247,7 +251,9 @@ namespace HedgeHog.Alice.Client {
     }
     void TileCharts() {
       var charterPanes = RootVisual.Panes.Where(pane => !pane.IsHidden && IsCharterPane(pane)).Union(Charters).ToList();
-      var charterPaneGroup = (charterPanes.FirstOrDefault(pane => pane.IsInDocumentHost) ?? charterPanes.FirstOrDefault()).PaneGroup;
+      var charterPaneGroup = charterPanes.Where(pane => pane.IsInDocumentHost).Select(p=>p.PaneGroup).FirstOrDefault()
+        ?? charterPanes.Select(p=>p.PaneGroup).FirstOrDefault()
+        ?? FindChartsSplitter().ChildrenOfType<RadPaneGroup>().FirstOrDefault();
       foreach (var pane in charterPanes.Skip(1).Reverse().ToList()) {
           pane.RemoveFromParent();
           pane.Width = pane.Height = double.NaN;
@@ -402,7 +408,7 @@ namespace HedgeHog.Alice.Client {
           paneGroup = new RadPaneGroup();
           chartsSplitter.Items.Add(paneGroup);
         }
-        paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right);
+        paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Bottom);
       }
       AddCharterToHidden(pane);
     }
