@@ -127,7 +127,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static Func<double, double, bool> priceHeightComparer = (d1, d2) => d1 >= d2;
 
-    public static CorridorStatistics ScanCorridorWithAngle(this List<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
+    public static CorridorStatistics ScanCorridorWithAngle(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       try {
         #region Funcs
         double[] linePrices = new double[rates.Count()];
