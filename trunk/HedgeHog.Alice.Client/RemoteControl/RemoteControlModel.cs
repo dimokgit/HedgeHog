@@ -141,7 +141,7 @@ namespace HedgeHog.Alice.Client {
       tm.CorridorStartDate = e.NewPosition;
       if( !IsInVirtualTrading && tm.Strategy != Strategies.Massa && !tm.IsHotStrategy)
         tm.Strategy = Strategies.None;
-      tm.ScanCorridor();
+      tm.ScanCorridor(tm.RatesArray);
       ShowChart(tm);
     }
 
@@ -591,7 +591,20 @@ namespace HedgeHog.Alice.Client {
       if (tm == null) return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
       tm.ShowChart += TradingMacro_ShowChart;
-      InitTradingMacro(tm);
+      var d = findDispatcherScheduler();
+      DispatcherScheduler.Instance.Schedule(2.FromSeconds(), ()=>InitTradingMacro(tm));
+    }
+
+    internal IScheduler findDispatcherScheduler() {
+      Type result = null;
+      try {
+        result = Type.GetType("System.Reactive.Concurrency.DispatcherScheduler, System.Reactive.Windows.Threading", true);
+      } catch {
+      }
+      if (result == null) {
+        Log = new Exception("WPF Rx.NET DLL reference not added - using Event Loop"); return new EventLoopScheduler();
+      }
+      return (IScheduler)result.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static).GetValue(null, null);
     }
 
     void TradingMacro_ShowChart(object sender, EventArgs e) {
