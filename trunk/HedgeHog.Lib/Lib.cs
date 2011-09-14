@@ -184,6 +184,27 @@ namespace HedgeHog {
       return Math.Sqrt(sumOfDerivationAverage - Math.Pow(average, 2));
     }
 
+    public static double StDevP(this ICollection<double> n) {
+      double total = 0, average = 0;
+
+      foreach (double num in n) {
+        total += num;
+      }
+
+      average = total / n.Count;
+
+      double runningTotal = 0;
+
+      foreach (double num in n) {
+        runningTotal += ((num - average) * (num - average));
+      }
+
+      double calc = runningTotal / n.Count;
+      double standardDeviationP = Math.Sqrt(calc);
+
+      return standardDeviationP;
+    }
+
     public static void LinearRegression_(double[] valuesX, double[] valuesY, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
@@ -323,7 +344,7 @@ namespace HedgeHog {
       return Math.Abs(v);
     }
     public static double Max(this double v, double other) {
-      return Math.Max(v, other);
+      return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Max(v, other);
     }
     public static double Max(this double v, params double[] other) {
       return other.Aggregate(v, (p, n) => p.Max(n));
