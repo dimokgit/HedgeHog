@@ -7,6 +7,69 @@ using System.Diagnostics;
 namespace HedgeHog {
   public static class MathExtensions {
 
+    public static double StDevP_(this double[] value,  bool fcompensate = true) {
+      double[] average = { 0.0, 0.0 };
+      double stdev = 0;
+      double mean;
+      double variance;
+      mean = 0; // adjust values
+
+      if ((fcompensate) && (value.Length > 1000)) {
+        int n = (int)(value.Length * 0.1);
+        for (int i = 0; i <= (n - 1); i++) {
+          mean = mean + value[i];
+        }
+        mean = mean / n;
+      }
+
+      for (int i = 1; i <= value.Length; i++) {
+        average[i % 2] = average[(i + 1) % 2] + (value[i - 1] - mean - average[(i + 1) % 2]) / i;
+        stdev += (value[i - 1] - mean - average[(i + 1) % 2]) * (value[i - 1] - mean - average[i % 2]);
+      }
+
+      mean = average[value.Length % 2];
+      variance = stdev / (value.Length - 1);
+
+      return Math.Sqrt(variance);
+    }
+
+    public static double StDevAL(this double[] x,bool fcompensate = true){//, int n, ref double stddev, ref double mean, bool fcompensate) {
+      int i;
+      double v1 = 0;
+      double v2 = 0;
+      double variance;
+      double sum = 0;
+      double mean = 0;
+      int n = x.Length;
+
+      if (fcompensate) {
+        for (i = 0; i <= (n - 1); i++) {
+          sum = sum + x[i];
+        }
+        mean = sum / n;
+      }
+
+      //
+      // Variance (using corrected two-pass algorithm)
+      //
+      if (n != 1) {
+        v1 = 0; v2 = 0;
+        for (i = 0; i <= n - 1; i++) {
+          v1 = v1 + (x[i] - mean) * (x[i] - mean);
+          v2 = v2 + (x[i] - mean);
+        }
+
+        v2 = v2 * v2 / n;
+        variance = (v1 - v2) / (n - 1);
+        if ((double)(variance) < (double)(0)) {
+          variance = 0;
+        }
+        var stddev = Math.Sqrt(variance);
+        return stddev;
+      }
+      return 0;
+    }
+
     public static double[] Trima(this double[] inReal,int period,  out int outBegIdx, out int outNBElement) {
       try {
         if (inReal.Length < period) {
