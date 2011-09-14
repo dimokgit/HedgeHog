@@ -61,6 +61,8 @@ namespace HedgeHog.Shared {
     event EventHandler<OrderEventArgs> OrderAdded;
     event EventHandler<TradeEventArgs> TradeClosed;
     event EventHandler<PriceChangedEventArgs> PriceChanged;
+    void RaisePriceChanged(string pair, Price price);
+
     event EventHandler<TradeEventArgs> TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
     event EventHandler<ErrorEventArgs> Error;
@@ -92,6 +94,8 @@ namespace HedgeHog.Shared {
 
     //void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList);
     void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd);
+
+    PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
   }
   public class ErrorEventArgs : EventArgs {
     public string Pair { get; set; }
@@ -126,6 +130,11 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
+
+    public static void RaisePriceChanged(this ITradesManager me, string pair, Rate rate) {
+      me.RaisePriceChanged(pair, new Price(pair, rate, me.ServerTime, me.GetPipSize(pair), me.GetDigits(pair), true));
+    }
+
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
       return Math.Floor((amountToTrade / baseUnitSize)).ToInt() * baseUnitSize;

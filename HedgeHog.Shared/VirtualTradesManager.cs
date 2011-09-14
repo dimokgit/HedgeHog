@@ -66,11 +66,11 @@ namespace HedgeHog.Shared {
         if (_account == null) {
           _account = new Account() {
             ID = accountId,
-            Balance = 10000,
-            UsableMargin = 10000,
+            Balance = 50000,
+            UsableMargin = 50000,
             IsMarginCall = false,
-            Equity = 10000,
-            Hedging = true,
+            Equity = 50000,
+            Hedging = false,
             //Trades = includeOtherInfo ? trades = GetTrades("") : null,
             //StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
             //LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
@@ -263,11 +263,9 @@ namespace HedgeHog.Shared {
 
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
-    public void RaisePriceChanged(string pair,Rate rate) {
-      RaisePriceChanged(pair,new Price(pair, rate, ServerTime, this.GetPipSize(pair), GetDigits(pair), true), GetTrades());
-    }
-    public void RaisePriceChanged(string pair, Price price,Trade[] trades) {
-      if (PriceChanged != null) PriceChanged(this, new PriceChangedEventArgs(pair,price,GetAccount(), trades));
+    public void RaisePriceChanged(string pair, Price price) {
+      if (PriceChanged != null)
+        PriceChanged(this, new PriceChangedEventArgs(pair,price,GetAccount(), GetTrades()));
     }
 
     public event EventHandler<TradeEventArgs> TradeAdded;
@@ -286,6 +284,9 @@ namespace HedgeHog.Shared {
 
     #region ITradesManager Members
 
+    public PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment) {
+      return OpenTrade(Pair, isBuy, lot, takeProfit, stopLoss, comment, null);
+    }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
       if (!isHedged) {
