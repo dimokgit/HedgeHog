@@ -97,12 +97,16 @@ namespace HedgeHog.Bars {
     [DataMember]
     public double PriceAvg1 { get; set; }
     [DataMember]
+    public double PriceAvg21 { get; set; }
+    [DataMember]
     public double PriceAvg2 { get; set; }
     [DataMember]
     public double PriceAvg02 { get; set; }
 
     public double PriceHeight2 { get { return PriceAvg1 != 0 && PriceAvg2 != 0 ? PriceAvg2 - PriceAvg : 0; } }
-    
+
+    [DataMember]
+    public double PriceAvg31 { get; set; }
     [DataMember]
     public double PriceAvg3 { get; set; }
     [DataMember]

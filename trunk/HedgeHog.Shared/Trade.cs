@@ -10,7 +10,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
-    public static double Lots(this IEnumerable<Trade> trades) {
+    public static int Lots(this IEnumerable<Trade> trades) {
       return trades.Sum(t => t.Lots);
     }
     public static double NetLots(this IEnumerable<Trade> trades) {
@@ -19,8 +19,8 @@ namespace HedgeHog.Shared {
     public static double GrossInPips(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.PL * t.Lots) / trades.Sum(t => t.Lots);
     }
-    public static double NetOpen(this IEnumerable<Trade> trades) {
-      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Open * t.Lots) / trades.Sum(t => t.Lots);
+    public static double NetOpen(this IEnumerable<Trade> trades, double defaultValue = 0) {
+      return trades == null || trades.Count() == 0 ? defaultValue : trades.Sum(t => t.Open * t.Lots) / trades.Sum(t => t.Lots);
     }
     public static double NetClose(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Close * t.Lots) / trades.Sum(t => t.Lots);
