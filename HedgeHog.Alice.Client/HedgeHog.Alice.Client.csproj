@@ -189,7 +189,6 @@
     <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />
     <Compile Include="Classes\TradeRequestManager.cs" />
-    <Compile Include="Classes\TradingAccountModel.cs" />
     <Compile Include="Commands\CommandReference.cs">
       <SubType>Code</SubType>
     </Compile>
