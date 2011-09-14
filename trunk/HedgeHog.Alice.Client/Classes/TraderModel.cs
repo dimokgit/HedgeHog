@@ -422,7 +422,7 @@ namespace HedgeHog.Alice.Client {
     public ListCollectionView AbsentTradesList { get; set; }
 
     private TradingAccountModel _accountModel;
-    public TradingAccountModel AccountModel {
+    public override TradingAccountModel AccountModel {
       get {
         if (_accountModel == null) {
           _accountModel = new TradingAccountModel();
@@ -439,6 +439,34 @@ namespace HedgeHog.Alice.Client {
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
+
+    IDisposable _priceChangeSubscribtion;
+    public IDisposable PriceChangeSubscribtion {
+      get { return _priceChangeSubscribtion; }
+      set {
+        if (_priceChangeSubscribtion != null)
+          _priceChangeSubscribtion.Dispose();
+        _priceChangeSubscribtion = value;
+      }
+    }
+    IDisposable _tradeColsedSubscribtion;
+    public IDisposable TradeColsedSubscribtion {
+      get { return _tradeColsedSubscribtion; }
+      set {
+        if (_tradeColsedSubscribtion != null)
+          _tradeColsedSubscribtion.Dispose();
+        _tradeColsedSubscribtion = value;
+      }
+    }
+    private IDisposable _orderChangedSubscribtion;
+    public IDisposable OrderChangedSubscribtion {
+      get { return _orderChangedSubscribtion; }
+      set {
+        if (_orderChangedSubscribtion != null)
+          _orderChangedSubscribtion.Dispose();
+        _orderChangedSubscribtion = value;
+      }
+    }
 
     #region SlaveAccountInfos
     ObservableCollection<TradingAccountModel> SlaveAccountInfos = new ObservableCollection<TradingAccountModel>();
@@ -1063,7 +1091,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void LoginAsync(string account, string password, bool isDemo) {
-      Task.Factory.StartNew(() => Login(account, password, isDemo));
+      DispatcherScheduler.Instance.Schedule(() => Login(account, password, isDemo));
     }
 
     #endregion
@@ -1193,29 +1221,32 @@ namespace HedgeHog.Alice.Client {
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
         CoreFX.LoggedIn += (s, e) => {
+          DispatcherScheduler.Instance.Schedule(() => App.Current.MainWindow.WindowState = WindowState.Maximized);
           IsInLogin = false;
           TradesManager.Error += fwMaster_Error;
           TradesManager.TradeAdded += fwMaster_TradeAdded;
           TradesManager.TradeRemoved += fwMaster_TradeRemoved;
-          //TradesManager.PriceChanged += fwMaster_PriceChanged;
-          Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
-            .Do(ie=> UpdateTradingAccountTargetBlock.Post(ie.EventArgs.Account))
-            .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
-            .Buffer(_throttleInterval)
-            .Subscribe(l => {
-              l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
-                .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
-            });
+          if (IsInVirtualTrading)
+            TradesManager.PriceChanged += fwMaster_PriceChanged;
+          else
+            PriceChangeSubscribtion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
+              .Do(ie => UpdateTradingAccountTargetBlock.Post(ie.EventArgs.Account))
+              .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
+              .Buffer(_throttleInterval)
+              .Subscribe(l => {
+                l.GroupBy(ie => ie.EventArgs.Pair).Select(g => g.Last()).ToList()
+                  .ForEach(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs));
+              });
           //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1), System.Concurrency.Scheduler.ThreadPool))
           //.Subscribe(g => g.TakeLast(1)
           //  .Subscribe(ie => fwMaster_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { }));
-          Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
+          OrderChangedSubscribtion = Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(h => h, h => FWMaster.OrderChanged += h, h => FWMaster.OrderChanged -= h)
             .Throttle(_throttleInterval)//, System.Concurrency.Scheduler.Dispatcher)
             .Subscribe(ie => fwMaster_OrderChanged(ie.Sender, ie.EventArgs), exc => Log = exc, () => { });
           //fwMaster.OrderChanged += fwMaster_OrderChanged;
           fwMaster.OrderAdded += fwMaster_OrderAdded;
 
-          Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
+          TradeColsedSubscribtion = Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => FWMaster.TradeClosed += h, h => FWMaster.TradeClosed -= h)
             .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
             ClosedTrades.Clear();
@@ -1364,6 +1395,10 @@ namespace HedgeHog.Alice.Client {
     }
     void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
       try {
+        if (IsInVirtualTrading) {
+          e.Account.Equity = e.Account.Balance + e.Account.Trades.Sum(t => t.GrossPL);
+          UpdateTradingAccount(e.Account);
+        }
         Price Price = e.Price;
         RunPriceChanged(e);
       } catch (Exception exc) {
@@ -1423,7 +1458,8 @@ namespace HedgeHog.Alice.Client {
     }
 
     protected void OnInvokeSyncronize(Account account) {
-      InvokeSyncronizeTargetBlock.Post(account);
+      if (IsInVirtualTrading) InvokeSyncronize(account);
+      else InvokeSyncronizeTargetBlock.Post(account);
     }
 
     void InvokeSyncronize(Account account) {
@@ -1450,7 +1486,11 @@ namespace HedgeHog.Alice.Client {
         var oldIds = tradesCollection.Select(t => t.Id).ToArray();
         var newIds = tradesList.Select(t => t.Id);
         var deleteIds = oldIds.Except(newIds).ToList();
-        deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
+        try {
+          deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
+        } catch (InvalidOperationException) {
+          deleteIds.ForEach(d => tradesCollection.RemoveAll(tradesCollection.Where(t => t.Id == d)));
+        }
         var addIds = newIds.Except(oldIds).ToList();
         addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
         foreach (var trade in tradesList) {
@@ -1609,7 +1649,6 @@ namespace HedgeHog.Alice.Client {
     }
 
     #endregion
-
   }
   public enum AliceModes {Neverland = 0, Wonderland = 1, Mirror = 2 }
 }
