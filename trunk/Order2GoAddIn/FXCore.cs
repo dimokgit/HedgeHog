@@ -7,6 +7,7 @@ using HedgeHog.Shared;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Concurrency;
 
 
 namespace Order2GoAddIn {
@@ -163,10 +164,16 @@ namespace Order2GoAddIn {
     void SessionStatusChanged(string status) {
       SessionStatus = (TradingServerSessionStatus)Enum.Parse(typeof(TradingServerSessionStatus),status);
       if (SessionStatus == TradingServerSessionStatus.Disconnected) {
-        Logout();
-        LogOn();
+        ReLoginDefered();
       }
 
+    }
+
+    private void ReLoginDefered() {
+      DispatcherScheduler.Instance.Schedule(TimeSpan.FromMinutes(1), () => {
+        if (!ReLogin())
+          ReLoginDefered();
+      });
     }
 
     public enum Tables { Accounts, Orders, Offers, Trades, ClosedTrades, Summary, Messages };
@@ -231,7 +238,7 @@ namespace Order2GoAddIn {
       }
     }
     public bool LogOn(string user, string password, string url, bool isDemo) {
-      if (!IsLoggedIn) {
+      if (!IsLoggedIn || IsInVirtualTrading) {
         this.user = user;
         this.password = password;
         this.isDemo = isDemo;
@@ -241,18 +248,15 @@ namespace Order2GoAddIn {
           Desk.SetTimeout(Desk.TIMEOUT_PRICEHISTORY, 30000);
           Desk.SetTimeout(Desk.TIMEOUT_COMMON, 60 * 1000);
           Desk.SetRowsFilterType(Desk.ROWSFILTER_EXTENDED);
-          Desk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
-          InitTimer();
+          if (!IsInVirtualTrading) {
+            Desk.Login(this.user, this.password, this.URL, this.isDemo ? "Demo" : "Real");
+            InitTimer();
+          }
           RaiseLoggedIn();
           return true;
         } catch (Exception e) {
           RaiseLoginError(e);
           return false;
-        } finally {
-          _isLoggedInSubscription = _isLoggedInObserver.Subscribe(n => {
-            if (!IsLoggedIn)
-              LogOn();
-          });
         }
       }
       return true;
@@ -262,8 +266,6 @@ namespace Order2GoAddIn {
       _isInLogOut = true;
       try {
         Unsubscribe();
-        if (_isLoggedInSubscription != null)
-          _isLoggedInSubscription.Dispose();
         RaiseLoggingOff();
         if (mCore != null) {
           if (IsLoggedIn) {
@@ -274,8 +276,6 @@ namespace Order2GoAddIn {
         }
       } catch { } finally { _isInLogOut = false; }
     }
-
-    IObservable<long> _isLoggedInObserver = Observable.Interval(TimeSpan.FromMinutes(1));
 
     public bool IsLoggedIn { get { 
       lock(_deskLocker)

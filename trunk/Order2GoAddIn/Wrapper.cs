@@ -334,7 +334,10 @@ namespace Order2GoAddIn {
         PriceChangedEvent -= value;
       }
     }
-    void RaisePriceChanged(string pair, Price price,Account account,Trade[] trades) {
+    public void RaisePriceChanged(string pair, Price price) {
+      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
+    }
+    void RaisePriceChanged(string pair, Price price, Account account, Trade[] trades) {
       if (IsInReplay(pair) != price.IsPlayback) return;
       var e = new PriceChangedEventArgs(pair, price, account, trades);
       if (_PriceChangedBroadcast != null)
@@ -866,16 +869,15 @@ namespace Order2GoAddIn {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
           GetBarsBase<Rate>(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
-        var maximumDate = Bars.Max(b => b.StartDate);
+        var maximumDate = Bars.Select(b => b.StartDate).DefaultIfEmpty(StartDate).Max();
         if (EndDate == TradesManagerStatic.FX_DATE_NOW || EndDate > maximumDate) {
           GetBarsBase<Rate>(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
         }
       }
       if (EndDate != TradesManagerStatic.FX_DATE_NOW)
-        foreach (var bar in Bars.Where(b => b.StartDate > EndDate).ToArray())
-          Bars.Remove(bar);
+          Bars.RemoveAll(b => b.StartDate > EndDate);
       if( Bars.Count < periodsBack)
-        GetBarsBase<Rate>(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Min(b => b.StartDate), Bars,callBack);
+        GetBarsBase<Rate>(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Select(b => b.StartDate).DefaultIfEmpty(EndDate).Min(), Bars,callBack);
       Bars.Sort();
       if (doTrim) {
         var countMaximum = TradesManagerStatic.GetMaxBarCount(periodsBack, StartDate, Bars);
@@ -2067,7 +2069,7 @@ namespace Order2GoAddIn {
     public bool ClosePair(string pair, bool buy, int lot) {
       try {
         if (this.IsFIFO(pair)) {
-          var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots().ToInt());
+          var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
           if (lotToDelete > 0) {
             OpenTrade(pair, !buy, lotToDelete, 0, 0, "", null);
           } else {
@@ -2579,7 +2581,7 @@ namespace Order2GoAddIn {
           case "offers":
             var price = GetPrice(new NameValueParser(rowText));
             SetCurrentPrice(price);
-            RaisePriceChanged(price.Pair, price,GetAccount(),GetTrades());
+            RaisePriceChanged(price.Pair, price);
             break;
           case TABLE_ACCOUNTS:
             GetAccount(new NameValueParser(rowText));
