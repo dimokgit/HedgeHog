@@ -203,8 +203,17 @@ namespace HedgeHog {
       get {
         return
           string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:0}s{10:n2}d{9:n2}D"
-          , Name, (BarsPeriodType)BarsPeriod, BarsCount, CorridorAngle
-          , HeightInPips, CorridorHeight, CorridorStDevToRatesStDevRatio, StDev, SpreadForCorridor, Density,DensityCorridor);
+          /*0*/, Name
+          /*1*/, (BarsPeriodType)BarsPeriod
+          /*2*/, BarsCount
+          /*3*/, CorridorAngle
+          /*4*/, HeightInPips
+          /*5*/, CorridorHeight
+          /*6*/, CorridorStDevToRatesStDevRatio
+          /*7*/, StDev
+          /*8*/, SpreadForCorridor
+          /*9*/, Density
+          /*10*/, DensityCorridor);
       }
     }
 
@@ -320,9 +329,11 @@ namespace HedgeHog {
     bool? buySell;
     public void SetPriceLineColor(bool? buySell) {
       if (PriceLineGraph!=null && this.buySell != buySell) {
-        PriceLineGraph.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
-        PriceLineGraphBid.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorBid);
-        this.buySell = buySell;
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+          PriceLineGraph.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
+          PriceLineGraphBid.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorBid);
+          this.buySell = buySell;
+        });
       }
     }
 
@@ -413,6 +424,9 @@ namespace HedgeHog {
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     public double LineAvgAsk { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineAvgAsk.Value = value); } }
 
+    HorizontalLine lineTakeProfitLimit = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public double LineTakeProfitLimit { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTakeProfitLimit.Value = value); } }
+
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     public double LineAvgBid {
       set {
@@ -443,6 +457,32 @@ namespace HedgeHog {
 
     VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
     DateTime LineTimeAvg { set { lineTimeAvg.Value = dateAxis.ConvertToDouble(value); } }
+
+    VerticalLine lineTimeTakeProfit = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public DateTime LineTimeTakeProfit {
+      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit.Value = dateAxis.ConvertToDouble(value)); }
+    }
+    VerticalLine lineTimeTakeProfit1 = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public DateTime LineTimeTakeProfit1 {
+      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit1.Value = dateAxis.ConvertToDouble(value)); }
+    }
+    VerticalLine lineTimeTakeProfit2 = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public DateTime LineTimeTakeProfit2 {
+      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit2.Value = dateAxis.ConvertToDouble(value)); }
+    }
+    VerticalLine lineTimeTakeProfit3 = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public DateTime LineTimeTakeProfit3 {
+      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit3.Value = dateAxis.ConvertToDouble(value)); }
+    }
+
+    Action<DateTime>[] _lineTimeTakeProfits;
+
+    public Action<DateTime>[] LineTimeTakeProfits {
+      get {
+        return _lineTimeTakeProfits ?? (_lineTimeTakeProfits = new Action<DateTime>[] { d => LineTimeTakeProfit = d, d => LineTimeTakeProfit1 = d, d => LineTimeTakeProfit2 = d, d => LineTimeTakeProfit3 = d });
+      }
+    }
+
     #endregion
 
     #region
@@ -456,8 +496,9 @@ namespace HedgeHog {
     }
 
     public void SetTrendLines(Rate[] rates) {
+      if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-        TrendLine = TrendLine1 = TrendLine11 = TrendLine2 = TrendLine22 = rates;
+        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = rates;
         var timeHigh = rates[0].StartDateContinuous;
         var corridorTime = rates[0].StartDate;
         lineTimeMax.ToolTip = corridorTime;
@@ -476,35 +517,50 @@ namespace HedgeHog {
       }
     }
 
-    Segment trendLine1 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
-    Rate[] TrendLine1 {
+    Segment trendLine21 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
+    Rate[] TrendLine21 {
       set {
-        trendLine1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
-        trendLine1.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg2);
-      }
-    }
-
-    Segment trendLine11 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
-    Rate[] TrendLine11 {
-      set {
-        trendLine11.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg02);
-        trendLine11.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg02);
+        trendLine21.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg21);
+        trendLine21.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg21);
       }
     }
 
     Segment trendLine2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine2 {
       set {
-        trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
-        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg3);
+        trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
+        trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg2);
       }
     }
 
-    Segment trendLine22 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
-    Rate[] TrendLine22 {
+    Segment trendLine02 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
+    Rate[] TrendLine02 {
       set {
-        trendLine22.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg03);
-        trendLine22.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg03);
+        trendLine02.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg02);
+        trendLine02.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg02);
+      }
+    }
+
+    Segment trendLine31 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
+    Rate[] TrendLine31 {
+      set {
+        trendLine31.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg31);
+        trendLine31.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg31);
+      }
+    }
+    Segment trendLine3 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
+    Rate[] TrendLine3 {
+      set {
+        trendLine3.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
+        trendLine3.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg3);
+      }
+    }
+
+    Segment trendLine03 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
+    Rate[] TrendLine03 {
+      set {
+        trendLine03.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg03);
+        trendLine03.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg03);
       }
     }
     #endregion
@@ -830,13 +886,20 @@ namespace HedgeHog {
 
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
+      plotter.Children.Add(lineTakeProfitLimit);
       plotter.Children.Add(lineTimeMin);
       plotter.Children.Add(lineTimeAvg);
+      plotter.Children.Add(lineTimeTakeProfit);
+      plotter.Children.Add(lineTimeTakeProfit1);
+      plotter.Children.Add(lineTimeTakeProfit2);
+      plotter.Children.Add(lineTimeTakeProfit3);
       plotter.Children.Add(trendLine);
-      plotter.Children.Add(trendLine1);
-      plotter.Children.Add(trendLine11);
+      plotter.Children.Add(trendLine21);
       plotter.Children.Add(trendLine2);
-      plotter.Children.Add(trendLine22);
+      plotter.Children.Add(trendLine02);
+      plotter.Children.Add(trendLine31);
+      plotter.Children.Add(trendLine3);
+      plotter.Children.Add(trendLine03);
       plotter.Children.Add(gannLine);
 
       plotter.Children.Add(centerOfMassHLineHigh);
@@ -1031,11 +1094,11 @@ namespace HedgeHog {
         #region Set Trendlines
         if (false && trendHighlight.HasValue)
           if (trendHighlight.Value) {
-            trendLine1.StrokeThickness = 2;
-            trendLine2.StrokeThickness = 1;
-          } else {
-            trendLine1.StrokeThickness = 1;
             trendLine2.StrokeThickness = 2;
+            trendLine3.StrokeThickness = 1;
+          } else {
+            trendLine2.StrokeThickness = 1;
+            trendLine3.StrokeThickness = 2;
           }
         #endregion
         //TicksAvg1.Clear();
