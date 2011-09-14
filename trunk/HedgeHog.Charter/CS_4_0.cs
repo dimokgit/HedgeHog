@@ -614,28 +614,28 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine"/></summary>
         public const string TrendLine = "TrendLine";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine1"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine2"/></summary>
         public const string trendLine1 = "trendLine1";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine1"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2"/></summary>
         public const string TrendLine1 = "TrendLine1";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine11"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine02"/></summary>
         public const string trendLine11 = "trendLine11";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine11"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine02"/></summary>
         public const string TrendLine11 = "TrendLine11";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine2"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine3"/></summary>
         public const string trendLine2 = "trendLine2";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3"/></summary>
         public const string TrendLine2 = "TrendLine2";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine22"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.trendLine03"/></summary>
         public const string trendLine22 = "trendLine22";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine22"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine03"/></summary>
         public const string TrendLine22 = "TrendLine22";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._GannAngleOffsetPoint"/></summary>
@@ -1026,16 +1026,16 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine"/></summary>
         public static PropertyPath TrendLinePath { get { return new PropertyPath("TrendLine"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine1"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2"/></summary>
         public static PropertyPath TrendLine1Path { get { return new PropertyPath("TrendLine1"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine11"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine02"/></summary>
         public static PropertyPath TrendLine11Path { get { return new PropertyPath("TrendLine11"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine2"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine3"/></summary>
         public static PropertyPath TrendLine2Path { get { return new PropertyPath("TrendLine2"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine22"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TrendLine03"/></summary>
         public static PropertyPath TrendLine22Path { get { return new PropertyPath("TrendLine22"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GannAngleOffsetPoint"/></summary>

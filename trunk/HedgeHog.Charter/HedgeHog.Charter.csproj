@@ -107,6 +107,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="app.config" />
     <None Include="CS_4_0.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>CS_4_0.cs</LastGenOutput>
