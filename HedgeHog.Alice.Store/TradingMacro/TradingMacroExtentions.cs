@@ -280,7 +280,7 @@ namespace HedgeHog.Alice.Store {
       if (suppRes == null) return false;
       return PriceCmaPeriod > 10
         ? (isBuy ? rate.PriceAvg > GetPriceMA(rate) : rate.PriceAvg < GetPriceMA(rate))
-        : (isBuy ? CorridorCrossLowPrice(rate) > suppRes.Rate : CorridorCrossHighPrice(rate) < suppRes.Rate);
+        : (isBuy ? CorridorCrossLowPrice(rate) > rate.PriceAvg03 /*suppRes.Rate*/ : CorridorCrossHighPrice(rate) < rate.PriceAvg02 /*suppRes.Rate*/);
     }
     void DisposeOpenTradeByMASubject() {
       if (IsInVitualTrading)
@@ -2655,9 +2655,11 @@ namespace HedgeHog.Alice.Store {
         if (!CorridorStartDate.HasValue) {
           var reversed = ratesForCorridor.ReverseIfNot();
           var waveRates = GetWaveRates(reversed, 4);
-          var zeros = reversed.Where(r => r.PriceStdDev == 0).ToList();
-
-          for (var w = 0; w < waveRates.Count; w++) {
+          if (waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
+            _waveRates.Clear();
+            _waveRates.AddRange(waveRates);
+          }
+          for (var w = 110; w < waveRates.Count; w++) {
             if (_waveRates.Count < w + 1)
               _waveRates.Add(waveRates[w]);
             else
@@ -2778,7 +2780,8 @@ namespace HedgeHog.Alice.Store {
     }
     private bool IsCorridorOk(CorridorStatistics cs, double corridorCrossesCountMinimum) {
         //if (cs.LegInfos.Count == 0 && corridorCrossesCountMinimum > 0) return false;
-      return cs.StDev / cs.Spread > CorridorStDevToSpreadMin/10.0;
+      var angle = cs.Slope.Angle(PointSize);
+      return cs.StDev / cs.Spread > CorridorStDevToSpreadMin && angle <= TradingAngleRange;
       if (cs.StDev / cs.Spread < CorridorStDevToSpreadMin) return false;
         var crossesCount = cs.CorridorCrossesCount;
         var isCorCountOk = IsCorridorCountOk(crossesCount, corridorCrossesCountMinimum);
