@@ -327,6 +327,8 @@ namespace HedgeHog.Alice.Client {
       if (IsInVirtualTrading) {
         tradesManager.ClosePair(tm.Pair);
         MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
+        tradesManager.GetAccount().Balance = tradesManager.GetAccount().Equity = 50000;
+        tm.ResetSessionId();
       }
       Task.Factory.StartNew(() =>
         tm.Replay(ReplayArguments)
