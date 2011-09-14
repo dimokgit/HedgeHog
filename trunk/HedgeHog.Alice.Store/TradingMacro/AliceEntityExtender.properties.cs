@@ -258,6 +258,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("Trading Distance Function")]
+    [Category(categoryTrading)]
+    public TradingMacroTakeProfitFunction TradingDistanceFunction {
+      get { return (TradingMacroTakeProfitFunction)CorridorIterationsIn; }
+      set {
+        CorridorIterationsIn = (int)value;
+        OnPropertyChanged(TradingMacroMetadata.TradingDistanceFunction);
+      }
+    }
+
+
     [DisplayName("Take Profit Function")]
     [Category(categoryTrading)]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
@@ -564,42 +575,20 @@ namespace HedgeHog.Alice.Store {
       set { BarPeriodsLow = (int)value; }
 
     }
-    [DisplayName("Corr Height/Spread - High")]
-    [Category(categoryXXX)]
-    [Description("Buy/Sell when locked && H/S > X/10")]
-    public double CorridorHeightToSpreadRatioHigh {
-      get { return BarPeriodsHigh / 10.0; }
-      set { BarPeriodsHigh = (int)value; }
-    }
+    //  BarPeriodsHigh
+    // CorridorIterationsIn
+    // CorridorIterationsOut
+    // PowerRowOffset
 
-
-    [DisplayName("Iterations For Power")]
-    [Description("Number of Iterations to calculate power for wave")]
+    [DisplayName("Corridor StDev To SpreadMin")]
+    [Description("CorridorStDev/SpreadMin > X")]
     [Category(categoryXXX)]
-    public int IterationsForPower {
-      get { return CorridorIterationsIn; }
-      set { CorridorIterationsIn = value; }
-    }
-
-    [DisplayName("Iterations For Center of Mass")]
-    [Description("Ex: CentersOfMass = rates.Overlaps(X)")]
-    [Category(categoryXXX)]
-    public int IterationsForCenterOfMass {
-      get { return CorridorIterationsOut; }
-      set {
-        if (CorridorIterationsOut == value) return;
-        CorridorIterationsOut = value;
-        OnPropertyChanged(TradingMacroMetadata.IterationsForCenterOfMass);
+    public double CorridorStDevToSpreadMin {
+      get { return FibMin; }
+      set { 
+        FibMin = value;
+        OnPropertyChanged(TradingMacroMetadata.CorridorStDevToSpreadMin);
       }
-    }
-
-
-    [DisplayName("Power Row Offset")]
-    [Description("Ex: Speed = Spread / (row + X)")]
-    [Category(categoryXXX)]
-    public int PowerRowOffset_ {
-      get { return PowerRowOffset; }
-      set { PowerRowOffset = value; }
     }
 
     [Category(categoryCorridor)]

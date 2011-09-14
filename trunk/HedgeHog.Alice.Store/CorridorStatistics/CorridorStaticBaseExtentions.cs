@@ -127,7 +127,7 @@ namespace HedgeHog.Alice.Store {
     }
     public static Func<double, double, bool> priceHeightComparer = (d1, d2) => d1 >= d2;
 
-    public static CorridorStatistics ScanCorridorWithAngle(this ICollection<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
+    public static CorridorStatistics ScanCorridorWithAngle(this IList<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       try {
         #region Funcs
         double[] linePrices = new double[rates.Count()];
@@ -146,9 +146,9 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         var stDevDict = new Dictionary<CorridorCalculationMethod, double>(){
-          {CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDev()},
-            {CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDev()},
-            {CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDev()}
+          {CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP()},
+            {CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()},
+            {CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP()}
         };
         stDev = stDevDict.Values.Max();
         height = stDev * 2;

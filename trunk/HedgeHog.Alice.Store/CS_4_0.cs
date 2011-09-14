@@ -2075,6 +2075,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MonthsOfHistory"/></summary>
         public const string MonthsOfHistory = "MonthsOfHistory";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCalcMethod"/></summary>
+        public const string CorridorCalcMethod = "CorridorCalcMethod";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceCmaLevels_"/></summary>
         public const string PriceCmaLevels_ = "PriceCmaLevels_";
 
@@ -2104,6 +2107,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCountMinimum_"/></summary>
         public const string CorridorCrossesCountMinimum_ = "CorridorCrossesCountMinimum_";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingDistanceFunction"/></summary>
+        public const string TradingDistanceFunction = "TradingDistanceFunction";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitFunction"/></summary>
         public const string TakeProfitFunction = "TakeProfitFunction";
@@ -2213,17 +2219,8 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public const string CorridorHeightToSpreadRatioLow = "CorridorHeightToSpreadRatioLow";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioHigh"/></summary>
-        public const string CorridorHeightToSpreadRatioHigh = "CorridorHeightToSpreadRatioHigh";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IterationsForPower"/></summary>
-        public const string IterationsForPower = "IterationsForPower";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IterationsForCenterOfMass"/></summary>
-        public const string IterationsForCenterOfMass = "IterationsForCenterOfMass";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PowerRowOffset_"/></summary>
-        public const string PowerRowOffset_ = "PowerRowOffset_";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStDevToSpreadMin"/></summary>
+        public const string CorridorStDevToSpreadMin = "CorridorStDevToSpreadMin";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSuppResManual_"/></summary>
         public const string IsSuppResManual_ = "IsSuppResManual_";
@@ -2396,6 +2393,111 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BalanceOnLimit"/></summary>
         public const string BalanceOnLimit = "BalanceOnLimit";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.THROTTLE_INTERVAL"/></summary>
+        public const string THROTTLE_INTERVAL = "THROTTLE_INTERVAL";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesBroadcast"/></summary>
+        public const string _LoadRatesBroadcast = "_LoadRatesBroadcast";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesBroadcast"/></summary>
+        public const string LoadRatesBroadcast = "LoadRatesBroadcast";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnLoadRates_"/></summary>
+        public const string OnLoadRates_ = "OnLoadRates_";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubjectLocker"/></summary>
+        public const string _LoadRatesSubjectLocker = "_LoadRatesSubjectLocker";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubject"/></summary>
+        public const string _LoadRatesSubject = "_LoadRatesSubject";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
+        public const string LoadRatesSubject = "LoadRatesSubject";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._loadRatesAction"/></summary>
+        public const string _loadRatesAction = "_loadRatesAction";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnLoadRates"/></summary>
+        public const string OnLoadRates = "OnLoadRates";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubjectLocker"/></summary>
+        public const string _EntryOrdersAdjustSubjectLocker = "_EntryOrdersAdjustSubjectLocker";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubject"/></summary>
+        public const string _EntryOrdersAdjustSubject = "_EntryOrdersAdjustSubject";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
+        public const string EntryOrdersAdjustSubject = "EntryOrdersAdjustSubject";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnEntryOrdersAdjust"/></summary>
+        public const string OnEntryOrdersAdjust = "OnEntryOrdersAdjust";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubjectLocker"/></summary>
+        public const string _DeleteOrderSubjectLocker = "_DeleteOrderSubjectLocker";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubject"/></summary>
+        public const string _DeleteOrderSubject = "_DeleteOrderSubject";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
+        public const string DeleteOrderSubject = "DeleteOrderSubject";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnDeletingOrder"/></summary>
+        public const string OnDeletingOrder = "OnDeletingOrder";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._setNetSubjectLocker"/></summary>
+        public const string _setNetSubjectLocker = "_setNetSubjectLocker";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SettingStopLimits"/></summary>
+        public const string _SettingStopLimits = "_SettingStopLimits";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
+        public const string SettingStopLimits = "SettingStopLimits";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnSettingStopLimits"/></summary>
+        public const string OnSettingStopLimits = "OnSettingStopLimits";
+
+        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper"/></summary>
+        public static class CreateEntryOrderHelperMetadata
+        {
+                        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Pair"/></summary>
+            public const string Pair = "Pair";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.IsBuy"/></summary>
+            public const string IsBuy = "IsBuy";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Amount"/></summary>
+            public const string Amount = "Amount";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Rate"/></summary>
+            public const string Rate = "Rate";
+
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Pair"/></summary>
+            public static PropertyPath PairPath { get { return new PropertyPath("Pair"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.IsBuy"/></summary>
+            public static PropertyPath IsBuyPath { get { return new PropertyPath("IsBuy"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Amount"/></summary>
+            public static PropertyPath AmountPath { get { return new PropertyPath("Amount"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Rate"/></summary>
+            public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
+
+        }
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CreateEntryOrderSubject"/></summary>
+        public const string _CreateEntryOrderSubject = "_CreateEntryOrderSubject";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
+        public const string CreateEntryOrderSubject = "CreateEntryOrderSubject";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnCreateEntryOrder"/></summary>
+        public const string OnCreateEntryOrder = "OnCreateEntryOrder";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnScanCorridor"/></summary>
+        public const string OnScanCorridor = "OnScanCorridor";
+
         /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo"/></summary>
         public static class __openTradeInfoMetadata
         {
@@ -2405,9 +2507,6 @@ namespace HedgeHog.Alice.Store.Metadata
             /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo.isBuy"/></summary>
             public const string isBuy = "isBuy";
 
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo.time"/></summary>
-            public const string time = "time";
-
 
             /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo.action"/></summary>
             public static PropertyPath actionPath { get { return new PropertyPath("action"); } }
@@ -2415,25 +2514,22 @@ namespace HedgeHog.Alice.Store.Metadata
             /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo.isBuy"/></summary>
             public static PropertyPath isBuyPath { get { return new PropertyPath("isBuy"); } }
 
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.__openTradeInfo.time"/></summary>
-            public static PropertyPath timePath { get { return new PropertyPath("time"); } }
-
         }
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.OPEN_TRADE_THROTTLE_INTERVAL"/></summary>
         public const string OPEN_TRADE_THROTTLE_INTERVAL = "OPEN_TRADE_THROTTLE_INTERVAL";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._OpenTradeSubjectLocker"/></summary>
-        public const string _OpenTradeSubjectLocker = "_OpenTradeSubjectLocker";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._OpenTradeBroadcast"/></summary>
+        public const string _OpenTradeBroadcast = "_OpenTradeBroadcast";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._OpenTradeSubject"/></summary>
-        public const string _OpenTradeSubject = "_OpenTradeSubject";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeBroadcast"/></summary>
+        public const string OpenTradeBroadcast = "OpenTradeBroadcast";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeSubject"/></summary>
-        public const string OpenTradeSubject = "OpenTradeSubject";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.virtualOpenTrade"/></summary>
+        public const string virtualOpenTrade = "virtualOpenTrade";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnOpenTrade"/></summary>
-        public const string OnOpenTrade = "OnOpenTrade";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnOpenTradeBroadcast"/></summary>
+        public const string OnOpenTradeBroadcast = "OnOpenTradeBroadcast";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsOpenTradeByMASubjectNull"/></summary>
         public const string IsOpenTradeByMASubjectNull = "IsOpenTradeByMASubjectNull";
@@ -2588,14 +2684,14 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasCorridor"/></summary>
         public const string HasCorridor = "HasCorridor";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._corridorStatsEmpty"/></summary>
-        public const string _corridorStatsEmpty = "_corridorStatsEmpty";
-
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CorridorStats"/></summary>
         public const string _CorridorStats = "_CorridorStats";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStats"/></summary>
         public const string CorridorStats = "CorridorStats";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStats_PeriodsJumped"/></summary>
+        public const string CorridorStats_PeriodsJumped = "CorridorStats_PeriodsJumped";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateCorridorHeightToRatesHeight"/></summary>
         public const string CalculateCorridorHeightToRatesHeight = "CalculateCorridorHeightToRatesHeight";
@@ -2756,9 +2852,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentGrossInPips"/></summary>
         public const string CurrentGrossInPips = "CurrentGrossInPips";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCalcMethod"/></summary>
-        public const string CorridorCalcMethod = "CorridorCalcMethod";
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PositionsBuy"/></summary>
         public const string PositionsBuy = "PositionsBuy";
 
@@ -2792,21 +2885,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsTradingHours"/></summary>
         public const string IsTradingHours = "IsTradingHours";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ResetTradeReady"/></summary>
-        public const string ResetTradeReady = "ResetTradeReady";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._buyWhenReady"/></summary>
-        public const string _buyWhenReady = "_buyWhenReady";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyWhenReady"/></summary>
-        public const string BuyWhenReady = "BuyWhenReady";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._sellWhenReady"/></summary>
-        public const string _sellWhenReady = "_sellWhenReady";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SellWhenReady"/></summary>
-        public const string SellWhenReady = "SellWhenReady";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.DisableTrading"/></summary>
         public const string DisableTrading = "DisableTrading";
 
@@ -2830,9 +2908,6 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.foos"/></summary>
         public const string foos = "foos";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.tradeOnCrossOnce"/></summary>
-        public const string tradeOnCrossOnce = "tradeOnCrossOnce";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenSignal"/></summary>
         public const string OpenSignal = "OpenSignal";
@@ -2897,24 +2972,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceCmaPeriodByStDevRatio"/></summary>
         public const string PriceCmaPeriodByStDevRatio = "PriceCmaPeriodByStDevRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseSignal"/></summary>
-        public const string CloseSignal = "CloseSignal";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ResetLock"/></summary>
-        public const string ResetLock = "ResetLock";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._isBuyLock"/></summary>
-        public const string _isBuyLock = "_isBuyLock";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsBuyLock"/></summary>
-        public const string IsBuyLock = "IsBuyLock";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._isSellLock"/></summary>
-        public const string _isSellLock = "_isSellLock";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSellLock"/></summary>
-        public const string IsSellLock = "IsSellLock";
-
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._tradesFromReportLock"/></summary>
         public const string _tradesFromReportLock = "_tradesFromReportLock";
 
@@ -2923,6 +2980,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.tradesFromReport"/></summary>
         public const string tradesFromReport = "tradesFromReport";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._priceChangedSubscribsion"/></summary>
+        public const string _priceChangedSubscribsion = "_priceChangedSubscribsion";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceChangedSubscribsion"/></summary>
+        public const string PriceChangedSubscribsion = "PriceChangedSubscribsion";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._TradesManager"/></summary>
         public const string _TradesManager = "_TradesManager";
@@ -2948,9 +3011,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager_TradeAddedGlobal"/></summary>
         public const string TradesManager_TradeAddedGlobal = "TradesManager_TradeAddedGlobal";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.AddTradeAddedHandler"/></summary>
-        public const string AddTradeAddedHandler = "AddTradeAddedHandler";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager_TradeAdded"/></summary>
         public const string TradesManager_TradeAdded = "TradesManager_TradeAdded";
 
@@ -2968,6 +3028,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.RaisePositionsChanged"/></summary>
         public const string RaisePositionsChanged = "RaisePositionsChanged";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.Replay"/></summary>
+        public const string Replay = "Replay";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.TradeStatisticsDictionary"/></summary>
         public const string TradeStatisticsDictionary = "TradeStatisticsDictionary";
@@ -3137,6 +3200,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateSuppResLevels"/></summary>
         public const string CalculateSuppResLevels = "CalculateSuppResLevels";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetMagnetPrice"/></summary>
+        public const string SetMagnetPrice = "SetMagnetPrice";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._MagnetPrice"/></summary>
         public const string _MagnetPrice = "_MagnetPrice";
 
@@ -3158,17 +3224,29 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RateLast"/></summary>
         public const string RateLast = "RateLast";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ratePrev"/></summary>
+        public const string _ratePrev = "_ratePrev";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatePrev"/></summary>
+        public const string RatePrev = "RatePrev";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._rateArrayLocker"/></summary>
         public const string _rateArrayLocker = "_rateArrayLocker";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._rateArray"/></summary>
         public const string _rateArray = "_rateArray";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesArray"/></summary>
+        public const string RatesArray = "RatesArray";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ratesSpreadSum"/></summary>
         public const string _ratesSpreadSum = "_ratesSpreadSum";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesArraySafe"/></summary>
         public const string RatesArraySafe = "RatesArraySafe";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasRates"/></summary>
+        public const string HasRates = "HasRates";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetRatesSafe"/></summary>
         public const string GetRatesSafe = "GetRatesSafe";
@@ -3196,9 +3274,6 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RateDirection"/></summary>
         public const string RateDirection = "RateDirection";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasRates"/></summary>
-        public const string HasRates = "HasRates";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.InPips"/></summary>
         public const string InPips = "InPips";
@@ -3401,8 +3476,8 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingDistance"/></summary>
         public const string TradingDistance = "TradingDistance";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.Playback"/></summary>
-        public const string Playback = "Playback";
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._Playback"/></summary>
+        public const string _Playback = "_Playback";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetPlayBackInfo"/></summary>
         public const string SetPlayBackInfo = "SetPlayBackInfo";
@@ -3437,96 +3512,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrderAllowedLot"/></summary>
         public const string EntryOrderAllowedLot = "EntryOrderAllowedLot";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.THROTTLE_INTERVAL"/></summary>
-        public const string THROTTLE_INTERVAL = "THROTTLE_INTERVAL";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubjectLocker"/></summary>
-        public const string _LoadRatesSubjectLocker = "_LoadRatesSubjectLocker";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._LoadRatesSubject"/></summary>
-        public const string _LoadRatesSubject = "_LoadRatesSubject";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
-        public const string LoadRatesSubject = "LoadRatesSubject";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnLoadRates"/></summary>
-        public const string OnLoadRates = "OnLoadRates";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubjectLocker"/></summary>
-        public const string _EntryOrdersAdjustSubjectLocker = "_EntryOrdersAdjustSubjectLocker";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._EntryOrdersAdjustSubject"/></summary>
-        public const string _EntryOrdersAdjustSubject = "_EntryOrdersAdjustSubject";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
-        public const string EntryOrdersAdjustSubject = "EntryOrdersAdjustSubject";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnEntryOrdersAdjust"/></summary>
-        public const string OnEntryOrdersAdjust = "OnEntryOrdersAdjust";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubjectLocker"/></summary>
-        public const string _DeleteOrderSubjectLocker = "_DeleteOrderSubjectLocker";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DeleteOrderSubject"/></summary>
-        public const string _DeleteOrderSubject = "_DeleteOrderSubject";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
-        public const string DeleteOrderSubject = "DeleteOrderSubject";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnDeletingOrder"/></summary>
-        public const string OnDeletingOrder = "OnDeletingOrder";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._setNetSubjectLocker"/></summary>
-        public const string _setNetSubjectLocker = "_setNetSubjectLocker";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SettingStopLimits"/></summary>
-        public const string _SettingStopLimits = "_SettingStopLimits";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
-        public const string SettingStopLimits = "SettingStopLimits";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnSettingStopLimits"/></summary>
-        public const string OnSettingStopLimits = "OnSettingStopLimits";
-
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper"/></summary>
-        public static class CreateEntryOrderHelperMetadata
-        {
-                        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Pair"/></summary>
-            public const string Pair = "Pair";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.IsBuy"/></summary>
-            public const string IsBuy = "IsBuy";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Amount"/></summary>
-            public const string Amount = "Amount";
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Rate"/></summary>
-            public const string Rate = "Rate";
-
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Pair"/></summary>
-            public static PropertyPath PairPath { get { return new PropertyPath("Pair"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.IsBuy"/></summary>
-            public static PropertyPath IsBuyPath { get { return new PropertyPath("IsBuy"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Amount"/></summary>
-            public static PropertyPath AmountPath { get { return new PropertyPath("Amount"); } }
-
-            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderHelper.Rate"/></summary>
-            public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
-
-        }
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._CreateEntryOrderSubject"/></summary>
-        public const string _CreateEntryOrderSubject = "_CreateEntryOrderSubject";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
-        public const string CreateEntryOrderSubject = "CreateEntryOrderSubject";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnCreateEntryOrder"/></summary>
-        public const string OnCreateEntryOrder = "OnCreateEntryOrder";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetEntryOrdersBySuppResLevels"/></summary>
         public const string SetEntryOrdersBySuppResLevels = "SetEntryOrdersBySuppResLevels";
 
@@ -3542,6 +3527,45 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalcTakeProfitDistance"/></summary>
         public const string CalcTakeProfitDistance = "CalcTakeProfitDistance";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetLimitRate"/></summary>
+        public const string GetLimitRate = "GetLimitRate";
+
+        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo"/></summary>
+        public static class WaveInfoMetadata
+        {
+                        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Rate"/></summary>
+            public const string Rate = "Rate";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Position"/></summary>
+            public const string Position = "Position";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Slope"/></summary>
+            public const string Slope = "Slope";
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Direction"/></summary>
+            public const string Direction = "Direction";
+
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Rate"/></summary>
+            public static PropertyPath RatePath { get { return new PropertyPath("Rate"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Position"/></summary>
+            public static PropertyPath PositionPath { get { return new PropertyPath("Position"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Slope"/></summary>
+            public static PropertyPath SlopePath { get { return new PropertyPath("Slope"); } }
+
+            /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveInfo.Direction"/></summary>
+            public static PropertyPath DirectionPath { get { return new PropertyPath("Direction"); } }
+
+        }
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetWaveRates"/></summary>
+        public const string GetWaveRates = "GetWaveRates";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetWaveRate"/></summary>
+        public const string GetWaveRate = "GetWaveRate";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.RatesForTakeProfit"/></summary>
         public const string RatesForTakeProfit = "RatesForTakeProfit";
 
@@ -3553,12 +3577,6 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrders"/></summary>
         public const string GetEntryOrders = "GetEntryOrders";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetEntryOrder"/></summary>
-        public const string GetEntryOrder = "GetEntryOrder";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetNetOrders"/></summary>
-        public const string GetNetOrders = "GetNetOrders";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._runPriceChangedTasker"/></summary>
         public const string _runPriceChangedTasker = "_runPriceChangedTasker";
@@ -3587,20 +3605,14 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetMA"/></summary>
         public const string SetMA = "SetMA";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ScanCorridorSubjectLocker"/></summary>
-        public const string _ScanCorridorSubjectLocker = "_ScanCorridorSubjectLocker";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ScanCorridorSubject"/></summary>
-        public const string _ScanCorridorSubject = "_ScanCorridorSubject";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridorSubject"/></summary>
-        public const string ScanCorridorSubject = "ScanCorridorSubject";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnScanCorridor"/></summary>
-        public const string OnScanCorridor = "OnScanCorridor";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridor"/></summary>
         public const string ScanCorridor = "ScanCorridor";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossGetPrice"/></summary>
+        public const string CorridorCrossGetPrice = "CorridorCrossGetPrice";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossHighPrice"/></summary>
+        public const string CorridorCrossHighPrice = "CorridorCrossHighPrice";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossGetHighPrice"/></summary>
         public const string CorridorCrossGetHighPrice = "CorridorCrossGetHighPrice";
@@ -3610,6 +3622,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHighPrice"/></summary>
         public const string CorridorHighPrice = "CorridorHighPrice";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossLowPrice"/></summary>
+        public const string CorridorCrossLowPrice = "CorridorCrossLowPrice";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossGetLowPrice"/></summary>
         public const string CorridorCrossGetLowPrice = "CorridorCrossGetLowPrice";
@@ -3644,41 +3659,44 @@ namespace HedgeHog.Alice.Store.Metadata
 
         }
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCount0"/></summary>
+        public const string CorridorCrossesCount0 = "CorridorCrossesCount0";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCount"/></summary>
         public const string CorridorCrossesCount = "CorridorCrossesCount";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.RatesForTrades"/></summary>
         public const string RatesForTrades = "RatesForTrades";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._takeProfitPrevious"/></summary>
-        public const string _takeProfitPrevious = "_takeProfitPrevious";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateTakeProfitInDollars"/></summary>
         public const string CalculateTakeProfitInDollars = "CalculateTakeProfitInDollars";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateTakeProfitInPips"/></summary>
+        public const string CalculateTakeProfitInPips = "CalculateTakeProfitInPips";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateTakeProfit"/></summary>
         public const string CalculateTakeProfit = "CalculateTakeProfit";
 
-        /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitChangedDispatcher"/></summary>
-        public static class TakeProfitChangedDispatcherMetadata
-        {
-            
-        }
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.GetValueByTakeProfitFunction"/></summary>
+        public const string GetValueByTakeProfitFunction = "GetValueByTakeProfitFunction";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitChangedQueue"/></summary>
-        public const string TakeProfitChangedQueue = "TakeProfitChangedQueue";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnTakeProfitChanged"/></summary>
-        public const string OnTakeProfitChanged = "OnTakeProfitChanged";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnTakeProfitChangedCore"/></summary>
-        public const string OnTakeProfitChangedCore = "OnTakeProfitChangedCore";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.CommissionByTrade"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CommissionByTrade"/></summary>
         public const string CommissionByTrade = "CommissionByTrade";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVitualTrading"/></summary>
+        public const string IsInVitualTrading = "IsInVitualTrading";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CanTrade"/></summary>
         public const string CanTrade = "CanTrade";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._runPriceBroadcast"/></summary>
+        public const string _runPriceBroadcast = "_runPriceBroadcast";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RunPriceBroadcast"/></summary>
+        public const string RunPriceBroadcast = "RunPriceBroadcast";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnRunPriceBroadcast"/></summary>
+        public const string OnRunPriceBroadcast = "OnRunPriceBroadcast";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.RunPrice"/></summary>
         public const string RunPrice = "RunPrice";
@@ -3773,9 +3791,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.isLoggedIn"/></summary>
         public const string isLoggedIn = "isLoggedIn";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateLevels"/></summary>
-        public const string CalculateLevels = "CalculateLevels";
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._limitBarToRateProvider"/></summary>
         public const string _limitBarToRateProvider = "_limitBarToRateProvider";
 
@@ -3866,6 +3881,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._limitRate"/></summary>
         public const string _limitRate = "_limitRate";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitRate"/></summary>
+        public const string LimitRate = "LimitRate";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._DensityInPips"/></summary>
         public const string _DensityInPips = "_DensityInPips";
 
@@ -3880,6 +3898,24 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesHeightInPips"/></summary>
         public const string RatesHeightInPips = "RatesHeightInPips";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CanOpenTradeByDirection"/></summary>
+        public const string CanOpenTradeByDirection = "CanOpenTradeByDirection";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TouchDownDateTime"/></summary>
+        public const string TouchDownDateTime = "TouchDownDateTime";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._waveRates"/></summary>
+        public const string _waveRates = "_waveRates";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveRates"/></summary>
+        public const string WaveRates = "WaveRates";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._TakeProfitTimeStart"/></summary>
+        public const string _TakeProfitTimeStart = "_TakeProfitTimeStart";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitTimeStart"/></summary>
+        public const string TakeProfitTimeStart = "TakeProfitTimeStart";
 
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.Pair"/></summary>
@@ -4122,6 +4158,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MonthsOfHistory"/></summary>
         public static PropertyPath MonthsOfHistoryPath { get { return new PropertyPath("MonthsOfHistory"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCalcMethod"/></summary>
+        public static PropertyPath CorridorCalcMethodPath { get { return new PropertyPath("CorridorCalcMethod"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceCmaLevels_"/></summary>
         public static PropertyPath PriceCmaLevels_Path { get { return new PropertyPath("PriceCmaLevels_"); } }
 
@@ -4145,6 +4184,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesCountMinimum_"/></summary>
         public static PropertyPath CorridorCrossesCountMinimum_Path { get { return new PropertyPath("CorridorCrossesCountMinimum_"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingDistanceFunction"/></summary>
+        public static PropertyPath TradingDistanceFunctionPath { get { return new PropertyPath("TradingDistanceFunction"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitFunction"/></summary>
         public static PropertyPath TakeProfitFunctionPath { get { return new PropertyPath("TakeProfitFunction"); } }
@@ -4242,17 +4284,8 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public static PropertyPath CorridorHeightToSpreadRatioLowPath { get { return new PropertyPath("CorridorHeightToSpreadRatioLow"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioHigh"/></summary>
-        public static PropertyPath CorridorHeightToSpreadRatioHighPath { get { return new PropertyPath("CorridorHeightToSpreadRatioHigh"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IterationsForPower"/></summary>
-        public static PropertyPath IterationsForPowerPath { get { return new PropertyPath("IterationsForPower"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IterationsForCenterOfMass"/></summary>
-        public static PropertyPath IterationsForCenterOfMassPath { get { return new PropertyPath("IterationsForCenterOfMass"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PowerRowOffset_"/></summary>
-        public static PropertyPath PowerRowOffset_Path { get { return new PropertyPath("PowerRowOffset_"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStDevToSpreadMin"/></summary>
+        public static PropertyPath CorridorStDevToSpreadMinPath { get { return new PropertyPath("CorridorStDevToSpreadMin"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSuppResManual_"/></summary>
         public static PropertyPath IsSuppResManual_Path { get { return new PropertyPath("IsSuppResManual_"); } }
@@ -4365,8 +4398,26 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BalanceOnLimit"/></summary>
         public static PropertyPath BalanceOnLimitPath { get { return new PropertyPath("BalanceOnLimit"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeSubject"/></summary>
-        public static PropertyPath OpenTradeSubjectPath { get { return new PropertyPath("OpenTradeSubject"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesBroadcast"/></summary>
+        public static PropertyPath LoadRatesBroadcastPath { get { return new PropertyPath("LoadRatesBroadcast"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
+        public static PropertyPath LoadRatesSubjectPath { get { return new PropertyPath("LoadRatesSubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
+        public static PropertyPath EntryOrdersAdjustSubjectPath { get { return new PropertyPath("EntryOrdersAdjustSubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
+        public static PropertyPath DeleteOrderSubjectPath { get { return new PropertyPath("DeleteOrderSubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
+        public static PropertyPath SettingStopLimitsPath { get { return new PropertyPath("SettingStopLimits"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
+        public static PropertyPath CreateEntryOrderSubjectPath { get { return new PropertyPath("CreateEntryOrderSubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeBroadcast"/></summary>
+        public static PropertyPath OpenTradeBroadcastPath { get { return new PropertyPath("OpenTradeBroadcast"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsOpenTradeByMASubjectNull"/></summary>
         public static PropertyPath IsOpenTradeByMASubjectNullPath { get { return new PropertyPath("IsOpenTradeByMASubjectNull"); } }
@@ -4506,9 +4557,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentGrossInPips"/></summary>
         public static PropertyPath CurrentGrossInPipsPath { get { return new PropertyPath("CurrentGrossInPips"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCalcMethod"/></summary>
-        public static PropertyPath CorridorCalcMethodPath { get { return new PropertyPath("CorridorCalcMethod"); } }
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PositionsBuy"/></summary>
         public static PropertyPath PositionsBuyPath { get { return new PropertyPath("PositionsBuy"); } }
 
@@ -4539,12 +4587,6 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsTradingHours"/></summary>
         public static PropertyPath IsTradingHoursPath { get { return new PropertyPath("IsTradingHours"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BuyWhenReady"/></summary>
-        public static PropertyPath BuyWhenReadyPath { get { return new PropertyPath("BuyWhenReady"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SellWhenReady"/></summary>
-        public static PropertyPath SellWhenReadyPath { get { return new PropertyPath("SellWhenReady"); } }
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenSignal"/></summary>
         public static PropertyPath OpenSignalPath { get { return new PropertyPath("OpenSignal"); } }
 
@@ -4560,17 +4602,11 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceCmaPeriodByStDevRatio"/></summary>
         public static PropertyPath PriceCmaPeriodByStDevRatioPath { get { return new PropertyPath("PriceCmaPeriodByStDevRatio"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseSignal"/></summary>
-        public static PropertyPath CloseSignalPath { get { return new PropertyPath("CloseSignal"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsBuyLock"/></summary>
-        public static PropertyPath IsBuyLockPath { get { return new PropertyPath("IsBuyLock"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSellLock"/></summary>
-        public static PropertyPath IsSellLockPath { get { return new PropertyPath("IsSellLock"); } }
-
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.tradesFromReport"/></summary>
         public static PropertyPath tradesFromReportPath { get { return new PropertyPath("tradesFromReport"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceChangedSubscribsion"/></summary>
+        public static PropertyPath PriceChangedSubscribsionPath { get { return new PropertyPath("PriceChangedSubscribsion"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager"/></summary>
         public static PropertyPath TradesManagerPath { get { return new PropertyPath("TradesManager"); } }
@@ -4638,8 +4674,17 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RateLast"/></summary>
         public static PropertyPath RateLastPath { get { return new PropertyPath("RateLast"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatePrev"/></summary>
+        public static PropertyPath RatePrevPath { get { return new PropertyPath("RatePrev"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesArray"/></summary>
+        public static PropertyPath RatesArrayPath { get { return new PropertyPath("RatesArray"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesArraySafe"/></summary>
         public static PropertyPath RatesArraySafePath { get { return new PropertyPath("RatesArraySafe"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasRates"/></summary>
+        public static PropertyPath HasRatesPath { get { return new PropertyPath("HasRates"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesInternal"/></summary>
         public static PropertyPath RatesInternalPath { get { return new PropertyPath("RatesInternal"); } }
@@ -4649,9 +4694,6 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RateDirection"/></summary>
         public static PropertyPath RateDirectionPath { get { return new PropertyPath("RateDirection"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasRates"/></summary>
-        public static PropertyPath HasRatesPath { get { return new PropertyPath("HasRates"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PointSize"/></summary>
         public static PropertyPath PointSizePath { get { return new PropertyPath("PointSize"); } }
@@ -4773,23 +4815,11 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CanDoNetOrders"/></summary>
         public static PropertyPath CanDoNetOrdersPath { get { return new PropertyPath("CanDoNetOrders"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSubject"/></summary>
-        public static PropertyPath LoadRatesSubjectPath { get { return new PropertyPath("LoadRatesSubject"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVitualTrading"/></summary>
+        public static PropertyPath IsInVitualTradingPath { get { return new PropertyPath("IsInVitualTrading"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.EntryOrdersAdjustSubject"/></summary>
-        public static PropertyPath EntryOrdersAdjustSubjectPath { get { return new PropertyPath("EntryOrdersAdjustSubject"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DeleteOrderSubject"/></summary>
-        public static PropertyPath DeleteOrderSubjectPath { get { return new PropertyPath("DeleteOrderSubject"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SettingStopLimits"/></summary>
-        public static PropertyPath SettingStopLimitsPath { get { return new PropertyPath("SettingStopLimits"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CreateEntryOrderSubject"/></summary>
-        public static PropertyPath CreateEntryOrderSubjectPath { get { return new PropertyPath("CreateEntryOrderSubject"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridorSubject"/></summary>
-        public static PropertyPath ScanCorridorSubjectPath { get { return new PropertyPath("ScanCorridorSubject"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RunPriceBroadcast"/></summary>
+        public static PropertyPath RunPriceBroadcastPath { get { return new PropertyPath("RunPriceBroadcast"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.GannAnglesResetCommand"/></summary>
         public static PropertyPath GannAnglesResetCommandPath { get { return new PropertyPath("GannAnglesResetCommand"); } }
@@ -4845,6 +4875,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TrendNessRatio"/></summary>
         public static PropertyPath TrendNessRatioPath { get { return new PropertyPath("TrendNessRatio"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitRate"/></summary>
+        public static PropertyPath LimitRatePath { get { return new PropertyPath("LimitRate"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DensityInPips"/></summary>
         public static PropertyPath DensityInPipsPath { get { return new PropertyPath("DensityInPips"); } }
 
@@ -4857,107 +4890,14 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.RatesHeightInPips"/></summary>
         public static PropertyPath RatesHeightInPipsPath { get { return new PropertyPath("RatesHeightInPips"); } }
 
-    }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TouchDownDateTime"/></summary>
+        public static PropertyPath TouchDownDateTimePath { get { return new PropertyPath("TouchDownDateTime"); } }
 
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.SuppResExtentions"/></summary>
-    public static class SuppResExtentionsMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.SuppResExtentions.Active"/></summary>
-        public const string Active = "Active";
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveRates"/></summary>
+        public static PropertyPath WaveRatesPath { get { return new PropertyPath("WaveRates"); } }
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.SuppResExtentions.IsBuy"/></summary>
-        public const string IsBuy = "IsBuy";
-
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.GannAngle"/></summary>
-    public static class GannAngleMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Price"/></summary>
-        public const string Price = "Price";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Time"/></summary>
-        public const string Time = "Time";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Value"/></summary>
-        public const string Value = "Value";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsDefault"/></summary>
-        public const string IsDefault = "IsDefault";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngle._IsOn"/></summary>
-        public const string _IsOn = "_IsOn";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsOn"/></summary>
-        public const string IsOn = "IsOn";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Price"/></summary>
-        public static PropertyPath PricePath { get { return new PropertyPath("Price"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Time"/></summary>
-        public static PropertyPath TimePath { get { return new PropertyPath("Time"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Value"/></summary>
-        public static PropertyPath ValuePath { get { return new PropertyPath("Value"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsDefault"/></summary>
-        public static PropertyPath IsDefaultPath { get { return new PropertyPath("IsDefault"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsOn"/></summary>
-        public static PropertyPath IsOnPath { get { return new PropertyPath("IsOn"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.GannAngles"/></summary>
-    public static class GannAnglesMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngles._Angle1x1Index"/></summary>
-        public const string _Angle1x1Index = "_Angle1x1Index";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angle1x1Index"/></summary>
-        public const string Angle1x1Index = "Angle1x1Index";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngles._Angles"/></summary>
-        public const string _Angles = "_Angles";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angles"/></summary>
-        public const string Angles = "Angles";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.Reset"/></summary>
-        public const string Reset = "Reset";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.ActiveAngles"/></summary>
-        public const string ActiveAngles = "ActiveAngles";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.Get1x1"/></summary>
-        public const string Get1x1 = "Get1x1";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.GetAngle1x1Index"/></summary>
-        public const string GetAngle1x1Index = "GetAngle1x1Index";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.FromString"/></summary>
-        public const string FromString = "FromString";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angle1x1Index"/></summary>
-        public static PropertyPath Angle1x1IndexPath { get { return new PropertyPath("Angle1x1Index"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angles"/></summary>
-        public static PropertyPath AnglesPath { get { return new PropertyPath("Angles"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.ActiveAngles"/></summary>
-        public static PropertyPath ActiveAnglesPath { get { return new PropertyPath("ActiveAngles"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacroEx"/></summary>
-    public static class TradingMacroExMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacroEx.ToTradingMacro"/></summary>
-        public const string ToTradingMacro = "ToTradingMacro";
-
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitTimeStart"/></summary>
+        public static PropertyPath TakeProfitTimeStartPath { get { return new PropertyPath("TakeProfitTimeStart"); } }
 
     }
 
@@ -5084,11 +5024,26 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.priceLow"/></summary>
         public const string priceLow = "priceLow";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.CorridorStatistics._RatesHeight"/></summary>
+        public const string _RatesHeight = "_RatesHeight";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.RatesHeight"/></summary>
+        public const string RatesHeight = "RatesHeight";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.RatesHeightInPips"/></summary>
+        public const string RatesHeightInPips = "RatesHeightInPips";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDevToRatesHeight"/></summary>
+        public const string StDevToRatesHeight = "StDevToRatesHeight";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.CorridorStatistics._StDev"/></summary>
         public const string _StDev = "_StDev";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDev"/></summary>
         public const string StDev = "StDev";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDevInPips"/></summary>
+        public const string StDevInPips = "StDevInPips";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.Slope"/></summary>
         public const string Slope = "Slope";
@@ -5152,6 +5107,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StartDate"/></summary>
         public const string StartDate = "StartDate";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.CorridorStatistics.RaisePeriodsJumped"/></summary>
+        public const string RaisePeriodsJumped = "RaisePeriodsJumped";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.CorridorStatistics._periods"/></summary>
+        public const string _periods = "_periods";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.Periods"/></summary>
         public const string Periods = "Periods";
@@ -5252,6 +5213,12 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.CorridorCrossesCount"/></summary>
         public const string CorridorCrossesCount = "CorridorCrossesCount";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.CorridorStatistics._CorridorCrossesCount0"/></summary>
+        public const string _CorridorCrossesCount0 = "_CorridorCrossesCount0";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.CorridorCrossesCount0"/></summary>
+        public const string CorridorCrossesCount0 = "CorridorCrossesCount0";
+
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.CorridorStatistics._Rates"/></summary>
         public const string _Rates = "_Rates";
 
@@ -5289,8 +5256,20 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.priceLow"/></summary>
         public static PropertyPath priceLowPath { get { return new PropertyPath("priceLow"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.RatesHeight"/></summary>
+        public static PropertyPath RatesHeightPath { get { return new PropertyPath("RatesHeight"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.RatesHeightInPips"/></summary>
+        public static PropertyPath RatesHeightInPipsPath { get { return new PropertyPath("RatesHeightInPips"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDevToRatesHeight"/></summary>
+        public static PropertyPath StDevToRatesHeightPath { get { return new PropertyPath("StDevToRatesHeight"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDev"/></summary>
         public static PropertyPath StDevPath { get { return new PropertyPath("StDev"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.StDevInPips"/></summary>
+        public static PropertyPath StDevInPipsPath { get { return new PropertyPath("StDevInPips"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.Slope"/></summary>
         public static PropertyPath SlopePath { get { return new PropertyPath("Slope"); } }
@@ -5381,6 +5360,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.CorridorCrossesCount"/></summary>
         public static PropertyPath CorridorCrossesCountPath { get { return new PropertyPath("CorridorCrossesCount"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.CorridorCrossesCount0"/></summary>
+        public static PropertyPath CorridorCrossesCount0Path { get { return new PropertyPath("CorridorCrossesCount0"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.CorridorStatistics.Rates"/></summary>
         public static PropertyPath RatesPath { get { return new PropertyPath("Rates"); } }
@@ -5549,6 +5531,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.FWMaster"/></summary>
         public const string FWMaster = "FWMaster";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.AccountModel"/></summary>
+        public const string AccountModel = "AccountModel";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.TradesManager"/></summary>
         public const string TradesManager = "TradesManager";
 
@@ -5588,6 +5573,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.FWMaster"/></summary>
         public static PropertyPath FWMasterPath { get { return new PropertyPath("FWMaster"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.AccountModel"/></summary>
+        public static PropertyPath AccountModelPath { get { return new PropertyPath("AccountModel"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TraderModelBase.TradesManager"/></summary>
         public static PropertyPath TradesManagerPath { get { return new PropertyPath("TradesManager"); } }
@@ -5650,6 +5638,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.PriceHistory.AddTicks"/></summary>
         public const string AddTicks = "AddTicks";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.PriceHistory.SaveTickCallBack"/></summary>
+        public const string SaveTickCallBack = "SaveTickCallBack";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.PriceHistory.FillBar"/></summary>
         public const string FillBar = "FillBar";
@@ -5900,6 +5891,210 @@ namespace HedgeHog.Alice.Store.Metadata
 
     }
 
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingAccountModel"/></summary>
+    public static class TradingAccountModelMetadata
+    {
+                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingAccountModel._tradingStatistics"/></summary>
+        public const string _tradingStatistics = "_tradingStatistics";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TradingStatistics"/></summary>
+        public const string TradingStatistics = "TradingStatistics";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.Log"/></summary>
+        public const string Log = "Log";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingAccountModel.RaiseCloseAllTrades"/></summary>
+        public const string RaiseCloseAllTrades = "RaiseCloseAllTrades";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingAccountModel._TakeProfit"/></summary>
+        public const string _TakeProfit = "_TakeProfit";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TakeProfit"/></summary>
+        public const string TakeProfit = "TakeProfit";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingAccountModel._PipsToExit"/></summary>
+        public const string _PipsToExit = "_PipsToExit";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.PipsToExit"/></summary>
+        public const string PipsToExit = "PipsToExit";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingAccountModel._DayTakeProfit"/></summary>
+        public const string _DayTakeProfit = "_DayTakeProfit";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.DayTakeProfit"/></summary>
+        public const string DayTakeProfit = "DayTakeProfit";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TradingRatio"/></summary>
+        public const string TradingRatio = "TradingRatio";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.ProfitPercent"/></summary>
+        public const string ProfitPercent = "ProfitPercent";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingAccountModel._CurrentLoss"/></summary>
+        public const string _CurrentLoss = "_CurrentLoss";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.CurrentLoss"/></summary>
+        public const string CurrentLoss = "CurrentLoss";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.OriginalBalance"/></summary>
+        public const string OriginalBalance = "OriginalBalance";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.OriginalProfit"/></summary>
+        public const string OriginalProfit = "OriginalProfit";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingAccountModel.Update"/></summary>
+        public const string Update = "Update";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.HasProfit"/></summary>
+        public const string HasProfit = "HasProfit";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingAccountModel.OnPropertyChanged"/></summary>
+        public const string OnPropertyChanged = "OnPropertyChanged";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingAccountModel.RaisePropertyChanged"/></summary>
+        public const string RaisePropertyChanged = "RaisePropertyChanged";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingAccountModel.VerifyPropertyName"/></summary>
+        public const string VerifyPropertyName = "VerifyPropertyName";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TradingStatistics"/></summary>
+        public static PropertyPath TradingStatisticsPath { get { return new PropertyPath("TradingStatistics"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.Log"/></summary>
+        public static PropertyPath LogPath { get { return new PropertyPath("Log"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TakeProfit"/></summary>
+        public static PropertyPath TakeProfitPath { get { return new PropertyPath("TakeProfit"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.PipsToExit"/></summary>
+        public static PropertyPath PipsToExitPath { get { return new PropertyPath("PipsToExit"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.DayTakeProfit"/></summary>
+        public static PropertyPath DayTakeProfitPath { get { return new PropertyPath("DayTakeProfit"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.TradingRatio"/></summary>
+        public static PropertyPath TradingRatioPath { get { return new PropertyPath("TradingRatio"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.ProfitPercent"/></summary>
+        public static PropertyPath ProfitPercentPath { get { return new PropertyPath("ProfitPercent"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.CurrentLoss"/></summary>
+        public static PropertyPath CurrentLossPath { get { return new PropertyPath("CurrentLoss"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.OriginalBalance"/></summary>
+        public static PropertyPath OriginalBalancePath { get { return new PropertyPath("OriginalBalance"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.OriginalProfit"/></summary>
+        public static PropertyPath OriginalProfitPath { get { return new PropertyPath("OriginalProfit"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingAccountModel.HasProfit"/></summary>
+        public static PropertyPath HasProfitPath { get { return new PropertyPath("HasProfit"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.SuppResExtentions"/></summary>
+    public static class SuppResExtentionsMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.SuppResExtentions.Active"/></summary>
+        public const string Active = "Active";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.SuppResExtentions.IsBuy"/></summary>
+        public const string IsBuy = "IsBuy";
+
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.GannAngle"/></summary>
+    public static class GannAngleMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Price"/></summary>
+        public const string Price = "Price";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Time"/></summary>
+        public const string Time = "Time";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Value"/></summary>
+        public const string Value = "Value";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsDefault"/></summary>
+        public const string IsDefault = "IsDefault";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngle._IsOn"/></summary>
+        public const string _IsOn = "_IsOn";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsOn"/></summary>
+        public const string IsOn = "IsOn";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Price"/></summary>
+        public static PropertyPath PricePath { get { return new PropertyPath("Price"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Time"/></summary>
+        public static PropertyPath TimePath { get { return new PropertyPath("Time"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.Value"/></summary>
+        public static PropertyPath ValuePath { get { return new PropertyPath("Value"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsDefault"/></summary>
+        public static PropertyPath IsDefaultPath { get { return new PropertyPath("IsDefault"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngle.IsOn"/></summary>
+        public static PropertyPath IsOnPath { get { return new PropertyPath("IsOn"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.GannAngles"/></summary>
+    public static class GannAnglesMetadata
+    {
+                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngles._Angle1x1Index"/></summary>
+        public const string _Angle1x1Index = "_Angle1x1Index";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angle1x1Index"/></summary>
+        public const string Angle1x1Index = "Angle1x1Index";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.GannAngles._Angles"/></summary>
+        public const string _Angles = "_Angles";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angles"/></summary>
+        public const string Angles = "Angles";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.Reset"/></summary>
+        public const string Reset = "Reset";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.ActiveAngles"/></summary>
+        public const string ActiveAngles = "ActiveAngles";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.Get1x1"/></summary>
+        public const string Get1x1 = "Get1x1";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.GetAngle1x1Index"/></summary>
+        public const string GetAngle1x1Index = "GetAngle1x1Index";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.GannAngles.FromString"/></summary>
+        public const string FromString = "FromString";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angle1x1Index"/></summary>
+        public static PropertyPath Angle1x1IndexPath { get { return new PropertyPath("Angle1x1Index"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.Angles"/></summary>
+        public static PropertyPath AnglesPath { get { return new PropertyPath("Angles"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.GannAngles.ActiveAngles"/></summary>
+        public static PropertyPath ActiveAnglesPath { get { return new PropertyPath("ActiveAngles"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacroEx"/></summary>
+    public static class TradingMacroExMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacroEx.ToTradingMacro"/></summary>
+        public const string ToTradingMacro = "ToTradingMacro";
+
+
+    }
+
     /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingStatistics"/></summary>
     public static class TradingStatisticsMetadata
     {
@@ -5920,6 +6115,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CorridorHeightToRatesHeightRatio"/></summary>
         public const string CorridorHeightToRatesHeightRatio = "CorridorHeightToRatesHeightRatio";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._StDevPips"/></summary>
+        public const string _StDevPips = "_StDevPips";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.StDevPips"/></summary>
+        public const string StDevPips = "StDevPips";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._TakeProfitPips"/></summary>
         public const string _TakeProfitPips = "_TakeProfitPips";
@@ -5981,6 +6182,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CorridorHeightToRatesHeightRatio"/></summary>
         public static PropertyPath CorridorHeightToRatesHeightRatioPath { get { return new PropertyPath("CorridorHeightToRatesHeightRatio"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.StDevPips"/></summary>
+        public static PropertyPath StDevPipsPath { get { return new PropertyPath("StDevPips"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.TakeProfitPips"/></summary>
         public static PropertyPath TakeProfitPipsPath { get { return new PropertyPath("TakeProfitPips"); } }
@@ -6081,6 +6285,33 @@ namespace HedgeHog.Alice.Store.FileMetadata.Metadata
 
             /// <summary>Represents x:Key="AngleDataTemplate"/></summary>
             public static string AngleDataTemplateKey { get { return "AngleDataTemplate"; } }
+
+
+    }
+
+    /// <summary>Metadata for File packages.config</summary>
+    public static class PackagesConfig    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Store;component/packages.config", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Store;component/packages.config"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Store;component/packages.config")); } }
+
+
+    }
+
+}
+
+namespace HedgeHog.Alice.Store.App_Start.Metadata
+{
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.App_Start.EntityFramework_SqlServerCompact"/></summary>
+    public static class EntityFramework_SqlServerCompactMetadata
+    {
+                /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.App_Start.EntityFramework_SqlServerCompact.Start"/></summary>
+        public const string Start = "Start";
 
 
     }
