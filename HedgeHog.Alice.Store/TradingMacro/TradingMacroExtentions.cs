@@ -260,7 +260,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region OpenTradeByMA Subject
-    public bool IsOpenTradeByMASubjectNull { get { return OpenTradeByMASubject == null; } }
+    public bool IsOpenTradeByMASubjectNull { get { return OpenTradeByMASubject == null && virtualOpenTrade == null; } }
     object _OpenTradeByMASubjectLocker = new object();
     ISubject<Rate> _OpenTradeByMASubject;
     public ISubject<Rate> OpenTradeByMASubject {
@@ -699,7 +699,7 @@ namespace HedgeHog.Alice.Store {
                 , CorridorStats.HeightUp0, CorridorStats.HeightDown0
                 , CorridorStats.HeightUp, CorridorStats.HeightDown
                 , CorridorStats.HeightUp0*3, CorridorStats.HeightDown0*3
-                , r => r.PriceAvg, r => r.PriceAvg1, (r, d) => r.PriceAvg1 = d
+                , r => MagnetPrice/* r.PriceAvg1*/, (r, d) => r.PriceAvg1 = d
                 , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
                 , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
                 , (r, d) => r.PriceAvg21 = d, (r, d) => r.PriceAvg31 = d
@@ -1396,6 +1396,7 @@ namespace HedgeHog.Alice.Store {
         CorridorStartDate = null;
         CorridorStats = null;
         DisposeOpenTradeByMASubject();
+        _waveRates.Clear();
         TakeProfitTimeStart = DateTime.MinValue;
         var currentPosition = -1;
         while (!args.MustStop) {
@@ -1853,9 +1854,9 @@ namespace HedgeHog.Alice.Store {
 
               OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriodByStDevRatio);
               SetMA();
+              SetMagnetPrice();
               OnScanCorridor(_rateArray);
               OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
-              SetMagnetPrice();
               this.DensityInPips = InPips(_rateArray.Density());
             }
             return _rateArray;
@@ -2655,7 +2656,7 @@ namespace HedgeHog.Alice.Store {
         if (!CorridorStartDate.HasValue) {
           var reversed = ratesForCorridor.ReverseIfNot();
           var waveRates = GetWaveRates(reversed, 4);
-          if (waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
+          if (!_waveRates.Any() || waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
             _waveRates.Clear();
             _waveRates.AddRange(waveRates);
           }
