@@ -187,7 +187,7 @@ namespace HedgeHog.Bars {
       , double heightUp0, double heightDown0
       , double heightUp, double heightDown
       , double heightUp1, double heightDown1
-      , Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
+      , Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
       , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
       , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
       , Action<Rate, double> setPriceHigh1, Action<Rate, double> setPriceLow1
