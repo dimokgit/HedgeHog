@@ -2171,6 +2171,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.categoryTrading"/></summary>
         public const string categoryTrading = "categoryTrading";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.categoryActive"/></summary>
+        public const string categoryActive = "categoryActive";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorRatioForBreakout_"/></summary>
         public const string CorridorRatioForBreakout_ = "CorridorRatioForBreakout_";
 
@@ -2218,6 +2221,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public const string CorridorHeightToSpreadRatioLow = "CorridorHeightToSpreadRatioLow";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLock"/></summary>
+        public const string StDevLevelLock = "StDevLevelLock";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLoad"/></summary>
+        public const string StDevLevelLoad = "StDevLevelLoad";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStDevToSpreadMin"/></summary>
         public const string CorridorStDevToSpreadMin = "CorridorStDevToSpreadMin";
@@ -3190,6 +3199,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SuppResMinimumDistance"/></summary>
         public const string SuppResMinimumDistance = "SuppResMinimumDistance";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._stDevPriceLevelsHigh"/></summary>
+        public const string _stDevPriceLevelsHigh = "_stDevPriceLevelsHigh";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._stDevPriceLevelsLow"/></summary>
+        public const string _stDevPriceLevelsLow = "_stDevPriceLevelsLow";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._doCenterOfMass"/></summary>
         public const string _doCenterOfMass = "_doCenterOfMass";
@@ -4283,6 +4298,12 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public static PropertyPath CorridorHeightToSpreadRatioLowPath { get { return new PropertyPath("CorridorHeightToSpreadRatioLow"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLock"/></summary>
+        public static PropertyPath StDevLevelLockPath { get { return new PropertyPath("StDevLevelLock"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLoad"/></summary>
+        public static PropertyPath StDevLevelLoadPath { get { return new PropertyPath("StDevLevelLoad"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorStDevToSpreadMin"/></summary>
         public static PropertyPath CorridorStDevToSpreadMinPath { get { return new PropertyPath("CorridorStDevToSpreadMin"); } }

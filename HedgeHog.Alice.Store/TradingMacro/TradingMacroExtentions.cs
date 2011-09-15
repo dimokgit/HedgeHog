@@ -280,7 +280,7 @@ namespace HedgeHog.Alice.Store {
       if (suppRes == null) return false;
       return PriceCmaPeriod > 10
         ? (isBuy ? rate.PriceAvg > GetPriceMA(rate) : rate.PriceAvg < GetPriceMA(rate))
-        : (isBuy ? CorridorCrossLowPrice(rate) > rate.PriceAvg03 /*suppRes.Rate*/ : CorridorCrossHighPrice(rate) < rate.PriceAvg02 /*suppRes.Rate*/);
+        : (isBuy ? CorridorCrossLowPrice(rate) > LoadPriceLow(rate) : CorridorCrossHighPrice(rate) < LoadPriceHigh(rate));
     }
     void DisposeOpenTradeByMASubject() {
       if (IsInVitualTrading)
@@ -687,7 +687,7 @@ namespace HedgeHog.Alice.Store {
           _CorridorStats.PeriodsJumped += CorridorStats_PeriodsJumped;
         //CorridorStatsArray.ToList().ForEach(cs => cs.IsCurrent = cs == value);
         lock (_rateArrayLocker) {
-          RatesArray.ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = double.NaN);
+          RatesArray.ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = r.PriceAvg21 = r.PriceAvg31 = double.NaN);
           if (value != null) {
             if (RatesArray.LastOrDefault() != _CorridorStats.Rates.FirstOrDefault()) {
               Log = new Exception(Pair + ": LastCorridorRate:" + _CorridorStats.Rates.FirstOrDefault() + ",LastRate:" + RatesArray.LastOrDefault());
@@ -1065,113 +1065,6 @@ namespace HedgeHog.Alice.Store {
           return RangeRatioForTradeStop < 0 ? RangeRatioForTradeStop : -CalculateTakeProfit() * RangeRatioForTradeStop;
       }
     }
-    #region Open/Close Signals
-
-    bool? GetSignal(bool? signal) { return !signal.HasValue ? null : ReverseStrategy ? !signal : signal; }
-
-    static Func<Rate, double>[] foos = new[] { new Func<Rate, double>(r => r.PriceAvg2), new Func<Rate, double>(r => r.PriceAvg3) };
-
-    public bool? OpenSignal {
-      get {
-        if (CorridorStats == null || !RatesArraySafe.Any()) return null;
-        var slope = CorridorStats.Slope;
-        var rates = RatesArraySafe.ToList();
-        var rateLast = Strategy == Strategies.Gann ? GetLastRateWithGannAngle() : GetLastRate();
-        var lastIndex = rates.IndexOf(rateLast);
-        var ratePrev = rates[lastIndex - 1];
-        var ratePrev2 = rates[lastIndex - 2];
-        var ratePrev3 = rates[lastIndex - 3];
-        var ratePrev4 = rates[lastIndex - 4];
-        rates = rates.TakeWhile(r => r <= rateLast).ToList();
-        bool? ret;
-        switch (Strategy) {
-          case Strategies.Gann:
-            var gannPrice = GannPriceForTrade();
-            if (!double.IsNaN(gannPrice)) {
-              if (rateLast.PriceLow > gannPrice) return true;
-              if (rateLast.PriceHigh < gannPrice) return false;
-              return null;
-              if (gannPriceLow(rateLast) > gannPrice && ratePrev.PriceLow < gannPrice) return GetSignal(true);
-              if (gannPriceHigh(rateLast) < gannPrice && ratePrev.PriceHigh > gannPrice) return GetSignal(false);
-            }
-            return null;
-          case Strategies.Range:
-            //if (CorridorAngle > 0 && rateLast.PriceHigh > rateLast.PriceAvg1) return false;
-            //if (CorridorAngle > 0 && ratePrev.PriceHigh > rateLast.PriceAvg1) return false;
-            //if (CorridorAngle < 0 && rateLast.PriceLow < rateLast.PriceAvg3) return true;
-            //if (CorridorAngle < 0 && ratePrev.PriceLow < rateLast.PriceAvg3) return true;
-            Func<Rate, double> corridor = rate => GannPriceForTrade(rate);// GetCurrentCorridor();
-            if (corridor == null) {
-              var corridorObject = new[] { 
-              //new {name = "PriceAvg1", price = new Func<Rate, double>(r => r.PriceAvg1), distance = (rateLast.PriceAvg - rateLast.PriceAvg1).Abs() } ,
-              //new {name = "PriceAvg02",  price = new Func<Rate, double>(r => r.PriceAvg02), distance = (rateLast.PriceAvg - rateLast.PriceAvg02).Abs() } ,
-              //new { name = "PriceAvg03", price = new Func<Rate, double>(r => r.PriceAvg03), distance = (rateLast.PriceAvg - rateLast.PriceAvg03).Abs() } ,
-              new { name = "PriceAvg2", price = new Func<Rate, double>(r => r.PriceAvg2), distance = (rateLast.PriceAvg - rateLast.PriceAvg2).Abs() } ,
-              new { name = "PriceAvg3", price = new Func<Rate, double>(r => r.PriceAvg3), distance = (rateLast.PriceAvg - rateLast.PriceAvg3).Abs() } 
-              }.OrderBy(a => a.distance).First();
-              corridor = corridorObject.price;
-            }
-            ret = GetRangeSignal(rateLast, ratePrev, corridor)
-              ?? GetRangeSignal(rateLast, ratePrev2, corridor)
-              ?? GetRangeSignal(rateLast, ratePrev3, corridor)
-              ?? GetRangeSignal(rateLast, ratePrev4, corridor);
-            //if (ret.HasValue && rateLast.PriceAvg.Between(rateLast.PriceAvg2,rateLast.PriceAvg3)) {
-            //  if (ret == true && CorridorAngle < 0 ) return null;
-            //  if (ret == false && CorridorAngle > 0 ) return null;
-            //}
-            return ret;
-            return GetSignal(CrossOverSignal(CorridorStats.priceHigh(rateLast), CorridorStats.priceHigh(ratePrev), CorridorStats.priceLow(rateLast), CorridorStats.priceLow(ratePrev),
-                                   rateLast.PriceAvg2, ratePrev.PriceAvg2) ??
-                             CrossOverSignal(CorridorStats.priceHigh(rateLast), CorridorStats.priceHigh(ratePrev), CorridorStats.priceLow(rateLast), CorridorStats.priceLow(ratePrev),
-                                    rateLast.PriceAvg3, ratePrev.PriceAvg3)
-                   );
-        }
-        return null;
-      }
-    }
-
-    private bool? GetRangeSignal(Rate rateLast, Rate ratePrev, Func<Rate, double> level) {
-      bool? signal = null;
-      if (!TradeOnCrossOnly)
-        return GetSignal(
-        rateLast.PriceLow > level(rateLast) ? true
-        : rateLast.PriceHigh < level(rateLast) ? false
-        : (bool?)null
-        );
-      if (CrossUp(rateLast.PriceLow, ratePrev.PriceLow, level(rateLast), level(ratePrev)))
-        signal = true;
-      if (CrossDown(rateLast.PriceHigh, ratePrev.PriceHigh, level(rateLast), level(ratePrev)))
-        signal = false;
-      return GetSignal(signal);
-    }
-
-    private bool? CrossOverSignal(double priceBuyLast, double priceBuyPrev, double priceSellLast, double priceSellPrev, double tresholdPriceLast, double tresholdPricePrev) {
-      if (CrossUp(priceBuyLast, priceBuyPrev, tresholdPriceLast, tresholdPricePrev)) return true;
-      if (CrossDown(priceSellLast, priceSellPrev, tresholdPriceLast, tresholdPricePrev)) return false;
-      return null;
-    }
-
-    private static bool CrossDown(double priceSellLast, double priceSellPrev, double tresholdPriceLast, double tresholdPricePrev) {
-      return priceSellLast < tresholdPriceLast && priceSellPrev > tresholdPricePrev;
-    }
-
-    private static bool CrossUp(double priceBuyLast, double priceBuyPrev, double tresholdPriceLast, double tresholdPricePrev) {
-      return priceBuyLast > tresholdPriceLast && priceBuyPrev < tresholdPricePrev;
-    }
-
-    private bool? CrossOverSignal(Rate rateLast, Rate ratePrev, double tresholdPriceLast, double tresholdPricePrev, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      if (priceHigh(rateLast) > tresholdPriceLast && priceHigh(ratePrev) < tresholdPricePrev) return true;
-      if (priceLow(rateLast) < tresholdPriceLast && priceLow(ratePrev) > tresholdPricePrev) return false;
-      return null;
-    }
-
-    bool HasCrossedUp(double priceCurrent, double pricePrevious, double treshold) {
-      return priceCurrent > treshold && pricePrevious < treshold;
-    }
-    bool HasCrossedDown(double priceCurrent, double pricePrevious, double treshold) {
-      return priceCurrent < treshold && pricePrevious > treshold;
-    }
-    #endregion
 
     #region Last Rate
     private Rate GetLastRateWithGannAngle() {
@@ -1397,7 +1290,6 @@ namespace HedgeHog.Alice.Store {
         CorridorStats = null;
         DisposeOpenTradeByMASubject();
         _waveRates.Clear();
-        TakeProfitTimeStart = DateTime.MinValue;
         var currentPosition = -1;
         while (!args.MustStop) {
           if (currentPosition > 0 && currentPosition != args.CurrentPosition) {
@@ -1717,8 +1609,22 @@ namespace HedgeHog.Alice.Store {
 
     public double SuppResMinimumDistance { get { return CurrentPrice.Spread * 2; } }
 
-    bool _doCenterOfMass = false;
-    bool _areSuppResesActive { get { return true; } }
+    double LockPriceHigh(Rate rate) { return _stDevPriceLevelsHigh[StDevLevelLock](rate); }
+    double LoadPriceHigh(Rate rate) { return _stDevPriceLevelsHigh[StDevLevelLoad](rate); }
+    Func<Rate, double>[] _stDevPriceLevelsHigh = new Func<Rate, double>[] { 
+      r => r.PriceAvg02, 
+      r => r.PriceAvg2, 
+      r => r.PriceAvg21 
+    };
+    double LockPriceLow(Rate rate) { return _stDevPriceLevelsLow[StDevLevelLock](rate); }
+    double LoadPriceLow(Rate rate) { return _stDevPriceLevelsLow[StDevLevelLoad](rate); }
+    Func<Rate, double>[] _stDevPriceLevelsLow = new Func<Rate, double>[] { 
+      r => r.PriceAvg03, 
+      r => r.PriceAvg3, 
+      r => r.PriceAvg31 
+    };
+
+
     [MethodImpl(MethodImplOptions.Synchronized)]
     void CalculateSuppResLevels() {
 
@@ -1756,14 +1662,14 @@ namespace HedgeHog.Alice.Store {
         var rateLast = CorridorStats.Rates.FirstOrDefault();
         if (rateLast != null && rateLast.PriceAvg1 > 0) {
           try {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
+            support.Value.Rate = ReverseStrategy ? LockPriceLow(rateLast) : LockPriceHigh(rateLast);
           } catch {
-            support.Value.Rate = ReverseStrategy ? rateLast.PriceAvg3 : rateLast.PriceAvg2;
+            support.Value.Rate = ReverseStrategy ? LockPriceLow(rateLast) : LockPriceHigh(rateLast);
           }
           try {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
+            resistance.Value.Rate = ReverseStrategy ? LockPriceHigh(rateLast) : LockPriceLow(rateLast);
           } catch {
-            resistance.Value.Rate = ReverseStrategy ? rateLast.PriceAvg2 : rateLast.PriceAvg3;
+            resistance.Value.Rate = ReverseStrategy ? LockPriceHigh(rateLast) : LockPriceLow(rateLast);
           }
           return;
         } else {
@@ -2653,8 +2559,10 @@ namespace HedgeHog.Alice.Store {
         if (periodsStart == 1) return;
         var periodsLength = CorridorStartDate.HasValue ? 1 : CorridorStats.Periods > 0 ? ratesForCorridor.Count(r => r.StartDate >= CorridorStats.StartDate) - periodsStart + 1 : int.MaxValue;// periodsStart;
 
+        #region Waves
+        var reversed = ratesForCorridor.ReverseIfNot();
+        var stDevRate = reversed.GetStDevPrice(GetPriceMA).OrderByDescending(t => t.Item2).First().Item1;
         if (!CorridorStartDate.HasValue) {
-          var reversed = ratesForCorridor.ReverseIfNot();
           var waveRates = GetWaveRates(reversed, 4);
           if (!_waveRates.Any() || waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
             _waveRates.Clear();
@@ -2672,10 +2580,11 @@ namespace HedgeHog.Alice.Store {
               else _waveRates[w].Rate = rate;
             }
           }
-          TakeProfitTimeStart = TakeProfitTimeStart.Max(reversed[0].StartDate.AddMinutes(-BarPeriodInt * _waveRates[0].Position));
-          periodsStart = reversed.Count(r => r.StartDate >= _waveRates.Last().Rate.StartDate) - 1;
-          periodsLength = 10000;
+          periodsStart = reversed.Count(r => r.StartDate >= stDevRate/*_waveRates.Last().Rate*/.StartDate) - 1;
+          periodsLength = 1;
         }
+        #endregion
+
         CorridorStatistics crossedCorridor = null;
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
         Func<Rate, double> priceLow = CorridorGetLowPrice();
@@ -3362,20 +3271,6 @@ namespace HedgeHog.Alice.Store {
     public IList<WaveInfo> WaveRates {
       get { return _waveRates; }
       set { _waveRates = value; }
-    }
-
-    DateTime _TakeProfitTimeStart;
-    public DateTime TakeProfitTimeStart {
-      get { return _TakeProfitTimeStart; }
-      set {
-        if (_TakeProfitTimeStart == value) return;
-        if (false && IsHotStrategy && value - _TakeProfitTimeStart > (BarPeriodInt * 2).FromMinutes()) {
-          var rates = RatesArray.SkipWhile(r => r.StartDate < value).OrderBy(r=>r.PriceAvg).ToList();
-          ForceOpenTrade = rates[0].StartDate > rates[rates.Count - 1].StartDate;
-        }
-
-        _TakeProfitTimeStart = value; 
-      }
     }
   }
 }
