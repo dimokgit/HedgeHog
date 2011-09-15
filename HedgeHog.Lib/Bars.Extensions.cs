@@ -221,6 +221,12 @@ namespace HedgeHog.Bars {
       return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
     }
 
+    public static IList<Tuple<TBar, double>> GetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      var list = new Tuple<TBar, double>[rates.Count-1];
+      Enumerable.Range(1, rates.Count() - 1).AsParallel()
+        .ForAll(i => list[i-1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
+      return list;
+    }
     public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
       rates[0].PriceStdDev = 0;
       Enumerable.Range(1, rates.Count() - 1).AsParallel()
