@@ -797,6 +797,7 @@ namespace HedgeHog.Alice.Client {
     }
     void ShowChart(TradingMacro tm) {
       try {
+        if (Application.Current.MainWindow.WindowState == WindowState.Minimized) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
