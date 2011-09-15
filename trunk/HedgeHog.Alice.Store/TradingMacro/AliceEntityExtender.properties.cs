@@ -261,9 +261,9 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Distance Function")]
     [Category(categoryActive)]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
-      get { return (TradingMacroTakeProfitFunction)CorridorIterationsIn; }
+      get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
       set {
-        CorridorIterationsIn = (int)value;
+        PowerRowOffset = (int)value;
         OnPropertyChanged(TradingMacroMetadata.TradingDistanceFunction);
       }
     }
@@ -577,9 +577,27 @@ namespace HedgeHog.Alice.Store {
 
     }
     //  BarPeriodsHigh
-    // CorridorIterationsIn
-    // CorridorIterationsOut
-    // PowerRowOffset
+
+    [DisplayName("StDev Level Lock")]
+    [Category(categoryActive)]
+    public int StDevLevelLock {
+      get { return CorridorIterationsIn; }
+      set {
+        CorridorIterationsIn = value;
+        OnPropertyChanged(TradingMacroMetadata.StDevLevelLock);
+      }
+    }
+    [DisplayName("StDev Level Load")]
+    [Category(categoryActive)]
+    public int StDevLevelLoad {
+      get { return CorridorIterationsOut; }
+      set {
+        CorridorIterationsOut = value;
+        OnPropertyChanged(TradingMacroMetadata.StDevLevelLoad);
+      }
+    }
+
+
 
     [DisplayName("Corridor StDev To SpreadMin")]
     [Description("CorridorStDev/SpreadMin > X")]
