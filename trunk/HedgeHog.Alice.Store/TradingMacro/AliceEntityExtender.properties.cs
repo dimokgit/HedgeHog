@@ -259,7 +259,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Distance Function")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)CorridorIterationsIn; }
       set {
@@ -270,7 +270,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Take Profit Function")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
       get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
       set { 
@@ -438,6 +438,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryXXX = "XXX";
     const string categoryCorridor = "Corridor";
     const string categoryTrading = "Trading";
+    const string categoryActive = "Active";
 
     [Category(categoryXXX)]
     [DisplayName("Ratio For Breakout")]
@@ -542,7 +543,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
@@ -582,7 +583,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Corridor StDev To SpreadMin")]
     [Description("CorridorStDev/SpreadMin > X")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public double CorridorStDevToSpreadMin {
       get { return FibMin; }
       set { 
@@ -631,7 +632,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Bars Count(45,360,..)")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public int BarsCount {
       get { return CorridorBarMinutes; }
       set {
@@ -644,7 +645,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Adjust TimeframeBy Lot")]
     [Description("Do Adjust Timeframe By Allowed Lot")]
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     public bool DoAdjustTimeframeByAllowedLot_ {
       get { return DoAdjustTimeframeByAllowedLot; }
       set {
