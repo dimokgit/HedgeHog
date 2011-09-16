@@ -153,6 +153,7 @@ namespace HedgeHog.Alice.Client {
       ((INotifyPropertyChanged)RootVisual.DataContext).PropertyChanged += DataContext_PropertyChanged;
       #region Window Events
       Closing += new System.ComponentModel.CancelEventHandler(DockingWindow_Closing);
+      StateChanged += DockingWindow_StateChanged;
       #endregion
       #region Message Registration
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CharterControl>(this, (object)CharterControl.MessageType.Add, AddCharter);
@@ -165,6 +166,10 @@ namespace HedgeHog.Alice.Client {
       RootVisual.ElementCleaning += RootVisual_ElementCleaning;
       RootVisual.ElementLoaded += RootVisual_ElementLoaded;
       #endregion
+    }
+
+    void DockingWindow_StateChanged(object sender, EventArgs e) {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Window>(this, typeof(WindowState));
     }
     #endregion
 
