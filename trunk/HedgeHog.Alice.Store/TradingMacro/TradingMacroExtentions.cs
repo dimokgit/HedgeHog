@@ -256,6 +256,12 @@ namespace HedgeHog.Alice.Store {
       } else
         OpenTradeBroadcast.SendAsync(new __openTradeInfo(p, isBuy));
     }
+    Action<Rate> virtualCloseTrade = null;
+    void OnCloseTradeBroadcast(Action a, bool isBuy) {
+      virtualCloseTrade = rate => {
+        virtualCloseTrade = null;
+      };
+    }
     #endregion
     #endregion
 
@@ -1316,6 +1322,8 @@ namespace HedgeHog.Alice.Store {
               args.CurrentPosition = currentPosition = (100.0 *(rates.IndexOf(RatesInternal.Last()) - BarsCount) / (rates.Count - BarsCount)).ToInt();
               var price = new Price(Pair, RatesInternal.Last(), RatesInternal.Last().StartDate, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
               RunPriceChanged(new PriceChangedEventArgs(Pair, price, TradesManager.GetAccount(), new Trade[0]), null);
+              if (TradesManager.GetAccount().Equity < 25000)
+                MessageBox.Show("Equity Alert!");
               RatesArraySafe.Count();
             } else
               Log = new Exception("Replay:End");
@@ -2267,8 +2275,10 @@ namespace HedgeHog.Alice.Store {
         } else {
           LimitRate = GetLimitRate(isBuy);
           if (LimitRate > 0) {
-            if (isBuy && LimitRate - ps <= CurrentPrice.Bid || !isBuy && LimitRate + ps >= CurrentPrice.Ask)
+            if (isBuy && LimitRate - ps <= CurrentPrice.Bid || !isBuy && LimitRate + ps >= CurrentPrice.Ask) {
+              DisposeOpenTradeByMASubject();
               TradesManager.ClosePair(Pair);
+            }
             if (fw!=null && (RoundPrice(currentLimit) - LimitRate).Abs() > ps) {
               fw.FixOrderSetLimit(trade.Id, LimitRate, "");
             }
@@ -2561,8 +2571,8 @@ namespace HedgeHog.Alice.Store {
 
         #region Waves
         var reversed = ratesForCorridor.ReverseIfNot();
-        var stDevRate = reversed.GetStDevPrice(GetPriceMA).OrderByDescending(t => t.Item2).First().Item1;
-        if (!CorridorStartDate.HasValue) {
+        var stDevRate = reversed.SetStDevPrice(GetPriceMA).OrderByDescending(t => t.PriceStdDev).First();
+        if (false && !CorridorStartDate.HasValue) {
           var waveRates = GetWaveRates(reversed, 4);
           if (!_waveRates.Any() || waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
             _waveRates.Clear();
@@ -2580,10 +2590,10 @@ namespace HedgeHog.Alice.Store {
               else _waveRates[w].Rate = rate;
             }
           }
-          periodsStart = reversed.Count(r => r.StartDate >= stDevRate/*_waveRates.Last().Rate*/.StartDate) - 1;
-          periodsLength = 1;
         }
         #endregion
+        periodsStart = reversed.Count(r => r.StartDate >= stDevRate/*_waveRates.Last().Rate*/.StartDate) - 1;
+        periodsLength = 1;
 
         CorridorStatistics crossedCorridor = null;
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
