@@ -508,6 +508,7 @@ namespace HedgeHog.Alice.Client {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)false, SellOrderCommand);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)true, BuyOrderCommand);
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Window>(this,typeof(WindowState), IsMinimized);
           MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
           MasterModel.CoreFX.LoggedOff += CoreFX_LoggedOffEvent;
           MasterModel.MasterTradeAccountChanged += MasterModel_MasterTradeAccountChanged;
@@ -795,9 +796,13 @@ namespace HedgeHog.Alice.Client {
       else
         ShowChartQueue.Post(tm);
     }
+    bool _isMinimized = false;
+    void IsMinimized(Window w) {
+      _isMinimized = w.WindowState == WindowState.Minimized;
+    }
     void ShowChart(TradingMacro tm) {
       try {
-        if (Application.Current.MainWindow.WindowState == WindowState.Minimized) return;
+        if (_isMinimized) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
