@@ -385,9 +385,13 @@
               
               <TextBlock Text="{Binding RatesInternal.Count}"/>
                 <TextBlock Text="{Binding LimitBar,StringFormat=[{0}]}"/>
-              <TextBlock Text="{Binding LastRatePullTime,StringFormat=HH:mm}"/>
+              <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd HH:mm}">
+                <TextBlock.ToolTip>
+                  <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd/yyyy HH:mm}"/>
+                </TextBlock.ToolTip>
+              </TextBlock>
                 <TextBlock>|</TextBlock>
-              <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:dd HH:mm}}"/>
+              <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:MM/dd HH:mm}}"/>
               </TextBlock>
               </StackPanel>
             </DataTemplate>
