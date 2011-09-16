@@ -735,7 +735,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.CorridorHeightByRegressionInPips);
         OnPropertyChanged(TradingMacroMetadata.CorridorHeightByRegressionInPips0);
         OnPropertyChanged(TradingMacroMetadata.CorridorsRatio);
-        OnPropertyChanged(TradingMacroMetadata.OpenSignal);
         #endregion
       }
     }
@@ -1690,8 +1689,9 @@ namespace HedgeHog.Alice.Store {
     #region MagnetPrice
     private void SetMagnetPrice() {
       try {
-        var rates = CorridorStats.Rates.Where(r => r.Volume > 0).ToList();
-        MagnetPrice = rates.Sum(r => r.PriceAvg / r.Volume) / rates.Sum(r => 1.0 / r.Volume);
+        var rates = CorridorStats.Rates.Where(r => r.Volume > 0 && r.Spread > 0).ToList();
+        //MagnetPrice = rates.Sum(r => r.PriceAvg / r.Volume) / rates.Sum(r => 1.0 / r.Volume);
+        MagnetPrice = rates.Sum(r => r.PriceAvg * r.PriceStdDev) / rates.Sum(r => r.PriceStdDev);
       } catch { }
     }
     private double _MagnetPrice;
@@ -1768,6 +1768,7 @@ namespace HedgeHog.Alice.Store {
 
               OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriodByStDevRatio);
               SetMA();
+              _rateArray.ReverseIfNot().SetStDevPrice(GetPriceMA);
               SetMagnetPrice();
               OnScanCorridor(_rateArray);
               OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
@@ -2571,7 +2572,7 @@ namespace HedgeHog.Alice.Store {
 
         #region Waves
         var reversed = ratesForCorridor.ReverseIfNot();
-        var stDevRate = reversed.SetStDevPrice(GetPriceMA).OrderByDescending(t => t.PriceStdDev).First();
+        var stDevRate = ratesForCorridor.OrderByDescending(t => t.PriceStdDev).First();
         if (false && !CorridorStartDate.HasValue) {
           var waveRates = GetWaveRates(reversed, 4);
           if (!_waveRates.Any() || waveRates[0].Rate.StartDate > _waveRates[0].Rate.StartDate) {
