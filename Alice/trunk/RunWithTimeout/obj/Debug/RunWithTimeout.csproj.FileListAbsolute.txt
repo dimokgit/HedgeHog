@@ -1,0 +1,10 @@
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\RunWithTimeout\bin\Debug\RunWithTimeout.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\RunWithTimeout\bin\Debug\RunWithTimeout.pdb
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\ResolveAssemblyReference.cache
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\RunWithTimeout.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\RunWithTimeout.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\RunWithTimeout\bin\Debug\RunWithTimeout.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\RunWithTimeout\bin\Debug\RunWithTimeout.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\RunWithTimeout.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\RunWithTimeout\obj\Debug\RunWithTimeout.pdb

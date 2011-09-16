@@ -1,0 +1,10 @@
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Persistancy\bin\Debug\Persistance.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Persistancy\bin\Debug\Persistance.pdb
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\ResolveAssemblyReference.cache
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\Persistance.dll
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\Persistance.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\Persistancy\bin\Debug\Persistance.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\Persistancy\bin\Debug\Persistance.pdb
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\Persistance.dll
+C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\Persistancy\obj\Debug\Persistance.pdb

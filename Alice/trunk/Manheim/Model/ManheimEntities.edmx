@@ -1,0 +1,577 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="ManheimModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="ManheimModelStoreContainer">
+          <EntitySet Name="Auction" EntityType="ManheimModel.Store.Auction" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="Manager" EntityType="ManheimModel.Store.Manager" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="PreSale" EntityType="ManheimModel.Store.PreSale" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="Seller" EntityType="ManheimModel.Store.Seller" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="State" EntityType="ManheimModel.Store.State" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="Vehicle" EntityType="ManheimModel.Store.Vehicle" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="VehicleStatus" EntityType="ManheimModel.Store.VehicleStatus" store:Type="Tables" Schema="enum" />
+          <AssociationSet Name="FK_Auction_Manager" Association="ManheimModel.Store.FK_Auction_Manager">
+            <End Role="Manager" EntitySet="Manager" />
+            <End Role="Auction" EntitySet="Auction" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Auction_State" Association="ManheimModel.Store.FK_Auction_State">
+            <End Role="State" EntitySet="State" />
+            <End Role="Auction" EntitySet="Auction" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PreSale_Auction" Association="ManheimModel.Store.FK_PreSale_Auction">
+            <End Role="Auction" EntitySet="Auction" />
+            <End Role="PreSale" EntitySet="PreSale" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PreSale_Seller" Association="ManheimModel.Store.FK_PreSale_Seller">
+            <End Role="Seller" EntitySet="Seller" />
+            <End Role="PreSale" EntitySet="PreSale" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PreSale_Vehicle" Association="ManheimModel.Store.FK_PreSale_Vehicle">
+            <End Role="Vehicle" EntitySet="Vehicle" />
+            <End Role="PreSale" EntitySet="PreSale" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Vehicle_VehicleStatus" Association="ManheimModel.Store.FK_Vehicle_VehicleStatus">
+            <End Role="VehicleStatus" EntitySet="VehicleStatus" />
+            <End Role="Vehicle" EntitySet="Vehicle" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Auction">
+          <Key>
+            <PropertyRef Name="AuctionId" />
+          </Key>
+          <Property Name="AuctionId" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" MaxLength="64" />
+          <Property Name="PreSaleManagerId" Type="int" Nullable="false" />
+          <Property Name="StateCode" Type="varchar" Nullable="false" MaxLength="2" />
+        </EntityType>
+        <EntityType Name="Manager">
+          <Key>
+            <PropertyRef Name="ManagerId" />
+          </Key>
+          <Property Name="ManagerId" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="64" />
+          <Property Name="Title" Type="varchar" Nullable="false" MaxLength="64" />
+          <Property Name="Phone" Type="varchar" Nullable="false" MaxLength="32" />
+          <Property Name="Fax" Type="varchar" Nullable="false" MaxLength="32" />
+          <Property Name="Email" Type="varchar" Nullable="false" MaxLength="64" />
+        </EntityType>
+        <EntityType Name="PreSale">
+          <Key>
+            <PropertyRef Name="PreSaleId" />
+          </Key>
+          <Property Name="PreSaleId" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Ln" Type="int" Nullable="false" />
+          <Property Name="Run" Type="int" Nullable="false" />
+          <Property Name="VIN" Type="varchar" Nullable="false" MaxLength="17" />
+          <Property Name="SellerId" Type="int" Nullable="false" />
+          <Property Name="SaleDate" Type="smalldatetime" Nullable="false" />
+          <Property Name="AuctionId" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Seller">
+          <Key>
+            <PropertyRef Name="SellerId" />
+          </Key>
+          <Property Name="SellerId" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="100" />
+        </EntityType>
+        <EntityType Name="State">
+          <Key>
+            <PropertyRef Name="StateCode" />
+          </Key>
+          <Property Name="StateCode" Type="varchar" Nullable="false" MaxLength="2" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="64" />
+        </EntityType>
+        <EntityType Name="Vehicle">
+          <Key>
+            <PropertyRef Name="VIN" />
+          </Key>
+          <Property Name="VIN" Type="varchar" Nullable="false" MaxLength="17" />
+          <Property Name="Year" Type="int" Nullable="false" />
+          <Property Name="Make" Type="varchar" Nullable="false" MaxLength="50" />
+          <Property Name="Model" Type="varchar" Nullable="false" MaxLength="50" />
+          <Property Name="BodyStyle" Type="varchar" MaxLength="50" />
+          <Property Name="TrimLevel" Type="varchar" MaxLength="50" />
+          <Property Name="VehicleType" Type="varchar" MaxLength="50" />
+          <Property Name="Doors" Type="int" />
+          <Property Name="Color" Type="varchar" MaxLength="50" />
+          <Property Name="Odometer" Type="int" />
+          <Property Name="Salvage" Type="bit" Nullable="false" />
+          <Property Name="InServiceDate" Type="varchar" MaxLength="50" />
+          <Property Name="TitleState" Type="varchar" MaxLength="50" />
+          <Property Name="TitleStatus" Type="varchar" MaxLength="50" />
+          <Property Name="FuelType" Type="varchar" MaxLength="50" />
+          <Property Name="Engine" Type="varchar" MaxLength="50" />
+          <Property Name="Cylinders" Type="int" />
+          <Property Name="Displacement" Type="varchar" MaxLength="50" />
+          <Property Name="DriveTrain" Type="varchar" MaxLength="50" />
+          <Property Name="Transmission" Type="varchar" MaxLength="50" />
+          <Property Name="InteriorType" Type="varchar" MaxLength="50" />
+          <Property Name="TopType" Type="varchar" MaxLength="50" />
+          <Property Name="ExteriorColor" Type="varchar" MaxLength="50" />
+          <Property Name="InteriorColor" Type="varchar" MaxLength="50" />
+          <Property Name="Stereo" Type="varchar" MaxLength="50" />
+          <Property Name="Airbags" Type="varchar" MaxLength="50" />
+          <Property Name="WindowSticker" Type="varchar" MaxLength="50" />
+          <Property Name="Options" Type="varchar" MaxLength="1024" />
+          <Property Name="StatusId" Type="int" Nullable="false" />
+          <Property Name="MMR" Type="int" />
+          <Property Name="Grade" Type="float" />
+        </EntityType>
+        <EntityType Name="VehicleStatus">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="50" />
+        </EntityType>
+        <Association Name="FK_Auction_Manager">
+          <End Role="Manager" Type="ManheimModel.Store.Manager" Multiplicity="1" />
+          <End Role="Auction" Type="ManheimModel.Store.Auction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Manager">
+              <PropertyRef Name="ManagerId" />
+            </Principal>
+            <Dependent Role="Auction">
+              <PropertyRef Name="PreSaleManagerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Auction_State">
+          <End Role="State" Type="ManheimModel.Store.State" Multiplicity="1" />
+          <End Role="Auction" Type="ManheimModel.Store.Auction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="State">
+              <PropertyRef Name="StateCode" />
+            </Principal>
+            <Dependent Role="Auction">
+              <PropertyRef Name="StateCode" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PreSale_Auction">
+          <End Role="Auction" Type="ManheimModel.Store.Auction" Multiplicity="1" />
+          <End Role="PreSale" Type="ManheimModel.Store.PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Auction">
+              <PropertyRef Name="AuctionId" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="AuctionId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PreSale_Seller">
+          <End Role="Seller" Type="ManheimModel.Store.Seller" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PreSale" Type="ManheimModel.Store.PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Seller">
+              <PropertyRef Name="SellerId" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="SellerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PreSale_Vehicle">
+          <End Role="Vehicle" Type="ManheimModel.Store.Vehicle" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PreSale" Type="ManheimModel.Store.PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Vehicle">
+              <PropertyRef Name="VIN" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="VIN" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Vehicle_VehicleStatus">
+          <End Role="VehicleStatus" Type="ManheimModel.Store.VehicleStatus" Multiplicity="1" />
+          <End Role="Vehicle" Type="ManheimModel.Store.Vehicle" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="VehicleStatus">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Vehicle">
+              <PropertyRef Name="StatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="ManheimModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="ManheimEntities" annotation:LazyLoadingEnabled="false">
+          <EntitySet Name="Auctions" EntityType="ManheimModel.Auction" />
+          <EntitySet Name="Managers" EntityType="ManheimModel.Manager" />
+          <EntitySet Name="States" EntityType="ManheimModel.State" />
+          <AssociationSet Name="FK_Auction_Manager" Association="ManheimModel.FK_Auction_Manager">
+            <End Role="Manager" EntitySet="Managers" />
+            <End Role="Auction" EntitySet="Auctions" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Auction_State" Association="ManheimModel.FK_Auction_State">
+            <End Role="State" EntitySet="States" />
+            <End Role="Auction" EntitySet="Auctions" />
+          </AssociationSet>
+          <EntitySet Name="PreSales" EntityType="ManheimModel.PreSale" />
+          <EntitySet Name="Vehicles" EntityType="ManheimModel.Vehicle" />
+          <EntitySet Name="VehicleStatuses" EntityType="ManheimModel.VehicleStatus" />
+          <AssociationSet Name="FK_PreSale_Auction" Association="ManheimModel.FK_PreSale_Auction">
+            <End Role="Auction" EntitySet="Auctions" />
+            <End Role="PreSale" EntitySet="PreSales" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PreSale_Vehicle" Association="ManheimModel.FK_PreSale_Vehicle">
+            <End Role="Vehicle" EntitySet="Vehicles" />
+            <End Role="PreSale" EntitySet="PreSales" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Vehicle_VehicleStatus" Association="ManheimModel.FK_Vehicle_VehicleStatus">
+            <End Role="VehicleStatu" EntitySet="VehicleStatuses" />
+            <End Role="Vehicle" EntitySet="Vehicles" />
+          </AssociationSet>
+          <EntitySet Name="Sellers" EntityType="ManheimModel.Seller" />
+          <AssociationSet Name="FK_PreSale_Seller" Association="ManheimModel.FK_PreSale_Seller">
+            <End Role="Seller" EntitySet="Sellers" />
+            <End Role="PreSale" EntitySet="PreSales" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Auction">
+          <Key>
+            <PropertyRef Name="AuctionId" />
+          </Key>
+          <Property Type="Int32" Name="AuctionId" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="PreSaleManagerId" Nullable="false" />
+          <Property Type="String" Name="StateCode" Nullable="false" MaxLength="2" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="PreSaleManager" Relationship="ManheimModel.FK_Auction_Manager" FromRole="Auction" ToRole="Manager" />
+          <NavigationProperty Name="State" Relationship="ManheimModel.FK_Auction_State" FromRole="Auction" ToRole="State" />
+          <NavigationProperty Name="PreSales" Relationship="ManheimModel.FK_PreSale_Auction" FromRole="Auction" ToRole="PreSale" />
+        </EntityType>
+        <EntityType Name="Manager">
+          <Key>
+            <PropertyRef Name="ManagerId" />
+          </Key>
+          <Property Type="Int32" Name="ManagerId" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Title" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Phone" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Fax" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Email" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="State">
+          <Key>
+            <PropertyRef Name="StateCode" />
+          </Key>
+          <Property Type="String" Name="StateCode" Nullable="false" MaxLength="2" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <Association Name="FK_Auction_Manager">
+          <End Type="ManheimModel.Manager" Role="Manager" Multiplicity="1" />
+          <End Type="ManheimModel.Auction" Role="Auction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Manager">
+              <PropertyRef Name="ManagerId" />
+            </Principal>
+            <Dependent Role="Auction">
+              <PropertyRef Name="PreSaleManagerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Auction_State">
+          <End Type="ManheimModel.State" Role="State" Multiplicity="1" />
+          <End Type="ManheimModel.Auction" Role="Auction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="State">
+              <PropertyRef Name="StateCode" />
+            </Principal>
+            <Dependent Role="Auction">
+              <PropertyRef Name="StateCode" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="PreSale">
+          <Key>
+            <PropertyRef Name="PreSaleId" />
+          </Key>
+          <Property Type="Int32" Name="PreSaleId" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="Int32" Name="Ln" Nullable="false" />
+          <Property Type="String" Name="VIN" Nullable="false" MaxLength="17" FixedLength="false" Unicode="false" />
+          <Property Type="DateTime" Name="SaleDate" Nullable="false" />
+          <Property Type="Int32" Name="AuctionId" Nullable="false" />
+          <NavigationProperty Name="Auction" Relationship="ManheimModel.FK_PreSale_Auction" FromRole="PreSale" ToRole="Auction" />
+          <NavigationProperty Name="Vehicle" Relationship="ManheimModel.FK_PreSale_Vehicle" FromRole="PreSale" ToRole="Vehicle" />
+          <Property Type="Int32" Name="Run" Nullable="false" />
+          <Property Type="Int32" Name="SellerId" Nullable="false" />
+          <NavigationProperty Name="Seller" Relationship="ManheimModel.FK_PreSale_Seller" FromRole="PreSale" ToRole="Seller" />
+        </EntityType>
+        <EntityType Name="Vehicle">
+          <Key>
+            <PropertyRef Name="VIN" />
+          </Key>
+          <Property Type="String" Name="VIN" Nullable="false" MaxLength="17" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Year" Nullable="false" />
+          <Property Type="String" Name="Make" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Model" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="BodyStyle" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TrimLevel" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="VehicleType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Doors" />
+          <Property Type="String" Name="Color" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Boolean" Name="Salvage" Nullable="false" />
+          <Property Type="String" Name="TitleStatus" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="DriveTrain" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="InteriorType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TopType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Stereo" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Airbags" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Options" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="StatusId" Nullable="false" />
+          <NavigationProperty Name="PreSales" Relationship="ManheimModel.FK_PreSale_Vehicle" FromRole="Vehicle" ToRole="PreSale" />
+          <NavigationProperty Name="VehicleStatus" Relationship="ManheimModel.FK_Vehicle_VehicleStatus" FromRole="Vehicle" ToRole="VehicleStatu" />
+          <Property Type="Int32" Name="Odometer" />
+          <Property Type="String" Name="InServiceDate" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TitleState" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="FuelType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Engine" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Displacement" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Transmission" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="ExteriorColor" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="InteriorColor" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="WindowSticker" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Cylinders" />
+          <Property Type="Int32" Name="MMR" />
+          <Property Type="Double" Name="Grade" />
+        </EntityType>
+        <EntityType Name="VehicleStatus">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <Association Name="FK_PreSale_Auction">
+          <End Type="ManheimModel.Auction" Role="Auction" Multiplicity="1" />
+          <End Type="ManheimModel.PreSale" Role="PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Auction">
+              <PropertyRef Name="AuctionId" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="AuctionId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PreSale_Vehicle">
+          <End Type="ManheimModel.Vehicle" Role="Vehicle" Multiplicity="1" />
+          <End Type="ManheimModel.PreSale" Role="PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Vehicle">
+              <PropertyRef Name="VIN" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="VIN" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Vehicle_VehicleStatus">
+          <End Type="ManheimModel.VehicleStatus" Role="VehicleStatu" Multiplicity="1" />
+          <End Type="ManheimModel.Vehicle" Role="Vehicle" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="VehicleStatu">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Vehicle">
+              <PropertyRef Name="StatusId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="Seller">
+          <Key>
+            <PropertyRef Name="SellerId" />
+          </Key>
+          <Property Type="Int32" Name="SellerId" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="100" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="PreSales" Relationship="ManheimModel.FK_PreSale_Seller" FromRole="Seller" ToRole="PreSale" />
+        </EntityType>
+        <Association Name="FK_PreSale_Seller">
+          <End Type="ManheimModel.Seller" Role="Seller" Multiplicity="1" />
+          <End Type="ManheimModel.PreSale" Role="PreSale" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Seller">
+              <PropertyRef Name="SellerId" />
+            </Principal>
+            <Dependent Role="PreSale">
+              <PropertyRef Name="SellerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="ManheimModelStoreContainer" CdmEntityContainer="ManheimEntities">
+          <EntitySetMapping Name="Auctions">
+            <EntityTypeMapping TypeName="ManheimModel.Auction">
+              <MappingFragment StoreEntitySet="Auction">
+                <ScalarProperty Name="StateCode" ColumnName="StateCode" />
+                <ScalarProperty Name="PreSaleManagerId" ColumnName="PreSaleManagerId" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="AuctionId" ColumnName="AuctionId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Managers">
+            <EntityTypeMapping TypeName="ManheimModel.Manager">
+              <MappingFragment StoreEntitySet="Manager">
+                <ScalarProperty Name="Email" ColumnName="Email" />
+                <ScalarProperty Name="Fax" ColumnName="Fax" />
+                <ScalarProperty Name="Phone" ColumnName="Phone" />
+                <ScalarProperty Name="Title" ColumnName="Title" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ManagerId" ColumnName="ManagerId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="States">
+            <EntityTypeMapping TypeName="ManheimModel.State">
+              <MappingFragment StoreEntitySet="State">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="StateCode" ColumnName="StateCode" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="PreSales">
+            <EntityTypeMapping TypeName="ManheimModel.PreSale">
+              <MappingFragment StoreEntitySet="PreSale">
+                <ScalarProperty Name="SellerId" ColumnName="SellerId" />
+                <ScalarProperty Name="Run" ColumnName="Run" />
+                <ScalarProperty Name="AuctionId" ColumnName="AuctionId" />
+                <ScalarProperty Name="SaleDate" ColumnName="SaleDate" />
+                <ScalarProperty Name="VIN" ColumnName="VIN" />
+                <ScalarProperty Name="Ln" ColumnName="Ln" />
+                <ScalarProperty Name="PreSaleId" ColumnName="PreSaleId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Vehicles">
+            <EntityTypeMapping TypeName="ManheimModel.Vehicle">
+              <MappingFragment StoreEntitySet="Vehicle">
+                <ScalarProperty Name="Grade" ColumnName="Grade" />
+                <ScalarProperty Name="MMR" ColumnName="MMR" />
+                <ScalarProperty Name="Cylinders" ColumnName="Cylinders" />
+                <ScalarProperty Name="WindowSticker" ColumnName="WindowSticker" />
+                <ScalarProperty Name="InteriorColor" ColumnName="InteriorColor" />
+                <ScalarProperty Name="ExteriorColor" ColumnName="ExteriorColor" />
+                <ScalarProperty Name="Transmission" ColumnName="Transmission" />
+                <ScalarProperty Name="Displacement" ColumnName="Displacement" />
+                <ScalarProperty Name="Engine" ColumnName="Engine" />
+                <ScalarProperty Name="FuelType" ColumnName="FuelType" />
+                <ScalarProperty Name="TitleState" ColumnName="TitleState" />
+                <ScalarProperty Name="InServiceDate" ColumnName="InServiceDate" />
+                <ScalarProperty Name="Odometer" ColumnName="Odometer" />
+                <ScalarProperty Name="StatusId" ColumnName="StatusId" />
+                <ScalarProperty Name="Options" ColumnName="Options" />
+                <ScalarProperty Name="Airbags" ColumnName="Airbags" />
+                <ScalarProperty Name="Stereo" ColumnName="Stereo" />
+                <ScalarProperty Name="TopType" ColumnName="TopType" />
+                <ScalarProperty Name="InteriorType" ColumnName="InteriorType" />
+                <ScalarProperty Name="DriveTrain" ColumnName="DriveTrain" />
+                <ScalarProperty Name="TitleStatus" ColumnName="TitleStatus" />
+                <ScalarProperty Name="Salvage" ColumnName="Salvage" />
+                <ScalarProperty Name="Color" ColumnName="Color" />
+                <ScalarProperty Name="Doors" ColumnName="Doors" />
+                <ScalarProperty Name="VehicleType" ColumnName="VehicleType" />
+                <ScalarProperty Name="TrimLevel" ColumnName="TrimLevel" />
+                <ScalarProperty Name="BodyStyle" ColumnName="BodyStyle" />
+                <ScalarProperty Name="Model" ColumnName="Model" />
+                <ScalarProperty Name="Make" ColumnName="Make" />
+                <ScalarProperty Name="Year" ColumnName="Year" />
+                <ScalarProperty Name="VIN" ColumnName="VIN" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="VehicleStatuses">
+            <EntityTypeMapping TypeName="ManheimModel.VehicleStatus">
+              <MappingFragment StoreEntitySet="VehicleStatus">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Sellers">
+            <EntityTypeMapping TypeName="ManheimModel.Seller">
+              <MappingFragment StoreEntitySet="Seller">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="SellerId" ColumnName="SellerId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="ManheimEntities">
+        <EntityTypeShape EntityType="ManheimModel.Auction" Width="1.5" PointX="3" PointY="1.625" Height="1.9210009765625" />
+        <EntityTypeShape EntityType="ManheimModel.Manager" Width="1.5" PointX="0.75" PointY="1.625" Height="1.9210009765625" />
+        <EntityTypeShape EntityType="ManheimModel.State" Width="1.5" PointX="0.75" PointY="6" Height="1.2636116536458326" />
+        <AssociationConnector Association="ManheimModel.FK_Auction_Manager" >
+          <ConnectorPoint PointX="2.25" PointY="2.58550048828125" />
+          <ConnectorPoint PointX="3" PointY="2.58550048828125" />
+        </AssociationConnector>
+        <AssociationConnector Association="ManheimModel.FK_Auction_State" >
+          <ConnectorPoint PointX="2.25" PointY="6" />
+          <ConnectorPoint PointX="2.625" PointY="5.625" />
+          <ConnectorPoint PointX="2.625" PointY="3.1791763977864593" />
+          <ConnectorPoint PointX="3" PointY="3.1791763977864593" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="ManheimModel.PreSale" Width="2" PointX="8.125" PointY="3.75" Height="2.2496956380208326" />
+        <EntityTypeShape EntityType="ManheimModel.Vehicle" Width="2" PointX="5.125" PointY="3.625" Height="4.2218636067708317" />
+        <EntityTypeShape EntityType="ManheimModel.VehicleStatus" Width="2" PointX="2.875" PointY="6.375" Height="1.2636116536458326" />
+        <AssociationConnector Association="ManheimModel.FK_PreSale_Auction" >
+          <ConnectorPoint PointX="4.5" PointY="2.9639794921875016" />
+          <ConnectorPoint PointX="8.5104141666666653" PointY="2.9639794921875011" />
+          <ConnectorPoint PointX="8.6770808333333331" PointY="2.9639794921875016" />
+          <ConnectorPoint PointX="9.125" PointY="2.9639794921875016" />
+          <ConnectorPoint PointX="9.125" PointY="3.75" />
+        </AssociationConnector>
+        <AssociationConnector Association="ManheimModel.FK_PreSale_Vehicle" >
+          <ConnectorPoint PointX="7.125" PointY="5.0391951497395837" />
+          <ConnectorPoint PointX="8.125" PointY="5.0391951497395837" />
+        </AssociationConnector>
+        <AssociationConnector Association="ManheimModel.FK_Vehicle_VehicleStatus" >
+          <ConnectorPoint PointX="4.875" PointY="7.0068058268229159" />
+          <ConnectorPoint PointX="5.125" PointY="7.0068058268229159" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="ManheimModel.Seller" Width="1.5" PointX="5.375" PointY="0.875" Height="1.4279589843750031" />
+        <AssociationConnector Association="ManheimModel.FK_PreSale_Seller" >
+          <ConnectorPoint PointX="6.875" PointY="1.5889794921875016" />
+          <ConnectorPoint PointX="8.5937475" PointY="1.5889794921875016" />
+          <ConnectorPoint PointX="8.5937475" PointY="3.75" />
+        </AssociationConnector>
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="bc2c99d0-3b89-4959-9f60-20df72b9f4a3" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" Protocol="mex" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="abf38516-99c8-401c-ac47-e580dd713062" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="8defbf74-3c82-4075-8214-b96eb63be936" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="89efe66a-d3df-4dad-849a-b951e6e1f2f8" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="HedgeHog.Bars.xsd" MetadataType="Schema" ID="efb1ec56-800b-4da7-bd8a-64d0b50e444a" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="Arrays.xsd" MetadataType="Schema" ID="c82c7436-0765-413d-b078-ca00231d24d8" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+    <MetadataFile FileName="HedgeHog.Alice.Server.xsd" MetadataType="Schema" ID="6f15f74f-43c6-4909-a646-2d4b5cf89e43" SourceId="1" SourceUrl="net.tcp://localhost:8732/Design_Time_Addresses/HedgeHog.Alice.Server/PriceService/mex" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

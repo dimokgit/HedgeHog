@@ -1,0 +1,3 @@
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\CS\obj\Debug\ResolveAssemblyReference.cache
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\CS\obj\Debug\Regression.Properties.Resources.resources
+C:\Data\Dev\Forex_Old\Projects\HedgeHog\Regression\CS\obj\Debug\Regression.csproj.GenerateResource.Cache
