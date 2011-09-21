@@ -549,7 +549,7 @@ namespace HedgeHog.Alice.Client {
       _tradingStatistics.VolumeRatioL = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
       _tradingStatistics.RatesStDevToRatesHeightRatioH = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
       _tradingStatistics.RatesStDevToRatesHeightRatioL = tms.Select(tm => tm.RatesStDevToRatesHeightRatio).ToArray().AverageByIterations(2, true).Average();
-      _tradingStatistics.CorridorHeightToRatesHeightRatio = tms.Select(tm => tm.CorridorHeightToRatesHeightRatio).ToArray().AverageByIterations(2).Average();
+      _tradingStatistics.AllowedLotMinimum = tms.Select(tm => tm.LotSizeByLossBuy.Max(tm.LotSizeByLossSell)).Min();
       var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
       _tradingStatistics.CurrentGross = grosses.Sum(g => g);
       _tradingStatistics.CurrentGrossAverage = grosses.Average();
