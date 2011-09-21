@@ -6101,10 +6101,10 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CurrentGross"/></summary>
         public const string CurrentGross = "CurrentGross";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._AllowedLotMinimum"/></summary>
         public const string _CorridorHeightToRatesHeightRatio = "_CorridorHeightToRatesHeightRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.AllowedLotMinimum"/></summary>
         public const string CorridorHeightToRatesHeightRatio = "CorridorHeightToRatesHeightRatio";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._StDevPips"/></summary>
@@ -6171,7 +6171,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CurrentGross"/></summary>
         public static PropertyPath CurrentGrossPath { get { return new PropertyPath("CurrentGross"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CorridorHeightToRatesHeightRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.AllowedLotMinimum"/></summary>
         public static PropertyPath CorridorHeightToRatesHeightRatioPath { get { return new PropertyPath("CorridorHeightToRatesHeightRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.StDevPips"/></summary>
