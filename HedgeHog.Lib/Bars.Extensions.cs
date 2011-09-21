@@ -59,9 +59,11 @@ namespace HedgeHog.Bars {
     }
 
     public static TBar Next<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
-      LinkedList<TBar> ll = new LinkedList<TBar>(rates);
-      var node = ll.Find(rate);
-      return node.Next == null ? null : node.Next.Value;
+      var i = rates.IndexOf(rate) + 1;
+      return i.Between(0, rates.Count - 1) ? rates[i] : null;
+      //LinkedList<TBar> ll = new LinkedList<TBar>(rates);
+      //var node = ll.Find(rate);
+      //return node.Next == null ? null : node.Next.Value;
     }
     public static TBar Previous<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
       LinkedList<TBar> ll = new LinkedList<TBar>(rates);
@@ -229,8 +231,14 @@ namespace HedgeHog.Bars {
     }
     public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
       rates[0].PriceStdDev = 0;
+      var list = new List<double>();
+      list.Add(getPrice(rates[0]));
+      for (var i = 1; i < rates.Count; i++ ) {
+        list.Add(getPrice(rates[i]));
+        rates[i].PriceStdDev = list.StDevP();
+      }
       Enumerable.Range(1, rates.Count() - 1).AsParallel()
-        .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP());
+        .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToList().StDevP());
       return rates;
     }
 
