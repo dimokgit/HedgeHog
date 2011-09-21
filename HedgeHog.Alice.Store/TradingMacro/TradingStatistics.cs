@@ -40,12 +40,12 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region CorridorHeightToRatesHeightRatio
-    private double _CorridorHeightToRatesHeightRatio;
-    public double CorridorHeightToRatesHeightRatio {
-      get { return _CorridorHeightToRatesHeightRatio; }
+    private double _AllowedLotMinimum;
+    public double AllowedLotMinimum {
+      get { return _AllowedLotMinimum; }
       set {
-        if (_CorridorHeightToRatesHeightRatio != value) {
-          _CorridorHeightToRatesHeightRatio = value;
+        if (_AllowedLotMinimum != value) {
+          _AllowedLotMinimum = value;
           RaisePropertyChanged();
         }
       }
