@@ -633,9 +633,6 @@ namespace HedgeHog.Alice.Client {
               charter.LineAvgAsk = tm.CurrentPrice.Ask;
               charter.LineAvgBid = tm.CurrentPrice.Bid;
               charter.LineTakeProfitLimit = tm.LimitRate;
-              tm.RatesArray.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-              Enumerable.Range(0, charter.LineTimeTakeProfits.Length.Min(tm.WaveRates.Count())).ToList()
-                .ForEach(i => charter.LineTimeTakeProfits[i](tm.WaveRates[i].Rate.StartDateContinuous));
             }
           } catch (Exception exc) {
             Log = exc;
@@ -652,8 +649,11 @@ namespace HedgeHog.Alice.Client {
           Log = tm.Log;
         }
 
-        var propsToHandle = new[] { TradingMacroMetadata.Pair, TradingMacroMetadata.TradingRatio };
-        if (propsToHandle.Contains(e.PropertyName)) tm.SetLotSize(tradesManager.GetAccount());
+        switch (e.PropertyName) {
+          case TradingMacroMetadata.Pair:
+          case TradingMacroMetadata.TradingRatio:
+            tm.SetLotSize(tradesManager.GetAccount());break;
+        }
         if (e.PropertyName == TradingMacroMetadata.CorridorIterations)
           tm.CorridorStatsArray.Clear();
         if (e.PropertyName == TradingMacroMetadata.IsActive && ShowAllMacrosFilter)
@@ -669,15 +669,30 @@ namespace HedgeHog.Alice.Client {
             }
           }));
         }
-        var property = tm.GetType().GetProperty(e.PropertyName);
-        if (property == null)
-          Debug.Fail("Property " + e.PropertyName + " does not exist.");
-        if (e.PropertyName!=Lib.GetLambda(()=>tm.IsAutoSync) && tm.IsAutoSync && property!=null && property.GetCustomAttributes(typeof(CategoryAttribute),true).Length>0) {
-          tm.IsAutoSync = false;
-          GetTradingMacros().Except(new[] { tm }).ToList().ForEach(_tm => {
-            _tm.IsAutoSync = false;
-            _tm.SetProperty(e.PropertyName, tm.GetProperty(e.PropertyName));
-          });
+        if (e.PropertyName == TradingMacroMetadata.SyncAll) {
+          if (tm.SyncAll) {
+            tm.SyncAll = false;
+            Func<PropertyInfo, bool> hasAtribute = p => {
+              var attr = p.GetCustomAttributes(typeof(CategoryAttribute), false).FirstOrDefault() as CategoryAttribute;
+              return attr != null && attr.Category == TradingMacro.categoryActive;
+            };
+            var props = tm.GetType().GetProperties().Where(hasAtribute).ToArray();
+            foreach (var p in props)
+              foreach (var t in GetTradingMacros().Except(new[] { tm }))
+                p.SetValue(t, p.GetValue(tm, null), null);
+          }
+        }
+        if (e.PropertyName != TradingMacroMetadata.IsAutoSync && tm.IsAutoSync) {
+          var property = tm.GetType().GetProperty(e.PropertyName);
+          if (property == null)
+            Debug.Fail("Property " + e.PropertyName + " does not exist.");
+          if (property != null && property.GetCustomAttributes(typeof(CategoryAttribute), true).Length > 0) {
+            tm.IsAutoSync = false;
+            GetTradingMacros().Except(new[] { tm }).ToList().ForEach(_tm => {
+              _tm.IsAutoSync = false;
+              _tm.SetProperty(e.PropertyName, tm.GetProperty(e.PropertyName));
+            });
+          }
         }
       } catch (Exception exc) {
         Log = exc; 
@@ -811,6 +826,8 @@ namespace HedgeHog.Alice.Client {
         if (tm == null) return;
         if (rates.Count() == 0) return;
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
+        Enumerable.Range(0, charter.LineTimeTakeProfits.Length.Min(tm.WaveRates.Count())).ToList()
+          .ForEach(i => charter.LineTimeTakeProfits[i](tm.WaveRates[i].Rate.StartDateContinuous));
         var price = tm.CurrentPrice;
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
