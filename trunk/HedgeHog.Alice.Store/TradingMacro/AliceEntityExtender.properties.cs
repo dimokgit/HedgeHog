@@ -636,6 +636,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region MaximumPositions
+    [DisplayName("Maximum Positions")]
+    [Category(categoryTrading)]
+    public int MaximumPositions_ {
+      get { return MaximumPositions; }
+      set {
+        if (MaximumPositions != value) {
+          MaximumPositions = value;
+          OnPropertyChanged(TradingMacroMetadata.MaximumPositions_);
+        }
+      }
+    }
+
+    #endregion
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActive)]
