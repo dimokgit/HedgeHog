@@ -2298,9 +2298,11 @@ namespace HedgeHog.Alice.Store {
         //var rates = RatesArray.Where(r => r >= rate);
         //return isBuy ? rates.Min(r => r.AskHigh) + profit : rates.Max(r => r.BidLow) - profit;
         //return this.RateLast.PriceAvg1;
+        var useNet = MaxLotSize == LotSize;
         Trade[] trades = Trades.IsBuy(isBuy);
-        var closeProfit = CalculateCloseProfit();
-        return trades.OrderBy(t => t.Lots).Select(t => t.Open).LastOrDefault() + (isBuy ? 1 : -1) * closeProfit;
+        var closeProfit = CalculateCloseProfit() / (useNet && this.TakeProfitFunction != TradingMacroTakeProfitFunction.Spread ? trades.Count() : 1);
+        var basePrice = useNet ? trades.NetOpen() : trades.OrderByDescending(t => t.Id).Select(t => t.Open).LastOrDefault();
+        return basePrice + (isBuy ? 1 : -1) * closeProfit;
 
         var corridorRates = CorridorStats.Rates;
         if (!_waveRates.Any()) return double.NaN;
@@ -2584,7 +2586,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         #endregion
-        periodsStart = reversed.Count(r => r.StartDate >= stDevRate/*_waveRates.Last().Rate*/.StartDate) - 1;
+        periodsStart = reversed.Count(r => r.StartDate >= (stDevRate.StartDate).Max(CorridorStats.StartDate));
         periodsLength = 1;
 
         CorridorStatistics crossedCorridor = null;
