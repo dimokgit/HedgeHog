@@ -2240,6 +2240,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsColdOnTrades_"/></summary>
         public const string IsColdOnTrades_ = "IsColdOnTrades_";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaximumPositions_"/></summary>
+        public const string MaximumPositions_ = "MaximumPositions_";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BarPeriodInt"/></summary>
         public const string BarPeriodInt = "BarPeriodInt";
 
@@ -4298,6 +4301,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsColdOnTrades_"/></summary>
         public static PropertyPath IsColdOnTrades_Path { get { return new PropertyPath("IsColdOnTrades_"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaximumPositions_"/></summary>
+        public static PropertyPath MaximumPositions_Path { get { return new PropertyPath("MaximumPositions_"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BarPeriodInt"/></summary>
         public static PropertyPath BarPeriodIntPath { get { return new PropertyPath("BarPeriodInt"); } }

@@ -282,6 +282,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     bool CanTradeByMAFilter(Rate rate, bool isBuy) {
+      if (!HasCorridor) DisposeOpenTradeByMASubject();
       var suppRes = EnsureActiveSuppReses(isBuy).SingleOrDefault();
       if (suppRes == null) return false;
       return PriceCmaPeriod > 10
@@ -2488,7 +2489,7 @@ namespace HedgeHog.Alice.Store {
       return HasTradesByDistance(Trades.IsBuy(isBuy));
     }
     private bool HasTradesByDistance(Trade[] trades) {
-      var multiplier = BarPeriod == BarsPeriodType.m1 ? trades.Count() : 1;
+      var multiplier = BarPeriod == BarsPeriodType.m1 && MaxLotSize > LotSize ? trades.Count() : 1;
       return TakeProfitPips == 0
         || (trades.Any() && trades.Max(t => t.PL) > -(TradingDistanceInPips * multiplier + PriceSpreadAverageInPips));
     }
@@ -2609,7 +2610,7 @@ namespace HedgeHog.Alice.Store {
           var csCurr = crossedCorridor ?? cc.FirstOrDefault();
           var csOld = CorridorStats;
           csOld.Init(csCurr, PointSize);
-          csOld.IsCurrent = crossedCorridor != null;
+          csOld.IsCurrent = crossedCorridor != null && csOld.Rates.Count <= RatesArray.Count / 2;
           CorridorStats = csOld;
         } else {
           throw new Exception("No corridors found for current range.");
@@ -2873,6 +2874,7 @@ namespace HedgeHog.Alice.Store {
 
     public int AllowedLotSizeCore(ICollection<Trade> trades, double? takeProfitPips = null) {
       if (!HasRates) return 0;
+      if (MaxLotSize == LotSize) return LotSize;
       var calcLot = CalculateLot(trades,takeProfitPips);
       if (DoAdjustTimeframeByAllowedLot && calcLot > MaxLotSize && Strategy.HasFlag(Strategies.Hot)) {
         while (CalculateLot(Trades, takeProfitPips) > MaxLotSize) {
@@ -3001,7 +3003,7 @@ namespace HedgeHog.Alice.Store {
     }
     public void LoadRates(bool dontStreachRates = false) {
       try {
-        if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn) {
+        if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {
           InfoTooltip = "Loading Rates";
           lock (_Rates) {
             Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, TradesManager.ServerTime, (BarsPeriodType)BarPeriod);
