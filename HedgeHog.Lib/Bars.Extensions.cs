@@ -237,8 +237,8 @@ namespace HedgeHog.Bars {
         list.Add(getPrice(rates[i]));
         rates[i].PriceStdDev = list.StDevP();
       }
-      Enumerable.Range(1, rates.Count() - 1).AsParallel()
-        .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToList().StDevP());
+      //Enumerable.Range(1, rates.Count() - 1).AsParallel()
+      //  .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToList().StDevP());
       return rates;
     }
 
@@ -1208,6 +1208,7 @@ namespace HedgeHog.Bars {
         for (var i = 1; i < cmaLevels; i++) {
           t.PriceCMA.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
         }
+        t.PriceCMALast = t.PriceCMA[t.PriceCMA.Count - 1];
       }
     }
     public static void SetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
