@@ -438,7 +438,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryXXX = "XXX";
     const string categoryCorridor = "Corridor";
     const string categoryTrading = "Trading";
-    const string categoryActive = "Active";
+    public const string categoryActive = "Active";
 
     [Category(categoryXXX)]
     [DisplayName("Ratio For Breakout")]
@@ -638,7 +638,7 @@ namespace HedgeHog.Alice.Store {
 
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {
@@ -720,6 +720,22 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    #region SyncAll
+    private bool _SyncAll;
+    [DisplayName("Sync All")]
+    [Category(categoryActive)]
+    public bool SyncAll {
+      get { return _SyncAll; }
+      set {
+        if (_SyncAll != value) {
+          _SyncAll = value;
+          OnPropertyChanged(TradingMacroMetadata.SyncAll);
+        }
+      }
+    }
+    
+    #endregion
 
     [DisplayName("LoadRates Seconds Warning")]
     [Category(categoryXXX)]

@@ -1671,7 +1671,7 @@ namespace HedgeHog.Alice.Store {
     #region MagnetPrice
     private void SetMagnetPrice() {
       try {
-        var rates = CorridorStats.Rates.Where(r => r.Volume > 0 && r.Spread > 0).ToList();
+        var rates = RatesArray.Where(r => r.Volume > 0 && r.Spread > 0 && r.PriceStdDev>0).ToList();
         //MagnetPrice = rates.Sum(r => r.PriceAvg / r.Volume) / rates.Sum(r => 1.0 / r.Volume);
         MagnetPrice = rates.Sum(r => r.PriceAvg * r.PriceStdDev) / rates.Sum(r => r.PriceStdDev);
       } catch { }
@@ -2488,8 +2488,9 @@ namespace HedgeHog.Alice.Store {
       return HasTradesByDistance(Trades.IsBuy(isBuy));
     }
     private bool HasTradesByDistance(Trade[] trades) {
+      var multiplier = BarPeriod == BarsPeriodType.m1 ? trades.Count() : 1;
       return TakeProfitPips == 0
-        || (trades.Any() && trades.Max(t => t.PL) > -(TradingDistanceInPips/**trades.Count()*/ + PriceSpreadAverageInPips));
+        || (trades.Any() && trades.Max(t => t.PL) > -(TradingDistanceInPips * multiplier + PriceSpreadAverageInPips));
     }
     static double? _runPriceMillisecondsAverage;
     public void RunPriceChangedTask(PriceChangedEventArgs e, Action<TradingMacro> doAfterScanCorridor) {

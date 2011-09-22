@@ -2276,6 +2276,12 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsAutoSync"/></summary>
         public const string IsAutoSync = "IsAutoSync";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._SyncAll"/></summary>
+        public const string _SyncAll = "_SyncAll";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SyncAll"/></summary>
+        public const string SyncAll = "SyncAll";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSecondsWarning_"/></summary>
         public const string LoadRatesSecondsWarning_ = "LoadRatesSecondsWarning_";
 
@@ -2998,9 +3004,6 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager_TradeAddedGlobal"/></summary>
         public const string TradesManager_TradeAddedGlobal = "TradesManager_TradeAddedGlobal";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TradesManager_TradeAdded"/></summary>
-        public const string TradesManager_TradeAdded = "TradesManager_TradeAdded";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.IsMyTrade"/></summary>
         public const string IsMyTrade = "IsMyTrade";
@@ -4328,6 +4331,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsAutoSync"/></summary>
         public static PropertyPath IsAutoSyncPath { get { return new PropertyPath("IsAutoSync"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SyncAll"/></summary>
+        public static PropertyPath SyncAllPath { get { return new PropertyPath("SyncAll"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesSecondsWarning_"/></summary>
         public static PropertyPath LoadRatesSecondsWarning_Path { get { return new PropertyPath("LoadRatesSecondsWarning_"); } }
@@ -6102,10 +6108,10 @@ namespace HedgeHog.Alice.Store.Metadata
         public const string CurrentGross = "CurrentGross";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._AllowedLotMinimum"/></summary>
-        public const string _CorridorHeightToRatesHeightRatio = "_CorridorHeightToRatesHeightRatio";
+        public const string _AllowedLotMinimum = "_AllowedLotMinimum";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.AllowedLotMinimum"/></summary>
-        public const string CorridorHeightToRatesHeightRatio = "CorridorHeightToRatesHeightRatio";
+        public const string AllowedLotMinimum = "AllowedLotMinimum";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._StDevPips"/></summary>
         public const string _StDevPips = "_StDevPips";
@@ -6172,7 +6178,7 @@ namespace HedgeHog.Alice.Store.Metadata
         public static PropertyPath CurrentGrossPath { get { return new PropertyPath("CurrentGross"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.AllowedLotMinimum"/></summary>
-        public static PropertyPath CorridorHeightToRatesHeightRatioPath { get { return new PropertyPath("CorridorHeightToRatesHeightRatio"); } }
+        public static PropertyPath AllowedLotMinimumPath { get { return new PropertyPath("AllowedLotMinimum"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.StDevPips"/></summary>
         public static PropertyPath StDevPipsPath { get { return new PropertyPath("StDevPips"); } }
