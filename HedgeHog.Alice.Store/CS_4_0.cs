@@ -2222,6 +2222,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public const string CorridorHeightToSpreadRatioLow = "CorridorHeightToSpreadRatioLow";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorMinimumLengthRatio"/></summary>
+        public const string CorridorMinimumLengthRatio = "CorridorMinimumLengthRatio";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLock"/></summary>
         public const string StDevLevelLock = "StDevLevelLock";
 
@@ -2566,6 +2569,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeByMASubject"/></summary>
         public const string OpenTradeByMASubject = "OpenTradeByMASubject";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._isInPipserMode"/></summary>
+        public const string _isInPipserMode = "_isInPipserMode";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CanTradeByMAFilter"/></summary>
         public const string CanTradeByMAFilter = "CanTradeByMAFilter";
@@ -3025,6 +3031,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.Replay"/></summary>
         public const string Replay = "Replay";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ReplayEvents"/></summary>
+        public const string ReplayEvents = "ReplayEvents";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.TradeStatisticsDictionary"/></summary>
         public const string TradeStatisticsDictionary = "TradeStatisticsDictionary";
@@ -4284,6 +4293,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorHeightToSpreadRatioLow"/></summary>
         public static PropertyPath CorridorHeightToSpreadRatioLowPath { get { return new PropertyPath("CorridorHeightToSpreadRatioLow"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorMinimumLengthRatio"/></summary>
+        public static PropertyPath CorridorMinimumLengthRatioPath { get { return new PropertyPath("CorridorMinimumLengthRatio"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.StDevLevelLock"/></summary>
         public static PropertyPath StDevLevelLockPath { get { return new PropertyPath("StDevLevelLock"); } }
 
@@ -4436,6 +4448,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.OpenTradeByMASubject"/></summary>
         public static PropertyPath OpenTradeByMASubjectPath { get { return new PropertyPath("OpenTradeByMASubject"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._isInPipserMode"/></summary>
+        public static PropertyPath _isInPipserModePath { get { return new PropertyPath("_isInPipserMode"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PendingEntryOrders"/></summary>
         public static PropertyPath PendingEntryOrdersPath { get { return new PropertyPath("PendingEntryOrders"); } }

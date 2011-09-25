@@ -543,7 +543,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
@@ -576,7 +576,20 @@ namespace HedgeHog.Alice.Store {
       set { BarPeriodsLow = (int)value; }
 
     }
-    //  BarPeriodsHigh
+
+    [DisplayName("Corridor Minimum Length Ratio")]
+    [Category(categoryActive)]
+    [Description("corr.Perios < rates.Periods * X/10")]
+    public int CorridorMinimumLengthRatio {
+      get { return BarPeriodsHigh; }
+      set {
+        if (BarPeriodsHigh != value) {
+          BarPeriodsHigh = value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorMinimumLengthRatio);
+        }
+      }
+    }
+
 
     [DisplayName("StDev Level Lock")]
     [Category(categoryActive)]
