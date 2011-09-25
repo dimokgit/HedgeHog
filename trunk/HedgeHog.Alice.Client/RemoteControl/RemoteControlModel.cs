@@ -536,7 +536,7 @@ namespace HedgeHog.Alice.Client {
     void UpdateTradingStatistics() {
       if (GetTradingMacros().Any(tm => !tm.RatesArray.Any())) return;
       var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0).ToList();
-      if (tms.Any() && tms.All(tm => tm.RatesArraySafe.Any())) {
+      if (tms.Any() && tms.All(tm => tm.RatesArray.Any())) {
         var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Count;
         _tradingStatistics.TakeProfitDistanceInPips = tp;
       } else {
@@ -628,7 +628,7 @@ namespace HedgeHog.Alice.Client {
         }
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
           try {
-            if (tm.HasRates) {
+            if (tm.HasRates && !IsInVirtualTrading) {
               var charter = GetCharter(tm);
               charter.LineAvgAsk = tm.CurrentPrice.Ask;
               charter.LineAvgBid = tm.CurrentPrice.Bid;
@@ -1127,7 +1127,7 @@ namespace HedgeHog.Alice.Client {
 
     #region CanTrade
     private bool CanTrade(TradingMacro tm) {
-      return tm.RatesArraySafe.Count() > 0;
+      return tm.RatesArray.Count() > 0;
     }
     #endregion
 
@@ -1154,7 +1154,7 @@ namespace HedgeHog.Alice.Client {
 
     #region Get (stop/limit)
     private Rate[] GetRatesForCorridor(TradingMacro tm) {
-      return GetRatesForCorridor(tm.RatesArraySafe, tm);
+      return GetRatesForCorridor(tm.RatesArray, tm);
     }
     private Rate[] GetRatesForCorridor(IEnumerable<Rate> rates, TradingMacro tm) {
       if (tm.CorridorStats == null) return rates.ToArray();

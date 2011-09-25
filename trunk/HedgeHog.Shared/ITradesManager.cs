@@ -136,8 +136,14 @@ namespace HedgeHog.Shared {
     }
 
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
+    public static int GetLotSize(this ITradesManager tm, double amount, bool useCeiling) {
+      return GetLotSize(amount, tm.MinimumQuantity, useCeiling);
+    }
+    public static int GetLotSize(double amountToTrade, int baseUnitSize,bool useCeiling) {
+      return (amountToTrade / baseUnitSize).ToInt(useCeiling) * baseUnitSize;
+    }
     public static int GetLotSize(double amountToTrade, int baseUnitSize) {
-      return Math.Floor((amountToTrade / baseUnitSize)).ToInt() * baseUnitSize;
+      return GetLotSize(amountToTrade, baseUnitSize,false);
     }
     public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
       var amountToTrade = balance * leverage * tradeRatio;

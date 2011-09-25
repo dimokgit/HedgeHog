@@ -132,6 +132,7 @@ namespace HedgeHog.Alice.Store {
     public double StDevInPips { get { return TradesManagerStatic.InPips(StDev, _pipSize); } }
 
     public double Slope { get; private set; }
+    public double Angle { get { return Slope.Angle(_pipSize); } }
     public LineInfo LineLow { get; private set; }
     public LineInfo LineHigh { get; private set; }
 
