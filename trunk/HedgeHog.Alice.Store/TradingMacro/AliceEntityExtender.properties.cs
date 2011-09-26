@@ -385,7 +385,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Open Only")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     [Description("Close position only when opposite opens.")]
     public bool CloseOnOpen_ {
       get { return CloseOnOpen; }
