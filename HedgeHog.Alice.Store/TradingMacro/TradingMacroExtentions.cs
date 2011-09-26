@@ -2419,7 +2419,7 @@ namespace HedgeHog.Alice.Store {
         var magnetPrice = MagnetPrice;
         var priceLast = CorridorCrossGetPrice(RateLast,GetPriceMA);
 
-        if (CurrentGrossInPips >= TakeProfitPips || CorridorStats.Rates.Count == RatesArray.Count)
+        if (CurrentGrossInPips >= TakeProfitPips || CorridorStats.Rates.Count > RatesArray.Count *.9)
           TradesManager.ClosePair(Pair);
         else if (Trades.Any()) {
           var lotCurrent = Trades.Lots();
