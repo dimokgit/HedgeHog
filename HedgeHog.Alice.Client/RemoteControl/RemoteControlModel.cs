@@ -318,7 +318,7 @@ namespace HedgeHog.Alice.Client {
         return _StartReplayCommand;
       }
     }
-    ReplayArguments _replayArguments = new ReplayArguments() { DelayInSeconds = .5 };
+    ReplayArguments _replayArguments = new ReplayArguments();
     public ReplayArguments ReplayArguments {
       get { return _replayArguments; }
     }
