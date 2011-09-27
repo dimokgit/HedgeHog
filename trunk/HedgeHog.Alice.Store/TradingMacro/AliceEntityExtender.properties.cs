@@ -651,7 +651,7 @@ namespace HedgeHog.Alice.Store {
 
     #region MaximumPositions
     [DisplayName("Maximum Positions")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public int MaximumPositions_ {
       get { return MaximumPositions; }
       set {

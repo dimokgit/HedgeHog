@@ -2419,27 +2419,31 @@ namespace HedgeHog.Alice.Store {
         var magnetPrice = MagnetPrice;
         var priceLast = CorridorCrossGetPrice(RateLast,GetPriceMA);
 
-        if (CurrentGrossInPips >= TakeProfitPips || CorridorStats.Rates.Count > RatesArray.Count *.9)
+        if (false && (CurrentGrossInPips >= TakeProfitPips || CorridorStats.Rates.Count > RatesArray.Count *.9))
           TradesManager.ClosePair(Pair);
-        else if (Trades.Any()) {
+        else if (Trades.Any() && CurrentGrossInPips >= TakeProfitPips / Trades.Positions(LotSize)) {
+          TradesManager.ClosePair(Pair, Trades[0].IsBuy);//, lotCurrent - LotSize);
+        } else if (Trades.Any() && CurrentGrossInPips >= TakeProfitPips / Trades.Positions(LotSize)) {
           var lotCurrent = Trades.Lots();
           var lotAllowed = AllowedLotSize(Trades, !Trades[0].IsBuy);
-          if (lotAllowed == LotSize && lotCurrent / LotSize > 5)
-            TradesManager.ClosePair(Pair, Trades[0].IsBuy, lotCurrent - LotSize);
+          if (lotAllowed == LotSize && lotCurrent / LotSize >= 2)
+            TradesManager.ClosePair(Pair, Trades[0].IsBuy);//, lotCurrent - LotSize);
         }
 
         var magnetDirection = priceLast > magnetPrice;
-        var corridorChanged = CorridorStats.StartDate > _corridorTradeDate;
-        var crossed = Trades.Any() && _magnetDirtection.HasValue && magnetDirection != _magnetDirtection
+        var corridorChanged = (CorridorStats.StartDate - _corridorTradeDate.GetValueOrDefault()).TotalMinutes /BarPeriodInt >RatesArray.Count/10.0;
+        var crossed = /*Trades.Any() && */_magnetDirtection.HasValue && magnetDirection != _magnetDirtection
           ||
-           !Trades.Any() && HasCorridor && corridorChanged;
+           false && !Trades.Any() && HasCorridor && corridorChanged;
         _magnetDirtection = magnetDirection;
         _corridorTradeDate = CorridorStats.StartDate;
-        if (crossed) {
-          if (priceLast > magnetPrice && !Trades.IsBuy(true).Any())
-            TradesManager.OpenTrade(Pair, true, EntryOrderAllowedLot(true), 0, 0, "", CurrentPrice);
-          if (priceLast < magnetPrice && !Trades.IsBuy(false).Any())
-            TradesManager.OpenTrade(Pair, false, EntryOrderAllowedLot(false), 0, 0, "", CurrentPrice);
+        if (HasCorridor && corridorChanged) {
+          var buy = false;
+          if (priceLast > magnetPrice && !HasTradesByDistance(buy))
+            TradesManager.OpenTrade(Pair, buy, EntryOrderAllowedLot(buy), 0, 0, "", CurrentPrice);
+          buy = true;
+          if (priceLast < magnetPrice && !HasTradesByDistance(buy))
+            TradesManager.OpenTrade(Pair, buy, EntryOrderAllowedLot(buy), 0, 0, "", CurrentPrice);
         }
         return;
         var orderedRates = CorridorStats.Rates.Select(r => r.PriceAvg).OrderBy(r => r).ToList();
@@ -2535,8 +2539,10 @@ namespace HedgeHog.Alice.Store {
       return HasTradesByDistance(Trades.IsBuy(isBuy));
     }
     private bool HasTradesByDistance(Trade[] trades) {
+      if (MaximumPositions <= trades.Positions(LotSize)) return true;
+      var td = TradingDistanceInPips.Max(trades.DistanceMaximum());
       return TakeProfitPips == 0 || double.IsNaN(TradingDistance)
-        || (trades.Any() && trades.Max(t => t.PL) > -(TradingDistanceInPips + PriceSpreadAverageInPips));
+        || (trades.Any() && trades.Max(t => t.PL) > -(td + PriceSpreadAverageInPips));
     }
     static double? _runPriceMillisecondsAverage;
     public void RunPriceChangedTask(PriceChangedEventArgs e, Action<TradingMacro> doAfterScanCorridor) {

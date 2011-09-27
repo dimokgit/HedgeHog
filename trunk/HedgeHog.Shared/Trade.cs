@@ -10,6 +10,22 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
+    public static double DistanceMaximum(this IList<Trade> trades) {
+      return trades.DistanceMaximum(t => t.PL);
+    }
+    public static double DistanceMaximum(this IList<Trade> trades, Func<Trade, double> tradeValue) {
+      var distanceMax = 0.0;
+      if (trades != null && trades.Count > 1)
+        trades.OrderBy(tradeValue).Aggregate((tp, tn) => {
+          distanceMax = Math.Max(distanceMax, tradeValue(tn) - tradeValue(tp));
+          return tn;
+        });
+      return distanceMax;
+    }
+
+    public static int Positions(this IEnumerable<Trade> trades,int lotBase) {
+      return trades.Sum(t => t.Lots) / lotBase;
+    }
     public static int Lots(this IEnumerable<Trade> trades) {
       return trades.Sum(t => t.Lots);
     }
