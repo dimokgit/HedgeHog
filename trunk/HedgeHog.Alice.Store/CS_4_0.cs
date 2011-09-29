@@ -3623,7 +3623,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCorridor"/></summary>
         public const string ScanCorridor = "ScanCorridor";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossGetPrice"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateLastPrice"/></summary>
         public const string CorridorCrossGetPrice = "CorridorCrossGetPrice";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossHighPrice"/></summary>

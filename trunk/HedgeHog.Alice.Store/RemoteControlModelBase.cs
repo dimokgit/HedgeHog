@@ -63,7 +63,6 @@ namespace HedgeHog.Alice.Store {
       if (tm.Strategy == Strategies.None) { MessageBox.Show("No strategy, dude!"); return; }
       //if (!tm.IsInPlayback) { MessageBox.Show("Set Chart to Playback, dude!"); return; }
       tm.ResetSessionId();
-      tm.EnableTrading();
       tm.SuppResResetAllTradeCounts();
       var minutesPerPeriod = (int)tm.BarPeriod;
       VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * (int)tm.BarPeriod);
