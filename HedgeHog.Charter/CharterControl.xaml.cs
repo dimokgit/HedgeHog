@@ -812,7 +812,7 @@ namespace HedgeHog {
       plotter.Children.RemoveAt(0);
       var verticalAxis = plotter.Children.OfType<VerticalAxis>().First();
       verticalAxis.FontSize = 9;
-      verticalAxis.FontWeight = FontWeights.Black;
+      //verticalAxis.FontWeight = FontWeights.Black;
       verticalAxis.ShowMinorTicks = false;
 
       #region Add Main Graph
@@ -871,7 +871,9 @@ namespace HedgeHog {
         lg.Opacity = .25;
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
         verticalAxis.Placement = AxisPlacement.Right;
-        innerPlotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Left;
+        var innerVA = innerPlotter.Children.OfType<VerticalAxis>().First();
+        innerVA.Placement = AxisPlacement.Left;
+        innerVA.ShowMinorTicks = false;
       } else {
         innerPlotter.Children.Remove(innerPlotter.Children.OfType<VerticalAxis>().Single());
         plotter.Children.OfType<VerticalAxis>().First().Placement = AxisPlacement.Right;
@@ -1122,7 +1124,7 @@ namespace HedgeHog {
               SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
               return rn;
             });
-            SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), lastRate);
+            SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
           }
           for (var i = 100000; i < ticks.Count(); i++) {
             animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
@@ -1332,5 +1334,6 @@ namespace HedgeHog {
 
 
     public Func<Rate, double> GetPriceMA { get; set; }
+    public Func<Rate, Func<Rate, double>, double> CalculateLastPrice { get; set; }
   }
 }

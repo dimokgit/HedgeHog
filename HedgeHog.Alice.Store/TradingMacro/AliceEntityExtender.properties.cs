@@ -416,7 +416,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reverse Strategy")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
       set {
@@ -543,7 +543,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {

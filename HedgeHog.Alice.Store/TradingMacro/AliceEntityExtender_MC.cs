@@ -36,14 +36,15 @@ namespace HedgeHog.Alice.Store {
 
   public enum TradingMacroTakeProfitFunction { Corridor = 1, Corridor0 = 2, RatesHeight = 4, StDev = 8, Corr0_CorrB0 = 9,Spread = 10 }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
-  public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3 }
+  public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
   [Flags]
   public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
   [Flags]
   public enum Strategies {
     None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Massa = 16, Reverse = 32, Momentum_R = Massa + Reverse,
-    Gann = 64, Brange = 128, SuppRes = 256, Vilner = 512, Hot = 1024, Hot_A = Hot + Auto
+    Gann = 64, Brange = 128, FastWave = 256, HighWave = 512, Hot = 1024,
+    Hot_A = Hot + Auto
   }
   public struct Playback {
     public bool Play;

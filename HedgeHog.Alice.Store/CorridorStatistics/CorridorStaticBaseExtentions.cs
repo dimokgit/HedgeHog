@@ -150,7 +150,18 @@ namespace HedgeHog.Alice.Store {
             {CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()},
             {CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP()}
         };
-        stDev = stDevDict.Values.Max();
+        switch (corridorMethod) {
+          case CorridorCalculationMethod.Minimum:
+            stDev = stDevDict.Values.Min(); break;
+          case CorridorCalculationMethod.Maximum:
+            stDev = stDevDict.Values.Max(); break;
+          case CorridorCalculationMethod.Height:
+          case CorridorCalculationMethod.HeightUD:
+          case CorridorCalculationMethod.Price:
+            stDev = stDevDict[corridorMethod]; break;
+          default:
+            throw new NotSupportedException(new { corridorMethod } + "");
+        }
         height = stDev * 2;
         return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow

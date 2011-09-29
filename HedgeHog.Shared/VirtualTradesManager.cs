@@ -258,7 +258,8 @@ namespace HedgeHog.Shared {
           TradeClosedEvent += value;
       }
       remove {
-        TradeClosedEvent -= value;
+        if(TradeClosedEvent.GetInvocationList().Contains(value))
+          TradeClosedEvent -= value;
       }
     }
     void OnTradeClosed(Trade trade) {

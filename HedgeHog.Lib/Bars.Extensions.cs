@@ -60,15 +60,14 @@ namespace HedgeHog.Bars {
 
     public static TBar Next<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
       var i = rates.IndexOf(rate) + 1;
-      return i.Between(0, rates.Count - 1) ? rates[i] : null;
+      return i.Between(1, rates.Count - 1) ? rates[i] : null;
       //LinkedList<TBar> ll = new LinkedList<TBar>(rates);
       //var node = ll.Find(rate);
       //return node.Next == null ? null : node.Next.Value;
     }
     public static TBar Previous<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
-      LinkedList<TBar> ll = new LinkedList<TBar>(rates);
-      var node = ll.Find(rate);
-      return node.Previous == null ? null : node.Previous.Value;
+      var i = rates.IndexOf(rate) - 1;
+      return i.Between(0, rates.Count - 1) ? rates[i] : null;
     }
     static TBar Previous_<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
       if (rates[0] == rate) return null;

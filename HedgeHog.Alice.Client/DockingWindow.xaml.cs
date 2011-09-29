@@ -378,13 +378,15 @@ namespace HedgeHog.Alice.Client {
 
     #region Add/Remove Charter
     public void RemoveCharter(CharterControl charter) {
-      var pane = FindChartPaneByName(charter.Name);
-      if (pane != null) {
-        pane.RemoveFromParent();
-        pane.IsHidden = true;
-        RadDocking.SetSerializationTag(pane, "");
-        pane.Content = null;
-      }
+      Dispatcher.BeginInvoke(new Action(() => {
+        var pane = FindChartPaneByName(charter.Name);
+        if (pane != null) {
+          pane.RemoveFromParent();
+          pane.IsHidden = true;
+          RadDocking.SetSerializationTag(pane, "");
+          pane.Content = null;
+        }
+      }));
     }
     public void AddCharter(CharterControl charter) {
       var pane = FindChartPaneByName(charter.Name);
