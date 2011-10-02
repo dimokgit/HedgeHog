@@ -427,10 +427,14 @@
               <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
+                      <StackPanel Orientation="Horizontal">
                       <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
-                    <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value="{Binding DataContext.ReplayArguments.CurrentPosition,Mode=TwoWay,RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                            Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickPlacement="TopLeft" TickFrequency="10" />
-                      
+                      <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.MonthsToTest,RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" ToolTip="MonthsToTest" />
+                      </StackPanel>
+                      <Border HorizontalAlignment="Stretch" Width="100" BorderThickness="1" BorderBrush="Plum">
+                        <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value="{Binding DataContext.ReplayArguments.CurrentPosition,Mode=TwoWay,RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                              Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickPlacement="TopLeft" TickFrequency="10" />
+                      </Border>
                     </StackPanel>
                   </StackPanel>
                 </Expander.Content>

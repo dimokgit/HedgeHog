@@ -42,8 +42,13 @@ namespace HedgeHog.Shared {
     int minimumQuantity;
     public int MinimumQuantity { get { return minimumQuantity; } }
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
-    public DateTime ServerTime { get {
-      return RatesByPair().First().Value.ToArray().Select(r=>r.StartDate).LastOrDefault().AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/; ; } }
+    public DateTime ServerTime {
+      get {
+        var rates = RatesByPair().First().Value;
+        var rateLast = rates[rates.Count - 1];
+        return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
+      }
+    }
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
@@ -294,6 +299,7 @@ namespace HedgeHog.Shared {
     }
 
     public PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price) {
+      if (price == null) price = GetPrice(pair);
       if (!isHedged) {
         var closeLots = GetTrades(pair).Where(t => t.Buy != buy).Sum(t => t.Lots);
         if (closeLots > 0) {

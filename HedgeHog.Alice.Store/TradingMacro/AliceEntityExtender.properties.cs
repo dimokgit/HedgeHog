@@ -964,7 +964,7 @@ namespace HedgeHog.Alice.Store {
     double? _currentSpread;
     Price _currentPrice;
     public Price CurrentPrice {
-      get { return _currentPrice; }
+      get { return IsInVitualTrading ? TradesManager.GetPrice(Pair) : _currentPrice; }
       set {
         _currentPrice = value;
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);

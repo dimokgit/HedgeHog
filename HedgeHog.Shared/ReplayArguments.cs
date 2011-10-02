@@ -18,6 +18,20 @@ namespace HedgeHog.Shared {
     }
     #endregion
 
+    #region MonthsToTest
+    private double _MonthsToTest;
+    public double MonthsToTest {
+      get { return _MonthsToTest; }
+      set {
+        if (_MonthsToTest != value) {
+          _MonthsToTest = value;
+          RaisePropertyChanged("MonthsToTest");
+        }
+      }
+    }
+
+    #endregion
+
     #region StartDate
     private DateTime? _DateStart;
     public DateTime? DateStart {
