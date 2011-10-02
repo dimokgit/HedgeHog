@@ -1258,6 +1258,8 @@ namespace HedgeHog.Alice.Store {
       RaisePositionsChanged();
       RaiseShowChart();
       ReleasePendingAction("OT");
+      if (CurrentGross >= 0 && Strategy == Strategies.Breakout)
+        TurnOffSuppRes();
     }
 
     private void RaisePositionsChanged() {
@@ -1281,6 +1283,8 @@ namespace HedgeHog.Alice.Store {
         var rates = args.DateStart.HasValue
           ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value, int.MaxValue, BarPeriodInt)
           : GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
+        if (args.MonthsToTest > 0)
+          rates = rates.Where(r => r.StartDate <= args.DateStart.Value.AddMonths(args.MonthsToTest.ToInt())).ToList();
         RatesInternal.Clear();
         CorridorStartDate = null;
         CorridorStats = null;
@@ -1775,6 +1779,9 @@ namespace HedgeHog.Alice.Store {
               SetShortLongSpreads(spreadShort, spreadLong, spreadForTrade);
               #endregion
 
+              if (IsInVitualTrading)
+                Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
+
               RatesHeight = _rateArray.Height();//CorridorStats.priceHigh, CorridorStats.priceLow);
               PriceSpreadAverage = _rateArray.Select(r => r.PriceSpread).Average();//.ToList().AverageByIterations(2).Average();
 
@@ -2106,10 +2113,12 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged(TradingMacroMetadata.CorridorHeightToSpreadRatio);
       OnPropertyChanged(TradingMacroMetadata.CorridorHeight0ToSpreadRatio);
     }
-    private double CalcSpreadForCorridor(ICollection<Rate> rates) {
+    private double CalcSpreadForCorridor(ICollection<Rate> rates,int iterations = 3) {
       var spreads = rates.Select(r => r.AskHigh - r.BidLow).ToList();
-      var spreadLow = spreads.AverageByIterations(3, true);
-      var spreadHight = spreads.AverageByIterations(3, false);
+      var spreadLow = spreads.AverageByIterations(iterations, true);
+      var spreadHight = spreads.AverageByIterations(iterations, false);
+      if (spreadLow.Count == 0 && spreadHight.Count == 0)
+        return CalcSpreadForCorridor(rates, iterations - 1);
       var sa = spreads.Except(spreadLow.Concat(spreadHight)).Average();
       var sstdev = 0;// spreads.StDev();
       return sa + sstdev;
@@ -2225,7 +2234,7 @@ namespace HedgeHog.Alice.Store {
 
     private int EntryOrderAllowedLot(bool isBuy, double? takeProfitPips = null) {
       var lotByStats = (int)_tradingStatistics.AllowedLotMinimum;
-      var lot = false && !_isInPipserMode && lotByStats > 0 ? lotByStats : AllowedLotSizeCore(Trades.IsBuy(isBuy), takeProfitPips);
+      var lot = false && !_isInPipserMode && lotByStats > 0 ? lotByStats : AllowedLotSizeCore(Trades.IsBuy(isBuy), takeProfitPips).Min(_lastLot + LotSize);
       return lot + (TradesManager.IsHedged ? 0 : Trades.IsBuy(!isBuy).Lots());
     }
 
@@ -2521,20 +2530,13 @@ namespace HedgeHog.Alice.Store {
 
     BreakoutInfo _breakoutInfo = new BreakoutInfo();
     void StrategyBreakout() {
-      Func<bool> exitByAngle = () => BreakoutInfo.DoExitByAngle(CorridorAngle);
+      Func<bool> exitByAngle = () => false && BreakoutInfo.DoExitByAngle(CorridorAngle);
       if (StrategyExitByGross(exitByAngle))
         TurnOffSuppRes();
 
       if (SupportLow().Rate > ResistsnceLow().Rate) return;
       if (IsInVitualTrading) {
-        if (RateLast.PriceAvg > RateLast.PriceAvg21) {
-          ResistsnceLow().Rate = RateLast.PriceAvg21;
-          SupportLow().Rate = RateLast.PriceAvg2;
-        }
-        if (RateLast.PriceAvg < RateLast.PriceAvg31) {
-          SupportLow().Rate = RateLast.PriceAvg31;
-          ResistsnceLow().Rate = RateLast.PriceAvg3;
-        }
+        StrategyEnterBreakout02();
       }
       if (false && IsInVitualTrading && HasCorridor && CurrentGross >= 0) {
         if (RateLast.PriceAvg > RateLast.PriceAvg21) {
@@ -2551,9 +2553,10 @@ namespace HedgeHog.Alice.Store {
       Action<bool, Func<double, bool>> openTrade = (isBuy, canTrade) => {
         var suppRes = EnsureActiveSuppReses(isBuy).FirstOrDefault();
         var level = suppRes.Rate;
+        var lotSizeOk = Trades.Any() || EntryOrderAllowedLot(isBuy) <= _lastLot;
         if (!HasTradesByDistance(isBuy) && canTrade(level))
           CheckPendingAction("OT", () => {
-            TradesManager.OpenTrade(Pair, isBuy, EntryOrderAllowedLot(isBuy), 0, 0, "", CurrentPrice);
+            TradesManager.OpenTrade(Pair, isBuy,_lastLot = EntryOrderAllowedLot(isBuy), 0, 0, "", null);
           });
       };
       if (SupportLow().Rate != ResistsnceLow().Rate && !exitByAngle()) {
@@ -2563,6 +2566,29 @@ namespace HedgeHog.Alice.Store {
         openTrade(false, level => priceLast < level && pricePrev >= level);
       }
     }
+
+    private void StrategyEnterBreakout01() {
+      if (RateLast.PriceAvg > RateLast.PriceAvg21) {
+        ResistsnceLow().Rate = RateLast.PriceAvg21;
+        SupportLow().Rate = RateLast.PriceAvg2;
+      }
+      if (RateLast.PriceAvg < RateLast.PriceAvg31) {
+        SupportLow().Rate = RateLast.PriceAvg31;
+        ResistsnceLow().Rate = RateLast.PriceAvg3;
+      }
+    }
+    private void StrategyEnterBreakout02() {
+      if (RateLast.PriceAvg > RateLast.PriceAvg21) {
+        ResistsnceLow().Rate = RateLast.PriceAvg21 + CorridorStats.StDev;
+        SupportLow().Rate = RateLast.PriceAvg21;
+      }
+      if (RateLast.PriceAvg < RateLast.PriceAvg31) {
+        SupportLow().Rate = RateLast.PriceAvg31 - CorridorStats.StDev;
+        ResistsnceLow().Rate = RateLast.PriceAvg31;
+      }
+    }
+
+    int _lastLot = int.MaxValue / 2;
 
     bool _canSell;
     public bool CanSell {
@@ -2611,11 +2637,14 @@ namespace HedgeHog.Alice.Store {
 
     bool StrategyExitByGross() { return StrategyExitByGross(() => true); }
     bool StrategyExitByGross(Func<bool> or) {
-      if (Trades.Any())
-        if (CurrentGrossInPips >= SpreadForCorridorInPips.Max(TakeProfitPips / Trades.Positions(LotSize)) || or()) {
-          TradesManager.ClosePair(Pair, Trades[0].IsBuy);//, lotCurrent - LotSize);
+      if (Trades.Any()) {
+        var exitByProfit = CurrentGrossInPips >= SpreadForCorridorInPips.Max(TakeProfitPips / Trades.Positions(LotSize));
+        if (exitByProfit || or()) {
+          TradesManager.ClosePair(Pair, Trades[0].IsBuy);
+          if (exitByProfit) _lastLot = int.MaxValue / 2;
           return true;
         }
+      }
       return false;
     }
     private void StrategyFastWave() {
@@ -3090,7 +3119,8 @@ namespace HedgeHog.Alice.Store {
     }
     
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
-      var lotSize = trades.Select(t => t.Lots).DefaultIfEmpty(LotSizeByLoss()).Min().Max(LotSize);
+      var lotSize = trades.Select(t => t.Lots).DefaultIfEmpty(LotSizeByLoss()).Min()
+        .Max(LotSize).Min((MaxLotByTakeProfitRatio * LotSize).ToInt());
       var lastLotSize = trades.Select(t => t.Lots).DefaultIfEmpty(lotSize).Max();
       var pl = trades.Select(t => (t.Close - t.Open).Abs()).OrderBy(d => d).LastOrDefault();
       var multilier = (Math.Floor(pl / CorridorStats.HeightUpDown) + 1).Min(MaxLotByTakeProfitRatio).ToInt();
