@@ -1,0 +1,26 @@
+﻿
+<!DOCTYPE html >
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>Using jQuery UI from the CDN</title>
+    <link rel="Stylesheet" href="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.10/themes/redmond/jquery-ui.css" />
+</head>
+<body>
+    <form id="form1" runat="server">
+    <div>
+    
+        <input ID="txtStartDate" />
+
+    </div>
+    </form>
+
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.6.4.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.10/jquery-ui.js"></script>
+
+    <script>
+      debugger;
+      $("#txtStartDate").datepicker();
+
+    </script>
+</body>
+</html>

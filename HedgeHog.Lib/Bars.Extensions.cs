@@ -234,7 +234,8 @@ namespace HedgeHog.Bars {
       list.Add(getPrice(rates[0]));
       for (var i = 1; i < rates.Count; i++ ) {
         list.Add(getPrice(rates[i]));
-        rates[i].PriceStdDev = list.StDevP();
+        var stDev = rates[i].PriceStdDev = list.StDevP();
+        rates[i].Corridorness = list.Count / stDev;
       }
       //Enumerable.Range(1, rates.Count() - 1).AsParallel()
       //  .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToList().StDevP());

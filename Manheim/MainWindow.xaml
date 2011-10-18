@@ -34,6 +34,7 @@
       <ToolBar>
         <Button Command="{Binding LoginCommand}">Login</Button>
         <Button Command="{Binding PreSaleCommand}">PreSale</Button>
+        <Button Command="{Binding FillSearchCommand}">Fill Search</Button>
       </ToolBar>
     </ToolBarTray>
     <StackPanel Grid.Row="1">

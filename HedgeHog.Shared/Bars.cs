@@ -188,6 +188,16 @@ namespace HedgeHog.Bars {
     }
     [DataMember]
     public double PriceStdDev { get; set; }
+
+    [DataMember]
+    public double Corridorness { get; set; }
+
+    double _density = double.NaN;
+    [DataMember]
+    public double Density {
+      get { return _density; }
+      set { _density = value; }
+    }
     #endregion
 
     public double? RunningTotal { get; set; }

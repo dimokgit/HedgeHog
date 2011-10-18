@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace HedgeHog.Alice.Store {
-  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, AskBidByMA = 5, PriceByMA = 6, BidAskByMA = 7 }
+  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, AskBidByMA = 5, PriceByMA = 6, BidAskByMA = 7,PriceMA = 8 }
   public enum MovingAverageType { Cma = 0, Trima = 1 }
   public partial class AliceEntities {
     [MethodImpl(MethodImplOptions.Synchronized)]
@@ -34,7 +34,13 @@ namespace HedgeHog.Alice.Store {
     public double NetPL { get { return GrossPL - Commission; } }
   }
 
-  public enum TradingMacroTakeProfitFunction { Corridor = 1, Corridor0 = 2, RatesHeight = 4, StDev = 8, Corr0_CorrB0 = 9,Spread = 10 }
+  public enum TradingMacroTakeProfitFunction {
+    Corridor = 1, Corridor0 = 2, RatesHeight = 4, RatesStDev = 5, StDev = 8, StDev2 = 9, Corr0_CorrB0 = 10, 
+    Spread = 11,
+    Spread2 = 12,
+    Spread3 = 13,
+    Spread4 = 14
+  }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
   [Flags]

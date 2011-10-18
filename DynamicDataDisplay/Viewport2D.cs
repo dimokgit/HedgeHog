@@ -66,8 +66,14 @@ namespace Microsoft.Research.DynamicDataDisplay
 			CoerceValue(VisibleProperty);
 		}
 
+    static Rect[] _rectArray = new Rect[] { new Rect(), new Rect() };
 		private static void OnPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
 		{
+      if (e.Property.Name == "Output") {
+        var rectArray = new Rect[] { (Rect)e.NewValue , (Rect)e.OldValue };
+        if (!rectArray.Except(_rectArray).Any()) return;
+        _rectArray = rectArray;
+      }
 			Viewport2D viewport = (Viewport2D)d;
 			viewport.UpdateTransform();
 			viewport.RaisePropertyChangedEvent(e);

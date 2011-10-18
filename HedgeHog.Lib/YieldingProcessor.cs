@@ -3,15 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class DataFlowProcessors {
-    public static ITargetBlock<T> CreateYieldingTargetBlock<T>(this Action<T> action, bool failOnError = false) {
-      return CreateYieldingTargetBlock(action, null, failOnError);
+    public static ITargetBlock<Action> CreateYieldingActionOnDispatcher() {
+      return TaskScheduler.FromCurrentSynchronizationContext().CreateYieldingAction();
     }
-    public static ITargetBlock<T> CreateYieldingTargetBlock<T>(this Action<T> action, Action<Exception> onError,bool failOnError = false) {
+    public static ITargetBlock<Action> CreateYieldingAction(this TaskScheduler taskScheduler) {
+      return new Action<Action>(a => a()).CreateYieldingTargetBlock(false, taskScheduler);
+    }
+    public static ITargetBlock<T> CreateYieldingTargetBlock<T>(this Action<T> action, bool failOnError = false,TaskScheduler taskScheduler = null) {
+      return CreateYieldingTargetBlock(action, null, failOnError, taskScheduler);
+    }
+    public static ITargetBlock<T> CreateYieldingTargetBlock<T>(this Action<T> action, Action<Exception> onError,bool failOnError = false,TaskScheduler taskScheduler = null) {
       var _source = new BroadcastBlock<T>(t => t);
       var options = new ExecutionDataflowBlockOptions() { BoundedCapacity = 1 };
+      if (taskScheduler != null)
+        options.TaskScheduler = taskScheduler;
       var _target = new ActionBlock<T>(t => {
         try {
           action(t);

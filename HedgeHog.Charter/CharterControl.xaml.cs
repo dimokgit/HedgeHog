@@ -27,6 +27,8 @@ using HedgeHog.Metadata;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Reactive.Concurrency;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -171,38 +173,11 @@ namespace HedgeHog {
       }
     }
 
-    #region Density
-    private double _Density;
-    public double Density {
-      get { return _Density; }
-      set {
-        if (_Density != value) {
-          _Density = value;
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-    #endregion
-
-    #region DensityCorridor
-    private double _DensityCorridor;
-    public double DensityCorridor {
-      get { return _DensityCorridor; }
-      set {
-        if (_DensityCorridor != value) {
-          _DensityCorridor = value;
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-
-    #endregion
-
     //†‡∆
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:0}s{10:n2}d{9:n2}D"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:n1}s"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
@@ -212,8 +187,7 @@ namespace HedgeHog {
           /*6*/, CorridorStDevToRatesStDevRatio
           /*7*/, StDev
           /*8*/, SpreadForCorridor
-          /*9*/, Density
-          /*10*/, DensityCorridor);
+          );
       }
     }
 
@@ -305,7 +279,10 @@ namespace HedgeHog {
     List<double> animatedVolt1ValueY = new List<double>();
     EnumerableDataSource<double> animatedVolt1DataSource = null;
 
-    TextBlock infoBox = new TextBlock() { FontFamily = new FontFamily("Courier New") };
+    TextBlock _infoBox;
+    TextBlock infoBox {
+      get { return _infoBox ?? (_infoBox = new TextBlock() { FontFamily = new FontFamily("Courier New") }); }
+    }
     ViewportUIContainer viewPortContainer = new ViewportUIContainer();
 
     public double CorridorHeightMultiplier { get; set; }
@@ -419,20 +396,16 @@ namespace HedgeHog {
     double LineNetSell { set { lineNetSell.Value = value; } }
 
     HorizontalLine lineNetBuy = new HorizontalLine() { StrokeThickness = 2, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = new SolidColorBrush(Colors.DarkGreen) };
-    double LineNetBuy { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineNetBuy.Value = value); } }
+    double LineNetBuy { set { lineNetBuy.Value = value; } }
 
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
-    public double LineAvgAsk { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineAvgAsk.Value = value); } }
+    public double LineAvgAsk { set { lineAvgAsk.Value = value; } }
 
     HorizontalLine lineTakeProfitLimit = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
-    public double LineTakeProfitLimit { set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTakeProfitLimit.Value = value); } }
+    public double LineTakeProfitLimit { set { lineTakeProfitLimit.Value = value; } }
 
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
-    public double LineAvgBid {
-      set {
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineAvgBid.Value = value);
-      }
-    }
+    public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
     #region TimeLines
     VerticalLine _lineTimeMax;
@@ -672,11 +645,12 @@ namespace HedgeHog {
 
 
     class DraggablePointInfo {
+      public object DataContext { get; set; }
       public DraggablePoint DraggablePoint { get; set; }
-      public ObservableValue<double> TradesCount { get; set; }
-      public DraggablePointInfo(DraggablePoint dp, double tradesCount) {
+      //public ObservableValue<double> TradesCount { get; set; }
+      public DraggablePointInfo(DraggablePoint dp,object dataContext) {
         this.DraggablePoint = dp;
-        this.TradesCount = new ObservableValue<double>() { Value = tradesCount };
+        this.DataContext = dataContext;
       }
     }
 
@@ -684,12 +658,12 @@ namespace HedgeHog {
     Dictionary<Guid, DraggablePointInfo> SellRates = new Dictionary<Guid, DraggablePointInfo>();
 
     public class BuySellLevel {
+      public object DataContext { get; set; }
       public double Rate { get; set; }
-      public double CrossCount { get; set; }
       public bool IsBuy { get; set; }
-      public BuySellLevel(double rate, double crossCount, bool isBuy) {
+      public BuySellLevel(object dataContext, double rate, bool isBuy) {
+        this.DataContext = dataContext;
         this.Rate = rate;
-        this.CrossCount = crossCount;
         this.IsBuy = isBuy;
       }
     }
@@ -702,15 +676,27 @@ namespace HedgeHog {
                         join trade in trades on value equals trade.Id
                         select trade;
         foreach (var t in tradesAdd) {
-          var hl = new HorizontalLine(t.Open + (t.Buy ? +1 : -1) * spread) { ToolTip = t.Open + " @ " + t.Time, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell) };
-          plotter.Children.Add(hl);
+          var y = t.Open + (t.Buy ? +1 : -1) * spread;
+          var toolTip = t.Open + " @ " + t.Time;
+          var stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell);
+          HorizontalLine hl = null;
+          var tl1 = this.tradeLines.FirstOrDefault(tl => tl.Value.Visibility == System.Windows.Visibility.Hidden);
+          if (tl1.Value != null) {
+            this.tradeLines.Remove(tl1.Key);
+            hl = tl1.Value;
+            hl.Visibility = System.Windows.Visibility.Visible;
+          } else {
+            hl = new HorizontalLine(y) { StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1 };
+            plotter.Children.Add(hl);
+          }
+          hl.Value = y;
+          hl.Stroke = stroke;
+          hl.ToolTip = toolTip;
           this.tradeLines.Add(t.Id, hl);
         }
         var tradesDelete = this.tradeLines.Select(t => t.Key).Except(trades.Select(t => t.Id)).ToArray();
         foreach (var t in tradesDelete) {
-          var hl = tradeLines[t];
-          plotter.Children.Remove(hl);
-          tradeLines.Remove(t);
+          tradeLines[t].Visibility = System.Windows.Visibility.Hidden;
         }
         lineNetBuy.Visibility = trades.IsBuy(true).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
         lineNetSell.Visibility = trades.IsBuy(false).Length > 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Hidden;
@@ -749,7 +735,6 @@ namespace HedgeHog {
         Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
         var uid = suppRes.Key;
         var rate = suppRes.Value.Rate;
-        var tradesCount = suppRes.Value.CrossCount;
         if (!rates.ContainsKey(uid)) {
           string anchorTemplateName = "DraggArrow" + (isBuy ? "Up" : "Down");
           Brush brush = new SolidColorBrush(isBuy ? Colors.DarkRed : Colors.Navy);
@@ -764,6 +749,7 @@ namespace HedgeHog {
           };
           dragPoint.ToolTip = "UID:" + uid;
           plotter.PreviewKeyDown += (s, e) => {
+            var numericKeys = new[] { Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9 };
             _isShiftDown = e.Key == Key.LeftShift || e.Key == Key.RightShift;
             if (!dragPoint.IsMouseOver) return;
             e.Handled = true;
@@ -777,21 +763,36 @@ namespace HedgeHog {
                 plotter.Children.Remove(dragPoint);
                 rates.Remove(uid);
                 break;
+              case Key.T:
+                dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
+                break;
+              case Key.Subtract:
+                dragPoint.DataContext.SetProperty("TradesCount", -dragPoint.DataContext.GetProperty<double>("TradesCount"));
+                break;
+              default:
+                if (numericKeys.Contains(e.Key)) {
+                  var i = int.Parse(new KeyConverter().ConvertToString(e.Key).Replace("NumPad", ""));
+                  dragPoint.DataContext.SetProperty("TradesCount", i);
+                }
+                break;
             }
           };
           DraggableManager.SetHorizontalAnchor(line, dragPoint);
-          var dpi = new DraggablePointInfo(dragPoint, tradesCount);
+          var dpi = new DraggablePointInfo(dragPoint,suppRes.Value.DataContext);
           rates.Add(uid, dpi);
-          dragPoint.DataContext = dpi;
+          dragPoint.DataContext = dpi.DataContext;
         }
         var dp = rates[uid].DraggablePoint;
         dp.Dispatcher.BeginInvoke(new Action(() => {
           var raiseChanged = rate == 0;
           if (raiseChanged) rate = animatedPriceY.Average();
           dp.Position = CreatePointY(rate);
-          rates[uid].TradesCount.Value = tradesCount;
         }));
       }
+    }
+
+    void plotter_MouseDown(object sender, MouseButtonEventArgs e) {
+      throw new NotImplementedException();
     }
 
     private Point CreatePointY(double y) { return new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), y); }
@@ -811,7 +812,7 @@ namespace HedgeHog {
       IsPlotterInitialised = true;
       plotter.Children.RemoveAt(0);
       var verticalAxis = plotter.Children.OfType<VerticalAxis>().First();
-      verticalAxis.FontSize = 9;
+      verticalAxis.FontSize = 10;
       //verticalAxis.FontWeight = FontWeights.Black;
       verticalAxis.ShowMinorTicks = false;
 
@@ -1141,7 +1142,7 @@ namespace HedgeHog {
           if (voltsByTicks != null && voltsByTicks.Length > 1) {
             ReAdjustXY(animatedVolt1TimeX, animatedVolt1ValueY, voltsByTicks[1].Length);
             for (var i = 0; i < voltsByTicks[1].Count(); i++) {
-              animatedVolt1ValueY[i] = voltsByTicks[1][i].Power;
+              animatedVolt1ValueY[i] = PriceBarValue(voltsByTicks[1][i]);
               animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDateContinuous;
             }
           }
@@ -1185,8 +1186,8 @@ namespace HedgeHog {
           animatedDataSource.RaiseDataChanged();
           animatedDataSourceBid.RaiseDataChanged();
           animatedDataSource1.RaiseDataChanged();
-          if( doVolts )
-          animatedVoltDataSource.RaiseDataChanged();
+          if (doVolts)
+            animatedVoltDataSource.RaiseDataChanged();
 
         } catch (InvalidOperationException exc) {
           plotter.FitToView();
@@ -1214,9 +1215,8 @@ namespace HedgeHog {
 
           #region Set Lines
 
-          LineAvgAsk = lastPrice.Ask;
-          LineAvgBid = lastPrice.Bid;
-
+          //LineAvgAsk = lastPrice.Ask;
+          //LineAvgBid = lastPrice.Bid;
           CenterOfMassHLineHigh = CenterOfMassBuy;
           CenterOfMassHLineLow = CenterOfMassSell;
 
@@ -1233,15 +1233,14 @@ namespace HedgeHog {
 
       if (Dispatcher.CheckAccess())
         a();
-      else
-        this.Dispatcher.BeginInvoke(new Action(() => {
-          inRendering = true;
-          try {
-            a();
-          } finally {
-            inRendering = false;
-          }
-        }), DispatcherPriority.ContextIdle);
+      else {
+        inRendering = true;
+        try {
+          Dispatcher.Invoke(a);
+        } finally {
+          inRendering = false;
+        }
+      }
     }
 
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {

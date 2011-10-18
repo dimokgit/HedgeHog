@@ -45,6 +45,7 @@ namespace HedgeHog.Shared {
     public DateTime ServerTime {
       get {
         var rates = RatesByPair().First().Value;
+        if (rates == null || !rates.Any()) return DateTime.MinValue;
         var rateLast = rates[rates.Count - 1];
         return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
       }
@@ -263,7 +264,7 @@ namespace HedgeHog.Shared {
           TradeClosedEvent += value;
       }
       remove {
-        if(TradeClosedEvent.GetInvocationList().Contains(value))
+        if(TradeClosedEvent!=null && TradeClosedEvent.GetInvocationList().Contains(value))
           TradeClosedEvent -= value;
       }
     }

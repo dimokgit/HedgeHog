@@ -21,6 +21,8 @@ using System.ComponentModel;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Collections.ObjectModel;
 using HedgeHog.Alice.Store;
+using System.Threading.Tasks.Dataflow;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -218,15 +220,25 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Window Event Handlers
+
+    ITargetBlock<Action> _IsLogExpandedTargetBlock;
+    ITargetBlock<Action> IsLogExpandedTargetBlock {
+      get {
+        if (_IsLogExpandedTargetBlock == null)
+          _IsLogExpandedTargetBlock = DataFlowProcessors.CreateYieldingActionOnDispatcher();
+        return _IsLogExpandedTargetBlock;
+      }
+    }
+
     void DataContext_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if (e.PropertyName == "IsLogExpanded") {
-        Dispatcher.BeginInvoke(new Action(() => {
+        IsLogExpandedTargetBlock.Post(() => {
           try {
             Log.IsPinned = (bool)sender.GetProperty(e.PropertyName);
           } catch (Exception exc) {
             Debug.WriteLine(exc);
           }
-        }));
+        });
       }
     }
 
