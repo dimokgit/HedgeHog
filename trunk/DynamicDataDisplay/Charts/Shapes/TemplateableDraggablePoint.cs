@@ -10,7 +10,7 @@ namespace Microsoft.Research.DynamicDataDisplay.Charts.Shapes
 {
 	public class TemplateableDraggablePoint : DraggablePoint
 	{
-		private readonly Control marker = new Control { Focusable = false };
+		private readonly Control marker = new Control { Focusable = true };
 		public TemplateableDraggablePoint()
 		{
 			marker.SetBinding(Control.TemplateProperty, new Binding { Source = this, Path = new PropertyPath("MarkerTemplate") });

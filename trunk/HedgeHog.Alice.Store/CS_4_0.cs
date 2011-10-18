@@ -3095,7 +3095,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SupportsNotCurrent"/></summary>
         public const string SupportsNotCurrent = "SupportsNotCurrent";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ResistsnceLow"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ResistanceLow"/></summary>
         public const string ResistsnceLow = "ResistsnceLow";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ResistanceHigh"/></summary>

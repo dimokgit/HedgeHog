@@ -547,13 +547,23 @@ namespace HedgeHog.Alice.Client {
     }
 
 
+
+    ITargetBlock<object> _LogExoandedTargetBlock;
+    ITargetBlock<object> LogExoandedTargetBlock {
+      get {
+        if (_LogExoandedTargetBlock == null)
+          _LogExoandedTargetBlock = new Action<object>((o) => RaisePropertyChanged(() => IsLogExpanded, () => IsLogPinned)).CreateYieldingTargetBlock(exc => Log = exc, false, TaskScheduler.FromCurrentSynchronizationContext());
+        return _LogExoandedTargetBlock;
+      }
+    }
+
     public bool IsLogPinned { get { return !IsLogExpanded; } }
     public bool IsLogExpanded {
       get { 
         var ts = DateTime.Now - lastLogTime;
         var ret = ts < TimeSpan.FromSeconds(10);
         if (ret)
-          new Schedulers.ThreadScheduler(ts, TimeSpan.Zero, () => RaisePropertyChanged(() => IsLogExpanded, () => IsLogPinned), (s, e) => Log = e.Exception);
+          LogExoandedTargetBlock.Post(null);
         return ret;
       }
     }

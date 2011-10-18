@@ -43,6 +43,19 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #region CanTrade
+    private bool _CanTrade;
+    public bool CanTrade {
+      get { return _CanTrade; }
+      set {
+        if (_CanTrade != value) {
+          _CanTrade = value;
+          OnPropertyChanged("CanTrade");
+        }
+      }
+    }
+
+    #endregion
 
 
     private string _EntryOrderId;
@@ -331,7 +344,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryCorridor)]
     public int SuppResLevelsCount_ {
       get { return SuppResLevelsCount; }
-      set { SuppResLevelsCount = value; }
+      set {
+        if (SuppResLevelsCount == value) return;
+        SuppResLevelsCount = value;
+        OnPropertyChanged(TradingMacroMetadata.SuppResLevelsCount_);
+      }
     }
 
     [DisplayName("StDev Ratio Min")]

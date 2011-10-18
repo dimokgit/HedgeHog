@@ -253,7 +253,7 @@ namespace HedgeHog.Alice.Store {
       this.CorridorCrossesCount = corridorCrossesCount;
       this.Corridornes = this.StDev / this.Rates.Height();
       this.RatesHeight = this.Rates.Height();
-      this.Density = rates.Density();
+      this.Density = periods / rates.StDev(r=>r.PriceAvg); ;
       // Must the last one
       this.StartDate = startDate;
       RaisePropertyChanged("Height");

@@ -19,6 +19,9 @@ using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using System.Threading;
+using Manheim.Web;
+using System.Data.Entity.Infrastructure;
+using System.Data.Metadata.Edm;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -91,21 +94,17 @@ namespace Manheim.ViewModel {
     #endregion
 
     #region Browser
-    WC.Browser _browser;
     WC.Browser Browser {
       get {
-        if (_browser == null)
-          Login();
-        return _browser;
+        return ManheimExtensions.Browser;
+      }
+      set {
+        ManheimExtensions.Browser = value;
       }
     }
     #endregion
 
     #region Manheim
-    private const string _manheimLoginUrl = "manheim.com/login";
-    private const string _manheimUserName = "afservices";
-    private const string _manheimPassword = "password";
-    private const string _manheimTabBuyPreSaleId = "tab_buy_pre_sale";
 
     ObservableCollection<Auction> _auctionsToRun = new ObservableCollection<Auction>();
     public ObservableCollection<Auction> AuctionsToRun { get { return _auctionsToRun; } }
@@ -127,25 +126,19 @@ namespace Manheim.ViewModel {
 
     #region Login
     void Login() {
-      Login(false);
-    }
-    void Login(bool reBrowser) {
       try {
-        if (reBrowser || _browser == null)
-          _browser = new WC.IE(_manheimLoginUrl);
-        else
-          Browser.GoTo(_manheimLoginUrl);
+        Browser.GoTo(this.GetLoginUrl());
       } catch (System.IO.FileNotFoundException exc) {
         MessageBox.Show(exc.FileName + " not found." + Environment.NewLine + exc.Message);
         return;
       }
       var userBox = Browser.TryFind<WC.TextField>("user_username");
       if (!userBox.Exists) return;
-      userBox.Value = _manheimUserName;
+      userBox.Value = this.GetUserName();
 
       var passwordBox = Browser.TryFind<WC.TextField>("user_password");
       if (!passwordBox.Exists) return;
-      passwordBox.Value = _manheimPassword;
+      passwordBox.Value = this.GetPassword();
 
       var loginButton = Browser.TryFind<WC.Button>("user_submit");
       if (!loginButton.Exists) return;
@@ -154,7 +147,8 @@ namespace Manheim.ViewModel {
     #endregion
     
     void NavigateToPreSale() {
-      var preSaleLink = Browser.TryFind<WC.Link>(_manheimTabBuyPreSaleId);
+      Login();
+      var preSaleLink = Browser.TryFind<WC.Link>(this.GetTabBuyPreSaleId());
       if (!preSaleLink.Exists) return;
       preSaleLink.Click();
       States.Clear();
@@ -196,8 +190,11 @@ namespace Manheim.ViewModel {
     }
 
     private void GetAllVehiclesForTheDay(string state, string auctionName, string listAllLink) {
-      Browser.GoTo(listAllLink.Replace("standard", "enhanced"));
-
+      var there = false;
+      while (!there) try {
+          Browser.GoTo(listAllLink.Replace("standard", "enhanced"));
+          there = true;
+        } catch (WC.Exceptions.TimeoutException) { }
       var dataTable = Browser.ElementOfType<WC.Table>(WC.Find.ByClass("dataTable"));
       if (!dataTable.Exists) return;
       var dataHeader = dataTable.ChildWithTag("thead", WC.Find.Any).AsElementContainer();
@@ -236,14 +233,14 @@ namespace Manheim.ViewModel {
             Fax = fax,
             Email = email
           };
-          manheimModel.Managers.AddObject(managerEntity);
+          manheimModel.Managers.Add(managerEntity);
           manheimModel.SaveChanges();
         }
       } else {
         managerEntity = manheimModel.Managers.SingleOrDefault(m => m.Name == "");
         if (managerEntity == null) {
           managerEntity = new Model.Manager() { Email = "", Fax = "", Phone = "", Title = "", Name = "" };
-          manheimModel.Managers.AddObject(managerEntity);
+          manheimModel.Managers.Add(managerEntity);
           manheimModel.SaveChanges();
         }
       }
@@ -257,7 +254,7 @@ namespace Manheim.ViewModel {
           State = stateEntity,
           PreSaleManager = managerEntity
         };
-        manheimModel.Auctions.AddObject(auctionEntity);
+        manheimModel.Auctions.Add(auctionEntity);
         manheimModel.SaveChanges();
       }
       #endregion
@@ -271,105 +268,101 @@ namespace Manheim.ViewModel {
       }
 
       #region if(false)Delete by SaleDate
+      var md = ((IObjectContextAdapter)manheimModel).ObjectContext.MetadataWorkspace;
+      var item = md.GetItems(DataSpace.CSpace);
+      item = md.GetItems(DataSpace.CSSpace);
+      item = md.GetItems(DataSpace.OCSpace);
+      item = md.GetItems(DataSpace.OSpace);
+      item = md.GetItems(DataSpace.SSpace);
       if (false) {
         var preSaleTable = typeof(Model.PreSale).GetCustomAttributes(typeof(EdmEntityTypeAttribute), true).Cast<EdmEntityTypeAttribute>().First();
         var auctionIdField = ExpressionExtentions.GetLambda(() => new Model.PreSale().AuctionId);
-        manheimModel.ExecuteStoreCommand("DELETE " + preSaleTable.Name + " WHERE " + auctionIdField + " = {0}", auctionEntity.AuctionId);
+        manheimModel.Database.ExecuteSqlCommand("DELETE " + preSaleTable.Name + " WHERE " + auctionIdField + " = {0}", auctionEntity.AuctionId);
       }
       #endregion
 
-      #region getOdometer
-      Func<string, int> getOdometer = s => {
-        int o = -1;
-        int.TryParse(s + "", System.Globalization.NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out o);
-        return o;
-      };
-      #endregion
-
-      dataBody.OwnTableRows.ToList().ForEach(tr => {
+      //dataBody.OwnTableRows.ToList().ForEach(tr => 
+      foreach (var tr in dataBody.OwnTableRows) {
         var tds = tr.OwnTableCells;
-        if (tds.Count == 0) return;
+        if (tds.Count == 0) continue;
         var vin = tds[6].Text + "";
         var addPresSale = false;
         lock (auctionEntity) {
           addPresSale = !manheimModel.PreSales.Any(ps => ps.SaleDate == saleDate && ps.VIN == vin);
         }
-        if (addPresSale) {
-          WC.IE vehicleInfoIE = OpenVehicleInfoWindow(tds);
-          //VehicleInfoWindowBlock.Post(tds);
-          //WC.IE vehicleInfoIE = VehicleInfoWindowBlock.Receive();
-          if (vehicleInfoIE == null) return;
-          var rightContent = vehicleInfoIE.Div("rightContent");
 
-          #region Vehicle
-
-          #region Grade
-          var grade = 0.0;
-          var lastColumn = rightContent.Div(WC.Find.ByClass("lastColumn"));
-          if (lastColumn.Exists) {
-            var gradeLink = lastColumn.Link(WC.Find.ByText(new Regex("Grade")));
-            if (gradeLink.Exists)
-              double.TryParse(Regex.Replace(gradeLink.Text, @"[^\d.]", ""), out grade);
+        if (addPresSale)
+          try {
+            WC.IE vehicleInfoIE = OpenVehicleInfoWindow(tds);
+            if (vehicleInfoIE != null)
+              AddPreSale(manheimModel, auctionEntity, saleDate, tds, vin, vehicleInfoIE);
+          } catch (System.Data.Entity.Validation.DbEntityValidationException exc){
+            var ev = exc.EntityValidationErrors.First().ValidationErrors.First().ErrorMessage;
+            Log = new Exception(ev);
           }
-          #endregion
-
-
-          var mmrElement = vehicleInfoIE.Link("mmrHover");
-          int mmrPrice = 0;
-          if (mmrElement.Exists)
-            int.TryParse(mmrElement.Text, NumberStyles.AllowThousands | NumberStyles.AllowCurrencySymbol, NumberFormatInfo.CurrentInfo, out mmrPrice);
-          var div = vehicleInfoIE.Div(new Regex("vdpTab_detail-1"));
-          var table = div.Tables.First();
-          if (table == null) return;
-          var vehicleEntity = manheimModel.Vehicles.SingleOrDefault(v => v.VIN == vin);
-          if (vehicleEntity == null) {
-            vehicleEntity = SetVehicle(table);
-            vehicleEntity.Grade = grade;
-            manheimModel.Vehicles.AddObject(vehicleEntity);
-          } else {
-            UpdateVehicle(vehicleEntity, table);
-          }
-          vehicleEntity.MMR = mmrPrice;
-          manheimModel.SaveChanges();
-          #endregion
-
-          #region Seller
-          var sellerElement = rightContent.Div(WC.Find.ByClass("firstColumn")).ElementWithTag("li", WC.Find.First());
-          var sellerName = sellerElement.Exists ? sellerElement.Text : "";
-          var sellerEntity = manheimModel.Sellers.SingleOrDefault(s => s.Name == sellerName);
-          if (sellerEntity == null) {
-            sellerEntity = new Model.Seller() { Name = sellerName };
-            manheimModel.Sellers.AddObject(sellerEntity);
-            manheimModel.SaveChanges();
-          }
-          #endregion
-
-          #region PreSale
-          var preSale = new Model.PreSale() {
-            Ln = int.Parse(tds[0].Text.Split('-')[0]),
-            Run = int.Parse(tds[0].Text.Split('-')[1]),
-            SaleDate = saleDate
-          };
-          lock (auctionEntity) {
-            preSale.Vehicle = vehicleEntity;
-            preSale.Auction = auctionEntity;
-            preSale.Seller = sellerEntity;
-            manheimModel.PreSales.AddObject(preSale);
-          }
-          #endregion
-          manheimModel.SaveChanges();
-        }
-      });
+      }
     }
 
-    TransformBlock<WC.TableCellCollection, WC.IE> _vehicleInfoWindowBlock;
-    public TransformBlock<WC.TableCellCollection, WC.IE> VehicleInfoWindowBlock {
-      get {
-        if (_vehicleInfoWindowBlock == null) {
-          //var options = new ExecutionDataflowBlockOptions() { TaskScheduler = TaskScheduler.FromCurrentSynchronizationContext() };
-          _vehicleInfoWindowBlock = new TransformBlock<WC.TableCellCollection, WC.IE>(tds => OpenVehicleInfoWindow(tds));
+    private static void AddPreSale(Model.ManheimEntities manheimModel, Model.Auction auctionEntity, DateTime saleDate, WC.TableCellCollection tds, string vin, WC.IE vehicleInfoIE) {
+      var rightContent = vehicleInfoIE.Div("rightContent");
+
+      #region Vehicle
+
+      #region Grade
+      var grade = 0.0;
+      var lastColumn = rightContent.Div(WC.Find.ByClass("lastColumn"));
+      if (lastColumn.Exists) {
+        var gradeLink = lastColumn.Link(WC.Find.ByText(new Regex("Grade")));
+        if (gradeLink.Exists)
+          double.TryParse(Regex.Replace(gradeLink.Text, @"[^\d.]", ""), out grade);
+      }
+      #endregion
+
+
+      var mmrElement = vehicleInfoIE.Link("mmrHover");
+      int mmrPrice = 0;
+      if (mmrElement.Exists)
+        int.TryParse(mmrElement.Text, NumberStyles.AllowThousands | NumberStyles.AllowCurrencySymbol, NumberFormatInfo.CurrentInfo, out mmrPrice);
+      var div = vehicleInfoIE.Div(new Regex("vdpTab_detail-1"));
+      var table = div.Tables.First();
+      if (table != null) {
+        var vehicleEntity = manheimModel.Vehicles.SingleOrDefault(v => v.VIN == vin);
+        if (vehicleEntity == null) {
+          vehicleEntity = SetVehicle(table);
+          vehicleEntity.Grade = grade;
+          manheimModel.Vehicles.Add(vehicleEntity);
+        } else {
+          UpdateVehicle(vehicleEntity, table);
         }
-        return _vehicleInfoWindowBlock; 
+        vehicleEntity.MMR = mmrPrice;
+        manheimModel.SaveChanges();
+      #endregion
+
+        #region Seller
+        var sellerElement = rightContent.Div(WC.Find.ByClass("firstColumn")).ElementWithTag("li", WC.Find.First());
+        var sellerName = sellerElement.Exists ? sellerElement.Text : "";
+        var sellerEntity = manheimModel.Sellers.SingleOrDefault(s => s.Name == sellerName);
+        if (sellerEntity == null) {
+          sellerEntity = new Model.Seller() { Name = sellerName };
+          manheimModel.Sellers.Add(sellerEntity);
+          manheimModel.SaveChanges();
+        }
+        #endregion
+
+        #region PreSale
+        var preSale = new Model.PreSale() {
+          Ln = int.Parse(tds[0].Text.Split('-')[0]),
+          Run = int.Parse(tds[0].Text.Split('-')[1]),
+          SaleDate = saleDate
+        };
+        lock (auctionEntity) {
+          preSale.Vehicle = vehicleEntity;
+          preSale.Auction = auctionEntity;
+          preSale.Seller = sellerEntity;
+          manheimModel.PreSales.Add(preSale);
+        }
+        #endregion
+        manheimModel.SaveChanges();
       }
     }
 
@@ -386,10 +379,10 @@ namespace Manheim.ViewModel {
         WC.IE vehicleInfoIE = null;
           try {
             vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
-              return t == "Manheim - PowerSearch - Vehicle Details";
+              return t.StartsWith("Manheim - PowerSearch");
             }));
           } catch { }
-          if (vehicleInfoIE == null)
+          if (vehicleInfoIE == null || vehicleInfoIE.Title == "Manheim - PowerSearch - Search Results")
             try {
               vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
                 return t == "Manheim - PowerSearch - Search Results";
@@ -475,6 +468,60 @@ namespace Manheim.ViewModel {
     #endregion
 
     #region Commands
+
+
+    #region FillSearch
+    ICommand _FillSearchCommand;
+    public ICommand FillSearchCommand {
+      get {
+        if (_FillSearchCommand == null) {
+          _FillSearchCommand = new RelayCommand(FillSearch, () => true);
+        }
+        return _FillSearchCommand;
+      }
+    }
+    void FillSearch() {
+      Browser.GoTo(this.GetHomeUrl());
+      using (var entities = new Model.ManheimEntities()) {
+        entities.Configuration.LazyLoadingEnabled = true;
+        while (Browser.Frames.Count < 2)
+          Thread.Sleep(100);
+        var makeList = Browser.Frames[1].TryFind<WC.SelectList>("makeList");
+        if (!makeList.Exists) return;
+        var modelList = Browser.Frames[1].TryFind<WC.SelectList>("modelList");
+        if (!modelList.Exists) return;
+        var models = modelList.Options.Select(o => o.Text);
+        bool saveToDb = false;
+        foreach (var make in makeList.Options.Skip(1)) {
+          Debug.WriteLine(make.Text);
+          var dbMake = entities.Makes.SingleOrDefault(m => m.Name == make.Text);
+          if (dbMake == null) {
+            dbMake = new Model.Make() { Name = make.Text };
+            entities.Makes.Add(dbMake);
+            saveToDb = true;
+          }
+          modelList.SetAttributeValue("selectedIndex", "-1");
+          makeList.Select(make.Text);
+          while (modelList.SelectedItem == null)
+            Thread.Sleep(100);
+          foreach (var model in modelList.Options.Skip(1)) {
+            Debug.WriteLine("\t" + model.Text);
+            if (!dbMake.Models.Where(m => m.Name == model.Text).Any()) {
+              dbMake.Models.Add(new Model.Model() { Name = model.Text });
+              saveToDb = true;
+            }
+          }
+          if (saveToDb) {
+            entities.SaveChanges();
+            saveToDb = false;
+          }
+        }
+      }
+      Log = new Exception("Done with FillSearch!");
+    }
+    #endregion
+
+
     ICommand _PreSaleCommand;
     public ICommand PreSaleCommand {
       get {
@@ -524,14 +571,13 @@ namespace Manheim.ViewModel {
     #endregion
 
     public override void Cleanup() {
-      if (_browser != null)
-        _browser.Dispose();
+      Browser = null;
       base.Cleanup();
     }
 
     #region Helpers
     private bool EnsureElement<TElement>(string id, out TElement element) where TElement : WC.Element<TElement> {
-      element = _browser.ElementOfType<TElement>(id);
+      element = Browser.ElementOfType<TElement>(id);
       if (!element.Exists) {
         MessageBox.Show(id + " " + typeof(TElement).Name + " is not found");
         return false;
@@ -554,7 +600,7 @@ namespace Manheim.ViewModel {
         throw new InvalidCastException(element.GetType().Name + " does not implement ElementContainer<Element>.");
       return element as WC.ElementContainer<WC.Element>;
     }
-    public static TElement TryFind<TElement>(this WC.Browser browser,string id)where TElement:WC.Element {
+    public static TElement TryFind<TElement>(this WC.Document browser,string id)where TElement:WC.Element {
       var element = browser.ElementOfType<TElement>(id);
       element.WaitUntilExists(5);
       if (!element.Exists)

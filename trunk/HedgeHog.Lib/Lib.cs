@@ -120,6 +120,15 @@ namespace HedgeHog {
       return ret;
     }
 
+    public static T GetProperty<T>(this object o, string p) {
+      var t = o.GetType();
+      System.Reflection.PropertyInfo pi = t.GetProperty(p);
+      if (pi != null) return (T)pi.GetValue(o, null);
+      System.Reflection.FieldInfo fi = t.GetField(p);
+      if (fi != null) return (T)fi.GetValue(o);
+      throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
+    }
+
     public static object GetProperty(this object o, string p) {
       System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
       if (pi != null) return pi.GetValue(o, null);

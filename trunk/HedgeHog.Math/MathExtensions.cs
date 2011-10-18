@@ -129,6 +129,17 @@ namespace HedgeHog {
       return new[] { c[1], c[0] };
     }
 
+    public static void SetProperty<T>(this object o, string p, T v) {
+      System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
+      if (pi != null) pi.SetValue(o, v, new object[] { });
+      else {
+        System.Reflection.FieldInfo fi = o.GetType().GetField(p);
+        if (fi == null) throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
+        fi.SetValue(o, v);
+      }
+    }
+
+
     public static void SetProperty(this object o, string p, object v) {
       var convert = new Func<object, Type, object>((valie, type) => {
         if (valie != null) {

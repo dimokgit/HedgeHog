@@ -129,13 +129,12 @@
         <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
         <TextBlock Text="{Binding PipsPerPosition,StringFormat=[{0:n0}}" ToolTip="Pips Per Position"/>
         <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}K],Converter={x:Static lib:PerMilleConverter.Default}}" ToolTip="Total Lot"/>
-        <TextBlock Text="{Binding Profitability,StringFormat=c0}" ToolTip="Profitability Per Month"
-                   Visibility="{Binding IsInVirtualTrading,Converter={StaticResource BooleanToVisibilityConverter}}"
-                   />
-        <!--<LineBreak/>
+        <TextBlock Visibility="{Binding IsInVirtualTrading,Converter={StaticResource BooleanToVisibilityConverter}}">
+          <TextBlock Text="{Binding Profitability,StringFormat=c0}" ToolTip="Profitability Per Month"/>
           <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
           <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
-          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />-->
+          <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />
+        </TextBlock>
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
@@ -151,7 +150,7 @@
     </DataTemplate>
     <DataTemplate x:Key="LossEditCellTemplate">
       <WrapPanel>
-      <TextBox Text="{Binding CurrentLoss}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
+        <TextBox Text="{Binding CurrentLoss}" ToolTip="Current Loss" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
         <!--<LineBreak/>-->
       <TextBox Text="{Binding RunningBalance,StringFormat=n0}"  ToolTip="Running Balance" />
       <TextBox Text="{Binding MinimumGross,StringFormat=n0}"  ToolTip="Minimum Gross" />

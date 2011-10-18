@@ -8,11 +8,14 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="{x:Type d3shapes:TemplateableDraggablePoint}">
-          <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
-            <Image.LayoutTransform>
-              <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
-            </Image.LayoutTransform>
-          </Image>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding TradesCount}"/>
+            <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
+              <Image.LayoutTransform>
+                <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+              </Image.LayoutTransform>
+            </Image>
+          </StackPanel>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
