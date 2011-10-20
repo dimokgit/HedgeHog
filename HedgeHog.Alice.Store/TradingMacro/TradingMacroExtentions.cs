@@ -1097,6 +1097,8 @@ namespace HedgeHog.Alice.Store {
     public double CorridorHeight0ToSpreadRatio { get { return CorridorStats.HeightUpDown0 / SpreadForCorridor; } }
     public double CorridorStDevToRatesStDevRatio { get { return CalcCorridorStDevToRatesStDevRatio(CorridorStats); } }
     public double CalcCorridorStDevToRatesStDevRatio(CorridorStatistics cs) { return (cs.StDev / RatesStDev).Round(2); }
+    public bool CalcIsCorridorStDevToRatesStDevRatioOk(CorridorStatistics cs) { return cs.StDev / RatesStDev < .4; }
+    public bool IsCorridorStDevToRatesStDevRatioOk { get { return CalcIsCorridorStDevToRatesStDevRatioOk(CorridorStats); } }
     #endregion
 
     void LockPriceCmaPeriod(bool unLock = false) { _priceCmaPeriodLocked = unLock ? null : (double?)PriceCmaPeriodByStDevRatio; }
@@ -2666,12 +2668,14 @@ namespace HedgeHog.Alice.Store {
         TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
       if (HasCorridor) {
         ResistanceHigh().Rate = RateLast.PriceAvg21;
-        if( SuppResLevelsCount == 2)
+        if (SuppResLevelsCount == 2)
           SupportHigh().Rate = RateLast.PriceAvg2;
         SupportLow().Rate = RateLast.PriceAvg31;
         if (SuppResLevelsCount == 2)
           ResistanceLow().Rate = RateLast.PriceAvg3;
       }
+      var canTrade = IsCorridorStDevToRatesStDevRatioOk;
+      SuppRes.ToList().ForEach(sr => sr.CanTrade = canTrade);
     }
 
     bool _canSell;
@@ -3042,6 +3046,7 @@ namespace HedgeHog.Alice.Store {
       return
         CorridorCrossGetLowPrice()(rateLow) > rateAverage - stDev3 &&
         CorridorCrossGetHighPrice()(rateHigh) < rateAverage + stDev3
+        && CalcIsCorridorStDevToRatesStDevRatioOk(cs)
         //&& cs.StDev.Between(SpreadForCorridor * .75, SpreadForCorridor * 1.5)
         ;
       var priceHigh = CorridorGetHighPrice()(rates[rates.Count - 1]);

@@ -139,13 +139,13 @@ namespace HedgeHog {
       }
     }
 
-    private double _CorridorHeight;
-    public double CorridorHeight {
-      get { return _CorridorHeight; }
+    private double _CorridorHeightInPips;
+    public double CorridorHeightInPips {
+      get { return _CorridorHeightInPips; }
       set {
-        if (_CorridorHeight != value) {
-          _CorridorHeight = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorHeight);
+        if (_CorridorHeightInPips != value) {
+          _CorridorHeightInPips = value;
+          OnPropertyChanged(CharterControlMetadata.CorridorHeightInPips);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -183,7 +183,7 @@ namespace HedgeHog {
           /*2*/, BarsCount
           /*3*/, CorridorAngle
           /*4*/, HeightInPips
-          /*5*/, CorridorHeight
+          /*5*/, CorridorHeightInPips
           /*6*/, CorridorStDevToRatesStDevRatio
           /*7*/, StDev
           /*8*/, SpreadForCorridor
