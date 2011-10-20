@@ -865,7 +865,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
-          charter.CorridorHeight = tm.CorridorHeightByRegressionInPips;
+          charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
