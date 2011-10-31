@@ -49,7 +49,7 @@ namespace HedgeHog.Alice.Store {
   public enum Strategies {
     None = 0, Breakout = 1, Range = 2, Stop = 4, Auto = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Massa = 16, Reverse = 32, Momentum_R = Massa + Reverse,
-    Gann = 64, Brange = 128, FastWave = 256, HighWave = 512, Hot = 1024,
+    Gann = 64, Brange = 128, Hot = 1024,
     Hot_A = Hot + Auto
   }
   public struct Playback {

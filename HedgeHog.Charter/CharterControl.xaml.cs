@@ -162,6 +162,19 @@ namespace HedgeHog {
         }
       }
     }
+    #region CorridorSpread
+    private double _CorridorSpread;
+    public double CorridorSpread {
+      get { return _CorridorSpread; }
+      set {
+        if (_CorridorSpread != value) {
+          _CorridorSpread = value;
+          OnPropertyChanged("CorridorSpread");
+        }
+      }
+    }
+
+    #endregion
     private double _CorridorStDevToRatesStDevRatio;
     public double CorridorStDevToRatesStDevRatio {
       get { return _CorridorStDevToRatesStDevRatio; }
@@ -747,7 +760,7 @@ namespace HedgeHog {
           dragPoint.PositionChanged += (s, e) => {
             OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, e.Position);
           };
-          dragPoint.ToolTip = "UID:" + uid;
+          //dragPoint.ToolTip = "UID:" + uid;
           plotter.PreviewKeyDown += (s, e) => {
             var numericKeys = new[] { Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9 };
             _isShiftDown = e.Key == Key.LeftShift || e.Key == Key.RightShift;
@@ -762,6 +775,9 @@ namespace HedgeHog {
                 plotter.Children.Remove(GetFriend(dragPoint));
                 plotter.Children.Remove(dragPoint);
                 rates.Remove(uid);
+                break;
+              case Key.S:
+                dragPoint.DataContext.Invoke("OnScan",null);
                 break;
               case Key.T:
                 dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
@@ -785,7 +801,12 @@ namespace HedgeHog {
         var dp = rates[uid].DraggablePoint;
         dp.Dispatcher.BeginInvoke(new Action(() => {
           var raiseChanged = rate == 0;
-          if (raiseChanged) rate = animatedPriceY.Average();
+          if (raiseChanged)
+            try {
+              rate = animatedPriceY.Average();
+            } catch {
+              rate = animatedPriceY.Average();
+            }
           dp.Position = CreatePointY(rate);
         }));
       }
@@ -860,8 +881,8 @@ namespace HedgeHog {
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVoltDataSource = new EnumerableDataSource<double>(animatedVoltValueY);
         animatedVoltDataSource.SetYMapping(y => y);
-        innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.Tan, 1, "")
-          .Description.LegendItem.Visibility = Visibility.Collapsed;
+        _voltGraph = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.Tan, 1, "");
+        _voltGraph.Description.LegendItem.Visibility = Visibility.Collapsed;
 
         xSrc = new EnumerableDataSource<DateTime>(animatedVolt1TimeX);
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
@@ -1188,10 +1209,9 @@ namespace HedgeHog {
           animatedDataSource1.RaiseDataChanged();
           if (doVolts)
             animatedVoltDataSource.RaiseDataChanged();
+          //_voltGraph.Stroke = new SolidColorBrush(animatedVoltValueY.Last() > 0 ? Colors.LimeGreen : Colors.Tan);
 
-        } catch (InvalidOperationException exc) {
-          plotter.FitToView();
-          throw new InvalidOperationException(errorMessage, exc);
+        } catch (InvalidOperationException) {
         } finally {
           //GannLine = ratesforTrend;
           infoBox.Text = string.Join(Environment.NewLine, info);
@@ -1252,6 +1272,7 @@ namespace HedgeHog {
     }
 
     Func<Rate, bool> hasGannAnglesFilter = r => r.GannPrice1x1 > 0;
+    private LineGraph _voltGraph;
     private void SetGannAngles(ICollection<Rate> rates, int selectedIndex) {
       var rateFirst = rates.FirstOrDefault(hasGannAnglesFilter);
       if (rateFirst == null) return;

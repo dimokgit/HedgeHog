@@ -234,7 +234,9 @@ namespace HedgeHog.Alice.Client {
       if (e.PropertyName == "IsLogExpanded") {
         IsLogExpandedTargetBlock.Post(() => {
           try {
-            Log.IsPinned = (bool)sender.GetProperty(e.PropertyName);
+            var isPinned = sender.GetProperty<bool>(e.PropertyName);
+            if (Log.IsPinned != isPinned)
+              Log.IsPinned = isPinned;
           } catch (Exception exc) {
             Debug.WriteLine(exc);
           }
