@@ -57,6 +57,49 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region CrossesCount
+    private int _CrossesCount;
+    public int CrossesCount {
+      get { return _CrossesCount; }
+      set {
+        if (_CrossesCount != value) {
+          _CrossesCount = value;
+          OnPropertyChanged("CrossesCount");
+        }
+      }
+    }
+    #endregion
+
+    #region Scan Event
+    event EventHandler<EventArgs> ScanEvent;
+    public event EventHandler<EventArgs> Scan {
+      add {
+        if (ScanEvent == null || !ScanEvent.GetInvocationList().Contains(value))
+          ScanEvent += value;
+      }
+      remove {
+        ScanEvent -= value;
+      }
+    }
+    public void OnScan() {
+      if (ScanEvent != null) ScanEvent(this, new EventArgs());
+    }
+    #endregion
+
+
+    #region CorridorDate
+    private DateTime _CorridorDate;
+    public DateTime CorridorDate {
+      get { return _CorridorDate; }
+      set {
+        if (_CorridorDate != value) {
+          _CorridorDate = value;
+          OnPropertyChanged("CorridorDate");
+        }
+      }
+    }
+
+    #endregion
 
     private string _EntryOrderId;
     public string EntryOrderId {

@@ -465,6 +465,8 @@ namespace HedgeHog.Bars {
 
       this.StartDate = StartDate;
     }
+
+    public double SpreadMADiff { get; set; }
   }
   public class Tick : Rate {
     public int Row { get; set; }

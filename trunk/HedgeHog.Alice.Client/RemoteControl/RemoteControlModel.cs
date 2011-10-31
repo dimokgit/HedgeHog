@@ -635,9 +635,11 @@ namespace HedgeHog.Alice.Client {
           try {
             if (tm.HasRates && !IsInVirtualTrading) {
               var charter = GetCharter(tm);
-              charter.LineAvgAsk = tm.CurrentPrice.Ask;
-              charter.LineAvgBid = tm.CurrentPrice.Bid;
-              charter.LineTakeProfitLimit = tm.LimitRate;
+              charter.Dispatcher.Invoke(() => {
+                charter.LineAvgAsk = tm.CurrentPrice.Ask;
+                charter.LineAvgBid = tm.CurrentPrice.Bid;
+                charter.LineTakeProfitLimit = tm.LimitRate;
+              });
             }
           } catch (Exception exc) {
             Log = exc;
@@ -839,11 +841,9 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null) return;
-        var timeHigh = rates.Skip(rates.Count() - Math.Max(1, csFirst.Periods)).Min(r => r.StartDateContinuous);
-        timeHigh = tm.CorridorStats.Rates.Select(r => r.StartDateContinuous).LastOrDefault();
+        var timeHigh = csFirst.Rates.LastByCount().StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
-        bool? trendHighlight = csFirst.TrendLevel == TrendLevel.None ? (bool?)null : csFirst.TrendLevel == TrendLevel.Resistance;
         var dateMin = rates.Min(r => r.StartDateContinuous);
         string[] info = new string[] { 
           "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tm.RatesHeight,tradesManager.ServerTime),
@@ -868,16 +868,17 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
+          charter.CorridorSpread = 0;
           charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
           charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
+          //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          charter.AddTicks(price, rates, new PriceBar[2][] { corridornesses,stDevBars }, info, trendHighlight,
+          charter.AddTicks(price, rates, new PriceBar[1][] { corridornesses/*, stDevBars*/ }, info, null,
             0, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),

@@ -133,15 +133,6 @@ namespace HedgeHog.Alice.Store {
 
     public double Slope { get; private set; }
     public double Angle { get { return Slope.Angle(_pipSize); } }
-    public LineInfo LineLow { get; private set; }
-    public LineInfo LineHigh { get; private set; }
-
-    public TrendLevel TrendLevel {
-      get {
-        if (LineLow == null) return Store.TrendLevel.None;
-        return  LineLow.Slope.Error(Slope) < LineHigh.Slope.Error(Slope) ? TrendLevel.Support : TrendLevel.Resistance;
-      }
-    }
 
     public Rate[] GetRates(IEnumerable<Rate> rates) { return rates.Skip(rates.Count() - Periods).ToArray(); }
 
@@ -173,7 +164,16 @@ namespace HedgeHog.Alice.Store {
 
     public double HeightUpDown0ToSpreadRatio { get { return HeightUpDown0 / Spread; } }
 
-    public DateTime EndDate { get; private set; }
+    DateTime _EndDate;
+
+    public DateTime EndDate {
+      get { return _EndDate; }
+      set {
+        if (_EndDate != value) {
+          _EndDate = value;
+        }
+      }
+    }
 
     private DateTime _StartDate;
     public DateTime StartDate {
@@ -217,8 +217,12 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
+    public CorridorStatistics(TradingMacro tm, IList<Rate> rates, double stDev,double[] coeffs) {
+      this.TradingMacro = tm;
+      Init(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2,rates.Count, rates.Min(r => r.StartDate), rates.Max(r => r.StartDate), 0, 0);
+    }
     public CorridorStatistics(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, lineHigh, lineLow, periods, endDate, startDate, 0,0);
+      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, periods, endDate, startDate, 0,0);
     }
 
     public void Init(CorridorStatistics cs,double pipSize) {
@@ -226,7 +230,7 @@ namespace HedgeHog.Alice.Store {
       this.priceLine = cs.priceLine;
       this.priceHigh = cs.priceHigh;
       this.priceLow = cs.priceLow;
-      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.LineHigh, cs.LineLow, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
+      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         LegInfos.Clear();
@@ -236,11 +240,9 @@ namespace HedgeHog.Alice.Store {
         () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
     }
 
-    public void Init(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
+    public void Init(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
       this.Rates = rates;
       this.StDev = stDev;
-      this.LineHigh = lineHigh;
-      this.LineLow = lineLow;
       this.EndDate = endDate;
       this.Coeffs = coeffs;
       this.Slope = rates.IsReversed() ? -coeffs[1] : coeffs[1];

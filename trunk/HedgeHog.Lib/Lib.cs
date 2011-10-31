@@ -27,6 +27,9 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
+    public static T LastByCount<T>(this IList<T> list) {
+      return list[list.Count - 1];
+    }
     public static T Pop<T>(this List<T> list, int position = 0) {
       try {
         return list[position];
@@ -127,6 +130,22 @@ namespace HedgeHog {
       System.Reflection.FieldInfo fi = t.GetField(p);
       if (fi != null) return (T)fi.GetValue(o);
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
+    }
+
+    public static TReturn Invoke<TReturn>(this object o, string methodName, object[] parameters) {
+      var t = o.GetType();
+      var mi = t.GetMethod(methodName);
+      if (mi != null) return (TReturn)mi.Invoke(o, parameters);
+      throw new NotImplementedException("Property/Field " + methodName + " is not implemented in " + o.GetType().Name + ".");
+    }
+    public static void Invoke(this object o, string methodName, object[] parameters) {
+      var t = o.GetType();
+      var mi = t.GetMethod(methodName);
+      if (mi != null) {
+        mi.Invoke(o, parameters);
+        return;
+      }
+      throw new NotImplementedException("Property/Field " + methodName + " is not implemented in " + o.GetType().Name + ".");
     }
 
     public static object GetProperty(this object o, string p) {
@@ -324,6 +343,9 @@ namespace HedgeHog {
     static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
       if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return Cma(MA, Periods, NewValue);
+    }
+    public static double IfNaN(this double d, double defaultValue) {
+      return double.IsNaN(d) ? defaultValue : d;
     }
     public static double Max3(double n1, double n2, double n3) {
       return Math.Max(Math.Max(n1, n2), n3);

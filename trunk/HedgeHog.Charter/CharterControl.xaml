@@ -15,37 +15,39 @@
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal">
+              <StackPanel Orientation="Horizontal" ToolTip="{Binding CrossesCount}">
                 <CheckBox IsChecked="{Binding CanTrade}"/>
                 <TextBox Text="{Binding TradesCount}" BorderBrush="Transparent" Background="Transparent" />
+                <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
+                  <Image.LayoutTransform>
+                    <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
+                  </Image.LayoutTransform>
+                </Image>
+                <TextBlock Text="{Binding CrossesCount}" />
               </StackPanel>
             </DataTemplate>
           </ContentPresenter.ContentTemplate>
         </ContentPresenter>
-        <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
-          <Image.LayoutTransform>
-            <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
-          </Image.LayoutTransform>
-        </Image>
       </StackPanel>
     </ControlTemplate>
     <ControlTemplate x:Key="DraggArrowDown" TargetType="{x:Type Control}">
-      <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+      <StackPanel Orientation="Horizontal" Margin="0,16,0,0" ToolTip="{Binding CrossesCount}">
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
                 <CheckBox IsChecked="{Binding CanTrade}" VerticalAlignment="Bottom"/>
                 <TextBox Text="{Binding TradesCount}" BorderBrush="Transparent" Background="Transparent" />
+                <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
+                  <Image.LayoutTransform>
+                    <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
+                  </Image.LayoutTransform>
+                </Image>
+                <TextBlock Text="{Binding CrossesCount}"  />
               </StackPanel>
             </DataTemplate>
           </ContentPresenter.ContentTemplate>
         </ContentPresenter>
-        <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
-          <Image.LayoutTransform>
-            <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
-          </Image.LayoutTransform>
-        </Image>
       </StackPanel>
     </ControlTemplate>
 
