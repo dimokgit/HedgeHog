@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using System.Runtime.Caching;
 using System.Reactive;
 using System.Threading.Tasks.Dataflow;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -462,17 +463,11 @@ namespace HedgeHog.Alice.Store {
       return ScanCrosses(rates, rates.Min(r => r.PriceAvg), rates.Max(r => r.PriceAvg), stepInPips);
     }
     private List<Tuple<int, double>> ScanCrosses(IList<Rate> rates, double levelStart, double levelEnd, double stepInPips = 1) {
-      var levels = new List<Tuple<int, double>>();
       var step = PointSize * stepInPips;
       var steps = new List<double>();
       for (; levelStart <= levelEnd; levelStart += step)
         steps.Add(levelStart);
-      steps.AsParallel().ForAll(s => {
-        levels.Add(new Tuple<int, double>(GetCrossesCount(rates, s), s));
-      });
-      //for (double i = levelStart; levelStart <= levelEnd; levelStart += step)
-      //  levels.Add(new Tuple<int, double>(GetCrossesCount(rates, levelStart), levelStart));
-      return levels;
+      return Partitioner.Create(steps).AsParallel().Select(s => new Tuple<int, double>(GetCrossesCount(rates, s), s)).ToList();
     }
     #endregion
 
@@ -1849,7 +1844,7 @@ namespace HedgeHog.Alice.Store {
 
               OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriodByStDevRatio);
               SetMA();
-              _rateArray.ReverseIfNot().SetStDevPrice(GetPriceMA);
+              if (false) _rateArray.ReverseIfNot().SetStDevPrice(GetPriceMA);
               SetMagnetPrice();
               if (!IsInVitualTrading)
                 SuppRes.ToList().ForEach(sr => sr.CrossesCount = GetCrossesCount(_rateArray, sr.Rate));
@@ -2693,7 +2688,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private bool CanTradeByTradeCorridor() {
-      return (ResistanceHigh().Rate - SupportLow().Rate) < RatesHeight / 3;
+      return (ResistanceHigh().Rate - SupportLow().Rate).Between(SpreadForCorridor*4,  RatesHeight / 3);
     }
 
 
@@ -2950,14 +2945,19 @@ namespace HedgeHog.Alice.Store {
           : ratesForCorridor.GetCorridornesses(priceHigh, priceLow, periodsStart, periodsLength, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod, cs => {
             return false;
           }).Select(c => c.Value).ToList();
-        CorridorBig = ratesForCorridor.ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);// corridornesses.LastOrDefault() ?? CorridorBig;
+        if(true){
+          var coeffs = Regression.Regress(ratesForCorridor.ReverseIfNot().Select(r => r.PriceAvg).ToArray(), 1);
+          var median = ratesForCorridor.Average(r => r.PriceAvg);
+          var stDev = ratesForCorridor.Select(r => (CorridorGetHighPrice()(r) - median).Abs()).ToList().StDev();
+          CorridorBig = new CorridorStatistics(this, ratesForCorridor, stDev, coeffs);
+        }else
+          CorridorBig = ratesForCorridor.ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);// corridornesses.LastOrDefault() ?? CorridorBig;
         #endregion
         #region Update Corridor
         if (corridornesses.Any()) {
           var rateLast = ratesForCorridor.Last();
           var cc = corridornesses
             //.OrderBy(cs => InPips(cs.Slope.Abs().Angle()).ToInt())
-           .OrderByDescending(cs => cs.Density)
            .ToList();
           crossedCorridor = cc/*.Where(cs => IsCorridorOk(cs))*/.FirstOrDefault();
           var csCurr = crossedCorridor ?? cc.FirstOrDefault();
