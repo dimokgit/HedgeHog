@@ -253,9 +253,7 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
       this.CorridorCrossesCount = corridorCrossesCount;
-      this.Corridornes = this.StDev / this.Rates.Height();
       this.RatesHeight = this.Rates.Height();
-      this.Density = periods / rates.StDev(r=>r.PriceAvg); ;
       // Must the last one
       this.StartDate = startDate;
       RaisePropertyChanged("Height");
@@ -336,17 +334,6 @@ namespace HedgeHog.Alice.Store {
       _CorridorFibInstant = _CorridorFibAverage = _CorridorFib = 0;
     }
     public double CorridorFibCmaPeriod { get; set; }
-
-    double _corridornes;
-    public double Corridornes {
-      get { return _corridornes; }
-      set {
-        if (_corridornes == value) return;
-        _corridornes = value;
-        RaisePropertyChanged("Corridornes");
-        RaisePropertyChanged("MinutesBack");
-      }
-    }
 
     Func<double, double> _InPips = null;
 
@@ -441,10 +428,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
-
-
-    public double Density { get; set; }
-
   }
 
   public enum TrendLevel { None, Resistance, Support }
