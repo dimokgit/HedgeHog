@@ -535,14 +535,14 @@ namespace HedgeHog.Alice.Client {
     void UpdateTradingStatistics() {
       try {
         if (GetTradingMacros().Any(tm => !tm.RatesArray.Any())) return;
-        var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0).ToList();
+        var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToList();
         if (tms.Any() && tms.All(tm => tm.RatesArray.Any())) {
           var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Count;
           _tradingStatistics.TakeProfitDistanceInPips = tp;
         } else {
           _tradingStatistics.TakeProfitDistanceInPips = double.NaN;
         }
-        tms = GetTradingMacros().Where(tm => tm.IsHotStrategy).ToList();
+        tms = GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToList();
         if (tms.Any()) {
           _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(1).Average();
           _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
@@ -847,7 +847,7 @@ namespace HedgeHog.Alice.Client {
         var dateMin = rates.Min(r => r.StartDateContinuous);
         string[] info = new string[] { 
           "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tm.RatesHeight,tradesManager.ServerTime),
-          "Spred:" + string.Format("{2:00.0}/{0:00.0}={1:n1}",tm.SpreadLongInPips,tm.CorridorHeightToSpreadRatio,tm.CorridorHeightByRegressionInPips)
+          "Spred:" + string.Format("{2:00.0}/{0:00.0}={1:n1}",tm.SpreadForCorridorInPips,tm.CorridorHeightToSpreadRatio,tm.CorridorHeightByRegressionInPips)
         };
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
         //charter.Dispatcher.Invoke(new Action(() => {
@@ -875,10 +875,10 @@ namespace HedgeHog.Alice.Client {
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
+          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
-          var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          charter.AddTicks(price, rates, new PriceBar[1][] { corridornesses/*, stDevBars*/ }, info, null,
+          //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
+          charter.AddTicks(price, rates, new PriceBar[1][] { /*corridornesses,*/ stDevBars }, info, null,
             0, 0/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
