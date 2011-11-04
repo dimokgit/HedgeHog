@@ -239,7 +239,7 @@ namespace Order2GoAddIn {
     }
     public bool LogOn(string user, string password, string url, bool isDemo) {
       if (!IsLoggedIn || IsInVirtualTrading) {
-        this.user = user;
+        this.user = user.Trim();
         this.password = password;
         this.isDemo = isDemo;
         this.URL = url + "" != "" ? url : DefaultUrl;
