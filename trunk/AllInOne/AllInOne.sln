@@ -110,6 +110,8 @@ Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "localhost", "http://localho
 		DefaultWebSiteLanguage = "Visual C#"
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MP3", "..\MP3\MP3\MP3.csproj", "{2D73991B-184D-4C8A-9C88-91299AAD6CED}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -1209,6 +1211,36 @@ Global
 		{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
 		{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}.Release|Win32.ActiveCfg = Debug|Any CPU
 		{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}.Release|x86.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|Any CPU.Build.0 = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|Win32.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug SubArray|x86.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|Any CPU.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|Any CPU.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|Mixed Platforms.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|Win32.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Part1|x86.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|Any CPU.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|Any CPU.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|Mixed Platforms.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|Win32.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release SubArray|x86.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|Win32.ActiveCfg = Release|Any CPU
+		{2D73991B-184D-4C8A-9C88-91299AAD6CED}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
