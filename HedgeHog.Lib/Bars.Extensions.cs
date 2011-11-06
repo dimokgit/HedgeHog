@@ -533,13 +533,13 @@ namespace HedgeHog.Bars {
     public static double Height<TBar>(this ICollection<TBar> rates, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
       return rates.Max(priceHigh) - rates.Min(priceLow);
     }
-    public static double Height<TBar>(this IList<TBar> rates) where TBar:BarBase {
+    public static double Height<TBar>(this IEnumerable<TBar> rates) where TBar:BarBase {
       return rates.Height(r => r.PriceAvg);
     }
-    public static double Height<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
+    public static double Height<TBar>(this IEnumerable<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       var rs = rates.Select(getPrice).ToList();
       rs.Sort();
-      return rs[rates.Count-1] - rs[0];
+      return rs[rs.Count - 1] - rs[0];
     }
     public static double Density(this ICollection<Rate> rates) {
       return rates.Average(r => r.BidHigh- r.AskLow);
