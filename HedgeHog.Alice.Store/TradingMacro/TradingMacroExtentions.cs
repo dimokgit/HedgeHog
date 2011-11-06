@@ -496,7 +496,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     void SuppRes_RateChanged(object sender, EventArgs e) {
-      (sender as SuppRes).CrossesCount = GetCrossesCount(RatesArray, (sender as SuppRes).Rate);
+      if (!IsInVitualTrading && !IsInPlayback)
+        (sender as SuppRes).CrossesCount = GetCrossesCount(RatesArray, (sender as SuppRes).Rate);
       return;
       SetEntryOrdersBySuppResLevels();
     }
@@ -2112,7 +2113,7 @@ namespace HedgeHog.Alice.Store {
         var spreadHight = spreads.AverageByIterations(iterations, false);
         if (spreadLow.Count == 0 && spreadHight.Count == 0)
           return CalcSpreadForCorridor(rates, iterations - 1);
-        var sa = spreads.Except(spreadLow.Concat(spreadHight)).Average();
+        var sa = spreads.Except(spreadLow.Concat(spreadHight)).DefaultIfEmpty(spreads.Average()).Average();
         var sstdev = 0;// spreads.StDev();
         return sa + sstdev;
       } catch (Exception exc) {
@@ -2492,13 +2493,14 @@ namespace HedgeHog.Alice.Store {
         var minTradeCount = suppReses.Min(sr => sr.TradesCount);
         foreach (var suppRes in EnsureActiveSuppReses(isBuy)) {
           var level = suppRes.Rate;
+          var suppResCanTrade = suppRes.CanTrade;
           if (canTrade(level)) {
             if (suppRes.TradesCount == minTradeCount)
               suppReses.IsBuy(!isBuy).OrderBy(sr => (sr.Rate - suppRes.Rate).Abs()).Take(1).ToList()
                 .ForEach(sr => sr.TradesCount = suppRes.TradesCount - 1);
             if (suppRes.TradesCount <= 0 && (!HasTradesByDistance(isBuy))) {
               CheckPendingAction("OT", (pa) => {
-                var lot = suppRes.CanTrade ? EntryOrderAllowedLot(isBuy) : Trades.IsBuy(!isBuy).Lots();
+                var lot = suppResCanTrade ? EntryOrderAllowedLot(isBuy) : Trades.IsBuy(!isBuy).Lots();
                 if (lot > 0) {
                   pa();
                   TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
@@ -2576,7 +2578,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     void StrategyRange() {
-      StrategyEnterRange033();
+      StrategyEnterRange036();
     }
     private void StrategyEnterRange032() {
       StrategyExitByGross032();
@@ -2653,6 +2655,51 @@ namespace HedgeHog.Alice.Store {
 
     }
 
+    private void StrategyEnterRange035() {
+      if (!StrategyExitByGross1()) {
+        Trades.Where(t => t.PL > TakeProfitPips).ToList().ForEach(t => TradesManager.CloseTrade(t));
+      }
+      if (!IsInVitualTrading) return;
+      Func<double, double, bool> canTradeByTradeCorridor = (level1, level2) => {
+        return (level1 - level2).Abs().Between(SpreadForCorridor * 2, RatesHeight / 2);
+      };
+
+      var stDev = this.CalculateTakeProfit();
+      var sellLevel = MagnetPrice + stDev;
+      var buyLevel = MagnetPrice - stDev;
+
+      var rs = Resistances.OrderByDescending(r => r.Rate).ToList();
+      Enumerable.Range(0, rs.Count()).ToList().ForEach(r => rs[r].Rate = buyLevel - stDev * r);
+      var ss = Supports.OrderBy(r => r.Rate).ToList();
+      Enumerable.Range(0, ss.Count()).ToList().ForEach(r => ss[r].Rate = sellLevel + stDev * r);
+      SuppRes.ToList().ForEach(sr => sr.CanTrade = true);
+
+    }
+    private void StrategyEnterRange036() {
+      if (!StrategyExitByGross1()) {
+        Trades.Where(t => t.PL > TakeProfitPips).ToList().ForEach(t => TradesManager.CloseTrade(t));
+      }
+      if (!IsInVitualTrading) return;
+
+      var stDev = this.CalculateTakeProfit();
+      var sellLevel = MagnetPrice + stDev;
+      var buyLevel = MagnetPrice - stDev;
+
+      var canBuy = !Trades.IsBuy(false).Any();
+      var rs = Resistances.OrderByDescending(r => r.Rate).ToList();
+      Enumerable.Range(0, rs.Count()).ToList().ForEach(r => {
+        rs[r].Rate = canBuy ? buyLevel - stDev * r : InPoints(1)*300-MagnetPrice;
+        rs[r].CanTrade = canBuy;
+      });
+
+      var canSell = !Trades.IsBuy(true).Any();
+      var ss = Supports.OrderBy(r => r.Rate).ToList();
+      Enumerable.Range(0, ss.Count()).ToList().ForEach(r => {
+        ss[r].Rate = canSell ? sellLevel + stDev * r : InPoints(1) * 300 + MagnetPrice;
+        ss[r].CanTrade = canSell;
+      });
+    }
+
     private void TurnOffSuppRes(double level = double.NaN) {
       var rate = double.IsNaN(level) ? SuppRes.Average(sr => sr.Rate) : level;
       foreach (var sr in SuppRes)
@@ -2689,7 +2736,20 @@ namespace HedgeHog.Alice.Store {
           TradesManager.ClosePair(Pair, Trades[0].IsBuy);
           return true;
         }
-        if( Trades.Lots() > LotSize && CurrentGross > 0)
+        if (Trades.Lots() > LotSize && CurrentGross > 0)
+          TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
+      }
+      return false;
+    }
+
+    bool StrategyExitByGross1() {
+      if (Trades.Any()) {
+        var exitByProfit = CurrentGrossInPips >= TakeProfitPips / Trades.Positions(LotSize);
+        if (exitByProfit) {
+          TradesManager.ClosePair(Pair, Trades[0].IsBuy);
+          return true;
+        }
+          if (Trades.Lots() > LotSize && CurrentGross > 0)
           TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
       }
       return false;
@@ -2740,7 +2800,7 @@ namespace HedgeHog.Alice.Store {
     }
     private bool HasTradesByDistance(Trade[] trades) {
       if (MaximumPositions <= trades.Positions(LotSize)) return true;
-      var td = TradingDistanceInPips.Max(trades.DistanceMaximum());
+      var td = TradingDistanceInPips;//.Max(trades.DistanceMaximum());
       return TakeProfitPips == 0 || double.IsNaN(TradingDistance)
         || (trades.Any() && trades.Max(t => t.PL) > -(td + PriceSpreadAverageInPips));
     }
@@ -2839,7 +2899,7 @@ namespace HedgeHog.Alice.Store {
         };
 
         #region Crosses
-        if (false) {
+        if (ratesForCorridor.Count == 0) {
           var startDate = ratesForCorridor.Take(ratesForCorridor.Count - 30).OrderByDescending(r => r.PriceStdDev).First().StartDate;
           var startRate = ScanCrosses(reversed.TakeWhile(r => r.StartDate >= startDate).ToList()).OrderByDescending(l => l.Item1).First().Item2;
           startDate = ratesForCorridor.Where(r => startRate.Between(r.BidLow, r.AskHigh)).Min(r => r.StartDate);//.Max(CorridorStats.StartDate);
@@ -2855,7 +2915,11 @@ namespace HedgeHog.Alice.Store {
           startDate = (waveRates[0].PriceAvg > median ? waveRates.OrderByDescending(r => r.PriceAvg) : waveRates.OrderBy(r => r.PriceAvg)).First().StartDate;
           _levelCounts = ScanCrosses(reversed.TakeWhile(r => r.StartDate >= startDate).ToList());
           _levelCounts.Sort((t1, t2) => -t1.Item1.CompareTo(t2.Item1));
-          MagnetPrice = _levelCounts.TakeWhile(lc => lc.Item1 == _levelCounts[0].Item1).Average(lc => lc.Item2);
+          var countAverageIterations = 5;
+          var levelCountsAverage = _levelCounts.Select(lc => (double)lc.Item1).ToList().AverageByIterations(countAverageIterations);
+          var highCountRates = _levelCounts.TakeWhile(lc => lc.Item1 >= levelCountsAverage.Average())
+            .Select(lc => reversed.First(r => lc.Item2.Between(r.BidLow, r.AskHigh)));
+          MagnetPrice = highCountRates.OrderBarsDescending().Take(2).Average(r => r.PriceAvg);
           var crossedRates = waveRates.Where(r => MagnetPrice.Between(r.BidLow, r.AskHigh)).OrderBars().ToList();
           startDate = crossedRates[0].StartDate;
           var endDate = crossedRates.LastByCount().StartDate;
@@ -3244,9 +3308,16 @@ namespace HedgeHog.Alice.Store {
       return (lotSize * multilier).Min(lastLotSize + lotSize);
     }
 
+    private int LotSizeByDistance(ICollection<Trade> trades) {
+      var pl = trades.Select(t => (t.Close - t.Open).Abs()).OrderBy(d => d).LastOrDefault();
+      var multilier = (Math.Floor(pl / RatesHeight) + 1).Min(MaxLotByTakeProfitRatio).ToInt();
+      return LotSize.Max(LotSize * multilier);
+    }
+
+
     public int AllowedLotSizeCore(ICollection<Trade> trades, double? takeProfitPips = null) {
       if (!HasRates) return 0;
-      return StrategyLotSizeByLossAndDistance(trades);
+      return LotSizeByDistance(trades);
       if (MaxLotSize == LotSize) return LotSize;
       var calcLot = CalculateLot(trades,takeProfitPips);
       if (DoAdjustTimeframeByAllowedLot && calcLot > MaxLotSize && Strategy.HasFlag(Strategies.Hot)) {
