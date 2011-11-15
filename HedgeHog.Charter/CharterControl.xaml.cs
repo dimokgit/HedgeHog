@@ -327,6 +327,21 @@ namespace HedgeHog {
       }
     }
 
+
+
+    HorizontalLine _voltageAverage;
+    HorizontalLine voltageAverage {
+      get {
+        if (_voltageAverage == null) {
+          _voltageAverage = new HorizontalLine { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
+          if (innerPlotter != null)
+            innerPlotter.Children.Add(_voltageAverage);
+        }
+        return _voltageAverage;
+      }
+    }
+    public double VoltageAverage { set { voltageAverage.Value = value; } }
+    
     HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
     public double LineMax { set { lineMax.Value = value; } }
 
@@ -1101,7 +1116,7 @@ namespace HedgeHog {
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
     public void AddTicks(Price lastPrice, Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
-                          double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
+                          double voltageHigh, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
       var voltsByTick = voltsByTicks[0];
@@ -1203,12 +1218,13 @@ namespace HedgeHog {
         var doVolts = voltsByTick != null;
         CreateCurrencyDataSource(doVolts);
         try {
-          SetGannAngles(ticks, SelectedGannAngleIndex);
+          //SetGannAngles(ticks, SelectedGannAngleIndex);
           animatedDataSource.RaiseDataChanged();
-          animatedDataSourceBid.RaiseDataChanged();
-          animatedDataSource1.RaiseDataChanged();
+          //animatedDataSourceBid.RaiseDataChanged();
+          //animatedDataSource1.RaiseDataChanged();
           if (doVolts)
-            animatedVoltDataSource.RaiseDataChanged();
+             VoltageAverage = voltageAverage;
+          //animatedVoltDataSource.RaiseDataChanged();
           //_voltGraph.Stroke = new SolidColorBrush(animatedVoltValueY.Last() > 0 ? Colors.LimeGreen : Colors.Tan);
 
         } catch (InvalidOperationException) {

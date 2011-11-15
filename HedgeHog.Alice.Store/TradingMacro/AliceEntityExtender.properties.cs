@@ -394,6 +394,37 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region StDevAverateRatioThreshold
+    private double _StDevAverateRatioMin;
+    [DisplayName("StDev Averate Ratio Min")]
+    [Category(categoryActive)]
+    public double StDevAverateRatioMin {
+      get { return _StDevAverateRatioMin; }
+      set {
+        if (_StDevAverateRatioMin != value) {
+          _StDevAverateRatioMin = value;
+          OnPropertyChanged("StDevAverateRatioMin");
+        }
+      }
+    }
+
+    #endregion
+
+    #region StDevAverateRatioMax
+    private double _StDevAverateRatioMax;
+    [DisplayName("StDev Averate Ratio Max")]
+    [Category(categoryActive)]
+    public double StDevAverateRatioMax {
+      get { return _StDevAverateRatioMax; }
+      set {
+        if (_StDevAverateRatioMax != value) {
+          _StDevAverateRatioMax = value;
+          OnPropertyChanged("StDevAverateRatioMax");
+        }
+      }
+    }
+
+    #endregion
     [DisplayName("StDev Ratio Min")]
     [Category(categoryCorridor)]
     [Description("BigCorr.StDev / CurrCorr.StDev")]
@@ -542,7 +573,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     [DisplayName("Range Ratio For TradeStop")]
     [Description("Ex:Exit when PL < -Range * X")]
     public double RangeRatioForTradeStop_ {
@@ -683,7 +714,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     [DisplayName("Is SuppRes Manual")]
     public bool IsSuppResManual_ {
       get { return IsSuppResManual; }
@@ -691,7 +722,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Is Gann Angles Manual")]
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     public bool IsGannAnglesManual_ {
       get { return IsGannAnglesManual; }
       set { IsGannAnglesManual = value; }
@@ -835,6 +866,22 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    #region StDevTresholdIterations
+    private int _StDevTresholdIterations;
+    [DisplayName("StDev Treshold Iterations")]
+    [Category(categoryActive)]
+    public int StDevTresholdIterations {
+      get { return _StDevTresholdIterations; }
+      set {
+        if (_StDevTresholdIterations != value) {
+          _StDevTresholdIterations = value;
+          OnPropertyChanged("StDevTresholdIterations");
+        }
+      }
+    }
+
+    #endregion
 
     private double _TradeDistanceInPips;
     double TradeDistanceInPips {

@@ -182,7 +182,10 @@ namespace HedgeHog {
     }
 
 
-    public static IList<double> AverageByIterations(this IList<double> values, double iterations,bool low = false) {
+    public static IList<double> AverageByIterations(this IList<double> values, double iterations) {
+      return values.AverageByIterations(Math.Abs(iterations), iterations < 0);
+    }
+    public static IList<double> AverageByIterations(this IList<double> values, double iterations, bool low) {
       return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations);
     }
     public static IList<double> AverageByIterations(this IList<double> values, Func<double, double, bool> compare, double iterations) {
