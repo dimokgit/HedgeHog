@@ -860,6 +860,8 @@ namespace HedgeHog.Alice.Client {
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
+          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
+          charter.CenterOfMassSell = tm.CenterOfMassSell;
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Count;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
