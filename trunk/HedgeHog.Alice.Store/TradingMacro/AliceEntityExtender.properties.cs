@@ -54,6 +54,20 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #endregion
+
+    public bool IsGroupIdEmpty { get { return GroupId == Guid.Empty; } }
+    #region GroupId
+    private Guid _GroupId = Guid.Empty;
+    public Guid GroupId {
+      get { return _GroupId; }
+      set {
+        if (_GroupId != value) {
+          _GroupId = value;
+          OnPropertyChanged("GroupId");
+        }
+      }
+    }
 
     #endregion
 
