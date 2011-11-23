@@ -2501,7 +2501,6 @@ namespace HedgeHog.Alice.Store {
         var minTradeCount = suppReses.Min(sr => sr.TradesCount);
         foreach (var suppRes in EnsureActiveSuppReses(isBuy)) {
           var level = suppRes.Rate;
-          var suppResCanTrade = suppRes.CanTrade;
           if (canTrade(level)) {
             var srGroup = suppReses.Where(a => !a.IsGroupIdEmpty && a.GroupId == suppRes.GroupId).OrderBy(sr => sr.TradesCount).ToList();
             if (srGroup.Any()) {
@@ -2510,9 +2509,9 @@ namespace HedgeHog.Alice.Store {
             } else if (suppRes.TradesCount == minTradeCount)
               suppReses.IsBuy(!isBuy).OrderBy(sr => (sr.Rate - suppRes.Rate).Abs()).Take(1).ToList()
                 .ForEach(sr => sr.TradesCount = suppRes.TradesCount - 1);
-            if (suppRes.TradesCount <= 0 && (!HasTradesByDistance(isBuy))) {
+            if (!suppRes.CanTrade || suppRes.TradesCount <= 0 && !HasTradesByDistance(isBuy)) {
               CheckPendingAction("OT", (pa) => {
-                var lot = suppResCanTrade ? EntryOrderAllowedLot(isBuy) : Trades.IsBuy(!isBuy).Lots();
+                var lot = suppRes.CanTrade ? EntryOrderAllowedLot(isBuy) : Trades.IsBuy(!isBuy).Lots();
                 if (lot > 0) {
                   pa();
                   TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
@@ -2538,8 +2537,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     void StrategyBreakout() {
-      StrategyEnterBreakout041();
+      StrategyEnterBreakout042();
     }
+
+    bool _useTakeProfitMin = false;
+    Action _strategyExecuteOnTradeClose;
+    Action _strategyExecuteOnTradeOpen;
 
     private void StrategyEnterBreakout032() {
       StrategyExitByGross032();
@@ -2684,11 +2687,6 @@ namespace HedgeHog.Alice.Store {
 
       SuppRes.ToList().ForEach(sr => sr.CanTrade = canTrade);
     }
-
-    bool _useTakeProfitMin = false;
-    Action _strategyExecuteOnTradeClose;
-    Action _strategyExecuteOnTradeOpen;
-
     private void StrategyEnterBreakout039() {
       if (_strategyExecuteOnTradeClose == null) {
         _strategyExecuteOnTradeClose = () => _useTakeProfitMin = false;
@@ -2803,8 +2801,37 @@ namespace HedgeHog.Alice.Store {
       ResistanceHigh().CanTrade = SupportLow().CanTrade = false;
       ResistanceLow().CanTrade = SupportHigh().CanTrade = true;
     }
+    private void StrategyEnterBreakout042() {
+      if (_strategyExecuteOnTradeClose == null) {
+        #region Init SuppReses
+        SuppResLevelsCount = 1;
+        _strategyExecuteOnTradeClose = () => {
+          _useTakeProfitMin = false;
+          ResistanceHigh().TradesCount = 0;
+          SupportLow().TradesCount = 0;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+        };
+        #endregion
+      }
+      StrategyExitByGross042();
+      if (!IsInVitualTrading) return;
+
+      var rates = CorridorStats.Rates.ReverseIfNot();
+      var rates2 = rates.Skip(2).OrderBy(r => r.PriceAvg).ToList();
+      var buyRate = rates2.LastByCount();
+      var buyLevel = buyRate.PriceAvg;
+      var sellRate = rates2[0];
+      var sellLevel = sellRate.PriceAvg;
+
+      ResistanceHigh().Rate = buyLevel + SpreadForCorridor;
+      SupportLow().Rate = sellLevel - SpreadForCorridor;
+
+      ResistanceHigh().CanTrade = SupportLow().CanTrade = true;
+    }
     void StrategyRange() {
-      StrategyEnterBreakout041();
+      StrategyEnterBreakout042();
     }
     private void StrategyEnterRange032() {
       StrategyExitByGross032();
@@ -3030,6 +3057,13 @@ namespace HedgeHog.Alice.Store {
       return false;
     }
     bool StrategyExitByGross() { return StrategyExitByGross(() => false); }
+    bool StrategyExitByGross042() {
+      if (Trades.Lots() > LotSize && CurrentGrossInPips > 0) {
+        TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
+        return true;
+      }
+      return false;
+    }
     bool StrategyExitByGross(Func<bool> or) {
       if (Trades.Any()) {
         var exitByProfit = CurrentGrossInPips >= SpreadForCorridorInPips.Max(TakeProfitPips / Trades.Positions(LotSize));
