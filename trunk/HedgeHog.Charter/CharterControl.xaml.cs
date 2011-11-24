@@ -328,6 +328,18 @@ namespace HedgeHog {
     }
 
 
+    HorizontalLine _voltageHigh;
+    HorizontalLine voltageHigh {
+      get {
+        if (_voltageHigh == null) {
+          _voltageHigh = new HorizontalLine { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
+          if (innerPlotter != null)
+            innerPlotter.Children.Add(_voltageHigh);
+        }
+        return _voltageHigh;
+      }
+    }
+    public double VoltageHigh { set { voltageHigh.Value = value; } }
 
     HorizontalLine _voltageAverage;
     HorizontalLine voltageAverage {
@@ -1222,8 +1234,10 @@ namespace HedgeHog {
           animatedDataSource.RaiseDataChanged();
           //animatedDataSourceBid.RaiseDataChanged();
           //animatedDataSource1.RaiseDataChanged();
-          if (doVolts)
-             VoltageAverage = voltageAverage;
+          if (doVolts) {
+            VoltageHigh = voltageHigh;
+            VoltageAverage = voltageAverage;
+          }
           //animatedVoltDataSource.RaiseDataChanged();
           //_voltGraph.Stroke = new SolidColorBrush(animatedVoltValueY.Last() > 0 ? Colors.LimeGreen : Colors.Tan);
 
