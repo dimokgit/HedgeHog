@@ -880,17 +880,46 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
-    #region StDevTresholdIterations
-    private int _StDevTresholdIterations;
-    [DisplayName("StDev Treshold Iterations")]
+    #region VolumeTresholdIterations
+    [DisplayName("Volume Iterations")]
+    [Description("Volume Treshold Iterations")]
     [Category(categoryActive)]
-    public int StDevTresholdIterations {
-      get { return _StDevTresholdIterations; }
+    public int VolumeTresholdIterations_ {
+      get { return VolumeTresholdIterations; }
       set {
-        if (_StDevTresholdIterations != value) {
-          _StDevTresholdIterations = value;
-          OnPropertyChanged("StDevTresholdIterations");
+        if (VolumeTresholdIterations != value) {
+          VolumeTresholdIterations = value;
+          OnPropertyChanged("VolumeTresholdIterations_");
+        }
+      }
+    }
+
+    #endregion
+    #region StDevAverageLeewayRatio
+    [DisplayName("StDev Leeway Ratio")]
+    [Description("StDev Average Leeway Ratio")]
+    [Category(categoryActive)]
+    public double StDevAverageLeewayRatio_ {
+      get { return StDevAverageLeewayRatio; }
+      set {
+        if (StDevAverageLeewayRatio != value) {
+          StDevAverageLeewayRatio = value;
+          OnPropertyChanged("StDevAverageLeewayRatio_");
+        }
+      }
+    }
+
+    #endregion
+    #region StDevTresholdIterations
+    [DisplayName("StDev Iterations")]
+    [Description("StDev Treshold Iterations")]
+    [Category(categoryActive)]
+    public int StDevTresholdIterations_ {
+      get { return StDevTresholdIterations; }
+      set {
+        if (StDevTresholdIterations != value) {
+          StDevTresholdIterations = value;
+          OnPropertyChanged("StDevTresholdIterations_");
         }
       }
     }

@@ -251,7 +251,8 @@ namespace HedgeHog.Alice.Client {
         loadRatesSecondsWarning: tm.LoadRatesSecondsWarning, corridorHighLowMethodInt: tm.CorridorHighLowMethodInt,
         corridorStDevRatioMax: tm.CorridorStDevRatioMax,
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
-        priceCmaLevels: tm.PriceCmaLevels);
+        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations_,
+        stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -878,12 +879,13 @@ namespace HedgeHog.Alice.Client {
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.Volume) }).ToArray();
+          var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          var secondaryAverage = volumes.Select(v => v.Speed).ToList().AverageByIterations(tm.StDevTresholdIterations).Average(); //tm.StDevAverageInPips;
+          var secondaryAverage = volumes.Select(v => v.Speed).ToList().AverageByIterations(-tm.VolumeTresholdIterations).Average(); //tm.StDevAverageInPips;
+          var secondaryHigh = volumes.Select(v => v.Speed).ToList().AverageByIterations(tm.VolumeTresholdIterations).Average(); //tm.StDevAverageInPips;
           charter.AddTicks(price, rates, new PriceBar[1][] { /*stDevBars*/volumes }, info, null,
-            0,secondaryAverage /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
+            secondaryHigh,secondaryAverage /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             timeHigh, DateTime.MinValue, DateTime.MinValue,

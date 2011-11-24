@@ -3375,7 +3375,7 @@ namespace HedgeHog.Alice.Store {
           #endregion
         } else {
           #region
-          var rates = ratesForCorridor.SkipWhile(r => r.PriceStdDev > StDevAverage).Reverse().ToList();
+          var rates = ratesForCorridor.SkipWhile(r => r.PriceStdDev > StDevAverage * StDevAverageLeewayRatio).Reverse().ToList();
           MagnetPrice = rates.Average(r => r.PriceAvg);
 
           if (rates.Count < 2) return;
