@@ -841,7 +841,7 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null) return;
-        var timeHigh = csFirst.Rates[0].StartDateContinuous;
+        var timeHigh = csFirst.Rates.LastByCount().StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
@@ -878,10 +878,12 @@ namespace HedgeHog.Alice.Client {
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
+          var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.Volume) }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          charter.AddTicks(price, rates, new PriceBar[1][] { /*corridornesses,*/ stDevBars }, info, null,
-            0, tm.StDevAverageInPips/*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
+          var secondaryAverage = volumes.Select(v => v.Speed).ToList().AverageByIterations(tm.StDevTresholdIterations).Average(); //tm.StDevAverageInPips;
+          charter.AddTicks(price, rates, new PriceBar[1][] { /*stDevBars*/volumes }, info, null,
+            0,secondaryAverage /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             timeHigh, DateTime.MinValue, DateTime.MinValue,

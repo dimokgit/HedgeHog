@@ -18,8 +18,10 @@ namespace HedgeHog.Shared {
     }
   }
   public delegate void PriceChangedEventHandler(Price Price);
+  public enum ClosePriceMode { Average, HighLow }
   [Serializable]
   public class Price {
+    public static ClosePriceMode ClosePriceMode = ClosePriceMode.Average;
     public double Bid { get; set; }
     public double Ask { get; set; }
     public double Average { get { return (Ask + Bid) / 2; } }
@@ -43,7 +45,11 @@ namespace HedgeHog.Shared {
       AskChangeDirection = 0;
       BidChangeDirection = 0;
       this.IsPlayback = isPlayBack;
+      BuyClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.BidHigh + rate.BidClose) / 2 : rate.BidHigh;
+      SellClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.AskLow + rate.AskClose) / 2 : rate.AskLow;
     }
+    public double BuyClose { get; set; }
+    public double SellClose { get; set; }
   }
 
 }
