@@ -2537,7 +2537,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     void StrategyBreakout() {
-      StrategyEnterBreakout042();
+      StrategyEnterBreakout044();
     }
 
     bool _useTakeProfitMin = false;
@@ -2830,8 +2830,66 @@ namespace HedgeHog.Alice.Store {
 
       ResistanceHigh().CanTrade = SupportLow().CanTrade = true;
     }
+    private void StrategyEnterBreakout043() {
+      if (_strategyExecuteOnTradeClose == null) {
+        #region Init SuppReses
+        SuppResLevelsCount = 1;
+        _strategyExecuteOnTradeClose = () => {
+          _useTakeProfitMin = false;
+          ResistanceHigh().TradesCount = 0;
+          SupportLow().TradesCount = 0;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+        };
+        #endregion
+      }
+      StrategyExitByGross042();
+      if (!IsInVitualTrading) return;
+
+      var canBuy = CorridorAngle > 0;
+      var tradeLevel = CorridorStats.Rates[0].PriceAvg1;
+      var buyLevel = canBuy ? tradeLevel : MagnetPrice + InPoints(200);
+      var sellLevel = !canBuy ? tradeLevel : MagnetPrice - InPoints(200);
+
+      ResistanceHigh().Rate = buyLevel;
+      SupportLow().Rate = sellLevel;
+
+      ResistanceHigh().CanTrade = SupportLow().CanTrade = true;
+    }
+    private void StrategyEnterBreakout044() {
+      Price.ClosePriceMode = ClosePriceMode.HighLow;
+      if (_strategyExecuteOnTradeClose == null) {
+        #region Init SuppReses
+        SuppResLevelsCount = 1;
+        _strategyExecuteOnTradeClose = () => {
+          _useTakeProfitMin = false;
+          ResistanceHigh().TradesCount = 0;
+          SupportLow().TradesCount = 0;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+        };
+        #endregion
+      }
+      StrategyExitByGross042();
+      if (!IsInVitualTrading) return;
+
+      var canBuy = CorridorAngle > 0;
+      var tradeLevel = CorridorStats.Rates[0].PriceAvg1;
+      var buyLevel = tradeLevel+SpreadForCorridor; //-StDevAverage;
+      var sellLevel = tradeLevel-SpreadForCorridor; //+StDevAverage;
+
+      ResistanceHigh().Rate = buyLevel;
+      SupportLow().Rate = sellLevel;
+
+      ResistanceHigh().CanTrade = true;
+      SupportLow().CanTrade = true;
+    }
+
+
     void StrategyRange() {
-      StrategyEnterBreakout042();
+      StrategyEnterBreakout044();
     }
     private void StrategyEnterRange032() {
       StrategyExitByGross032();
