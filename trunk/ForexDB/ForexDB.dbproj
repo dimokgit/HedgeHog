@@ -332,6 +332,8 @@
     </Build>
     <Build Include="Schema Objects\Views\dbo.v_TradeSession.view.sql">
       <SubType>Code</SubType>
+      <AnsiNulls>On</AnsiNulls>
+      <QuotedIdentifier>On</QuotedIdentifier>
     </Build>
     <Build Include="Schema Objects\Views\dbo.v_BarsSummary.view.sql">
       <SubType>Code</SubType>
@@ -377,6 +379,8 @@
     </Build>
     <Build Include="Schema Objects\Tables\dbo.t_Trade.table.sql">
       <SubType>Code</SubType>
+      <AnsiNulls>On</AnsiNulls>
+      <QuotedIdentifier>On</QuotedIdentifier>
     </Build>
     <Build Include="Schema Objects\Tables\dbo.t_Tick_20.table.sql">
       <SubType>Code</SubType>
@@ -408,6 +412,15 @@
     <Build Include="Schema Objects\Programmability\Types\User Defined Table Types\dbo.dt_VoltsTable.udtt.sql">
       <SubType>Code</SubType>
     </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_CleanTrades.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TradeSession_10.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_BarStats_1.view.sql">
+      <SubType>Code</SubType>
+    </Build>
   </ItemGroup>
   <ItemGroup>
     <NotInBuild Include="Schema Objects\Assemblies\LightLib.dll">
@@ -423,6 +436,9 @@
       <SubType>NotInBuild</SubType>
     </Build>
     <NotInBuild Include="Schema Objects\Assemblies\TA-Lib-Core.dll">
+      <SubType>NotInBuild</SubType>
+    </NotInBuild>
+    <NotInBuild Include="Schema Comparisons\SchemaComparison1.scmp">
       <SubType>NotInBuild</SubType>
     </NotInBuild>
   </ItemGroup>
