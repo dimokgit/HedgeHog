@@ -1,11 +1,8 @@
 ﻿CREATE VIEW dbo.v_TradeSession
 AS
-SELECT     TOP (100) PERCENT Pair, SessionId, MAX(TimeStamp) AS TimeStamp, COUNT(*) AS Count, SUM(GrossPL) AS GrossPL, DATEDIFF(dd, MIN(TimeOpen), 
-                      MAX(TimeClose)) AS Days, MAX(Lot) AS Lot, SUM(GrossPL) / NULLIF (DATEDIFF(dd, MIN(TimeOpen), MAX(TimeClose)), 0) * 30.0 AS DollarsPerMonth
-FROM         dbo.t_Trade
-WHERE     (IsVirtual = 1)
-GROUP BY SessionId, Pair
-ORDER BY TimeStamp DESC
+SELECT     Pair, SessionId, TimeStamp, Count, GrossPL, Days, Lot / 1000 AS Lot, LotA / 1000 AS LotA, LotSD / 1000 AS LotSD, DollarsPerMonth, PL, MinutesInTest, 
+                      DaysPerMinute, DollarsPerMonth / Lot * 1000 AS DollarPerLot
+FROM         dbo.v_TradeSession_10
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane1', @value = N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
