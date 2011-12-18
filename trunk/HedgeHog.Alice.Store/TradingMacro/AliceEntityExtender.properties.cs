@@ -411,7 +411,7 @@ namespace HedgeHog.Alice.Store {
     #region StDevAverateRatioThreshold
     private double _StDevAverateRatioMin;
     [DisplayName("StDev Averate Ratio Min")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public double StDevAverateRatioMin {
       get { return _StDevAverateRatioMin; }
       set {
@@ -427,7 +427,7 @@ namespace HedgeHog.Alice.Store {
     #region StDevAverateRatioMax
     private double _StDevAverateRatioMax;
     [DisplayName("StDev Averate Ratio Max")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public double StDevAverateRatioMax {
       get { return _StDevAverateRatioMax; }
       set {
@@ -465,6 +465,32 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("Extream Close Offset")]
+    [Category(categoryActive)]
+    [Description("Extream Close Offset in pips")]
+    public int ExtreamCloseOffset_ {
+      get { return ExtreamCloseOffset; }
+      set {
+        if (ExtreamCloseOffset != value) {
+          ExtreamCloseOffset = value;
+          OnPropertyChanged(TradingMacroMetadata.ExtreamCloseOffset_);
+        }
+      }
+    }
+
+    [DisplayName("Current Loss Close Adjustment")]
+    [Category(categoryActive)]
+    [Description("CurrentLossInPips * 0.9")]
+    public double CurrentLossInPipsCloseAdjustment_ {
+      get { return CurrentLossInPipsCloseAdjustment; }
+      set {
+        if (CurrentLossInPipsCloseAdjustment != value) {
+          CurrentLossInPipsCloseAdjustment = value;
+          OnPropertyChanged(TradingMacroMetadata.CurrentLossInPipsCloseAdjustment_);
+        }
+      }
+    }
+
 
 
     [DisplayName("Corridor Height Multiplier")]
@@ -490,7 +516,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Open Only")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     [Description("Close position only when opposite opens.")]
     public bool CloseOnOpen_ {
       get { return CloseOnOpen; }
@@ -521,7 +547,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reverse Strategy")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
       set {
@@ -683,7 +709,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Corridor Minimum Length Ratio")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     [Description("corr.Perios < rates.Periods * X/10")]
     public int CorridorMinimumLengthRatio {
       get { return BarPeriodsHigh; }
@@ -697,7 +723,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("StDev Level Lock")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public int StDevLevelLock {
       get { return CorridorIterationsIn; }
       set {
@@ -706,7 +732,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [DisplayName("StDev Level Load")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public int StDevLevelLoad {
       get { return CorridorIterationsOut; }
       set {
@@ -719,7 +745,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Corridor StDev To SpreadMin")]
     [Description("CorridorStDev/SpreadMin > X")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public double CorridorStDevToSpreadMin {
       get { return FibMin; }
       set { 
@@ -883,7 +909,7 @@ namespace HedgeHog.Alice.Store {
     #region VolumeTresholdIterations
     [DisplayName("Volume Iterations")]
     [Description("Volume Treshold Iterations")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public int VolumeTresholdIterations_ {
       get { return VolumeTresholdIterations; }
       set {
@@ -898,7 +924,7 @@ namespace HedgeHog.Alice.Store {
     #region StDevAverageLeewayRatio
     [DisplayName("StDev Leeway Ratio")]
     [Description("StDev Average Leeway Ratio")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public double StDevAverageLeewayRatio_ {
       get { return StDevAverageLeewayRatio; }
       set {

@@ -433,8 +433,6 @@ namespace HedgeHog.Alice.Client {
     }
 
     void AccountModel_CloseAllTrades(object sender, EventArgs e) {
-      TradesManager.GetTradesInternal("").Select(t => t.Pair).Distinct()
-        .ToList().ForEach(p => TradesManager.ClosePair(p));
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
@@ -1645,6 +1643,7 @@ namespace HedgeHog.Alice.Client {
           var ct = t_Trade.Createt_Trade(trade.Id, trade.Buy, trade.PL, trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, tradeStats.CorridorStDev, tradeStats.CorridorStDevCma, tradeStats.SessionId, trade.Open, trade.Close);
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
+          ct.SessionInfo = tradeStats.SessionInfo;
           using (var context = new ForexEntities()) {
             context.t_Trade.AddObject(ct);
             try {

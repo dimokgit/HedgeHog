@@ -319,7 +319,7 @@ namespace HedgeHog.Shared {
 
 
     public Price GetPrice(string pair) {
-      var rate = RatesByPair()[pair].Last();
+      var rate = RatesByPair()[pair].LastOrDefault();
       return new Price(pair, rate, ServerTime, GetPipSize(pair), GetDigits(pair), true);
     }
 

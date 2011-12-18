@@ -182,26 +182,33 @@ namespace HedgeHog {
     }
 
 
-    public static IList<double> AverageByIterations(this IList<double> values, double iterations) {
-      return values.AverageByIterations(Math.Abs(iterations), iterations < 0);
+    public static IList<double> AverageByIterations(this IList<double> values, double iterations, List<double> averagesOut = null) {
+      return values.AverageByIterations(Math.Abs(iterations), iterations < 0, averagesOut);
     }
-    public static IList<double> AverageByIterations(this IList<double> values, double iterations, bool low) {
-      return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations);
+    public static IList<double> AverageByIterations(this IList<double> values, double iterations, bool low, List<double> averagesOut = null) {
+      return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations,averagesOut);
     }
-    public static IList<double> AverageByIterations(this IList<double> values, Func<double, double, bool> compare, double iterations) {
-      return values.AverageByIterations<double>(v => v, compare, iterations);
+    public static IList<double> AverageByIterations(this IList<double> values, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
+      return values.AverageByIterations<double>(v => v, compare, iterations, averagesOut);
     }
 
-    public static IList<T> AverageByIterations<T>(this IList<T> values,Func<T,double> getValue, Func<T, double, bool> compare, double iterations) {
+    public static IList<T> AverageByIterations_<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
+      if (averagesOut != null) averagesOut.Add(avg);
       if (values.Count == 0) return values.ToArray();
-      for (int i = 1; i < iterations; i++) {
+      for (int i = 0; i < iterations; i++) {
         var vs = values.Where(r => compare(r, avg)).ToArray();
         if (vs.Length == 0) break;
         values = vs;
         avg = values.Average(getValue);
+        if (averagesOut != null) averagesOut.Insert(0, avg);
       }
       return values;
+    }
+    public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
+      var avg = values.DefaultIfEmpty().Average(getValue);
+      if (averagesOut != null) averagesOut.Insert(0,avg);
+      return values.Count == 0 || iterations == 0 ? values : values.AsParallel().Where(r => compare(r, avg)).ToList().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }

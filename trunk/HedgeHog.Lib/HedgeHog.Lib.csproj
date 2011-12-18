@@ -88,12 +88,14 @@
     <Compile Include="DateTimeExtender.cs" />
     <Compile Include="Lib.cs" />
     <Compile Include="ObservableExtensions.cs" />
+    <Compile Include="OrderableListPartitioner.cs" />
     <Compile Include="ParserCombinators.cs" />
     <Compile Include="PropertyObserver.cs" />
     <Compile Include="RingQueue.cs" />
     <Compile Include="Schedulers\TaskScheduler.cs" />
     <Compile Include="SimpleCommand.cs" />
     <Compile Include="SmartObservableCollection.cs" />
+    <Compile Include="StaticRangePartitioer.cs" />
     <Compile Include="TBar.cs" />
     <Compile Include="UI\GroupFilter.cs" />
     <Compile Include="MarkupExtemssions.cs" />

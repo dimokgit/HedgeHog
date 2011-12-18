@@ -374,6 +374,9 @@ namespace HedgeHog {
     public static int Abs(this int v) {
       return Math.Abs(v);
     }
+    public static double Sign(this double v) {
+      return Math.Sign(v);
+    }
     public static double Max(this double v, double other) {
       return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Max(v, other);
     }

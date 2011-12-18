@@ -1578,6 +1578,30 @@ namespace HedgeHog.DB
         private global::System.Double _PriceClose;
         partial void OnPriceCloseChanging(global::System.Double value);
         partial void OnPriceCloseChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String SessionInfo
+        {
+            get
+            {
+                return _SessionInfo;
+            }
+            set
+            {
+                OnSessionInfoChanging(value);
+                ReportPropertyChanging("SessionInfo");
+                _SessionInfo = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("SessionInfo");
+                OnSessionInfoChanged();
+            }
+        }
+        private global::System.String _SessionInfo;
+        partial void OnSessionInfoChanging(global::System.String value);
+        partial void OnSessionInfoChanged();
 
         #endregion
     

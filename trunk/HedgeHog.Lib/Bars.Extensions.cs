@@ -7,6 +7,7 @@ using System.Collections;
 using System.Windows;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Bars {
   public class RsiStatistics {
@@ -229,9 +230,10 @@ namespace HedgeHog.Bars {
       return list;
     }
     public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
+      return rates.Count < 2000 ? rates.SetStDevPrice_4(getPrice) : rates.SetStDevPrice_(getPrice);
+      /*
       rates[0].PriceStdDev = 0;
-      var list = new List<double>();
-      list.Add(getPrice(rates[0]));
+      var list = new List<double> { getPrice(rates[0]) };
       for (var i = 1; i < rates.Count; i++ ) {
         list.Add(getPrice(rates[i]));
         var stDev = rates[i].PriceStdDev = list.StDevP();
@@ -239,6 +241,76 @@ namespace HedgeHog.Bars {
       }
       //Enumerable.Range(1, rates.Count() - 1).AsParallel()
       //  .ForAll(i => rates[i].PriceStdDev = rates.Take(i + 1).Select(r1 => getPrice(r1)).ToList().StDevP());
+      return rates;
+       * */
+    }
+
+    public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      rates[0].PriceStdDev = 0;
+      var list = rates.Select(getPrice).ToArray();
+      var dp = new StaticRangePartitioner(Enumerable.Range(0, list.Length+1).ToArray(), 0.5);
+      dp.AsParallel().ForAll(range => {
+        for (int i = range.Item1.Max(2); i < range.Item2 && i <= list.Length; i++) {
+          var l = new double[i];
+          Array.Copy(list, l, i);
+          try {
+            var stDev = rates[i - 1].PriceStdDev = l.StDevP();
+            rates[i - 1].Corridorness = i / stDev;
+          } catch {
+            Debugger.Break();
+          }
+        }
+      });
+      return rates;
+    }
+    public static IList<TBar> SetStDevPrice_3<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      rates[0].PriceStdDev = 0;
+      var list = rates.Select(getPrice).ToArray();
+      var dp = new StaticRangePartitioer(Enumerable.Range(2, list.Length - 1).ToArray(), 0.25);
+      dp.AsParallel().ForAll(i => {
+        var l = new double[i];
+        Array.Copy(list, l, i);
+        var stDev = rates[i - 1].PriceStdDev = l.StDevP();
+        rates[i - 1].Corridorness = i / stDev;
+      });
+      return rates;
+    }
+    public static IList<TBar> SetStDevPrice_2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      rates[0].PriceStdDev = 0;
+      var list = rates.Select(getPrice).ToArray();
+      var dp = Partitioner.Create(2, list.Length+1, Environment.ProcessorCount);
+      Parallel.ForEach(dp, range => {
+        for (int i = range.Item1; i < range.Item2; i++) {
+          var l = new double[i];
+          Array.Copy(list, l, i);
+          var stDev = rates[i - 1].PriceStdDev = l.StDevP();
+          rates[i - 1].Corridorness = i / stDev;
+        }
+      });
+      return rates;
+    }
+    public static IList<TBar> SetStDevPrice_1<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      rates[0].PriceStdDev = 0;
+      var list = rates.Select(getPrice).ToArray();
+      var dp = Partitioner.Create(Enumerable.Range(2, list.Length - 1).ToList(),true);
+      Parallel.ForEach(dp, i => {
+        var l = new double[i];
+        Array.Copy(list, l, i);
+        var stDev = rates[i - 1].PriceStdDev = l.StDevP();
+        rates[i - 1].Corridorness = i / stDev;
+      });
+      return rates;
+    }
+    public static IList<TBar> SetStDevPrice_<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      rates[0].PriceStdDev = 0;
+      var list = rates.Select(getPrice).ToArray();
+      var dp = new OrderableListPartitioner<int>(Enumerable.Range(2, list.Length - 1).ToList());
+      Parallel.ForEach(dp, i => {
+        var l = new double[i];
+        Array.Copy(list,l,i);
+        var stDev = rates[i - 1].PriceStdDev = l.StDevP();
+        rates[i - 1].Corridorness = i / stDev;
+      });
       return rates;
     }
 
@@ -760,6 +832,16 @@ namespace HedgeHog.Bars {
     /// <param name="pricer">lambda with price source</param>
     private static void FillSpeed<TBar>(this IEnumerable<TBar> bars, TBar bar, Func<TBar, double> price) where TBar : BarBase {
       bar.PriceSpeed = HedgeHog.Regression.Regress(bars.Select(price).ToArray(),1)[1];
+    }
+
+    public static double Spread(this IList<Rate> rates, int iterations = 3) {
+        var spreads = rates.Select(r => r.AskHigh - r.BidLow).ToList();
+        if (spreads.Count == 0) return double.NaN;
+        var spreadLow = spreads.AverageByIterations(iterations, true);
+        var spreadHight = spreads.AverageByIterations(iterations, false);
+        if (spreadLow.Count == 0 && spreadHight.Count == 0)
+          return rates.Spread(iterations - 1);
+        return spreads.Except(spreadLow.Concat(spreadHight)).DefaultIfEmpty(spreads.Average()).Average();
     }
 
     public static void AddUp<TBar>(this List<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {

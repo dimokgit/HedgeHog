@@ -67,6 +67,7 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="TA-Lib-Core, Version=1.0.2813.38947, Culture=neutral, PublicKeyToken=fdb2a6b268f56aa5, processorArchitecture=MSIL" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +78,7 @@
   <ItemGroup>
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="LibTest.cs" />
+    <Compile Include="MathExtensionsTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RxDataFlow.cs" />
     <Compile Include="TradeExtensionsTest.cs" />
