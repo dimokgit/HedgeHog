@@ -35,9 +35,15 @@ namespace HedgeHog.Shared {
     public int Digits { get; set; }
     public double PipSize { get; set; }
     public Price() {    }
-    public Price(string pair, Rate rate,DateTime serverTime,double pipSize,int digits,bool isPlayBack) {
-      Ask = rate.AskClose;
-      Bid = rate.BidClose;
+    public Price(string pair, Rate rate, DateTime serverTime, double pipSize, int digits, bool isPlayBack) {
+      if (rate == null) {
+        Ask = Bid = BuyClose = SellClose = double.NaN;
+      } else {
+        Ask = rate.AskClose;
+        Bid = rate.BidClose;
+        BuyClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.BidHigh + rate.BidClose) / 2 : rate.BidHigh;
+        SellClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.AskLow + rate.AskClose) / 2 : rate.AskLow;
+      }
       Digits = digits;
       Time = serverTime;
       Pair = pair;
@@ -45,8 +51,7 @@ namespace HedgeHog.Shared {
       AskChangeDirection = 0;
       BidChangeDirection = 0;
       this.IsPlayback = isPlayBack;
-      BuyClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.BidHigh + rate.BidClose) / 2 : rate.BidHigh;
-      SellClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.AskLow + rate.AskClose) / 2 : rate.AskLow;
+
     }
     public double BuyClose { get; set; }
     public double SellClose { get; set; }

@@ -179,7 +179,8 @@ namespace HedgeHog.Shared {
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
       if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
       TimeClose = price.Time;
-      Close = Buy ? price.BuyClose : price.SellClose;
+      Close = Buy ? price.Bid : price.Ask;
+      //Close = Buy ? price.BuyClose : price.SellClose;
     }
 
     public double NetPL { get { return GrossPL + Commission; } }

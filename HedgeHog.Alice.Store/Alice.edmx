@@ -176,6 +176,8 @@
           <Property Name="VolumeTresholdIterations" Type="int" Nullable="false" />
           <Property Name="StDevTresholdIterations" Type="int" Nullable="false" />
           <Property Name="StDevAverageLeewayRatio" Type="float" Nullable="false" />
+          <Property Name="ExtreamCloseOffset" Type="int" Nullable="false" />
+          <Property Name="CurrentLossInPipsCloseAdjustment" Type="float" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -308,6 +310,8 @@
           <Property Type="Int32" Name="VolumeTresholdIterations" Nullable="false" />
           <Property Type="Int32" Name="StDevTresholdIterations" Nullable="false" />
           <Property Type="Double" Name="StDevAverageLeewayRatio" Nullable="false" />
+          <Property Type="Int32" Name="ExtreamCloseOffset" Nullable="false" />
+          <Property Type="Double" Name="CurrentLossInPipsCloseAdjustment" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -401,6 +405,8 @@
             <ScalarProperty Name="Commission" ColumnName="Commission" />
           </MappingFragment></EntityTypeMapping></EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="CurrentLossInPipsCloseAdjustment" ColumnName="CurrentLossInPipsCloseAdjustment" />
+                <ScalarProperty Name="ExtreamCloseOffset" ColumnName="ExtreamCloseOffset" />
                 <ScalarProperty Name="StDevAverageLeewayRatio" ColumnName="StDevAverageLeewayRatio" />
                 <ScalarProperty Name="StDevTresholdIterations" ColumnName="StDevTresholdIterations" />
                 <ScalarProperty Name="VolumeTresholdIterations" ColumnName="VolumeTresholdIterations" />

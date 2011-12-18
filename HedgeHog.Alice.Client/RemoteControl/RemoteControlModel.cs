@@ -252,7 +252,8 @@ namespace HedgeHog.Alice.Client {
         corridorStDevRatioMax: tm.CorridorStDevRatioMax,
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
         priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations_,
-        stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio);
+        stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio, 
+        extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -827,11 +828,11 @@ namespace HedgeHog.Alice.Client {
     }
     void ShowChart(TradingMacro tm) {
       try {
-        if (_isMinimized) return;
+        var charter = GetCharter(tm);
+        if (_isMinimized || charter.IsParentHidden) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
-        var charter = GetCharter(tm);
         if (tm.IsCharterMinimized) return;
         if (tm == null) return;
         if (rates.Count() == 0) return;
@@ -841,7 +842,7 @@ namespace HedgeHog.Alice.Client {
         var price = tm.CurrentPrice;
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
-        if (csFirst == null) return;
+        if (csFirst == null || !csFirst.Rates.Any()) return;
         var timeHigh = csFirst.Rates.LastByCount().StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
@@ -871,7 +872,7 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
           charter.StDev = tm.RatesStDevInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
-          charter.CorridorSpread = 0;
+          charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
           charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
           charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
@@ -882,10 +883,8 @@ namespace HedgeHog.Alice.Client {
           var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          var secondaryAverage = volumes.Select(v => v.Speed).ToList().AverageByIterations(-tm.VolumeTresholdIterations).Average(); //tm.StDevAverageInPips;
-          var secondaryHigh = volumes.Select(v => v.Speed).ToList().AverageByIterations(tm.VolumeTresholdIterations).Average(); //tm.StDevAverageInPips;
           charter.AddTicks(price, rates, new PriceBar[1][] { /*stDevBars*/volumes }, info, null,
-            secondaryHigh,secondaryAverage /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
+            tm.VolumeAverageHigh,tm.VolumeAverageLow /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             timeHigh, DateTime.MinValue, DateTime.MinValue,
@@ -969,7 +968,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
 
-    void AdjustCurrentLosses() {
+    void AdjustCurrentLosses_New() {
       var tms = GetTradingMacros();
       var tmsWithProfit = tms.Where(tm => tm.CurrentLoss > 0 && !tm.Trades.Any()).ToList();
       if (tmsWithProfit.Any()) {
@@ -988,7 +987,7 @@ namespace HedgeHog.Alice.Client {
         try { GlobalStorage.UseAliceContextSaveChanges(); } catch { }
       }
     }
-    void AdjustCurrentLosses_Old() {
+    void AdjustCurrentLosses() {
       var tmsWithProfit = GetTradingMacros().Where(tm => tm.CurrentLoss > 0).ToList();
       var tmWithLoss = GetTradingMacros().Where(tm => tm.CurrentLoss < 0).ToList();
       var lossSum = tmWithLoss.Sum(tm => tm.CurrentLoss).Abs();
@@ -1021,6 +1020,7 @@ namespace HedgeHog.Alice.Client {
         var tm = GetTradingMacros(trade.Pair).First();
         var ts = trade.InitUnKnown<TradeUnKNown>().InitTradeStatistics(tm.GetTradeStatistics(trade));
         ts.SessionId = TradingMacro.SessionId;
+        ts.SessionInfo = tm.SessionInfo;
         MasterModel.AddCosedTrade(trade);
       } catch (Exception exc) { Log = exc; }
     }

@@ -273,6 +273,10 @@
                   <TextBlock.ToolTip>
                     <StackPanel>
                       <TextBlock>
+                        CloseOpenRatioCma.Last :<TextBlock Text="{Binding CloseOpenRatioCma.Last,StringFormat=n1}"/> > 
+                        CloseOpenRatioCma.Prev :<TextBlock Text="{Binding CloseOpenRatioCma.Prev,StringFormat=n1}"/>
+                      </TextBlock>
+                      <TextBlock>
                         CorridorCrossesCount :<TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/>
                       </TextBlock>
                       <!--<TextBlock>

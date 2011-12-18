@@ -34,12 +34,26 @@ namespace HedgeHog.Alice.Store {
     public double NetPL { get { return GrossPL - Commission; } }
   }
 
+  public class SessionInfoAttribute : Attribute {
+    public string Nick { get; set; }
+    public SessionInfoAttribute(string nick) {
+      this.Nick = nick;
+    }
+    public SessionInfoAttribute() { }
+  }
   public enum TradingMacroTakeProfitFunction {
-    Corridor = 1, Corridor0 = 2, RatesHeight = 4, RatesStDev = 5, StDev = 8, StDev2 = 9, Corr0_CorrB0 = 10, 
-    Spread = 11,
-    Spread2 = 12,
-    Spread3 = 13,
-    Spread4 = 14
+    Corridor = 1,
+    Corridor0 = 2,
+    Corridor1 = 3,
+    Corridor_RH_2 = 4,
+    Corr0_CorrB0 = 5,
+    RatesHeight = 10,
+    RatesHeight_2 = 12,
+    RatesStDev = 11,
+    Spread = 20,
+    Spread2 = 21,
+    Spread3 = 22,
+    Spread4 = 23
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }

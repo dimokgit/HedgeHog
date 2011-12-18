@@ -1779,7 +1779,9 @@ namespace HedgeHog.Alice.Store
         /// <param name="volumeTresholdIterations">Initial value of the VolumeTresholdIterations property.</param>
         /// <param name="stDevTresholdIterations">Initial value of the StDevTresholdIterations property.</param>
         /// <param name="stDevAverageLeewayRatio">Initial value of the StDevAverageLeewayRatio property.</param>
-        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio, global::System.Int32 loadRatesSecondsWarning, global::System.Int32 corridorHighLowMethodInt, global::System.Double corridorStDevRatioMax, global::System.Double corridorLengthMinimum, global::System.Int32 corridorCrossHighLowMethodInt, global::System.Int32 priceCmaLevels, global::System.Int32 volumeTresholdIterations, global::System.Int32 stDevTresholdIterations, global::System.Double stDevAverageLeewayRatio)
+        /// <param name="extreamCloseOffset">Initial value of the ExtreamCloseOffset property.</param>
+        /// <param name="currentLossInPipsCloseAdjustment">Initial value of the CurrentLossInPipsCloseAdjustment property.</param>
+        public static TradingMacro CreateTradingMacro(global::System.String pair, global::System.Double tradingRatio, global::System.Guid uID, global::System.Int32 limitBar, global::System.Double currentLoss, global::System.Boolean reverseOnProfit, global::System.Int32 freezLimit, global::System.Int32 corridorMethod, global::System.Int32 freezeStop, global::System.String fibMax, global::System.Double fibMin, global::System.Double corridornessMin, global::System.Int32 corridorIterationsIn, global::System.Int32 corridorIterationsOut, global::System.String corridorIterations, global::System.Int32 corridorBarMinutes, global::System.Int32 pairIndex, global::System.Int32 tradingGroup, global::System.Int32 maximumPositions, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.Boolean limitCorridorByBarHeight, global::System.Double maxLotByTakeProfitRatio, global::System.Int32 barPeriodsLow, global::System.Int32 barPeriodsHigh, global::System.Boolean strictTradeClose, global::System.Double barPeriodsLowHighRatio, global::System.Int32 longMAPeriod, global::System.Int32 corridorAverageDaysBack, global::System.Int32 corridorPeriodsStart, global::System.Int32 corridorPeriodsLength, global::System.Double corridorRatioForRange, global::System.Double corridorRatioForBreakout, global::System.Double rangeRatioForTradeLimit, global::System.Boolean tradeByAngle, global::System.Double profitToLossExitRatio, global::System.Int32 powerRowOffset, global::System.Double rangeRatioForTradeStop, global::System.Boolean reversePower, global::System.Double correlationTreshold, global::System.Boolean closeOnProfitOnly, global::System.Boolean closeOnProfit, global::System.Boolean closeOnOpen, global::System.Boolean streachTradingDistance, global::System.Boolean closeAllOnProfit, global::System.Boolean reverseStrategy, global::System.Boolean tradeAndAngleSynced, global::System.Double tradingAngleRange, global::System.Boolean closeByMomentum, global::System.Boolean tradeByRateDirection, global::System.String gannAngles, global::System.Boolean isGannAnglesManual, global::System.Double spreadShortToLongTreshold, global::System.Int32 suppResLevelsCount, global::System.Boolean doStreatchRates, global::System.Boolean isSuppResManual, global::System.Boolean tradeOnCrossOnly, global::System.Int32 takeProfitFunctionInt, global::System.Boolean doAdjustTimeframeByAllowedLot, global::System.Boolean isColdOnTrades, global::System.Int32 corridorCrossesCountMinimum, global::System.Double stDevToSpreadRatio, global::System.Int32 loadRatesSecondsWarning, global::System.Int32 corridorHighLowMethodInt, global::System.Double corridorStDevRatioMax, global::System.Double corridorLengthMinimum, global::System.Int32 corridorCrossHighLowMethodInt, global::System.Int32 priceCmaLevels, global::System.Int32 volumeTresholdIterations, global::System.Int32 stDevTresholdIterations, global::System.Double stDevAverageLeewayRatio, global::System.Int32 extreamCloseOffset, global::System.Double currentLossInPipsCloseAdjustment)
         {
             TradingMacro tradingMacro = new TradingMacro();
             tradingMacro.Pair = pair;
@@ -1853,6 +1855,8 @@ namespace HedgeHog.Alice.Store
             tradingMacro.VolumeTresholdIterations = volumeTresholdIterations;
             tradingMacro.StDevTresholdIterations = stDevTresholdIterations;
             tradingMacro.StDevAverageLeewayRatio = stDevAverageLeewayRatio;
+            tradingMacro.ExtreamCloseOffset = extreamCloseOffset;
+            tradingMacro.CurrentLossInPipsCloseAdjustment = currentLossInPipsCloseAdjustment;
             return tradingMacro;
         }
 
@@ -3781,6 +3785,54 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _StDevAverageLeewayRatio;
         partial void OnStDevAverageLeewayRatioChanging(global::System.Double value);
         partial void OnStDevAverageLeewayRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 ExtreamCloseOffset
+        {
+            get
+            {
+                return _ExtreamCloseOffset;
+            }
+            set
+            {
+                OnExtreamCloseOffsetChanging(value);
+                ReportPropertyChanging("ExtreamCloseOffset");
+                _ExtreamCloseOffset = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ExtreamCloseOffset");
+                OnExtreamCloseOffsetChanged();
+            }
+        }
+        private global::System.Int32 _ExtreamCloseOffset;
+        partial void OnExtreamCloseOffsetChanging(global::System.Int32 value);
+        partial void OnExtreamCloseOffsetChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double CurrentLossInPipsCloseAdjustment
+        {
+            get
+            {
+                return _CurrentLossInPipsCloseAdjustment;
+            }
+            set
+            {
+                OnCurrentLossInPipsCloseAdjustmentChanging(value);
+                ReportPropertyChanging("CurrentLossInPipsCloseAdjustment");
+                _CurrentLossInPipsCloseAdjustment = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CurrentLossInPipsCloseAdjustment");
+                OnCurrentLossInPipsCloseAdjustmentChanged();
+            }
+        }
+        private global::System.Double _CurrentLossInPipsCloseAdjustment;
+        partial void OnCurrentLossInPipsCloseAdjustmentChanging(global::System.Double value);
+        partial void OnCurrentLossInPipsCloseAdjustmentChanged();
 
         #endregion
     

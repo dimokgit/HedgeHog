@@ -80,6 +80,21 @@ namespace HedgeHog {
 
     #endregion
 
+
+
+    public bool IsParentHidden {
+      get;
+      set;
+    }
+
+    // Using a DependencyProperty as the backing store for IsParentHidden.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty IsParentHiddenProperty =
+        DependencyProperty.Register("IsParentHidden", typeof(bool), typeof(CharterControl), new UIPropertyMetadata((d, p) => {
+          ((CharterControl)d).IsParentHidden = (bool)p.NewValue;
+        }));
+
+    
+
     private int _barsPeriod;
     public int BarsPeriod {
       get { return _barsPeriod; }
@@ -190,7 +205,7 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{8:n1}s"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{9:n1}/{8:n1}s"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
@@ -200,6 +215,7 @@ namespace HedgeHog {
           /*6*/, CorridorStDevToRatesStDevRatio
           /*7*/, StDev
           /*8*/, SpreadForCorridor
+          /*9*/, CorridorSpread
           );
       }
     }

@@ -79,6 +79,7 @@
           <Property Name="SessionId" Type="uniqueidentifier" Nullable="false" />
           <Property Name="PriceOpen" Type="float" Nullable="false" />
           <Property Name="PriceClose" Type="float" Nullable="false" />
+          <Property Name="SessionInfo" Type="nvarchar" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'Forex.dbo.v_Pair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -171,6 +172,7 @@
           <Property Type="Guid" Name="SessionId" Nullable="false" />
           <Property Type="Double" Name="PriceOpen" Nullable="false" />
           <Property Type="Double" Name="PriceClose" Nullable="false" />
+          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
         </EntityType>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -247,6 +249,7 @@
           <EntitySetMapping Name="t_Trade">
             <EntityTypeMapping TypeName="ForexModel.t_Trade">
               <MappingFragment StoreEntitySet="t_Trade">
+                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
                 <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
                 <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
                 <ScalarProperty Name="SessionId" ColumnName="SessionId" />
