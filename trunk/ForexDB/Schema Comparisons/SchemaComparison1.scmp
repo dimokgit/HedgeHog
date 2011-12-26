@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <SchemaComparison>
-  <Version>1</Version>
+  <Version>10</Version>
   <SourceModelProvider>
     <ConnectionBasedModelProvider>
       <ConnectionString>Data Source=DIMONFX\sqlexpress;Initial Catalog=Forex;Integrated Security=True;Pooling=False</ConnectionString>
@@ -25,7 +25,7 @@
     <ConfigurationOptionsElement>
       <PropertyElementName>
         <Name>PlanGenerationType</Name>
-        <Value>Sql100SchemaDeploymentOptions</Value>
+        <Value>SqlDeploymentOptions</Value>
       </PropertyElementName>
       <PropertyElementName>
         <Name>IgnoreCryptographicProviderFilePath</Name>
@@ -300,11 +300,11 @@
         <Value>True</Value>
       </PropertyElementName>
       <PropertyElementName>
-        <Name>Microsoft.Data.Schema.Sql.SchemaModel.ISqlPermissionStatement</Name>
+        <Name>Microsoft.Data.Tools.Schema.Sql.SchemaModel.SqlPermissionStatement</Name>
         <Value>ExcludedType</Value>
       </PropertyElementName>
       <PropertyElementName>
-        <Name>Microsoft.Data.Schema.Sql.SchemaModel.ISqlExtendedProperty</Name>
+        <Name>Microsoft.Data.Tools.Schema.Sql.SchemaModel.SqlExtendedProperty</Name>
         <Value>ExcludedType</Value>
       </PropertyElementName>
     </ConfigurationOptionsElement>
@@ -361,4 +361,5 @@
       <Name>Forex_log</Name>
     </SelectedItem>
   </ExcludedTargetElements>
+  <SchemaCompareViewSettings />
 </SchemaComparison>
