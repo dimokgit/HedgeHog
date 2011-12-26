@@ -12,6 +12,19 @@ using System.Reflection;
 namespace HedgeHog.Alice.Store {
   public class TradingStatistics : INotifyPropertyChanged{
 
+    #region CurrentGrossInPips
+    private double _CurrentGrossInPips;
+    public double CurrentGrossInPips {
+      get { return _CurrentGrossInPips; }
+      set {
+        if (_CurrentGrossInPips != value) {
+          _CurrentGrossInPips = value;
+          RaisePropertyChanged("CurrentGrossInPips");
+        }
+      }
+    }
+    #endregion
+
     #region CurrentGrossAverage
     private double _CurrentGrossAverage = double.NaN;
     public double CurrentGrossAverage {

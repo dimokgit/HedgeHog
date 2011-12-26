@@ -58,7 +58,7 @@ namespace HedgeHog.Alice.Client {
     CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
         ObservableValue<CharterControl> charterObserver = new ObservableValue<CharterControl>();
-        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container);
+        var charterNew = Dispatcher.CurrentDispatcher.Invoke(new Func<CharterControl>(() => new CharterControl(tradingMacro.CompositeId, App.container))) as CharterControl;
         RequestAddCharterToUI(charterNew);
         charters.Add(tradingMacro, charterNew);
         charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
@@ -253,7 +253,7 @@ namespace HedgeHog.Alice.Client {
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
         priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations_,
         stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio, 
-        extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment);
+        extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment,corridorBigToSmallRatio:tm.CorridorBigToSmallRatio);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)
@@ -556,6 +556,7 @@ namespace HedgeHog.Alice.Client {
           var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
+          _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips);
         }
       } catch (Exception exc) {
         Log = exc;
@@ -635,7 +636,7 @@ namespace HedgeHog.Alice.Client {
         }
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
           try {
-            if (tm.HasRates && !IsInVirtualTrading) {
+            if (tm.IsActive && tm.HasRates && !IsInVirtualTrading) {
               var charter = GetCharter(tm);
               charter.Dispatcher.Invoke(() => {
                 charter.LineAvgAsk = tm.CurrentPrice.Ask;
@@ -843,7 +844,9 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
-        var timeHigh = csFirst.Rates.LastByCount().StartDateContinuous;
+        var corridorTime0 = tm.CorridorsRates[0][0].StartDateContinuous;
+        var corridorTime1 = tm.CorridorsRates[1][0].StartDateContinuous;
+        var corridorTime2 = tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
@@ -880,14 +883,14 @@ namespace HedgeHog.Alice.Client {
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
+          //var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          charter.AddTicks(price, rates, new PriceBar[1][] { /*stDevBars*/volumes }, info, null,
-            tm.VolumeAverageHigh,tm.VolumeAverageLow /*powerBars.AverageByIterations((v, a) => v <= a, tm.IterationsForPower).Average()*/,
+          charter.AddTicks(price, rates, new PriceBar[1][] { stDevBars }, info, null,
+            tm.InPips(tm.StDevAverages[1]),tm.InPips(tm.StDevAverages[0]),
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
-            timeHigh, DateTime.MinValue, DateTime.MinValue,
+            corridorTime0, corridorTime1, corridorTime2,
             //timeCurr, timeLow,
             new double[0]);
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, true));

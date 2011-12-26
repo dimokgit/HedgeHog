@@ -62,8 +62,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />
+    <None Include="packages.config" />
+    <None Include="Properties\DataSources\ForexEntities.datasource" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="EntityFramework.Preview.ReadMe.txt" />
     <Content Include="Forex.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -80,6 +80,7 @@
           <Property Name="PriceOpen" Type="float" Nullable="false" />
           <Property Name="PriceClose" Type="float" Nullable="false" />
           <Property Name="SessionInfo" Type="nvarchar" />
+          <Property Name="RunningBalance" Type="float" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'Forex.dbo.v_Pair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -125,7 +126,6 @@
     <edmx:ConceptualModels>
       <Schema Namespace="ForexModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
         <EntityContainer Name="ForexEntities" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
           <FunctionImport Name="GetCorridor" ReturnType="Collection(Single)">
             <Parameter Name="Pair" Mode="In" Type="String" />
             <Parameter Name="Period" Mode="In" Type="Byte" />
@@ -150,30 +150,8 @@
           <EntitySet Name="t_Offer" EntityType="ForexModel.t_Offer" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
           <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
+          <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
         </EntityContainer>
-        <EntityType Name="t_Trade">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="String" Name="Id" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
-          <Property Type="Boolean" Name="Buy" Nullable="false" />
-          <Property Type="Double" Name="PL" Nullable="false" />
-          <Property Type="Double" Name="GrossPL" Nullable="false" />
-          <Property Type="Double" Name="Lot" Nullable="false" />
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
-          <Property Type="DateTime" Name="TimeOpen" Nullable="false" />
-          <Property Type="DateTime" Name="TimeClose" Nullable="false" />
-          <Property Type="String" Name="AccountId" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="Commission" Nullable="false" />
-          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
-          <Property Type="DateTime" Name="TimeStamp" />
-          <Property Type="Double" Name="CorridorHeightInPips" Nullable="false" />
-          <Property Type="Double" Name="CorridorMinutesBack" Nullable="false" />
-          <Property Type="Guid" Name="SessionId" Nullable="false" />
-          <Property Type="Double" Name="PriceOpen" Nullable="false" />
-          <Property Type="Double" Name="PriceClose" Nullable="false" />
-          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
-        </EntityType>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
           <Property Type="Double" Name="StDev" Nullable="true" />
@@ -240,36 +218,36 @@
           <Property Type="Int32" Name="Volume" Nullable="false" />
           <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
         </EntityType>
+        <EntityType Name="t_Trade">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Id" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Type="Boolean" Name="Buy" Nullable="false" />
+          <Property Type="Double" Name="PL" Nullable="false" />
+          <Property Type="Double" Name="GrossPL" Nullable="false" />
+          <Property Type="Double" Name="Lot" Nullable="false" />
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="TimeOpen" Nullable="false" />
+          <Property Type="DateTime" Name="TimeClose" Nullable="false" />
+          <Property Type="String" Name="AccountId" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
+          <Property Type="Double" Name="Commission" Nullable="false" />
+          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
+          <Property Type="DateTime" Name="TimeStamp" />
+          <Property Type="Double" Name="CorridorHeightInPips" Nullable="false" />
+          <Property Type="Double" Name="CorridorMinutesBack" Nullable="false" />
+          <Property Type="Guid" Name="SessionId" Nullable="false" />
+          <Property Type="Double" Name="PriceOpen" Nullable="false" />
+          <Property Type="Double" Name="PriceClose" Nullable="false" />
+          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Type="Double" Name="RunningBalance" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="ForexModelStoreContainer" CdmEntityContainer="ForexEntities">
-          <EntitySetMapping Name="t_Trade">
-            <EntityTypeMapping TypeName="ForexModel.t_Trade">
-              <MappingFragment StoreEntitySet="t_Trade">
-                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
-                <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
-                <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
-                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
-                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
-                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
-                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
-                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
-                <ScalarProperty Name="Commission" ColumnName="Commission" />
-                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
-                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
-                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
-                <ScalarProperty Name="PL" ColumnName="PL" />
-                <ScalarProperty Name="Buy" ColumnName="Buy" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <FunctionImportMapping FunctionImportName="GetCorridor" FunctionName="ForexModel.Store.GetCorridor" />
           <FunctionImportMapping FunctionImportName="GetCorridorAverage" FunctionName="ForexModel.Store.GetCorridorAverage">
             <ResultMapping>
@@ -347,6 +325,31 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_Trade">
+            <EntityTypeMapping TypeName="ForexModel.t_Trade">
+              <MappingFragment StoreEntitySet="t_Trade">
+                <ScalarProperty Name="RunningBalance" ColumnName="RunningBalance" />
+                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
+                <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
+                <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
+                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
+                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
+                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
+                <ScalarProperty Name="Commission" ColumnName="Commission" />
+                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
+                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+                <ScalarProperty Name="PL" ColumnName="PL" />
+                <ScalarProperty Name="Buy" ColumnName="Buy" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -368,11 +371,11 @@
     <!-- Diagram content (shape and connector positions) -->
     <Diagrams>
       <Diagram Name="Forex">
-        <EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="3.375" PointY="0.75" Height="3.4001269531249996" />
         <EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="5.375" PointY="0.75" Height="1.4279589843749996" />
         <EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.375" PointY="3.75" Height="1.7566536458333317" />
         <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916674" />
         <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.5" PointY="0.5" Height="3.5186979166666674" />
+        <EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="2.75" PointY="0.875" Height="4.6725065104166674" />
       </Diagram>
     </Diagrams>
   </Designer>

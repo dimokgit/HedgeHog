@@ -41,7 +41,10 @@ namespace HedgeHog.Alice.Store {
 
     private double _TakeProfit = double.NaN;
     public double TakeProfit {
-      get { return PipsToExit.GetValueOrDefault(_TakeProfit); }
+      get {
+        if (!PipsToExit.HasValue) return double.NaN;
+        return PipsToExit == 0 ? _TakeProfit : PipsToExit.Value;
+      }
       set {
         if (_TakeProfit != value) {
           _TakeProfit = value;
@@ -49,6 +52,20 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    #region GrossToExitInPips
+    private double? _GrossToExitInPips;
+    public double? GrossToExitInPips {
+      get { return _GrossToExitInPips; }
+      set {
+        if (_GrossToExitInPips != value) {
+          _GrossToExitInPips = value;
+          RaisePropertyChanged("GrossToExitInPips");
+        }
+      }
+    }
+
+    #endregion
     private double? _PipsToExit;
     public double? PipsToExit {
       get { return _PipsToExit; }
@@ -86,6 +103,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region CurrentGrossInPips
+    private double _CurrentGrossInPips;
+    public double CurrentGrossInPips {
+      get { return _CurrentGrossInPips; }
+      set {
+        if (_CurrentGrossInPips != value) {
+          _CurrentGrossInPips = value;
+          RaisePropertyChanged("CurrentGrossInPips");
+        }
+      }
+    }
+
+    #endregion
+
     public double OriginalBalance { get { return Balance - CurrentLoss; } }
     public double OriginalProfit { get { return Equity / OriginalBalance - 1; } }
 
@@ -107,6 +138,9 @@ namespace HedgeHog.Alice.Store {
         accountRow.LimitAmount = account.LimitAmount;
         accountRow.TradingStatistics = tradingStatistics;
         accountRow.TakeProfit = tradingStatistics.TakeProfitDistanceInPips;
+        accountRow.CurrentGrossInPips = tradingStatistics.CurrentGrossInPips;
+        if(accountRow.CurrentGrossInPips>= GrossToExitInPips)
+          RaiseCloseAllTrades();
         if (accountRow.PL >= accountRow.TakeProfit) {
           RaiseCloseAllTrades();
           PipsToExit = null;

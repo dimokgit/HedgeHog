@@ -439,6 +439,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
     [DisplayName("StDev Ratio Min")]
     [Category(categoryCorridor)]
     [Description("BigCorr.StDev / CurrCorr.StDev")]
@@ -451,6 +452,20 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    [DisplayName("ProfitToLossExitRatio")]
+    [Category(categoryActive)]
+    [Description("Trades.Lot() / AllowedLotSize")]
+    public double ProfitToLossExitRatio_ {
+      get { return ProfitToLossExitRatio; }
+      set {
+        if (ProfitToLossExitRatio != value) {
+          ProfitToLossExitRatio = value;
+          OnPropertyChanged(TradingMacroMetadata.ProfitToLossExitRatio_);
+        }
+      }
+    }
+
 
     [DisplayName("StDev Ratio Max")]
     [Category(categoryCorridor)]
@@ -491,6 +506,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("Corridor Big/Small")]
+    [Category(categoryActive)]
+    [Description("CorridorBigToSmallRatio")]
+    public double CorridorBigToSmallRatio_ {
+      get { return CorridorBigToSmallRatio; }
+      set {
+        if (CorridorBigToSmallRatio != value) {
+          CorridorBigToSmallRatio = value;
+          OnPropertyChanged(TradingMacroMetadata.CorridorBigToSmallRatio_);
+        }
+      }
+    }
 
 
     [DisplayName("Corridor Height Multiplier")]
@@ -924,7 +951,7 @@ namespace HedgeHog.Alice.Store {
     #region StDevAverageLeewayRatio
     [DisplayName("StDev Leeway Ratio")]
     [Description("StDev Average Leeway Ratio")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public double StDevAverageLeewayRatio_ {
       get { return StDevAverageLeewayRatio; }
       set {

@@ -68,22 +68,6 @@ namespace HedgeHog.DB
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        public ObjectSet<t_Trade> t_Trade
-        {
-            get
-            {
-                if ((_t_Trade == null))
-                {
-                    _t_Trade = base.CreateObjectSet<t_Trade>("t_Trade");
-                }
-                return _t_Trade;
-            }
-        }
-        private ObjectSet<t_Trade> _t_Trade;
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
         public ObjectSet<v_Pair> v_Pair
         {
             get
@@ -144,17 +128,25 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<t_Bar> _t_Bar;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Trade> t_Trade
+        {
+            get
+            {
+                if ((_t_Trade == null))
+                {
+                    _t_Trade = base.CreateObjectSet<t_Trade>("t_Trade");
+                }
+                return _t_Trade;
+            }
+        }
+        private ObjectSet<t_Trade> _t_Trade;
 
         #endregion
         #region AddTo Methods
-    
-        /// <summary>
-        /// Deprecated Method for adding a new object to the t_Trade EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
-        /// </summary>
-        public void AddTot_Trade(t_Trade t_Trade)
-        {
-            base.AddObject("t_Trade", t_Trade);
-        }
     
         /// <summary>
         /// Deprecated Method for adding a new object to the v_Pair EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
@@ -186,6 +178,14 @@ namespace HedgeHog.DB
         public void AddTot_Bar(t_Bar t_Bar)
         {
             base.AddObject("t_Bar", t_Bar);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Trade EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Trade(t_Trade t_Trade)
+        {
+            base.AddObject("t_Trade", t_Trade);
         }
 
         #endregion
@@ -1602,6 +1602,30 @@ namespace HedgeHog.DB
         private global::System.String _SessionInfo;
         partial void OnSessionInfoChanging(global::System.String value);
         partial void OnSessionInfoChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> RunningBalance
+        {
+            get
+            {
+                return _RunningBalance;
+            }
+            set
+            {
+                OnRunningBalanceChanging(value);
+                ReportPropertyChanging("RunningBalance");
+                _RunningBalance = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("RunningBalance");
+                OnRunningBalanceChanged();
+            }
+        }
+        private Nullable<global::System.Double> _RunningBalance;
+        partial void OnRunningBalanceChanging(Nullable<global::System.Double> value);
+        partial void OnRunningBalanceChanged();
 
         #endregion
     

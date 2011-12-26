@@ -15,6 +15,9 @@
     [CorridorMinutesBack]  FLOAT            NOT NULL,
     [SessionId]            UNIQUEIDENTIFIER NOT NULL,
     [PriceOpen]            FLOAT            NOT NULL,
-    [PriceClose]           FLOAT            NOT NULL
+    [PriceClose]           FLOAT            NOT NULL,
+    [SessionInfo]          NVARCHAR (4000)  NULL
 );
+
+
 

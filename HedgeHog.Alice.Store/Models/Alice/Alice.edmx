@@ -178,6 +178,7 @@
           <Property Name="StDevAverageLeewayRatio" Type="float" Nullable="false" />
           <Property Name="ExtreamCloseOffset" Type="int" Nullable="false" />
           <Property Name="CurrentLossInPipsCloseAdjustment" Type="float" Nullable="false" />
+          <Property Name="CorridorBigToSmallRatio" Type="float" Nullable="false" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -312,6 +313,7 @@
           <Property Type="Double" Name="StDevAverageLeewayRatio" Nullable="false" />
           <Property Type="Int32" Name="ExtreamCloseOffset" Nullable="false" />
           <Property Type="Double" Name="CurrentLossInPipsCloseAdjustment" Nullable="false" />
+          <Property Type="Double" Name="CorridorBigToSmallRatio" Nullable="false" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -391,20 +393,27 @@
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
-          <EntitySetMapping Name="TradingAccounts"><EntityTypeMapping TypeName="AliceModel.TradingAccount"><MappingFragment StoreEntitySet="TradingAccount">
-            <ScalarProperty Name="PipsToExit" ColumnName="PipsToExit" />
+          <EntitySetMapping Name="TradingAccounts">
+            <EntityTypeMapping TypeName="AliceModel.TradingAccount">
+              <MappingFragment StoreEntitySet="TradingAccount">
+                <ScalarProperty Name="PipsToExit" ColumnName="PipsToExit" />
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
                 <ScalarProperty Name="Password" ColumnName="Password" />
-            <ScalarProperty Name="MasterId" ColumnName="MasterId" />
-            <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
-            <ScalarProperty Name="AccountId" ColumnName="AccountId" />
-            <ScalarProperty Name="Id" ColumnName="Id" />
-            <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
-            <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
-            <ScalarProperty Name="Commission" ColumnName="Commission" />
-          </MappingFragment></EntityTypeMapping></EntitySetMapping>
-          <EntitySetMapping Name="TradingMacroes"><EntityTypeMapping TypeName="AliceModel.TradingMacro"><MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="MasterId" ColumnName="MasterId" />
+                <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
+                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
+                <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
+                <ScalarProperty Name="Commission" ColumnName="Commission" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TradingMacroes">
+            <EntityTypeMapping TypeName="AliceModel.TradingMacro">
+              <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="CorridorBigToSmallRatio" ColumnName="CorridorBigToSmallRatio" />
                 <ScalarProperty Name="CurrentLossInPipsCloseAdjustment" ColumnName="CurrentLossInPipsCloseAdjustment" />
                 <ScalarProperty Name="ExtreamCloseOffset" ColumnName="ExtreamCloseOffset" />
                 <ScalarProperty Name="StDevAverageLeewayRatio" ColumnName="StDevAverageLeewayRatio" />
@@ -469,25 +478,27 @@
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
                 <ScalarProperty Name="Pair" ColumnName="Pair" />
-            <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
-            <ScalarProperty Name="UID" ColumnName="UID" />
-            <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
-            <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
-            <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
-            <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
-            <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
-            <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
-            <ScalarProperty Name="FibMax" ColumnName="FibMax" />
-            <ScalarProperty Name="FibMin" ColumnName="FibMin" />
-            <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
-            <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
-            <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
-            <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
-            <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
-            <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
-            <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
-            <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
-          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+                <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
+                <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
+                <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
+                <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+                <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
+                <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
+                <ScalarProperty Name="FibMax" ColumnName="FibMax" />
+                <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+                <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+                <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
+                <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+                <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
+                <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
+                <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
+                <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           <EntitySetMapping Name="Bars">
             <EntityTypeMapping TypeName="AliceModel.Bar">
               <MappingFragment StoreEntitySet="Bar">

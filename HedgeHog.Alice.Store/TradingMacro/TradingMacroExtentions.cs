@@ -1299,7 +1299,7 @@ namespace HedgeHog.Alice.Store {
       ReleasePendingAction("OT");
       if (Strategy == Strategies.Wave || !Trades.Any() && CurrentGross >= 0 )
         SuppRes.ToList().ForEach(sr => { sr.CanTrade = false; sr.CorridorDate = CorridorStats.StartDate; });
-      if (_strategyExecuteOnTradeClose != null) _strategyExecuteOnTradeClose();
+      if (_strategyExecuteOnTradeClose != null) _strategyExecuteOnTradeClose(e.Trade);
       defferedOpen = null;
     }
 
@@ -2535,7 +2535,7 @@ namespace HedgeHog.Alice.Store {
 
     Action StrategyAction {
       get {
-        switch (Strategy) {
+        switch (Strategy & ~Strategies.Auto) {
           case Strategies.Hot:
             return StrategyBreakout;
           case Strategies.Breakout:
@@ -2620,7 +2620,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     bool _useTakeProfitMin = false;
-    Action _strategyExecuteOnTradeClose;
+    Action<Trade> _strategyExecuteOnTradeClose;
     Action _strategyExecuteOnTradeOpen;
     double _strategyAnglePrev;
 
@@ -2770,7 +2770,7 @@ namespace HedgeHog.Alice.Store {
     }
     private void StrategyEnterBreakout039() {
       if (_strategyExecuteOnTradeClose == null) {
-        _strategyExecuteOnTradeClose = () => _useTakeProfitMin = false;
+        _strategyExecuteOnTradeClose = (t) => _useTakeProfitMin = false;
         _strategyExecuteOnTradeOpen = () => _useTakeProfitMin = true;
       }
       var stDev = RatesArray.Max(r => r.PriceStdDev);
@@ -2800,7 +2800,7 @@ namespace HedgeHog.Alice.Store {
     }
     private void StrategyEnterBreakout040() {
       if (_strategyExecuteOnTradeClose == null) {
-        _strategyExecuteOnTradeClose = () => _useTakeProfitMin = false;
+        _strategyExecuteOnTradeClose = (t) => _useTakeProfitMin = false;
         _strategyExecuteOnTradeOpen = () => _useTakeProfitMin = true;
       }
       if (!StrategyExitByGross())
@@ -2840,7 +2840,7 @@ namespace HedgeHog.Alice.Store {
         ResistanceHigh().GroupId = ResistanceLow().GroupId = Guid.NewGuid();
         SupportHigh().GroupId = SupportLow().GroupId = Guid.NewGuid();
 
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
 
           ResistanceHigh().TradesCount = 1;
@@ -2886,7 +2886,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -2915,7 +2915,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -2948,7 +2948,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -2990,7 +2990,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3043,7 +3043,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3054,6 +3054,8 @@ namespace HedgeHog.Alice.Store {
       }
       #endregion
       StrategyExitByGross042();
+
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
       var stDevAverageBig = _rateArray.Select(r => r.PriceStdDev).ToList().AverageByIterations(StDevTresholdIterations + 1).Average();
       var ratesBig = RatesArray.SkipWhile(r => r.PriceStdDev > stDevAverageBig * StDevAverageLeewayRatio).OrderBy(r => r.PriceAvg).ToList();
       var rates = CorridorStats.Rates.ReverseIfNot();
@@ -3078,7 +3080,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
 
-      if (CorridorStats.Spread > SpreadForCorridor && (CorridorAngle.Sign() != _strategyAnglePrev.Sign() || CorridorAngle.Abs().Round(0) <= 3) && IsInVitualTrading) {
+      if (CorridorStats.Spread > SpreadForCorridor && (CorridorAngle.Sign() != _strategyAnglePrev.Sign() || CorridorAngle.Abs().Round(0) <= 3) && isAuto) {
         _strategyAnglePrev = CorridorAngle;
         buyLevel.Rate = buyPrice;
         sellLevel.Rate = sellPrice;
@@ -3088,11 +3090,76 @@ namespace HedgeHog.Alice.Store {
       #region Close Levels
       var plAgjustment = InPoints(this.CurrentLossInPips.Min(0) * CurrentLossInPipsCloseAdjustment - TakeProfitPips);
       var bcl = buyClosePrice.Max(buyNetOpen - plAgjustment);// + SpreadForCorridor/2;
-      if (IsInVitualTrading || bcl > buyCloseLevel.Rate)
+      if (isAuto || bcl > buyCloseLevel.Rate)
         buyCloseLevel.Rate = bcl;
 
       var scl = sellClosePrice.Min(sellNetOpen + plAgjustment);// - SpreadForCorridor/2;
-      if (IsInVitualTrading || scl < sellCloseLevel.Rate)
+      if (isAuto || scl < sellCloseLevel.Rate)
+        sellCloseLevel.Rate = scl;
+
+      buyCloseLevel.CanTrade = buyCloseLevel.CanTrade = false;
+      #endregion
+
+    }
+    private void StrategyEnterBreakout04232() {// 0.6
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            ResistanceHigh().TradesCount = 0;
+            SupportLow().TradesCount = 0;
+          }
+          SuppRes.ToList().ForEach(sr => sr.CanTrade = false);
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+        };
+      }
+      #endregion
+      StrategyExitByGross04232();
+
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var ratesBig = CorridorsRates[1].OrderBy(r => r.PriceAvg).ToList();
+      var rates = CorridorStats.Rates.ReverseIfNot().Skip(1).OrderBy(r => r.PriceAvg).ToList();
+      var extreamOffset = InPoints(1);
+      var buyRate = ratesBig.LastByCount();
+      var buyClosePrice = buyRate.PriceAvg - extreamOffset;
+      var sellRate = ratesBig[0];
+      var sellClosePrice = sellRate.PriceAvg + extreamOffset;
+      var buyPrice = rates.LastByCount().PriceAvg + extreamOffset;//.Min(SpreadForCorridor * 2);
+      var sellPrice = rates[0].PriceAvg - extreamOffset;// MagnetPrice - CorridorStats.StDev;//.Min(SpreadForCorridor * 2);
+      var netOpen = Trades.NetOpen();
+
+
+      #region Suppres levels
+      var buyLevel = ResistanceHigh();
+      var buyCloseLevel = SupportHigh();
+      var buyNetOpen = Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = SupportLow();
+      var sellCloseLevel = ResistanceLow();
+      var sellNetOpen = Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var stDevOk = CorridorBigToSmallRatio > 0 ? StDevAverages[1] / StDevAverages[0] > CorridorBigToSmallRatio : StDevAverages[1] / StDevAverages[0] < CorridorBigToSmallRatio.Abs();
+      var angleOk =  /*CorridorAngle.Sign() != _strategyAnglePrev.Sign();// ||*/ CorridorAngle.Abs().Round(0) <= this.TradingAngleRange;
+      _strategyAnglePrev = CorridorAngle;
+      var tradeHeightOk = false;// buyLevel.CanTrade && (buyPrice - sellPrice) < (buyLevel.Rate - sellLevel.Rate);
+      if ((stDevOk && angleOk || tradeHeightOk) && isAuto) {
+        buyLevel.Rate = buyPrice;
+        sellLevel.Rate = sellPrice;
+        buyLevel.CanTrade = sellLevel.CanTrade = true;
+      }
+
+      #region Close Levels
+      var plAgjustment = InPoints(this.CurrentLossInPips.Min(0) * CurrentLossInPipsCloseAdjustment - TakeProfitPips);
+      var bcl = buyClosePrice.Max(buyNetOpen - plAgjustment);// + SpreadForCorridor/2;
+      if (isAuto || bcl > buyCloseLevel.Rate)
+        buyCloseLevel.Rate = bcl;
+
+      var scl = sellClosePrice.Min(sellNetOpen + plAgjustment);// - SpreadForCorridor/2;
+      if (isAuto || scl < sellCloseLevel.Rate)
         sellCloseLevel.Rate = scl;
 
       buyCloseLevel.CanTrade = buyCloseLevel.CanTrade = false;
@@ -3103,7 +3170,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3156,7 +3223,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3212,7 +3279,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           SuppRes.ToList().ForEach(sr => sr.TradesCount = 0);
         };
@@ -3274,7 +3341,7 @@ namespace HedgeHog.Alice.Store {
       #region Init SuppReses
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           SuppRes.ToList().ForEach(sr => sr.TradesCount = 0);
         };
@@ -3320,7 +3387,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3348,7 +3415,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3377,7 +3444,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3411,7 +3478,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3441,7 +3508,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         #region Init SuppReses
         SuppResLevelsCount = 1;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3489,7 +3556,7 @@ namespace HedgeHog.Alice.Store {
         _corridorDirectionChanged += (s, e) => setLevels();
         #region Init SuppReses
         SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = () => {
+        _strategyExecuteOnTradeClose = (t) => {
           _useTakeProfitMin = false;
           ResistanceHigh().TradesCount = 0;
           SupportLow().TradesCount = 0;
@@ -3508,7 +3575,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     void StrategyBreakout() {
-      StrategyEnterBreakout04231();
+      StrategyEnterBreakout04232();
     }
 
     void StrategyRange() {
@@ -3741,6 +3808,18 @@ namespace HedgeHog.Alice.Store {
     bool StrategyExitByGross042() {
       if (Trades.Lots() > LotSize && CurrentGrossInPips > 0) {
         TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
+        return true;
+      }
+      return false;
+    }
+    bool StrategyExitByGross04232() {
+      if (Trades.Lots() > LotSize && CurrentGrossInPips > 0) {
+        TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - LotSize);
+        return true;
+      }
+      double als = AllowedLotSizeCore(Trades);
+      if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
+        TradesManager.ClosePair(Pair, Trades[0].IsBuy, Trades.Lots() - als.ToInt());
         return true;
       }
       return false;
@@ -4009,11 +4088,12 @@ namespace HedgeHog.Alice.Store {
         } else {
           #region
           CorridorsRates.Clear();
-          CorridorsRates.Add(ratesForCorridor.SkipWhile(r => r.PriceStdDev > StDevAverages[1] * StDevAverageLeewayRatio).ToList());
-          var rates = CorridorsRates[0].SkipWhile(r => r.PriceStdDev > StDevAverage * StDevAverageLeewayRatio).Reverse().ToList();
+          foreach (var sda in StDevAverages.OrderByDescending(d => d))
+            CorridorsRates.Insert(0, CorridorsRates.DefaultIfEmpty(ratesForCorridor).First().SkipWhile(r => r.PriceStdDev > sda).ToList());
+          var rates = CorridorsRates[0] = CorridorsRates[0].SkipWhile(r => r.PriceStdDev > StDevAverage * StDevAverageLeewayRatio).ToList();
           MagnetPrice = rates.Average(r => r.PriceAvg);
           if (rates.Count < 2) return;
-          crossedCorridor = rates.ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);
+          crossedCorridor = rates.ReverseIfNot().ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);
           #endregion
         }
 
@@ -4310,8 +4390,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.Spread2: tp = SpreadForCorridor *2; break;
         case TradingMacroTakeProfitFunction.Spread3: tp = SpreadForCorridor * 3; break;
         case TradingMacroTakeProfitFunction.Spread4: tp = SpreadForCorridor * 4; break;
-        case TradingMacroTakeProfitFunction.Corr0_CorrB0:
-          tp = CorridorHeightByRegression0.Max(CorridorBig.HeightUpDown0); break;
+        case TradingMacroTakeProfitFunction.CorridorPrev: tp = CorridorsRates[1].Height(); break;
         default:
           throw new NotImplementedException(new { function } + "");
       }

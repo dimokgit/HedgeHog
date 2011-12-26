@@ -1,0 +1,8 @@
+---------------------------------------------
+          No Preview Available    
+---------------------------------------------
+
+
+There is no available preview of Entity Framework. 
+
+The latest features are available in the 'EntityFramework' package.
