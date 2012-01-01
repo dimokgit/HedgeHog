@@ -3859,6 +3859,30 @@ namespace HedgeHog.Alice.Store
         private global::System.Double _CorridorBigToSmallRatio;
         partial void OnCorridorBigToSmallRatioChanging(global::System.Double value);
         partial void OnCorridorBigToSmallRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> ResetOnBalance
+        {
+            get
+            {
+                return _ResetOnBalance;
+            }
+            set
+            {
+                OnResetOnBalanceChanging(value);
+                ReportPropertyChanging("ResetOnBalance");
+                _ResetOnBalance = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ResetOnBalance");
+                OnResetOnBalanceChanged();
+            }
+        }
+        private Nullable<global::System.Double> _ResetOnBalance;
+        partial void OnResetOnBalanceChanging(Nullable<global::System.Double> value);
+        partial void OnResetOnBalanceChanged();
 
         #endregion
     

@@ -2885,6 +2885,18 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnCorridorBigToSmallRatioChanged"/></summary>
         public const string OnCorridorBigToSmallRatioChanged = "OnCorridorBigToSmallRatioChanged";
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ResetOnBalance"/></summary>
+        public const string ResetOnBalance = "ResetOnBalance";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ResetOnBalance"/></summary>
+        public const string _ResetOnBalance = "_ResetOnBalance";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnResetOnBalanceChanging"/></summary>
+        public const string OnResetOnBalanceChanging = "OnResetOnBalanceChanging";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnResetOnBalanceChanged"/></summary>
+        public const string OnResetOnBalanceChanged = "OnResetOnBalanceChanged";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SuppRes"/></summary>
         public const string SuppRes = "SuppRes";
 
@@ -3061,6 +3073,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingAngleRange_"/></summary>
         public const string TradingAngleRange_ = "TradingAngleRange_";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ResetOnBalance_"/></summary>
+        public const string ResetOnBalance_ = "ResetOnBalance_";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradeByRateDirection_"/></summary>
         public const string TradeByRateDirection_ = "TradeByRateDirection_";
@@ -5256,6 +5271,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorBigToSmallRatio"/></summary>
         public static PropertyPath CorridorBigToSmallRatioPath { get { return new PropertyPath("CorridorBigToSmallRatio"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ResetOnBalance"/></summary>
+        public static PropertyPath ResetOnBalancePath { get { return new PropertyPath("ResetOnBalance"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SuppRes"/></summary>
         public static PropertyPath SuppResPath { get { return new PropertyPath("SuppRes"); } }
 
@@ -5399,6 +5417,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingAngleRange_"/></summary>
         public static PropertyPath TradingAngleRange_Path { get { return new PropertyPath("TradingAngleRange_"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ResetOnBalance_"/></summary>
+        public static PropertyPath ResetOnBalance_Path { get { return new PropertyPath("ResetOnBalance_"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradeByRateDirection_"/></summary>
         public static PropertyPath TradeByRateDirection_Path { get { return new PropertyPath("TradeByRateDirection_"); } }

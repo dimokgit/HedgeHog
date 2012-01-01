@@ -711,6 +711,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("Reset On Balance")]
+    [Category(categoryActive)]
+    public double ResetOnBalance_ {
+      get { return ResetOnBalance.GetValueOrDefault(0); }
+      set {
+        if (ResetOnBalance == value) return;
+        ResetOnBalance = value;
+        OnPropertyChanged(TradingMacroMetadata.ResetOnBalance_);
+      }
+    }
+
     [DisplayName("Trade By Rate Direction")]
     [Category(categoryTrading)]
     public bool TradeByRateDirection_ {

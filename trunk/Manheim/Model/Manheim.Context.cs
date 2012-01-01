@@ -34,5 +34,6 @@ namespace Manheim.Model
         public DbSet<Seller> Sellers { get; set; }
         public DbSet<Make> Makes { get; set; }
         public DbSet<Model> Models { get; set; }
+        public DbSet<vPreSale> vPreSales { get; set; }
     }
 }
