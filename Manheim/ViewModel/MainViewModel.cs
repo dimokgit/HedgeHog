@@ -22,6 +22,7 @@ using System.Threading;
 using Manheim.Web;
 using System.Data.Entity.Infrastructure;
 using System.Data.Metadata.Edm;
+using LINQtoCSV;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -39,10 +40,23 @@ namespace Manheim.ViewModel {
       return value;
     }
   }
-  public class Auction {
+  public class Auction:ViewModelBase {
     public string State { get; set; }
     public string Name { get; set; }
     public string Url { get; set; }
+    #region IsSelected
+    private bool _IsSelected;
+    public bool IsSelected {
+      get { return _IsSelected; }
+      set {
+        if (_IsSelected != value) {
+          _IsSelected = value;
+          RaisePropertyChanged("IsSelected");
+        }
+      }
+    }
+    
+    #endregion
     public Auction(string state,string name,string url) {
       this.State = state;
       this.Name = name;
@@ -76,6 +90,27 @@ namespace Manheim.ViewModel {
     #region Properties
 
     #region UI
+
+    #region SelectedAuctionItem
+    private object _SelectedAuctionItem;
+    public object SelectedAuctionItem {
+      get { return _SelectedAuctionItem; }
+      set {
+        if (_SelectedAuctionItem != value) {
+          if (value != null) {
+            var auction = value as Auction;
+            //if (auction != null) auction.IsSelected = true;
+          } else {
+            var auction = _SelectedAuctionItem as Auction;
+            //if (auction != null) auction.IsSelected = false;
+          }
+          _SelectedAuctionItem = value;
+          RaisePropertyChanged("SelectedAuctionItem");
+        }
+      }
+    }
+
+    #endregion
 
     public object SelectedAuction {
       set {
@@ -470,6 +505,50 @@ namespace Manheim.ViewModel {
     #region Commands
 
 
+    #region Close
+    ICommand _CloseCommand;
+    public ICommand CloseCommand {
+      get {
+        if (_CloseCommand == null) {
+          _CloseCommand = new RelayCommand(CloseWindow, () => true);
+        }
+
+        return _CloseCommand;
+      }
+    }
+    void CloseWindow() {
+      _mustShutDown = true;
+    }
+    #endregion
+
+
+    #region Export
+    ICommand _ExportCommand;
+    public ICommand ExportCommand {
+      get {
+        if (_ExportCommand == null) {
+          _ExportCommand = new RelayCommand(Export, () => true);
+        }
+
+        return _ExportCommand;
+      }
+    }
+    void Export() {
+      using (var entities = new Model.ManheimEntities()) {
+        var path = "C:\\Data";
+        System.IO.Directory.CreateDirectory(path);
+        CsvFileDescription outputFileDescription = new CsvFileDescription {
+          SeparatorChar = ',', 
+          FirstLineHasColumnNames = true,
+           
+        };
+        CsvContext cc = new CsvContext();
+        cc.Write(entities.vPreSales, path + "\\Manheim.csv", outputFileDescription);
+      }
+    }
+    #endregion
+
+
     #region FillSearch
     ICommand _FillSearchCommand;
     public ICommand FillSearchCommand {
@@ -534,6 +613,7 @@ namespace Manheim.ViewModel {
     }
     #region LoginCommand
     ICommand _LoginCommand;
+    private bool _mustShutDown;
     public ICommand LoginCommand {
       get {
         if (_LoginCommand == null) {
@@ -558,10 +638,14 @@ namespace Manheim.ViewModel {
           .Where(ie => ie.EventArgs.Action == NotifyCollectionChangedAction.Add)
           .ObserveOn(Scheduler.ThreadPool)
           .SelectMany(ie => ie.EventArgs.NewItems.Cast<Auction>())
+          .SubscribeOn(Scheduler.NewThread)
           .Subscribe(auction => {
             var t = new Thread(new ThreadStart(() => {
               GetAuctionPreSale(auction.State, auction);
-              Application.Current.Dispatcher.Invoke(new Action(() => _auctionsToRun.Remove(auction)));
+              Application.Current.Dispatcher.Invoke(new Action(() => {
+                _auctionsToRun.Remove(auction);
+                SelectedAuctionItem = null;
+              }));
             }));
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
@@ -571,6 +655,7 @@ namespace Manheim.ViewModel {
     #endregion
 
     public override void Cleanup() {
+      _mustShutDown = true;
       Browser = null;
       base.Cleanup();
     }

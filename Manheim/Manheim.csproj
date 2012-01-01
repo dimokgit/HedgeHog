@@ -46,6 +46,9 @@
       <Private>True</Private>
       <HintPath>..\AllInOne\packages\WatiN.2.1.0\lib\net40\Interop.SHDocVw.dll</HintPath>
     </Reference>
+    <Reference Include="LINQtoCSV">
+      <HintPath>..\AllInOne\packages\LinqToCsv.1.0.0.0\lib\LINQtoCSV.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <Private>True</Private>
@@ -133,6 +136,9 @@
     <Compile Include="Model\VehicleStatus.cs">
       <DependentUpon>Manheim.tt</DependentUpon>
     </Compile>
+    <Compile Include="Model\vPreSale.cs">
+      <DependentUpon>Manheim.tt</DependentUpon>
+    </Compile>
     <Compile Include="ViewModel\MainViewModel.cs" />
     <Compile Include="ViewModel\ToDataContextValueConverter.cs" />
     <Compile Include="ViewModel\ViewModelLocator.cs" />
@@ -204,6 +210,10 @@
     <ProjectReference Include="..\HedgeHog.Extentions\HedgeHog.Extentions.csproj">
       <Project>{1D8C77B9-0D28-4100-953A-E1F2EBB2F32D}</Project>
       <Name>HedgeHog.Extentions</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.UI\HedgeHog.UI.csproj">
+      <Project>{7D258DF9-4DD8-4BB0-82AA-42DCC61374FA}</Project>
+      <Name>HedgeHog.UI</Name>
     </ProjectReference>
     <ProjectReference Include="..\Manheim.Web\Manheim.Web.csproj">
       <Project>{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}</Project>

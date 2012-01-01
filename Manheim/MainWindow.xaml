@@ -1,18 +1,27 @@
 ﻿<Window x:Class="Manheim.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
         xmlns:watin="clr-namespace:WatiN.Core;assembly=WatiN.Core"
         xmlns:lvm="clr-namespace:Manheim.ViewModel"
+        xmlns:cmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
+        xmlns:ui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         Title="Manheimer"
         Top="{state:UserSettings Default=100}" Left="{state:UserSettings Default=100}" Height="{state:UserSettings Default=300}" Width="{state:UserSettings Default=300}"
-        DataContext="{Binding Main, Source={StaticResource Locator}}">
-    
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Skins/MainSkin.xaml" />
-            </ResourceDictionary.MergedDictionaries>
+        DataContext="{Binding Main, Source={StaticResource Locator}}"
+>
+  <i:Interaction.Triggers>
+    <i:EventTrigger EventName="Closed">
+      <cmd:EventToCommand Command="{Binding CloseCommand}"/>
+    </i:EventTrigger>
+  </i:Interaction.Triggers>
+
+  <Window.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Skins/MainSkin.xaml" />
+      </ResourceDictionary.MergedDictionaries>
       <HierarchicalDataTemplate 
         DataType="{x:Type lvm:StateAuctions}"
         ItemsSource="{Binding Auctions}"
@@ -23,18 +32,19 @@
         <TextBlock Text="{Binding Name}"/>
       </HierarchicalDataTemplate>
     </ResourceDictionary>
-    </Window.Resources>
+  </Window.Resources>
 
-    <Grid x:Name="LayoutRoot">
+  <Grid x:Name="LayoutRoot">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-      <ToolBarTray Orientation="Horizontal" VerticalAlignment="Top" Name="toolBarTray1">
+    <ToolBarTray Orientation="Horizontal" VerticalAlignment="Top" Name="toolBarTray1">
       <ToolBar>
         <Button Command="{Binding LoginCommand}">Login</Button>
         <Button Command="{Binding PreSaleCommand}">PreSale</Button>
         <Button Command="{Binding FillSearchCommand}">Fill Search</Button>
+        <Button Command="{Binding ExportCommand}">Export</Button>
       </ToolBar>
     </ToolBarTray>
     <StackPanel Grid.Row="1">
@@ -49,7 +59,16 @@
       </ListBox>
       <TreeView Name="StateTree" HorizontalAlignment="Left" 
                 Tag="{Binding SelectedValue,RelativeSource={RelativeSource Self},Converter={x:Static Member=lvm:ToSelectedStateConverter.Default},ConverterParameter={StaticResource Locator}}"
-                ItemsSource="{Binding States}" VerticalAlignment="Top"/>
+                ItemsSource="{Binding States}" VerticalAlignment="Top">
+        <TreeView.Resources>
+          <!--<Style TargetType="TreeViewItem">
+            <Setter Property="IsSelected" Value="{Binding Path=IsSelected,Mode=TwoWay}"/>
+          </Style>-->
+        </TreeView.Resources>
+        <i:Interaction.Behaviors>
+          <ui:BindableSelectedItemBehaviour SelectedItem="{Binding SelectedAuctionItem}" />
+        </i:Interaction.Behaviors>
+      </TreeView>
     </StackPanel>
   </Grid>
 </Window>

@@ -15,6 +15,45 @@
           <EntitySet Name="State" EntityType="ManheimModel.Store.State" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="Vehicle" EntityType="ManheimModel.Store.Vehicle" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="VehicleStatus" EntityType="ManheimModel.Store.VehicleStatus" store:Type="Tables" Schema="enum" />
+          <EntitySet Name="vPreSale" EntityType="ManheimModel.Store.vPreSale" store:Type="Views" store:Schema="dbo" store:Name="vPreSale">
+            <DefiningQuery>SELECT 
+      [vPreSale].[Ln] AS [Ln], 
+      [vPreSale].[Run] AS [Run], 
+      [vPreSale].[Seller] AS [Seller], 
+      [vPreSale].[Auction] AS [Auction], 
+      [vPreSale].[StateCode] AS [StateCode], 
+      [vPreSale].[SaleDate] AS [SaleDate], 
+      [vPreSale].[MMR] AS [MMR], 
+      [vPreSale].[Year] AS [Year], 
+      [vPreSale].[Make] AS [Make], 
+      [vPreSale].[Model] AS [Model], 
+      [vPreSale].[BodyStyle] AS [BodyStyle], 
+      [vPreSale].[TrimLevel] AS [TrimLevel], 
+      [vPreSale].[VehicleType] AS [VehicleType], 
+      [vPreSale].[Doors] AS [Doors], 
+      [vPreSale].[Color] AS [Color], 
+      [vPreSale].[Odometer] AS [Odometer], 
+      [vPreSale].[Salvage] AS [Salvage], 
+      [vPreSale].[InServiceDate] AS [InServiceDate], 
+      [vPreSale].[TitleState] AS [TitleState], 
+      [vPreSale].[TitleStatus] AS [TitleStatus], 
+      [vPreSale].[FuelType] AS [FuelType], 
+      [vPreSale].[Engine] AS [Engine], 
+      [vPreSale].[Displacement] AS [Displacement], 
+      [vPreSale].[DriveTrain] AS [DriveTrain], 
+      [vPreSale].[Transmission] AS [Transmission], 
+      [vPreSale].[InteriorType] AS [InteriorType], 
+      [vPreSale].[TopType] AS [TopType], 
+      [vPreSale].[ExteriorColor] AS [ExteriorColor], 
+      [vPreSale].[InteriorColor] AS [InteriorColor], 
+      [vPreSale].[Stereo] AS [Stereo], 
+      [vPreSale].[Airbags] AS [Airbags], 
+      [vPreSale].[Options] AS [Options], 
+      [vPreSale].[VIN] AS [VIN], 
+      [vPreSale].[AuctionId] AS [AuctionId], 
+      [vPreSale].[Grade] AS [Grade]
+      FROM [dbo].[vPreSale] AS [vPreSale]</DefiningQuery>
+          </EntitySet>
           <AssociationSet Name="FK_Auction_Manager" Association="ManheimModel.Store.FK_Auction_Manager">
             <End Role="Manager" EntitySet="Manager" />
             <End Role="Auction" EntitySet="Auction" />
@@ -148,6 +187,60 @@
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Name" Type="varchar" Nullable="false" MaxLength="50" />
         </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'C:\USERS\DIMON\PROJECTS\FOREX_OLD\PROJECTS\HEDGEHOG\MANHEIM\BIN\DEBUG\MANHEIM.MDF.dbo.vPreSale' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vPreSale">
+          <Key>
+            <PropertyRef Name="Ln" />
+            <PropertyRef Name="Run" />
+            <PropertyRef Name="Seller" />
+            <PropertyRef Name="StateCode" />
+            <PropertyRef Name="SaleDate" />
+            <PropertyRef Name="Year" />
+            <PropertyRef Name="Make" />
+            <PropertyRef Name="Model" />
+            <PropertyRef Name="Salvage" />
+            <PropertyRef Name="VIN" />
+            <PropertyRef Name="AuctionId" />
+            <PropertyRef Name="Grade" />
+          </Key>
+          <Property Name="Ln" Type="int" Nullable="false" />
+          <Property Name="Run" Type="int" Nullable="false" />
+          <Property Name="Seller" Type="varchar" Nullable="false" MaxLength="100" />
+          <Property Name="Auction" Type="varchar" MaxLength="64" />
+          <Property Name="StateCode" Type="varchar" Nullable="false" MaxLength="2" />
+          <Property Name="SaleDate" Type="smalldatetime" Nullable="false" />
+          <Property Name="MMR" Type="int" />
+          <Property Name="Year" Type="int" Nullable="false" />
+          <Property Name="Make" Type="varchar" Nullable="false" MaxLength="50" />
+          <Property Name="Model" Type="varchar" Nullable="false" MaxLength="50" />
+          <Property Name="BodyStyle" Type="varchar" MaxLength="50" />
+          <Property Name="TrimLevel" Type="varchar" MaxLength="50" />
+          <Property Name="VehicleType" Type="varchar" MaxLength="50" />
+          <Property Name="Doors" Type="int" />
+          <Property Name="Color" Type="varchar" MaxLength="50" />
+          <Property Name="Odometer" Type="int" />
+          <Property Name="Salvage" Type="bit" Nullable="false" />
+          <Property Name="InServiceDate" Type="varchar" MaxLength="50" />
+          <Property Name="TitleState" Type="varchar" MaxLength="50" />
+          <Property Name="TitleStatus" Type="varchar" MaxLength="50" />
+          <Property Name="FuelType" Type="varchar" MaxLength="50" />
+          <Property Name="Engine" Type="varchar" MaxLength="50" />
+          <Property Name="Displacement" Type="varchar" MaxLength="50" />
+          <Property Name="DriveTrain" Type="varchar" MaxLength="50" />
+          <Property Name="Transmission" Type="varchar" MaxLength="50" />
+          <Property Name="InteriorType" Type="varchar" MaxLength="50" />
+          <Property Name="TopType" Type="varchar" MaxLength="50" />
+          <Property Name="ExteriorColor" Type="varchar" MaxLength="50" />
+          <Property Name="InteriorColor" Type="varchar" MaxLength="50" />
+          <Property Name="Stereo" Type="varchar" MaxLength="50" />
+          <Property Name="Airbags" Type="varchar" MaxLength="50" />
+          <Property Name="Options" Type="varchar" MaxLength="1024" />
+          <Property Name="VIN" Type="varchar" Nullable="false" MaxLength="17" />
+          <Property Name="AuctionId" Type="int" Nullable="false" />
+          <Property Name="Grade" Type="float" Nullable="false" />
+        </EntityType>
         <Association Name="FK_Auction_Manager">
           <End Role="Manager" Type="ManheimModel.Store.Manager" Multiplicity="1" />
           <End Role="Auction" Type="ManheimModel.Store.Auction" Multiplicity="*" />
@@ -280,6 +373,7 @@
             <End Role="Make" EntitySet="Makes" />
             <End Role="Model" EntitySet="Models" />
           </AssociationSet>
+          <EntitySet Name="vPreSales" EntityType="ManheimModel.vPreSale" />
         </EntityContainer>
         <EntityType Name="Auction">
           <Key>
@@ -480,6 +574,57 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <EntityType Name="vPreSale">
+          <Key>
+            <PropertyRef Name="Ln" />
+            <PropertyRef Name="Run" />
+            <PropertyRef Name="Seller" />
+            <PropertyRef Name="StateCode" />
+            <PropertyRef Name="SaleDate" />
+            <PropertyRef Name="Year" />
+            <PropertyRef Name="Make" />
+            <PropertyRef Name="Model" />
+            <PropertyRef Name="Salvage" />
+            <PropertyRef Name="VIN" />
+            <PropertyRef Name="AuctionId" />
+            <PropertyRef Name="Grade" />
+          </Key>
+          <Property Type="Int32" Name="Ln" Nullable="false" />
+          <Property Type="Int32" Name="Run" Nullable="false" />
+          <Property Type="String" Name="Seller" Nullable="false" MaxLength="100" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Auction" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="StateCode" Nullable="false" MaxLength="2" FixedLength="false" Unicode="false" />
+          <Property Type="DateTime" Name="SaleDate" Nullable="false" />
+          <Property Type="Int32" Name="MMR" />
+          <Property Type="Int32" Name="Year" Nullable="false" />
+          <Property Type="String" Name="Make" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Model" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="BodyStyle" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TrimLevel" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="VehicleType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Doors" />
+          <Property Type="String" Name="Color" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Odometer" />
+          <Property Type="Boolean" Name="Salvage" Nullable="false" />
+          <Property Type="String" Name="InServiceDate" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TitleState" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TitleStatus" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="FuelType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Engine" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Displacement" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="DriveTrain" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Transmission" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="InteriorType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="TopType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="ExteriorColor" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="InteriorColor" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Stereo" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Airbags" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Options" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="VIN" Nullable="false" MaxLength="17" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="AuctionId" Nullable="false" />
+          <Property Type="Double" Name="Grade" Nullable="false" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -599,6 +744,47 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="vPreSales">
+            <EntityTypeMapping TypeName="ManheimModel.vPreSale">
+              <MappingFragment StoreEntitySet="vPreSale">
+                <ScalarProperty Name="Grade" ColumnName="Grade" />
+                <ScalarProperty Name="AuctionId" ColumnName="AuctionId" />
+                <ScalarProperty Name="VIN" ColumnName="VIN" />
+                <ScalarProperty Name="Options" ColumnName="Options" />
+                <ScalarProperty Name="Airbags" ColumnName="Airbags" />
+                <ScalarProperty Name="Stereo" ColumnName="Stereo" />
+                <ScalarProperty Name="InteriorColor" ColumnName="InteriorColor" />
+                <ScalarProperty Name="ExteriorColor" ColumnName="ExteriorColor" />
+                <ScalarProperty Name="TopType" ColumnName="TopType" />
+                <ScalarProperty Name="InteriorType" ColumnName="InteriorType" />
+                <ScalarProperty Name="Transmission" ColumnName="Transmission" />
+                <ScalarProperty Name="DriveTrain" ColumnName="DriveTrain" />
+                <ScalarProperty Name="Displacement" ColumnName="Displacement" />
+                <ScalarProperty Name="Engine" ColumnName="Engine" />
+                <ScalarProperty Name="FuelType" ColumnName="FuelType" />
+                <ScalarProperty Name="TitleStatus" ColumnName="TitleStatus" />
+                <ScalarProperty Name="TitleState" ColumnName="TitleState" />
+                <ScalarProperty Name="InServiceDate" ColumnName="InServiceDate" />
+                <ScalarProperty Name="Salvage" ColumnName="Salvage" />
+                <ScalarProperty Name="Odometer" ColumnName="Odometer" />
+                <ScalarProperty Name="Color" ColumnName="Color" />
+                <ScalarProperty Name="Doors" ColumnName="Doors" />
+                <ScalarProperty Name="VehicleType" ColumnName="VehicleType" />
+                <ScalarProperty Name="TrimLevel" ColumnName="TrimLevel" />
+                <ScalarProperty Name="BodyStyle" ColumnName="BodyStyle" />
+                <ScalarProperty Name="Model" ColumnName="Model" />
+                <ScalarProperty Name="Make" ColumnName="Make" />
+                <ScalarProperty Name="Year" ColumnName="Year" />
+                <ScalarProperty Name="MMR" ColumnName="MMR" />
+                <ScalarProperty Name="SaleDate" ColumnName="SaleDate" />
+                <ScalarProperty Name="StateCode" ColumnName="StateCode" />
+                <ScalarProperty Name="Auction" ColumnName="Auction" />
+                <ScalarProperty Name="Seller" ColumnName="Seller" />
+                <ScalarProperty Name="Run" ColumnName="Run" />
+                <ScalarProperty Name="Ln" ColumnName="Ln" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -665,6 +851,7 @@
           <ConnectorPoint PointX="6.875" PointY="6.797841796875" />
           <ConnectorPoint PointX="7.625" PointY="6.797841796875" />
         </AssociationConnector>
+        <EntityTypeShape EntityType="ManheimModel.vPreSale" Width="1.5" PointX="0.75" PointY="5.625" Height="7.7493294270833317" />
         </Diagram>
     </Diagrams>
   </Designer>

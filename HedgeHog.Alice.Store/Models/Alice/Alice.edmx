@@ -179,6 +179,7 @@
           <Property Name="ExtreamCloseOffset" Type="int" Nullable="false" />
           <Property Name="CurrentLossInPipsCloseAdjustment" Type="float" Nullable="false" />
           <Property Name="CorridorBigToSmallRatio" Type="float" Nullable="false" />
+          <Property Name="ResetOnBalance" Type="float" />
         </EntityType>
         <Association Name="TradingMacro_SuppRes">
           <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
@@ -314,6 +315,7 @@
           <Property Type="Int32" Name="ExtreamCloseOffset" Nullable="false" />
           <Property Type="Double" Name="CurrentLossInPipsCloseAdjustment" Nullable="false" />
           <Property Type="Double" Name="CorridorBigToSmallRatio" Nullable="false" />
+          <Property Type="Double" Name="ResetOnBalance" />
         </EntityType>
         <EntityType Name="Bar">
           <Key>
@@ -413,6 +415,7 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="AliceModel.TradingMacro">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="ResetOnBalance" ColumnName="ResetOnBalance" />
                 <ScalarProperty Name="CorridorBigToSmallRatio" ColumnName="CorridorBigToSmallRatio" />
                 <ScalarProperty Name="CurrentLossInPipsCloseAdjustment" ColumnName="CurrentLossInPipsCloseAdjustment" />
                 <ScalarProperty Name="ExtreamCloseOffset" ColumnName="ExtreamCloseOffset" />
