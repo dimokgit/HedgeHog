@@ -175,10 +175,10 @@ namespace HedgeHog.Shared {
         newTrade.Id = NewTradeId() + "";
         var e = new PriceChangedEventArgs(trade.Pair, price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
         newTrade.UpdateByPrice(this,e);
-        tradesOpened.Add(newTrade);
         trade.Lots = lot;
         trade.UpdateByPrice(this, e);
         CloseTrade(trade);
+        tradesOpened.Add(newTrade);
       }
       return true;
     }
