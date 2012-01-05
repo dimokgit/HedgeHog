@@ -156,6 +156,10 @@ namespace HedgeHog {
       throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
+    public static double Mean(this IEnumerable<double> values) {
+      var vs = values.OrderBy(v => v).ToList();
+      return (vs.LastByCount() - vs[0]) / 2;
+    }
     public static double Deviation(IEnumerable<double> Values, DeviationType CalculationType) {
       double SumOfValuesSquared = 0;
       double SumOfValues = 0;
@@ -390,7 +394,7 @@ namespace HedgeHog {
       return other.Aggregate(v, (p, n) => p.Max(n));
     }
     public static double Min(this double v, double other) {
-      return Math.Min(v, other);
+      return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Min(v, other);
     }
     public static double Min(this double v,params double[] other) {
       return other.Aggregate(v, (p, n) => p.Min(n));
