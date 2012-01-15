@@ -1,28 +1,27 @@
-﻿using GalaSoft.MvvmLight;
-using System;
-using System.Text.RegularExpressions;
-using GalaSoft.MvvmLight.Command;
-using System.Windows.Input;
-using WC = WatiN.Core;
-using System.Windows;
-using System.Collections.ObjectModel;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Data.Objects.DataClasses;
-using HedgeHog;
-using System.Globalization;
-using System.Windows.Data;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using System.Reactive.Linq;
-using System.Reactive.Concurrency;
-using System.Threading;
-using Manheim.Web;
+using System.Configuration;
 using System.Data.Entity.Infrastructure;
 using System.Data.Metadata.Edm;
+using System.Data.Objects.DataClasses;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Input;
+using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.Command;
+using HedgeHog;
 using LINQtoCSV;
+using Manheim.Web;
+using WC = WatiN.Core;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -88,6 +87,16 @@ namespace Manheim.ViewModel {
   /// </summary>
   public class MainViewModel : ViewModelBase {
     #region Properties
+
+    string dbPath { get { return System.IO.Path.Combine(Environment.CurrentDirectory, "Manheim.mdf"); } }
+    string dataPath {
+      get {
+        var path = System.IO.Path.Combine(Environment.CurrentDirectory, "Data");
+        System.IO.Directory.CreateDirectory(path);
+        return path;
+      }
+    }
+    string excelPath { get { return System.IO.Path.Combine(dataPath, "Manheim.csv"); } }
 
     #region UI
 
@@ -237,7 +246,7 @@ namespace Manheim.ViewModel {
       foreach (var cell in trHeader.ChildrenWithTag("th"))
         Debug.WriteLine(Regex.Replace(cell.Text, @"[\W]", ""));
       var dataBody = dataTable.TableBody(WC.Find.Any);
-      var manheimModel = new Manheim.Model.ManheimEntities();
+      var manheimModel = new Manheim.Model.ManheimEntities(dbPath);
 
       var stateEntity = manheimModel.States.Where(s => s.Name == state).SingleOrDefault();
       if (stateEntity == null) {
@@ -405,39 +414,39 @@ namespace Manheim.ViewModel {
       var doc = ((WC.Native.InternetExplorer.IEBrowser)ie.NativeBrowser).WebBrowser.Document as mshtml.IHTMLDocument2;
       return false;
     };
+    WC.IE vehicleInfoIE = null;
     private WC.IE OpenVehicleInfoWindow(WC.TableCellCollection tdsInput) {
       Func<WC.TableCellCollection, WC.IE> f = (tds) => {
         var link = tds[2].Links.First();
         var target = link.GetAttributeValue("target");
         link.SetAttributeValue("target", _vehicleInfoTargetName);
         link.Click();
-        WC.IE vehicleInfoIE = null;
+        try {
+          vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
+            return t.StartsWith("Manheim - PowerSearch");
+          }));
+        } catch { }
+        if (vehicleInfoIE == null || vehicleInfoIE.Title == "Manheim - PowerSearch - Search Results")
           try {
             vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
-              return t.StartsWith("Manheim - PowerSearch");
+              return t == "Manheim - PowerSearch - Search Results";
             }));
-          } catch { }
-          if (vehicleInfoIE == null || vehicleInfoIE.Title == "Manheim - PowerSearch - Search Results")
-            try {
-              vehicleInfoIE = WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
-                return t == "Manheim - PowerSearch - Search Results";
-              }));
-              if (vehicleInfoIE != null) {
-                var vehicle_detail_row = vehicleInfoIE.TableRow(WC.Find.ByClass("vehicle_detail_row "));
-                if (vehicle_detail_row.Exists) {
-                  var link1 = vehicle_detail_row.Link("vehicleDetailsLink_0");
-                  if (link1 != null) {
-                    link1.Click();
-                    try {
-                      return WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
-                        return t == "Manheim - PowerSearch - Vehicle Details";
-                      }));
-                    } catch { }
-                  }
+            if (vehicleInfoIE != null) {
+              var vehicle_detail_row = vehicleInfoIE.TableRow(WC.Find.ByClass("vehicle_detail_row "));
+              if (vehicle_detail_row.Exists) {
+                var link1 = vehicle_detail_row.Link("vehicleDetailsLink_0");
+                if (link1 != null) {
+                  link1.Click();
+                  try {
+                    return WC.IE.AttachTo<WC.IE>(WC.Find.ByTitle(t => {
+                      return t == "Manheim - PowerSearch - Vehicle Details";
+                    }));
+                  } catch { }
                 }
-                Log = new Exception("VehicleInfo window not found.");
               }
-            } catch { }
+              Log = new Exception("VehicleInfo window not found.");
+            }
+          } catch { }
         return vehicleInfoIE;
       };
       if (Application.Current.Dispatcher.CheckAccess())
@@ -518,6 +527,26 @@ namespace Manheim.ViewModel {
     }
     void CloseWindow() {
       _mustShutDown = true;
+      try {
+        this.vehicleInfoIE.Close();
+      } catch { }
+    }
+    #endregion
+
+
+    #region DataFolder
+    ICommand _DataFolderCommand;
+    public ICommand DataFolderCommand {
+      get {
+        if (_DataFolderCommand == null) {
+          _DataFolderCommand = new RelayCommand(DataFolder, () => true);
+        }
+
+        return _DataFolderCommand;
+      }
+    }
+    void DataFolder() {
+      System.Diagnostics.Process.Start(dataPath);
     }
     #endregion
 
@@ -534,16 +563,19 @@ namespace Manheim.ViewModel {
       }
     }
     void Export() {
-      using (var entities = new Model.ManheimEntities()) {
-        var path = "C:\\Data";
-        System.IO.Directory.CreateDirectory(path);
+      using (var entities = new Model.ManheimEntities(dbPath)) {
         CsvFileDescription outputFileDescription = new CsvFileDescription {
           SeparatorChar = ',', 
           FirstLineHasColumnNames = true,
            
         };
         CsvContext cc = new CsvContext();
-        cc.Write(entities.vPreSales, path + "\\Manheim.csv", outputFileDescription);
+        var path = System.IO.Path.GetDirectoryName(excelPath) 
+          + "\\" + System.IO.Path.GetFileNameWithoutExtension(excelPath) 
+          + DateTime.Today.ToString("_yyyyMMdd") 
+          + System.IO.Path.GetExtension(excelPath);
+        cc.Write(entities.vPreSales, path, outputFileDescription);
+        System.Diagnostics.Process.Start(path);
       }
     }
     #endregion
@@ -561,7 +593,7 @@ namespace Manheim.ViewModel {
     }
     void FillSearch() {
       Browser.GoTo(this.GetHomeUrl());
-      using (var entities = new Model.ManheimEntities()) {
+      using (var entities = new Model.ManheimEntities(dbPath)) {
         entities.Configuration.LazyLoadingEnabled = true;
         while (Browser.Frames.Count < 2)
           Thread.Sleep(100);
@@ -640,15 +672,25 @@ namespace Manheim.ViewModel {
           .SelectMany(ie => ie.EventArgs.NewItems.Cast<Auction>())
           .SubscribeOn(Scheduler.NewThread)
           .Subscribe(auction => {
+            if (_mustShutDown) return;
             var t = new Thread(new ThreadStart(() => {
-              GetAuctionPreSale(auction.State, auction);
-              Application.Current.Dispatcher.Invoke(new Action(() => {
-                _auctionsToRun.Remove(auction);
-                SelectedAuctionItem = null;
-              }));
+              try {
+                GetAuctionPreSale(auction.State, auction);
+              } catch (Exception exc) {
+                if (!_mustShutDown)
+                  Log = exc;
+              } finally {
+                try {
+                  Application.Current.Dispatcher.Invoke(new Action(() => {
+                    _auctionsToRun.Remove(auction);
+                    SelectedAuctionItem = null;
+                  }));
+                } catch { }
+              }
             }));
             t.SetApartmentState(ApartmentState.STA);
             t.Start();
+            t.Join();
           });
       }
     }

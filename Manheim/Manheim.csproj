@@ -113,6 +113,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Manheim.tt</DependentUpon>
     </Compile>
+    <Compile Include="Model\Manheim.Context.Factory.cs" />
     <Compile Include="Model\ManheimEntities.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
