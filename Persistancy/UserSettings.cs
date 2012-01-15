@@ -65,7 +65,17 @@ namespace WpfPersist {
     SaveDelegate Save { get; set; }
   }
   public static class UserSettingsStorage {
-    static string SettingsFileName { get { return AppDomain.CurrentDomain.BaseDirectory + "Settings.xml"; } }
+    static bool useApplicationDataFolder { get { return System.Configuration.ConfigurationManager.AppSettings["PersistToAppData"] == "true"; } }
+    static string SettingsFileName {
+      get {
+        if (!useApplicationDataFolder)
+          return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Settings.xml");
+        var appName = AppDomain.CurrentDomain.FriendlyName.Split('.')[0];
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName);
+        Directory.CreateDirectory(path);
+        return Path.Combine(path, "Settings.xml");
+      }
+    }
     static UserSettingsStorage() {
       if (Application.Current != null && Application.Current.MainWindow != null) {
         Application.Current.MainWindow.Closing += new CancelEventHandler(MainWindow_Closing);
