@@ -41,14 +41,15 @@
     </Grid.RowDefinitions>
     <ToolBarTray Orientation="Horizontal" VerticalAlignment="Top" Name="toolBarTray1">
       <ToolBar>
-        <Button Command="{Binding LoginCommand}">Login</Button>
+        <Button Command="{Binding LoginCommand}" Visibility="Collapsed">Login</Button>
         <Button Command="{Binding PreSaleCommand}">PreSale</Button>
-        <Button Command="{Binding FillSearchCommand}">Fill Search</Button>
-        <Button Command="{Binding ExportCommand}">Export</Button>
+        <Button Command="{Binding ExportCommand}">Export To -></Button>
+        <Button Command="{Binding DataFolderCommand}">Data Folder</Button>
+        <Button Command="{Binding FillSearchCommand}" IsEnabled="False">Fill Search</Button>
       </ToolBar>
     </ToolBarTray>
     <StackPanel Grid.Row="1">
-      <ListBox ItemsSource="{Binding AuctionsToRun}">
+      <!--<ListBox ItemsSource="{Binding AuctionsToRun}">
         <ListBox.ItemTemplate>
           <DataTemplate>
             <TextBlock>
@@ -56,7 +57,7 @@
             </TextBlock>
           </DataTemplate>
         </ListBox.ItemTemplate>
-      </ListBox>
+      </ListBox>-->
       <TreeView Name="StateTree" HorizontalAlignment="Left" 
                 Tag="{Binding SelectedValue,RelativeSource={RelativeSource Self},Converter={x:Static Member=lvm:ToSelectedStateConverter.Default},ConverterParameter={StaticResource Locator}}"
                 ItemsSource="{Binding States}" VerticalAlignment="Top">
