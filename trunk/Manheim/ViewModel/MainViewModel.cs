@@ -22,6 +22,7 @@ using HedgeHog;
 using LINQtoCSV;
 using Manheim.Web;
 using WC = WatiN.Core;
+using System.IO;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -87,15 +88,14 @@ namespace Manheim.ViewModel {
   /// </summary>
   public class MainViewModel : ViewModelBase {
     #region Properties
-
-    string dbPath { get { return System.IO.Path.Combine(Environment.CurrentDirectory, "Manheim.mdf"); } }
     string dataPath {
       get {
-        var path = System.IO.Path.Combine(Environment.CurrentDirectory, "Data");
+        var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create), "Manheim");
         System.IO.Directory.CreateDirectory(path);
         return path;
       }
     }
+    string dbPath { get { return Path.Combine(dataPath,"DB", "Manheim.mdf"); } }
     string excelPath { get { return System.IO.Path.Combine(dataPath, "Manheim.csv"); } }
 
     #region UI

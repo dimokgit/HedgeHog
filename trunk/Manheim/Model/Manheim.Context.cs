@@ -15,7 +15,7 @@ namespace Manheim.Model
     
     public partial class ManheimEntities : DbContext
     {
-        ManheimEntities()
+        public ManheimEntities()
             : base("name=ManheimEntities")
         {
         }

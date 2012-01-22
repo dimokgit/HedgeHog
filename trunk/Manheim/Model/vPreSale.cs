@@ -20,6 +20,8 @@ namespace Manheim.Model
         public string Auction { get; set; }
         public string StateCode { get; set; }
         public System.DateTime SaleDate { get; set; }
+        public Nullable<System.DateTime> FirstDate { get; set; }
+        public Nullable<int> SalesCount { get; set; }
         public Nullable<int> MMR { get; set; }
         public int Year { get; set; }
         public string Make { get; set; }

@@ -23,6 +23,8 @@
       [vPreSale].[Auction] AS [Auction], 
       [vPreSale].[StateCode] AS [StateCode], 
       [vPreSale].[SaleDate] AS [SaleDate], 
+      [vPreSale].[FirstDate] AS [FirstDate], 
+      [vPreSale].[SalesCount] AS [SalesCount], 
       [vPreSale].[MMR] AS [MMR], 
       [vPreSale].[Year] AS [Year], 
       [vPreSale].[Make] AS [Make], 
@@ -188,7 +190,7 @@
           <Property Name="Name" Type="varchar" Nullable="false" MaxLength="50" />
         </EntityType>
         <!--Errors Found During Generation:
-      warning 6002: The table/view 'C:\USERS\DIMON\PROJECTS\FOREX_OLD\PROJECTS\HEDGEHOG\MANHEIM\BIN\DEBUG\MANHEIM.MDF.dbo.vPreSale' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      warning 6002: The table/view 'C:\USERS\DIMON\APPDATA\ROAMING\MANHEIM\DB\MANHEIM.MDF.dbo.vPreSale' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
       -->
         <EntityType Name="vPreSale">
           <Key>
@@ -211,6 +213,8 @@
           <Property Name="Auction" Type="varchar" MaxLength="64" />
           <Property Name="StateCode" Type="varchar" Nullable="false" MaxLength="2" />
           <Property Name="SaleDate" Type="smalldatetime" Nullable="false" />
+          <Property Name="FirstDate" Type="smalldatetime" />
+          <Property Name="SalesCount" Type="int" />
           <Property Name="MMR" Type="int" />
           <Property Name="Year" Type="int" Nullable="false" />
           <Property Name="Make" Type="varchar" Nullable="false" MaxLength="50" />
@@ -595,6 +599,8 @@
           <Property Type="String" Name="Auction" MaxLength="64" FixedLength="false" Unicode="false" />
           <Property Type="String" Name="StateCode" Nullable="false" MaxLength="2" FixedLength="false" Unicode="false" />
           <Property Type="DateTime" Name="SaleDate" Nullable="false" />
+          <Property Type="DateTime" Name="FirstDate" />
+          <Property Type="Int32" Name="SalesCount" />
           <Property Type="Int32" Name="MMR" />
           <Property Type="Int32" Name="Year" Nullable="false" />
           <Property Type="String" Name="Make" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
@@ -776,6 +782,8 @@
                 <ScalarProperty Name="Make" ColumnName="Make" />
                 <ScalarProperty Name="Year" ColumnName="Year" />
                 <ScalarProperty Name="MMR" ColumnName="MMR" />
+                <ScalarProperty Name="SalesCount" ColumnName="SalesCount" />
+                <ScalarProperty Name="FirstDate" ColumnName="FirstDate" />
                 <ScalarProperty Name="SaleDate" ColumnName="SaleDate" />
                 <ScalarProperty Name="StateCode" ColumnName="StateCode" />
                 <ScalarProperty Name="Auction" ColumnName="Auction" />
@@ -851,7 +859,7 @@
           <ConnectorPoint PointX="6.875" PointY="6.797841796875" />
           <ConnectorPoint PointX="7.625" PointY="6.797841796875" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="ManheimModel.vPreSale" Width="1.5" PointX="0.75" PointY="5.625" Height="7.7493294270833317" />
+        <EntityTypeShape EntityType="ManheimModel.vPreSale" Width="1.5" PointX="0.75" PointY="5.75" Height="8.1339322916666674" />
         </Diagram>
     </Diagrams>
   </Designer>
