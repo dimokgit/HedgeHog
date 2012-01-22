@@ -441,7 +441,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [DisplayName("StDev Ratio Min")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     [Description("BigCorr.StDev / CurrCorr.StDev")]
     public double CorridorStDevRatioMin {
       get { return StDevToSpreadRatio; }
@@ -468,7 +468,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("StDev Ratio Max")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     [Description("BigCorr.StDev / CurrCorr.StDev")]
     public double CorridorStDevRatioMax_ {
       get { return CorridorStDevRatioMax; }
@@ -782,8 +782,8 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Corridor StDev To SpreadMin")]
-    [Description("CorridorStDev/SpreadMin > X")]
-    [Category(categoryCorridor)]
+    [Description("CorridorStDev/Spread > X")]
+    [Category(categoryActive)]
     public double CorridorStDevToSpreadMin {
       get { return FibMin; }
       set { 
