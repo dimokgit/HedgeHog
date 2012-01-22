@@ -4480,11 +4480,11 @@ namespace HedgeHog.Alice.Store {
             _waitBuyClose = _waitSellClose = false;
             _tradingDistanceMax = 0;
           }
-          CanSell = CanBuy = false;
+          if (CurrentGross > 0)
+            CanBuy = CanSell = false;
         };
         _strategyExecuteOnTradeOpen = () => {
           _useTakeProfitMin = true;
-          CanSell = CanBuy = false;
         };
       }
       #endregion
@@ -4536,15 +4536,24 @@ namespace HedgeHog.Alice.Store {
           buyLevel.Rate = sellNetOpen() + tp;
         }
       } else {
-        Action a = () => buyLevel.Rate = CanBuy ? MagnetPrice : buyRate;
+        Action a = () => {
+          if (CanBuy) {
+            buyLevel.Rate = MagnetPrice;
+            sellLevel.Rate = sellRate;
+          } else if (CanSell) {
+            buyLevel.Rate = buyRate;
+            sellLevel.Rate = MagnetPrice;
+          } else {
+            buyLevel.Rate = buyRate;
+            sellLevel.Rate = sellRate;
+          }
+        };
         a();
         if (RateLast.PriceAvg < sellRate) {
           buyLevel.CanTrade = sellLevel.CanTrade = true;
           CanBuy = true;
           a();
         }
-        a = () => sellLevel.Rate = CanSell ? MagnetPrice : sellRate;
-        a();
         if (RateLast.PriceAvg > buyRate) {
           buyLevel.CanTrade = sellLevel.CanTrade = true;
           CanSell = true;
