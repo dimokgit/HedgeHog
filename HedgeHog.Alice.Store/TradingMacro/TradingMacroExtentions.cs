@@ -2638,7 +2638,7 @@ namespace HedgeHog.Alice.Store {
     private Action<bool, double> defferedOpen;
 
     private void CalculatePriceLastAndPrev(out double priceLast, out double pricePrev) {
-      priceLast = CalculateLastPrice(RateLast, r => r.PriceAvg);
+      priceLast = CalculateLastPrice(RatesArray.LastByCount(), r => r.PriceAvg);
       pricePrev = RatePrev1.PriceAvg;
     }
 
@@ -3738,6 +3738,9 @@ namespace HedgeHog.Alice.Store {
       buyCloseLevel.CanTrade = buyCloseLevel.CanTrade = false;
       #endregion
 
+      if (!IsInVitualTrading)
+        this.RaiseShowChart();
+
     }
     private void StrategyEnterBreakout060() {
       #region Init SuppReses
@@ -4059,10 +4062,507 @@ namespace HedgeHog.Alice.Store {
       sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
       #endregion
     }
+
+    private void StrategyEnterBreakout070() {
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            _waitBuyClose = _waitSellClose = false;
+            _tradingDistanceMax = 0;
+          }
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+        };
+      }
+      #endregion
+
+      #region Suppres levels
+      var buyLevel = Resistance0();
+      var buyCloseLevel = Support1();
+      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = Support0();
+      var sellCloseLevel = Resistance1();
+      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
+      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
+      #region SetLevels
+      Action<bool> setLevels = (bool isBuy) => {
+
+        #region Close Trades
+        if (!Trades.Any())
+          _waitBuyClose = _waitSellClose = false;
+        else {
+          if (RateLast.PriceAvg >= buyCloseLevel.Rate)
+            _waitBuyClose = true;
+          if (RateLast.PriceAvg <= sellCloseLevel.Rate)
+            _waitSellClose = true;
+        }
+        #endregion
+
+        if (isBuy) {
+          buyLevel.Rate = RateLast.PriceAvg03.Min(RateLast.PriceAvg1 - tp);
+          buyCloseLevel.Rate = RateLast.PriceAvg02.Max(buyNetOpen() + tpColse);
+        } else {
+          sellLevel.Rate = RateLast.PriceAvg02.Max(RateLast.PriceAvg1 + tp);
+          sellCloseLevel.Rate = RateLast.PriceAvg03.Min(sellNetOpen() - tpColse);
+        }
+      };
+      #endregion
+
+      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
+        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
+        ) {
+        TradesManager.ClosePair(Pair);
+        return;
+      }
+      StrategyExitByGross061();
+
+      #region Run
+      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
+        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
+      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
+      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
+      _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
+      var up = Trades.Any() ? Trades[0].IsBuy : CorridorAngle > 0;
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var stDevMean = RatesArray.Select(r => r.PriceStdDev).Mean();
+      var angleOk = CorridorAngle.Abs().Round(0) < TradingAngleRange;
+      var stDevOk = StDevAverage.Between(stDevMean * CorridorStDevRatioMin, stDevMean * CorridorStDevRatioMax);
+      var corridorDateOk = (RatesArray.LastByCount().StartDate - CorridorStats.StartDate).TotalMinutes.Abs() * 2 < (RatesArray.LastByCount().StartDate - RatesArray[0].StartDate).TotalMinutes.Abs();
+      var canTrade = RatesStDev >= SpreadForCorridor * 4;
+      var basePrice = MagnetPrice;
+      if (Trades.Any()) {
+        if (up) {
+          buyCloseLevel.CanTrade = false;
+          sellLevel.Rate = MagnetPrice - tp;
+          sellLevel.CanTrade = canTrade;
+          buyLevel.Rate = sellCloseLevel.Rate = 0.0001;
+        } else {
+          sellCloseLevel.CanTrade = false;
+          buyLevel.Rate = MagnetPrice + tp;
+          buyLevel.CanTrade = canTrade;
+          sellLevel.Rate = buyCloseLevel.Rate = 0.0001;
+        }
+      } else {
+        buyLevel.Rate = MagnetPrice + tp;
+        sellLevel.Rate = MagnetPrice - tp;
+        buyLevel.CanTrade = sellLevel.CanTrade = canTrade;
+        buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+        buyCloseLevel.Rate = sellCloseLevel.Rate = 0.0001;
+      }
+      buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse);
+      sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
+      #endregion
+    }
+
+    #region CanBuy(Sell)
+    bool _canBuy;
+    public bool CanBuy {
+      get { return _canBuy; }
+      set {
+        if (_canBuy == value) return;
+        _canBuy = value;
+        if (value) CanSell = false;
+      }
+    }
+    bool _canSell;
+    public bool CanSell {
+      get { return _canSell; }
+      set {
+        if (_canSell == value) return;
+        _canSell = value;
+        if (value) CanBuy = false;
+      }
+    }
+    #endregion
+
+    private void StrategyEnterBreakout071() {
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            _waitBuyClose = _waitSellClose = false;
+            _tradingDistanceMax = 0;
+          }
+          CanSell = CanBuy = false;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+          CanSell = CanBuy = false;
+        };
+      }
+      #endregion
+
+      #region Suppres levels
+      var buyLevel = Resistance0();
+      var buyCloseLevel = Support1();
+      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = Support0();
+      var sellCloseLevel = Resistance1();
+      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
+      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
+      #region SetLevels
+      Action<bool> setLevels = (bool isBuy) => {
+
+        #region Close Trades
+        if (!Trades.Any())
+          _waitBuyClose = _waitSellClose = false;
+        else {
+          if (RateLast.PriceAvg >= buyCloseLevel.Rate)
+            _waitBuyClose = true;
+          if (RateLast.PriceAvg <= sellCloseLevel.Rate)
+            _waitSellClose = true;
+        }
+        #endregion
+
+        if (isBuy) {
+          buyLevel.Rate = RateLast.PriceAvg03.Min(RateLast.PriceAvg1 - tp);
+          buyCloseLevel.Rate = RateLast.PriceAvg02.Max(buyNetOpen() + tpColse);
+        } else {
+          sellLevel.Rate = RateLast.PriceAvg02.Max(RateLast.PriceAvg1 + tp);
+          sellCloseLevel.Rate = RateLast.PriceAvg03.Min(sellNetOpen() - tpColse);
+        }
+      };
+      #endregion
+
+      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
+        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
+        ) {
+        TradesManager.ClosePair(Pair);
+        return;
+      }
+      StrategyExitByGross061();
+
+      #region Run
+      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
+        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
+      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
+      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
+      _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
+      var up = Trades.Any() ? Trades[0].IsBuy : CorridorAngle > 0;
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var stDevMean = RatesArray.Select(r => r.PriceStdDev).Mean();
+      var angleOk = CorridorAngle.Abs().Round(0) < TradingAngleRange;
+      var stDevOk = StDevAverage.Between(stDevMean * CorridorStDevRatioMin, stDevMean * CorridorStDevRatioMax);
+      var corridorDateOk = (RatesArray.LastByCount().StartDate - CorridorStats.StartDate).TotalMinutes.Abs() * 2 < (RatesArray.LastByCount().StartDate - RatesArray[0].StartDate).TotalMinutes.Abs();
+      var canTrade = RatesStDev >= SpreadForCorridor * 4;
+      var basePrice = MagnetPrice;
+      Func<bool, double> tradeLevelByMP = (above) => CorridorStats.Rates.TakeWhile(r => above ? r.PriceAvg > MagnetPrice : r.PriceAvg < MagnetPrice)
+        .Select(r => (r.PriceAvg - MagnetPrice).Abs()).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> sellLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg > MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> buyLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg < MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderBy(d => d).First();
+      if (Trades.Any()) {
+        if (up) {
+          buyCloseLevel.CanTrade = false;
+          sellLevel.Rate = MagnetPrice - tp;
+          sellLevel.CanTrade = canTrade;
+          buyLevel.Rate = sellCloseLevel.Rate = 0.0001;
+        } else {
+          sellCloseLevel.CanTrade = false;
+          buyLevel.Rate = MagnetPrice + tp;
+          buyLevel.CanTrade = canTrade;
+          sellLevel.Rate = buyCloseLevel.Rate = 0.0001;
+        }
+      } else {
+        if (RateLast.PriceAvg > buyLevel.Rate)
+          CanBuy = true;
+        if (RateLast.PriceAvg < sellLevel.Rate)
+          CanSell = true;
+        buyLevel.Rate = MagnetPrice + (CanBuy ? -tradeLevelByMP(false) : tp);
+        sellLevel.Rate = MagnetPrice - (CanSell ? -tradeLevelByMP(true) : tp);
+      }
+
+      buyLevel.CanTrade = CanBuy;
+      sellLevel.CanTrade = CanSell;
+      buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+      
+      buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse);
+      sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
+
+      #endregion
+    }
+    private void StrategyEnterBreakout072() {
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            _waitBuyClose = _waitSellClose = false;
+            _tradingDistanceMax = 0;
+          }
+          CanSell = CanBuy = false;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+          CanSell = CanBuy = false;
+        };
+      }
+      #endregion
+
+      #region Suppres levels
+      var buyLevel = Resistance0();
+      var buyCloseLevel = Support1();
+      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = Support0();
+      var sellCloseLevel = Resistance1();
+      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
+      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
+
+      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
+        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
+        ) {
+        TradesManager.ClosePair(Pair);
+        return;
+      }
+      if (StrategyExitByGross061()) return;
+
+      #region Run
+      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
+        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
+      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
+      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
+      _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
+      var up = Trades.Any() ? Trades[0].IsBuy : CorridorAngle > 0;
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var stDevMean = RatesArray.Select(r => r.PriceStdDev).Mean();
+      var angleOk = CorridorAngle.Abs().Round(0) < TradingAngleRange;
+      var stDevOk = StDevAverage.Between(stDevMean * CorridorStDevRatioMin, stDevMean * CorridorStDevRatioMax);
+      var corridorDateOk = (RatesArray.LastByCount().StartDate - CorridorStats.StartDate).TotalMinutes.Abs() * 2 < (RatesArray.LastByCount().StartDate - RatesArray[0].StartDate).TotalMinutes.Abs();
+      var canTrade = RatesStDev >= SpreadForCorridor * 4;
+      var basePrice = MagnetPrice;
+      Func<bool, double> tradeLevelByMP = (above) => CorridorStats.Rates.TakeWhile(r => above ? r.PriceAvg > MagnetPrice : r.PriceAvg < MagnetPrice)
+        .Select(r => (r.PriceAvg - MagnetPrice).Abs()).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> sellLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg > MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> buyLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg < MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderBy(d => d).First();
+      var buyRate = RateLast.PriceAvg21;
+      var sellRate = RateLast.PriceAvg31;
+      if (Trades.Any()) {
+        if (up) {
+          sellLevel.Rate = buyNetOpen() - tp;
+        } else {
+          buyLevel.Rate = sellNetOpen() + tp;
+        }
+      } else {
+        Action a = () => buyLevel.Rate = CanBuy ? MagnetPrice - tradeLevelByMP(false) : buyRate;
+        a();
+        if (RateLast.PriceAvg > buyLevel.Rate) {
+          CanBuy = true;
+          a();
+        }
+        a = () => sellLevel.Rate = CanSell ? MagnetPrice + tradeLevelByMP(true) : sellRate;
+        a();
+        if (RateLast.PriceAvg < sellLevel.Rate) {
+          CanSell = true;
+          a();
+        }
+      }
+
+      buyLevel.CanTrade = CanBuy;
+      sellLevel.CanTrade = CanSell;
+      buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+
+      buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse);
+      sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
+
+      #endregion
+    }
+    private void StrategyEnterBreakout073() {
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            _waitBuyClose = _waitSellClose = false;
+            _tradingDistanceMax = 0;
+          }
+          CanSell = CanBuy = false;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+          CanSell = CanBuy = false;
+        };
+      }
+      #endregion
+
+      #region Suppres levels
+      var buyLevel = Resistance0();
+      var buyCloseLevel = Support1();
+      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = Support0();
+      var sellCloseLevel = Resistance1();
+      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
+      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
+
+      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
+        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
+        ) {
+        TradesManager.ClosePair(Pair);
+        return;
+      }
+      if (StrategyExitByGross061()) return;
+
+      #region Run
+      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
+        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
+      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
+      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
+      _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
+      var up = Trades.Any() ? Trades[0].IsBuy : CorridorAngle > 0;
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var stDevMean = RatesArray.Select(r => r.PriceStdDev).Mean();
+      var angleOk = CorridorAngle.Abs().Round(0) < TradingAngleRange;
+      var stDevOk = StDevAverage.Between(stDevMean * CorridorStDevRatioMin, stDevMean * CorridorStDevRatioMax);
+      var corridorDateOk = (RatesArray.LastByCount().StartDate - CorridorStats.StartDate).TotalMinutes.Abs() * 2 < (RatesArray.LastByCount().StartDate - RatesArray[0].StartDate).TotalMinutes.Abs();
+      var canTrade = RatesStDev >= SpreadForCorridor * 4;
+      var basePrice = MagnetPrice;
+      Func<bool, double> tradeLevelByMP = (above) => CorridorStats.Rates.TakeWhile(r => above ? r.PriceAvg > MagnetPrice : r.PriceAvg < MagnetPrice)
+        .Select(r => (r.PriceAvg - MagnetPrice).Abs()).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> sellLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg > MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> buyLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg < MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderBy(d => d).First();
+      var buyRate = RateLast.PriceAvg21;
+      var sellRate = RateLast.PriceAvg31;
+      if (Trades.Any()) {
+        if (up) {
+          sellLevel.Rate = buyNetOpen() - tp;
+        } else {
+          buyLevel.Rate = sellNetOpen() + tp;
+        }
+      } else {
+        Action a = () => buyLevel.Rate = CanBuy ? MagnetPrice : buyRate;
+        a();
+        if (RateLast.PriceAvg < sellRate) {
+          CanBuy = true;
+          a();
+        }
+        a = () => sellLevel.Rate = CanSell ? MagnetPrice : sellRate;
+        a();
+        if (RateLast.PriceAvg > buyRate) {
+          CanSell = true;
+          a();
+        }
+      }
+
+      buyLevel.CanTrade = CanBuy;
+      sellLevel.CanTrade = CanSell;
+      buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+
+      buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse);
+      sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
+
+      #endregion
+    }
+    private void StrategyEnterBreakout074() {
+      #region Init SuppReses
+      if (_strategyExecuteOnTradeClose == null) {
+        SuppResLevelsCount = 2;
+        _strategyExecuteOnTradeClose = (t) => {
+          if (!Trades.IsBuy(t.IsBuy).Any()) {
+            _useTakeProfitMin = false;
+            _waitBuyClose = _waitSellClose = false;
+            _tradingDistanceMax = 0;
+          }
+          CanSell = CanBuy = false;
+        };
+        _strategyExecuteOnTradeOpen = () => {
+          _useTakeProfitMin = true;
+          CanSell = CanBuy = false;
+        };
+      }
+      #endregion
+
+      #region Suppres levels
+      var buyLevel = Resistance0();
+      var buyCloseLevel = Support1();
+      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(buyLevel.Rate);
+      var sellLevel = Support0();
+      var sellCloseLevel = Resistance1();
+      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(sellLevel.Rate);
+      #endregion
+
+      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
+      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
+
+      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
+        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
+        ) {
+        TradesManager.ClosePair(Pair);
+        return;
+      }
+      if (StrategyExitByGross061()) return;
+
+      #region Run
+      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
+        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
+      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
+      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
+      _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
+      var up = Trades.Any() ? Trades[0].IsBuy : CorridorAngle > 0;
+      var isAuto = IsInVitualTrading || IsAutoStrategy;
+      var stDevMean = RatesArray.Select(r => r.PriceStdDev).Mean();
+      var angleOk = CorridorAngle.Abs().Round(0) < TradingAngleRange;
+      var stDevOk = StDevAverage.Between(stDevMean * CorridorStDevRatioMin, stDevMean * CorridorStDevRatioMax);
+      var corridorDateOk = (RatesArray.LastByCount().StartDate - CorridorStats.StartDate).TotalMinutes.Abs() * 2 < (RatesArray.LastByCount().StartDate - RatesArray[0].StartDate).TotalMinutes.Abs();
+      var canTrade = RatesStDev >= SpreadForCorridor * 4;
+      var basePrice = MagnetPrice;
+      Func<bool, double> tradeLevelByMP = (above) => CorridorStats.Rates.TakeWhile(r => above ? r.PriceAvg > MagnetPrice : r.PriceAvg < MagnetPrice)
+        .Select(r => (r.PriceAvg - MagnetPrice).Abs()).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> sellLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg > MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderByDescending(d => d).First();
+      Func<double> buyLevelByMP = () => CorridorStats.Rates.TakeWhile(r => r.PriceAvg < MagnetPrice).Select(r => r.PriceAvg - MagnetPrice).DefaultIfEmpty(0).OrderBy(d => d).First();
+      var buyRate = RateLast.PriceAvg21;
+      var sellRate = RateLast.PriceAvg31;
+      if (false && Trades.Any()) {
+        if (up) {
+          sellLevel.Rate = buyNetOpen() - tp;
+        } else {
+          buyLevel.Rate = sellNetOpen() + tp;
+        }
+      } else {
+        Action a = () => buyLevel.Rate = CanBuy ? MagnetPrice : buyRate;
+        a();
+        if (RateLast.PriceAvg < sellRate) {
+          buyLevel.CanTrade = sellLevel.CanTrade = true;
+          CanBuy = true;
+          a();
+        }
+        a = () => sellLevel.Rate = CanSell ? MagnetPrice : sellRate;
+        a();
+        if (RateLast.PriceAvg > buyRate) {
+          buyLevel.CanTrade = sellLevel.CanTrade = true;
+          CanSell = true;
+          a();
+        }
+      }
+
+      buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+
+      buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse);
+      sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse);
+
+      #endregion
+    }
     #endregion
 
     void StrategyBreakout() {
-      StrategyEnterBreakout064();
+      StrategyEnterBreakout074();
     }
 
     void StrategyRange() {
@@ -4710,10 +5210,11 @@ namespace HedgeHog.Alice.Store {
           CorridorsRates.Clear();
           foreach (var sda in StDevAverages.OrderByDescending(d => d))
             CorridorsRates.Insert(0, CorridorsRates.DefaultIfEmpty(ratesForCorridor).First().SkipWhile(r => r.PriceStdDev > sda * StDevAverageLeewayRatio).ToList());
-          var rates = CorridorsRates[0] = CorridorsRates[0].SkipWhile(r => r.PriceStdDev > StDevAverage * StDevAverageLeewayRatio).ToList();
-          MagnetPrice = rates.Average(r => r.PriceAvg);
-          if (rates.Count < 2) return;
-          crossedCorridor = rates.ReverseIfNot().ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);
+          if( CorridorStats.Rates.Count >0)
+            CorridorsRates[0] = CorridorsRates[0].Skip((CorridorsRates[0].Count - (CorridorStats.Rates.Count + 1)).Max(0)).ToList();
+          MagnetPrice = CorridorsRates[0].Average(r => r.PriceAvg);
+          if (CorridorsRates[0].Count < 2) return;
+          crossedCorridor = CorridorsRates[0].ReverseIfNot().ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);
           #endregion
         }
 
@@ -5056,6 +5557,7 @@ namespace HedgeHog.Alice.Store {
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
         SetTradesStatistics(price, trades);
+        RunStrategy();
       } catch (Exception exc) { Log = exc; }
       if (sw.Elapsed > TimeSpan.FromSeconds(5))
         Log = new Exception("RunPrice(" + Pair + ") took " + Math.Round(sw.Elapsed.TotalSeconds, 1) + " secods");
