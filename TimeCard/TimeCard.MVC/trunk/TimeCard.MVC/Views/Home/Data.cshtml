@@ -1,0 +1,156 @@
+﻿@{
+    ViewBag.Title = "Data";
+}
+<![if false]>
+<script src="../../Scripts/jquery.js" type="text/javascript"></script>
+<script src="../../Scripts/Namespace.js" type="text/javascript"></script>
+<script src="../../Scripts/knockout.js" type="text/javascript"></script>
+<script src="../../Scripts/knockout.data.js" type="text/javascript"></script>
+<![endif]>
+<style>
+  DIV.dataContainer TABLE
+  {
+  	display:inline-table;
+  }
+  TFOOT TR TD DIV
+  {
+  	overflow:inherit;
+  	width;100%;
+  }
+  TFOOT TR TD input
+  {
+  	float:left;
+  	width:100%;
+  	white-space:pre;
+  	overflow-x:visible;
+  }
+</style>
+<h2>Data</h2>
+<div class="dataContainer"></div>
+<script>
+  $(function () {
+    var vm = {
+      punchTypes: ko.observableArray(),
+      punchTypesAdd: function (data) { AddData(this.punchTypesNew, "punchTypes") },
+      punchTypesDelete: function (data) { DeleteData(data, "punchTypes") },
+      punchDirectionsAdd: function (data) { AddData(this.punchDirectionsNew, "punchDirections") },
+      punchDirectionsDelete: function (data) { DeleteData(data, "punchDirections") },
+      format: function (v) { return v; }
+    };
+    GetData(vm, "punchTypes", "#punchTypesTemplate");
+    GetData(vm, "punchDirections", "#punchDirectionsTemplate");
+
+    var homePath = "/home/";
+    function GetData(vm, propertyName, table) {
+      $.ajax({
+        url: homePath + propertyName + "Get",
+        type: "GET",
+        success: function (result) {
+          bindTable(table, result, vm, propertyName, ".dataContainer");
+        },
+        error: function (result) { showAjaxError(result); }
+      });
+    }
+    function DeleteData(data, property) {
+      $.ajax({
+        url: homePath + property + "Delete",
+        type: "POST",
+        data: data,
+        success: function (result) {
+          vm[property].remove(data);
+        },
+        error: function (result) {
+          showAjaxError(result);
+        }
+      });
+    }
+    function AddData(data, property) {
+      $.ajax({
+        url: homePath + property + "Add",
+        type: "POST",
+        data: data,
+        success: function (result) {
+          vm[property].push(result);
+        },
+        error: function (result) {
+          showAjaxError(result);
+        }
+      });
+    }
+    function showAjaxError(response) {
+      alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
+    }
+    function bindTable(table, data, vm, vmProperty, container, options) {
+      table = $(table);
+      container = $(container);
+      if (!container.length) {
+        alert(container.selector + " is not found.");
+        return;
+      }
+      var dataBind = "data-bind";
+      vm[vmProperty] = ko.observableArray(data);
+      vm[vmProperty + "New"] = {};
+      vm[vmProperty + "Columns"] = ko.observableArray($.map(data[0], function (e, n) {
+        vm[vmProperty + "New"][n] = ko.observable(n);
+        return n;
+      }));
+      ko.data.dataBind(vm, table, vmProperty, vmProperty + "Columns");
+    }
+  });
+</script>
+<table id="punchTypesTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+<tr><td><input type="button" value="X" data-bind="click:$root.{{delete}}" /></td></tr>
+</tbody>
+<tfoot>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <td>
+      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <span>
+        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
+      </span>
+     </td>
+  </tr>
+</tfoot>
+</table>
+<table id="punchDirectionsTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+<tr><td><input type="button" value="X" data-bind="click:$root.{{delete}}" /></td></tr>
+</tbody>
+<tfoot>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <td>
+      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <span>
+        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
+      </span>
+     </td>
+  </tr>
+</tfoot>
+</table>

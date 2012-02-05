@@ -1,0 +1,41 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Test Binding</title>
+<![if true]>
+<script src="Scripts/jquery.js" type="text/javascript"></script>
+<script src="Scripts/knockout.js" type="text/javascript"></script>
+<script src="Scripts/Namespace.js" type="text/javascript"></script>
+<script src="Scripts/knockout.data.js" type="text/javascript"></script>
+<![endif]>
+<script type="text/javascript">
+  $(function () {
+    var vm = {
+      rows: [{ Dimok: 1, Dimon: 2 }, { Dimok: 10, Dimon: 20 }, { Dimok: 1000, Dimon: 2000 }, { Dimok: 10000, Dimon: 20000}],
+      format: function (v) { return v; }
+    }
+    ko.data.dataBind(vm, $("#tableTemplate"), "rows");
+  });
+</script>
+</head>
+<body>
+
+
+<table id="tableTemplate">
+<thead>
+  <tr><th>A</th></tr>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+  <tr><td>A</td></tr>
+  <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+    <td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+  </tr>
+  <tr><td>X</td></tr>
+</tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,205 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="TimeCardEntities.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="TimeCardEntitiesStoreContainer">
+          <EntitySet Name="Punch" EntityType="TimeCardEntities.Store.Punch" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="PunchDirection" EntityType="TimeCardEntities.Store.PunchDirection" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="PunchType" EntityType="TimeCardEntities.Store.PunchType" store:Type="Tables" Schema="dbo" />
+          <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.Store.FK_Punch_PunchDirection">
+            <End Role="PunchDirection" EntitySet="PunchDirection" />
+            <End Role="Punch" EntitySet="Punch" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Punch_PunchType" Association="TimeCardEntities.Store.FK_Punch_PunchType">
+            <End Role="PunchType" EntitySet="PunchType" />
+            <End Role="Punch" EntitySet="Punch" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Punch">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="DirectionId" Type="int" Nullable="false" />
+          <Property Name="TypeId" Type="int" Nullable="false" />
+          <Property Name="Time" Type="datetimeoffset" Nullable="false" />
+        </EntityType>
+        <EntityType Name="PunchDirection">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="20" />
+        </EntityType>
+        <EntityType Name="PunchType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="30" />
+        </EntityType>
+        <Association Name="FK_Punch_PunchDirection">
+          <End Role="PunchDirection" Type="TimeCardEntities.Store.PunchDirection" Multiplicity="1" />
+          <End Role="Punch" Type="TimeCardEntities.Store.Punch" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="PunchDirection">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Punch">
+              <PropertyRef Name="DirectionId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Punch_PunchType">
+          <End Role="PunchType" Type="TimeCardEntities.Store.PunchType" Multiplicity="1" />
+          <End Role="Punch" Type="TimeCardEntities.Store.Punch" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="PunchType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Punch">
+              <PropertyRef Name="TypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema xmlns="http://schemas.microsoft.com/ado/2008/09/edm" xmlns:cg="http://schemas.microsoft.com/ado/2006/04/codegeneration" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" Namespace="TimeCardEntities" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+        <EntityContainer Name="TimeCardEntitiesContainer" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Punches" EntityType="TimeCardEntities.Punch" />
+          <EntitySet Name="PunchDirections" EntityType="TimeCardEntities.PunchDirection" />
+          <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.FK_Punch_PunchDirection">
+            <End Role="PunchDirection" EntitySet="PunchDirections" />
+            <End Role="Punch" EntitySet="Punches" />
+          </AssociationSet>
+          <EntitySet Name="PunchTypes" EntityType="TimeCardEntities.PunchType" />
+          <AssociationSet Name="FK_Punch_PunchType" Association="TimeCardEntities.FK_Punch_PunchType">
+            <End Role="PunchType" EntitySet="PunchTypes" />
+            <End Role="Punch" EntitySet="Punches" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Punch">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="Int32" Name="DirectionId" Nullable="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <NavigationProperty Name="PunchDirection" Relationship="TimeCardEntities.FK_Punch_PunchDirection" FromRole="Punch" ToRole="PunchDirection" />
+          <NavigationProperty Name="PunchType" Relationship="TimeCardEntities.FK_Punch_PunchType" FromRole="Punch" ToRole="PunchType" />
+        </EntityType>
+        <EntityType Name="PunchDirection">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="20" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <Association Name="FK_Punch_PunchDirection">
+          <End Type="TimeCardEntities.PunchDirection" Role="PunchDirection" Multiplicity="1" />
+          <End Type="TimeCardEntities.Punch" Role="Punch" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="PunchDirection">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Punch">
+              <PropertyRef Name="DirectionId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="PunchType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="30" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <Association Name="FK_Punch_PunchType">
+          <End Type="TimeCardEntities.PunchType" Role="PunchType" Multiplicity="1" />
+          <End Type="TimeCardEntities.Punch" Role="Punch" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="PunchType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Punch">
+              <PropertyRef Name="TypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs" Space="C-S">
+        <Alias Key="Model" Value="TimeCardEntities" />
+        <Alias Key="Target" Value="TimeCardEntities.Store" />
+        <EntityContainerMapping CdmEntityContainer="TimeCardEntitiesContainer" StorageEntityContainer="TimeCardEntitiesStoreContainer">
+        <EntitySetMapping Name="Punches">
+            <EntityTypeMapping TypeName="TimeCardEntities.Punch">
+              <MappingFragment StoreEntitySet="Punch">
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="PunchDirections">
+            <EntityTypeMapping TypeName="TimeCardEntities.PunchDirection">
+              <MappingFragment StoreEntitySet="PunchDirection">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="PunchTypes">
+            <EntityTypeMapping TypeName="TimeCardEntities.PunchType">
+              <MappingFragment StoreEntitySet="PunchType">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <edmx:Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </edmx:Connection>
+    <edmx:Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </edmx:Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram Name="TimeCardEntities" >
+        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.875" Height="2.1725878906249996" />
+        <EntityTypeShape EntityType="TimeCardEntities.PunchDirection" Width="1.5" PointX="3.375" PointY="1.25" Height="1.4033821614583331" />
+        <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchDirection" >
+          <ConnectorPoint PointX="4.875" PointY="1.9516910807291665" />
+          <ConnectorPoint PointX="5.625" PointY="1.9516910807291665" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3" PointY="3.625" Height="1.4033821614583331" />
+        <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchType" >
+          <ConnectorPoint PointX="4.5" PointY="4.3266910807291667" />
+          <ConnectorPoint PointX="6.375" PointY="4.3266910807291667" />
+          <ConnectorPoint PointX="6.375" PointY="3.047587890625" />
+        </AssociationConnector>
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>
