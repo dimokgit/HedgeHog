@@ -1,48 +1,131 @@
 ﻿/// <reference path="jquery.js" />
 /// <reference path="knockout.js" />
-Namespace("ko.data", {
-  dataBind: function (vm, node, rows, cols) {
-    var DATA_BIND = "data-bind";
-    cols = cols || vm[rows + "Columns"];
-    if (!cols)
-      vm[cols = rows + "Cols"] = $.map(ko.utils.unwrapObservable(vm[rows])[0], function (v, n) { return n; });
-    node = $(node);
-    var itemNew = rows + "New";
-    var addItem = rows + "Add";
-    var deleteItem = rows + "Delete";
-    replaceAttr(node, "columns", cols);
-    replaceAttr(node, "rows", rows);
-    replaceAttr(node, "new", itemNew);
-    replaceAttr(node, "add", addItem);
-    replaceAttr(node, "delete", deleteItem);
+/// <reference path="knockout.mapping-latest.debug.js" />
 
-    ko.applyBindings(vm, node[0]);
-    ko.cleanNode(node[0]);
-
-    mash("THEAD"); mash("TBODY"); mash("TFOOT");
-    ko.applyBindings(vm, node[0]);
-
-    function mash(parent) {
-      var trs = $(parent + ' TR', node);
-      trs.slice(1).each(function () {
-        $(this).children().each(function () {
-          trs.eq(0).append(this);
+if (!ko.data) {
+  Namespace("ko.data", {
+    MvcCrud: {
+      initCrud: function () {
+        var vm = this;
+        $.each(vm.crud, function () {
+          makeAddHandler(this);
+          makeDeleteHandler(this);
         });
-        var dba = $(this).attr(DATA_BIND);
-        if (dba)
-          trs.eq(0).attr(DATA_BIND, trs.eq(0).attr(DATA_BIND) + "," + dba);
-        $(this).remove();
-      });
-    }
-    function replaceAttr(node, replace, value, attr) {
-      attr = attr || DATA_BIND;
-      replace = "{{" + replace + "}}";
-      $('[' + attr + '*="' + replace + '"]', node).each(function () {
-        $(this).attr(attr, $(this).attr(attr).replace(replace, value));
-      });
-    }
-    function autoTemplate(container, rows, cols) {
-      var table =
+        function makeAddHandler(property) {
+          vm[property + "Add"] = $.proxy(function (data) { this.AddData(property) }, vm);
+        }
+        function makeDeleteHandler(property) {
+          vm[property + "Delete"] = $.proxy(function (data) { this.DeleteData(data, property) }, vm);
+        }
+      },
+      GetData: function (vm, propertyName, table) {
+        var vm = this;
+        $.ajax({
+          url: this.homePath + propertyName + "Get",
+          type: "GET",
+          success: function (result) {
+            vm.bindTable(table, result, vm, propertyName, ".dataContainer");
+          },
+          error: function (result) { vm.showAjaxError(result); }
+        });
+      },
+      DeleteData: function (data, property) {
+        var vm = this;
+        $.ajax({
+          url: this.homePath + property + "Delete",
+          type: "POST",
+          data: data,
+          success: function (result) {
+            vm[property].remove(data);
+          },
+          error: function (result) { vm.showAjaxError(result); }
+        });
+      },
+      AddData: function (property) {
+        var vm = this;
+        $.ajax({
+          url: this.homePath + property + "Add",
+          type: "POST",
+          data: $.parseJSON(ko.mapping.toJSON(this[property + "New"])),
+          success: function (result) {
+            vm[property].push(result);
+          },
+          error: function (result) { vm.showAjaxError(result); }
+        });
+      },
+      showAjaxError: function (response) {
+        alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
+      },
+      bindTable: function (table, data, vm, vmProperty, container, options) {
+        table = $(table);
+        container = $(container);
+        if (!container.length) {
+          alert(container.selector + " is not found.");
+          return;
+        }
+        var dataBind = "data-bind";
+        vm[vmProperty] = ko.observableArray(data);
+        vm[vmProperty + "New"] = {};
+        var propPrev = "", stop = false;
+        vm[vmProperty + "Columns"] = ko.observableArray($.map(data[0], function (e, n) {
+          if (n == "C_") stop = true;
+          if (stop) return;
+          if (propPrev + "Id" != n) {
+            propPrev = n;
+            vm[vmProperty + "New"][n] = ko.observable("");
+            return n;
+          } else if (propPrev) {
+            var p = vm[vmProperty + "New"][propPrev];
+            vm[vmProperty + "New"][n] = ko.computed(function () {
+              return p().Id;
+            }, vm);
+          }
+        }));
+        ko.data.dataBind(vm, table, vmProperty, vmProperty + "Columns");
+      }
+    },
+    dataBind: function (vm, node, rows, cols) {
+      var DATA_BIND = "data-bind";
+      cols = cols || vm[rows + "Columns"];
+      if (!cols)
+        vm[cols = rows + "Cols"] = $.map(ko.utils.unwrapObservable(vm[rows])[0], function (v, n) { return n; });
+      node = $(node);
+      var itemNew = rows + "New";
+      var addItem = rows + "Add";
+      var deleteItem = rows + "Delete";
+      replaceAttr(node, "columns", cols);
+      replaceAttr(node, "rows", rows);
+      replaceAttr(node, "new", itemNew);
+      replaceAttr(node, "add", addItem);
+      replaceAttr(node, "delete", deleteItem);
+
+      ko.applyBindings(vm, node[0]);
+      ko.cleanNode(node[0]);
+
+      mash("THEAD"); mash("TBODY"); mash("TFOOT");
+      ko.applyBindings(vm, node[0]);
+
+      function mash(parent) {
+        var trs = $(parent + ' TR', node);
+        trs.slice(1).each(function () {
+          $(this).children().each(function () {
+            trs.eq(0).append(this);
+          });
+          var dba = $(this).attr(DATA_BIND);
+          if (dba)
+            trs.eq(0).attr(DATA_BIND, trs.eq(0).attr(DATA_BIND) + "," + dba);
+          $(this).remove();
+        });
+      }
+      function replaceAttr(node, replace, value, attr) {
+        attr = attr || DATA_BIND;
+        replace = "{{" + replace + "}}";
+        $('[' + attr + '*="' + replace + '"]', node).each(function () {
+          $(this).attr(attr, $(this).attr(attr).replace(replace, value));
+        });
+      }
+      function autoTemplate(container, rows, cols) {
+        var table =
       $("<table/>")
         .append($("<caption/>").text(rows))
         .append($("<thead/>")
@@ -56,7 +139,8 @@ Namespace("ko.data", {
             .append($("<td/>")
               .append($("<input/>").attr(DATA_BIND, "attr:{name:$data,type:$data=='X'?'button':'text'},value:$data=='X'?'Add':$root." + rows + "New[$data],click:$data=='X'?$root." + rows + "Add:null")))))
       .appendTo("DIV#main");
-      return table;
+        return table;
+      }
     }
-  }
-});
+  });
+}

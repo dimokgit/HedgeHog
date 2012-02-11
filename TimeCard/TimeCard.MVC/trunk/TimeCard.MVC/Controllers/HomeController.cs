@@ -23,6 +23,28 @@ namespace TimeCard.MVC.Controllers {
     }
 
     #region Data
+    #region Punches
+    public ActionResult PunchesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vPunch_Update.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult PunchesAdd(Models.Punch punches) {
+      Func<Models.TimeCardEntitiesContainer, Models.vPunch_Update> a = tc => {
+        tc.Punches.Add(punches);
+        tc.SaveChanges();
+        return tc.vPunch_Update.Where(p => p.Id == punches.Id).First();
+      };
+      var res = a.Do();
+      return Json(res);
+    }
+    public ActionResult PunchesDelete(Models.Punch punch) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.Punches.Remove(tc.Punches.Find(punch.Id));
+      };
+      a.Do();
+      return Json(punch);
+    }
+    #endregion
+
     #region PunchDirections
     public ActionResult PunchDirectionsGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().PunchDirections.ToList(), JsonRequestBehavior.AllowGet);

@@ -12,5 +12,14 @@ namespace TimeCard.MVC.Models {
         throw;
       }
     }
+    public static TOutput Do<TOutput>(this Func<TimeCardEntitiesContainer,TOutput> func) {
+      try {
+        using (var context = new TimeCardEntitiesContainer()) {
+          return func(context);
+        }
+      } catch {
+        throw;
+      }
+    }
   }
 }
