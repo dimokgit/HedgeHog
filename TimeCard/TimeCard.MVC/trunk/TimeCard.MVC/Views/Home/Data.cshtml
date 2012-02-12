@@ -10,23 +10,24 @@
 <script src="../../Scripts/knockout.js" type="text/javascript"></script>
 <script src="../../Scripts/knockout.data.js" type="text/javascript"></script>
 <script src="../../Scripts/knockout.extentions.js" type="text/javascript"></script>
+<script src="../../Scripts/knockout.extentions.js" type="text/javascript"></script>
 <![endif]>
 <style>
   DIV.dataContainer TABLE
   {
-  	display:inline-table;
+    display:inline-table;
   }
   TFOOT TR TD DIV
   {
-  	overflow:inherit;
-  	width;100%;
+    overflow:inherit;
+    width;100%;
   }
   TFOOT TR TD input
   {
-  	float:left;
-  	width:100%;
-  	white-space:pre;
-  	overflow-x:visible;
+    float:left;
+    width:100%;
+    white-space:pre;
+    overflow-x:visible;
   }
 td input {
     width: 100%;
@@ -34,29 +35,26 @@ td input {
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
 }
+CAPTION
+{
+  text-transform:capitalize;
+}
+LEGEND:hover
+{
+  cursor:default;
+  background-color:whitesmoke;
+}
 </style>
 <h2>Data</h2>
 <div class="dataContainer"></div>
 <script>
-  jQuery.extend({
-    propsToArray: function (o) {
-      return jQuery.map(o, function (v, n) { return n; });
-    }
-  });
-  jQuery.extend({
-    Linq: {
-      select: function (array, prop) {
-        return jQuery.map(array, function (v, n) { return v[prop]; });
-      }
-    }
-  });
   $(function () {
     var vm = {
       crud: ["punchTypes", "punchDirections", "punches"],
       format: function (v) {
         if (typeof v == "string" && v.indexOf("/Date(") == 0)
-          return eval("new " + v.slice(1, -1)).toString("MM/dd/yyyy HH:mm");
-        return v;
+          v = eval("new " + v.slice(1, -1));
+        return v instanceof Date ? v.toString("MM/dd/yyyy HH:mm") : v;
       },
       homePath: "/home/"
     };
@@ -65,8 +63,12 @@ td input {
     vm.GetData(vm, "punchTypes", "#punchTypesTemplate");
     vm.GetData(vm, "punchDirections", "#punchDirectionsTemplate");
     vm.GetData(vm, "punches", "#punchesTemplate");
+    $("[toggle]").click(function () {
+      $(this).parent().children(":not(LEGEND)").toggle();
+    });
   });
 </script>
+<fieldset class="metaData"><legend toggle="true">MetaData</legend>
 <table id="punchTypesTemplate" style="display:inline-table">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
@@ -123,6 +125,7 @@ td input {
   </tr>
 </tfoot>
 </table>
+</fieldset>
 <table id="punchesTemplate">
 <caption>Punches</caption>
 <thead>

@@ -25,9 +25,9 @@ namespace TimeCard.MVC.Models
             throw new UnintentionalCodeFirstException();
         }
     
+        public DbSet<vPunch> vPunches { get; set; }
         public DbSet<Punch> Punches { get; set; }
         public DbSet<PunchDirection> PunchDirections { get; set; }
         public DbSet<PunchType> PunchTypes { get; set; }
-        public DbSet<vPunch_Update> vPunch_Update { get; set; }
     }
 }

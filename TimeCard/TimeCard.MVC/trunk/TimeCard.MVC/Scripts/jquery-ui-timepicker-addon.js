@@ -23,9 +23,9 @@
 $.extend($.ui, { timepicker: { version: "0.9.8" } });
 
 /* Time picker manager.
-   Use the singleton instance of this class, $.timepicker, to interact with the time picker.
-   Settings for (groups of) time pickers are maintained in an instance object,
-   allowing multiple different settings on the same page. */
+	 Use the singleton instance of this class, $.timepicker, to interact with the time picker.
+	 Settings for (groups of) time pickers are maintained in an instance object,
+	 allowing multiple different settings on the same page. */
 
 function Timepicker() {
 	this.regional = []; // Available regional settings, indexed by language code
@@ -120,8 +120,8 @@ $.extend(Timepicker.prototype, {
 	timezoneList: null,
 
 	/* Override the default settings for all instances of the time picker.
-	   @param  settings  object - the new settings to use as defaults (anonymous object)
-	   @return the manager object */
+		 @param  settings  object - the new settings to use as defaults (anonymous object)
+		 @return the manager object */
 	setDefaults: function(settings) {
 		extendRemove(this._defaults, settings || {});
 		return this;
@@ -283,14 +283,14 @@ $.extend(Timepicker.prototype, {
 				case 5:	// +hhmm
 					if (this._defaults.timezoneIso8609)
 						tz = tz.substring(1) == '0000'
-						   ? 'Z'
-						   : tz.substring(0, 3) + ':' + tz.substring(3);
+							 ? 'Z'
+							 : tz.substring(0, 3) + ':' + tz.substring(3);
 					break;
 				case 6:	// +hh:mm
 					if (!this._defaults.timezoneIso8609)
 						tz = tz == 'Z' || tz.substring(1) == '00:00'
-						   ? '+0000'
-						   : tz.replace(/:/, '');
+							 ? '+0000'
+							 : tz.replace(/:/, '');
 					else if (tz.substring(1) == '00:00')
 						tz = 'Z';
 					break;
@@ -366,7 +366,7 @@ $.extend(Timepicker.prototype, {
 				millisecGridSize = 0,
 				size;
 
- 			// Hours
+			// Hours
 			html += '<dd class="ui_tpicker_hour"><div id="ui_tpicker_hour_' + dp_id + '"' +
 						((o.showHour) ? '' : noDisplay) + '></div>';
 			if (o.showHour && o.hourGrid > 0) {
@@ -754,8 +754,8 @@ $.extend(Timepicker.prototype, {
 
 		if(adjustSliders !== undefined && adjustSliders === true){
 			var hourMax = parseInt((this._defaults.hourMax - ((this._defaults.hourMax - this._defaults.hourMin) % this._defaults.stepHour)) ,10),
-                minMax  = parseInt((this._defaults.minuteMax - ((this._defaults.minuteMax - this._defaults.minuteMin) % this._defaults.stepMinute)) ,10),
-                secMax  = parseInt((this._defaults.secondMax - ((this._defaults.secondMax - this._defaults.secondMin) % this._defaults.stepSecond)) ,10),
+								minMax  = parseInt((this._defaults.minuteMax - ((this._defaults.minuteMax - this._defaults.minuteMin) % this._defaults.stepMinute)) ,10),
+								secMax  = parseInt((this._defaults.secondMax - ((this._defaults.secondMax - this._defaults.secondMin) % this._defaults.stepSecond)) ,10),
 				millisecMax  = parseInt((this._defaults.millisecMax - ((this._defaults.millisecMax - this._defaults.millisecMin) % this._defaults.stepMillisec)) ,10);
 
 			if(this.hour_slider)
@@ -801,7 +801,7 @@ $.extend(Timepicker.prototype, {
 		var hasChanged = (hour != this.hour || minute != this.minute
 				|| second != this.second || millisec != this.millisec
 				|| (this.ampm.length > 0
-				    && (hour < 12) != ($.inArray(this.ampm.toUpperCase(), this.amNames) !== -1))
+						&& (hour < 12) != ($.inArray(this.ampm.toUpperCase(), this.amNames) !== -1))
 				|| timezone != this.timezone);
 		
 		if (hasChanged) {
@@ -823,7 +823,7 @@ $.extend(Timepicker.prototype, {
 		this.timeDefined = true;
 		if (hasChanged) this._updateDateTime();
 	},
-    
+		
 	//########################################################################
 	// call custom onSelect. 
 	// bind to sliders slidestop, and grid click.
@@ -986,9 +986,9 @@ $.datepicker._updateDatepicker = function(inst) {
 	// don't popup the datepicker if there is another instance already opened
 	var input = inst.input[0];
 	if($.datepicker._curInst &&
-	   $.datepicker._curInst != inst &&
-	   $.datepicker._datepickerShowing &&
-	   $.datepicker._lastInput != input) {
+		 $.datepicker._curInst != inst &&
+		 $.datepicker._datepickerShowing &&
+		 $.datepicker._lastInput != input) {
 		return;
 	}
 

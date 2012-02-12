@@ -25,20 +25,20 @@ namespace TimeCard.MVC.Controllers {
     #region Data
     #region Punches
     public ActionResult PunchesGet() {
-      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vPunch_Update.ToList(), JsonRequestBehavior.AllowGet);
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vPunches.ToList(), JsonRequestBehavior.AllowGet);
     }
     public ActionResult PunchesAdd(Models.Punch punches) {
-      Func<Models.TimeCardEntitiesContainer, Models.vPunch_Update> a = tc => {
+      Func<Models.TimeCardEntitiesContainer, Models.vPunch> a = tc => {
         tc.Punches.Add(punches);
         tc.SaveChanges();
-        return tc.vPunch_Update.Where(p => p.Id == punches.Id).First();
+        return tc.vPunches.Where(p => p.Time == punches.Time).First();
       };
       var res = a.Do();
       return Json(res);
     }
     public ActionResult PunchesDelete(Models.Punch punch) {
       Action<Models.TimeCardEntitiesContainer> a = tc => {
-        tc.Punches.Remove(tc.Punches.Find(punch.Id));
+        tc.Punches.Remove(tc.Punches.Find(punch.Time));
       };
       a.Do();
       return Json(punch);

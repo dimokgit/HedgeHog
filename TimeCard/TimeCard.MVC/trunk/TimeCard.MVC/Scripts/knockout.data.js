@@ -1,4 +1,5 @@
 ﻿/// <reference path="jquery.js" />
+/// <reference path="jquery.extentions.js" />
 /// <reference path="knockout.js" />
 /// <reference path="knockout.mapping-latest.debug.js" />
 
@@ -24,7 +25,7 @@ if (!ko.data) {
           url: this.homePath + propertyName + "Get",
           type: "GET",
           success: function (result) {
-            vm.bindTable(table, result, vm, propertyName, ".dataContainer");
+            vm.bindTable(table, $.AJAX.processResults(result), vm, propertyName);
           },
           error: function (result) { vm.showAjaxError(result); }
         });
@@ -34,7 +35,7 @@ if (!ko.data) {
         $.ajax({
           url: this.homePath + property + "Delete",
           type: "POST",
-          data: data,
+          data: $.AJAX.processRequest(data),
           success: function (result) {
             vm[property].remove(data);
           },
@@ -46,9 +47,9 @@ if (!ko.data) {
         $.ajax({
           url: this.homePath + property + "Add",
           type: "POST",
-          data: $.parseJSON(ko.mapping.toJSON(this[property + "New"])),
+          data: $.AJAX.processRequest(this[property + "New"]),
           success: function (result) {
-            vm[property].push(result);
+            vm[property].push($.AJAX.processResult(result));
           },
           error: function (result) { vm.showAjaxError(result); }
         });
@@ -58,9 +59,8 @@ if (!ko.data) {
       },
       bindTable: function (table, data, vm, vmProperty, container, options) {
         table = $(table);
-        container = $(container);
-        if (!container.length) {
-          alert(container.selector + " is not found.");
+        if (!table.length) {
+          alert(table.selector + " is not found.");
           return;
         }
         var dataBind = "data-bind";
@@ -90,6 +90,8 @@ if (!ko.data) {
       if (!cols)
         vm[cols = rows + "Cols"] = $.map(ko.utils.unwrapObservable(vm[rows])[0], function (v, n) { return n; });
       node = $(node);
+      var table = node.is("TABLE") ? node : $("TABLE", node);
+      table.not(":has(CAPTION)").prepend('<caption>' + rows + '</caption>');
       var itemNew = rows + "New";
       var addItem = rows + "Add";
       var deleteItem = rows + "Delete";
