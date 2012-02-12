@@ -201,14 +201,18 @@ input[type="password"] {
 
 select {
     border: 1px solid #ccc;
-    padding: 2px;
+    padding: 0px;
     font-size: 1.2em;
     color: #444;
 }
 
+input[type="button"] 
+{
+	padding:0px;
+}
 input[type="submit"] {
     font-size: 1.2em;
-    padding: 5px;
+    padding: 0px;
 }
 
 /* TABLE
@@ -220,12 +224,12 @@ table {
 }
 
 table td {
-    padding: 5px;
+    padding: 0px 3px;
     border: solid 1px #e8eef4;
 }
 
 table th {
-    padding: 6px 5px;
+    padding: 2px 1px;
     text-align: left;
     background-color: #e8eef4;
     border: solid 1px #e8eef4;
