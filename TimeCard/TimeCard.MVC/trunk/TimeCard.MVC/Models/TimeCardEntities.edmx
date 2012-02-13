@@ -18,6 +18,20 @@
       [vPunch].[TypeId] AS [TypeId]
       FROM [dbo].[vPunch] AS [vPunch]</DefiningQuery>
           </EntitySet>
+          <EntitySet Name="vPunchPair" EntityType="TimeCardEntities.Store.vPunchPair" store:Type="Views" store:Schema="dbo" store:Name="vPunchPair">
+            <DefiningQuery>SELECT 
+      [vPunchPair].[TypeIn] AS [TypeIn], 
+      [vPunchPair].[Start] AS [Start], 
+      [vPunchPair].[TypeOut] AS [TypeOut], 
+      [vPunchPair].[Stop] AS [Stop]
+      FROM [dbo].[vPunchPair] AS [vPunchPair]</DefiningQuery>
+          </EntitySet>
+          <EntitySet Name="vWorkShift" EntityType="TimeCardEntities.Store.vWorkShift" store:Type="Views" store:Schema="dbo" store:Name="vWorkShift">
+            <DefiningQuery>SELECT 
+      [vWorkShift].[Start] AS [Start], 
+      [vWorkShift].[Stop] AS [Stop]
+      FROM [dbo].[vWorkShift] AS [vWorkShift]</DefiningQuery>
+          </EntitySet>
           <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.Store.FK_Punch_PunchDirection">
             <End Role="PunchDirection" EntitySet="PunchDirection" />
             <End Role="Punch" EntitySet="Punch" />
@@ -66,6 +80,32 @@
           <Property Name="Type" Type="varchar" Nullable="false" MaxLength="31" />
           <Property Name="TypeId" Type="int" Nullable="false" />
         </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vPunchPair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vPunchPair">
+          <Key>
+            <PropertyRef Name="TypeIn" />
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="TypeOut" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Name="TypeIn" Type="varchar" Nullable="false" MaxLength="31" />
+          <Property Name="Start" Type="datetimeoffset" Nullable="false" />
+          <Property Name="TypeOut" Type="varchar" Nullable="false" MaxLength="31" />
+          <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vWorkShift' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vWorkShift">
+          <Key>
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Name="Start" Type="datetimeoffset" Nullable="false" />
+          <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
+        </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Role="PunchDirection" Type="TimeCardEntities.Store.PunchDirection" Multiplicity="1" />
           <End Role="Punch" Type="TimeCardEntities.Store.Punch" Multiplicity="*" />
@@ -107,6 +147,8 @@
             <End Role="PunchType" EntitySet="PunchTypes" />
             <End Role="Punch" EntitySet="Punches" />
           </AssociationSet>
+          <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
+          <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
           </EntityContainer>
         <EntityType Name="vPunch">
           <Key>
@@ -170,6 +212,26 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <EntityType Name="vPunchPair">
+          <Key>
+            <PropertyRef Name="TypeIn" />
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="TypeOut" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Type="String" Name="TypeIn" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="String" Name="TypeOut" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+        </EntityType>
+        <EntityType Name="vWorkShift">
+          <Key>
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+        </EntityType>
         </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -214,6 +276,24 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="vPunchPairs">
+            <EntityTypeMapping TypeName="TimeCardEntities.vPunchPair">
+              <MappingFragment StoreEntitySet="vPunchPair">
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="TypeOut" ColumnName="TypeOut" />
+                <ScalarProperty Name="Start" ColumnName="Start" />
+                <ScalarProperty Name="TypeIn" ColumnName="TypeIn" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vWorkShifts">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShift">
+              <MappingFragment StoreEntitySet="vWorkShift">
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="Start" ColumnName="Start" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -245,10 +325,12 @@
           <ConnectorPoint PointX="5.625" PointY="1.8266910807291665" />
         </AssociationConnector>
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchType" >
-          <ConnectorPoint PointX="4.875" PointY="4.8266910807291659" />
-          <ConnectorPoint PointX="6.375" PointY="4.8266910807291659" />
-          <ConnectorPoint PointX="6.375" PointY="2.8552864583333353" />
+          <ConnectorPoint PointX="4.875" PointY="5.3721321614583317" />
+          <ConnectorPoint PointX="7.03125" PointY="5.3721321614583317" />
+          <ConnectorPoint PointX="7.03125" PointY="2.8552864583333353" />
         </AssociationConnector>
+        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.75" PointY="3.75" Height="1.787985026041667" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="5.375" PointY="3.75" Height="1.4033821614583322" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

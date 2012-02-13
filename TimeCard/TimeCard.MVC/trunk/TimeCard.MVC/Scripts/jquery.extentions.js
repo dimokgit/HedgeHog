@@ -30,8 +30,14 @@ jQuery.extend({
       $.each(results, function (i, v) { $.AJAX.processResult(v); });
       return results;
     },
-    processRequest: function (v) {
-      return $.parseJSON(ko.mapping.toJSON(v));
+    processRequest: function (request) {
+      $.each(request, function (n, v) {
+        if (v instanceof Date)
+          request[n] = v.toString("MM/dd/yyyy HH:mm:ss")
+        if ($.isFunction(v) && v() instanceof Date)
+          request[n] = function () { return v().toString("MM/dd/yyyy HH:mm:ss"); }
+      });
+      return request;
     }
   }
 });

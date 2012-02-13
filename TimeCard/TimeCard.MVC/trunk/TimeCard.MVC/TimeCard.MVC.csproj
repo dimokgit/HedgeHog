@@ -103,6 +103,12 @@
     <Compile Include="Models\vPunch.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vPunchPair.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vWorkShift.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -176,6 +182,7 @@
     <Content Include="Scripts\jquery.js" />
     <Content Include="Scripts\jquery-ui-1.8.11.js" />
     <Content Include="Scripts\jquery-ui-1.8.11.min.js" />
+    <Content Include="Scripts\jquery.parseJSON.js" />
     <Content Include="Scripts\jquery.validate-vsdoc.js" />
     <Content Include="Scripts\jquery.validate.js" />
     <Content Include="Scripts\jquery.validate.min.js" />

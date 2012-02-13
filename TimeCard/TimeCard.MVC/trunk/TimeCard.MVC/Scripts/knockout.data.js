@@ -19,13 +19,19 @@ if (!ko.data) {
           vm[property + "Delete"] = $.proxy(function (data) { this.DeleteData(data, property) }, vm);
         }
       },
-      GetData: function (vm, propertyName, table) {
+      GetData: function (propertyName, table, success) {
         var vm = this;
-        $.ajax({
+        return $.ajax({
           url: this.homePath + propertyName + "Get",
           type: "GET",
           success: function (result) {
-            vm.bindTable(table, $.AJAX.processResults(result), vm, propertyName);
+            if (table)
+              vm.bindTable(table, $.AJAX.processResults(result), vm, propertyName);
+            else {
+              vm[propertyName].removeAll();
+              $.each(result, function (i, v) { vm[propertyName].push(v); });
+            }
+            if (success) success(result);
           },
           error: function (result) { vm.showAjaxError(result); }
         });

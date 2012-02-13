@@ -17,17 +17,14 @@
   {
     display:inline-table;
   }
+  TH
+  {
+  	text-align:center;
+  }
   TFOOT TR TD DIV
   {
     overflow:inherit;
     width;100%;
-  }
-  TFOOT TR TD input
-  {
-    float:left;
-    width:100%;
-    white-space:pre;
-    overflow-x:visible;
   }
 td input {
     width: 100%;
@@ -45,30 +42,56 @@ LEGEND:hover
   background-color:whitesmoke;
 }
 </style>
-<h2>Data</h2>
-<div class="dataContainer"></div>
 <script>
   $(function () {
     var vm = {
-      crud: ["punchTypes", "punchDirections", "punches"],
+      crud: ["punchTypes", "punchDirections", "punches", "punchPairs"],
       format: function (v) {
         if (typeof v == "string" && v.indexOf("/Date(") == 0)
           v = eval("new " + v.slice(1, -1));
         return v instanceof Date ? v.toString("MM/dd/yyyy HH:mm") : v;
       },
+      sortPunches: function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) },
+      updatePunch: function (data, ev, property) {
+        var el = ev.srcElement;
+        if (!$(el).is("TD")) return;
+        $(el).empty();
+        var footTD = $(el).parents("TABLE:first").find("TFOOT TR TD:eq(" + el.cellIndex + ")");
+        var clone = footTD.children().clone();
+        data.format = vm.format;
+        clone.attr("data-bind", "text:$root.format(" + property + ")");
+        $(el).append(clone);
+        if (!$.isFunction(data[property]))
+          data[property] = ko.observable(data[property]);
+        data[property].subscribe(function (a, b) {
+          var p = property;
+          debugger;
+        });
+        ko.applyBindings(data, clone[0]);
+      },
       homePath: "/home/"
     };
     $.extend(vm, ko.data.MvcCrud);
     vm.initCrud();
-    vm.GetData(vm, "punchTypes", "#punchTypesTemplate");
-    vm.GetData(vm, "punchDirections", "#punchDirectionsTemplate");
-    vm.GetData(vm, "punches", "#punchesTemplate");
-    $("[toggle]").click(function () {
-      $(this).parent().children(":not(LEGEND)").toggle();
+    var def1 = vm.GetData("punchTypes", "#punchTypesTemplate");
+    var def2 = vm.GetData("punchDirections", "#punchDirectionsTemplate");
+    $.when(def1, def2).done(function () {
+      vm.GetData("punches", "#punchesTemplate", function () {
+        vm.punches.subscribe(function (a, b) {
+          vm.GetData("punchPairs");
+          vm.GetData("workShifts");
+          //vm.punches.sort(function (a, b) { return a.Time > b.Time ? 1 : -1; });
+        });
+      });
+      vm.GetData("punchPairs", "#punchPairsTemplate");
+      vm.GetData("workShifts", "#workShiftsTemplate");
+      $("[toggle]").click(function () {
+        $(this).parent().children(":not(LEGEND)").toggle();
+      });
     });
   });
 </script>
-<fieldset class="metaData"><legend toggle="true">MetaData</legend>
+<fieldset class="metaData"><legend toggle="true">Punch Card MetaData</legend>
 <table id="punchTypesTemplate" style="display:inline-table">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
@@ -126,25 +149,24 @@ LEGEND:hover
 </tfoot>
 </table>
 </fieldset>
-<table id="punchesTemplate">
+<table id="punchesTemplate" style="display:inline-table">
 <caption>Punches</caption>
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+    <th data-bind="text:$data,attr:{'data-bind':'click:function(){$root.sortPunches(\''+$data+'\')}'}"></th>
   </tr>
   <tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
-<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.updatePunch(a,b,\""+$data+"\")}"}' align='right'/>
 </tr>
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
   <tr>
   <td>
-<input data-bind="datetimepicker: punchesNew.Time, 
-           datetimepickerOptions: {}" size="1" />
+<input data-bind="value: punchesNew.Time" size="1" />
   </td>
   <td><select data-bind="options:punchDirections,optionsText:'Name',value:punchesNew.Direction" /></td>
   <td><select data-bind="options:punchTypes,optionsText:'Name',value:punchesNew.Type" /></td>
@@ -156,3 +178,29 @@ LEGEND:hover
   </tr>
 </tfoot>
 </table>
+<table id="punchPairsTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+</tbody>
+</table>
+<table id="workShiftsTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+</tbody>
+</table>
+
+

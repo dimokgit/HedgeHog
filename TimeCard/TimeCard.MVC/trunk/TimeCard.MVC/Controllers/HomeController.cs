@@ -23,6 +23,29 @@ namespace TimeCard.MVC.Controllers {
     }
 
     #region Data
+    #region WorkShift
+    public ActionResult WorkShiftsGet() {
+      Func<TimeCardEntitiesContainer, List<vWorkShift>> a = tc => {
+        var list = tc.vWorkShifts.ToList();
+        if (!list.Any())
+          list.Add(new vWorkShift());
+        return list;
+      };
+      return Json(a.Do(), JsonRequestBehavior.AllowGet);
+    }
+    #endregion
+
+    #region PuncPair
+    public ActionResult PunchPairsGet() {
+      Func<TimeCardEntitiesContainer, List<vPunchPair>> a = tc => {
+        var list = tc.vPunchPairs.ToList();
+        if (!list.Any())
+          list.Add(new vPunchPair());
+        return list;
+      };
+      return Json(a.Do(), JsonRequestBehavior.AllowGet);
+    }
+    #endregion
     #region Punches
     public ActionResult PunchesGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vPunches.ToList(), JsonRequestBehavior.AllowGet);

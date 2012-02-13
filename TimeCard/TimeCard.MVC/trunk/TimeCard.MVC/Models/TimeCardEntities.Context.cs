@@ -29,5 +29,7 @@ namespace TimeCard.MVC.Models
         public DbSet<Punch> Punches { get; set; }
         public DbSet<PunchDirection> PunchDirections { get; set; }
         public DbSet<PunchType> PunchTypes { get; set; }
+        public DbSet<vPunchPair> vPunchPairs { get; set; }
+        public DbSet<vWorkShift> vWorkShifts { get; set; }
     }
 }
