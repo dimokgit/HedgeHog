@@ -1,0 +1,5 @@
+﻿CREATE PROCEDURE sTest AS
+
+DECLARE @V int
+SET @V = 48
+RETURN
