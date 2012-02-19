@@ -14,6 +14,7 @@ namespace TimeCard.MVC.Models
 {
     public partial class Punch
     {
+        public int Id { get; set; }
         public System.DateTimeOffset Time { get; set; }
         public int DirectionId { get; set; }
         public int TypeId { get; set; }

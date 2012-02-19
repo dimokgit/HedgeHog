@@ -8,9 +8,11 @@
         <EntityContainer Name="TimeCardEntitiesStoreContainer">
           <EntitySet Name="Punch" EntityType="TimeCardEntities.Store.Punch" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchDirection" EntityType="TimeCardEntities.Store.PunchDirection" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="PunchPair" EntityType="TimeCardEntities.Store.PunchPair" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchType" EntityType="TimeCardEntities.Store.PunchType" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="vPunch" EntityType="TimeCardEntities.Store.vPunch" store:Type="Views" store:Schema="dbo" store:Name="vPunch">
             <DefiningQuery>SELECT 
+      [vPunch].[Id] AS [Id], 
       [vPunch].[Time] AS [Time], 
       [vPunch].[Direction] AS [Direction], 
       [vPunch].[DirectionId] AS [DirectionId], 
@@ -43,8 +45,9 @@
         </EntityContainer>
         <EntityType Name="Punch">
           <Key>
-            <PropertyRef Name="Time" />
+            <PropertyRef Name="Id" />
           </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
           <Property Name="DirectionId" Type="int" Nullable="false" />
           <Property Name="TypeId" Type="int" Nullable="false" />
@@ -55,6 +58,13 @@
           </Key>
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="varchar" Nullable="false" MaxLength="20" />
+        </EntityType>
+        <EntityType Name="PunchPair">
+          <Key>
+            <PropertyRef Name="Start" />
+          </Key>
+          <Property Name="Start" Type="datetimeoffset" Nullable="false" />
+          <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
         </EntityType>
         <EntityType Name="PunchType">
           <Key>
@@ -68,12 +78,14 @@
       -->
         <EntityType Name="vPunch">
           <Key>
+            <PropertyRef Name="Id" />
             <PropertyRef Name="Time" />
             <PropertyRef Name="Direction" />
             <PropertyRef Name="DirectionId" />
             <PropertyRef Name="Type" />
             <PropertyRef Name="TypeId" />
           </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
           <Property Name="Direction" Type="varchar" Nullable="false" MaxLength="21" />
           <Property Name="DirectionId" Type="int" Nullable="false" />
@@ -135,10 +147,11 @@
     <edmx:ConceptualModels>
       <Schema xmlns="http://schemas.microsoft.com/ado/2008/09/edm" xmlns:cg="http://schemas.microsoft.com/ado/2006/04/codegeneration" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" Namespace="TimeCardEntities" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
         <EntityContainer Name="TimeCardEntitiesContainer" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
-          <EntitySet Name="Punches" EntityType="TimeCardEntities.Punch" />
           <EntitySet Name="PunchDirections" EntityType="TimeCardEntities.PunchDirection" />
           <EntitySet Name="PunchTypes" EntityType="TimeCardEntities.PunchType" />
+          <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
+          <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
+          <EntitySet Name="Punches" EntityType="TimeCardEntities.Punch" />
           <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.FK_Punch_PunchDirection">
             <End Role="PunchDirection" EntitySet="PunchDirections" />
             <End Role="Punch" EntitySet="Punches" />
@@ -147,33 +160,8 @@
             <End Role="PunchType" EntitySet="PunchTypes" />
             <End Role="Punch" EntitySet="Punches" />
           </AssociationSet>
-          <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
-          <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
+          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
           </EntityContainer>
-        <EntityType Name="vPunch">
-          <Key>
-            <PropertyRef Name="Time" />
-            <PropertyRef Name="Direction" />
-            <PropertyRef Name="DirectionId" />
-            <PropertyRef Name="Type" />
-            <PropertyRef Name="TypeId" />
-          </Key>
-          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
-          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="DirectionId" Nullable="false" />
-          <Property Type="String" Name="Type" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="TypeId" Nullable="false" />
-        </EntityType>
-        <EntityType Name="Punch">
-          <Key>
-            <PropertyRef Name="Time" />
-          </Key>
-          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
-          <Property Type="Int32" Name="DirectionId" Nullable="false" />
-          <Property Type="Int32" Name="TypeId" Nullable="false" />
-          <NavigationProperty Name="PunchDirection" Relationship="TimeCardEntities.FK_Punch_PunchDirection" FromRole="Punch" ToRole="PunchDirection" />
-          <NavigationProperty Name="PunchType" Relationship="TimeCardEntities.FK_Punch_PunchType" FromRole="Punch" ToRole="PunchType" />
-        </EntityType>
         <EntityType Name="PunchDirection">
           <Key>
             <PropertyRef Name="Id" />
@@ -187,6 +175,37 @@
           </Key>
           <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="30" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="vPunchPair">
+          <Key>
+            <PropertyRef Name="TypeIn" />
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="TypeOut" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Type="String" Name="TypeIn" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="String" Name="TypeOut" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+        </EntityType>
+        <EntityType Name="vWorkShift">
+          <Key>
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Punch">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="Int32" Name="DirectionId" Nullable="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <NavigationProperty Name="PunchDirection" Relationship="TimeCardEntities.FK_Punch_PunchDirection" FromRole="Punch" ToRole="PunchDirection" />
+          <NavigationProperty Name="PunchType" Relationship="TimeCardEntities.FK_Punch_PunchType" FromRole="Punch" ToRole="PunchType" />
         </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Type="TimeCardEntities.PunchDirection" Role="PunchDirection" Multiplicity="1" />
@@ -212,25 +231,21 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityType Name="vPunchPair">
+        <EntityType Name="vPunch">
           <Key>
-            <PropertyRef Name="TypeIn" />
-            <PropertyRef Name="Start" />
-            <PropertyRef Name="TypeOut" />
-            <PropertyRef Name="Stop" />
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="Direction" />
+            <PropertyRef Name="DirectionId" />
+            <PropertyRef Name="Type" />
+            <PropertyRef Name="TypeId" />
           </Key>
-          <Property Type="String" Name="TypeIn" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
-          <Property Type="String" Name="TypeOut" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
-        </EntityType>
-        <EntityType Name="vWorkShift">
-          <Key>
-            <PropertyRef Name="Start" />
-            <PropertyRef Name="Stop" />
-          </Key>
-          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="DirectionId" Nullable="false" />
+          <Property Type="String" Name="Type" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -240,26 +255,6 @@
         <Alias Key="Model" Value="TimeCardEntities" />
         <Alias Key="Target" Value="TimeCardEntities.Store" />
         <EntityContainerMapping CdmEntityContainer="TimeCardEntitiesContainer" StorageEntityContainer="TimeCardEntitiesStoreContainer">
-          <EntitySetMapping Name="vPunches">
-            <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
-              <MappingFragment StoreEntitySet="vPunch">
-                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
-                <ScalarProperty Name="Type" ColumnName="Type" />
-                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
-                <ScalarProperty Name="Direction" ColumnName="Direction" />
-                <ScalarProperty Name="Time" ColumnName="Time" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Punches">
-            <EntityTypeMapping TypeName="TimeCardEntities.Punch">
-              <MappingFragment StoreEntitySet="Punch">
-                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
-                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
-                <ScalarProperty Name="Time" ColumnName="Time" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="PunchDirections">
             <EntityTypeMapping TypeName="TimeCardEntities.PunchDirection">
               <MappingFragment StoreEntitySet="PunchDirection">
@@ -294,6 +289,28 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="Punches">
+            <EntityTypeMapping TypeName="TimeCardEntities.Punch">
+              <MappingFragment StoreEntitySet="Punch">
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vPunches">
+            <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
+              <MappingFragment StoreEntitySet="vPunch">
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="Type" ColumnName="Type" />
+                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
+                <ScalarProperty Name="Direction" ColumnName="Direction" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -316,10 +333,11 @@
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
       <Diagram Name="TimeCardEntities" ZoomLevel="100" >
-        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.75" PointY="0.75" Height="1.9802864583333326" />
-        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.875" Height="1.9802864583333353" />
         <EntityTypeShape EntityType="TimeCardEntities.PunchDirection" Width="1.5" PointX="3.375" PointY="1.125" Height="1.4033821614583331" />
         <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3.375" PointY="4.125" Height="1.4033821614583326" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.75" PointY="3.75" Height="1.787985026041667" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="5.375" PointY="3.75" Height="1.4033821614583322" />
+        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.1725878906249996" />
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchDirection" >
           <ConnectorPoint PointX="4.875" PointY="1.8266910807291665" />
           <ConnectorPoint PointX="5.625" PointY="1.8266910807291665" />
@@ -327,10 +345,9 @@
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchType" >
           <ConnectorPoint PointX="4.875" PointY="5.3721321614583317" />
           <ConnectorPoint PointX="7.03125" PointY="5.3721321614583317" />
-          <ConnectorPoint PointX="7.03125" PointY="2.8552864583333353" />
+          <ConnectorPoint PointX="7.03125" PointY="2.9225878906249996" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.75" PointY="3.75" Height="1.787985026041667" />
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="5.375" PointY="3.75" Height="1.4033821614583322" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.75" PointY="0.75" Height="2.1725878906249996" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

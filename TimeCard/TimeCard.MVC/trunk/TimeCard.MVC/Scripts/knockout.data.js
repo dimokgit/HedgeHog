@@ -2,10 +2,15 @@
 /// <reference path="jquery.extentions.js" />
 /// <reference path="knockout.js" />
 /// <reference path="knockout.mapping-latest.debug.js" />
+/// <reference path="MicrosoftAjax.debug.js" />
 
 if (!ko.data) {
   Namespace("ko.data", {
     MvcCrud: {
+      formatters: {
+        text: function (data) { return data; },
+        date: function (data, format) { return data instanceof Date ? data.toString(format || "MM/dd/yyyy HH:mm") : data; }
+      },
       initCrud: function () {
         var vm = this;
         $.each(vm.crud, function () {
@@ -56,6 +61,36 @@ if (!ko.data) {
           data: $.AJAX.processRequest(this[property + "New"]),
           success: function (result) {
             vm[property].push($.AJAX.processResult(result));
+          },
+          error: function (result) { vm.showAjaxError(result); }
+        });
+      },
+      showAjaxError: function (response) {
+        alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
+      },
+      UpdateData: function (property, dataNew, keyValue, onSuccess) {
+        var vm = this;
+        var data = { key: keyValue };
+        data[property] = dataNew;
+        var json = Sys.Serialization.JavaScriptSerializer.serialize(ko.mapping.toJS(data));
+        $.ajax({
+          url: this.homePath + property + "Update",
+          type: "POST",
+          contentType: 'application/json; charset=utf-8',
+          data: json,
+          processData: false,
+          success: function (result, status, response) {
+            result = Sys.Serialization.JavaScriptSerializer.deserialize(response.responseText);
+            if (onSuccess) onSuccess(result);
+            $.each(result, function (n, v) {
+              if (dataNew.hasOwnProperty(n)) {
+                if (ko.isObservable(dataNew[n]))
+                  dataNew[n](v);
+                else {
+                  dataNew[n] = v;
+                }
+              }
+            });
           },
           error: function (result) { vm.showAjaxError(result); }
         });

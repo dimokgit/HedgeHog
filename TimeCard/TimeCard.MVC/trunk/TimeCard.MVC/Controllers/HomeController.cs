@@ -18,6 +18,9 @@ namespace TimeCard.MVC.Controllers {
       return View();
     }
 
+    public ActionResult Example3editing() {
+      return View();
+    }
     public ActionResult Data() {
       return View();
     }
@@ -55,6 +58,19 @@ namespace TimeCard.MVC.Controllers {
         tc.Punches.Add(punches);
         tc.SaveChanges();
         return tc.vPunches.Where(p => p.Time == punches.Time).First();
+      };
+      var res = a.Do();
+      return Json(res);
+    }
+    public ActionResult PunchesUpdate(Models.Punch punches) {
+      Func<Models.TimeCardEntitiesContainer, Models.vPunch> a = tc => {
+        var punch = tc.Punches.Find(punches.Id);
+        foreach (var p in  punch.GetType().GetProperties()) {
+          if (!p.GetGetMethod().IsVirtual)
+            p.SetValue(punch, p.GetValue(punches,null), null);
+        }
+        tc.SaveChanges();
+        return tc.vPunches.Where(p => p.Id == punch.Id).First();
       };
       var res = a.Do();
       return Json(res);

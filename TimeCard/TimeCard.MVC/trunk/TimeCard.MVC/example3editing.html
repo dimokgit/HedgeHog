@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<title>SlickGrid example 3: Editing</title>
+<link href="/Scripts/SlickGrid/slick.grid.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="/Scripts/SlickGrid/css/smoothness/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<link rel="stylesheet" href="/Scripts/SlickGrid/examples/examples.css" type="text/css"/>
+<style>
+  .cell-title {
+    font-weight: bold;
+  }
+
+  .cell-effort-driven {
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+    <span id="myGrid" style="display:inline;height:500px;"></span>
+<script src="/Scripts/MicrosoftAjax.debug.js" type="text/javascript"></script>
+<script src="/Scripts/SlickGrid/lib/firebugx.js"></script>
+
+<script src="/Scripts/SlickGrid/lib/jquery-1.7.min.js"></script>
+<script src="/Scripts/SlickGrid/lib/jquery-ui-1.8.16.custom.min.js"></script>
+<script src="/Scripts/SlickGrid/lib/jquery.event.drag-2.0.min.js"></script>
+
+<script src="/Scripts/SlickGrid/slick.core.js"></script>
+<script src="/Scripts/SlickGrid/plugins/slick.cellrangedecorator.js"></script>
+<script src="/Scripts/SlickGrid/plugins/slick.cellrangeselector.js"></script>
+<script src="/Scripts/SlickGrid/plugins/slick.cellselectionmodel.js"></script>
+<script src="/Scripts/SlickGrid/slick.formatters.js"></script>
+<script src="/Scripts/SlickGrid/slick.editors.js"></script>
+<script src="/Scripts/SlickGrid/slick.grid.js"></script>
+
+<script>
+  function requiredFieldValidator(value) {
+    if (value == null || value == undefined || !value.length) {
+      return {valid: false, msg: "This is a required field"};
+    } else {
+      return {valid: true, msg: null};
+    }
+  }
+
+  var grid;
+  $(function () {
+    $.ajax("home/PunchesGet", {
+      processData: false,
+      success: function (d, b, c) {
+        var data = Sys.Serialization.JavaScriptSerializer.deserialize(c.responseText);
+
+        var columns = [
+    { id: "title", name: "Title", field: "title", width: 120, cssClass: "cell-title", editor: Slick.Editors.Text, validator: requiredFieldValidator },
+    { id: "desc", name: "Description", field: "description", width: 100, editor: Slick.Editors.LongText },
+    { id: "duration", name: "Duration", field: "duration", editor: Slick.Editors.Text },
+    { id: "%", name: "% Complete", field: "percentComplete", width: 80, resizable: false, formatter: Slick.Formatters.PercentCompleteBar, editor: Slick.Editors.PercentComplete },
+    { id: "start", name: "Start", field: "start", minWidth: 60, editor: Slick.Editors.Date },
+    { id: "finish", name: "Finish", field: "finish", minWidth: 60, editor: Slick.Editors.Date },
+    { id: "effort-driven", name: "Effort Driven", width: 80, minWidth: 20, maxWidth: 80, cssClass: "cell-effort-driven", field: "effortDriven", formatter: Slick.Formatters.Checkmark, editor: Slick.Editors.Checkbox }
+          ];
+        columns = $.map(data[0], function (v, n) {
+          return { id: n, name: n, field: n, width: 1, minWidth: 1, maxWidth: 100, editor: v instanceof Date ? Slick.Editors.Date : Slick.Editors.Text };
+
+        });
+        var options = {
+          editable: true,
+          enableAddRow: true,
+          enableCellNavigation: true,
+          asyncEditorLoading: false,
+          autoEdit: false,
+          forceFitColumns:true
+        };
+        grid = new Slick.Grid("#myGrid", data, columns, options);
+
+        grid.setSelectionModel(new Slick.CellSelectionModel());
+
+        grid.onAddNewRow.subscribe(function (e, args) {
+          var item = args.item;
+          grid.invalidateRow(data.length);
+          data.push(item);
+          grid.updateRowCount();
+          grid.render();
+        });
+        grid.onCellChange.subscribe(function (e, args) {
+        });
+      },
+      error: function (a, b, c) {
+        alert(a.responseText || a.serverText || "Server Error");
+      }
+    });
+
+  })
+</script>
+</body>
+</html>
