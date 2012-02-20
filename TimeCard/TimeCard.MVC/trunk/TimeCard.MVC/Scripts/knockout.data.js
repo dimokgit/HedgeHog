@@ -98,7 +98,64 @@ if (!ko.data) {
           }
         });
       },
+      format: function (v) {
+        if (typeof v == "string" && v.indexOf("/Date(") == 0)
+          v = eval("new " + v.slice(1, -1));
+        if (ko.isObservable(v))
+          v = v();
+        return v instanceof Date ? v.toString("MM/dd/yyyy HH:mm") : v;
+      },
+      update: function (data, ev, dataProperty, observables) {
+        var model = this;
+        var dataPropertyOriginal = dataProperty;
+        if (data.hasOwnProperty(dataProperty + "Id")) {
+          dataPropertyOriginal = dataProperty;
+          dataProperty += "Id";
+        }
 
+        var el = ev.srcElement;
+        if (!$(el).is("TD")) return;
+        var footTD = $(el).parents("TABLE:first").find("TFOOT TR TD:eq(" + el.cellIndex + ")");
+        var clone = footTD.children().clone();
+        if (!clone.is(":input")) return;
+
+        $(el).empty();
+        data.format = model.format;
+        data.update = arguments.callee;
+        var dbAttrs = ["value:bindTo"];
+        clone.dataBindAttr(dbAttrs);
+        $(el).append(clone);
+        var bindTo = ko.computed({
+          read: function () { return model.format(ko.utils.unwrapObservable(this[dataProperty])); },
+          write: function (value) {
+            var ov = ko.utils.unwrapObservable(this[dataProperty]);
+            if (ov instanceof Date)
+              value = new Date(value);
+            if (typeof value != "string" && isNaN(value))
+              return alert(value + "");
+            if (("" + ov) == ("" + value)) return;
+            ko.utils.setObservableOrNotValue(this, dataProperty, value);
+            model.UpdateData("punches", this, $.proxy(function (result) {
+              if (dataProperty != dataPropertyOriginal)
+                ko.utils.setObservableOrNotValue(this, dataPropertyOriginal, result[dataPropertyOriginal]);
+              alert("Saved.");
+            }, this));
+          },
+          owner: data
+        });
+        clone.focus().blur($.proxy(_cleanup, data));
+        ko.applyBindings({ bindTo: bindTo }, clone[0]);
+        function _cleanup() {
+          ko.cleanNode(clone[0]);
+          clone.remove();
+          var $this = this;
+          $.each(observables, function () {
+            model[this].replace($this, $.extend({}, $this));
+          });
+          //          ko.cleanNode(el);
+          //          ko.applyBindings(this, el);
+        }
+      },
       bindTable: function (table, data, vm, vmProperty, container, options) {
         table = $(table);
         if (!table.length) {
