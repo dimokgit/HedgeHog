@@ -17,7 +17,8 @@
       [vPunch].[Direction] AS [Direction], 
       [vPunch].[DirectionId] AS [DirectionId], 
       [vPunch].[Type] AS [Type], 
-      [vPunch].[TypeId] AS [TypeId]
+      [vPunch].[TypeId] AS [TypeId], 
+      [vPunch].[PairStart] AS [PairStart]
       FROM [dbo].[vPunch] AS [vPunch]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vPunchPair" EntityType="TimeCardEntities.Store.vPunchPair" store:Type="Views" store:Schema="dbo" store:Name="vPunchPair">
@@ -91,6 +92,7 @@
           <Property Name="DirectionId" Type="int" Nullable="false" />
           <Property Name="Type" Type="varchar" Nullable="false" MaxLength="31" />
           <Property Name="TypeId" Type="int" Nullable="false" />
+          <Property Name="PairStart" Type="datetimeoffset" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vPunchPair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -246,6 +248,7 @@
           <Property Type="Int32" Name="DirectionId" Nullable="false" />
           <Property Type="String" Name="Type" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
           <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="PairStart" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -302,6 +305,7 @@
           <EntitySetMapping Name="vPunches">
             <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
               <MappingFragment StoreEntitySet="vPunch">
+                <ScalarProperty Name="PairStart" ColumnName="PairStart" />
                 <ScalarProperty Name="TypeId" ColumnName="TypeId" />
                 <ScalarProperty Name="Type" ColumnName="Type" />
                 <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />

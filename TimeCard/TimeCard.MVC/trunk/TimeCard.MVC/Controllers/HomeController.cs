@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Diagnostics;
+using System.Linq.Dynamic;
 using TimeCard.MVC.Models;
 
 namespace TimeCard.MVC.Controllers {

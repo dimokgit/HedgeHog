@@ -1,4 +1,13 @@
-﻿ko.bindingHandlers.datepicker = {
+﻿/// <reference path="knockout.js" />
+$.extend(ko.utils, {
+  setObservableOrNotValue: function (data, property, value) {
+    if (ko.isObservable(data[property]))
+      data[property](value);
+    else
+      data[property] = value;
+  }
+});
+ko.bindingHandlers.datepicker = {
   init: function (element, valueAccessor, allBindingsAccessor) {
     //initialize datepicker with some optional options 
     var options = allBindingsAccessor().datepickerOptions || {};

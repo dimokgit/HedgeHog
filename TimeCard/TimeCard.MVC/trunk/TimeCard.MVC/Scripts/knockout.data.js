@@ -68,20 +68,20 @@ if (!ko.data) {
       showAjaxError: function (response) {
         alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
       },
-      UpdateData: function (property, dataNew, keyValue, onSuccess) {
-        var vm = this;
-        var data = { key: keyValue };
+      UpdateData: function (property, dataNew, onSuccess, onError, async) {
+        var data = {};
         data[property] = dataNew;
-        var json = Sys.Serialization.JavaScriptSerializer.serialize(ko.mapping.toJS(data));
+        var json = JSON.stringify(ko.mapping.toJS(data));
         $.ajax({
           url: this.homePath + property + "Update",
           type: "POST",
+          async: async !== undefined ? async : false,
           contentType: 'application/json; charset=utf-8',
           data: json,
           processData: false,
           success: function (result, status, response) {
             result = Sys.Serialization.JavaScriptSerializer.deserialize(response.responseText);
-            if (onSuccess) onSuccess(result);
+            if (onSuccess && onSuccess(result)) return;
             $.each(result, function (n, v) {
               if (dataNew.hasOwnProperty(n)) {
                 if (ko.isObservable(dataNew[n]))
@@ -92,12 +92,13 @@ if (!ko.data) {
               }
             });
           },
-          error: function (result) { vm.showAjaxError(result); }
+          error: function (result) {
+            if (onError && onError(result)) return;
+            ko.data.MvcCrud.showAjaxError(result);
+          }
         });
       },
-      showAjaxError: function (response) {
-        alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
-      },
+
       bindTable: function (table, data, vm, vmProperty, container, options) {
         table = $(table);
         if (!table.length) {
@@ -186,4 +187,7 @@ if (!ko.data) {
       }
     }
   });
+  ko.data.MvcCrud.showAjaxError = function (response) {
+    alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
+  }
 }
