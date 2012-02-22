@@ -7,13 +7,17 @@
 if (!ko.data) {
   Namespace("ko.data", {
     MvcCrud: {
+      test: function (name) {
+        if (!this.hasOwnProperty(name)) throw new Error(name + " does not exists");
+        return name;
+      },
       formatters: {
         text: function (data) { return data; },
         date: function (data, format) { return data instanceof Date ? data.toString(format || "MM/dd/yyyy HH:mm") : data; }
       },
       initCrud: function () {
         var vm = this;
-        $.each(vm.crud, function () {
+        $.each(vm.crud || [], function () {
           makeAddHandler(this);
           makeDeleteHandler(this);
         });
@@ -24,14 +28,17 @@ if (!ko.data) {
           vm[property + "Delete"] = $.proxy(function (data) { this.DeleteData(data, property) }, vm);
         }
       },
-      GetData: function (propertyName, table, success) {
+      GetData: function (propertyName, table, data, success) {
         var vm = this;
         return $.ajax({
           url: this.homePath + propertyName + "Get",
           type: "GET",
+          dataType: "text",
+          data: data,
           success: function (result) {
+            result = Sys.Serialization.JavaScriptSerializer.deserialize(result).d;
             if (table)
-              vm.bindTable(table, $.AJAX.processResults(result), vm, propertyName);
+              vm.bindTable(table, result, vm, propertyName);
             else {
               vm[propertyName].removeAll();
               $.each(result, function (i, v) { vm[propertyName].push(v); });
@@ -163,12 +170,16 @@ if (!ko.data) {
           return;
         }
         var dataBind = "data-bind";
-        vm[vmProperty] = ko.observableArray(data);
+        if (ko.isObservable(vm[vmProperty]))
+          vm[vmProperty].splice.apply(vm[vmProperty], [0, 0].concat(data));
+        else
+          vm[vmProperty] = ko.observableArray(data);
         vm[vmProperty + "New"] = {};
         var propPrev = "", stop = false;
         vm[vmProperty + "Columns"] = ko.observableArray($.map(data[0], function (e, n) {
           if (n == "C_") stop = true;
           if (stop) return;
+          if (n.startsWith("__")) return undefined;
           if (propPrev + "Id" != n) {
             propPrev = n;
             vm[vmProperty + "New"][n] = ko.observable("");
