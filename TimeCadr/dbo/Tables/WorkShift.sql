@@ -1,5 +1,6 @@
-﻿CREATE TABLE [dbo].[Shift] (
+﻿CREATE TABLE [dbo].[WorkShift] (
     [Start] DATETIMEOFFSET (7) NOT NULL,
+    [Stop]  DATETIMEOFFSET (7) NOT NULL,
     CONSTRAINT [PK_Shift] PRIMARY KEY CLUSTERED ([Start] ASC)
 );
 

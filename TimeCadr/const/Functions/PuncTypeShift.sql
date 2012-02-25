@@ -1,0 +1,6 @@
+﻿CREATE FUNCTION [const].[PuncTypeShift](
+)RETURNS int WITH SCHEMABINDING
+AS
+BEGIN
+RETURN(SELECT Id FROM dbo.PunchType WHERE Name = 'Shift')
+END

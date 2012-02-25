@@ -106,15 +106,29 @@
     <Folder Include="dbo\Tables\" />
     <Folder Include="dbo\Views\" />
     <Folder Include="dbo\Stored Procedures\" />
+    <Folder Include="const\" />
+    <Folder Include="const\Functions\" />
+    <Folder Include="Security\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo\Tables\Punch.sql" />
     <Build Include="dbo\Tables\PunchDirection.sql" />
     <Build Include="dbo\Tables\PunchType.sql" />
     <Build Include="dbo\Tables\WorkDay.sql" />
-    <Build Include="dbo\Tables\Shift.sql" />
     <Build Include="dbo\Tables\PunchPair.sql" />
     <Build Include="dbo\Views\vPunch.sql" />
     <Build Include="dbo\Stored Procedures\sTest.sql" />
+    <Build Include="dbo\Tables\WorkShift.sql" />
+    <Build Include="dbo\Tables\PunchDirectionSalutation.sql" />
+    <Build Include="dbo\Views\vWorkShift.sql" />
+    <Build Include="dbo\Views\vPunchPair.sql" />
+    <Build Include="const\Functions\PuncTypeLunch.sql" />
+    <Build Include="const\Functions\PuncTypeShift.sql" />
+    <Build Include="const\Functions\PunchDirectionIn.sql" />
+    <Build Include="const\Functions\PunchDirectionOut.sql" />
+    <Build Include="dbo\Stored Procedures\sRunWorkShifts.sql" />
+    <Build Include="dbo\Stored Procedures\sRunWorkShift.sql" />
+    <Build Include="dbo\Stored Procedures\sRunPunchPairs.sql" />
+    <Build Include="Security\const.sql" />
   </ItemGroup>
 </Project>
