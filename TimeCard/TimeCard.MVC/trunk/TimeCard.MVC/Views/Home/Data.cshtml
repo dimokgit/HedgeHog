@@ -87,8 +87,23 @@ TABLE TR.selected TD
       this.headers = { punches: { IsOutOfSequence: "OoS"} };
       this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
       this.homePath = "/home/";
+      this.rowNavigation = function (data, e, rowsName) {
+        var rows = $.D.sure(this, rowsName);
+        var current = (this.selectedRowsByParent(rowsName)[0] || {}).data;
+        var select;
+        switch (e.key) {
+          case "Up":
+            select = current ? rows()[Math.max(0, rows.indexOf(current) - 1)] : rows()[rows().length - 1];
+            break;
+          case "Down":
+            select = current ? rows()[Math.min(rows().length - 1, rows.indexOf(current)) + 1] : rows()[0];
+            break;
+        }
+        if (select)
+          this.selectRow(select, rowsName);
+      }
       this.onPunchesSelected = function (data) {
-        var time = data ? ko.utils.unwrapObservable($.D.sure(data, "time")) : Date.now();
+        var time = data ? new Date(ko.utils.unwrapObservable($.D.sure(data, "time"))) : Date.now();
         this.selectRowByProp(data, "punchPairs", function (a) {
           return time.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
         });
@@ -183,7 +198,7 @@ TABLE TR.selected TD
 </tfoot>
 </table>
 </fieldset>
-<table id="punchesTemplate" style="display:inline-table;float:left">
+<table id="punchesTemplate" style="float:left">
 <caption>Punches</caption>
 <thead>
   <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
@@ -192,7 +207,7 @@ TABLE TR.selected TD
   <tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
-<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':'event:{keydown:function(a,b){$parent.rowNavigation(a,b,\'{{rows}}\')}}'}">
 <td data-bind='attr:{"data-bind": "html: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"punches\"])}"}' align='right'/>
 </tr>
 <tr><td><input type="button" value="X" tabindex="-1"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>

@@ -10,6 +10,9 @@ if (!ko.data.selected) {
     selected: new (function () {
       this.debug = false;
       this.selectedRows = ko.observableArray();
+      this.selectedRowsByParent = function (parent) {
+        return ko.utils.arrayFilter(this.selectedRows(), function (a) { return a.rows == parent });
+      }
       this.selectRow = selectRow;
       this.isSelected = isSelected;
       function selectRow(data, parentName) {
