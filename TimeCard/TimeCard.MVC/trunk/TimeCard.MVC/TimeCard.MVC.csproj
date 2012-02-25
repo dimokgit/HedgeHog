@@ -178,6 +178,7 @@
     <Content Include="DataBind.htm" />
     <Content Include="Global.asax" />
     <Content Include="Images\tick.png" />
+    <Content Include="Scripts\knockout.data.selected.js" />
     <Content Include="Scripts\jquery.extentions.js" />
     <Content Include="Scripts\date.js" />
     <Content Include="Scripts\jquery-1.5.1-vsdoc.js" />

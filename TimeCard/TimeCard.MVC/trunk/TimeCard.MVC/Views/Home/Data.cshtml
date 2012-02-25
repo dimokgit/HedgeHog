@@ -2,6 +2,7 @@
     ViewBag.Title = "Data";
 }
 <![if false]>
+<script src="../../Scripts/MicrosoftAjax.js" type="text/javascript"></script>
 <script src="../../Scripts/jquery.js" type="text/javascript"></script>
 <script src="../../Scripts/jquery-ui-1.8.11.js" type="text/javascript"></script>
 <script src="../../Scripts/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
@@ -11,15 +12,34 @@
 <script src="../../Scripts/knockout.data.js" type="text/javascript"></script>
 <script src="../../Scripts/knockout.extentions.js" type="text/javascript"></script>
 <script src="../../Scripts/knockout.extentions.js" type="text/javascript"></script>
+<script src="../../Scripts/knockout.data.selected.js" type="text/javascript"></script>
 <![endif]>
 <style>
-  DIV.dataContainer TABLE
+  HTML,BODY
   {
-    display:inline-table;
+    height:100%;
+    padding:0px;
+    margin:0px;
   }
-  TH
+  #menucontainer,#header
   {
-  	text-align:center;
+    display:none;
+  }
+  .page,#main
+  {
+    padding:0px;
+    margin:0px;
+    height:100%;
+    width:100%;
+  }
+  TABLE THEAD TH,
+  TABLE TBODY TD
+  {
+  	cursor:default;
+  }
+  TABLE THEAD TH
+  {
+    text-align:center;
   }
   TFOOT TR TD DIV
   {
@@ -41,21 +61,56 @@ LEGEND:hover
   cursor:default;
   background-color:whitesmoke;
 }
+FIELDSET.metaData >TABLE
+{
+  display:none;
+}
+FIELDSET.metaData >TABLE+TABLE
+{
+  margin-left:15px;
+}
+TABLE TR:hover TD
+{
+	background-color:whitesmoke;
+}
+TABLE TR.selected TD
+{
+  background:#F5E9EF;
+}
 </style>
 <script>
   $(function () {
-    var vm = {
-      crud: ["punchTypes", "punchDirections", "punches", "punchPairs"],
-      sortPunches: function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) },
-      homePath: "/home/"
-    };
-    $.extend(vm, ko.data.MvcCrud);
+    var vm = new (function () {
+      var self = this;
+      this.debug = true;
+      this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs"];
+      this.headers = { punches: { IsOutOfSequence: "OoS"} };
+      this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
+      this.homePath = "/home/";
+      this.onPunchesSelected = function (data) {
+        var time = data ? ko.utils.unwrapObservable($.D.sure(data, "time")) : Date.now();
+        this.selectRowByProp(data, "punchPairs", function (a) {
+          return time.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
+        });
+      }
+      this.onPunchPairsSelected = function (data) {
+        var start = data ? ko.utils.unwrapObservable($.D.sure(data, "Start")) : Date.now();
+        this.selectRowByProp(data, "workShifts", function (a) {
+          return start.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
+        });
+      }
+    })();
+    $.extend(vm, ko.data.MvcCrud, ko.data.selected);
+    vm.onRowSelected.subscribe(function (sr, a, b) {
+      var h = $.D.prop(vm, "on" + sr.rows + "Selected");
+      if ($.isFunction(h)) h.call(vm, sr.data);
+    }, vm);
     vm.initCrud();
     // Show data
     var def1 = vm.GetData("punchTypes", "#punchTypesTemplate");
     var def2 = vm.GetData("punchDirections", "#punchDirectionsTemplate");
     $.when(def1, def2).done(function () {
-      vm.GetData("punches", "#punchesTemplate", function () {
+      vm.GetData("punches", "#punchesTemplate", null, function () {
         vm.punches.subscribe(function (a, b) {
           vm.GetData("punchPairs");
           vm.GetData("workShifts");
@@ -71,7 +126,7 @@ LEGEND:hover
   });
 </script>
 <fieldset class="metaData"><legend toggle="true">Punch Card MetaData</legend>
-<table id="punchTypesTemplate" style="display:inline-table">
+<table id="punchTypesTemplate" style="float:left">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -99,7 +154,7 @@ LEGEND:hover
   </tr>
 </tfoot>
 </table>
-<table id="punchDirectionsTemplate" style="display:inline-table">
+<table id="punchDirectionsTemplate" style="float:left">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -128,17 +183,17 @@ LEGEND:hover
 </tfoot>
 </table>
 </fieldset>
-<table id="punchesTemplate" style="display:inline-table">
+<table id="punchesTemplate" style="display:inline-table;float:left">
 <caption>Punches</caption>
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':'click:function(){$root.sortPunches(\''+$data+'\')}'}"></th>
   </tr>
   <tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
-<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"punches\"])}"}' align='right'/>
+<td data-bind='attr:{"data-bind": "html: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"punches\"])}"}' align='right'/>
 </tr>
 <tr><td><input type="button" value="X" tabindex="-1"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
@@ -150,11 +205,14 @@ LEGEND:hover
   <td><select data-bind="options:punchDirections,
                          optionsText:'Name',
                          optionsValue:'Id',
-                         value:punchesNew.Direction" /></td>
+                         value:punchesNew.DirectionId" /></td>
   <td><select data-bind="options:punchTypes,
                          optionsText:'Name',
                          optionsValue:'Id',
-                         value:punchesNew.Type" /></td>
+                         value:punchesNew.TypeId" /></td>
+  <td>
+  <input type="checkbox" data-bind="checked:punchesNew.IsOutOfSequence" />
+  </td>
     <td>
       <span>
         <input type="button" value="Add" data-bind="click:$root.{{add}}" />

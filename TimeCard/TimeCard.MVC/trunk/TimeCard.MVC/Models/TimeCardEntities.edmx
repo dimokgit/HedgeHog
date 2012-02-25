@@ -18,6 +18,7 @@
       [vPunch].[DirectionId] AS [DirectionId], 
       [vPunch].[Type] AS [Type], 
       [vPunch].[TypeId] AS [TypeId], 
+      [vPunch].[IsOutOfSequence] AS [IsOutOfSequence], 
       [vPunch].[PairStart] AS [PairStart]
       FROM [dbo].[vPunch] AS [vPunch]</DefiningQuery>
           </EntitySet>
@@ -52,6 +53,7 @@
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
           <Property Name="DirectionId" Type="int" Nullable="false" />
           <Property Name="TypeId" Type="int" Nullable="false" />
+          <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
         </EntityType>
         <EntityType Name="PunchDirection">
           <Key>
@@ -85,6 +87,7 @@
             <PropertyRef Name="DirectionId" />
             <PropertyRef Name="Type" />
             <PropertyRef Name="TypeId" />
+            <PropertyRef Name="IsOutOfSequence" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
@@ -92,6 +95,7 @@
           <Property Name="DirectionId" Type="int" Nullable="false" />
           <Property Name="Type" Type="varchar" Nullable="false" MaxLength="31" />
           <Property Name="TypeId" Type="int" Nullable="false" />
+          <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
           <Property Name="PairStart" Type="datetimeoffset" />
         </EntityType>
         <!--Errors Found During Generation:
@@ -208,6 +212,7 @@
           <Property Type="Int32" Name="TypeId" Nullable="false" />
           <NavigationProperty Name="PunchDirection" Relationship="TimeCardEntities.FK_Punch_PunchDirection" FromRole="Punch" ToRole="PunchDirection" />
           <NavigationProperty Name="PunchType" Relationship="TimeCardEntities.FK_Punch_PunchType" FromRole="Punch" ToRole="PunchType" />
+          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
         </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Type="TimeCardEntities.PunchDirection" Role="PunchDirection" Multiplicity="1" />
@@ -241,6 +246,7 @@
             <PropertyRef Name="DirectionId" />
             <PropertyRef Name="Type" />
             <PropertyRef Name="TypeId" />
+            <PropertyRef Name="IsOutOfSequence" />
           </Key>
           <Property Type="Int32" Name="Id" Nullable="false" />
           <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
@@ -248,6 +254,7 @@
           <Property Type="Int32" Name="DirectionId" Nullable="false" />
           <Property Type="String" Name="Type" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
           <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
           <Property Type="DateTimeOffset" Name="PairStart" />
         </EntityType>
         </Schema>
@@ -295,6 +302,7 @@
           <EntitySetMapping Name="Punches">
             <EntityTypeMapping TypeName="TimeCardEntities.Punch">
               <MappingFragment StoreEntitySet="Punch">
+                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
                 <ScalarProperty Name="TypeId" ColumnName="TypeId" />
                 <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
                 <ScalarProperty Name="Time" ColumnName="Time" />
@@ -306,6 +314,7 @@
             <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
               <MappingFragment StoreEntitySet="vPunch">
                 <ScalarProperty Name="PairStart" ColumnName="PairStart" />
+                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
                 <ScalarProperty Name="TypeId" ColumnName="TypeId" />
                 <ScalarProperty Name="Type" ColumnName="Type" />
                 <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
@@ -341,7 +350,7 @@
         <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3.375" PointY="4.125" Height="1.4033821614583326" />
         <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.75" PointY="3.75" Height="1.787985026041667" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="5.375" PointY="3.75" Height="1.4033821614583322" />
-        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.1725878906249996" />
+        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.3648893229166661" />
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchDirection" >
           <ConnectorPoint PointX="4.875" PointY="1.8266910807291665" />
           <ConnectorPoint PointX="5.625" PointY="1.8266910807291665" />
@@ -349,9 +358,9 @@
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchType" >
           <ConnectorPoint PointX="4.875" PointY="5.3721321614583317" />
           <ConnectorPoint PointX="7.03125" PointY="5.3721321614583317" />
-          <ConnectorPoint PointX="7.03125" PointY="2.9225878906249996" />
+          <ConnectorPoint PointX="7.03125" PointY="3.1148893229166661" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.75" PointY="0.75" Height="2.1725878906249996" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="0.875" Height="2.5571907552083317" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

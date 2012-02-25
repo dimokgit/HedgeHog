@@ -4,8 +4,10 @@
 /// <reference path="knockout.mapping-latest.debug.js" />
 /// <reference path="MicrosoftAjax.debug.js" />
 
-if (!ko.data) {
+Namespace("ko.data");
+if (!ko.data.MvcCrud) {
   Namespace("ko.data", {
+
     MvcCrud: {
       test: function (name) {
         if (!this.hasOwnProperty(name)) throw new Error(name + " does not exists");
@@ -36,7 +38,8 @@ if (!ko.data) {
           dataType: "text",
           data: data,
           success: function (result) {
-            result = Sys.Serialization.JavaScriptSerializer.deserialize(result).d;
+            result = Sys.Serialization.JavaScriptSerializer.deserialize(result);
+            result = result.d || result;
             if (table)
               vm.bindTable(table, result, vm, propertyName);
             else {
@@ -62,12 +65,17 @@ if (!ko.data) {
       },
       AddData: function (property) {
         var vm = this;
+        var json = JSON.stringify(ko.mapping.toJS(this[property + "New"]));
         $.ajax({
           url: this.homePath + property + "Add",
           type: "POST",
-          data: $.AJAX.processRequest(this[property + "New"]),
+          contentType: 'application/json; charset=utf-8',
+          data: json,
+          dataType: "text",
           success: function (result) {
-            vm[property].push($.AJAX.processResult(result));
+            result = Sys.Serialization.JavaScriptSerializer.deserialize(result);
+            result = result.d || result;
+            vm[property].push(result);
           },
           error: function (result) { vm.showAjaxError(result); }
         });
@@ -110,9 +118,12 @@ if (!ko.data) {
           v = eval("new " + v.slice(1, -1));
         if (ko.isObservable(v))
           v = v();
-        return v instanceof Date ? v.toString("MM/dd/yyyy HH:mm") : v;
+        if (v instanceof Date) return v.toString("MM/dd/yyyy HH:mm");
+        if (typeof v == 'boolean') return v ? "<img src='/images/tick.png'/>" : "";
+        return v;
       },
       update: function (data, ev, dataProperty, observables) {
+        if (ev.ctrlKey || ev.altKey || ko.isObservable(this.selectedRows) && !this.isSelected(data, observables[0])) return;
         var model = this;
         var dataPropertyOriginal = dataProperty;
         if (data.hasOwnProperty(dataProperty + "Id")) {
@@ -121,7 +132,10 @@ if (!ko.data) {
         }
 
         var el = ev.srcElement;
-        if (!$(el).is("TD")) return;
+        if (!$(el).is("TD")) {
+          el = $(el).parent()[0];
+          if (!$(el).is("TD")) return;
+        }
         var footTD = $(el).parents("TABLE:first").find("TFOOT TR TD:eq(" + el.cellIndex + ")");
         var clone = footTD.children().clone();
         if (!clone.is(":input")) return;
@@ -129,11 +143,15 @@ if (!ko.data) {
         $(el).empty();
         data.format = model.format;
         data.update = arguments.callee;
-        var dbAttrs = ["value:bindTo"];
+        var typeValue = { checkbox: "checked" };
+        var dbAttrs = [(typeValue[clone.attr("type")] || "value") + ":bindTo"];
         clone.dataBindAttr(dbAttrs);
         $(el).append(clone);
         var bindTo = ko.computed({
-          read: function () { return model.format(ko.utils.unwrapObservable(this[dataProperty])); },
+          read: function () {
+            var v = this[dataProperty];
+            return typeof v == 'boolean' ? v : model.format(ko.utils.unwrapObservable(this[dataProperty]));
+          },
           write: function (value) {
             var ov = ko.utils.unwrapObservable(this[dataProperty]);
             if (ov instanceof Date)
@@ -150,18 +168,18 @@ if (!ko.data) {
           },
           owner: data
         });
-        clone.focus().blur($.proxy(_cleanup, data));
-        ko.applyBindings({ bindTo: bindTo }, clone[0]);
-        function _cleanup() {
+        var cleanup = $.proxy(function _cleanup() {
           ko.cleanNode(clone[0]);
-          clone.remove();
+          clone.blur().remove();
           var $this = this;
           $.each(observables, function () {
             model[this].replace($this, $.extend({}, $this));
           });
           //          ko.cleanNode(el);
           //          ko.applyBindings(this, el);
-        }
+        }, data);
+        clone.focus().blur(cleanup).keypress(function (a) { if (a.charCode == 27) cleanup() });
+        ko.applyBindings({ bindTo: bindTo }, clone[0]);
       },
       bindTable: function (table, data, vm, vmProperty, container, options) {
         table = $(table);
@@ -176,6 +194,7 @@ if (!ko.data) {
           vm[vmProperty] = ko.observableArray(data);
         vm[vmProperty + "New"] = {};
         var propPrev = "", stop = false;
+        var headres = vm[vmProperty + "Headers"] = ko.observableArray();
         vm[vmProperty + "Columns"] = ko.observableArray($.map(data[0], function (e, n) {
           if (n == "C_") stop = true;
           if (stop) return;
@@ -183,6 +202,7 @@ if (!ko.data) {
           if (propPrev + "Id" != n) {
             propPrev = n;
             vm[vmProperty + "New"][n] = ko.observable("");
+            headres.push(((vm.headers || {})[vmProperty] || {})[n] || n);
             return n;
           } else if (propPrev) {
             var p = vm[vmProperty + "New"][propPrev];
@@ -194,11 +214,12 @@ if (!ko.data) {
         ko.data.dataBind(vm, table, vmProperty, vmProperty + "Columns");
       }
     },
-    dataBind: function (vm, node, rows, cols) {
+    dataBind: function (vm, node, rows, cols, headers) {
       var DATA_BIND = "data-bind";
       cols = cols || vm[rows + "Columns"];
       if (!cols)
         vm[cols = rows + "Cols"] = $.map(ko.utils.unwrapObservable(vm[rows])[0], function (v, n) { return n; });
+      headers = headers || rows + "Headers";
       node = $(node);
       var table = node.is("TABLE") ? node : $("TABLE", node);
       table.not(":has(CAPTION)").prepend('<caption>' + rows + '</caption>');
@@ -206,6 +227,7 @@ if (!ko.data) {
       var addItem = rows + "Add";
       var deleteItem = rows + "Delete";
       replaceAttr(node, "columns", cols);
+      replaceAttr(node, "headers", headers);
       replaceAttr(node, "rows", rows);
       replaceAttr(node, "new", itemNew);
       replaceAttr(node, "add", addItem);
@@ -215,6 +237,8 @@ if (!ko.data) {
       ko.cleanNode(node[0]);
 
       mash("THEAD"); mash("TBODY"); mash("TFOOT");
+      var tr = $('TBODY TR', node);
+      tr.dataBindAttr(tr.dataBindAttr(), "css:{selected:$root.isSelected($data,'" + rows + "')},click:function(a,b){$root.selectRow(a,'" + rows + "')}");
       ko.applyBindings(vm, node[0]);
 
       function mash(parent) {

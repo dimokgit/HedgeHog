@@ -1,5 +1,25 @@
 ﻿/// <reference path="jquery.js" />
 jQuery.extend({
+  D: {
+    prop: function (o, p) {
+      p = p.toLowerCase();
+      for (var n in o)
+        if (n.toLowerCase() == p)
+          return o[n];
+    },
+    sure: function (o, p) {
+      return o[$.D.name(o,p)];
+    },
+    name: function (o, p) {
+      if (!o)
+        throw new Error("Object is empty");
+      p = p.toLowerCase();
+      for (var n in o)
+        if (n.toLowerCase() == p)
+          return n;
+      throw new Error("Property [" + p + "] not found in " + (JSON.stringify ? JSON.stringify(o) : o));
+    }
+  },
   propsToArray: function (o) {
     return jQuery.map(o, function (v, n) { return n; });
   }
@@ -18,7 +38,7 @@ function () {
     dataBindAttr: function (attrs) {
       if (arguments.length == 0)
         return this.eq(0).attr(DATA_BIND);
-      var attr = $.isArray(attrs) ? attrs : $.makeArray(arguments).join(",");
+      var attr = $.isArray(attrs) ? attrs : $.map($.makeArray(arguments),function(v){return v?v:null; }).join(",");
       this.eq(0).attr(DATA_BIND, attr);
       return this;
     }

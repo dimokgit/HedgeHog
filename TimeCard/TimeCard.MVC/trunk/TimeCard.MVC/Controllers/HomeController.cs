@@ -78,7 +78,7 @@ namespace TimeCard.MVC.Controllers {
     }
     public ActionResult PunchesDelete(Models.Punch punch) {
       Action<Models.TimeCardEntitiesContainer> a = tc => {
-        tc.Punches.Remove(tc.Punches.Find(punch.Time));
+        tc.Punches.Remove(tc.Punches.Find(punch.Id));
       };
       a.Do();
       return Json(punch);

@@ -20,6 +20,7 @@ namespace TimeCard.MVC.Models
         public int DirectionId { get; set; }
         public string Type { get; set; }
         public int TypeId { get; set; }
+        public bool IsOutOfSequence { get; set; }
         public Nullable<System.DateTimeOffset> PairStart { get; set; }
     }
     
