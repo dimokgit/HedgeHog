@@ -177,6 +177,9 @@
     <Content Include="Content\themes\redmond\jquery.ui.theme.css" />
     <Content Include="DataBind.htm" />
     <Content Include="Global.asax" />
+    <Content Include="Images\delete-icon.png" />
+    <Content Include="Images\round_turn_off.png" />
+    <Content Include="Images\Tick-red.png" />
     <Content Include="Images\tick.png" />
     <Content Include="Scripts\knockout.data.selected.js" />
     <Content Include="Scripts\jquery.extentions.js" />

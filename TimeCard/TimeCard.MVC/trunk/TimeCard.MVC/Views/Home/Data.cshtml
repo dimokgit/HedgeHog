@@ -35,7 +35,7 @@
   TABLE THEAD TH,
   TABLE TBODY TD
   {
-  	cursor:default;
+    cursor:default;
   }
   TABLE THEAD TH
   {
@@ -71,7 +71,7 @@ FIELDSET.metaData >TABLE+TABLE
 }
 TABLE TR:hover TD
 {
-	background-color:whitesmoke;
+  background-color:whitesmoke;
 }
 TABLE TR.selected TD
 {
@@ -83,8 +83,15 @@ TABLE TR.selected TD
     var vm = new (function () {
       var self = this;
       this.debug = true;
+      this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
       this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs"];
-      this.headers = { punches: { IsOutOfSequence: "OoS"} };
+      this.headers = { punches: {
+        IsOutOfSequence: {
+          header: "OoS",
+          format: function (v) { return v ? "<img src='/images/Tick-Red.png'>":"" }
+        }
+      }
+      };
       this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
       this.homePath = "/home/";
       this.rowNavigation = function (data, e, rowsName) {
@@ -207,10 +214,10 @@ TABLE TR.selected TD
   <tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
-<tr data-bind="foreach: {{columns}},attr:{'data-bind':'event:{keydown:function(a,b){$parent.rowNavigation(a,b,\'{{rows}}\')}}'}">
-<td data-bind='attr:{"data-bind": "html: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"punches\"])}"}' align='right'/>
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':'attr:{title:\'PunchId: \'+Id},event:{keydown:function(a,b){$parent.rowNavigation(a,b,\'{{rows}}\')}}'}">
+<td data-bind='attr:{"data-bind": "html: $root.format($data[\""+$data+"\"],\"{{rows}}\",\""+$data+"\"),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"punches\"])}"}' align='right'/>
 </tr>
-<tr><td><input type="button" value="X" tabindex="-1"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
+<tr><td><span tabindex="-1" title="delete punch"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' style="cursor:default;color:Maroon;font-size:+1">&bull;</span></td></tr>
 </tbody>
 <tfoot>
   <tr>
@@ -225,10 +232,7 @@ TABLE TR.selected TD
                          optionsText:'Name',
                          optionsValue:'Id',
                          value:punchesNew.TypeId" /></td>
-  <td>
-  <input type="checkbox" data-bind="checked:punchesNew.IsOutOfSequence" />
-  </td>
-    <td>
+    <td colspan="2">
       <span>
         <input type="button" value="Add" data-bind="click:$root.{{add}}" />
       </span>

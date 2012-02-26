@@ -52,6 +52,7 @@ if (!ko.data.MvcCrud) {
         });
       },
       DeleteData: function (data, property) {
+        if (!confirm("Delete:\n" + JSON.stringify(ko.toJS(data)).replace(/","/g, '",\n"'))) return;
         var vm = this;
         $.ajax({
           url: this.homePath + property + "Delete",
@@ -64,8 +65,14 @@ if (!ko.data.MvcCrud) {
         });
       },
       AddData: function (property) {
+        debugger;
         var vm = this;
-        var json = JSON.stringify(ko.mapping.toJS(this[property + "New"]));
+        var data = ko.mapping.toJS(this[property + "New"]);
+        if (this.useUtc)
+          $.each(data, function (n, v) {
+            data[n] = $.AJAX.stringToDate(v);
+          });
+        var json = JSON.stringify(data);
         $.ajax({
           url: this.homePath + property + "Add",
           type: "POST",
@@ -84,9 +91,14 @@ if (!ko.data.MvcCrud) {
         alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
       },
       UpdateData: function (property, dataNew, onSuccess, onError, async) {
+        debugger;
         var data = {};
-        data[property] = dataNew;
-        var json = JSON.stringify(ko.mapping.toJS(data));
+        data[property] = ko.mapping.toJS(dataNew);
+        if (!this.useUtc)
+          $.each(data[property], function (n, v) {
+            data[property][n] = $.AJAX.dateToString(v);
+          });
+        var json = JSON.stringify(data);
         $.ajax({
           url: this.homePath + property + "Update",
           type: "POST",
@@ -113,7 +125,12 @@ if (!ko.data.MvcCrud) {
           }
         });
       },
-      format: function (v) {
+      format: function (v, parentName, propName) {
+        if (parentName) {
+          var f = $.D.props(this, "headers", parentName, propName, "format");
+          if ($.isFunction(f))
+            return f(v);
+        };
         if (typeof v == "string" && v.indexOf("/Date(") == 0)
           v = eval("new " + v.slice(1, -1));
         if (ko.isObservable(v))
@@ -139,7 +156,7 @@ if (!ko.data.MvcCrud) {
         var footTD = $(el).parents("TABLE:first").find("TFOOT TR TD:eq(" + el.cellIndex + ")");
         var clone = footTD.children().clone();
         if (!clone.is(":input")) return;
-
+        clone.keydown(function (a, b) { event.cancelBubble = true; });
         $(el).empty();
         data.format = model.format;
         data.update = arguments.callee;
@@ -202,7 +219,9 @@ if (!ko.data.MvcCrud) {
           if (propPrev + "Id" != n) {
             propPrev = n;
             vm[vmProperty + "New"][n] = ko.observable("");
-            headres.push(((vm.headers || {})[vmProperty] || {})[n] || n);
+            var header = ((vm.headers || {})[vmProperty] || {})[n];
+            header = (header || {}).header || header;
+            headres.push(header || n);
             return n;
           } else if (propPrev) {
             var p = vm[vmProperty + "New"][propPrev];

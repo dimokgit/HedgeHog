@@ -1,6 +1,19 @@
 ﻿/// <reference path="jquery.js" />
+/// <reference path="knockout.js" />
+/// <reference path="MicrosoftAjax.js" />
+
 jQuery.extend({
   D: {
+    props: function (o) {
+      $.each($.makeArray(arguments).slice(1), function (i, p) {
+        p = p.toLowerCase();
+        for (var n in o)
+          if (n.toLowerCase() == p)
+            o = ko.utils.unwrapObservable(o[n]);
+        if (o === undefined) return;
+      });
+      return o;
+    },
     prop: function (o, p) {
       p = p.toLowerCase();
       for (var n in o)
@@ -8,7 +21,7 @@ jQuery.extend({
           return o[n];
     },
     sure: function (o, p) {
-      return o[$.D.name(o,p)];
+      return o[$.D.name(o, p)];
     },
     name: function (o, p) {
       if (!o)
@@ -32,7 +45,7 @@ jQuery.extend({
   }
 });
 (
-function () {
+(function () {
   var DATA_BIND = "data-bind";
   jQuery.fn.extend({
     dataBindAttr: function (attrs) {
@@ -45,6 +58,13 @@ function () {
   });
   jQuery.extend({
     AJAX: {
+      dateToString:function(d){
+        return d instanceof Date ?d.toString("MM/dd/yyyy HH:mm:ss"):d;
+      },
+      stringToDate:function(s){
+        var d = typeof s == "string" && s.match(/^\s*\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/)?new Date(s):undefined;
+        return isNaN(d)?s:d;
+      },
       isMSDate: function (v) { return typeof v == "string" && v.indexOf("/Date(") == 0; },
       convertMSDate: function (v, doTest) {
         if (doTest && !jQuery.AJAX.isMSDate(v))
@@ -74,4 +94,4 @@ function () {
     }
   });
 }
-)()
+))()
