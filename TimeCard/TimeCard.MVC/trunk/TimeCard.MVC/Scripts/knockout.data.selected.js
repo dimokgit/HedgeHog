@@ -28,13 +28,28 @@ if (!ko.data.selected) {
         }
       }
       this.selectRowByProp = selectRowByProp;
-      function selectRowByProp(data, propName, find) {
+      function selectRowByProp(propName, find) {
         propName = $.D.name(this, propName);
         var item = ko.utils.arrayFirst(ko.utils.unwrapObservable(this[propName]), find);
         if ((this.isSelected(item, propName) || {}).data != item || !item)
           this.selectRow(item, propName);
       }
       this.onRowSelected = ko.observable();
+      this.rowNavigation = function (data, e, rowsName) {
+        var rows = $.D.sure(this, rowsName);
+        var current = (this.selectedRowsByParent(rowsName)[0] || {}).data;
+        var select;
+        switch (e.key) {
+          case "Up":
+            select = current ? rows()[Math.max(0, rows.indexOf(current) - 1)] : rows()[rows().length - 1];
+            break;
+          case "Down":
+            select = current ? rows()[Math.min(rows().length - 1, rows.indexOf(current)) + 1] : rows()[0];
+            break;
+        }
+        if (select)
+          this.selectRow(select, rowsName);
+      }
       function isSelected(data, parentName) {
         if (this.debug) debugger;
         var search = new SelectedRow(parentName, data);

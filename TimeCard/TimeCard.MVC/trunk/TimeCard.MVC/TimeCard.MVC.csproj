@@ -112,6 +112,9 @@
     <Compile Include="Models\vWorkShift.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vWorkShiftMinute.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scripts\SlickGrid\build\minimize.cs" />
   </ItemGroup>
@@ -181,6 +184,9 @@
     <Content Include="Images\round_turn_off.png" />
     <Content Include="Images\Tick-red.png" />
     <Content Include="Images\tick.png" />
+    <Content Include="Scripts\jquery.extentions.Linq.js" />
+    <Content Include="Scripts\jquery.extentions.fn.js" />
+    <Content Include="Scripts\jquery.extentions.D.js" />
     <Content Include="Scripts\knockout.data.selected.js" />
     <Content Include="Scripts\jquery.extentions.js" />
     <Content Include="Scripts\date.js" />

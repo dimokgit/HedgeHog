@@ -12,14 +12,11 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class vPunchPair
+    public partial class vWorkShiftMinute
     {
-        public string TypeIn { get; set; }
-        public System.DateTimeOffset Start { get; set; }
-        public string TypeOut { get; set; }
-        public System.DateTimeOffset Stop { get; set; }
-        public Nullable<int> TotalMinutes { get; set; }
-        public Nullable<decimal> TotalHours { get; set; }
+        public System.DateTimeOffset WorkShiftStart { get; set; }
+        public int Minute { get; set; }
+        public int Hour { get; set; }
     }
     
 }

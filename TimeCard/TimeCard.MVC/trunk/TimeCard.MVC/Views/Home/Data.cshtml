@@ -14,6 +14,9 @@
 <script src="../../Scripts/knockout.extentions.js" type="text/javascript"></script>
 <script src="../../Scripts/knockout.data.selected.js" type="text/javascript"></script>
 <![endif]>
+<script src="../../Scripts/jquery.extentions.D.js" type="text/javascript"></script>
+<script src="../../Scripts/jquery.extentions.fn.js" type="text/javascript"></script>
+<script src="../../Scripts/jquery.extentions.Linq.js" type="text/javascript"></script>
 <style>
   HTML,BODY
   {
@@ -45,6 +48,10 @@
   {
     overflow:inherit;
     width:100%;
+  }
+  SELECT
+  {
+  	font-size:1em;
   }
 td input {
     width: 100%;
@@ -84,44 +91,38 @@ TABLE TR.selected TD
       var self = this;
       this.debug = true;
       this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
-      this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs"];
+      this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs", "workShiftMinutes"];
       this.headers = { punches: {
         IsOutOfSequence: {
           header: "OoS",
-          format: function (v) { return v ? "<img src='/images/Tick-Red.png'>":"" }
+          format: function (v) { return v ? "<img src='/images/Tick-Red.png'>" : "" }
         }
       }
       };
       this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
       this.homePath = "/home/";
-      this.rowNavigation = function (data, e, rowsName) {
-        var rows = $.D.sure(this, rowsName);
-        var current = (this.selectedRowsByParent(rowsName)[0] || {}).data;
-        var select;
-        switch (e.key) {
-          case "Up":
-            select = current ? rows()[Math.max(0, rows.indexOf(current) - 1)] : rows()[rows().length - 1];
-            break;
-          case "Down":
-            select = current ? rows()[Math.min(rows().length - 1, rows.indexOf(current)) + 1] : rows()[0];
-            break;
-        }
-        if (select)
-          this.selectRow(select, rowsName);
-      }
+      this.onWorkShiftsSelected = function (data) {
+        var request = { start: vm.selectedRowsByParent("workShifts")[0].data.Start.toString("MM/dd/yyyy HH:mm") };
+        vm.GetData("workShiftMinutes", '', request);
+      };
+      this.onPunchesUpdated = ko.observable();
       this.onPunchesSelected = function (data) {
         var time = data ? new Date(ko.utils.unwrapObservable($.D.sure(data, "time"))) : Date.now();
-        this.selectRowByProp(data, "punchPairs", function (a) {
+        this.selectRowByProp("punchPairs", function (a) {
           return time.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
         });
       }
       this.onPunchPairsSelected = function (data) {
         var start = data ? ko.utils.unwrapObservable($.D.sure(data, "Start")) : Date.now();
-        this.selectRowByProp(data, "workShifts", function (a) {
+        this.selectRowByProp("workShifts", function (a) {
           return start.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
         });
       }
     })();
+    vm.onPunchesUpdated.subscribe(function () {
+      vm.GetData("punchPairs");
+      vm.GetData("workShifts");
+    }, vm);
     $.extend(vm, ko.data.MvcCrud, ko.data.selected);
     vm.onRowSelected.subscribe(function (sr, a, b) {
       var h = $.D.prop(vm, "on" + sr.rows + "Selected");
@@ -134,13 +135,15 @@ TABLE TR.selected TD
     $.when(def1, def2).done(function () {
       vm.GetData("punches", "#punchesTemplate", null, function () {
         vm.punches.subscribe(function (a, b) {
-          vm.GetData("punchPairs");
-          vm.GetData("workShifts");
           //vm.punches.sort(function (a, b) { return a.Time > b.Time ? 1 : -1; });
         });
+        $(":input").Enter2Tab();
       });
       vm.GetData("punchPairs", "#punchPairsTemplate");
-      vm.GetData("workShifts", "#workShiftsTemplate");
+      vm.GetData("workShifts", "#workShiftsTemplate", null, function () {
+        var wsStart = $.D.props(vm.workShifts()[0], "Start");
+        vm.GetData("workShiftMinutes", "#workShiftMinutesTemplate", { start: wsStart.toString("MM/dd/yyyy HH:mm:ss") });
+      });
       $("[toggle]").click(function () {
         $(this).parent().children(":not(LEGEND)").toggle();
       });
@@ -253,6 +256,18 @@ TABLE TR.selected TD
 </tbody>
 </table>
 <table id="workShiftsTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+</tbody>
+</table>
+<table id="workShiftMinutesTemplate" style="display:inline-table">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>

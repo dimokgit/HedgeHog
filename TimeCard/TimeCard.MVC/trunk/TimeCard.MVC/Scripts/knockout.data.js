@@ -3,6 +3,8 @@
 /// <reference path="knockout.js" />
 /// <reference path="knockout.mapping-latest.debug.js" />
 /// <reference path="MicrosoftAjax.debug.js" />
+/// <reference path="jquery.extentions.fn.js" />
+/// <reference path="knockout.data.selected.js" />
 
 Namespace("ko.data");
 if (!ko.data.MvcCrud) {
@@ -44,7 +46,8 @@ if (!ko.data.MvcCrud) {
               vm.bindTable(table, result, vm, propertyName);
             else {
               vm[propertyName].removeAll();
-              $.each(result, function (i, v) { vm[propertyName].push(v); });
+              vm[propertyName].splice.apply(vm[propertyName], [0, 0].concat(result));
+              //$.each(result, function (i, v) { vm[propertyName].push(v); });
             }
             if (success) success(result);
           },
@@ -60,12 +63,13 @@ if (!ko.data.MvcCrud) {
           data: $.AJAX.processRequest(data),
           success: function (result) {
             vm[property].remove(data);
+            vm.GetData(property);
+            vm.fireUpdated(property);
           },
           error: function (result) { vm.showAjaxError(result); }
         });
       },
       AddData: function (property) {
-        debugger;
         var vm = this;
         var data = ko.mapping.toJS(this[property + "New"]);
         if (this.useUtc)
@@ -83,15 +87,22 @@ if (!ko.data.MvcCrud) {
             result = Sys.Serialization.JavaScriptSerializer.deserialize(result);
             result = result.d || result;
             vm[property].push(result);
+            vm.GetData(property, '', null, function () {
+              vm.selectRowByProp(property, function (a) { return a.Id == result.Id; });
+            });
+            vm.fireUpdated(property);
           },
-          error: function (result) { vm.showAjaxError(result); }
+          error: function (result) {
+            vm.showAjaxError(result);
+            vm.fireUpdated(property);
+          }
         });
       },
       showAjaxError: function (response) {
         alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
       },
       UpdateData: function (property, dataNew, onSuccess, onError, async) {
-        debugger;
+        var vm = this;
         var data = {};
         data[property] = ko.mapping.toJS(dataNew);
         if (!this.useUtc)
@@ -118,8 +129,10 @@ if (!ko.data.MvcCrud) {
                 }
               }
             });
+            vm.fireUpdated(property);
           },
           error: function (result) {
+            vm.fireUpdated(property);
             if (onError && onError(result)) return;
             ko.data.MvcCrud.showAjaxError(result);
           }
@@ -136,8 +149,16 @@ if (!ko.data.MvcCrud) {
         if (ko.isObservable(v))
           v = v();
         if (v instanceof Date) return v.toString("MM/dd/yyyy HH:mm");
+        if (typeof v == 'number') {
+          return v.format("n2");
+        }
         if (typeof v == 'boolean') return v ? "<img src='/images/tick.png'/>" : "";
         return v;
+      },
+      fireUpdated: function (property) {
+        var h = $.D.prop(this, "on" + property + "Updated");
+        if (ko.isObservable(h))
+          h.valueHasMutated();
       },
       update: function (data, ev, dataProperty, observables) {
         if (ev.ctrlKey || ev.altKey || ko.isObservable(this.selectedRows) && !this.isSelected(data, observables[0])) return;
@@ -164,6 +185,7 @@ if (!ko.data.MvcCrud) {
         var dbAttrs = [(typeValue[clone.attr("type")] || "value") + ":bindTo"];
         clone.dataBindAttr(dbAttrs);
         $(el).append(clone);
+        $(":input", el).Enter2Tab();
         var bindTo = ko.computed({
           read: function () {
             var v = this[dataProperty];
@@ -190,7 +212,15 @@ if (!ko.data.MvcCrud) {
           clone.blur().remove();
           var $this = this;
           $.each(observables, function () {
-            model[this].replace($this, $.extend({}, $this));
+            try {
+              model.GetData(this);
+              model.fireUpdated(this);
+              var newRow = $.extend({}, $this);
+              model[this].replace($this, newRow);
+              model.selectRow(newRow, this);
+            } catch (e) {
+              alert("Cleanup Error:\n" + e.Message);
+            }
           });
           //          ko.cleanNode(el);
           //          ko.applyBindings(this, el);

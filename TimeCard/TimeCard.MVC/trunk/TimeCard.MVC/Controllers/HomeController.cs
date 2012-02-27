@@ -27,6 +27,19 @@ namespace TimeCard.MVC.Controllers {
     }
 
     #region Data
+
+    #region WorkShiftMinutes
+    public ActionResult WorkShiftMinutesGet(DateTimeOffset start) {
+      Func<TimeCardEntitiesContainer, List<vWorkShiftMinute>> a = tc => {
+        var list = tc.vWorkShiftMinutes.Where(wsm => wsm.WorkShiftStart == start).ToList();
+        if (!list.Any())
+          list.Add(new vWorkShiftMinute());
+        return list;
+      };
+      return Json(a.Do(), JsonRequestBehavior.AllowGet);
+    }
+    #endregion
+
     #region WorkShift
     public ActionResult WorkShiftsGet() {
       Func<TimeCardEntitiesContainer, List<vWorkShift>> a = tc => {
