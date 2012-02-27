@@ -109,6 +109,7 @@
     <Folder Include="const\" />
     <Folder Include="const\Functions\" />
     <Folder Include="Security\" />
+    <Folder Include="dbo\Functions\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo\Tables\Punch.sql" />
@@ -130,5 +131,18 @@
     <Build Include="dbo\Stored Procedures\sRunWorkShift.sql" />
     <Build Include="dbo\Stored Procedures\sRunPunchPairs.sql" />
     <Build Include="Security\const.sql" />
+    <Build Include="dbo\Tables\WorkShiftMinute.sql" />
+    <Build Include="dbo\Views\vWorkShiftMinute.sql" />
+    <Build Include="dbo\Views\vTest.sql" />
+    <Build Include="dbo\Views\vPunchActive.sql" />
+    <Build Include="dbo\Functions\fn_TriggerTable.sql" />
+    <Build Include="dbo\Functions\fn_ColumnsUpdated.sql" />
+    <Build Include="dbo\Functions\fn_binary_byte.sql" />
+    <Build Include="dbo\Functions\fn_binary.sql" />
+    <Build Include="const\Functions\ShiftTimeout.sql" />
+    <Build Include="dbo\Functions\GetHoursAndMinutes.sql" />
+    <Build Include="dbo\Functions\fn_ColumnUpdated1.sql" />
+    <Build Include="dbo\Functions\fn_ColumnUpdated.sql" />
+    <Build Include="dbo\Functions\getPunchPrev.sql" />
   </ItemGroup>
 </Project>

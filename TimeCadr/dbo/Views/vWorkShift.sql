@@ -1,7 +1,14 @@
-﻿CREATE VIEW dbo.vWorkShift
+﻿CREATE VIEW vWorkShift
 AS
-SELECT        Start, Stop
-FROM            dbo.WorkShift
+SELECT 
+WS.Start,
+WS.Stop,
+SUM(PP.TotalMinutes)TotalMinutes ,SUM(PP.TotalHours)TotalHours
+FROM vPunchPair PP
+INNER JOIN WorkShift WS 
+  ON PP.Start BETWEEN WS.Start AND WS.Stop
+    AND PP.Stop BETWEEN WS.Start AND WS.Stop
+GROUP BY WS.Start,WS.Stop
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShift';
 

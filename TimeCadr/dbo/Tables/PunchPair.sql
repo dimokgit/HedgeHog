@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [dbo].[PunchPair] (
     [Start] DATETIMEOFFSET (7) NOT NULL,
     [Stop]  DATETIMEOFFSET (7) NOT NULL,
-    CONSTRAINT [PK_PunchPair] PRIMARY KEY CLUSTERED ([Start] ASC),
+    CONSTRAINT [PK_PunchPair_Start] PRIMARY KEY CLUSTERED ([Start] ASC),
     CONSTRAINT [FK_PunchPair_Punch] FOREIGN KEY ([Start]) REFERENCES [dbo].[Punch] ([Time]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [FK_PunchPair_Punch1] FOREIGN KEY ([Stop]) REFERENCES [dbo].[Punch] ([Time]) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
@@ -18,36 +18,32 @@ ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
 
 
 GO
-CREATE TRIGGER [dbo].[PunchPair#DUI] 
-   ON  [dbo].[PunchPair] 
-   AFTER DELETE,UPDATE,INSERT
-AS 
-BEGIN
-SET NOCOUNT ON;
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch];
 
 
-DELETE FROM WS 
-FROM WorkShift WS
---INNER JOIN inserted i ON WS.Start >= i.Start
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
 
-EXEC sRunPunchPairs
-EXEC sRunWorkShifts
 
-END
+
+
+GO
+
 GO
 CREATE TRIGGER [dbo].[PunchPair#Delete] 
    ON  [dbo].[PunchPair] 
-   AFTER DELETE
+   AFTER INSERT,UPDATE,DELETE
 AS 
-BEGIN
+BEGIN --1
+IF @@ROWCOUNT = 0 RETURN
 SET NOCOUNT ON;
 
-
-DELETE FROM WS 
+DELETE FROM WS
 FROM WorkShift WS
-INNER JOIN deleted d ON WS.Start >= d.Start
-
-EXEC sRunPunchPairs
-EXEC sRunWorkShifts
+INNER JOIN deleted d ON d.Stop = WS.Start 
 
 END
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_PunchPair_Stop]
+    ON [dbo].[PunchPair]([Stop] ASC);
+

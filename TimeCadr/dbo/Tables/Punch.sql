@@ -4,11 +4,14 @@
     [DirectionId]     INT                NOT NULL,
     [TypeId]          INT                NOT NULL,
     [IsOutOfSequence] BIT                CONSTRAINT [DF_Punch_IsOutOffSequence] DEFAULT ((0)) NOT NULL,
+    [TimeUTC]         AS                 (switchoffset([Time],(0))) PERSISTED,
     CONSTRAINT [PK_Punch] PRIMARY KEY NONCLUSTERED ([Id] ASC),
     CONSTRAINT [CK_Punch_Time] CHECK ([Time]>'1/1/1999'),
     CONSTRAINT [FK_Punch_PunchDirection] FOREIGN KEY ([DirectionId]) REFERENCES [dbo].[PunchDirection] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE,
     CONSTRAINT [FK_Punch_PunchType] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[PunchType] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE
 );
+
+
 
 
 
@@ -23,47 +26,51 @@ CREATE UNIQUE CLUSTERED INDEX [IX_Punch_Time]
 GO
 CREATE TRIGGER [dbo].[Punch#Insert] 
    ON  [dbo].[Punch] 
-   AFTER INSERT
+   AFTER INSERT,UPDATE,DELETE
 AS 
-BEGIN
+BEGIN --1
+IF @@ROWCOUNT = 0 RETURN
 SET NOCOUNT ON;
 
+IF dbo.fn_ColumnsUpdated(COLUMNS_UPDATED(),@@PROCID) = 'IsOutOfSequence' RETURN
+
+DECLARE @Times TABLE(Time datetimeoffset)
+
+-- Recalculate IsOutOfSequence
+UPDATE Punch SET IsOutOfSequence = PU.IsOutOfSequence
+OUTPUT inserted.Time INTO @Times
+FROM Punch INNER JOIN
+(
+SELECT Prev.Time,CASE WHEN Prev.DirectionId = P.DirectionId THEN 1 ELSE 0 END IsOutOfSequence
+FROM Punch P CROSS APPLY getPunchPrev(P.Time)Prev
+)
+PU ON Punch.Time = PU.Time AND Punch.IsOutOfSequence <> PU.IsOutOfSequence
+
+DECLARE @D datetimeoffset
+
+;WITH D AS
+(
+SELECT Time FROM inserted
+UNION
+SELECT Time FROM deleted
+UNION
+SELECT Time FROM @Times 
+)
+SELECT @D = MIN(Time) FROM
+(
+SELECT Time FROM D
+UNION
+SELECT PP.Time FROM D CROSS APPLY getPunchPrev(D.Time)PP
+)T
+
+--- Clean PunchPairs
 DELETE FROM PP 
 FROM PunchPair PP
-INNER JOIN inserted i ON PP.Start >= i.Time AND i.DirectionId = const.PunchDirectionIn()
+WHERE PP.Stop >= @D
 
-DELETE FROM PP 
-FROM PunchPair PP
-INNER JOIN inserted i ON PP.Stop >= i.Time AND i.DirectionId = const.PunchDirectionOut()
-
+--- Chained actions
 EXEC sRunPunchPairs
-
 --- Test
---BEGIN TRAN
---INSERT INTO Punch
---SELECT GETDATE(),1,1
---UNION ALL
---SELECT DATEADD(hh,4,GETDATE()),2,2
---SELECT * FROM vPunchPair
---ROLLBACK
 
 END
 GO
-CREATE TRIGGER [dbo].[Punch#Delete] 
-   ON  [dbo].[Punch] 
-   AFTER DELETE,UPDATE
-AS 
-BEGIN
-SET NOCOUNT ON;
-
-DELETE FROM PP 
-FROM PunchPair PP
-INNER JOIN deleted d ON PP.Start >= d.Time AND d.DirectionId = const.PunchDirectionIn()
-
-DELETE FROM PP 
-FROM PunchPair PP
-INNER JOIN deleted d ON PP.Stop >= d.Time AND d.DirectionId = const.PunchDirectionOut()
-
-EXEC sRunPunchPairs
-
-END

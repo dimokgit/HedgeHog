@@ -1,12 +1,9 @@
-﻿CREATE VIEW dbo.vPunchPair
+﻿CREATE VIEW dbo.vTest
 AS
-SELECT        PIn.Type AS TypeIn, PP.Start, POut.Type AS TypeOut, PP.Stop, DATEDIFF(n, PP.Start, PP.Stop) AS TotalMinutes, DATEDIFF(n, PP.Start, PP.Stop) 
-                         / 60.0 AS TotalHours
-FROM            dbo.vPunch AS PIn INNER JOIN
-                         dbo.PunchPair AS PP ON PIn.Time = PP.Start INNER JOIN
-                         dbo.vPunch AS POut ON PP.Stop = POut.Time
+SELECT        dbo.Punch.*
+FROM            dbo.Punch
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunchPair';
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vTest';
 
 
 GO
@@ -81,32 +78,12 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "PIn"
-            Begin Extent = 
-               Top = 6
-               Left = 454
-               Bottom = 204
-               Right = 624
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "PP"
+         Begin Table = "Punch"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 101
-               Right = 208
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "POut"
-            Begin Extent = 
-               Top = 250
-               Left = 424
-               Bottom = 379
-               Right = 594
+               Bottom = 135
+               Right = 219
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -118,22 +95,11 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 9
-         Width = 284
-         Width = 1500
-         Width = 1500
-         Width = 1500
-         Width = 1500
-         Width = 1500
-         Width = 1500
-         Width = 1500
-         Width = 1500
-      End
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 3330
-         Alias = 1470
+         Column = 1440
+         Alias = 900
          Table = 1170
          Output = 720
          Append = 1400
@@ -147,7 +113,5 @@ Begin DesignProperties =
          Or = 1350
       End
    End
-End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunchPair';
-
-
+End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vTest';
 
