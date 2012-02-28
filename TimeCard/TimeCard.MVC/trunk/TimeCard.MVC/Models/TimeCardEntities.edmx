@@ -10,6 +10,7 @@
           <EntitySet Name="PunchDirection" EntityType="TimeCardEntities.Store.PunchDirection" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchPair" EntityType="TimeCardEntities.Store.PunchPair" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchType" EntityType="TimeCardEntities.Store.PunchType" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="RateCode" EntityType="TimeCardEntities.Store.RateCode" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="vPunch" EntityType="TimeCardEntities.Store.vPunch" store:Type="Views" store:Schema="dbo" store:Name="vPunch">
             <DefiningQuery>SELECT 
       [vPunch].[Id] AS [Id], 
@@ -87,6 +88,13 @@
           </Key>
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="varchar" Nullable="false" MaxLength="30" />
+        </EntityType>
+        <EntityType Name="RateCode">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="50" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vPunch' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -177,6 +185,14 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <!--Errors Found During Generation:
+      warning 6013: The table/view 'TimeCard.dbo.vRateCodeByRange' does not have a primary key defined and no valid primary key could be inferred. This table/view has been excluded. To use the entity, you will need to review your schema, add the correct keys, and uncomment it.
+      
+      <EntityType Name="vRateCodeByRange">
+        <Property Name="HourStart" Type="int" />
+        <Property Name="HourStop" Type="int" />
+        <Property Name="RateCode" Type="varchar" MaxLength="50" />
+      </EntityType>-->
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -197,6 +213,7 @@
           </AssociationSet>
           <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
           <EntitySet Name="vWorkShiftMinutes" EntityType="TimeCardEntities.vWorkShiftMinute" />
+          <EntitySet Name="RateCodes" EntityType="TimeCardEntities.RateCode" />
           </EntityContainer>
         <EntityType Name="PunchDirection">
           <Key>
@@ -302,6 +319,13 @@
           <Property Type="Int32" Name="Minute" Nullable="false" />
           <Property Type="Int32" Name="Hour" Nullable="false" />
         </EntityType>
+        <EntityType Name="RateCode">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="String" Name="Name" MaxLength="50" FixedLength="false" Unicode="false" />
+        </EntityType>
         </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -383,6 +407,14 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="RateCodes">
+            <EntityTypeMapping TypeName="TimeCardEntities.RateCode">
+              <MappingFragment StoreEntitySet="RateCode">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -421,6 +453,7 @@
         </AssociationConnector>
         <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="0.875" Height="2.5571907552083317" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftMinute" Width="1.5" PointX="0.75" PointY="6.75" Height="1.5956835937499996" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCode" Width="1.5" PointX="3.375" PointY="6.75" Height="1.4033821614583317" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

@@ -102,6 +102,7 @@ TABLE TR.selected TD
       this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
       this.homePath = "/home/";
       this.onWorkShiftsSelected = function (data) {
+        if (!data) return;
         var request = { start: vm.selectedRowsByParent("workShifts")[0].data.Start.toString("MM/dd/yyyy HH:mm") };
         vm.GetData("workShiftMinutes", '', request);
       };
@@ -273,7 +274,7 @@ TABLE TR.selected TD
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
   </tr>
 </thead>
-<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}},style:{height:\'100px\',overflow:\'auto\'}'}" >
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
 <td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
 </tr>

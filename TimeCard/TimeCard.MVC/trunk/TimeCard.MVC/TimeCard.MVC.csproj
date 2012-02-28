@@ -87,6 +87,9 @@
     <Compile Include="Models\PunchType.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\RateCode.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\TimeCardEntities.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

@@ -63,6 +63,7 @@ namespace TimeCard.MVC.Controllers {
       return Json(a.Do(), JsonRequestBehavior.AllowGet);
     }
     #endregion
+    
     #region Punches
     public ActionResult PunchesGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vPunches.ToList(), JsonRequestBehavior.AllowGet);
@@ -115,6 +116,7 @@ namespace TimeCard.MVC.Controllers {
       return Json(punchDirection);
     }
     #endregion
+
     #region PunchType
     public ActionResult PunchTypesGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().PunchTypes.ToList(), JsonRequestBehavior.AllowGet);
@@ -132,6 +134,27 @@ namespace TimeCard.MVC.Controllers {
       return Json(punchType);
     }
     #endregion
+
+    #region RateCode
+
+
+    public ActionResult RateCodeGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodes.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeAdd(Models.RateCode rateCodes) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodes.Add(rateCodes);
+      a.Do();
+      return Json(rateCodes);
+    }
+    public ActionResult RateCodeDelete(Models.RateCode rateCodes) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.RateCodes.Remove(tc.RateCodes.Find(rateCodes.Id));
+      };
+      a.Do();
+      return Json(rateCodes);
+    }
+    #endregion
+
     #endregion
   }
 }
