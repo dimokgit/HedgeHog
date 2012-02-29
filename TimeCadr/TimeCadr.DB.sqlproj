@@ -144,5 +144,10 @@
     <Build Include="dbo\Functions\fn_ColumnUpdated1.sql" />
     <Build Include="dbo\Functions\fn_ColumnUpdated.sql" />
     <Build Include="dbo\Functions\getPunchPrev.sql" />
+    <Build Include="dbo\Tables\RateCodeByRange.sql" />
+    <Build Include="dbo\Tables\RateCode.sql" />
+    <Build Include="dbo\Views\vWorkShiftPay.sql" />
+    <Build Include="dbo\Views\vWorkShiftMinuteWithRate.sql" />
+    <Build Include="dbo\Views\vRateCodeByRange.sql" />
   </ItemGroup>
 </Project>
