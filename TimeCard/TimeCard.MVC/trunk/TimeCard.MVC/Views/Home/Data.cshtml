@@ -91,7 +91,7 @@ TABLE TR.selected TD
       var self = this;
       this.debug = true;
       this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
-      this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs", "workShiftMinutes"];
+      this.crud = ["punchTypes", "punchDirections", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges"];
       this.headers = { punches: {
         IsOutOfSequence: {
           header: "OoS",
@@ -104,7 +104,7 @@ TABLE TR.selected TD
       this.onWorkShiftsSelected = function (data) {
         if (!data) return;
         var request = { start: vm.selectedRowsByParent("workShifts")[0].data.Start.toString("MM/dd/yyyy HH:mm") };
-        vm.GetData("workShiftMinutes", '', request);
+        //vm.GetData("workShiftMinutes", '', request);
       };
       this.onPunchesUpdated = ko.observable();
       this.onPunchesSelected = function (data) {
@@ -123,6 +123,7 @@ TABLE TR.selected TD
     vm.onPunchesUpdated.subscribe(function () {
       vm.GetData("punchPairs");
       vm.GetData("workShifts");
+      vm.GetData("workShiftMinuteWithRates");
     }, vm);
     $.extend(vm, ko.data.MvcCrud, ko.data.selected);
     vm.onRowSelected.subscribe(function (sr, a, b) {
@@ -133,6 +134,10 @@ TABLE TR.selected TD
     // Show data
     var def1 = vm.GetData("punchTypes", "#punchTypesTemplate");
     var def2 = vm.GetData("punchDirections", "#punchDirectionsTemplate");
+    vm.GetData("rateCodes", "#rateCodesTemplate").done(function () {
+      vm.GetData("rateCodeByRanges", "#rateCodeByRangesTemplate");
+    });
+    vm.GetData("workShiftMinuteWithRates", "#workShiftMinuteWithRatesTemplate");
     $.when(def1, def2).done(function () {
       vm.GetData("punches", "#punchesTemplate", null, function () {
         vm.punches.subscribe(function (a, b) {
@@ -143,7 +148,7 @@ TABLE TR.selected TD
       vm.GetData("punchPairs", "#punchPairsTemplate");
       vm.GetData("workShifts", "#workShiftsTemplate", null, function () {
         var wsStart = $.D.props(vm.workShifts()[0], "Start");
-        vm.GetData("workShiftMinutes", "#workShiftMinutesTemplate", { start: wsStart.toString("MM/dd/yyyy HH:mm:ss") });
+        //vm.GetData("workShiftMinutes", "#workShiftMinutesTemplate", { start: wsStart.toString("MM/dd/yyyy HH:mm:ss") });
       });
       $("[toggle]").click(function () {
         $(this).parent().children(":not(LEGEND)").toggle();
@@ -198,6 +203,69 @@ TABLE TR.selected TD
     <td>
       <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
     </td>
+  </tr>
+  <tr>
+    <td>
+      <span>
+        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
+      </span>
+     </td>
+  </tr>
+</tfoot>
+</table>
+<table id="rateCodesTemplate" style="float:left">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"rateCodes\"])}"}' align='right'/>
+</tr>
+<tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
+</tbody>
+<tfoot>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <td>
+      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <span>
+        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
+      </span>
+     </td>
+  </tr>
+</tfoot>
+</table>
+<table id="rateCodeByRangesTemplate" style="float:left">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"{{rows}}\"])}"}' align='right'/>
+</tr>
+<tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
+</tbody>
+<tfoot>
+  <tr>
+  <td>
+<input data-bind="value: rateCodeByRanges.HourStart" size="1" />
+</td>
+<td>
+<input data-bind="value: rateCodeByRanges.HourStop" size="1" />
+  </td>
+  <td><select data-bind="options:rateCodes,
+                         optionsText:'Name',
+                         optionsValue:'Id',
+                         value:rateCodeByRangesNew.RateCodeId" /></td>
   </tr>
   <tr>
     <td>
@@ -268,6 +336,7 @@ TABLE TR.selected TD
 </tr>
 </tbody>
 </table>
+@*
 <table id="workShiftMinutesTemplate" style="display:inline-table">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
@@ -280,5 +349,19 @@ TABLE TR.selected TD
 </tr>
 </tbody>
 </table>
+*@
+<table id="workShiftMinuteWithRatesTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"])"}' align='right'/>
+</tr>
+</tbody>
+</table>
+
 
 

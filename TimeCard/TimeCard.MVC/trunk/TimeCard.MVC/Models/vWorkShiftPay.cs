@@ -12,11 +12,10 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class RateCode
+    public partial class vWorkShiftPay
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public double Rate { get; set; }
+        public System.DateTimeOffset Start { get; set; }
+        public Nullable<double> Pay { get; set; }
     }
     
 }

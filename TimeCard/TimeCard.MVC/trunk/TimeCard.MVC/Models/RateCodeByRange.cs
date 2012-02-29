@@ -12,11 +12,14 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class RateCode
+    public partial class RateCodeByRange
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public double Rate { get; set; }
+        public int HourStart { get; set; }
+        public int HourStop { get; set; }
+        public int RateCodeId { get; set; }
+    
+        public virtual RateCode RateCode { get; set; }
     }
     
 }

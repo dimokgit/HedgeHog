@@ -33,5 +33,9 @@ namespace TimeCard.MVC.Models
         public DbSet<vPunch> vPunches { get; set; }
         public DbSet<vWorkShiftMinute> vWorkShiftMinutes { get; set; }
         public DbSet<RateCode> RateCodes { get; set; }
+        public DbSet<vRateCodeByRange> vRateCodeByRanges { get; set; }
+        public DbSet<RateCodeByRange> RateCodeByRanges { get; set; }
+        public DbSet<vWorkShiftMinuteWithRate> vWorkShiftMinuteWithRates { get; set; }
+        public DbSet<vWorkShiftPay> vWorkShiftPays { get; set; }
     }
 }

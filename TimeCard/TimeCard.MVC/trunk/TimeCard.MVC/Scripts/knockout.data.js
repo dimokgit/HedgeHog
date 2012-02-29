@@ -199,7 +199,7 @@ if (!ko.data.MvcCrud) {
               return alert(value + "");
             if (("" + ov) == ("" + value)) return;
             ko.utils.setObservableOrNotValue(this, dataProperty, value);
-            model.UpdateData("punches", this, $.proxy(function (result) {
+            model.UpdateData(observables[0], this, $.proxy(function (result) {
               if (dataProperty != dataPropertyOriginal)
                 ko.utils.setObservableOrNotValue(this, dataPropertyOriginal, result[dataPropertyOriginal]);
               alert("Saved.");

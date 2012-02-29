@@ -137,16 +137,54 @@ namespace TimeCard.MVC.Controllers {
 
     #region RateCode
 
+    public ActionResult WorkShiftMinuteWithRatesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vWorkShiftMinuteWithRates.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeByRangesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vRateCodeByRanges.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeByRangesAdd(Models.RateCodeByRange rateCodeByRanges) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodeByRanges.Add(rateCodeByRanges);
+      a.Do();
+      return Json(rateCodeByRanges);
+    }
+    public ActionResult RateCodeByRangesUpdate(Models.RateCodeByRange rateCodeByRanges) {
+      Func<Models.TimeCardEntitiesContainer, Models.vRateCodeByRange> a = tc => {
+        var rateCodeByRange = tc.RateCodeByRanges.First(rcbr => rcbr.Id == rateCodeByRanges.Id);
+        CopyObject(rateCodeByRanges, rateCodeByRange);
+        tc.SaveChanges();
+        return tc.vRateCodeByRanges.First(p => p.Id == rateCodeByRange.Id);
+      };
+      var res = a.Do();
+      return Json(res);
+    }
 
-    public ActionResult RateCodeGet() {
+    public ActionResult RateCodesGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodes.ToList(), JsonRequestBehavior.AllowGet);
     }
-    public ActionResult RateCodeAdd(Models.RateCode rateCodes) {
+    public ActionResult RateCodesAdd(Models.RateCode rateCodes) {
       Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodes.Add(rateCodes);
       a.Do();
       return Json(rateCodes);
     }
-    public ActionResult RateCodeDelete(Models.RateCode rateCodes) {
+    public ActionResult RateCodesUpdate(Models.RateCode rateCodes) {
+      Func<Models.TimeCardEntitiesContainer, Models.RateCode> a = tc => {
+        var rateCode = tc.RateCodes.Find(rateCodes.Id);
+        CopyObject(rateCodes, rateCode);
+        tc.SaveChanges();
+        return tc.RateCodes.Where(p => p.Id == rateCode.Id).First();
+      };
+      var res = a.Do();
+      return Json(res);
+    }
+
+    private static void CopyObject(object from, object to) {
+      foreach (var p in to.GetType().GetProperties()) {
+        if (!p.GetGetMethod().IsVirtual)
+          p.SetValue(to, p.GetValue(from, null), null);
+      }
+    }
+    public ActionResult RateCodesDelete(Models.RateCode rateCodes) {
       Action<Models.TimeCardEntitiesContainer> a = tc => {
         tc.RateCodes.Remove(tc.RateCodes.Find(rateCodes.Id));
       };
