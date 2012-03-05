@@ -17,6 +17,9 @@ namespace TimeCard.MVC.Models
         public int Id { get; set; }
         public string Name { get; set; }
         public double Rate { get; set; }
+        public int TypeId { get; set; }
+    
+        public virtual RateCodeType RateCodeType { get; set; }
     }
     
 }

@@ -12,13 +12,11 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class vPunchPair
+    public partial class Config
     {
-        public string TypeIn { get; set; }
-        public System.DateTimeOffset Start { get; set; }
-        public string TypeOut { get; set; }
-        public System.DateTimeOffset Stop { get; set; }
-        public Nullable<int> TotalMinutes { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Value { get; set; }
     }
     
 }

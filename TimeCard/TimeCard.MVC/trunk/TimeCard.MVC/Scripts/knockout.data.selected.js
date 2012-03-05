@@ -49,6 +49,8 @@ if (!ko.data.selected) {
         }
         if (select)
           this.selectRow(select, rowsName);
+        else
+          return true; // Allow default action
       }
       function isSelected(data, parentName) {
         if (this.debug) debugger;

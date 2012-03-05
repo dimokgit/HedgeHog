@@ -16,8 +16,11 @@ namespace TimeCard.MVC.Models
     {
         public System.DateTimeOffset Start { get; set; }
         public System.DateTimeOffset Stop { get; set; }
+        public Nullable<int> Hours { get; set; }
+        public Nullable<int> Minutes { get; set; }
         public Nullable<int> TotalMinutes { get; set; }
-        public Nullable<decimal> TotalHours { get; set; }
+        public Nullable<System.DateTime> StartDate { get; set; }
+        public Nullable<System.DateTime> StopDate { get; set; }
     }
     
 }

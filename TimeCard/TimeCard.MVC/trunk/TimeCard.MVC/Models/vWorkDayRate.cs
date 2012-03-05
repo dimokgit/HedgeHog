@@ -12,13 +12,15 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class vPunchPair
+    public partial class vWorkDayRate
     {
-        public string TypeIn { get; set; }
-        public System.DateTimeOffset Start { get; set; }
-        public string TypeOut { get; set; }
-        public System.DateTimeOffset Stop { get; set; }
-        public Nullable<int> TotalMinutes { get; set; }
+        public System.DateTime Date { get; set; }
+        public int HourFrom { get; set; }
+        public int HourTill { get; set; }
+        public int RateMinutes { get; set; }
+        public string RateCode { get; set; }
+        public int RateCodeId { get; set; }
+        public double Rate { get; set; }
     }
     
 }

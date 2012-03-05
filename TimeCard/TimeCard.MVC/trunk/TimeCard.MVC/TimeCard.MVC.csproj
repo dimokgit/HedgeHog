@@ -28,6 +28,10 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PublishDatabaseSettings>
+      <Objects>
+      </Objects>
+    </PublishDatabaseSettings>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -41,9 +45,9 @@
     <Reference Include="DynamicLinq">
       <HintPath>..\..\..\..\..\..\Projects\Forex_Old\Projects\HedgeHog\HedgeHog.Lib\bin\Release\DynamicLinq.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <Private>True</Private>
-      <HintPath>..\packages\EntityFramework.4.1.10331.0\lib\EntityFramework.dll</HintPath>
+    <Reference Include="EntityFramework, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.4.2.0.0\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data.Entity" />
@@ -78,6 +82,9 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\Config.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\Punch.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
@@ -91,6 +98,9 @@
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\RateCodeByRange.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\RateCodeType.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\TimeCardEntities.Context.cs">
@@ -115,7 +125,16 @@
     <Compile Include="Models\vPunchPair.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\vRateCode.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\vRateCodeByRange.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vWorkDayMinute.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\vWorkDayRate.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\vWorkShift.cs">
@@ -124,10 +143,10 @@
     <Compile Include="Models\vWorkShiftMinute.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="Models\vWorkShiftMinuteWithRate.cs">
+    <Compile Include="Models\vWorkShiftPay.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
-    <Compile Include="Models\vWorkShiftPay.cs">
+    <Compile Include="Models\vWorkShiftRate.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -194,14 +213,18 @@
     <Content Include="Content\themes\redmond\jquery.ui.tabs.css" />
     <Content Include="Content\themes\redmond\jquery.ui.theme.css" />
     <Content Include="DataBind.htm" />
+    <Content Include="EntityFramework.Preview.ReadMe.txt" />
     <Content Include="Global.asax" />
     <Content Include="Images\delete-icon.png" />
     <Content Include="Images\round_turn_off.png" />
     <Content Include="Images\Tick-red.png" />
     <Content Include="Images\tick.png" />
+    <Content Include="Scripts\jquery-ui-latest.min.js" />
     <Content Include="Scripts\jquery.extentions.Linq.js" />
     <Content Include="Scripts\jquery.extentions.fn.js" />
     <Content Include="Scripts\jquery.extentions.D.js" />
+    <Content Include="Scripts\jquery.layout-latest.js" />
+    <Content Include="Scripts\json2.js" />
     <Content Include="Scripts\knockout.data.selected.js" />
     <Content Include="Scripts\jquery.extentions.js" />
     <Content Include="Scripts\date.js" />

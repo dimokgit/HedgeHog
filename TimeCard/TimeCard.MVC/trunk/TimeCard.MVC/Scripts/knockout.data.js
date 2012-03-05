@@ -1,4 +1,5 @@
 ﻿/// <reference path="jquery.js" />
+/// <reference path="jquery-ui-latest.min.js" />
 /// <reference path="jquery.extentions.js" />
 /// <reference path="knockout.js" />
 /// <reference path="knockout.mapping-latest.debug.js" />
@@ -69,15 +70,19 @@ if (!ko.data.MvcCrud) {
           error: function (result) { vm.showAjaxError(result); }
         });
       },
-      AddData: function (property) {
+      AddData: function (property, data) {
         var vm = this;
-        var data = ko.mapping.toJS(this[property + "New"]);
+        data = ko.mapping.toJS(data || this[property + "New"]);
         if (this.useUtc)
           $.each(data, function (n, v) {
             data[n] = $.AJAX.stringToDate(v);
           });
+        else
+          $.each(data, function (n, v) {
+            data[n] = $.AJAX.dateToString(v);
+          });
         var json = JSON.stringify(data);
-        $.ajax({
+        return $.ajax({
           url: this.homePath + property + "Add",
           type: "POST",
           contentType: 'application/json; charset=utf-8',
@@ -141,8 +146,9 @@ if (!ko.data.MvcCrud) {
       format: function (v, parentName, propName) {
         if (parentName) {
           var f = $.D.props(this, "headers", parentName, propName, "format");
-          if ($.isFunction(f))
+          if ($.isFunction(f)) {
             return f(v);
+          }
         };
         if (typeof v == "string" && v.indexOf("/Date(") == 0)
           v = eval("new " + v.slice(1, -1));
@@ -150,7 +156,7 @@ if (!ko.data.MvcCrud) {
           v = v();
         if (v instanceof Date) return v.toString("MM/dd/yyyy HH:mm");
         if (typeof v == 'number') {
-          return v.format("n2");
+          return v; //.format("n2");
         }
         if (typeof v == 'boolean') return v ? "<img src='/images/tick.png'/>" : "";
         return v;
@@ -169,7 +175,7 @@ if (!ko.data.MvcCrud) {
           dataProperty += "Id";
         }
 
-        var el = ev.srcElement;
+        var el = ev.srcElement || ev.target;
         if (!$(el).is("TD")) {
           el = $(el).parent()[0];
           if (!$(el).is("TD")) return;
@@ -177,7 +183,7 @@ if (!ko.data.MvcCrud) {
         var footTD = $(el).parents("TABLE:first").find("TFOOT TR TD:eq(" + el.cellIndex + ")");
         var clone = footTD.children().clone();
         if (!clone.is(":input")) return;
-        clone.keydown(function (a, b) { event.cancelBubble = true; });
+        //clone.keydown(function (a, b) { event.cancelBubble = true; });
         $(el).empty();
         data.format = model.format;
         data.update = arguments.callee;
@@ -329,6 +335,7 @@ if (!ko.data.MvcCrud) {
     }
   });
   ko.data.MvcCrud.showAjaxError = function (response) {
-    alert($(response.responseText)[1].text.replace(/<br>/gi, "\n"));
+    debugger;
+    $("<div></div>").append($(response.responseText).eq(1)).append($("CODE", response.responseText)).dialog({ width: 800, height: 600 });
   }
 }

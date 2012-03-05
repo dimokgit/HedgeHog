@@ -7,6 +7,15 @@ $.extend(ko.utils, {
       data[property] = value;
   }
 });
+
+ko.bindingHandlers.toggle = {
+  init: function (element, valueAccessor, allBindingsAccessor) {
+    $("CAPTION", element).click(function () {
+      $(this).parent().children().not("CAPTION").toggle();
+    });
+  }
+};
+
 ko.bindingHandlers.datepicker = {
   init: function (element, valueAccessor, allBindingsAccessor) {
     //initialize datepicker with some optional options 

@@ -27,15 +27,20 @@ namespace TimeCard.MVC.Models
     
         public DbSet<PunchDirection> PunchDirections { get; set; }
         public DbSet<PunchType> PunchTypes { get; set; }
-        public DbSet<vPunchPair> vPunchPairs { get; set; }
-        public DbSet<vWorkShift> vWorkShifts { get; set; }
         public DbSet<Punch> Punches { get; set; }
-        public DbSet<vPunch> vPunches { get; set; }
         public DbSet<vWorkShiftMinute> vWorkShiftMinutes { get; set; }
-        public DbSet<RateCode> RateCodes { get; set; }
         public DbSet<vRateCodeByRange> vRateCodeByRanges { get; set; }
-        public DbSet<RateCodeByRange> RateCodeByRanges { get; set; }
-        public DbSet<vWorkShiftMinuteWithRate> vWorkShiftMinuteWithRates { get; set; }
         public DbSet<vWorkShiftPay> vWorkShiftPays { get; set; }
+        public DbSet<vWorkShift> vWorkShifts { get; set; }
+        public DbSet<vWorkShiftRate> vWorkShiftRates { get; set; }
+        public DbSet<RateCodeType> RateCodeTypes { get; set; }
+        public DbSet<vRateCode> vRateCodes { get; set; }
+        public DbSet<RateCode> RateCodes { get; set; }
+        public DbSet<RateCodeByRange> RateCodeByRanges { get; set; }
+        public DbSet<vWorkDayRate> vWorkDayRates { get; set; }
+        public DbSet<Config> Configs { get; set; }
+        public DbSet<vPunch> vPunches { get; set; }
+        public DbSet<vPunchPair> vPunchPairs { get; set; }
+        public DbSet<vWorkDayMinute> vWorkDayMinutes { get; set; }
     }
 }

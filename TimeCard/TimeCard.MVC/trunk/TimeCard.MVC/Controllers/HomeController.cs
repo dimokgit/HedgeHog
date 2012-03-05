@@ -8,6 +8,7 @@ using System.Linq.Dynamic;
 using TimeCard.MVC.Models;
 
 namespace TimeCard.MVC.Controllers {
+  [OutputCache(NoStore = true, Duration = 0, VaryByParam = "*")]
   public class HomeController : Controller {
     public ActionResult Index() {
       ViewBag.Message = "Welcome to ASP.NET MVC!";
@@ -117,9 +118,27 @@ namespace TimeCard.MVC.Controllers {
     }
     #endregion
 
+    #region RateCodeType
+    public ActionResult RateCodeTypesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodeTypes.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeTypesAdd(Models.RateCodeType RateCodeType) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodeTypes.Add(RateCodeType);
+      a.Do();
+      return Json(RateCodeType);
+    }
+    public ActionResult RateCodeTypesDelete(Models.RateCodeType RateCodeType) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.RateCodeTypes.Remove(tc.RateCodeTypes.Find(RateCodeType.Id));
+      };
+      a.Do();
+      return Json(RateCodeType);
+    }
+    #endregion
+
     #region PunchType
     public ActionResult PunchTypesGet() {
-      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().PunchTypes.ToList(), JsonRequestBehavior.AllowGet);
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().PunchTypes.ToList().DefaultIfEmpty(new PunchType()), JsonRequestBehavior.AllowGet);
     }
     public ActionResult PunchTypesAdd(Models.PunchType punchType) {
       Action<Models.TimeCardEntitiesContainer> a = tc => tc.PunchTypes.Add(punchType);
@@ -136,10 +155,6 @@ namespace TimeCard.MVC.Controllers {
     #endregion
 
     #region RateCode
-
-    public ActionResult WorkShiftMinuteWithRatesGet() {
-      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vWorkShiftMinuteWithRates.ToList(), JsonRequestBehavior.AllowGet);
-    }
     public ActionResult RateCodeByRangesGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vRateCodeByRanges.ToList(), JsonRequestBehavior.AllowGet);
     }
@@ -158,21 +173,31 @@ namespace TimeCard.MVC.Controllers {
       var res = a.Do();
       return Json(res);
     }
+    public ActionResult RateCodeByRangesDelete(Models.RateCodeByRange RateCodeByRanges) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.RateCodeByRanges.Remove(tc.RateCodeByRanges.Find(RateCodeByRanges.Id));
+      };
+      a.Do();
+      return Json(RateCodeByRanges);
+    }
 
     public ActionResult RateCodesGet() {
-      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodes.ToList(), JsonRequestBehavior.AllowGet);
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vRateCodes.ToList(), JsonRequestBehavior.AllowGet);
     }
     public ActionResult RateCodesAdd(Models.RateCode rateCodes) {
-      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodes.Add(rateCodes);
-      a.Do();
-      return Json(rateCodes);
+      Func<Models.TimeCardEntitiesContainer, Models.vRateCode> a = tc => {
+        tc.RateCodes.Add(rateCodes);
+        tc.SaveChanges();
+        return tc.vRateCodes.Single(rc => rc.Id == rateCodes.Id);
+      };
+      return Json(a.Do());
     }
     public ActionResult RateCodesUpdate(Models.RateCode rateCodes) {
-      Func<Models.TimeCardEntitiesContainer, Models.RateCode> a = tc => {
+      Func<Models.TimeCardEntitiesContainer, Models.vRateCode> a = tc => {
         var rateCode = tc.RateCodes.Find(rateCodes.Id);
         CopyObject(rateCodes, rateCode);
         tc.SaveChanges();
-        return tc.RateCodes.Where(p => p.Id == rateCode.Id).First();
+        return tc.vRateCodes.Single(p => p.Id == rateCode.Id);
       };
       var res = a.Do();
       return Json(res);
@@ -190,6 +215,48 @@ namespace TimeCard.MVC.Controllers {
       };
       a.Do();
       return Json(rateCodes);
+    }
+    #endregion
+
+    #region Config
+    public ActionResult ConfigsGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().Configs.ToList().DefaultIfEmpty(new Config()), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult ConfigsAdd(Models.Config Config) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.Configs.Add(Config);
+      a.Do();
+      return Json(Config);
+    }
+    public ActionResult ConfigsUpdate(Models.Config Configs) {
+      Func<Models.TimeCardEntitiesContainer, Models.Config> a = tc => {
+        var Config = tc.Configs.First(c => c.Id == Configs.Id);
+        CopyObject(Configs, Config);
+        tc.SaveChanges();
+        return tc.Configs.First(p => p.Id == Config.Id);
+      };
+      return Json(a.Do());
+    }
+    public ActionResult ConfigsDelete(Models.Config Config) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.Configs.Remove(tc.Configs.Find(Config.Id));
+      };
+      a.Do();
+      return Json(Config);
+    }
+    #endregion
+
+    #region Work(Shift/Day)Rates
+    public ActionResult WorkDayMinutesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vWorkDayMinutes
+        .OrderBy(wdm=>wdm.Date)
+        .ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult WorkShiftRatesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vWorkShiftRates.ToList(), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult WorkDayRatesGet() {
+      var wdr = new TimeCard.MVC.Models.TimeCardEntitiesContainer().vWorkDayRates.ToList();
+      return Json(wdr, JsonRequestBehavior.AllowGet);
     }
     #endregion
 

@@ -19,6 +19,8 @@ namespace TimeCard.MVC.Models
         public int HourStop { get; set; }
         public string RateCode { get; set; }
         public int RateCodeId { get; set; }
+        public string RateCodeType { get; set; }
+        public int RateCodeTypeId { get; set; }
     }
     
 }

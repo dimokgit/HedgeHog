@@ -5,6 +5,27 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeCard.MVC", "TimeCard.MV
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "TimeCadr.DB", "..\TimeCadr.DB\TimeCadr.DB.sqlproj", "{54C94390-0FED-4563-8B8D-B2F95FBE79D4}"
 EndProject
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "timecard", "http://timecard", "{0145BB23-A042-421E-980B-93763DEA906C}"
+	ProjectSection(WebsiteProperties) = preProject
+		UseIISExpress = "false"
+		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.0"
+		Debug.AspNetCompiler.VirtualPath = "/timecard"
+		Debug.AspNetCompiler.PhysicalPath = "..\..\..\..\..\..\..\Data\Web\TimeCard\"
+		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\timecard\"
+		Debug.AspNetCompiler.Updateable = "true"
+		Debug.AspNetCompiler.ForceOverwrite = "true"
+		Debug.AspNetCompiler.FixedNames = "false"
+		Debug.AspNetCompiler.Debug = "True"
+		Release.AspNetCompiler.VirtualPath = "/timecard"
+		Release.AspNetCompiler.PhysicalPath = "..\..\..\..\..\..\..\Data\Web\TimeCard\"
+		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\timecard\"
+		Release.AspNetCompiler.Updateable = "true"
+		Release.AspNetCompiler.ForceOverwrite = "true"
+		Release.AspNetCompiler.FixedNames = "false"
+		Release.AspNetCompiler.Debug = "False"
+		SlnRelativePath = "..\..\..\..\..\..\..\Data\Web\TimeCard\"
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -25,6 +46,10 @@ Global
 		{54C94390-0FED-4563-8B8D-B2F95FBE79D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54C94390-0FED-4563-8B8D-B2F95FBE79D4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{54C94390-0FED-4563-8B8D-B2F95FBE79D4}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{0145BB23-A042-421E-980B-93763DEA906C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0145BB23-A042-421E-980B-93763DEA906C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0145BB23-A042-421E-980B-93763DEA906C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{0145BB23-A042-421E-980B-93763DEA906C}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

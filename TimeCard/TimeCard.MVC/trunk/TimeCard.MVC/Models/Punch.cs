@@ -20,6 +20,7 @@ namespace TimeCard.MVC.Models
         public int TypeId { get; set; }
         public bool IsOutOfSequence { get; set; }
         public Nullable<System.DateTimeOffset> TimeUTC { get; set; }
+        public Nullable<int> TimeZoneOffset { get; set; }
     
         public virtual PunchDirection PunchDirection { get; set; }
         public virtual PunchType PunchType { get; set; }

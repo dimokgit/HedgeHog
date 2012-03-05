@@ -6,12 +6,14 @@
     <edmx:StorageModels>
     <Schema Namespace="TimeCardEntities.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="TimeCardEntitiesStoreContainer">
+          <EntitySet Name="Config" EntityType="TimeCardEntities.Store.Config" store:Type="Tables" Schema="config" />
           <EntitySet Name="Punch" EntityType="TimeCardEntities.Store.Punch" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchDirection" EntityType="TimeCardEntities.Store.PunchDirection" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchPair" EntityType="TimeCardEntities.Store.PunchPair" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="PunchType" EntityType="TimeCardEntities.Store.PunchType" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="RateCode" EntityType="TimeCardEntities.Store.RateCode" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="RateCodeByRange" EntityType="TimeCardEntities.Store.RateCodeByRange" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="RateCodeType" EntityType="TimeCardEntities.Store.RateCodeType" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="vPunch" EntityType="TimeCardEntities.Store.vPunch" store:Type="Views" store:Schema="dbo" store:Name="vPunch">
             <DefiningQuery>SELECT 
       [vPunch].[Id] AS [Id], 
@@ -30,9 +32,17 @@
       [vPunchPair].[Start] AS [Start], 
       [vPunchPair].[TypeOut] AS [TypeOut], 
       [vPunchPair].[Stop] AS [Stop], 
-      [vPunchPair].[TotalMinutes] AS [TotalMinutes], 
-      [vPunchPair].[TotalHours] AS [TotalHours]
+      [vPunchPair].[TotalMinutes] AS [TotalMinutes]
       FROM [dbo].[vPunchPair] AS [vPunchPair]</DefiningQuery>
+          </EntitySet>
+          <EntitySet Name="vRateCode" EntityType="TimeCardEntities.Store.vRateCode" store:Type="Views" store:Schema="dbo" store:Name="vRateCode">
+            <DefiningQuery>SELECT 
+      [vRateCode].[Id] AS [Id], 
+      [vRateCode].[Name] AS [Name], 
+      [vRateCode].[Rate] AS [Rate], 
+      [vRateCode].[Type] AS [Type], 
+      [vRateCode].[TypeId] AS [TypeId]
+      FROM [dbo].[vRateCode] AS [vRateCode]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vRateCodeByRange" EntityType="TimeCardEntities.Store.vRateCodeByRange" store:Type="Views" store:Schema="dbo" store:Name="vRateCodeByRange">
             <DefiningQuery>SELECT 
@@ -40,15 +50,37 @@
       [vRateCodeByRange].[HourStart] AS [HourStart], 
       [vRateCodeByRange].[HourStop] AS [HourStop], 
       [vRateCodeByRange].[RateCode] AS [RateCode], 
-      [vRateCodeByRange].[RateCodeId] AS [RateCodeId]
+      [vRateCodeByRange].[RateCodeId] AS [RateCodeId], 
+      [vRateCodeByRange].[RateCodeType] AS [RateCodeType], 
+      [vRateCodeByRange].[RateCodeTypeId] AS [RateCodeTypeId]
       FROM [dbo].[vRateCodeByRange] AS [vRateCodeByRange]</DefiningQuery>
+          </EntitySet>
+          <EntitySet Name="vWorkDayMinutes" EntityType="TimeCardEntities.Store.vWorkDayMinutes" store:Type="Views" store:Schema="dbo" store:Name="vWorkDayMinutes">
+            <DefiningQuery>SELECT 
+      [vWorkDayMinutes].[Date] AS [Date], 
+      [vWorkDayMinutes].[TotalMinutes] AS [TotalMinutes]
+      FROM [dbo].[vWorkDayMinutes] AS [vWorkDayMinutes]</DefiningQuery>
+          </EntitySet>
+          <EntitySet Name="vWorkDayRate" EntityType="TimeCardEntities.Store.vWorkDayRate" store:Type="Views" store:Schema="dbo" store:Name="vWorkDayRate">
+            <DefiningQuery>SELECT 
+      [vWorkDayRate].[Date] AS [Date], 
+      [vWorkDayRate].[HourFrom] AS [HourFrom], 
+      [vWorkDayRate].[HourTill] AS [HourTill], 
+      [vWorkDayRate].[RateMinutes] AS [RateMinutes], 
+      [vWorkDayRate].[RateCode] AS [RateCode], 
+      [vWorkDayRate].[RateCodeId] AS [RateCodeId], 
+      [vWorkDayRate].[Rate] AS [Rate]
+      FROM [dbo].[vWorkDayRate] AS [vWorkDayRate]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vWorkShift" EntityType="TimeCardEntities.Store.vWorkShift" store:Type="Views" store:Schema="dbo" store:Name="vWorkShift">
             <DefiningQuery>SELECT 
       [vWorkShift].[Start] AS [Start], 
       [vWorkShift].[Stop] AS [Stop], 
-      [vWorkShift].[TotalMinutes] AS [TotalMinutes], 
-      [vWorkShift].[TotalHours] AS [TotalHours]
+      [vWorkShift].[StartDate] AS [StartDate], 
+      [vWorkShift].[StopDate] AS [StopDate], 
+      [vWorkShift].[Hours] AS [Hours], 
+      [vWorkShift].[Minutes] AS [Minutes], 
+      [vWorkShift].[TotalMinutes] AS [TotalMinutes]
       FROM [dbo].[vWorkShift] AS [vWorkShift]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vWorkShiftMinute" EntityType="TimeCardEntities.Store.vWorkShiftMinute" store:Type="Views" store:Schema="dbo" store:Name="vWorkShiftMinute">
@@ -58,19 +90,20 @@
       [vWorkShiftMinute].[Hour] AS [Hour]
       FROM [dbo].[vWorkShiftMinute] AS [vWorkShiftMinute]</DefiningQuery>
           </EntitySet>
-          <EntitySet Name="vWorkShiftMinuteWithRate" EntityType="TimeCardEntities.Store.vWorkShiftMinuteWithRate" store:Type="Views" store:Schema="dbo" store:Name="vWorkShiftMinuteWithRate">
-            <DefiningQuery>SELECT 
-      [vWorkShiftMinuteWithRate].[WorkShiftStart] AS [WorkShiftStart], 
-      [vWorkShiftMinuteWithRate].[RateCodeId] AS [RateCodeId], 
-      [vWorkShiftMinuteWithRate].[Minutes] AS [Minutes], 
-      [vWorkShiftMinuteWithRate].[Hours] AS [Hours]
-      FROM [dbo].[vWorkShiftMinuteWithRate] AS [vWorkShiftMinuteWithRate]</DefiningQuery>
-          </EntitySet>
           <EntitySet Name="vWorkShiftPay" EntityType="TimeCardEntities.Store.vWorkShiftPay" store:Type="Views" store:Schema="dbo" store:Name="vWorkShiftPay">
             <DefiningQuery>SELECT 
       [vWorkShiftPay].[Start] AS [Start], 
       [vWorkShiftPay].[Pay] AS [Pay]
       FROM [dbo].[vWorkShiftPay] AS [vWorkShiftPay]</DefiningQuery>
+          </EntitySet>
+          <EntitySet Name="vWorkShiftRate" EntityType="TimeCardEntities.Store.vWorkShiftRate" store:Type="Views" store:Schema="dbo" store:Name="vWorkShiftRate">
+            <DefiningQuery>SELECT 
+      [vWorkShiftRate].[WorkShiftStart] AS [WorkShiftStart], 
+      [vWorkShiftRate].[Hours] AS [Hours], 
+      [vWorkShiftRate].[Minutes] AS [Minutes], 
+      [vWorkShiftRate].[RateCode] AS [RateCode], 
+      [vWorkShiftRate].[Rate] AS [Rate]
+      FROM [dbo].[vWorkShiftRate] AS [vWorkShiftRate]</DefiningQuery>
           </EntitySet>
           <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.Store.FK_Punch_PunchDirection">
             <End Role="PunchDirection" EntitySet="PunchDirection" />
@@ -80,11 +113,23 @@
             <End Role="PunchType" EntitySet="PunchType" />
             <End Role="Punch" EntitySet="Punch" />
           </AssociationSet>
+          <AssociationSet Name="FK_RateCode_RateCodeType" Association="TimeCardEntities.Store.FK_RateCode_RateCodeType">
+            <End Role="RateCodeType" EntitySet="RateCodeType" />
+            <End Role="RateCode" EntitySet="RateCode" />
+          </AssociationSet>
           <AssociationSet Name="FK_RateCodeByRange_RateCode" Association="TimeCardEntities.Store.FK_RateCodeByRange_RateCode">
             <End Role="RateCode" EntitySet="RateCode" />
             <End Role="RateCodeByRange" EntitySet="RateCodeByRange" />
           </AssociationSet>
         </EntityContainer>
+        <EntityType Name="Config">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="128" />
+          <Property Name="Value" Type="nvarchar" Nullable="false" />
+        </EntityType>
         <EntityType Name="Punch">
           <Key>
             <PropertyRef Name="Id" />
@@ -95,6 +140,7 @@
           <Property Name="TypeId" Type="int" Nullable="false" />
           <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
           <Property Name="TimeUTC" Type="datetimeoffset" StoreGeneratedPattern="Computed" />
+          <Property Name="TimeZoneOffset" Type="int" StoreGeneratedPattern="Computed" />
         </EntityType>
         <EntityType Name="PunchDirection">
           <Key>
@@ -109,6 +155,7 @@
           </Key>
           <Property Name="Start" Type="datetimeoffset" Nullable="false" />
           <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
+          <Property Name="TotalMinutes" Type="int" Nullable="false" StoreGeneratedPattern="Computed" />
         </EntityType>
         <EntityType Name="PunchType">
           <Key>
@@ -124,6 +171,7 @@
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
           <Property Name="Name" Type="varchar" MaxLength="50" />
           <Property Name="Rate" Type="float" Nullable="false" />
+          <Property Name="TypeId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="RateCodeByRange">
           <Key>
@@ -133,6 +181,13 @@
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
           <Property Name="RateCodeId" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="RateCodeType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="varchar" MaxLength="50" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vPunch' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -145,13 +200,12 @@
             <PropertyRef Name="DirectionId" />
             <PropertyRef Name="TypeId" />
             <PropertyRef Name="IsOutOfSequence" />
-            <PropertyRef Name="Type" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
           <Property Name="Direction" Type="varchar" Nullable="false" MaxLength="21" />
           <Property Name="DirectionId" Type="int" Nullable="false" />
-          <Property Name="Type" Type="varchar" MaxLength="41" Nullable="false" />
+          <Property Name="Type" Type="varchar" MaxLength="41" />
           <Property Name="TypeId" Type="int" Nullable="false" />
           <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
           <Property Name="PairStart" Type="datetimeoffset" />
@@ -163,15 +217,27 @@
           <Key>
             <PropertyRef Name="Start" />
             <PropertyRef Name="Stop" />
-            <PropertyRef Name="TypeIn" />
-            <PropertyRef Name="TypeOut" />
           </Key>
-          <Property Name="TypeIn" Type="varchar" MaxLength="41" Nullable="false" />
+          <Property Name="TypeIn" Type="varchar" MaxLength="41" />
           <Property Name="Start" Type="datetimeoffset" Nullable="false" />
-          <Property Name="TypeOut" Type="varchar" MaxLength="41" Nullable="false" />
+          <Property Name="TypeOut" Type="varchar" MaxLength="41" />
           <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
           <Property Name="TotalMinutes" Type="int" />
-          <Property Name="TotalHours" Type="numeric" Precision="17" Scale="6" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vRateCode' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vRateCode">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Rate" />
+            <PropertyRef Name="TypeId" />
+          </Key>
+          <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="50" />
+          <Property Name="Rate" Type="float" Nullable="false" />
+          <Property Name="Type" Type="varchar" MaxLength="50" />
+          <Property Name="TypeId" Type="int" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vRateCodeByRange' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -182,12 +248,47 @@
             <PropertyRef Name="HourStart" />
             <PropertyRef Name="HourStop" />
             <PropertyRef Name="RateCodeId" />
+            <PropertyRef Name="RateCodeTypeId" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
           <Property Name="RateCode" Type="varchar" MaxLength="50" />
           <Property Name="RateCodeId" Type="int" Nullable="false" />
+          <Property Name="RateCodeType" Type="varchar" MaxLength="50" />
+          <Property Name="RateCodeTypeId" Type="int" Nullable="false" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vWorkDayMinutes' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vWorkDayMinutes">
+          <Key>
+            <PropertyRef Name="Date" />
+            <PropertyRef Name="TotalMinutes" />
+          </Key>
+          <Property Name="Date" Type="datetime" Nullable="false" />
+          <Property Name="TotalMinutes" Type="int" Nullable="false" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vWorkDayRate' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vWorkDayRate">
+          <Key>
+            <PropertyRef Name="RateCodeId" />
+            <PropertyRef Name="Rate" />
+            <PropertyRef Name="Date" />
+            <PropertyRef Name="HourFrom" />
+            <PropertyRef Name="HourTill" />
+            <PropertyRef Name="RateMinutes" />
+            <PropertyRef Name="RateCode" />
+          </Key>
+          <Property Name="Date" Type="datetime" Nullable="false" />
+          <Property Name="HourFrom" Type="int" Nullable="false" />
+          <Property Name="HourTill" Type="int" Nullable="false" />
+          <Property Name="RateMinutes" Type="int" Nullable="false" />
+          <Property Name="RateCode" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="RateCodeId" Type="int" Nullable="false" />
+          <Property Name="Rate" Type="float" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vWorkShift' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -199,8 +300,11 @@
           </Key>
           <Property Name="Start" Type="datetimeoffset" Nullable="false" />
           <Property Name="Stop" Type="datetimeoffset" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="StopDate" Type="datetime" />
+          <Property Name="Hours" Type="int" />
+          <Property Name="Minutes" Type="int" />
           <Property Name="TotalMinutes" Type="int" />
-          <Property Name="TotalHours" Type="numeric" Precision="38" Scale="6" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vWorkShiftMinute' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -216,19 +320,6 @@
           <Property Name="Hour" Type="int" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
-      warning 6002: The table/view 'TimeCard.dbo.vWorkShiftMinuteWithRate' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
-      -->
-        <EntityType Name="vWorkShiftMinuteWithRate">
-          <Key>
-            <PropertyRef Name="WorkShiftStart" />
-            <PropertyRef Name="RateCodeId" />
-          </Key>
-          <Property Name="WorkShiftStart" Type="datetimeoffset" Nullable="false" />
-          <Property Name="RateCodeId" Type="int" Nullable="false" />
-          <Property Name="Minutes" Type="int" />
-          <Property Name="Hours" Type="int" />
-        </EntityType>
-        <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vWorkShiftPay' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
       -->
         <EntityType Name="vWorkShiftPay">
@@ -237,6 +328,20 @@
           </Key>
           <Property Name="Start" Type="datetimeoffset" Nullable="false" />
           <Property Name="Pay" Type="float" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'TimeCard.dbo.vWorkShiftRate' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="vWorkShiftRate">
+          <Key>
+            <PropertyRef Name="WorkShiftStart" />
+            <PropertyRef Name="Rate" />
+          </Key>
+          <Property Name="WorkShiftStart" Type="datetimeoffset" Nullable="false" />
+          <Property Name="Hours" Type="int" />
+          <Property Name="Minutes" Type="int" />
+          <Property Name="RateCode" Type="varchar" MaxLength="50" />
+          <Property Name="Rate" Type="float" Nullable="false" />
         </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Role="PunchDirection" Type="TimeCardEntities.Store.PunchDirection" Multiplicity="1" />
@@ -262,6 +367,20 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_RateCode_RateCodeType">
+          <End Role="RateCodeType" Type="TimeCardEntities.Store.RateCodeType" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="RateCode" Type="TimeCardEntities.Store.RateCode" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="RateCodeType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="RateCode">
+              <PropertyRef Name="TypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_RateCodeByRange_RateCode">
           <End Role="RateCode" Type="TimeCardEntities.Store.RateCode" Multiplicity="1" />
           <End Role="RateCodeByRange" Type="TimeCardEntities.Store.RateCodeByRange" Multiplicity="*" />
@@ -281,8 +400,6 @@
         <EntityContainer Name="TimeCardEntitiesContainer" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="PunchDirections" EntityType="TimeCardEntities.PunchDirection" />
           <EntitySet Name="PunchTypes" EntityType="TimeCardEntities.PunchType" />
-          <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
-          <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
           <EntitySet Name="Punches" EntityType="TimeCardEntities.Punch" />
           <AssociationSet Name="FK_Punch_PunchDirection" Association="TimeCardEntities.FK_Punch_PunchDirection">
             <End Role="PunchDirection" EntitySet="PunchDirections" />
@@ -292,17 +409,28 @@
             <End Role="PunchType" EntitySet="PunchTypes" />
             <End Role="Punch" EntitySet="Punches" />
           </AssociationSet>
-          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
           <EntitySet Name="vWorkShiftMinutes" EntityType="TimeCardEntities.vWorkShiftMinute" />
-          <EntitySet Name="RateCodes" EntityType="TimeCardEntities.RateCode" />
           <EntitySet Name="vRateCodeByRanges" EntityType="TimeCardEntities.vRateCodeByRange" />
+          <EntitySet Name="vWorkShiftPays" EntityType="TimeCardEntities.vWorkShiftPay" />
+          <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
+          <EntitySet Name="vWorkShiftRates" EntityType="TimeCardEntities.vWorkShiftRate" />
+          <EntitySet Name="RateCodeTypes" EntityType="TimeCardEntities.RateCodeType" />
+          <EntitySet Name="vRateCodes" EntityType="TimeCardEntities.vRateCode" />
+          <EntitySet Name="RateCodes" EntityType="TimeCardEntities.RateCode" />
           <EntitySet Name="RateCodeByRanges" EntityType="TimeCardEntities.RateCodeByRange" />
+          <AssociationSet Name="FK_RateCode_RateCodeType" Association="TimeCardEntities.FK_RateCode_RateCodeType">
+            <End Role="RateCodeType" EntitySet="RateCodeTypes" />
+            <End Role="RateCode" EntitySet="RateCodes" />
+          </AssociationSet>
           <AssociationSet Name="FK_RateCodeByRange_RateCode" Association="TimeCardEntities.FK_RateCodeByRange_RateCode">
             <End Role="RateCode" EntitySet="RateCodes" />
             <End Role="RateCodeByRange" EntitySet="RateCodeByRanges" />
           </AssociationSet>
-          <EntitySet Name="vWorkShiftMinuteWithRates" EntityType="TimeCardEntities.vWorkShiftMinuteWithRate" />
-          <EntitySet Name="vWorkShiftPays" EntityType="TimeCardEntities.vWorkShiftPay" />
+          <EntitySet Name="vWorkDayRates" EntityType="TimeCardEntities.vWorkDayRate" />
+          <EntitySet Name="Configs" EntityType="TimeCardEntities.Config" />
+          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
+          <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
+          <EntitySet Name="vWorkDayMinutes" EntityType="TimeCardEntities.vWorkDayMinute" />
           </EntityContainer>
         <EntityType Name="PunchDirection">
           <Key>
@@ -318,30 +446,6 @@
           <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="30" FixedLength="false" Unicode="false" />
         </EntityType>
-        <EntityType Name="vPunchPair">
-          <Key>
-            <PropertyRef Name="TypeIn" />
-            <PropertyRef Name="Start" />
-            <PropertyRef Name="TypeOut" />
-            <PropertyRef Name="Stop" />
-          </Key>
-          <Property Type="String" Name="TypeIn" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
-          <Property Type="String" Name="TypeOut" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
-          <Property Type="Int32" Name="TotalMinutes" />
-          <Property Type="Decimal" Name="TotalHours" Precision="17" Scale="6" />
-        </EntityType>
-        <EntityType Name="vWorkShift">
-          <Key>
-            <PropertyRef Name="Start" />
-            <PropertyRef Name="Stop" />
-          </Key>
-          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
-          <Property Type="Int32" Name="TotalMinutes" />
-          <Property Type="Decimal" Name="TotalHours" Precision="38" Scale="6" />
-        </EntityType>
         <EntityType Name="Punch">
           <Key>
             <PropertyRef Name="Id" />
@@ -354,6 +458,7 @@
           <NavigationProperty Name="PunchType" Relationship="TimeCardEntities.FK_Punch_PunchType" FromRole="Punch" ToRole="PunchType" />
           <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
           <Property Type="DateTimeOffset" Name="TimeUTC" annotation:StoreGeneratedPattern="Computed" />
+          <Property Type="Int32" Name="TimeZoneOffset" annotation:StoreGeneratedPattern="Computed" />
         </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Type="TimeCardEntities.PunchDirection" Role="PunchDirection" Multiplicity="1" />
@@ -379,25 +484,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityType Name="vPunch">
-          <Key>
-            <PropertyRef Name="Id" />
-            <PropertyRef Name="Time" />
-            <PropertyRef Name="Direction" />
-            <PropertyRef Name="DirectionId" />
-            <PropertyRef Name="Type" />
-            <PropertyRef Name="TypeId" />
-            <PropertyRef Name="IsOutOfSequence" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
-          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="DirectionId" Nullable="false" />
-          <Property Type="String" Name="Type" Nullable="false" MaxLength="31" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="TypeId" Nullable="false" />
-          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="PairStart" />
-        </EntityType>
         <EntityType Name="vWorkShiftMinute">
           <Key>
             <PropertyRef Name="WorkShiftStart" />
@@ -408,6 +494,72 @@
           <Property Type="Int32" Name="Minute" Nullable="false" />
           <Property Type="Int32" Name="Hour" Nullable="false" />
         </EntityType>
+        <EntityType Name="vRateCodeByRange">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="HourStart" />
+            <PropertyRef Name="HourStop" />
+            <PropertyRef Name="RateCodeId" />
+            <PropertyRef Name="RateCodeTypeId" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="Int32" Name="HourStart" Nullable="false" />
+          <Property Type="Int32" Name="HourStop" Nullable="false" />
+          <Property Type="String" Name="RateCode" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
+          <Property Type="String" Name="RateCodeType" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RateCodeTypeId" Nullable="false" />
+        </EntityType>
+        <EntityType Name="vWorkShiftPay">
+          <Key>
+            <PropertyRef Name="Start" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="Double" Name="Pay" />
+        </EntityType>
+        <EntityType Name="vWorkShift">
+          <Key>
+            <PropertyRef Name="Start" />
+            <PropertyRef Name="Stop" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+          <Property Type="Int32" Name="Hours" />
+          <Property Type="Int32" Name="Minutes" />
+          <Property Type="Int32" Name="TotalMinutes" />
+          <Property Type="DateTime" Name="StartDate" />
+          <Property Type="DateTime" Name="StopDate" />
+        </EntityType>
+        <EntityType Name="vWorkShiftRate">
+          <Key>
+            <PropertyRef Name="WorkShiftStart" />
+            <PropertyRef Name="Rate" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="WorkShiftStart" Nullable="false" />
+          <Property Type="Int32" Name="Hours" />
+          <Property Type="Int32" Name="Minutes" />
+          <Property Type="String" Name="RateCode" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Double" Name="Rate" Nullable="false" />
+        </EntityType>
+        <EntityType Name="RateCodeType">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" MaxLength="50" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="vRateCode">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Rate" />
+            <PropertyRef Name="TypeId" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="String" Name="Name" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Double" Name="Rate" Nullable="false" />
+          <Property Type="String" Name="Type" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+        </EntityType>
         <EntityType Name="RateCode">
           <Key>
             <PropertyRef Name="Id" />
@@ -415,19 +567,8 @@
           <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="String" Name="Name" MaxLength="50" FixedLength="false" Unicode="false" />
           <Property Type="Double" Name="Rate" Nullable="false" />
-        </EntityType>
-        <EntityType Name="vRateCodeByRange">
-          <Key>
-            <PropertyRef Name="Id" />
-            <PropertyRef Name="HourStart" />
-            <PropertyRef Name="HourStop" />
-            <PropertyRef Name="RateCodeId" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" />
-          <Property Type="Int32" Name="HourStart" Nullable="false" />
-          <Property Type="Int32" Name="HourStop" Nullable="false" />
-          <Property Type="String" Name="RateCode" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <NavigationProperty Name="RateCodeType" Relationship="TimeCardEntities.FK_RateCode_RateCodeType" FromRole="RateCode" ToRole="RateCodeType" />
         </EntityType>
         <EntityType Name="RateCodeByRange">
           <Key>
@@ -439,6 +580,18 @@
           <Property Type="Int32" Name="RateCodeId" Nullable="false" />
           <NavigationProperty Name="RateCode" Relationship="TimeCardEntities.FK_RateCodeByRange_RateCode" FromRole="RateCodeByRange" ToRole="RateCode" />
         </EntityType>
+        <Association Name="FK_RateCode_RateCodeType">
+          <End Type="TimeCardEntities.RateCodeType" Role="RateCodeType" Multiplicity="1" />
+          <End Type="TimeCardEntities.RateCode" Role="RateCode" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="RateCodeType">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="RateCode">
+              <PropertyRef Name="TypeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_RateCodeByRange_RateCode">
           <End Type="TimeCardEntities.RateCode" Role="RateCode" Multiplicity="1" />
           <End Type="TimeCardEntities.RateCodeByRange" Role="RateCodeByRange" Multiplicity="*" />
@@ -451,22 +604,68 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityType Name="vWorkShiftMinuteWithRate">
+        <EntityType Name="vWorkDayRate">
           <Key>
-            <PropertyRef Name="WorkShiftStart" />
             <PropertyRef Name="RateCodeId" />
+            <PropertyRef Name="Rate" />
+            <PropertyRef Name="Date" />
+            <PropertyRef Name="HourFrom" />
+            <PropertyRef Name="HourTill" />
+            <PropertyRef Name="RateMinutes" />
+            <PropertyRef Name="RateCode" />
           </Key>
-          <Property Type="DateTimeOffset" Name="WorkShiftStart" Nullable="false" />
+          <Property Type="DateTime" Name="Date" Nullable="false" />
+          <Property Type="Int32" Name="HourFrom" Nullable="false" />
+          <Property Type="Int32" Name="HourTill" Nullable="false" />
+          <Property Type="Int32" Name="RateMinutes" Nullable="false" />
+          <Property Type="String" Name="RateCode" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
           <Property Type="Int32" Name="RateCodeId" Nullable="false" />
-          <Property Type="Int32" Name="Minutes" />
-          <Property Type="Int32" Name="Hours" />
+          <Property Type="Double" Name="Rate" Nullable="false" />
         </EntityType>
-        <EntityType Name="vWorkShiftPay">
+        <EntityType Name="Config">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Value" Nullable="false" MaxLength="4000" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="vPunch">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="Direction" />
+            <PropertyRef Name="DirectionId" />
+            <PropertyRef Name="TypeId" />
+            <PropertyRef Name="IsOutOfSequence" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="DirectionId" Nullable="false" />
+          <Property Type="String" Name="Type" MaxLength="41" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="PairStart" />
+        </EntityType>
+        <EntityType Name="vPunchPair">
           <Key>
             <PropertyRef Name="Start" />
+            <PropertyRef Name="Stop" />
           </Key>
+          <Property Type="String" Name="TypeIn" MaxLength="41" FixedLength="false" Unicode="false" />
           <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
-          <Property Type="Double" Name="Pay" />
+          <Property Type="String" Name="TypeOut" MaxLength="41" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Stop" Nullable="false" />
+          <Property Type="Int32" Name="TotalMinutes" />
+        </EntityType>
+        <EntityType Name="vWorkDayMinute">
+          <Key>
+            <PropertyRef Name="Date" />
+            <PropertyRef Name="TotalMinutes" />
+          </Key>
+          <Property Type="DateTime" Name="Date" Nullable="false" />
+          <Property Type="Int32" Name="TotalMinutes" Nullable="false" />
         </EntityType>
         </Schema>
     </edmx:ConceptualModels>
@@ -492,36 +691,130 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="vPunchPairs">
-            <EntityTypeMapping TypeName="TimeCardEntities.vPunchPair">
-              <MappingFragment StoreEntitySet="vPunchPair">
-                <ScalarProperty Name="TotalHours" ColumnName="TotalHours" />
-                <ScalarProperty Name="TotalMinutes" ColumnName="TotalMinutes" />
-                <ScalarProperty Name="Stop" ColumnName="Stop" />
-                <ScalarProperty Name="TypeOut" ColumnName="TypeOut" />
+          <EntitySetMapping Name="Punches">
+            <EntityTypeMapping TypeName="TimeCardEntities.Punch">
+              <MappingFragment StoreEntitySet="Punch">
+                <ScalarProperty Name="TimeZoneOffset" ColumnName="TimeZoneOffset" />
+                <ScalarProperty Name="TimeUTC" ColumnName="TimeUTC" />
+                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vWorkShiftMinutes">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftMinute">
+              <MappingFragment StoreEntitySet="vWorkShiftMinute">
+                <ScalarProperty Name="Hour" ColumnName="Hour" />
+                <ScalarProperty Name="Minute" ColumnName="Minute" />
+                <ScalarProperty Name="WorkShiftStart" ColumnName="WorkShiftStart" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vRateCodeByRanges">
+            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeByRange">
+              <MappingFragment StoreEntitySet="vRateCodeByRange">
+                <ScalarProperty Name="RateCodeTypeId" ColumnName="RateCodeTypeId" />
+                <ScalarProperty Name="RateCodeType" ColumnName="RateCodeType" />
+                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
+                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
+                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
+                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vWorkShiftPays">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftPay">
+              <MappingFragment StoreEntitySet="vWorkShiftPay">
+                <ScalarProperty Name="Pay" ColumnName="Pay" />
                 <ScalarProperty Name="Start" ColumnName="Start" />
-                <ScalarProperty Name="TypeIn" ColumnName="TypeIn" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="vWorkShifts">
             <EntityTypeMapping TypeName="TimeCardEntities.vWorkShift">
               <MappingFragment StoreEntitySet="vWorkShift">
-                <ScalarProperty Name="TotalHours" ColumnName="TotalHours" />
+                <ScalarProperty Name="StopDate" ColumnName="StopDate" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
                 <ScalarProperty Name="TotalMinutes" ColumnName="TotalMinutes" />
+                <ScalarProperty Name="Minutes" ColumnName="Minutes" />
+                <ScalarProperty Name="Hours" ColumnName="Hours" />
                 <ScalarProperty Name="Stop" ColumnName="Stop" />
                 <ScalarProperty Name="Start" ColumnName="Start" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="Punches">
-            <EntityTypeMapping TypeName="TimeCardEntities.Punch">
-              <MappingFragment StoreEntitySet="Punch">
-                <ScalarProperty Name="TimeUTC" ColumnName="TimeUTC" />
-                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
+          <EntitySetMapping Name="vWorkShiftRates">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftRate">
+              <MappingFragment StoreEntitySet="vWorkShiftRate">
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
+                <ScalarProperty Name="Minutes" ColumnName="Minutes" />
+                <ScalarProperty Name="Hours" ColumnName="Hours" />
+                <ScalarProperty Name="WorkShiftStart" ColumnName="WorkShiftStart" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RateCodeTypes">
+            <EntityTypeMapping TypeName="TimeCardEntities.RateCodeType">
+              <MappingFragment StoreEntitySet="RateCodeType">
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vRateCodes">
+            <EntityTypeMapping TypeName="TimeCardEntities.vRateCode">
+              <MappingFragment StoreEntitySet="vRateCode">
                 <ScalarProperty Name="TypeId" ColumnName="TypeId" />
-                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
-                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Type" ColumnName="Type" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RateCodes">
+            <EntityTypeMapping TypeName="TimeCardEntities.RateCode">
+              <MappingFragment StoreEntitySet="RateCode">
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RateCodeByRanges">
+            <EntityTypeMapping TypeName="TimeCardEntities.RateCodeByRange">
+              <MappingFragment StoreEntitySet="RateCodeByRange">
+                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
+                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
+                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vWorkDayRates">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkDayRate">
+              <MappingFragment StoreEntitySet="vWorkDayRate">
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
+                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
+                <ScalarProperty Name="RateMinutes" ColumnName="RateMinutes" />
+                <ScalarProperty Name="HourTill" ColumnName="HourTill" />
+                <ScalarProperty Name="HourFrom" ColumnName="HourFrom" />
+                <ScalarProperty Name="Date" ColumnName="Date" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Configs">
+            <EntityTypeMapping TypeName="TimeCardEntities.Config">
+              <MappingFragment StoreEntitySet="Config">
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
@@ -540,60 +833,22 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="vWorkShiftMinutes">
-            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftMinute">
-              <MappingFragment StoreEntitySet="vWorkShiftMinute">
-                <ScalarProperty Name="Hour" ColumnName="Hour" />
-                <ScalarProperty Name="Minute" ColumnName="Minute" />
-                <ScalarProperty Name="WorkShiftStart" ColumnName="WorkShiftStart" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="RateCodes">
-            <EntityTypeMapping TypeName="TimeCardEntities.RateCode">
-              <MappingFragment StoreEntitySet="RateCode">
-                <ScalarProperty Name="Rate" ColumnName="Rate" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="vRateCodeByRanges">
-            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeByRange">
-              <MappingFragment StoreEntitySet="vRateCodeByRange">
-                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
-                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
-                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
-                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="RateCodeByRanges">
-            <EntityTypeMapping TypeName="TimeCardEntities.RateCodeByRange">
-              <MappingFragment StoreEntitySet="RateCodeByRange">
-                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
-                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
-                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="vWorkShiftMinuteWithRates">
-            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftMinuteWithRate">
-              <MappingFragment StoreEntitySet="vWorkShiftMinuteWithRate">
-                <ScalarProperty Name="Hours" ColumnName="Hours" />
-                <ScalarProperty Name="Minutes" ColumnName="Minutes" />
-                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
-                <ScalarProperty Name="WorkShiftStart" ColumnName="WorkShiftStart" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="vWorkShiftPays">
-            <EntityTypeMapping TypeName="TimeCardEntities.vWorkShiftPay">
-              <MappingFragment StoreEntitySet="vWorkShiftPay">
-                <ScalarProperty Name="Pay" ColumnName="Pay" />
+          <EntitySetMapping Name="vPunchPairs">
+            <EntityTypeMapping TypeName="TimeCardEntities.vPunchPair">
+              <MappingFragment StoreEntitySet="vPunchPair">
+                <ScalarProperty Name="TotalMinutes" ColumnName="TotalMinutes" />
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="TypeOut" ColumnName="TypeOut" />
                 <ScalarProperty Name="Start" ColumnName="Start" />
+                <ScalarProperty Name="TypeIn" ColumnName="TypeIn" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vWorkDayMinutes">
+            <EntityTypeMapping TypeName="TimeCardEntities.vWorkDayMinute">
+              <MappingFragment StoreEntitySet="vWorkDayMinutes">
+                <ScalarProperty Name="TotalMinutes" ColumnName="TotalMinutes" />
+                <ScalarProperty Name="Date" ColumnName="Date" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -618,32 +873,44 @@
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram Name="TimeCardEntities" ZoomLevel="100" >
-        <EntityTypeShape EntityType="TimeCardEntities.PunchDirection" Width="1.5" PointX="3.375" PointY="1.125" Height="1.4033821614583331" />
-        <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3.375" PointY="4.125" Height="1.4033821614583326" />
-        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.75" PointY="3.75" Height="1.787985026041667" />
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="5.375" PointY="3.75" Height="1.4033821614583322" />
-        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.3648893229166661" />
+      <Diagram Name="TimeCardEntities" ZoomLevel="86" >
+        <EntityTypeShape EntityType="TimeCardEntities.PunchDirection" Width="1.5" PointX="3.25" PointY="0.5" Height="1.4033821614583331" />
+        <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3.25" PointY="2.25" Height="1.4033821614583326" />
+        <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.7494921875" />
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchDirection" >
-          <ConnectorPoint PointX="4.875" PointY="1.8266910807291665" />
-          <ConnectorPoint PointX="5.625" PointY="1.8266910807291665" />
+          <ConnectorPoint PointX="4.75" PointY="1.3266910807291663" />
+          <ConnectorPoint PointX="5.625" PointY="1.3266910807291663" />
         </AssociationConnector>
         <AssociationConnector Association="TimeCardEntities.FK_Punch_PunchType" >
-          <ConnectorPoint PointX="4.875" PointY="5.3721321614583317" />
-          <ConnectorPoint PointX="7.03125" PointY="5.3721321614583317" />
-          <ConnectorPoint PointX="7.03125" PointY="3.1148893229166661" />
+          <ConnectorPoint PointX="4.75" PointY="2.87474609375" />
+          <ConnectorPoint PointX="5.625" PointY="2.87474609375" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="0.875" Height="2.5571907552083317" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftMinute" Width="1.5" PointX="0.75" PointY="6.75" Height="1.5956835937499996" />
-        <EntityTypeShape EntityType="TimeCardEntities.RateCode" Width="1.5" PointX="2.875" PointY="6" Height="1.5956835937499996" />
         <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="3" PointY="10" Height="1.9802864583333388" />
-        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="3" PointY="7.875" Height="1.9802864583333388" />
-        <AssociationConnector Association="TimeCardEntities.FK_RateCodeByRange_RateCode" >
-          <ConnectorPoint PointX="3.6875" PointY="7.59568359375" />
-          <ConnectorPoint PointX="3.6875" PointY="7.875" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftPay" Width="1.5" PointX="6.25" PointY="4" Height="1.4033821614583388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="4.5" PointY="4" Height="1.9802864583333326" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftRate" Width="1.75" PointX="7.375" PointY="1.375" Height="1.9802864583333246" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeType" Width="1.5" PointX="2.5" PointY="4" Height="1.4033821614583326" />
+        <EntityTypeShape EntityType="TimeCardEntities.vRateCode" Width="1.5" PointX="2.625" PointY="6" Height="1.9802864583333388" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCode" Width="1.5" PointX="4.5" PointY="6.5" Height="1.9802864583333317" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="2.875" PointY="8.25" Height="1.9802864583333388" />
+        <AssociationConnector Association="TimeCardEntities.FK_RateCode_RateCodeType" >
+          <ConnectorPoint PointX="2.53125" PointY="5.4033821614583326" />
+          <ConnectorPoint PointX="2.53125" PointY="8.14195" />
+          <ConnectorPoint PointX="4.5" PointY="8.14195" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftMinuteWithRate" Width="1.5" PointX="5.375" PointY="6.75" Height="1.7879850260416674" />
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftPay" Width="1.5" PointX="5.25" PointY="8.875" Height="1.4033821614583388" />
+        <AssociationConnector Association="TimeCardEntities.FK_RateCodeByRange_RateCode" >
+          <ConnectorPoint PointX="4.5" PointY="7.2763196145833344" />
+          <ConnectorPoint PointX="4.3464" PointY="7.2763196145833344" />
+          <ConnectorPoint PointX="4.3464" PointY="8.0964" />
+          <ConnectorPoint PointX="3.625" PointY="8.0964" />
+          <ConnectorPoint PointX="3.625" PointY="8.25" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkDayRate" Width="1.5" PointX="6.5" PointY="6" Height="2.3648893229166674" />
+        <EntityTypeShape EntityType="TimeCardEntities.Config" Width="1.5" PointX="5.375" PointY="9.75" Height="1.5956835937500031" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="1" Height="2.5571907552083388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.625" PointY="4.375" Height="1.9802864583333388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkDayMinute" Width="1.5" PointX="9.375" PointY="4.75" Height="1.4033821614583388" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>
