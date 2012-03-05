@@ -1,14 +1,10 @@
-﻿CREATE VIEW dbo.vWorkShiftMinuteWithRate
+﻿CREATE VIEW dbo.vWorkDayMinutes_10
 AS
-SELECT        dbo.WorkShiftMinute.WorkShiftStart, COUNT(*) % 60 AS Minutes, COUNT(*) / 60 AS Hours, COUNT(*) AS TotalMinutes, dbo.RateCode.Name AS RateCode, 
-                         dbo.RateCodeByRange.RateCodeId, dbo.RateCode.Rate
-FROM            dbo.WorkShiftMinute INNER JOIN
-                         dbo.RateCodeByRange ON dbo.WorkShiftMinute.Hour BETWEEN dbo.RateCodeByRange.HourStart AND dbo.RateCodeByRange.HourStop INNER JOIN
-                         dbo.RateCode ON dbo.RateCodeByRange.RateCodeId = dbo.RateCode.Id
-GROUP BY dbo.RateCodeByRange.RateCodeId, dbo.WorkShiftMinute.WorkShiftStart, dbo.RateCode.Name, dbo.RateCode.Rate, dbo.RateCode.TypeId
-HAVING        (dbo.RateCode.TypeId = 1)
+SELECT        PP.Start, CASE startdate WHEN stopdate THEN startdate ELSE dbo.getdate(minutedatetime) END AS MinuteDate, PP.TotalMinutes, PP.Hour, PP.Minute
+FROM            dbo.vPunchPairMinute AS PP INNER JOIN
+                         dbo.WorkShift ON PP.Start BETWEEN dbo.WorkShift.Start AND dbo.WorkShift.Stop
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteWithRate';
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkDayMinutes_10';
 
 
 GO
@@ -83,32 +79,22 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "WorkShiftMinute"
+         Begin Table = "PP"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 118
-               Right = 208
+               Bottom = 135
+               Right = 216
             End
             DisplayFlags = 280
             TopColumn = 0
          End
-         Begin Table = "RateCode"
+         Begin Table = "WorkShift"
             Begin Extent = 
                Top = 6
-               Left = 464
-               Bottom = 170
-               Right = 650
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "RateCodeByRange"
-            Begin Extent = 
-               Top = 63
-               Left = 256
-               Bottom = 194
-               Right = 426
+               Left = 254
+               Bottom = 135
+               Right = 424
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -123,7 +109,7 @@ Begin DesignProperties =
       Begin ColumnWidths = 9
          Width = 284
          Width = 2865
-         Width = 1500
+         Width = 1980
          Width = 1500
          Width = 1500
          Width = 1500
@@ -133,10 +119,10 @@ Begin DesignProperties =
       End
    End
    Begin CriteriaPane = 
-      Begin ColumnWidths = 12
-         Column = 2220
-         Alias = 900
-         Table = 1905
+      Begin ColumnWidths = 11
+         Column = 8970
+         Alias = 1155
+         Table = 1170
          Output = 720
          Append = 1400
          NewValue = 1170
@@ -149,7 +135,5 @@ Begin DesignProperties =
          Or = 1350
       End
    End
-End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteWithRate';
-
-
+End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkDayMinutes_10';
 

@@ -107,7 +107,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 26
                Left = 375
-               Bottom = 182
+               Bottom = 236
                Right = 545
             End
             DisplayFlags = 280
@@ -133,6 +133,16 @@ Begin DesignProperties =
             DisplayFlags = 280
             TopColumn = 0
          End
+         Begin Table = "PDS"
+            Begin Extent = 
+               Top = 160
+               Left = 919
+               Bottom = 272
+               Right = 1100
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
          Begin Table = "ppStop"
             Begin Extent = 
                Top = 352
@@ -153,16 +163,6 @@ Begin DesignProperties =
             DisplayFlags = 280
             TopColumn = 0
          End
-         Begin Table = "PDS"
-            Begin Extent = 
-               Top = 160
-               Left = 919
-               Bottom = 272
-               Right = 1100
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
       End
    End
    Begin SQLPane = 
@@ -174,6 +174,8 @@ Begin DesignProperties =
          Width = 284
          Width = 2910
          Width = 1500', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunch';
+
+
 
 
 

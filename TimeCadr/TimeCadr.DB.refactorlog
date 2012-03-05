@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Operations Version="1.0">
+  <Operation Name="Rename Refactor" Key="580935a5-9324-4f4b-a7c8-4526016d03b9" ChangeDateTime="03/04/2012 17:13:19">
+    <Property Name="ElementName" Value="[dbo].[PunchPair].[Date]" />
+    <Property Name="ElementType" Value="SqlSimpleColumn" />
+    <Property Name="ParentElementName" Value="[dbo].[PunchPair]" />
+    <Property Name="ParentElementType" Value="SqlTable" />
+    <Property Name="NewName" Value="DateStart" />
+  </Operation>
+</Operations>

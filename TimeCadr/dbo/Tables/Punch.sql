@@ -5,11 +5,18 @@
     [TypeId]          INT                NOT NULL,
     [IsOutOfSequence] BIT                CONSTRAINT [DF_Punch_IsOutOffSequence] DEFAULT ((0)) NOT NULL,
     [TimeUTC]         AS                 (switchoffset([Time],(0))) PERSISTED,
+    [TimeZoneOffset]  AS                 (datepart(tzoffset,[Time])) PERSISTED,
     CONSTRAINT [PK_Punch] PRIMARY KEY NONCLUSTERED ([Id] ASC),
     CONSTRAINT [CK_Punch_Time] CHECK ([Time]>'1/1/1999'),
     CONSTRAINT [FK_Punch_PunchDirection] FOREIGN KEY ([DirectionId]) REFERENCES [dbo].[PunchDirection] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE,
     CONSTRAINT [FK_Punch_PunchType] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[PunchType] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE
 );
+
+
+
+
+
+
 
 
 
@@ -60,7 +67,7 @@ SELECT @D = MIN(Time) FROM
 (
 SELECT Time FROM D
 UNION
-SELECT PP.Time FROM D CROSS APPLY getPunchPrev(D.Time)PP
+SELECT PP.Start FROM D CROSS APPLY getPunchPairPrev(D.Time)PP
 )T
 
 --- Clean PunchPairs

@@ -1,10 +1,51 @@
 ﻿CREATE TABLE [dbo].[PunchPair] (
-    [Start] DATETIMEOFFSET (7) NOT NULL,
-    [Stop]  DATETIMEOFFSET (7) NOT NULL,
+    [Start]        DATETIMEOFFSET (7) NOT NULL,
+    [Stop]         DATETIMEOFFSET (7) NOT NULL,
+    [TotalMinutes] AS                 (isnull(datediff(minute,[Start],[Stop]),(0))) PERSISTED NOT NULL,
     CONSTRAINT [PK_PunchPair_Start] PRIMARY KEY CLUSTERED ([Start] ASC),
     CONSTRAINT [FK_PunchPair_Punch] FOREIGN KEY ([Start]) REFERENCES [dbo].[Punch] ([Time]) ON DELETE NO ACTION ON UPDATE NO ACTION,
     CONSTRAINT [FK_PunchPair_Punch1] FOREIGN KEY ([Stop]) REFERENCES [dbo].[Punch] ([Time]) ON DELETE NO ACTION ON UPDATE NO ACTION
 );
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch];
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
+
+
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch];
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
+
+
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch];
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
+
+
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch];
+
+
+GO
+ALTER TABLE [dbo].[PunchPair] NOCHECK CONSTRAINT [FK_PunchPair_Punch1];
+
+
 
 
 GO

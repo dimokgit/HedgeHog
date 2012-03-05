@@ -1,0 +1,6 @@
+﻿CREATE FUNCTION GetDate(
+@Date datetimeoffset(7)
+)RETURNS datetime WITH SCHEMABINDING AS
+BEGIN
+RETURN DATEADD(d,0,DATEDIFF(d,0,@Date))
+END

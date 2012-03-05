@@ -110,12 +110,14 @@
     <Folder Include="const\Functions\" />
     <Folder Include="Security\" />
     <Folder Include="dbo\Functions\" />
+    <Folder Include="config\" />
+    <Folder Include="config\Tables\" />
+    <Folder Include="config\Functions\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="dbo\Tables\Punch.sql" />
     <Build Include="dbo\Tables\PunchDirection.sql" />
     <Build Include="dbo\Tables\PunchType.sql" />
-    <Build Include="dbo\Tables\WorkDay.sql" />
     <Build Include="dbo\Tables\PunchPair.sql" />
     <Build Include="dbo\Views\vPunch.sql" />
     <Build Include="dbo\Stored Procedures\sTest.sql" />
@@ -141,7 +143,6 @@
     <Build Include="dbo\Functions\fn_binary.sql" />
     <Build Include="const\Functions\ShiftTimeout.sql" />
     <Build Include="dbo\Functions\GetHoursAndMinutes.sql" />
-    <Build Include="dbo\Functions\fn_ColumnUpdated1.sql" />
     <Build Include="dbo\Functions\fn_ColumnUpdated.sql" />
     <Build Include="dbo\Functions\getPunchPrev.sql" />
     <Build Include="dbo\Tables\RateCodeByRange.sql" />
@@ -149,5 +150,35 @@
     <Build Include="dbo\Views\vWorkShiftPay.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteWithRate.sql" />
     <Build Include="dbo\Views\vRateCodeByRange.sql" />
+    <Build Include="dbo\Tables\Sequence.sql" />
+    <Build Include="dbo\Tables\RateCodeType.sql" />
+    <Build Include="dbo\Views\vWorkShiftRate.sql" />
+    <Build Include="dbo\Views\vWorkDayRate.sql" />
+    <Build Include="dbo\Views\vWorkDayMinutes.sql" />
+    <Build Include="dbo\Views\vWorkDay_40.sql" />
+    <Build Include="dbo\Views\vWorkDay_30.sql" />
+    <Build Include="dbo\Views\vWorkDay_20.sql" />
+    <Build Include="dbo\Views\vWorkDay_03.sql" />
+    <Build Include="dbo\Views\vRateCode.sql" />
+    <Build Include="dbo\Functions\GetPunchDate.sql" />
+    <Build Include="dbo\Functions\GetDate.sql" />
+    <Build Include="dbo\Functions\getPunchPairPrev.sql" />
+    <Build Include="dbo\Stored Procedures\UnitTest.sql" />
+    <Build Include="config\Tables\Config.sql" />
+    <Build Include="Security\config.sql" />
+    <Build Include="dbo\Views\vWorkShift_10.sql" />
+    <Build Include="dbo\Views\vWorkDayMinutes_10.sql" />
+    <Build Include="dbo\Views\vPunchPairMinute.sql" />
+    <Build Include="dbo\Functions\GetWorkShiftStopDate.sql" />
+    <Build Include="dbo\Functions\GetWorkShiftStartDate.sql" />
+    <Build Include="dbo\Functions\GetDayMinutes.sql" />
+    <Build Include="config\Functions\WorkDayStopGraceMinutes.sql" />
+    <Build Include="config\Functions\WorkDayStartGraceMinutes.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SqlSchemaCompare.scmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <RefactorLog Include="TimeCadr.DB.refactorlog" />
   </ItemGroup>
 </Project>

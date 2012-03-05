@@ -1,7 +1,6 @@
 ﻿CREATE VIEW dbo.vPunchPair
 AS
-SELECT        PIn.Type AS TypeIn, PP.Start, POut.Type AS TypeOut, PP.Stop, DATEDIFF(n, PP.Start, PP.Stop) AS TotalMinutes, DATEDIFF(n, PP.Start, PP.Stop) 
-                         / 60.0 AS TotalHours
+SELECT        PIn.Type AS TypeIn, PP.Start, POut.Type AS TypeOut, PP.Stop, DATEDIFF(n, PP.Start, PP.Stop) AS TotalMinutes
 FROM            dbo.vPunch AS PIn INNER JOIN
                          dbo.PunchPair AS PP ON PIn.Time = PP.Start INNER JOIN
                          dbo.vPunch AS POut ON PP.Stop = POut.Time
@@ -95,7 +94,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 101
+               Bottom = 144
                Right = 208
             End
             DisplayFlags = 280
@@ -132,7 +131,7 @@ Begin DesignProperties =
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 3330
+         Column = 4095
          Alias = 1470
          Table = 1170
          Output = 720
@@ -148,6 +147,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunchPair';
+
+
 
 
 

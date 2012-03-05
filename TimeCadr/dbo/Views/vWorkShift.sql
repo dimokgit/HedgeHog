@@ -1,14 +1,9 @@
-﻿CREATE VIEW vWorkShift
+﻿CREATE VIEW dbo.vWorkShift
 AS
-SELECT 
-WS.Start,
-WS.Stop,
-SUM(PP.TotalMinutes)TotalMinutes ,SUM(PP.TotalHours)TotalHours
-FROM vPunchPair PP
-INNER JOIN WorkShift WS 
-  ON PP.Start BETWEEN WS.Start AND WS.Stop
-    AND PP.Stop BETWEEN WS.Start AND WS.Stop
-GROUP BY WS.Start,WS.Stop
+SELECT        dbo.vWorkShift_10.Start, dbo.vWorkShift_10.Stop, dbo.WorkShift.StartDate, dbo.WorkShift.StopDate, dbo.vWorkShift_10.Hours, dbo.vWorkShift_10.Minutes, 
+                         dbo.vWorkShift_10.TotalMinutes
+FROM            dbo.vWorkShift_10 INNER JOIN
+                         dbo.WorkShift ON dbo.vWorkShift_10.Start = dbo.WorkShift.Start
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShift';
 
@@ -85,12 +80,22 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "WorkShift"
+         Begin Table = "vWorkShift_10"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 101
+               Bottom = 205
                Right = 208
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "WorkShift"
+            Begin Extent = 
+               Top = 6
+               Left = 246
+               Bottom = 135
+               Right = 416
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -101,6 +106,17 @@ Begin DesignProperties =
    End
    Begin DataPane = 
       Begin ParameterDefaults = ""
+      End
+      Begin ColumnWidths = 9
+         Width = 284
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
       End
    End
    Begin CriteriaPane = 
@@ -121,4 +137,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShift';
+
+
+
+
 

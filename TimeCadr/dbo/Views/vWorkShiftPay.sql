@@ -1,6 +1,6 @@
 ﻿CREATE VIEW dbo.vWorkShiftPay
 AS
-SELECT        M.WorkShiftStart AS Start, SUM(M.Minutes * RC.Rate / 60) AS Pay
+SELECT        M.WorkShiftStart AS Start, SUM(M.TotalMinutes * RC.Rate / 60) AS Pay
 FROM            dbo.vWorkShiftMinuteWithRate AS M INNER JOIN
                          dbo.RateCode AS RC ON M.RateCodeId = RC.Id
 GROUP BY M.WorkShiftStart
@@ -121,7 +121,7 @@ Begin DesignProperties =
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 12
-         Column = 2205
+         Column = 5175
          Alias = 900
          Table = 1170
          Output = 720
@@ -137,4 +137,6 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftPay';
+
+
 
