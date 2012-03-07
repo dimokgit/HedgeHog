@@ -342,7 +342,6 @@ if (!ko.data.MvcCrud) {
     }
   });
   ko.data.MvcCrud.showAjaxError = function (response) {
-    debugger;
     $("<div></div>").append($(response.responseText).eq(1)).append($("CODE", response.responseText)).dialog({ width: 800, height: 600 });
   }
 }
