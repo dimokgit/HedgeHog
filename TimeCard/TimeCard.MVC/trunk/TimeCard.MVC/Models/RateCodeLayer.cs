@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class RateCodeType
+    public partial class RateCodeLayer
     {
         public int Id { get; set; }
         public string Name { get; set; }
