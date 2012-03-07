@@ -106,7 +106,7 @@ TABLE TR.selected TD
     var vm = new (function () {
       var self = this;
       this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
-      this.crud = ["punchTypes", "punchDirections", "rateCodeTypes", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges","configs"];
+      this.crud = ["punchTypes", "punchDirections", "rateCodeTypes", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges","configs","rateCodeLayers"];
       this.formatDateDay = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy ddd HH:mm") : v; }
       this.formatDate = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
       // Headers
@@ -127,6 +127,10 @@ TABLE TR.selected TD
           TotalMinutes: { header: "TM" },
           Start: { header: "Start", format: self.formatDateDay },
           Date: { header: "Date", format: self.formatDate }
+        },
+        rateCodeByRanges: {
+          RateCodeType: { header: "Type" },
+          RateCodeLayer: { header: "Layer" }
         },
         workShifts: {
           Hours: { header: "HH" },
@@ -206,6 +210,8 @@ TABLE TR.selected TD
       })
     }).extend({ throttle: 100 });
     defs.push(vm.GetData("configs", "#configsTemplate"));
+    defs.push(vm.GetData("rateCodeLayers", "#rateCodeLayersTemplate"));
+
     defs.push(vm.GetData("punchTypes", "#punchTypesTemplate"));
     defs.push(vm.GetData("punchDirections", "#punchDirectionsTemplate"));
     defs.push(vm.GetData("rateCodeTypes", "#rateCodeTypesTemplate"));
@@ -384,7 +390,7 @@ TABLE TR.selected TD
   </tr>
 </tfoot>
 </table>
-<table id="punchDirectionsTemplate" style="float:left">
+<table id="punchDirectionsTemplate">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -412,7 +418,7 @@ TABLE TR.selected TD
   </tr>
 </tfoot>
 </table>
-<table id="rateCodeTypesTemplate">
+<table id="rateCodeTypesTemplate" style="float:left">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -440,7 +446,36 @@ TABLE TR.selected TD
   </tr>
 </tfoot>
 </table>
-<table id="rateCodesTemplate" style="float:left">
+<table id="rateCodeLayersTemplate" style="display:inline-table">
+<thead>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+  <tr><th>X</th></tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"{{rows}}\"])}"}' align='right'/>
+</tr>
+<tr><td><input type="button" value="X" data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
+</tbody>
+<tfoot>
+  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+    <td>
+      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <span>
+        <input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
+      </span>
+     </td>
+  </tr>
+</tfoot>
+</table>
+
+<table id="rateCodesTemplate">
 <thead>
   <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -461,7 +496,10 @@ TABLE TR.selected TD
                          optionsText:'Name',
                          optionsValue:'Id',
                          value:rateCodesNew.TypeId" /></td>
-    </td>
+  <td><select data-bind="options:rateCodeLayers,
+                         optionsText:'Name',
+                         optionsValue:'Id',
+                         value:rateCodesNew.LayerId" /></td>
   </tr>
   <tr>
     <td>
@@ -474,7 +512,7 @@ TABLE TR.selected TD
 </table>
 <table id="rateCodeByRangesTemplate" style="float:left">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
   </tr>
   <tr><th>X</th></tr>
@@ -495,11 +533,12 @@ TABLE TR.selected TD
                          value:rateCodeByRangesNew.RateCodeId" /></td>
   </tr>
   <tr>
-    <td>
+    <td colspan="2">
       <span>
         <input type="button" value="Add" data-bind="click:$root.{{add}}" />
       </span>
      </td>
+     <td></td>
   </tr>
 </tfoot>
 </table>
