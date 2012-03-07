@@ -291,12 +291,14 @@ if (!ko.data.MvcCrud) {
       ko.applyBindings(vm, node[0]);
       ko.cleanNode(node[0]);
 
-      mash("THEAD"); mash("TBODY"); mash("TFOOT");
+      mash("THEAD");
+      mash("TBODY", rows);
+      mash("TFOOT");
       var tr = $('TBODY TR', node);
       tr.dataBindAttr(tr.dataBindAttr(), "css:{selected:$root.isSelected($data,'" + rows + "')},click:function(a,b){$root.selectRow(a,'" + rows + "')}");
       ko.applyBindings(vm, node[0]);
 
-      function mash(parent) {
+      function mash(parent, parentArray) {
         var trs = $(parent + ' TR', node);
         trs.slice(1).each(function () {
           $(this).children().each(function () {
@@ -307,6 +309,11 @@ if (!ko.data.MvcCrud) {
             trs.eq(0).attr(DATA_BIND, trs.eq(0).attr(DATA_BIND) + "," + dba);
           $(this).remove();
         });
+        if (parentArray) {
+          var tr = $(parent + ' TR', node).eq(0);
+          $("TD:first", tr).after("<!-- ko ifvisible: {} -->");
+          $("TD:last", tr).after("<!-- /ko -->");
+        }
       }
       function replaceAttr(node, replace, value, attr) {
         attr = attr || DATA_BIND;
