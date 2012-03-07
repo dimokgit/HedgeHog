@@ -218,6 +218,33 @@ namespace TimeCard.MVC.Controllers {
     }
     #endregion
 
+    #region RateCodeLayers
+    public ActionResult RateCodeLayersGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodeLayers.ToList().DefaultIfEmpty(new RateCodeLayer()), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeLayersAdd(Models.RateCodeLayer RateCodeLayer) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodeLayers.Add(RateCodeLayer);
+      a.Do();
+      return Json(RateCodeLayer);
+    }
+    public ActionResult RateCodeLayersUpdate(Models.RateCodeLayer RateCodeLayers) {
+      Func<Models.TimeCardEntitiesContainer, Models.RateCodeLayer> a = tc => {
+        var RateCodeLayer = tc.RateCodeLayers.First(c => c.Id == RateCodeLayers.Id);
+        CopyObject(RateCodeLayers, RateCodeLayer);
+        tc.SaveChanges();
+        return tc.RateCodeLayers.First(p => p.Id == RateCodeLayer.Id);
+      };
+      return Json(a.Do());
+    }
+    public ActionResult RateCodeLayersDelete(Models.RateCodeLayer RateCodeLayer) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.RateCodeLayers.Remove(tc.RateCodeLayers.Find(RateCodeLayer.Id));
+      };
+      a.Do();
+      return Json(RateCodeLayer);
+    }
+    #endregion
+
     #region Config
     public ActionResult ConfigsGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().Configs.ToList().DefaultIfEmpty(new Config()), JsonRequestBehavior.AllowGet);
@@ -244,6 +271,7 @@ namespace TimeCard.MVC.Controllers {
       return Json(Config);
     }
     #endregion
+
 
     #region Work(Shift/Day)Rates
     public ActionResult WorkDayMinutesGet() {

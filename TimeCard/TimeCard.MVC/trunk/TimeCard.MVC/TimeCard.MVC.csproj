@@ -100,6 +100,9 @@
     <Compile Include="Models\RateCodeByRange.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\RateCodeLayer.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Models\RateCodeType.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
