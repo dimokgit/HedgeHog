@@ -1,12 +1,13 @@
-﻿CREATE VIEW dbo.vRateCode
+﻿CREATE VIEW dbo.vWorkShiftMinuteBreakdown_30
 AS
-SELECT        dbo.RateCode.Id, dbo.RateCode.Name, dbo.RateCode.Rate, dbo.RateCodeType.Name AS Type, dbo.RateCode.TypeId, dbo.RateCodeLayer.Name AS Layer, 
-                         dbo.RateCode.LayerId
-FROM            dbo.RateCode INNER JOIN
-                         dbo.RateCodeType ON dbo.RateCode.TypeId = dbo.RateCodeType.Id INNER JOIN
-                         dbo.RateCodeLayer ON dbo.RateCode.LayerId = dbo.RateCodeLayer.Id
+SELECT        WSMB.WorkShiftStart, WSMB.PunchPairStart, WSMB.MinuteDate, WSMB.MinuteDateTime, WSMB.WorkShiftMinute, WSMB.WorkShiftHour, 
+                         WSMB.WorkShiftMinuteByHour, WSMB.WorkDayMinute, (WSMB.WorkDayMinute - 1) / 60 + 1 AS WorkDayHour, (WSMB.WorkDayMinute - 1) 
+                         % 60 + 1 AS WorkDayMinuteByHour, ISNULL(RCBR.RateCodeId, - 1) AS WorkShiftRateCodeId
+FROM            dbo.vWorkShiftMinuteBreakdown_20 AS WSMB LEFT OUTER JOIN
+                         dbo.vRateCodeByRange AS RCBR ON WSMB.WorkShiftHour >= RCBR.HourStart AND WSMB.WorkShiftHour <= RCBR.HourStop
+WHERE        (RCBR.RateCodeTypeId = 1)
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteBreakdown_30';
 
 
 GO
@@ -19,11 +20,11 @@ Begin DesignProperties =
       End
       Begin PaneConfiguration = 1
          NumPanes = 3
-         Configuration = "(H (1 [50] 4 [25] 3))"
+         Configuration = "(H (1[50] 4[25] 3) )"
       End
       Begin PaneConfiguration = 2
          NumPanes = 3
-         Configuration = "(H (1 [50] 2 [25] 3))"
+         Configuration = "(H (1[50] 2[25] 3) )"
       End
       Begin PaneConfiguration = 3
          NumPanes = 3
@@ -31,11 +32,11 @@ Begin DesignProperties =
       End
       Begin PaneConfiguration = 4
          NumPanes = 2
-         Configuration = "(H (1 [56] 3))"
+         Configuration = "(H (1[18] 3) )"
       End
       Begin PaneConfiguration = 5
          NumPanes = 2
-         Configuration = "(H (2 [66] 3))"
+         Configuration = "(H (2[66] 3) )"
       End
       Begin PaneConfiguration = 6
          NumPanes = 2
@@ -43,7 +44,7 @@ Begin DesignProperties =
       End
       Begin PaneConfiguration = 7
          NumPanes = 1
-         Configuration = "(V (3))"
+         Configuration = "(V (3) )"
       End
       Begin PaneConfiguration = 8
          NumPanes = 3
@@ -81,32 +82,22 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "RateCodeType"
-            Begin Extent = 
-               Top = 6
-               Left = 246
-               Bottom = 131
-               Right = 416
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "RateCodeLayer"
-            Begin Extent = 
-               Top = 162
-               Left = 271
-               Bottom = 257
-               Right = 441
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "RateCode"
+         Begin Table = "WSMB"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 177
-               Right = 208
+               Bottom = 206
+               Right = 257
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "RCBR"
+            Begin Extent = 
+               Top = 6
+               Left = 295
+               Bottom = 188
+               Right = 471
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -118,7 +109,7 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 9
+      Begin ColumnWidths = 12
          Width = 284
          Width = 1500
          Width = 1500
@@ -126,15 +117,18 @@ Begin DesignProperties =
          Width = 1500
          Width = 1500
          Width = 1500
-         Width = 1500
+         Width = 2145
+         Width = 1890
+         Width = 2310
+         Width = 2280
          Width = 1500
       End
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 1440
-         Alias = 795
-         Table = 1410
+         Column = 3180
+         Alias = 2640
+         Table = 2805
          Output = 720
          Append = 1400
          NewValue = 1170
@@ -147,7 +141,5 @@ Begin DesignProperties =
          Or = 1350
       End
    End
-End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
-
-
+End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteBreakdown_30';
 

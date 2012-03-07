@@ -1,12 +1,12 @@
-﻿CREATE VIEW dbo.vRateCode
+﻿CREATE VIEW [dbo].[vWorkShiftMinuteBreakdown_20]
 AS
-SELECT        dbo.RateCode.Id, dbo.RateCode.Name, dbo.RateCode.Rate, dbo.RateCodeType.Name AS Type, dbo.RateCode.TypeId, dbo.RateCodeLayer.Name AS Layer, 
-                         dbo.RateCode.LayerId
-FROM            dbo.RateCode INNER JOIN
-                         dbo.RateCodeType ON dbo.RateCode.TypeId = dbo.RateCodeType.Id INNER JOIN
-                         dbo.RateCodeLayer ON dbo.RateCode.LayerId = dbo.RateCodeLayer.Id
+SELECT WorkShiftStart, PunchPairStart, MinuteDate, MinuteDateTime
+, WorkShiftMinute, (WorkShiftMinute - 1) / 60 + 1 AS WorkShiftHour
+, (WorkShiftMinute - 1) % 60 + 1 AS WorkShiftMinuteByHour
+,ROW_NUMBER() OVER (PARTITION BY MinuteDate ORDER BY MinuteDateTime) WorkDayMinute
+FROM            dbo.vWorkShiftMinuteBreakdown_10
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteBreakdown_20';
 
 
 GO
@@ -27,7 +27,7 @@ Begin DesignProperties =
       End
       Begin PaneConfiguration = 3
          NumPanes = 3
-         Configuration = "(H (4 [30] 2 [40] 3))"
+         Configuration = "(H (4[30] 2[40] 3) )"
       End
       Begin PaneConfiguration = 4
          NumPanes = 2
@@ -35,15 +35,15 @@ Begin DesignProperties =
       End
       Begin PaneConfiguration = 5
          NumPanes = 2
-         Configuration = "(H (2 [66] 3))"
+         Configuration = "(H (2[66] 3) )"
       End
       Begin PaneConfiguration = 6
          NumPanes = 2
-         Configuration = "(H (4 [50] 3))"
+         Configuration = "(H (4[34] 3) )"
       End
       Begin PaneConfiguration = 7
          NumPanes = 1
-         Configuration = "(V (3))"
+         Configuration = "(V (3) )"
       End
       Begin PaneConfiguration = 8
          NumPanes = 3
@@ -73,40 +73,21 @@ Begin DesignProperties =
          NumPanes = 1
          Configuration = "(V (2))"
       End
-      ActivePaneConfig = 0
+      ActivePaneConfig = 3
    End
    Begin DiagramPane = 
+      PaneHidden = 
       Begin Origin = 
          Top = 0
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "RateCodeType"
-            Begin Extent = 
-               Top = 6
-               Left = 246
-               Bottom = 131
-               Right = 416
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "RateCodeLayer"
-            Begin Extent = 
-               Top = 162
-               Left = 271
-               Bottom = 257
-               Right = 441
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "RateCode"
+         Begin Table = "vWorkShiftMinuteBreakdown_10"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 177
-               Right = 208
+               Bottom = 156
+               Right = 217
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -120,11 +101,11 @@ Begin DesignProperties =
       End
       Begin ColumnWidths = 9
          Width = 284
+         Width = 2865
          Width = 1500
          Width = 1500
          Width = 1500
-         Width = 1500
-         Width = 1500
+         Width = 1755
          Width = 1500
          Width = 1500
          Width = 1500
@@ -132,9 +113,9 @@ Begin DesignProperties =
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 1440
-         Alias = 795
-         Table = 1410
+         Column = 3180
+         Alias = 1980
+         Table = 1170
          Output = 720
          Append = 1400
          NewValue = 1170
@@ -147,7 +128,5 @@ Begin DesignProperties =
          Or = 1350
       End
    End
-End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
-
-
+End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteBreakdown_20';
 

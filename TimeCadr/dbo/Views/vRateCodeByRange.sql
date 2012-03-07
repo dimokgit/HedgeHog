@@ -1,10 +1,10 @@
 ﻿CREATE VIEW dbo.vRateCodeByRange
 AS
 SELECT        TOP (1000000000) dbo.RateCodeByRange.Id, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop, RC.Name AS RateCode, 
-                         dbo.RateCodeByRange.RateCodeId, RC.Type AS RateCodeType, RC.TypeId AS RateCodeTypeId
+                         dbo.RateCodeByRange.RateCodeId, RC.Type AS RateCodeType, RC.TypeId AS RateCodeTypeId, RC.Layer AS RateCodeLayer, RC.LayerId AS RateCodeLayerId
 FROM            dbo.vRateCode AS RC INNER JOIN
                          dbo.RateCodeByRange ON RC.Id = dbo.RateCodeByRange.RateCodeId
-ORDER BY RateCodeType, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop
+ORDER BY RateCodeLayerId, RateCodeTypeId, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeByRange';
 
@@ -85,7 +85,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 246
-               Bottom = 174
+               Bottom = 205
                Right = 416
             End
             DisplayFlags = 280
@@ -108,8 +108,9 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 9
+      Begin ColumnWidths = 10
          Width = 284
+         Width = 1500
          Width = 1500
          Width = 1500
          Width = 1500
@@ -138,6 +139,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeByRange';
+
+
 
 
 
