@@ -1,6 +1,28 @@
 ﻿/// <reference path="knockout.js" />
 /// <reference path="jquery.js" />
 /// <reference path="StopWatch.js" />
+(function () { } (
+      function makeComputed(name, context) {
+        return function () {
+          return ko.computed({
+            read: function () {
+              var items = this();
+              if (!ko.isObservable(items[name]))
+                items[name] = ko.observable();
+              return items[name]();
+            },
+            write: function (item) {
+              var items = this();
+              items[name](item)
+            },
+            owner: this
+          });
+        }
+      }
+//      ko.observableArray.fn.firstOnPage = makeComputed("_first");
+//      ko.observableArray.fn.lastOnPage = makeComputed("_last");
+
+));
 $.extend(ko.utils, {
   setObservableOrNotValue: function (data, property, value) {
     if (ko.isObservable(data[property]))
@@ -37,35 +59,59 @@ ko.bindingHandlers.textv = {
 };
 
 // "if: someExpression" is equivalent to "template: { if: someExpression }"
-ko.bindingHandlers['ifvisible'] = {
-  makeTemplateValueAccessor: function (valueAccessor) {
-    return function () { return { 'if': valueAccessor(), 'templateEngine': ko.nativeTemplateEngine.instance} };
-  },
-  'init': function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-    bindingContext.$root.stopWatch.start();
-    try {
-      var parent = $(element).parent();
-      var parentTop = parent.position().top;
-      var scrollParent = bindingContext.$root.scrollParent || parent.scrollParent();
-      var va = scrollParent && parentTop > 0 && parentTop < scrollParent.height() ? function () { return true } : function () { return false }
-      return ko.bindingHandlers['template']['init'](element, ko.bindingHandlers['if'].makeTemplateValueAccessor(va));
-    } finally {
-      bindingContext.$root.stopWatch.stop();
-    }
-  },
-  'update': function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-    bindingContext.$root.stopWatch.start();
-    try {
-      var parent = $(element).parent();
-      var parentTop = parent.position().top;
-      var scrollParent = bindingContext.$root.scrollParent || parent.scrollParent();
-      var va = !scrollParent || parentTop < 0 || parentTop > scrollParent.height() ? function () { return false } : function () { return true }
-      return ko.bindingHandlers['template']['update'](element, ko.bindingHandlers['if'].makeTemplateValueAccessor(va), allBindingsAccessor, viewModel, bindingContext);
-    } finally {
-      bindingContext.$root.stopWatch.stop();
+var __f__ = function () {
+  function __true() { return true };
+  function __false() { return false };
+
+  ko.bindingHandlers['ifvisible'] = {
+    makeTemplateValueAccessor: function (valueAccessor) {
+      return function () { return { 'if': valueAccessor(), 'templateEngine': ko.nativeTemplateEngine.instance} };
+    },
+    'init': function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+      bindingContext.$root.stopWatch.start();
+      try {
+        if (!ko.isObservable(viewModel.__visible))
+          viewModel.__visible = ko.observable();
+        viewModel.__visible();
+        return ko.bindingHandlers['template']['init'](element, ko.bindingHandlers['if'].makeTemplateValueAccessor(function () { true; }));
+      } finally {
+        bindingContext.$root.stopWatch.stop();
+      }
+    },
+    'update': function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+      try {
+        // must be called to make dependency on scrolling
+        var options = allBindingsAccessor();
+        var items = bindingContext.$root[options.ifvisible.array];
+        var scrolTop = items.scrollPosition();
+        bindingContext.$root.stopWatch.start();
+        var item = viewModel;
+        var firstPass = false;
+        if (item.__visible()) {
+          setTimeout(function () { ko.cleanNode(element); }, 0);
+          return;
+        }
+        if (items.stopProcess) { setTimeout(function () { items.stopProcess = false }, 100); return; }
+        if (dbc) {
+          dbc = false;
+        }
+        var parent = $(element).parent();
+        var parentTop = parent.position().top;
+        var scrollParent = bindingContext.$root.scrollParent || parent.scrollParent();
+        var scrollParentHeight = scrollParent.height();
+        var va = scrollParent && parentTop > scrollParentHeight * 2 ? __false : __true;
+        if (!va()) {
+          va = __true;
+          items.stopProcess = true;
+        }
+        item.__visible(va());
+        return ko.bindingHandlers['template']['update'](element, ko.bindingHandlers['if'].makeTemplateValueAccessor(va), allBindingsAccessor, viewModel, bindingContext);
+      } finally {
+        bindingContext.$root.stopWatch.stop();
+      }
     }
   }
-};
+} ();
 ko.jsonExpressionRewriting.bindingRewriteValidators['ifvisible'] = false; // Can't rewrite control flow bindings
 ko.virtualElements.allowedBindings['ifvisible'] = true;
 
