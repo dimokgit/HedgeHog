@@ -115,6 +115,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Manheims", "Manheims", "{42
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "ManheimSetup", "..\ManheimSetup\ManheimSetup.vdproj", "{CF891F00-7694-4371-8823-961FBAA6003C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Order2GoTest", "..\Order2GoTest\Order2GoTest.csproj", "{6B4BDCEE-B297-4937-9B29-43138F9028A9}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -1264,6 +1266,36 @@ Global
 		{CF891F00-7694-4371-8823-961FBAA6003C}.Release|Mixed Platforms.ActiveCfg = Release
 		{CF891F00-7694-4371-8823-961FBAA6003C}.Release|Win32.ActiveCfg = Release
 		{CF891F00-7694-4371-8823-961FBAA6003C}.Release|x86.ActiveCfg = Release
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|Any CPU.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|Mixed Platforms.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|Mixed Platforms.Build.0 = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|Win32.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|x86.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug SubArray|x86.Build.0 = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|Win32.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|x86.ActiveCfg = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Debug|x86.Build.0 = Debug|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|Any CPU.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|Mixed Platforms.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|Mixed Platforms.Build.0 = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|Win32.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|x86.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Part1|x86.Build.0 = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|Any CPU.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|Mixed Platforms.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|Mixed Platforms.Build.0 = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|Win32.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|x86.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release SubArray|x86.Build.0 = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|Any CPU.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|Mixed Platforms.Build.0 = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|Win32.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|x86.ActiveCfg = Release|x86
+		{6B4BDCEE-B297-4937-9B29-43138F9028A9}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1271,7 +1303,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{13F7A71E-FA9C-48B8-9D4F-130D8E9F1D02} = {FFAE80F8-567A-4B9F-970A-A0BB93A76F05}
 		{997C1250-13BF-4429-B0A1-0E036E745625} = {8F8326E2-C11B-41B5-B475-88587710F21D}
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923} = {8F8326E2-C11B-41B5-B475-88587710F21D}
 		{0EDC31D6-ABA2-4395-9759-A89504C6B1B5} = {42E6F0E8-6AC1-4BE1-940C-51AC266ECEA0}
 		{CF891F00-7694-4371-8823-961FBAA6003C} = {42E6F0E8-6AC1-4BE1-940C-51AC266ECEA0}
 	EndGlobalSection

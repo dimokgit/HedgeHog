@@ -178,7 +178,9 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <EntityDeploy Include="Model\ManheimEntities.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>ManheimEntities.Designer.cs</LastGenOutput>

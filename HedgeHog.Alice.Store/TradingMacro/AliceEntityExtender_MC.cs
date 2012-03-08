@@ -50,10 +50,12 @@ namespace HedgeHog.Alice.Store {
     RatesHeight = 10,
     RatesHeight_2 = 12,
     RatesStDev = 11,
+    SpreadX = 19,
     Spread = 20,
     Spread2 = 21,
     Spread3 = 22,
-    Spread4 = 23
+    Spread4 = 23,
+    BuySellLevels = 6
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
@@ -63,7 +65,7 @@ namespace HedgeHog.Alice.Store {
   public enum Strategies {
     None = 0, Auto = 1, Breakout = 2, Range = 4, Wave = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Massa = 16, Reverse = 32, Momentum_R = Massa + Reverse,
-    Gann = 64, Brange = 128, Hot = 1024,
+    Gann = 64, Brange = 128, Breakout_2Corrs = 256 + Breakout, Breakout_2Corrs_A = 256 + Breakout + Auto, Hot = 1024,
     Hot_A = Hot + Auto
   }
   public struct Playback {

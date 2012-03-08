@@ -520,10 +520,10 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Corridor Height Multiplier")]
+    [DisplayName("TakeProfit Multiplier")]
     [Category(categoryCorridor)]
-    [Description("Ex: CorrHeighMin = SpreadMax * X")]
-    public double CorridorHeightMultiplier {
+    [Description("Ex: TakeProfit = Spread * X")]
+    public double TakeProfitMultiplier {
       get { return CorridornessMin; }
       set { 
         CorridornessMin = value;
@@ -900,6 +900,7 @@ namespace HedgeHog.Alice.Store {
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
+    public bool IsBreakpoutStrategy { get { return Strategy.HasFlag(Strategies.Breakout); } }
     public bool IsHotStrategy { get { return Strategy.HasFlag(Strategies.Hot); } }
     public bool IsAutoStrategy { get { return Strategy.HasFlag(Strategies.Auto); } }
     public bool IsCold { get { return IsColdOnTrades && Trades.Length > 0; } }

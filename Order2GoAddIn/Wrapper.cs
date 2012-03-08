@@ -603,6 +603,7 @@ namespace Order2GoAddIn {
     public FXCoreWrapper(CoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
       if (coreFX == null) throw new NullReferenceException("coreFx parameter can npt be null.");
       this.CoreFX = coreFX;
+      IsLoggedIn = coreFX.IsLoggedIn;
       if (pair != null) this.Pair = pair;
       this.CoreFX.LoggedIn += coreFX_LoggedInEvent;
       this.CoreFX.LoggedOff += coreFX_LoggedOffEvent;
@@ -2071,7 +2072,7 @@ namespace Order2GoAddIn {
         if (this.IsFIFO(pair)) {
           var lotToDelete = Math.Min(lot, GetTradesInternal(pair).IsBuy(buy).Lots());
           if (lotToDelete > 0) {
-            OpenTrade(pair, !buy, lotToDelete, 0, 0, "", null);
+              OpenTrade(pair, !buy, lotToDelete, 0, 0, "", null);
           } else {
             RaiseError(new Exception("Pair [" + pair + "] does not have positions to close."));
             return false;
