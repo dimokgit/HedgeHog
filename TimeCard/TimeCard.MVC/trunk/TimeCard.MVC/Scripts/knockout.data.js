@@ -12,6 +12,7 @@ if (!ko.data.MvcCrud) {
   Namespace("ko.data", {
 
     MvcCrud: {
+      stopWatch: new StopWatch(), stopWatch1: new StopWatch(), stopWatch2: new StopWatch(),
       test: function (name) {
         if (!this.hasOwnProperty(name)) throw new Error(name + " does not exists");
         return name;
@@ -266,6 +267,17 @@ if (!ko.data.MvcCrud) {
             }, vm);
           }
         }));
+        var scrollParent = vm[vmProperty].scrollParent = table.scrollParent();
+        if (scrollParent) {
+          vm[vmProperty]._scrollPosition = ko.observable();
+          vm[vmProperty].scrollPosition = ko.computed(function () {
+            vm[vmProperty].stopProcess = false;
+            return vm[vmProperty]._scrollPosition();
+          }, this).extend({ throttle: 300 });
+          scrollParent.on("scroll", function (a, b, c) {
+            if (!vm[vmProperty].stopProcess) vm[vmProperty]._scrollPosition($(this).scrollTop());
+          });
+        }
         ko.data.dataBind(vm, table, vmProperty, vmProperty + "Columns");
       }
     },
@@ -296,7 +308,10 @@ if (!ko.data.MvcCrud) {
       mash("TFOOT");
       var tr = $('TBODY TR', node);
       tr.dataBindAttr(tr.dataBindAttr(), "css:{selected:$root.isSelected($data,'" + rows + "')},click:function(a,b){$root.selectRow(a,'" + rows + "')}");
+
+      vm.stopWatch2.start();
       ko.applyBindings(vm, node[0]);
+      vm.stopWatch2.stop();
 
       function mash(parent, parentArray) {
         var trs = $(parent + ' TR', node);
@@ -311,7 +326,7 @@ if (!ko.data.MvcCrud) {
         });
         if (parentArray) {
           var tr = $(parent + ' TR', node).eq(0);
-          $("TD:first", tr).after("<!-- ko ifvisible: {} -->");
+          $("TD:first", tr).after("<!-- ko ifvisible: {array:\"" + parentArray + "\"} -->");
           $("TD:last", tr).after("<!-- /ko -->");
         }
       }
