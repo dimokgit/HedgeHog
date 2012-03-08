@@ -541,7 +541,7 @@ ko.utils.domNodeDisposal = new (function () {
         },
         
         cleanNode : function(node) {
-            if ((node.nodeType != 1) && (node.nodeType != 9))
+            if ((node.nodeType != 1) && (node.nodeType != 9) && (node.nodeType != 8))
                 return;
             cleanSingleNode(node);
             
