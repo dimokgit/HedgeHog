@@ -27,6 +27,10 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
+    public static string CallingMethod(int skipFrames=1) {
+      return new StackFrame(skipFrames + 1).GetMethod().Name;
+    }
+
     public static T LastByCount<T>(this IList<T> list) {
       return list[list.Count - 1];
     }
