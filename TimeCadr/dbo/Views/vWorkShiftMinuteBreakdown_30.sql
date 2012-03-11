@@ -2,7 +2,8 @@
 AS
 SELECT        WSMB.WorkShiftStart, WSMB.PunchPairStart, WSMB.MinuteDate, WSMB.MinuteDateTime, WSMB.WorkShiftMinute, WSMB.WorkShiftHour, 
                          WSMB.WorkShiftMinuteByHour, WSMB.WorkDayMinute, (WSMB.WorkDayMinute - 1) / 60 + 1 AS WorkDayHour, (WSMB.WorkDayMinute - 1) 
-                         % 60 + 1 AS WorkDayMinuteByHour, ISNULL(RCBR.RateCodeId, - 1) AS WorkShiftRateCodeId
+                         % 60 + 1 AS WorkDayMinuteByHour, ISNULL(RCBR.RateCodeId, - 1) AS WSRCId, ISNULL(RCBR.RateCodeTypePriority, 0) AS WSRCTypePriority, 
+                         ISNULL(RCBR.RateCodeLayerPriority, 0) AS WSRCLayerPriority
 FROM            dbo.vWorkShiftMinuteBreakdown_20 AS WSMB LEFT OUTER JOIN
                          dbo.vRateCodeByRange AS RCBR ON WSMB.WorkShiftHour >= RCBR.HourStart AND WSMB.WorkShiftHour <= RCBR.HourStop
 WHERE        (RCBR.RateCodeTypeId = 1)
@@ -16,7 +17,7 @@ Begin DesignProperties =
    Begin PaneConfigurations = 
       Begin PaneConfiguration = 0
          NumPanes = 4
-         Configuration = "(H (1[40] 4[20] 2[20] 3) )"
+         Configuration = "(H (1[28] 4[32] 2[20] 3) )"
       End
       Begin PaneConfiguration = 1
          NumPanes = 3
@@ -96,8 +97,8 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 295
-               Bottom = 188
-               Right = 471
+               Bottom = 280
+               Right = 496
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -109,25 +110,26 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 12
+      Begin ColumnWidths = 13
          Width = 284
          Width = 1500
          Width = 1500
          Width = 1500
-         Width = 1500
+         Width = 2865
          Width = 1500
          Width = 1500
          Width = 2145
          Width = 1890
          Width = 2310
          Width = 2280
+         Width = 1890
          Width = 1500
       End
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 3180
-         Alias = 2640
+         Column = 3795
+         Alias = 3735
          Table = 2805
          Output = 720
          Append = 1400
@@ -142,4 +144,6 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vWorkShiftMinuteBreakdown_30';
+
+
 

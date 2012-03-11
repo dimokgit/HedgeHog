@@ -179,6 +179,12 @@
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_30.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_20.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_10.sql" />
+    <Build Include="dbo\Views\vMinuteBreakdown_00.sql" />
+    <Build Include="dbo\Functions\CalcHourMinute.sql" />
+    <Build Include="dbo\Functions\CalcHour.sql" />
+    <Build Include="dbo\Functions\GetMinuteBreakdownByLayerAndType.sql" />
+    <Build Include="dbo\Stored Procedures\BuildMinuteBreakdown_00.sql" />
+    <Build Include="dbo\Stored Procedures\BuildMinuteBreakdown.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SqlSchemaCompare.scmp" />
