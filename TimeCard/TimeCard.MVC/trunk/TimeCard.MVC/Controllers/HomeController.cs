@@ -127,6 +127,16 @@ namespace TimeCard.MVC.Controllers {
       a.Do();
       return Json(RateCodeType);
     }
+    public ActionResult RateCodeTypesUpdate(Models.RateCodeType rateCodeTypes) {
+      Func<Models.TimeCardEntitiesContainer, Models.RateCodeType> a = tc => {
+        var rateCodeType = tc.RateCodeTypes.First(rcbr => rcbr.Id == rateCodeTypes.Id);
+        CopyObject(rateCodeTypes, rateCodeType);
+        tc.SaveChanges();
+        return tc.RateCodeTypes.First(p => p.Id == rateCodeType.Id);
+      };
+      var res = a.Do();
+      return Json(res);
+    }
     public ActionResult RateCodeTypesDelete(Models.RateCodeType RateCodeType) {
       Action<Models.TimeCardEntitiesContainer> a = tc => {
         tc.RateCodeTypes.Remove(tc.RateCodeTypes.Find(RateCodeType.Id));
@@ -288,6 +298,12 @@ namespace TimeCard.MVC.Controllers {
     }
     #endregion
 
+    #region Brealdown
+    public ActionResult BuildMinuteBreakdownGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().BuildMinuteBreakdown().ToList().DefaultIfEmpty(new BuildMinuteBreakdown_Result()), JsonRequestBehavior.AllowGet);
+    }
+
+    #endregion
     #endregion
   }
 }

@@ -21,6 +21,8 @@ namespace TimeCard.MVC.Models
         public int TypeId { get; set; }
         public string Layer { get; set; }
         public int LayerId { get; set; }
+        public int RateCodeTypePriority { get; set; }
+        public int RateCodeLayerPriority { get; set; }
     }
     
 }

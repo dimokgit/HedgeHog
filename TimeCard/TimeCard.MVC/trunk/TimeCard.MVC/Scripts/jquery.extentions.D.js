@@ -5,6 +5,14 @@
 jQuery.extend({
   D: {
     props: function (o) {
+      var args = $.makeArray(arguments).slice(1);
+      for (var i = 0; i < args.length; i++) {
+        o = ko.utils.unwrapObservable(jQuery.D.prop(o, args[i]));
+        if (o === undefined || o === null) return o;
+      }
+      return o;
+    },
+    props1: function (o) {
       $.each($.makeArray(arguments).slice(1), function (i, p) {
         p = p.toLowerCase();
         for (var n in o)

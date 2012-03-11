@@ -20,8 +20,8 @@ namespace TimeCard.MVC.Models
         public int TypeId { get; set; }
         public int LayerId { get; set; }
     
-        public virtual RateCodeType RateCodeType { get; set; }
         public virtual RateCodeLayer RateCodeLayer { get; set; }
+        public virtual RateCodeType RateCodeType { get; set; }
     }
     
 }

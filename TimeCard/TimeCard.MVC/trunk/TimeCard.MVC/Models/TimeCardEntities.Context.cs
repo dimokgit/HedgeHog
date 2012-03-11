@@ -10,6 +10,7 @@
 using System;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
+using System.Data.Objects;
 
 namespace TimeCard.MVC.Models
 {
@@ -33,7 +34,6 @@ namespace TimeCard.MVC.Models
         public DbSet<vWorkShiftPay> vWorkShiftPays { get; set; }
         public DbSet<vWorkShift> vWorkShifts { get; set; }
         public DbSet<vWorkShiftRate> vWorkShiftRates { get; set; }
-        public DbSet<RateCodeType> RateCodeTypes { get; set; }
         public DbSet<RateCode> RateCodes { get; set; }
         public DbSet<RateCodeByRange> RateCodeByRanges { get; set; }
         public DbSet<vWorkDayRate> vWorkDayRates { get; set; }
@@ -43,5 +43,13 @@ namespace TimeCard.MVC.Models
         public DbSet<vWorkDayMinute> vWorkDayMinutes { get; set; }
         public DbSet<vRateCode> vRateCodes { get; set; }
         public DbSet<RateCodeLayer> RateCodeLayers { get; set; }
+        public DbSet<RateCodeType> RateCodeTypes { get; set; }
+    
+        public virtual ObjectResult<BuildMinuteBreakdown_Result> BuildMinuteBreakdown()
+        {
+            ((IObjectContextAdapter)this).ObjectContext.MetadataWorkspace.LoadFromAssembly(typeof(BuildMinuteBreakdown_Result).Assembly);
+    
+            return ((IObjectContextAdapter)this).ObjectContext.ExecuteFunction<BuildMinuteBreakdown_Result>("BuildMinuteBreakdown");
+        }
     }
 }

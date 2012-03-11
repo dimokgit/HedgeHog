@@ -12,19 +12,17 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class vRateCodeByRange
+    public partial class BuildMinuteBreakdown_Result
     {
-        public int Id { get; set; }
-        public int HourStart { get; set; }
-        public int HourStop { get; set; }
+        public System.DateTimeOffset WorkShiftStart { get; set; }
+        public System.DateTime MinuteDate { get; set; }
+        public int Minutes { get; set; }
+        public int Hour { get; set; }
+        public int Minute { get; set; }
         public string RateCode { get; set; }
         public int RateCodeId { get; set; }
-        public string RateCodeType { get; set; }
-        public int RateCodeTypeId { get; set; }
-        public string RateCodeLayer { get; set; }
-        public int RateCodeLayerId { get; set; }
-        public int RateCodeTypePriority { get; set; }
-        public int RateCodeLayerPriority { get; set; }
+        public string Layer { get; set; }
+        public string Type { get; set; }
     }
     
 }
