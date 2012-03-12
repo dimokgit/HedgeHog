@@ -23,14 +23,25 @@
 //      ko.observableArray.fn.lastOnPage = makeComputed("_last");
 
 ));
-$.extend(ko.utils, {
-  setObservableOrNotValue: function (data, property, value) {
-    if (ko.isObservable(data[property]))
-      data[property](value);
-    else
-      data[property] = value;
-  }
-});
+      $.extend(ko.utils, {
+        setObservableOrNotValue: function (data, property, value) {
+          if (ko.isObservable(data[property]))
+            data[property](value);
+          else
+            data[property] = value;
+        },
+        makeComputedDependable: function (read, write, context) {
+          var _value = 0;
+          return ko.computed({
+            read: function () { return read ? read.call(context, _value) : _value; },
+            write: function (newValue) {
+              _value = write ? write.call(context, newValue) : newValue;
+            },
+            owher: context
+          });
+        }
+
+      });
 var dbc = true;
 ko.bindingHandlers.textv = {
   update: function (element, valueAccessor, allBindingsAccessor, data, bindingContext) {
