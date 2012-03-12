@@ -4,6 +4,7 @@
 /// <reference path="knockout.js" />
 /// <reference path="knockout.mapping-latest.debug.js" />
 /// <reference path="MicrosoftAjax.debug.js" />
+/// <reference path="jquery.extentions.D.js" />
 /// <reference path="jquery.extentions.fn.js" />
 /// <reference path="knockout.data.selected.js" />
 
@@ -36,8 +37,9 @@ if (!ko.data.MvcCrud) {
       },
       GetData: function (propertyName, table, data, success) {
         var vm = this;
+        var url = this.homePath + propertyName + "Get";
         return $.ajax({
-          url: this.homePath + propertyName + "Get",
+          url: url,
           type: "GET",
           dataType: "text",
           data: data,
@@ -53,14 +55,15 @@ if (!ko.data.MvcCrud) {
             }
             if (success) success(result);
           },
-          error: function (result) { vm.showAjaxError(result); }
+          error: function (result) { vm.showAjaxError(result, url); }
         });
       },
       DeleteData: function (data, property) {
         if (!confirm("Delete:\n" + JSON.stringify(ko.toJS(data)).replace(/","/g, '",\n"'))) return;
         var vm = this;
+        var url = this.homePath + property + "Delete";
         $.ajax({
-          url: this.homePath + property + "Delete",
+          url: url,
           type: "POST",
           data: $.AJAX.processRequest(data),
           success: function (result) {
@@ -68,7 +71,7 @@ if (!ko.data.MvcCrud) {
             vm.GetData(property);
             vm.fireUpdated(property);
           },
-          error: function (result) { vm.showAjaxError(result); }
+          error: function (result) { vm.showAjaxError(result, url); }
         });
       },
       AddData: function (property, data) {
@@ -83,8 +86,9 @@ if (!ko.data.MvcCrud) {
             data[n] = $.AJAX.dateToString(v);
           });
         var json = JSON.stringify(data);
+        var url = this.homePath + property + "Add";
         return $.ajax({
-          url: this.homePath + property + "Add",
+          url: url,
           type: "POST",
           contentType: 'application/json; charset=utf-8',
           data: json,
@@ -99,7 +103,7 @@ if (!ko.data.MvcCrud) {
             vm.fireUpdated(property);
           },
           error: function (result) {
-            vm.showAjaxError(result);
+            vm.showAjaxError(result, url);
             vm.fireUpdated(property);
           }
         });
@@ -116,8 +120,9 @@ if (!ko.data.MvcCrud) {
             data[property][n] = $.AJAX.dateToString(v);
           });
         var json = JSON.stringify(data);
+        var url = this.homePath + property + "Update";
         $.ajax({
-          url: this.homePath + property + "Update",
+          url: url,
           type: "POST",
           async: async !== undefined ? async : false,
           contentType: 'application/json; charset=utf-8',
@@ -140,7 +145,7 @@ if (!ko.data.MvcCrud) {
           error: function (result) {
             vm.fireUpdated(property);
             if (onError && onError(result)) return;
-            ko.data.MvcCrud.showAjaxError(result);
+            ko.data.MvcCrud.showAjaxError(result, url);
           }
         });
       },
@@ -253,11 +258,14 @@ if (!ko.data.MvcCrud) {
           if (n == "C_") stop = true;
           if (stop) return;
           if (n.startsWith("__")) return undefined;
-          if (propPrev + "Id" != n) {
+          var header = $.D.props(vm, "headers", vmProperty, n); // ((vm.headers || {})[vmProperty] || {})[n];
+          if (header || propPrev + "Id" != n) {
             propPrev = n;
             vm[vmProperty + "New"][n] = ko.observable("");
-            var header = ((vm.headers || {})[vmProperty] || {})[n];
-            header = (header || {}).header || header;
+            header = $.D.prop(header, "header") || header;
+            if (header) {
+              header["title"] = n;
+            }
             headres.push(header || n);
             return n;
           } else if (propPrev) {
@@ -304,7 +312,7 @@ if (!ko.data.MvcCrud) {
       ko.cleanNode(node[0]);
 
       mash("THEAD");
-      mash("TBODY", rows);
+      mash("TBODY");
       mash("TFOOT");
       var tr = $('TBODY TR', node);
       tr.dataBindAttr(tr.dataBindAttr(), "css:{selected:$root.isSelected($data,'" + rows + "')},click:function(a,b){$root.selectRow(a,'" + rows + "')}");
@@ -356,7 +364,12 @@ if (!ko.data.MvcCrud) {
       }
     }
   });
-  ko.data.MvcCrud.showAjaxError = function (response) {
-    $("<div></div>").append($(response.responseText).eq(1)).append($("CODE", response.responseText)).dialog({ width: 800, height: 600 });
+  ko.data.MvcCrud.showAjaxError = function (response,url) {
+    if (response.status >= 400 && response.status < 500)
+      return alert(url+":\n"+response.statusText);
+    debugger;
+    var r = $(response.responseText);
+    var title = $("TITLE", r).text();
+    $("<div></div>").append("<P>" + $("TITLE", r).text() + "</P>").append(r.eq(1)).append($("CODE", response.responseText)).dialog({ width: 800, height: 600 });
   }
 }

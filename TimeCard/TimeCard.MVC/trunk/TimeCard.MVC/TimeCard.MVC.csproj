@@ -368,6 +368,7 @@
     <Content Include="Scripts\modernizr-1.7.min.js" />
     <Content Include="Scripts\Namespace.js" />
     <Content Include="example3editing.html" />
+    <Content Include="Scripts\StopWatch.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

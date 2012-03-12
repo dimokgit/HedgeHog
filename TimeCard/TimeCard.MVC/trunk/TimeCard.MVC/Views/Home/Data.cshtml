@@ -1,6 +1,7 @@
 ﻿@{
-    ViewBag.Title = "Data";
+		ViewBag.Title = "Data";
 }
+<script src="../../Scripts/StopWatch.js" type="text/javascript"></script>
 <script src="../../Scripts/MicrosoftAjax.js" type="text/javascript"></script>
 <script src="../../Scripts/jquery.js" type="text/javascript"></script>
 <script src="../../Scripts/date.js" type="text/javascript"></script>
@@ -21,244 +22,246 @@
 <script src="../../Scripts/jquery.extentions.Linq.js" type="text/javascript"></script>
 <script src="../../Scripts/json2.js" type="text/javascript"></script>
 <style>
-  HTML,BODY
-  {
-    height:100%;
-    padding:0px;
-    margin:0px;
-  }
-  #menucontainer,#header
-  {
-    display:none;
-  }
-  .page,#main
-  {
-    padding:0px;
-    margin:0px;
-    height:100%;
-    width:100%;
-  }
-  TABLE
-  {
-  	border:2px solid black;
-  	border-color:#607B91;
-  	margin-right:2px;
-  }
-  CAPTION
-  {
-  	font-weight:bold;
-  	cursor:default;
-  }
-  TABLE THEAD TH,
-  TABLE TBODY TD
-  {
-    cursor:default;
-    white-space:pre;
-  }
-  TABLE THEAD TH
-  {
-    text-align:center;
-    background-color:#C4DFF5;
-  }
-  TFOOT TR TD DIV
-  {
-    overflow:inherit;
-    width:100%;
-  }
-  SELECT
-  {
-  	font-size:1em;
-  }
+	HTML,BODY
+	{
+		height:100%;
+		padding:0px;
+		margin:0px;
+	}
+	#menucontainer,#header
+	{
+		display:none;
+	}
+	.page,#main
+	{
+		padding:0px;
+		margin:0px;
+		height:100%;
+		width:100%;
+	}
+	TABLE
+	{
+		border:2px solid black;
+		border-color:#607B91;
+		margin-right:2px;
+	}
+	CAPTION
+	{
+		font-weight:bold;
+		cursor:default;
+	}
+	TABLE THEAD TH,
+	TABLE TBODY TD
+	{
+		cursor:default;
+		white-space:pre;
+	}
+	TABLE THEAD TH
+	{
+		text-align:center;
+		background-color:#C4DFF5;
+	}
+	TFOOT TR TD DIV
+	{
+		overflow:inherit;
+		width:100%;
+	}
+	SELECT
+	{
+		font-size:1em;
+	}
 td input {
-    width: 100%;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
+		width: 100%;
+		box-sizing: border-box;
+		-moz-box-sizing: border-box;
+		-webkit-box-sizing: border-box;
 }
 CAPTION
 {
-  text-transform:capitalize;
+	text-transform:capitalize;
 }
 LEGEND:hover
 {
-  cursor:default;
-  background-color:whitesmoke;
+	cursor:default;
+	background-color:whitesmoke;
 }
 FIELDSET.metaData >TABLE
 {
-  display:none;
+	display:none;
 }
 FIELDSET.metaData >TABLE+TABLE
 {
-  margin-left:15px;
+	margin-left:15px;
 }
 TABLE TR:hover TD
 {
-  background-color:whitesmoke;
+	background-color:whitesmoke;
 }
 TABLE TR.selected TD
 {
-  background:#F5E9EF;
+	background:#F5E9EF;
 }
 </style>
 <script>
-  $(function () {
-    var vm = new (function () {
-      var self = this;
-      this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
-      this.crud = ["punchTypes", "punchDirections", "rateCodeTypes", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges", "configs", "rateCodeLayers"];
-      this.formatDateDay = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy ddd HH:mm") : v; }
-      this.formatDate = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
-      this.formatDate1 = function (v, formatString) { debugger; return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
-      // Headers
-      this.headers = {
-        punches: {
-          IsOutOfSequence: {
-            header: "OoS",
-            format: function (v) { return v ? "<img src='/images/Tick-Red.png'>" : "" }
-          },
-          Time: {
-            header: "Time",
-            format: self.formatDateDay
-          },
-          Direction: { header: "Dir" },
-          Date: { header: "Date", format: self.formatDate }
-        },
-        punchPairs: {
-          TotalMinutes: { header: "TM" },
-          Start: { header: "Start", format: self.formatDateDay },
-          Date: { header: "Date", format: self.formatDate }
-        },
-        rateCodeByRanges: {
-          RateCodeType: { header: "Type" },
-          RateCodeLayer: { header: "Layer" }
-        },
-        rateCodes: {
-          Id: "Id",
-          RateCodeTypePriority: { header: "TP" },
-          RateCodeLayerPriority: { header: "LP" }
-        },
-        workShifts: {
-          Hours: { header: "HH" },
-          Minutes: { header: "MM" },
-          TotalMinutes: { header: "ΣMM" }
-        },
-        workShiftRates: {
-          Hours: { header: "HH" },
-          Minutes: { header: "MM" },
-          Rate: { header: "$" }
-        },
-        workDayRates: {
-          Date: { header: "Date", format: self.formatDate },
-          HourFrom: { header: "From" },
-          HourTill: { header: "Till" },
-          RateMinutes: { header: "Mins" },
-          RateCode: { header: "Rate" },
-          Rate: { header: "$" }
-        },
-        buildMinuteBreakdown: {
-          MinuteDate: { header: "Date", format: self.formatDate },
-          Minutes: { header: "ΣMM" },
-          Hour: { header: "HH" },
-          Minute: { header: "MM" }
-        }
-      };
-      this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
-      this.homePath = "/home/";
-      this.addShift = function (model, e) {
-        var timeStart = new Date(this.punchesNew.Time());
-        if (isNaN(timeStart)) return alert("Invalid date:[" + this.punchesNew.Time() + "]");
-        this.AddData("punches", { time: timeStart, typeId: 1, directionId: 1 }).done(function () {
-          model.AddData("punches", { time: timeStart.addHours(4), typeId: 2, directionId: 2 }).done(function () {
-            model.AddData("punches", { time: timeStart.addHours(1), typeId: 2, directionId: 1 }).done(function () {
-              model.AddData("punches", { time: timeStart.addHours(4), typeId: 1, directionId: 2 });
-            })
-          })
-        });
-      }
-      this.onWorkShiftsSelected = function (data) {
-        if (!data) return;
-        var request = { start: vm.selectedRowsByParent("workShifts")[0].data.Start.toString("MM/dd/yyyy HH:mm") };
-        //vm.GetData("workShiftMinutes", '', request);
-      };
-      this.onPunchesUpdated = ko.observable();
-      this.onPunchesSelected = function (data) {
-        var time = data ? new Date(ko.utils.unwrapObservable($.D.sure(data, "time"))) : Date.now();
-        this.selectRowByProp("punchPairs", function (a) {
-          return time.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
-        });
-      }
-      this.onPunchPairsSelected = function (data) {
-        var start = data ? ko.utils.unwrapObservable($.D.sure(data, "Start")) : Date.now();
-        this.selectRowByProp("workShifts", function (a) {
-          return start.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
-        });
-      }
-    })();
-    vm.onPunchesUpdated.subscribe(function () {
-      vm.GetData("punchPairs");
-      vm.GetData("workShifts");
-      vm.GetData("workShiftRates");
-      vm.GetData("workDayRates");
-      vm.GetData("workDayMinutes");
-      vm.GetData("buildMinuteBreakdown");
-    }, vm);
-    $.extend(vm, ko.data.MvcCrud, ko.data.selected);
-    vm.onRowSelected.subscribe(function (sr, a, b) {
-      var h = $.D.prop(vm, "on" + sr.rows + "Selected");
-      if ($.isFunction(h)) h.call(vm, sr.data);
-    }, vm);
-    vm.initCrud();
-    // Show data
-    var defs = ko.observableArray([]);
-    var cdefs = ko.computed(function () {
-      $.when(defs()).done(function () {
-        $(":input").Enter2Tab();
-        $("CAPTION").click(function () {
-          $(this).parent().children().not("CAPTION,THEAD").toggle();
-        });
-        $("[toggle]").click(function () {
-          $(this).parent().children(":not(LEGEND)").toggle();
-        });
-      })
-    }).extend({ throttle: 100 });
-    defs.push(vm.GetData("configs", "#configsTemplate"));
-    defs.push(vm.GetData("rateCodeLayers", "#rateCodeLayersTemplate"));
+	$(function () {
+		var vm = new (function () {
+			var self = this;
+			this.image = { "false": "/images/Tick_Red.png", "true": "/images/Tick.png" };
+			this.crud = ["punchTypes", "punchDirections", "rateCodeTypes", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges", "configs", "rateCodeLayers"];
+			this.formatDateDay = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy ddd HH:mm") : v; }
+			this.formatDate = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
+			this.formatDate1 = function (v, formatString) { debugger; return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
+			// Headers
+			this.headers = {
+				punches: {
+					IsOutOfSequence: {
+						header: "OoS",
+						format: function (v) { return v ? "<img src='/images/Tick-Red.png'>" : "" }
+					},
+					Time: {
+						header: "Time",
+						format: self.formatDateDay
+					},
+					Direction: { header: "Dir" },
+					Date: { header: "Date", format: self.formatDate }
+				},
+				punchPairs: {
+					TotalMinutes: { header: "TM" },
+					Start: { header: "Start", format: self.formatDateDay },
+					Date: { header: "Date", format: self.formatDate }
+				},
+				rateCodeByRanges: {
+					RateCodeType: { header: "Type" },
+					RateCodeLayer: { header: "Layer" },
+					RateCodeTypePriority: { header: "TP" },
+					RateCodeLayerPriority: { header: "LP" }
+				},
+				rateCodes: {
+					Id: "Id",
+					RateCodeTypePriority: { header: "TP" },
+					RateCodeLayerPriority: { header: "LP" }
+				},
+				workShifts: {
+					Hours: { header: "HH" },
+					Minutes: { header: "MM" },
+					TotalMinutes: { header: "ΣMM" }
+				},
+				workShiftRates: {
+					Hours: { header: "HH" },
+					Minutes: { header: "MM" },
+					Rate: { header: "$" }
+				},
+				workDayRates: {
+					Date: { header: "Date", format: self.formatDate },
+					HourFrom: { header: "From" },
+					HourTill: { header: "Till" },
+					RateMinutes: { header: "Mins" },
+					RateCode: { header: "Rate" },
+					Rate: { header: "$" }
+				},
+				buildMinuteBreakdown: {
+					MinuteDate: { header: "Date", format: self.formatDate },
+					Minutes: { header: "ΣMM" },
+					Hour: { header: "HH" },
+					Minute: { header: "MM" }
+				}
+			};
+			this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
+			this.homePath = "/home/";
+			this.addShift = function (model, e) {
+				var timeStart = new Date(this.punchesNew.Time());
+				if (isNaN(timeStart)) return alert("Invalid date:[" + this.punchesNew.Time() + "]");
+				this.AddData("punches", { time: timeStart, typeId: 1, directionId: 1 }).done(function () {
+					model.AddData("punches", { time: timeStart.addHours(4), typeId: 2, directionId: 2 }).done(function () {
+						model.AddData("punches", { time: timeStart.addHours(1), typeId: 2, directionId: 1 }).done(function () {
+							model.AddData("punches", { time: timeStart.addHours(4), typeId: 1, directionId: 2 });
+						})
+					})
+				});
+			}
+			this.onWorkShiftsSelected = function (data) {
+				if (!data) return;
+				var request = { start: vm.selectedRowsByParent("workShifts")[0].data.Start.toString("MM/dd/yyyy HH:mm") };
+				//vm.GetData("workShiftMinutes", '', request);
+			};
+			this.onPunchesUpdated = ko.observable();
+			this.onPunchesSelected = function (data) {
+				var time = data ? new Date(ko.utils.unwrapObservable($.D.sure(data, "time"))) : Date.now();
+				this.selectRowByProp("punchPairs", function (a) {
+					return time.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
+				});
+			}
+			this.onPunchPairsSelected = function (data) {
+				var start = data ? ko.utils.unwrapObservable($.D.sure(data, "Start")) : Date.now();
+				this.selectRowByProp("workShifts", function (a) {
+					return start.between(ko.utils.unwrapObservable(a.Start), ko.utils.unwrapObservable(a.Stop));
+				});
+			}
+		})();
+		vm.onPunchesUpdated.subscribe(function () {
+			vm.GetData("punchPairs");
+			vm.GetData("workShifts");
+			vm.GetData("workShiftRates");
+			vm.GetData("workDayRates");
+			vm.GetData("workDayMinutes");
+			vm.GetData("buildMinuteBreakdown");
+		}, vm);
+		$.extend(vm, ko.data.MvcCrud, ko.data.selected);
+		vm.onRowSelected.subscribe(function (sr, a, b) {
+			var h = $.D.prop(vm, "on" + sr.rows + "Selected");
+			if ($.isFunction(h)) h.call(vm, sr.data);
+		}, vm);
+		vm.initCrud();
+		// Show data
+		var defs = ko.observableArray([]);
+		var cdefs = ko.computed(function () {
+			$.when(defs()).done(function () {
+				$(":input").Enter2Tab();
+				$("CAPTION").click(function () {
+					$(this).parent().children().not("CAPTION,THEAD").toggle();
+				});
+				$("[toggle]").click(function () {
+					$(this).parent().children(":not(LEGEND)").toggle();
+				});
+			})
+		}).extend({ throttle: 100 });
+		defs.push(vm.GetData("configs", "#configsTemplate"));
+		defs.push(vm.GetData("rateCodeLayers", "#rateCodeLayersTemplate"));
 
-    defs.push(vm.GetData("punchTypes", "#punchTypesTemplate"));
-    defs.push(vm.GetData("punchDirections", "#punchDirectionsTemplate"));
-    defs.push(vm.GetData("rateCodeTypes", "#rateCodeTypesTemplate"));
-    defs.push(vm.GetData("workShiftRates", "#workShiftRatesTemplate"));
-    defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
-    defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
-    defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
-      $('#main').layout({ applyDefaultStyles: true, west__initClosed: true, west__size: "auto", east__size: "auto" });
-    }));
-    $.when(defs).done(function () {
-      defs.push(vm.GetData("punches", "#punchesTemplate", null, function () {
-        vm.punches.subscribe(function (a, b) {
-          //vm.punches.sort(function (a, b) { return a.Time > b.Time ? 1 : -1; });
-        });
-      }));
-      defs.push(vm.GetData("punchPairs", "#punchPairsTemplate"));
-      defs.push(vm.GetData("workShifts", "#workShiftsTemplate", null, function () {
-        var wsStart = $.D.props(vm.workShifts()[0], "Start");
-        //vm.GetData("workShiftMinutes", "#workShiftMinutesTemplate", { start: wsStart.toString("MM/dd/yyyy HH:mm:ss") });
-      }));
-    });
-    defs.push(vm.GetData("rateCodes", "#rateCodesTemplate").done(function () {
-      defs.push(vm.GetData("rateCodeByRanges", "#rateCodeByRangesTemplate"));
-    }));
-  });
+		defs.push(vm.GetData("punchTypes", "#punchTypesTemplate"));
+		defs.push(vm.GetData("punchDirections", "#punchDirectionsTemplate"));
+		defs.push(vm.GetData("rateCodeTypes", "#rateCodeTypesTemplate"));
+		defs.push(vm.GetData("workShiftRates", "#workShiftRatesTemplate"));
+		defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
+		defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
+		defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
+			$('#main').layout({ applyDefaultStyles: true, west__initClosed: true, west__size: "auto", east__size: "auto" });
+		}));
+		$.when(defs).done(function () {
+			defs.push(vm.GetData("punches", "#punchesTemplate", null, function () {
+				vm.punches.subscribe(function (a, b) {
+					//vm.punches.sort(function (a, b) { return a.Time > b.Time ? 1 : -1; });
+				});
+			}));
+			defs.push(vm.GetData("punchPairs", "#punchPairsTemplate"));
+			defs.push(vm.GetData("workShifts", "#workShiftsTemplate", null, function () {
+				var wsStart = $.D.props(vm.workShifts()[0], "Start");
+				//vm.GetData("workShiftMinutes", "#workShiftMinutesTemplate", { start: wsStart.toString("MM/dd/yyyy HH:mm:ss") });
+			}));
+		});
+		defs.push(vm.GetData("rateCodes", "#rateCodesTemplate").done(function () {
+			defs.push(vm.GetData("rateCodeByRanges", "#rateCodeByRangesTemplate"));
+		}));
+	});
 </script>
 <DIV class="ui-layout-center">
 <table id="punchesTemplate" style="float:left">
 <caption>Punches</caption>
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':'click:function(){$root.sortPunches(\''+$data+'\')}'}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':'click:function(){$root.sortPunches(\''+$data+'\')}'}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':'attr:{title:\'PunchId: \'+Id},event:{keydown:function(a,b){return $parent.rowNavigation(a,b,\'{{rows}}\')}}'}">
@@ -267,31 +270,31 @@ TABLE TR.selected TD
 <tr><td><span tabindex="-1" title="delete punch"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' style="cursor:default;color:Maroon;font-size:+1">&bull;</span></td></tr>
 </tbody>
 <tfoot>
-  <tr>
-  <td>
+	<tr>
+	<td>
 <input data-bind="value: punchesNew.Time" size="1" />
-  </td>
-  <td><select data-bind="options:punchDirections,
-                         optionsText:'Name',
-                         optionsValue:'Id',
-                         value:punchesNew.DirectionId" /></td>
-  <td><select data-bind="options:punchTypes,
-                         optionsText:'Name',
-                         optionsValue:'Id',
-                         value:punchesNew.TypeId" /></td>
-    <td colspan="2">
-        <input type="button" value="Add" data-bind="click:$root.{{add}}" style="float:left;width:45%" />
-        <input type="button" value="Shift" data-bind="click:$root.addShift" title="Add whole shift in one shot" style="float:right;width:45%;" />
-     </td>
-     <td colspan="2"></td>
-  </tr>
+	</td>
+	<td><select data-bind="options:punchDirections,
+												 optionsText:'Name',
+												 optionsValue:'Id',
+												 value:punchesNew.DirectionId" /></td>
+	<td><select data-bind="options:punchTypes,
+												 optionsText:'Name',
+												 optionsValue:'Id',
+												 value:punchesNew.TypeId" /></td>
+		<td colspan="2">
+				<input type="button" value="Add" data-bind="click:$root.{{add}}" style="float:left;width:45%" />
+				<input type="button" value="Shift" data-bind="click:$root.addShift" title="Add whole shift in one shot" style="float:right;width:45%;" />
+		 </td>
+		 <td colspan="2"></td>
+	</tr>
 </tfoot>
 </table>
 <table id="punchPairsTemplate">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -301,9 +304,9 @@ TABLE TR.selected TD
 </table>
 <table id="workShiftsTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -313,9 +316,9 @@ TABLE TR.selected TD
 </table>
 <table id="workShiftRatesTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -325,9 +328,9 @@ TABLE TR.selected TD
 </table>
 <table id="workDayRatesTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -337,9 +340,9 @@ TABLE TR.selected TD
 </table>
 <table id="workDayMinutesTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -351,10 +354,10 @@ TABLE TR.selected TD
 <DIV class="ui-layout-west">
 <table id="configsTemplate">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -363,27 +366,27 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X" data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <td>
-      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <span>
-        <input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
-      </span>
-     </td>
-  </tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<td>
+			<input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span>
+				<input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 
 <table id="punchTypesTemplate" style="float:left">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -392,26 +395,26 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X" data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <td>
-      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <span>
-        <input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
-      </span>
-     </td>
-  </tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<td>
+			<input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span>
+				<input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 <table id="punchDirectionsTemplate">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -420,26 +423,26 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <td>
-      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <span>
-        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
-      </span>
-     </td>
-  </tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<td>
+			<input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span>
+				<input type="button" value="Add" data-bind="click:$root.{{add}}" />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 <table id="rateCodeTypesTemplate" style="float:left">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -448,26 +451,26 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <td>
-      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <span>
-        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
-      </span>
-     </td>
-  </tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<td>
+			<input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span>
+				<input type="button" value="Add" data-bind="click:$root.{{add}}" />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 <table id="rateCodeLayersTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -476,27 +479,27 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X" data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
-    <td>
-      <input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <span>
-        <input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
-      </span>
-     </td>
-  </tr>
+	<tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+		<td>
+			<input data-bind='attr:{"data-bind":"value: $root.{{new}}[\""+$data+"\"]"}' size="1" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<span>
+				<input type="button" value="Add" data-bind='attr:{"data-bind":"click:$root.{{add}}"}' />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 
 <table id="rateCodesTemplate">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{title:$data['title'],'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{title:$data['title'],'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -505,32 +508,32 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr>
-  <td></td>
-  <td><input data-bind="value: rateCodesNew.Name" size="1" /></td>
-  <td><input data-bind="value: rateCodesNew.Rate" size="1" /></td>
-  <td><select data-bind="options:rateCodeTypes,
-                         optionsText:'Name',
-                         optionsValue:'Id',
-                         value:rateCodesNew.TypeId" /></td>
-  <td><select data-bind="options:rateCodeLayers,
-                         optionsText:'Name',
-                         optionsValue:'Id',
-                         value:rateCodesNew.LayerId" /></td>
-    <td colspan="3">
-      <span>
-        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
-      </span>
-     </td>
-  </tr>
+	<tr>
+	<td></td>
+	<td><input data-bind="value: rateCodesNew.Name" size="1" /></td>
+	<td><input data-bind="value: rateCodesNew.Rate" size="1" /></td>
+	<td><select data-bind="options:rateCodeTypes,
+												 optionsText:'Name',
+												 optionsValue:'Id',
+												 value:rateCodesNew.TypeId" /></td>
+	<td><select data-bind="options:rateCodeLayers,
+												 optionsText:'Name',
+												 optionsValue:'Id',
+												 value:rateCodesNew.LayerId" /></td>
+		<td colspan="3">
+			<span>
+				<input type="button" value="Add" data-bind="click:$root.{{add}}" />
+			</span>
+		 </td>
+	</tr>
 </tfoot>
 </table>
 <table id="rateCodeByRangesTemplate" style="float:left">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
-  <tr><th>X</th></tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
+	<tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
@@ -539,31 +542,31 @@ TABLE TR.selected TD
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
-  <tr>
-  <td><input data-bind="value: rateCodeByRangesNew.HourStart" size="1" /></td>
-  <td><input data-bind="value: rateCodeByRangesNew.HourStop" size="1" /></td>
-  <td><select data-bind="options:rateCodes,
-                         optionsText:'Name',
-                         optionsValue:'Id',
-                         value:rateCodeByRangesNew.RateCodeId" /></td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      <span>
-        <input type="button" value="Add" data-bind="click:$root.{{add}}" />
-      </span>
-     </td>
-     <td></td>
-  </tr>
+	<tr>
+	<td><input data-bind="value: rateCodeByRangesNew.HourStart" size="1" /></td>
+	<td><input data-bind="value: rateCodeByRangesNew.HourStop" size="1" /></td>
+	<td><select data-bind="options:rateCodes,
+												 optionsText:'Name',
+												 optionsValue:'Id',
+												 value:rateCodeByRangesNew.RateCodeId" /></td>
+	</tr>
+	<tr>
+		<td colspan="2">
+			<span>
+				<input type="button" value="Add" data-bind="click:$root.{{add}}" />
+			</span>
+		 </td>
+		 <td colspan="3"></td>
+	</tr>
 </tfoot>
 </table>
 </DIV>
 <div class="ui-layout-east">
 <table id="buildMinuteBreakdownTemplate" style="display:inline-table">
 <thead>
-  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
-  </tr>
+	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
+	</tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
