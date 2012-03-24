@@ -175,7 +175,6 @@
     <Build Include="config\Functions\WorkDayStopGraceMinutes.sql" />
     <Build Include="config\Functions\WorkDayStartGraceMinutes.sql" />
     <Build Include="dbo\Tables\RateCodeLayer.sql" />
-    <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_40.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_30.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_20.sql" />
     <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_10.sql" />
