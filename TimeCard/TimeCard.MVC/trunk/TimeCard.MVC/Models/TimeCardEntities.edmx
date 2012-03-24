@@ -772,7 +772,9 @@
         </Association>
         <ComplexType Name="BuildMinuteBreakdown_Result">
           <Property Type="DateTimeOffset" Name="WorkShiftStart" Nullable="false" />
-          <Property Type="DateTime" Name="MinuteDate" Nullable="false" />
+          <Property Type="DateTime" Name="MinuteDate" Nullable="false" Precision="23" />
+          <Property Type="DateTimeOffset" Name="Start" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="End" Nullable="false" />
           <Property Type="Int32" Name="Minutes" Nullable="false" />
           <Property Type="Int32" Name="Hour" Nullable="false" />
           <Property Type="Int32" Name="Minute" Nullable="false" />
@@ -990,6 +992,8 @@
               <ComplexTypeMapping TypeName="TimeCardEntities.BuildMinuteBreakdown_Result">
                 <ScalarProperty Name="WorkShiftStart" ColumnName="WorkShiftStart" />
                 <ScalarProperty Name="MinuteDate" ColumnName="MinuteDate" />
+                <ScalarProperty Name="Start" ColumnName="Start" />
+                <ScalarProperty Name="End" ColumnName="End" />
                 <ScalarProperty Name="Minutes" ColumnName="Minutes" />
                 <ScalarProperty Name="Hour" ColumnName="Hour" />
                 <ScalarProperty Name="Minute" ColumnName="Minute" />

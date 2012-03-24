@@ -16,6 +16,8 @@ namespace TimeCard.MVC.Models
     {
         public System.DateTimeOffset WorkShiftStart { get; set; }
         public System.DateTime MinuteDate { get; set; }
+        public System.DateTimeOffset Start { get; set; }
+        public System.DateTimeOffset End { get; set; }
         public int Minutes { get; set; }
         public int Hour { get; set; }
         public int Minute { get; set; }
