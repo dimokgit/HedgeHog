@@ -13,3 +13,10 @@
 
 
 
+
+
+
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_RateCode_Type_Layer]
+    ON [dbo].[RateCode]([TypeId] ASC, [LayerId] ASC);
+

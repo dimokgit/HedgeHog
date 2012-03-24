@@ -2,7 +2,7 @@
 AS
 SELECT        TOP (1000000000) dbo.RateCodeByRange.Id, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop, RC.Name AS RateCode, 
                          dbo.RateCodeByRange.RateCodeId, RC.Type AS RateCodeType, RC.TypeId AS RateCodeTypeId, RC.Layer AS RateCodeLayer, RC.LayerId AS RateCodeLayerId, 
-                         RC.RateCodeTypePriority, RC.RateCodeLayerPriority
+                         RC.RateCodeTypePriority, RC.RateCodeLayerPriority, RC.[Rule], RC.RuleId, RC.IsRuleOver, RC.IsRuleExtra
 FROM            dbo.vRateCode AS RC INNER JOIN
                          dbo.RateCodeByRange ON RC.Id = dbo.RateCodeByRange.RateCodeId
 ORDER BY RC.RateCodeLayerPriority, RC.RateCodeTypePriority, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop
@@ -86,7 +86,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 246
-               Bottom = 271
+               Bottom = 292
                Right = 451
             End
             DisplayFlags = 280
@@ -140,6 +140,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeByRange';
+
+
 
 
 
