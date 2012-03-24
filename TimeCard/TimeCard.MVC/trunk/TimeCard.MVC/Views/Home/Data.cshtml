@@ -110,6 +110,8 @@ TABLE TR.selected TD
 			this.crud = ["punchTypes", "punchDirections", "rateCodeTypes", "punches", "punchPairs", "workShiftMinutes", "rateCodes", "rateCodeByRanges", "configs", "rateCodeLayers"];
 			this.formatDateDay = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy ddd HH:mm") : v; }
 			this.formatDate = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
+			this.formatDay = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "dd") : v; }
+			this.formatTime = function (v, formatString) { return v instanceof Date ? v.toString(formatString || "HH:mm") : v; }
 			this.formatDate1 = function (v, formatString) { debugger; return v instanceof Date ? v.toString(formatString || "MM/dd/yyyy") : v; }
 			// Headers
 			this.headers = {
@@ -160,10 +162,12 @@ TABLE TR.selected TD
 					Rate: { header: "$" }
 				},
 				buildMinuteBreakdown: {
-					MinuteDate: { header: "Date", format: self.formatDate },
+					MinuteDate: { header: "Day", format: self.formatDay },
 					Minutes: { header: "ΣMM" },
 					Hour: { header: "HH" },
-					Minute: { header: "MM" }
+					Minute: { header: "MM" },
+					Start: { header: "Start",format: self.formatTime},
+					End: { header: "End",format: self.formatTime}
 				}
 			};
 			this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
@@ -201,8 +205,8 @@ TABLE TR.selected TD
 		vm.onPunchesUpdated.subscribe(function () {
 			vm.GetData("punchPairs");
 			vm.GetData("workShifts");
-			vm.GetData("workShiftRates");
-			vm.GetData("workDayRates");
+//			vm.GetData("workShiftRates");
+//			vm.GetData("workDayRates");
 			vm.GetData("workDayMinutes");
 			vm.GetData("buildMinuteBreakdown");
 		}, vm);
@@ -231,8 +235,8 @@ TABLE TR.selected TD
 		defs.push(vm.GetData("punchTypes", "#punchTypesTemplate"));
 		defs.push(vm.GetData("punchDirections", "#punchDirectionsTemplate"));
 		defs.push(vm.GetData("rateCodeTypes", "#rateCodeTypesTemplate"));
-		defs.push(vm.GetData("workShiftRates", "#workShiftRatesTemplate"));
-		defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
+//		defs.push(vm.GetData("workShiftRates", "#workShiftRatesTemplate"));
+//		defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
 		defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
 		defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
 			$('#main').layout({ applyDefaultStyles: true, west__initClosed: true, west__size: "auto", east__size: "auto" });
@@ -314,7 +318,7 @@ TABLE TR.selected TD
 </tr>
 </tbody>
 </table>
-<table id="workShiftRatesTemplate" style="display:inline-table">
+<table id="workShiftRatesTemplate" style="display:none">
 <thead>
 	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
 		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
@@ -326,7 +330,7 @@ TABLE TR.selected TD
 </tr>
 </tbody>
 </table>
-<table id="workDayRatesTemplate" style="display:inline-table">
+<table id="workDayRatesTemplate" style="display:none">
 <thead>
 	<tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
 		<th data-bind="text:$data,attr:{'data-bind':''}"></th>
