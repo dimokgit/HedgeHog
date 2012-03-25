@@ -120,7 +120,7 @@ namespace TimeCard.MVC.Controllers {
 
     #region RateCodeType
     public ActionResult RateCodeTypesGet() {
-      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodeTypes.ToList(), JsonRequestBehavior.AllowGet);
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().vRateCodeTypes.ToList(), JsonRequestBehavior.AllowGet);
     }
     public ActionResult RateCodeTypesAdd(Models.RateCodeType RateCodeType) {
       Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodeTypes.Add(RateCodeType);
@@ -128,11 +128,11 @@ namespace TimeCard.MVC.Controllers {
       return Json(RateCodeType);
     }
     public ActionResult RateCodeTypesUpdate(Models.RateCodeType rateCodeTypes) {
-      Func<Models.TimeCardEntitiesContainer, Models.RateCodeType> a = tc => {
+      Func<Models.TimeCardEntitiesContainer, Models.vRateCodeType> a = tc => {
         var rateCodeType = tc.RateCodeTypes.First(rcbr => rcbr.Id == rateCodeTypes.Id);
         CopyObject(rateCodeTypes, rateCodeType);
         tc.SaveChanges();
-        return tc.RateCodeTypes.First(p => p.Id == rateCodeType.Id);
+        return tc.vRateCodeTypes.First(p => p.Id == rateCodeType.Id);
       };
       var res = a.Do();
       return Json(res);
@@ -254,6 +254,34 @@ namespace TimeCard.MVC.Controllers {
       return Json(RateCodeLayer);
     }
     #endregion
+
+    #region RateCodeRules
+    public ActionResult RateCodeRulesGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().RateCodeRules.ToList().DefaultIfEmpty(new RateCodeRule()), JsonRequestBehavior.AllowGet);
+    }
+    public ActionResult RateCodeRulesAdd(Models.RateCodeRule RateCodeRule) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => tc.RateCodeRules.Add(RateCodeRule);
+      a.Do();
+      return Json(RateCodeRule);
+    }
+    public ActionResult RateCodeRulesUpdate(Models.RateCodeRule RateCodeRules) {
+      Func<Models.TimeCardEntitiesContainer, Models.RateCodeRule> a = tc => {
+        var RateCodeRule = tc.RateCodeRules.First(c => c.Id == RateCodeRules.Id);
+        CopyObject(RateCodeRules, RateCodeRule);
+        tc.SaveChanges();
+        return tc.RateCodeRules.First(p => p.Id == RateCodeRule.Id);
+      };
+      return Json(a.Do());
+    }
+    public ActionResult RateCodeRulesDelete(Models.RateCodeRule RateCodeRule) {
+      Action<Models.TimeCardEntitiesContainer> a = tc => {
+        tc.RateCodeRules.Remove(tc.RateCodeRules.Find(RateCodeRule.Id));
+      };
+      a.Do();
+      return Json(RateCodeRule);
+    }
+    #endregion
+
 
     #region Config
     public ActionResult ConfigsGet() {

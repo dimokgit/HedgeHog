@@ -25,6 +25,7 @@ namespace TimeCard.MVC.Models
         public int RateCodeId { get; set; }
         public string Layer { get; set; }
         public string Type { get; set; }
+        public string Rule { get; set; }
     }
     
 }

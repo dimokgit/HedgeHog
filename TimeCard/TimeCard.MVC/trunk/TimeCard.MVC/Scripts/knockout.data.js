@@ -266,6 +266,7 @@ if (!ko.data.MvcCrud) {
             if (header) {
               header["title"] = n;
             }
+            if ((header || n).indexOf("__") == 0) return;
             headres.push(header || n);
             return n;
           } else if (propPrev) {
@@ -367,7 +368,6 @@ if (!ko.data.MvcCrud) {
   ko.data.MvcCrud.showAjaxError = function (response,url) {
     if (response.status >= 400 && response.status < 500)
       return alert(url+":\n"+response.statusText);
-    debugger;
     var r = $(response.responseText);
     var title = $("TITLE", r).text();
     $("<div></div>").append("<P>" + $("TITLE", r).text() + "</P>").append(r.eq(1)).append($("CODE", response.responseText)).dialog({ width: 800, height: 600 });

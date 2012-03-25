@@ -17,6 +17,11 @@ namespace TimeCard.MVC.Models
         public int Id { get; set; }
         public string Name { get; set; }
         public int Priority { get; set; }
+        public int RuleId { get; set; }
+        public int IsRuleOver { get; set; }
+        public int IsRuleExtra { get; set; }
+    
+        public virtual RateCodeRule RateCodeRule { get; set; }
     }
     
 }

@@ -12,22 +12,11 @@ using System.Collections.Generic;
 
 namespace TimeCard.MVC.Models
 {
-    public partial class vRateCode
+    public partial class RateCodeRule
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public double Rate { get; set; }
-        public string Type { get; set; }
-        public int TypeId { get; set; }
-        public string Layer { get; set; }
-        public int LayerId { get; set; }
-        public string Rule { get; set; }
-        public int RuleId { get; set; }
-        public int RateCodeTypePriority { get; set; }
-        public int RateCodeLayerPriority { get; set; }
-        public int RulePriority { get; set; }
-        public int IsRuleOver { get; set; }
-        public int IsRuleExtra { get; set; }
+        public bool IsSystem { get; set; }
     }
     
 }

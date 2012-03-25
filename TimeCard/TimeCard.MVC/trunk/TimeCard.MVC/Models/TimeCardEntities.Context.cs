@@ -30,7 +30,6 @@ namespace TimeCard.MVC.Models
         public DbSet<PunchType> PunchTypes { get; set; }
         public DbSet<Punch> Punches { get; set; }
         public DbSet<vWorkShiftMinute> vWorkShiftMinutes { get; set; }
-        public DbSet<vRateCodeByRange> vRateCodeByRanges { get; set; }
         public DbSet<vWorkShiftPay> vWorkShiftPays { get; set; }
         public DbSet<vWorkShift> vWorkShifts { get; set; }
         public DbSet<vWorkShiftRate> vWorkShiftRates { get; set; }
@@ -41,9 +40,12 @@ namespace TimeCard.MVC.Models
         public DbSet<vPunch> vPunches { get; set; }
         public DbSet<vPunchPair> vPunchPairs { get; set; }
         public DbSet<vWorkDayMinute> vWorkDayMinutes { get; set; }
-        public DbSet<vRateCode> vRateCodes { get; set; }
         public DbSet<RateCodeLayer> RateCodeLayers { get; set; }
         public DbSet<RateCodeType> RateCodeTypes { get; set; }
+        public DbSet<RateCodeRule> RateCodeRules { get; set; }
+        public DbSet<vRateCodeType> vRateCodeTypes { get; set; }
+        public DbSet<vRateCodeByRange> vRateCodeByRanges { get; set; }
+        public DbSet<vRateCode> vRateCodes { get; set; }
     
         public virtual ObjectResult<BuildMinuteBreakdown_Result> BuildMinuteBreakdown()
         {
