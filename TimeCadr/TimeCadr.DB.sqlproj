@@ -185,7 +185,6 @@
     <Build Include="dbo\Stored Procedures\BuildMinuteBreakdown_00.sql" />
     <Build Include="dbo\Stored Procedures\BuildMinuteBreakdown.sql" />
     <Build Include="dbo\Tables\RateCodeRule.sql" />
-    <Build Include="dbo\Views\vWorkShiftMinuteBreakdown_40.sql" />
     <Build Include="dbo\Views\vRateCodeType.sql" />
     <Build Include="dbo\Views\vMinuteBreakdown.sql" />
     <Build Include="const\Functions\PuncCodeRule_Over.sql" />
