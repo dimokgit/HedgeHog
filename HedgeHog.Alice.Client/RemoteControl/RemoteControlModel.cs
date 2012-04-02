@@ -887,7 +887,7 @@ namespace HedgeHog.Alice.Client {
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
           charter.AddTicks(price, rates, new PriceBar[1][] { stDevBars }, info, null,
-            tm.InPips(tm.StDevAverages[1]),tm.InPips(tm.StDevAverages[0]),
+            tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages[1]) : 0, tm.InPips(tm.StDevAverages[0]),
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2,
