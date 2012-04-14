@@ -45,9 +45,9 @@
     <Reference Include="DynamicLinq">
       <HintPath>..\..\..\..\..\..\Projects\Forex_Old\Projects\HedgeHog\HedgeHog.Lib\bin\Release\DynamicLinq.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+    <Reference Include="EntityFramework, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.4.2.0.0\lib\net40\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.5.0.0-beta2\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data.Entity" />
@@ -110,6 +110,9 @@
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\RateCodeType.cs">
+      <DependentUpon>TimeCardEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\SalaryBreakdown.cs">
       <DependentUpon>TimeCardEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\TimeCardEntities.Context.cs">
@@ -231,6 +234,7 @@
     <Content Include="Images\round_turn_off.png" />
     <Content Include="Images\Tick-red.png" />
     <Content Include="Images\tick.png" />
+    <Content Include="Images\time_icon.gif" />
     <Content Include="Scripts\jquery-ui-latest.min.js" />
     <Content Include="Scripts\jquery.extentions.Linq.js" />
     <Content Include="Scripts\jquery.extentions.fn.js" />

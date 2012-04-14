@@ -15,6 +15,8 @@ namespace TimeCard.MVC.Models
     public partial class vRateCodeByRange
     {
         public int Id { get; set; }
+        public Nullable<int> TimeStart { get; set; }
+        public Nullable<int> GracePeriod { get; set; }
         public int HourStart { get; set; }
         public int HourStop { get; set; }
         public string RateCode { get; set; }
@@ -27,6 +29,7 @@ namespace TimeCard.MVC.Models
         public int RuleId { get; set; }
         public int IsRuleOver { get; set; }
         public int IsRuleExtra { get; set; }
+        public Nullable<bool> IsTimeAbsolute { get; set; }
         public int RateCodeTypePriority { get; set; }
         public int RateCodeLayerPriority { get; set; }
         public int RulePriority { get; set; }

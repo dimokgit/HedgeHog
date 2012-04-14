@@ -14,6 +14,11 @@ namespace TimeCard.MVC.Models
 {
     public partial class RateCode
     {
+        public RateCode()
+        {
+            this.RateCodeByRanges = new HashSet<RateCodeByRange>();
+        }
+    
         public int Id { get; set; }
         public string Name { get; set; }
         public double Rate { get; set; }
@@ -22,6 +27,7 @@ namespace TimeCard.MVC.Models
     
         public virtual RateCodeLayer RateCodeLayer { get; set; }
         public virtual RateCodeType RateCodeType { get; set; }
+        public virtual ICollection<RateCodeByRange> RateCodeByRanges { get; set; }
     }
     
 }

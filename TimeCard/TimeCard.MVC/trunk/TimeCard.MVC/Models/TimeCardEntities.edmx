@@ -16,6 +16,7 @@
           <EntitySet Name="RateCodeLayer" EntityType="TimeCardEntities.Store.RateCodeLayer" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="RateCodeRule" EntityType="TimeCardEntities.Store.RateCodeRule" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="RateCodeType" EntityType="TimeCardEntities.Store.RateCodeType" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="SalaryBreakdown" EntityType="TimeCardEntities.Store.SalaryBreakdown" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="vPunch" EntityType="TimeCardEntities.Store.vPunch" store:Type="Views" store:Schema="dbo" store:Name="vPunch">
             <DefiningQuery>SELECT 
       [vPunch].[Id] AS [Id], 
@@ -58,6 +59,8 @@
           <EntitySet Name="vRateCodeByRange" EntityType="TimeCardEntities.Store.vRateCodeByRange" store:Type="Views" store:Schema="dbo" store:Name="vRateCodeByRange">
             <DefiningQuery>SELECT 
       [vRateCodeByRange].[Id] AS [Id], 
+      [vRateCodeByRange].[TimeStart] AS [TimeStart], 
+      [vRateCodeByRange].[GracePeriod] AS [GracePeriod], 
       [vRateCodeByRange].[HourStart] AS [HourStart], 
       [vRateCodeByRange].[HourStop] AS [HourStop], 
       [vRateCodeByRange].[RateCode] AS [RateCode], 
@@ -70,6 +73,7 @@
       [vRateCodeByRange].[RuleId] AS [RuleId], 
       [vRateCodeByRange].[IsRuleOver] AS [IsRuleOver], 
       [vRateCodeByRange].[IsRuleExtra] AS [IsRuleExtra], 
+      [vRateCodeByRange].[IsTimeAbsolute] AS [IsTimeAbsolute], 
       [vRateCodeByRange].[RateCodeTypePriority] AS [RateCodeTypePriority], 
       [vRateCodeByRange].[RateCodeLayerPriority] AS [RateCodeLayerPriority], 
       [vRateCodeByRange].[RulePriority] AS [RulePriority]
@@ -83,7 +87,8 @@
       [vRateCodeType].[Rule] AS [Rule], 
       [vRateCodeType].[RuleId] AS [RuleId], 
       [vRateCodeType].[IsRuleOver] AS [IsRuleOver], 
-      [vRateCodeType].[IsRuleExtra] AS [IsRuleExtra]
+      [vRateCodeType].[IsRuleExtra] AS [IsRuleExtra], 
+      [vRateCodeType].[RulePriority] AS [RulePriority]
       FROM [dbo].[vRateCodeType] AS [vRateCodeType]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vWorkDayMinutes" EntityType="TimeCardEntities.Store.vWorkDayMinutes" store:Type="Views" store:Schema="dbo" store:Name="vWorkDayMinutes">
@@ -218,6 +223,8 @@
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="TimeStart" Type="int" />
+          <Property Name="GracePeriod" Type="int" />
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
           <Property Name="RateCodeId" Type="int" Nullable="false" />
@@ -248,6 +255,14 @@
           <Property Name="RuleId" Type="int" Nullable="false" />
           <Property Name="IsRuleOver" Type="int" Nullable="false" StoreGeneratedPattern="Computed" />
           <Property Name="IsRuleExtra" Type="int" Nullable="false" StoreGeneratedPattern="Computed" />
+        </EntityType>
+        <EntityType Name="SalaryBreakdown">
+          <Key>
+            <PropertyRef Name="RateCode" />
+          </Key>
+          <Property Name="RateCode" Type="varchar" Nullable="false" MaxLength="50" />
+          <Property Name="Salary" Type="numeric" Nullable="false" Precision="38" Scale="2" />
+          <Property Name="DateStamp" Type="datetime" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vPunch' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -342,6 +357,8 @@
             <PropertyRef Name="RulePriority" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
+          <Property Name="TimeStart" Type="int" />
+          <Property Name="GracePeriod" Type="int" />
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
           <Property Name="RateCode" Type="varchar" Nullable="false" MaxLength="50" />
@@ -354,6 +371,7 @@
           <Property Name="RuleId" Type="int" Nullable="false" />
           <Property Name="IsRuleOver" Type="int" Nullable="false" />
           <Property Name="IsRuleExtra" Type="int" Nullable="false" />
+          <Property Name="IsTimeAbsolute" Type="bit" />
           <Property Name="RateCodeTypePriority" Type="int" Nullable="false" />
           <Property Name="RateCodeLayerPriority" Type="int" Nullable="false" />
           <Property Name="RulePriority" Type="int" Nullable="false" />
@@ -370,6 +388,7 @@
             <PropertyRef Name="RuleId" />
             <PropertyRef Name="IsRuleOver" />
             <PropertyRef Name="IsRuleExtra" />
+            <PropertyRef Name="RulePriority" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Name" Type="varchar" Nullable="false" MaxLength="50" />
@@ -378,6 +397,7 @@
           <Property Name="RuleId" Type="int" Nullable="false" />
           <Property Name="IsRuleOver" Type="int" Nullable="false" />
           <Property Name="IsRuleExtra" Type="int" Nullable="false" />
+          <Property Name="RulePriority" Type="int" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vWorkDayMinutes' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -560,11 +580,6 @@
           <EntitySet Name="vWorkShifts" EntityType="TimeCardEntities.vWorkShift" />
           <EntitySet Name="vWorkShiftRates" EntityType="TimeCardEntities.vWorkShiftRate" />
           <EntitySet Name="RateCodes" EntityType="TimeCardEntities.RateCode" />
-          <EntitySet Name="RateCodeByRanges" EntityType="TimeCardEntities.RateCodeByRange" />
-          <AssociationSet Name="FK_RateCodeByRange_RateCode" Association="TimeCardEntities.FK_RateCodeByRange_RateCode">
-            <End Role="RateCode" EntitySet="RateCodes" />
-            <End Role="RateCodeByRange" EntitySet="RateCodeByRanges" />
-          </AssociationSet>
           <EntitySet Name="vWorkDayRates" EntityType="TimeCardEntities.vWorkDayRate" />
           <EntitySet Name="Configs" EntityType="TimeCardEntities.Config" />
           <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
@@ -581,14 +596,21 @@
             <End Role="RateCode" EntitySet="RateCodes" />
           </AssociationSet>
           <EntitySet Name="RateCodeRules" EntityType="TimeCardEntities.RateCodeRule" />
-          <EntitySet Name="vRateCodeTypes" EntityType="TimeCardEntities.vRateCodeType" />
           <AssociationSet Name="FK_RateCodeType_RateCodeRule" Association="TimeCardEntities.FK_RateCodeType_RateCodeRule">
             <End Role="RateCodeRule" EntitySet="RateCodeRules" />
             <End Role="RateCodeType" EntitySet="RateCodeTypes" />
           </AssociationSet>
-          <FunctionImport Name="BuildMinuteBreakdown" ReturnType="Collection(TimeCardEntities.BuildMinuteBreakdown_Result)" />
-          <EntitySet Name="vRateCodeByRanges" EntityType="TimeCardEntities.vRateCodeByRange" />
+          <FunctionImport Name="BuildMinuteBreakdown" ReturnType="Collection(TimeCardEntities.BuildMinuteBreakdown_Result)" >
+          </FunctionImport>
           <EntitySet Name="vRateCodes" EntityType="TimeCardEntities.vRateCode" />
+          <EntitySet Name="vRateCodeTypes" EntityType="TimeCardEntities.vRateCodeType" />
+          <EntitySet Name="SalaryBreakdowns" EntityType="TimeCardEntities.SalaryBreakdown" />
+          <EntitySet Name="vRateCodeByRanges" EntityType="TimeCardEntities.vRateCodeByRange" />
+          <EntitySet Name="RateCodeByRanges" EntityType="TimeCardEntities.RateCodeByRange" />
+          <AssociationSet Name="FK_RateCodeByRange_RateCode" Association="TimeCardEntities.FK_RateCodeByRange_RateCode">
+            <End Role="RateCode" EntitySet="RateCodes" />
+            <End Role="RateCodeByRange" EntitySet="RateCodeByRanges" />
+          </AssociationSet>
           </EntityContainer>
         <EntityType Name="PunchDirection">
           <Key>
@@ -694,29 +716,8 @@
           <Property Type="Int32" Name="LayerId" Nullable="false" />
           <NavigationProperty Name="RateCodeLayer" Relationship="TimeCardEntities.FK_RateCode_RateCodeLayer" FromRole="RateCode" ToRole="RateCodeLayer" />
           <NavigationProperty Name="RateCodeType" Relationship="TimeCardEntities.FK_RateCode_RateCodeType" FromRole="RateCode" ToRole="RateCodeType" />
+          <NavigationProperty Name="RateCodeByRanges" Relationship="TimeCardEntities.FK_RateCodeByRange_RateCode" FromRole="RateCode" ToRole="RateCodeByRange" />
         </EntityType>
-        <EntityType Name="RateCodeByRange">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Type="Int32" Name="HourStart" Nullable="false" />
-          <Property Type="Int32" Name="HourStop" Nullable="false" />
-          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
-          <NavigationProperty Name="RateCode" Relationship="TimeCardEntities.FK_RateCodeByRange_RateCode" FromRole="RateCodeByRange" ToRole="RateCode" />
-        </EntityType>
-        <Association Name="FK_RateCodeByRange_RateCode">
-          <End Type="TimeCardEntities.RateCode" Role="RateCode" Multiplicity="1" />
-          <End Type="TimeCardEntities.RateCodeByRange" Role="RateCodeByRange" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="RateCode">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="RateCodeByRange">
-              <PropertyRef Name="RateCodeId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <EntityType Name="vWorkDayRate">
           <Key>
             <PropertyRef Name="RateCodeId" />
@@ -832,24 +833,6 @@
           <Property Type="String" Name="Name" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
           <Property Type="Boolean" Name="IsSystem" Nullable="false" />
         </EntityType>
-        <EntityType Name="vRateCodeType">
-          <Key>
-            <PropertyRef Name="Id" />
-            <PropertyRef Name="Name" />
-            <PropertyRef Name="Priority" />
-            <PropertyRef Name="Rule" />
-            <PropertyRef Name="RuleId" />
-            <PropertyRef Name="IsRuleOver" />
-            <PropertyRef Name="IsRuleExtra" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" />
-          <Property Type="String" Name="Name" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="Priority" Nullable="false" />
-          <Property Type="String" Name="Rule" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RuleId" Nullable="false" />
-          <Property Type="Int32" Name="IsRuleOver" Nullable="false" />
-          <Property Type="Int32" Name="IsRuleExtra" Nullable="false" />
-        </EntityType>
         <Association Name="FK_RateCodeType_RateCodeRule">
           <End Type="TimeCardEntities.RateCodeRule" Role="RateCodeRule" Multiplicity="1" />
           <End Type="TimeCardEntities.RateCodeType" Role="RateCodeType" Multiplicity="*" />
@@ -876,42 +859,6 @@
           <Property Type="String" Name="Type" Nullable="false" MaxLength="50" />
           <Property Type="String" Name="Rule" Nullable="false" MaxLength="1" />
         </ComplexType>
-        <EntityType Name="vRateCodeByRange">
-          <Key>
-            <PropertyRef Name="Id" />
-            <PropertyRef Name="HourStart" />
-            <PropertyRef Name="HourStop" />
-            <PropertyRef Name="RateCode" />
-            <PropertyRef Name="RateCodeId" />
-            <PropertyRef Name="RateCodeType" />
-            <PropertyRef Name="RateCodeTypeId" />
-            <PropertyRef Name="RateCodeLayer" />
-            <PropertyRef Name="RateCodeLayerId" />
-            <PropertyRef Name="Rule" />
-            <PropertyRef Name="RuleId" />
-            <PropertyRef Name="IsRuleOver" />
-            <PropertyRef Name="IsRuleExtra" />
-            <PropertyRef Name="RateCodeTypePriority" />
-            <PropertyRef Name="RateCodeLayerPriority" />
-            <PropertyRef Name="RulePriority" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" />
-          <Property Type="Int32" Name="HourStart" Nullable="false" />
-          <Property Type="Int32" Name="HourStop" Nullable="false" />
-          <Property Type="String" Name="RateCode" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
-          <Property Type="String" Name="RateCodeType" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RateCodeTypeId" Nullable="false" />
-          <Property Type="String" Name="RateCodeLayer" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RateCodeLayerId" Nullable="false" />
-          <Property Type="String" Name="Rule" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="RuleId" Nullable="false" />
-          <Property Type="Int32" Name="IsRuleOver" Nullable="false" />
-          <Property Type="Int32" Name="IsRuleExtra" Nullable="false" />
-          <Property Type="Int32" Name="RateCodeTypePriority" Nullable="false" />
-          <Property Type="Int32" Name="RateCodeLayerPriority" Nullable="false" />
-          <Property Type="Int32" Name="RulePriority" Nullable="false" />
-        </EntityType>
         <EntityType Name="vRateCode">
           <Key>
             <PropertyRef Name="Id" />
@@ -944,6 +891,97 @@
           <Property Type="Int32" Name="IsRuleOver" Nullable="false" />
           <Property Type="Int32" Name="IsRuleExtra" Nullable="false" />
         </EntityType>
+        <EntityType Name="vRateCodeType">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Name" />
+            <PropertyRef Name="Priority" />
+            <PropertyRef Name="Rule" />
+            <PropertyRef Name="RuleId" />
+            <PropertyRef Name="IsRuleOver" />
+            <PropertyRef Name="IsRuleExtra" />
+            <PropertyRef Name="RulePriority" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Priority" Nullable="false" />
+          <Property Type="String" Name="Rule" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RuleId" Nullable="false" />
+          <Property Type="Int32" Name="IsRuleOver" Nullable="false" />
+          <Property Type="Int32" Name="IsRuleExtra" Nullable="false" />
+          <Property Type="Int32" Name="RulePriority" Nullable="false" />
+        </EntityType>
+        <EntityType Name="SalaryBreakdown">
+          <Key>
+            <PropertyRef Name="RateCode" />
+          </Key>
+          <Property Type="String" Name="RateCode" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Decimal" Name="Salary" Nullable="false" Precision="38" Scale="2" />
+          <Property Type="DateTime" Name="DateStamp" Nullable="false" />
+        </EntityType>
+        <EntityType Name="vRateCodeByRange">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="HourStart" />
+            <PropertyRef Name="HourStop" />
+            <PropertyRef Name="RateCode" />
+            <PropertyRef Name="RateCodeId" />
+            <PropertyRef Name="RateCodeType" />
+            <PropertyRef Name="RateCodeTypeId" />
+            <PropertyRef Name="RateCodeLayer" />
+            <PropertyRef Name="RateCodeLayerId" />
+            <PropertyRef Name="Rule" />
+            <PropertyRef Name="RuleId" />
+            <PropertyRef Name="IsRuleOver" />
+            <PropertyRef Name="IsRuleExtra" />
+            <PropertyRef Name="RateCodeTypePriority" />
+            <PropertyRef Name="RateCodeLayerPriority" />
+            <PropertyRef Name="RulePriority" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="Int32" Name="TimeStart" />
+          <Property Type="Int32" Name="GracePeriod" />
+          <Property Type="Int32" Name="HourStart" Nullable="false" />
+          <Property Type="Int32" Name="HourStop" Nullable="false" />
+          <Property Type="String" Name="RateCode" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
+          <Property Type="String" Name="RateCodeType" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RateCodeTypeId" Nullable="false" />
+          <Property Type="String" Name="RateCodeLayer" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RateCodeLayerId" Nullable="false" />
+          <Property Type="String" Name="Rule" Nullable="false" MaxLength="32" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="RuleId" Nullable="false" />
+          <Property Type="Int32" Name="IsRuleOver" Nullable="false" />
+          <Property Type="Int32" Name="IsRuleExtra" Nullable="false" />
+          <Property Type="Boolean" Name="IsTimeAbsolute" />
+          <Property Type="Int32" Name="RateCodeTypePriority" Nullable="false" />
+          <Property Type="Int32" Name="RateCodeLayerPriority" Nullable="false" />
+          <Property Type="Int32" Name="RulePriority" Nullable="false" />
+        </EntityType>
+        <EntityType Name="RateCodeByRange">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="Int32" Name="TimeStart" />
+          <Property Type="Int32" Name="GracePeriod" />
+          <Property Type="Int32" Name="HourStart" Nullable="false" />
+          <Property Type="Int32" Name="HourStop" Nullable="false" />
+          <Property Type="Int32" Name="RateCodeId" Nullable="false" />
+          <NavigationProperty Name="RateCode" Relationship="TimeCardEntities.FK_RateCodeByRange_RateCode" FromRole="RateCodeByRange" ToRole="RateCode" />
+        </EntityType>
+        <Association Name="FK_RateCodeByRange_RateCode">
+          <End Type="TimeCardEntities.RateCode" Role="RateCode" Multiplicity="1" />
+          <End Type="TimeCardEntities.RateCodeByRange" Role="RateCodeByRange" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="RateCode">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="RateCodeByRange">
+              <PropertyRef Name="RateCodeId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -1033,16 +1071,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="RateCodeByRanges">
-            <EntityTypeMapping TypeName="TimeCardEntities.RateCodeByRange">
-              <MappingFragment StoreEntitySet="RateCodeByRange">
-                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
-                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
-                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="vWorkDayRates">
             <EntityTypeMapping TypeName="TimeCardEntities.vWorkDayRate">
               <MappingFragment StoreEntitySet="vWorkDayRate">
@@ -1128,19 +1156,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="vRateCodeTypes">
-            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeType">
-              <MappingFragment StoreEntitySet="vRateCodeType">
-                <ScalarProperty Name="IsRuleExtra" ColumnName="IsRuleExtra" />
-                <ScalarProperty Name="IsRuleOver" ColumnName="IsRuleOver" />
-                <ScalarProperty Name="RuleId" ColumnName="RuleId" />
-                <ScalarProperty Name="Rule" ColumnName="Rule" />
-                <ScalarProperty Name="Priority" ColumnName="Priority" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <FunctionImportMapping FunctionImportName="BuildMinuteBreakdown" FunctionName="TimeCardEntities.Store.BuildMinuteBreakdown">
             <ResultMapping>
               <ComplexTypeMapping TypeName="TimeCardEntities.BuildMinuteBreakdown_Result">
@@ -1159,28 +1174,6 @@
               </ComplexTypeMapping>
             </ResultMapping>
           </FunctionImportMapping>
-          <EntitySetMapping Name="vRateCodeByRanges">
-            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeByRange">
-              <MappingFragment StoreEntitySet="vRateCodeByRange">
-                <ScalarProperty Name="RulePriority" ColumnName="RulePriority" />
-                <ScalarProperty Name="RateCodeLayerPriority" ColumnName="RateCodeLayerPriority" />
-                <ScalarProperty Name="RateCodeTypePriority" ColumnName="RateCodeTypePriority" />
-                <ScalarProperty Name="IsRuleExtra" ColumnName="IsRuleExtra" />
-                <ScalarProperty Name="IsRuleOver" ColumnName="IsRuleOver" />
-                <ScalarProperty Name="RuleId" ColumnName="RuleId" />
-                <ScalarProperty Name="Rule" ColumnName="Rule" />
-                <ScalarProperty Name="RateCodeLayerId" ColumnName="RateCodeLayerId" />
-                <ScalarProperty Name="RateCodeLayer" ColumnName="RateCodeLayer" />
-                <ScalarProperty Name="RateCodeTypeId" ColumnName="RateCodeTypeId" />
-                <ScalarProperty Name="RateCodeType" ColumnName="RateCodeType" />
-                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
-                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
-                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
-                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="vRateCodes">
             <EntityTypeMapping TypeName="TimeCardEntities.vRateCode">
               <MappingFragment StoreEntitySet="vRateCode">
@@ -1197,6 +1190,66 @@
                 <ScalarProperty Name="Type" ColumnName="Type" />
                 <ScalarProperty Name="Rate" ColumnName="Rate" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vRateCodeTypes">
+            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeType">
+              <MappingFragment StoreEntitySet="vRateCodeType">
+                <ScalarProperty Name="RulePriority" ColumnName="RulePriority" />
+                <ScalarProperty Name="IsRuleExtra" ColumnName="IsRuleExtra" />
+                <ScalarProperty Name="IsRuleOver" ColumnName="IsRuleOver" />
+                <ScalarProperty Name="RuleId" ColumnName="RuleId" />
+                <ScalarProperty Name="Rule" ColumnName="Rule" />
+                <ScalarProperty Name="Priority" ColumnName="Priority" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="SalaryBreakdowns">
+            <EntityTypeMapping TypeName="TimeCardEntities.SalaryBreakdown">
+              <MappingFragment StoreEntitySet="SalaryBreakdown">
+                <ScalarProperty Name="DateStamp" ColumnName="DateStamp" />
+                <ScalarProperty Name="Salary" ColumnName="Salary" />
+                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vRateCodeByRanges">
+            <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeByRange">
+              <MappingFragment StoreEntitySet="vRateCodeByRange">
+                <ScalarProperty Name="RulePriority" ColumnName="RulePriority" />
+                <ScalarProperty Name="RateCodeLayerPriority" ColumnName="RateCodeLayerPriority" />
+                <ScalarProperty Name="RateCodeTypePriority" ColumnName="RateCodeTypePriority" />
+                <ScalarProperty Name="IsTimeAbsolute" ColumnName="IsTimeAbsolute" />
+                <ScalarProperty Name="IsRuleExtra" ColumnName="IsRuleExtra" />
+                <ScalarProperty Name="IsRuleOver" ColumnName="IsRuleOver" />
+                <ScalarProperty Name="RuleId" ColumnName="RuleId" />
+                <ScalarProperty Name="Rule" ColumnName="Rule" />
+                <ScalarProperty Name="RateCodeLayerId" ColumnName="RateCodeLayerId" />
+                <ScalarProperty Name="RateCodeLayer" ColumnName="RateCodeLayer" />
+                <ScalarProperty Name="RateCodeTypeId" ColumnName="RateCodeTypeId" />
+                <ScalarProperty Name="RateCodeType" ColumnName="RateCodeType" />
+                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
+                <ScalarProperty Name="RateCode" ColumnName="RateCode" />
+                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
+                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
+                <ScalarProperty Name="GracePeriod" ColumnName="GracePeriod" />
+                <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RateCodeByRanges">
+            <EntityTypeMapping TypeName="TimeCardEntities.RateCodeByRange">
+              <MappingFragment StoreEntitySet="RateCodeByRange">
+                <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
+                <ScalarProperty Name="HourStop" ColumnName="HourStop" />
+                <ScalarProperty Name="HourStart" ColumnName="HourStart" />
+                <ScalarProperty Name="GracePeriod" ColumnName="GracePeriod" />
+                <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
@@ -1234,46 +1287,46 @@
           <ConnectorPoint PointX="4.75" PointY="2.87474609375" />
           <ConnectorPoint PointX="5.625" PointY="2.87474609375" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftMinute" Width="1.5" PointX="0.75" PointY="6.75" Height="1.5956835937499996" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftMinute" Width="1.5" PointX="8.125" PointY="3.75" Height="1.5956835937499996" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftPay" Width="1.5" PointX="6.25" PointY="4" Height="1.4033821614583388" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShift" Width="1.5" PointX="4.5" PointY="4" Height="1.9802864583333326" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkShiftRate" Width="1.75" PointX="7.375" PointY="1.375" Height="1.9802864583333246" />
         <EntityTypeShape EntityType="TimeCardEntities.RateCode" Width="1.5" PointX="4.5" PointY="6.5" Height="1.9802864583333317" />
-        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="2.75" PointY="10.375" Height="1.9802864583333388" />
-        <AssociationConnector Association="TimeCardEntities.FK_RateCodeByRange_RateCode" >
-          <ConnectorPoint PointX="5.25" PointY="8.8648893229166674" />
-          <ConnectorPoint PointX="5.25" PointY="9.5" />
-          <ConnectorPoint PointX="4.5" PointY="9.5" />
-          <ConnectorPoint PointX="4.5" PointY="11.365143229166669" />
-          <ConnectorPoint PointX="4.25" PointY="11.365143229166669" />
-        </AssociationConnector>
         <EntityTypeShape EntityType="TimeCardEntities.vWorkDayRate" Width="1.5" PointX="6.5" PointY="6" Height="2.3648893229166674" />
-        <EntityTypeShape EntityType="TimeCardEntities.Config" Width="1.5" PointX="6.625" PointY="10.625" Height="1.5956835937500031" />
-        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="1" Height="2.5571907552083388" />
-        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.625" PointY="4.375" Height="1.9802864583333388" />
-        <EntityTypeShape EntityType="TimeCardEntities.vWorkDayMinute" Width="1.5" PointX="9.375" PointY="4.75" Height="1.4033821614583388" />
+        <EntityTypeShape EntityType="TimeCardEntities.Config" Width="1.5" PointX="8.375" PointY="9.125" Height="1.5956835937500031" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="0.625" Height="2.5571907552083388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.875" PointY="3.375" Height="1.9802864583333388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vWorkDayMinute" Width="1.5" PointX="8.375" PointY="5.625" Height="1.4033821614583388" />
         <EntityTypeShape EntityType="TimeCardEntities.RateCodeLayer" Width="1.5" PointX="6.625" PointY="8.75" Height="1.5956835937499996" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCode_RateCodeLayer" >
-          <ConnectorPoint PointX="7.375" PointY="8.75" />
-          <ConnectorPoint PointX="7.375" PointY="8.558" />
-          <ConnectorPoint PointX="6.192" PointY="8.558" />
-          <ConnectorPoint PointX="6.192" PointY="7.6824446614583337" />
-          <ConnectorPoint PointX="6" PointY="7.6824446614583337" />
+          <ConnectorPoint PointX="6.625" PointY="8.9035953776041659" />
+          <ConnectorPoint PointX="6.333333333333333" PointY="8.9035953776041659" />
+          <ConnectorPoint PointX="6.166666666666667" PointY="8.9035953776041659" />
+          <ConnectorPoint PointX="6" PointY="8.9035953776041659" />
         </AssociationConnector>
         <EntityTypeShape EntityType="TimeCardEntities.RateCodeType" Width="1.5" PointX="2.5" PointY="3.75" Height="2.3648893229166665" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCode_RateCodeType" >
           <ConnectorPoint PointX="3.9999999999999991" PointY="6.1148893229166665" />
           <ConnectorPoint PointX="4.5" PointY="6.5" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.RateCodeRule" Width="1.5" PointX="0.75" PointY="10" Height="1.5956835937499996" />
-        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeType" Width="1.5" PointX="10.625" PointY="0.75" Height="2.3648893229166674" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeRule" Width="1.5" PointX="0.75" PointY="8.75" Height="1.5956835937499996" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCodeType_RateCodeRule" >
-          <ConnectorPoint PointX="2.25" PointY="10.230499674479164" />
-          <ConnectorPoint PointX="2.53125" PointY="10.230499674479164" />
-          <ConnectorPoint PointX="2.53125" PointY="6.1148893229166665" />
+          <ConnectorPoint PointX="0.78125" PointY="8.75" />
+          <ConnectorPoint PointX="0.78125" PointY="5.5526432291666694" />
+          <ConnectorPoint PointX="2.5" PointY="5.5526432291666694" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="4.75" PointY="9.75" Height="4.0956022135416674" />
         <EntityTypeShape EntityType="TimeCardEntities.vRateCode" Width="1.5" PointX="2.625" PointY="6.375" Height="3.7109993489583282" />
+        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeType" Width="1.5" PointX="0.875" PointY="5.75" Height="2.5571907552083335" />
+        <EntityTypeShape EntityType="TimeCardEntities.SalaryBreakdown" Width="1.5" PointX="8.375" PointY="7.25" Height="1.5956835937500102" />
+        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="4.5" PointY="9.375" Height="4.6725065104166674" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="6.5" PointY="10.75" Height="2.3648893229166674" />
+        <AssociationConnector Association="TimeCardEntities.FK_RateCodeByRange_RateCode" >
+          <ConnectorPoint PointX="6" PointY="7.6705456888020827" />
+          <ConnectorPoint PointX="6.25" PointY="7.6705456888020827" />
+          <ConnectorPoint PointX="6.25" PointY="10.59568359375" />
+          <ConnectorPoint PointX="7.25" PointY="10.59568359375" />
+          <ConnectorPoint PointX="7.25" PointY="10.75" />
+        </AssociationConnector>
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

@@ -149,13 +149,18 @@ DIV.ui-layout-east
           Date: { header: "Date", format: self.formatDate }
         },
         rateCodeByRanges: {
+          TimeStart: { header: "<img src='/Images/time_icon.gif' style='vertical-align:middle' />Start" },
+          GracePeriod: { header: "<img src='/Images/time_icon.gif' style='vertical-align:middle' />Grace" },
           RateCodeType: { header: "Type" },
           RateCodeLayer: { header: "Layer" },
           RateCodeTypePriority: { header: "TP" },
           RateCodeLayerPriority: { header: "LP" },
           IsRuleOver: { header: "__" },
           IsRuleExtra: { header: "__" },
-          RulePriority: { header: "RP" }
+          RulePriority: { header: "RP" },
+          IsTimeAbsolute: { header: "Abs" },
+          HourStart: { header: "Start" },
+          HourStop: { header: "Stop" }
         },
         rateCodeTypes: {
           IsRuleOver: { header: "__" },
@@ -182,6 +187,10 @@ DIV.ui-layout-east
           Minutes: { header: "MM" },
           Rate: { header: "$" }
         },
+        workDayMinutes: {
+          Date: { header: "Date", format: self.formatDate },
+          TotalMinutes: { header: "ΣMM" }
+        },
         workDayRates: {
           Date: { header: "Date", format: self.formatDate },
           HourFrom: { header: "From" },
@@ -197,6 +206,8 @@ DIV.ui-layout-east
           Minute: { header: "MM" },
           Start: { header: "Start", format: self.formatTime },
           End: { header: "End", format: self.formatTime }
+        },
+        salaryBreakdowns: {
         }
       };
       this.sortPunches = function (name) { vm.punches.sort(function (a, b) { return a[name] > b[name] ? 1 : -1 }) };
@@ -237,7 +248,7 @@ DIV.ui-layout-east
       //			vm.GetData("workShiftRates");
       //			vm.GetData("workDayRates");
       vm.GetData("workDayMinutes");
-      vm.GetData("buildMinuteBreakdown");
+      vm.GetData("buildMinuteBreakdown").done(function () { vm.GetData("salaryBreakdowns"); });
     }, vm);
     $.extend(vm, ko.data.MvcCrud, ko.data.selected);
     vm.onRowSelected.subscribe(function (sr, a, b) {
@@ -276,6 +287,7 @@ DIV.ui-layout-east
     //		defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
     defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
     defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
+      vm.GetData("salaryBreakdowns", "#salaryBreakdownsTemplate");
       $('#main').layout({ applyDefaultStyles: true, west__initClosed: false, west__size: "auto", east__size: "auto" });
     }));
     $.when.apply($, defs()).done(function () {
@@ -505,7 +517,7 @@ DIV.ui-layout-east
 <div class="groupContainer">
 <table id="rateCodeTypesTemplate">
 <thead>
-  <tr data-bind="foreach:{{columns}},attr:{'data-bind':''}">
+  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>
   </tr>
   <tr><th>X</th></tr>
@@ -526,7 +538,7 @@ DIV.ui-layout-east
                          value:{{rows}}New.RuleId" /></td>
   </tr>
   <tr>
-    <td>
+    <td colspan="2">
       <span>
         <input type="button" value="Add" data-bind="click:$root.{{add}}" />
       </span>
@@ -604,18 +616,20 @@ DIV.ui-layout-east
 <table id="rateCodeByRangesTemplate" style="float:left">
 <thead>
   <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
-    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+    <th data-bind="html:$data,attr:{'data-bind':''}"></th>
   </tr>
   <tr><th>X</th></tr>
 </thead>
 <tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}">
 <tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
-<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"{{rows}}\"])}"}' align='right'/>
+<td data-bind='attr:{"data-bind": "html: $root.format($data[\""+$data+"\"]),click:function(a,b){$root.update(a,b,\""+$data+"\",[\"{{rows}}\"])}"}' align='right'/>
 </tr>
 <tr><td><input type="button" value="X"  data-bind='attr:{"data-bind":"click:$.proxy($root.{{delete}},$root)"}' /></td></tr>
 </tbody>
 <tfoot>
   <tr>
+  <td><input data-bind="value: rateCodeByRangesNew.TimeStart" size="1" /></td>
+  <td><input data-bind="value: rateCodeByRangesNew.GracePeriod" size="1" /></td>
   <td><input data-bind="value: rateCodeByRangesNew.HourStart" size="1" /></td>
   <td><input data-bind="value: rateCodeByRangesNew.HourStop" size="1" /></td>
   <td><select data-bind="options:rateCodes,
@@ -629,13 +643,25 @@ DIV.ui-layout-east
         <input type="button" value="Add" data-bind="click:$root.{{add}}" />
       </span>
      </td>
-     <td colspan="5"></td>
+     <td colspan="7"></td>
   </tr>
 </tfoot>
 </table>
 </div>
 <div class="ui-layout-east">
 <table id="buildMinuteBreakdownTemplate">
+<thead>
+  <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
+    <th data-bind="text:$data,attr:{'data-bind':''}"></th>
+  </tr>
+</thead>
+<tbody data-bind="attr:{'data-bind':'foreach:{{rows}}'}" >
+<tr data-bind="foreach: {{columns}},attr:{'data-bind':''}">
+<td data-bind='attr:{"data-bind": "text: $root.format($data[\""+$data+"\"],\"{{rows}}\",\""+$data+"\")"}' align='right'/>
+</tr>
+</tbody>
+</table>
+<table id="salaryBreakdownsTemplate">
 <thead>
   <tr data-bind="foreach:{{headers}},attr:{'data-bind':''}">
     <th data-bind="text:$data,attr:{'data-bind':''}"></th>

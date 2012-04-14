@@ -330,6 +330,9 @@ namespace TimeCard.MVC.Controllers {
     public ActionResult BuildMinuteBreakdownGet() {
       return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().BuildMinuteBreakdown().ToList().DefaultIfEmpty(new BuildMinuteBreakdown_Result()), JsonRequestBehavior.AllowGet);
     }
+    public ActionResult SalaryBreakdownsGet() {
+      return Json(new TimeCard.MVC.Models.TimeCardEntitiesContainer().SalaryBreakdowns.ToList().DefaultIfEmpty(new SalaryBreakdown()), JsonRequestBehavior.AllowGet);
+    }
 
     #endregion
     #endregion

@@ -21,6 +21,7 @@ namespace TimeCard.MVC.Models
         public int RuleId { get; set; }
         public int IsRuleOver { get; set; }
         public int IsRuleExtra { get; set; }
+        public int RulePriority { get; set; }
     }
     
 }
