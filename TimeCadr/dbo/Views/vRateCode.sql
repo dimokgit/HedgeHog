@@ -1,12 +1,12 @@
 ﻿CREATE VIEW dbo.vRateCode
 AS
-SELECT        TOP (10000) RC.Id, RC.Name, RC.Rate, RCT.Name AS Type, RC.TypeId, RCL.Name AS Layer, RC.LayerId, RCT.Priority AS RateCodeTypePriority, 
-                         RCL.Priority AS RateCodeLayerPriority, RCR.Name AS [Rule], RCT.RuleId, RCT.IsRuleOver, RCT.IsRuleExtra, RCR.Id AS RulePriority
+SELECT        TOP (10000) RC.Id, RC.Name, RC.Rate, RCT.Name AS Type, RC.TypeId, RCL.Name AS Layer, RC.LayerId, RCR.Name AS [Rule], RCT.RuleId, 
+                         RCT.Priority AS RateCodeTypePriority, RCL.Priority AS RateCodeLayerPriority, RCR.Id AS RulePriority, RCT.IsRuleOver, RCT.IsRuleExtra
 FROM            dbo.RateCode AS RC INNER JOIN
                          dbo.RateCodeType AS RCT ON RC.TypeId = RCT.Id INNER JOIN
                          dbo.RateCodeLayer AS RCL ON RC.LayerId = RCL.Id INNER JOIN
                          dbo.RateCodeRule AS RCR ON RCT.RuleId = RCR.Id
-ORDER BY RateCodeLayerPriority, RateCodeTypePriority, RC.Name
+ORDER BY RulePriority, RateCodeLayerPriority, RateCodeTypePriority, RC.Name
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 2, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
 
@@ -103,7 +103,7 @@ Begin DesignProperties =
                Right = 416
             End
             DisplayFlags = 280
-            TopColumn = 0
+            TopColumn = 2
          End
          Begin Table = "RCL"
             Begin Extent = 
@@ -132,7 +132,7 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 12
+      Begin ColumnWidths = 15
          Width = 284
          Width = 1500
          Width = 1500
@@ -143,6 +143,9 @@ Begin DesignProperties =
          Width = 1500
          Width = 1920
          Width = 2220
+         Width = 1500
+         Width = 1500
+         Width = 1500
          Width = 1500
          Width = 1500
       End
@@ -156,10 +159,11 @@ Begin DesignProperties =
          Append = 1400
          NewValue = 1170
          SortType = 1350
-         SortOrder = 1410
-         GroupBy = 1350
-         Filter = 1350
-         Or = 1350', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
+         SortOrder = 1410', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
+
+
+
+
 
 
 
@@ -169,9 +173,14 @@ Begin DesignProperties =
 
 
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane2', @value = N'Or = 1350
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane2', @value = N'GroupBy = 1350
+         Filter = 1350
+         Or = 1350
+         Or = 1350
          Or = 1350
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCode';
+
+
 

@@ -7,16 +7,22 @@
 
 
 GO
-CREATE TRIGGER tr_RateCodeRule
-   ON  RateCodeRule
+CREATE TRIGGER [dbo].[tr_RateCodeRule]
+   ON  [dbo].[RateCodeRule]
    AFTER INSERT,DELETE,UPDATE
 AS 
 BEGIN
 	SET NOCOUNT ON;
 
-IF EXISTS(SELECT * FROM(SELECT * FROM inserted UNION SELECT * FROM deleted)T WHERE IsSystem = 1)BEGIN
+IF EXISTS(SELECT * FROM deleted WHERE IsSystem = 1) AND NOT EXISTS(SELECT * FROM inserted WHERE IsSystem = 1) BEGIN
   ROLLBACK
-  RAISERROR('System RateCode rules are readonly.',16,1)
+  RAISERROR('System Rate Code Rules can not be deleted.',16,1)
+  RETURN
+END
+
+IF UPDATE(Id) BEGIN
+  ROLLBACK
+  RAISERROR('System Rate Code Rules IDs can not be changed.',16,1)
   RETURN
 END
 

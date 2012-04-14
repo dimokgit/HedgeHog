@@ -1,11 +1,13 @@
 ﻿CREATE VIEW dbo.vRateCodeByRange
 AS
-SELECT        TOP (1000000000) dbo.RateCodeByRange.Id, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop, RC.Name AS RateCode, 
-                         dbo.RateCodeByRange.RateCodeId, RC.Type AS RateCodeType, RC.TypeId AS RateCodeTypeId, RC.Layer AS RateCodeLayer, RC.LayerId AS RateCodeLayerId, 
-                         RC.RateCodeTypePriority, RC.RateCodeLayerPriority, RC.[Rule], RC.RuleId, RC.IsRuleOver, RC.IsRuleExtra
+SELECT        TOP (1000000000) dbo.RateCodeByRange.Id, dbo.RateCodeByRange.TimeStart, dbo.RateCodeByRange.GracePeriod, dbo.RateCodeByRange.HourStart, 
+                         dbo.RateCodeByRange.HourStop, RC.Name AS RateCode, dbo.RateCodeByRange.RateCodeId, RC.Type AS RateCodeType, RC.TypeId AS RateCodeTypeId, 
+                         RC.Layer AS RateCodeLayer, RC.LayerId AS RateCodeLayerId, RC.[Rule], RC.RuleId, RC.IsRuleOver, RC.IsRuleExtra, CONVERT(bit, 
+                         CASE WHEN timestart >= 0 THEN 1 ELSE 0 END) AS IsTimeAbsolute, RC.RateCodeTypePriority, RC.RateCodeLayerPriority, RC.RulePriority
 FROM            dbo.vRateCode AS RC INNER JOIN
                          dbo.RateCodeByRange ON RC.Id = dbo.RateCodeByRange.RateCodeId
-ORDER BY RC.RateCodeLayerPriority, RC.RateCodeTypePriority, dbo.RateCodeByRange.HourStart, dbo.RateCodeByRange.HourStop
+ORDER BY ISNULL(dbo.RateCodeByRange.TimeStart, 0) + dbo.RateCodeByRange.HourStart, RC.RateCodeLayerPriority, RC.RateCodeTypePriority, RC.RulePriority, 
+                         dbo.RateCodeByRange.HourStop
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeByRange';
 
@@ -16,7 +18,7 @@ Begin DesignProperties =
    Begin PaneConfigurations = 
       Begin PaneConfiguration = 0
          NumPanes = 4
-         Configuration = "(H (1[40] 4[20] 2[20] 3) )"
+         Configuration = "(H (1[27] 4[35] 2[20] 3) )"
       End
       Begin PaneConfiguration = 1
          NumPanes = 3
@@ -86,7 +88,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 246
-               Bottom = 292
+               Bottom = 338
                Right = 451
             End
             DisplayFlags = 280
@@ -96,7 +98,7 @@ Begin DesignProperties =
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 147
+               Bottom = 203
                Right = 208
             End
             DisplayFlags = 280
@@ -109,8 +111,17 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 10
+      Begin ColumnWidths = 19
          Width = 284
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
          Width = 1500
          Width = 1500
          Width = 1500
@@ -124,7 +135,7 @@ Begin DesignProperties =
    End
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
-         Column = 1980
+         Column = 6555
          Alias = 1560
          Table = 1680
          Output = 720
@@ -140,6 +151,10 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeByRange';
+
+
+
+
 
 
 

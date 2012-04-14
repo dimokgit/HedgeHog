@@ -1,8 +1,9 @@
 ﻿CREATE VIEW dbo.vRateCodeType
 AS
-SELECT        T.Id, T.Name, T.Priority, R.Name AS [Rule], T.RuleId, T.IsRuleOver, T.IsRuleExtra
+SELECT        TOP (100000) T.Id, T.Name, T.Priority, R.Name AS [Rule], T.RuleId, T.IsRuleOver, T.IsRuleExtra, R.Id AS RulePriority
 FROM            dbo.RateCodeType AS T INNER JOIN
                          dbo.RateCodeRule AS R ON T.RuleId = R.Id
+ORDER BY RulePriority, T.Priority
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeType';
 
@@ -79,22 +80,22 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "R"
-            Begin Extent = 
-               Top = 6
-               Left = 246
-               Bottom = 118
-               Right = 416
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
          Begin Table = "T"
             Begin Extent = 
                Top = 6
                Left = 38
                Bottom = 177
                Right = 208
+            End
+            DisplayFlags = 280
+            TopColumn = 0
+         End
+         Begin Table = "R"
+            Begin Extent = 
+               Top = 6
+               Left = 246
+               Bottom = 118
+               Right = 416
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -121,7 +122,7 @@ Begin DesignProperties =
    Begin CriteriaPane = 
       Begin ColumnWidths = 11
          Column = 1440
-         Alias = 900
+         Alias = 1140
          Table = 1170
          Output = 720
          Append = 1400
@@ -136,4 +137,6 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vRateCodeType';
+
+
 
