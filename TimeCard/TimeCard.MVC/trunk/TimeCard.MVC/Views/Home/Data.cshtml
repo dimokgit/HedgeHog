@@ -283,19 +283,13 @@ DIV.ui-layout-east
 
     defs.push(vm.GetData("punchTypes", "#punchTypesTemplate"));
     defs.push(vm.GetData("punchDirections", "#punchDirectionsTemplate"));
-    //		defs.push(vm.GetData("workShiftRates", "#workShiftRatesTemplate"));
-    //		defs.push(vm.GetData("workDayRates", "#workDayRatesTemplate"));
     defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
     defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
       vm.GetData("salaryBreakdowns", "#salaryBreakdownsTemplate");
       $('#main').layout({ applyDefaultStyles: true, west__initClosed: false, west__size: "auto", east__size: "auto" });
     }));
     $.when.apply($, defs()).done(function () {
-      defs.push(vm.GetData("punches", "#punchesTemplate", null, function () {
-        vm.punches.subscribe(function (a, b) {
-          //vm.punches.sort(function (a, b) { return a.Time > b.Time ? 1 : -1; });
-        });
-      }));
+      defs.push(vm.GetData("punches", "#punchesTemplate"));
     });
   });
 </script>

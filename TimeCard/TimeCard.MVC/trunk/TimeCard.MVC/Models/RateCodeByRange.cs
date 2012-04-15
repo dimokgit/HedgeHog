@@ -16,7 +16,6 @@ namespace TimeCard.MVC.Models
     {
         public int Id { get; set; }
         public Nullable<int> TimeStart { get; set; }
-        public Nullable<int> GracePeriod { get; set; }
         public int HourStart { get; set; }
         public int HourStop { get; set; }
         public int RateCodeId { get; set; }

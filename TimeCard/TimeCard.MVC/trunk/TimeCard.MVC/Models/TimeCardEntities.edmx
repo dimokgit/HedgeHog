@@ -940,7 +940,6 @@
           </Key>
           <Property Type="Int32" Name="Id" Nullable="false" />
           <Property Type="Int32" Name="TimeStart" />
-          <Property Type="Int32" Name="GracePeriod" />
           <Property Type="Int32" Name="HourStart" Nullable="false" />
           <Property Type="Int32" Name="HourStop" Nullable="false" />
           <Property Type="String" Name="RateCode" Nullable="false" MaxLength="50" FixedLength="false" Unicode="false" />
@@ -964,7 +963,6 @@
           </Key>
           <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="Int32" Name="TimeStart" />
-          <Property Type="Int32" Name="GracePeriod" />
           <Property Type="Int32" Name="HourStart" Nullable="false" />
           <Property Type="Int32" Name="HourStop" Nullable="false" />
           <Property Type="Int32" Name="RateCodeId" Nullable="false" />
@@ -1236,7 +1234,6 @@
                 <ScalarProperty Name="RateCode" ColumnName="RateCode" />
                 <ScalarProperty Name="HourStop" ColumnName="HourStop" />
                 <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="GracePeriod" ColumnName="GracePeriod" />
                 <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
@@ -1248,7 +1245,6 @@
                 <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
                 <ScalarProperty Name="HourStop" ColumnName="HourStop" />
                 <ScalarProperty Name="HourStart" ColumnName="HourStart" />
-                <ScalarProperty Name="GracePeriod" ColumnName="GracePeriod" />
                 <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
@@ -1318,8 +1314,8 @@
         <EntityTypeShape EntityType="TimeCardEntities.vRateCode" Width="1.5" PointX="2.625" PointY="6.375" Height="3.7109993489583282" />
         <EntityTypeShape EntityType="TimeCardEntities.vRateCodeType" Width="1.5" PointX="0.875" PointY="5.75" Height="2.5571907552083335" />
         <EntityTypeShape EntityType="TimeCardEntities.SalaryBreakdown" Width="1.5" PointX="8.375" PointY="7.25" Height="1.5956835937500102" />
-        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="4.5" PointY="9.375" Height="4.6725065104166674" />
-        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="6.5" PointY="10.75" Height="2.3648893229166674" />
+        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="4.5" PointY="9.375" Height="4.480205078125" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="6.5" PointY="10.75" Height="2.1725878906249996" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCodeByRange_RateCode" >
           <ConnectorPoint PointX="6" PointY="7.6705456888020827" />
           <ConnectorPoint PointX="6.25" PointY="7.6705456888020827" />
