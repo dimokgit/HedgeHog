@@ -1,6 +1,8 @@
-﻿CREATE VIEW [dbo].[vWorkShiftMinuteBreakdown_20]
+﻿
+
+CREATE VIEW [dbo].[vWorkShiftMinuteBreakdown_20]
 AS
-SELECT WorkShiftStart, PunchPairStart, MinuteDate, MinuteDateTime
+SELECT WorkShiftStart, WorkShiftStop, WorkShiftStartDate, PunchPairStart, MinuteDate, MinuteDateTime
 , WorkShiftMinute, (WorkShiftMinute - 1) / 60 + 1 AS WorkShiftHour
 , (WorkShiftMinute - 1) % 60 + 1 AS WorkShiftMinuteByHour
 ,ROW_NUMBER() OVER (PARTITION BY MinuteDate ORDER BY MinuteDateTime) WorkDayMinute

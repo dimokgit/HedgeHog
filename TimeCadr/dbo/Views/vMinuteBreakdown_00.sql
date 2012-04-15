@@ -1,7 +1,8 @@
-﻿CREATE VIEW dbo.[vMinuteBreakdown_00]
+﻿CREATE VIEW dbo.vMinuteBreakdown_00
 AS
-SELECT        WorkShiftStart, PunchPairStart, MinuteDate, MinuteDateTime, WorkShiftMinute AS WSMinute, WorkShiftHour AS WSHour, WorkShiftMinuteByHour AS WSHourMinute,
-                          WorkDayMinute AS WDMinute, (WorkDayMinute - 1) / 60 + 1 AS WDHour, (WorkDayMinute - 1) % 60 + 1 AS WDHourMinute
+SELECT        WorkShiftStart, WorkShiftStartDate, WorkShiftStop, PunchPairStart, MinuteDate, MinuteDateTime, WorkShiftMinute AS WSMinute, WorkShiftHour AS WSHour, 
+                         WorkShiftMinuteByHour AS WSHourMinute, WorkDayMinute AS WDMinute, (WorkDayMinute - 1) / 60 + 1 AS WDHour, (WorkDayMinute - 1) 
+                         % 60 + 1 AS WDHourMinute
 FROM            dbo.vWorkShiftMinuteBreakdown_20 AS WSMB
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPaneCount', @value = 1, @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vMinuteBreakdown_00';
