@@ -180,11 +180,34 @@ namespace HedgeHog.Alice.Store {
       get { return _StartDate; }
       private set {
         if (_StartDate != value) {
+          var old = _StartDate;
           _StartDate = value;
           RaisePropertyChanged("StartDate");
+          RaiseStartDateChanged(value, old);
         }
       }
     }
+
+    #region StartDateChanged Event
+    public class StartDateEventArgs : EventArgs {
+      public DateTime New { get; set; }
+      public DateTime Old { get; set; }
+    }
+    event EventHandler<StartDateEventArgs> StartDateChangedEvent;
+    public event EventHandler<StartDateEventArgs> StartDateChanged {
+      add {
+        if (StartDateChangedEvent == null || !StartDateChangedEvent.GetInvocationList().Contains(value))
+          StartDateChangedEvent += value;
+      }
+      remove {
+        StartDateChangedEvent -= value;
+      }
+    }
+    protected void RaiseStartDateChanged(DateTime New,DateTime Old) {
+      if (StartDateChangedEvent != null) StartDateChangedEvent(this, new StartDateEventArgs() { New = New, Old = Old });
+    }
+    #endregion
+
 
     #region PeriodsJumped Event
     event EventHandler<EventArgs> PeriodsJumpedEvent;
