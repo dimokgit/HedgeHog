@@ -229,6 +229,27 @@ namespace HedgeHog.Bars {
         .ForAll(i => list[i-1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
       return list;
     }
+    public static IList<TBar> SetStDevPrices<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
+      var list = new List<TBar>(rates.Take(2) );
+      list.SetStDevPrice(getPrice);
+      var stDevLast = list.LastByCount().PriceStdDev;
+      int count = 0;
+      foreach(var r in rates.Skip(2)) {
+        list.Add(r);
+        list.SetStDevPrice(getPrice);
+        var stDev = list.LastByCount().PriceStdDev;
+        if (stDev >= stDevLast) {
+          stDevLast = stDev;
+        } else {
+          list.RemoveRange(0, list.Count - 1);
+          stDevLast = 0;
+          list[0].PriceStdDev = 0;
+          if (++count > 2 && rates.LastByCount().PriceStdDev > 0)
+            break;
+        }
+      }
+      return rates;
+    }
     public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
       return rates.Count < 2000 ? rates.SetStDevPrice_4(getPrice) : rates.SetStDevPrice_(getPrice);
       /*
@@ -443,9 +464,9 @@ namespace HedgeHog.Bars {
       return (rate2.PriceAvg - rate1.PriceAvg) / (rate2.StartDate - rate1.StartDate).Divide(interval).TotalMinutes;
     }
 
-    public static TBar[] FindExtreams<TBar>(this TBar[] bars, Func<TBar, TBar, TBar> aggregate, int margin = 2) where TBar : BarBase {
-      if (bars.Length == 0) return new TBar[0];
-      var count = bars.Length - margin * 2;
+    public static TBar[] FindExtreams<TBar>(this IList<TBar> bars, Func<TBar, TBar, TBar> aggregate, int margin = 2) where TBar : BarBase {
+      if (bars.Count == 0) return new TBar[0];
+      var count = bars.Count - margin * 2;
       var extreams = new List<TBar>();
       //Parallel.For(0, count, i => {
       //  lock (bars) {

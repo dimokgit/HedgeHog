@@ -66,7 +66,7 @@ namespace HedgeHog.Alice.Store {
     None = 0, Auto = 1, Breakout = 2, Range = 4, Wave = 8,
     Breakout_A = Breakout + Auto, Range_A = Range + Auto, Massa = 16, Reverse = 32, Momentum_R = Massa + Reverse,
     Gann = 64, Brange = 128, Breakout_2Corrs = 256 + Breakout, Breakout_2Corrs_A = 256 + Breakout + Auto, Hot = 1024,
-    Hot_A = Hot + Auto
+    Hot_A = Hot + Auto, Breakout7 = Breakout + 512, RomanCandle = 1024 * 2
   }
   public struct Playback {
     public bool Play;

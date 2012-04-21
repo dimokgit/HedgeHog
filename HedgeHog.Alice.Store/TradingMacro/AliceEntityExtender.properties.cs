@@ -386,14 +386,14 @@ namespace HedgeHog.Alice.Store {
       set { StrictTradeClose = value; }
     }
 
-    [DisplayName("Density Min")]
-    [Category(categoryCorridor)]
-    public double DensityMin {
+    [DisplayName("Wave Length Min")]
+    [Category(categoryActive)]
+    public double WaveLengthMin {
       get { return SpreadShortToLongTreshold; }
       set {
         if (SpreadShortToLongTreshold == value) return;
         SpreadShortToLongTreshold = value;
-        OnPropertyChanged(TradingMacroMetadata.DensityMin);
+        OnPropertyChanged(TradingMacroMetadata.WaveLengthMin);
       }
     }
 
@@ -527,7 +527,7 @@ namespace HedgeHog.Alice.Store {
       get { return CorridornessMin; }
       set { 
         CorridornessMin = value;
-        OnPropertyChanged(TradingMacroMetadata.CorridorHeightMultiplier);
+        OnPropertyChanged(TradingMacroMetadata.TakeProfitMultiplier);
       }
     }
 
