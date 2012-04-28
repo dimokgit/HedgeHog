@@ -205,6 +205,12 @@ namespace HedgeHog {
       }
       return values;
     }
+    public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
+      var avg = values.DefaultIfEmpty().Average(getValue);
+      if (averagesOut != null) averagesOut.Insert(0, avg);
+      return values.Count < 2 || iterations == 0 ? values : values.AsParallel().Where(r => compare(getValue(r), avg)).ToList().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
+    }
+
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
       if (averagesOut != null) averagesOut.Insert(0, avg);
