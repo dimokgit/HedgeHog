@@ -5153,7 +5153,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorsRates"/></summary>
         public const string CorridorsRates = "CorridorsRates";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._bigWave"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._waveLong"/></summary>
         public const string _bigWave = "_bigWave";
 
 
@@ -6198,7 +6198,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorsRates"/></summary>
         public static PropertyPath CorridorsRatesPath { get { return new PropertyPath("CorridorsRates"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._bigWave"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._waveLong"/></summary>
         public static PropertyPath _bigWavePath { get { return new PropertyPath("_bigWave"); } }
 
     }

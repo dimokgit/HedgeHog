@@ -229,27 +229,76 @@ namespace HedgeHog.Bars {
         .ForAll(i => list[i-1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
       return list;
     }
+    class ValueHolder<T> {
+      public T Value { get; set; }
+      public ValueHolder(T v) {
+        Value = v;
+      }
+    }
+
+    public static LinkedList<T> ToLinkedList<T>(this IList<T> list) { return new LinkedList<T>(list); }
+    public static IList<IList<T>> Partition<T>(this IList<T> list, Func<T, bool> condition) {
+      list = list.ToList();
+      var o = new List<IList<T>>();
+      var ll = new LinkedList<T>(list);
+      while (list.Count > 0) {
+        var l = list.TakeWhile(condition).ToList();
+        if (list.Count > l.Count)
+          l.Add(list[l.Count]);
+        list.RemoveRange(0, l.Count);
+        o.Add(l);
+      }
+      return o;
+    }
     public static IList<TBar> SetStDevPrices<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
-      var list = new List<TBar>(rates.Take(2) );
+      var list = new List<TBar>(rates.Take(2));
       list.SetStDevPrice(getPrice);
       var stDevLast = list.LastByCount().PriceStdDev;
-      int count = 0;
-      foreach(var r in rates.Skip(2)) {
-        list.Add(r);
-        list.SetStDevPrice(getPrice);
-        var stDev = list.LastByCount().PriceStdDev;
-        if (stDev >= stDevLast) {
-          stDevLast = stDev;
-        } else {
-          list.RemoveRange(0, list.Count - 1);
-          stDevLast = 0;
-          list[0].PriceStdDev = 0;
-          if (++count > 2 && rates.LastByCount().PriceStdDev > 0)
-            break;
-        }
+      int counter = 0;
+      Func<int, int, List<Tuple<TBar,ValueHolder<double>>>> getWave = (start, count) => {
+        var rates1 = rates.Skip(start).Take(count).Select(r => new Tuple<TBar,ValueHolder<double>>( r,  new ValueHolder<double>(0.0) )).ToList();
+        rates1.SetStDevPrice_4(t => getPrice(t.Item1), (t, d) => t.Item2.Value = d);
+        var node = rates1.ToLinkedList().First;
+        var rates2 = new List<Tuple<TBar,ValueHolder<double>>> { node.Value };
+        for (; node.Next != null && node.Value.Item2.Value < node.Next.Value.Item2.Value; node = node.Next)
+          rates2.Add(node.Next.Value);
+        return rates2;
+      };
+      var step = rates.Count / rates.Partition(r => r.PriceStdDev != 0).Select(l=>(double)l.Count)
+        .ToList().AverageByIterations(1,true).Average().ToInt();
+      for (int i = 0; i < rates.Count; ) {
+        var rates3 = getWave(i, step);
+        for (var i1 = 1; i + i1 * step < rates.Count && rates3.Count == step * i1; )
+          rates3 = getWave(i, step * ++i1);
+        i += rates3.Count;
+        var stDevChanged = false;
+        rates3.ForEach(t => {
+          if (t.Item1.PriceStdDev != t.Item2.Value)
+            stDevChanged = true;
+          t.Item1.PriceStdDev = t.Item2.Value;
+        });
+        if (!stDevChanged) break;
+        //if (++counter > 2 && step > 1)
+        //  break;
       }
+      if (step < 0)
+        foreach (var r in rates.Skip(2)) {
+          list.Add(r);
+          list.SetStDevPrice(getPrice);
+          var stDev = list.LastByCount().PriceStdDev;
+          if (stDev >= stDevLast) {
+            stDevLast = stDev;
+          } else {
+            list.RemoveRange(0, list.Count - 1);
+            stDevLast = 0;
+            list[0].PriceStdDev = 0;
+            if (++counter > 2 && rates.LastByCount().PriceStdDev > 0)
+              break;
+          }
+        }
       return rates;
     }
+
     public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
       return rates.Count < 2000 ? rates.SetStDevPrice_4(getPrice) : rates.SetStDevPrice_(getPrice);
       /*
@@ -267,7 +316,10 @@ namespace HedgeHog.Bars {
     }
 
     public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
-      rates[0].PriceStdDev = 0;
+      return rates.SetStDevPrice_4(getPrice, (r, d) => r.PriceStdDev = d);
+    }
+    public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice,Action<TBar,double> setPrice)  {
+      setPrice(rates[0], 0);
       var list = rates.Select(getPrice).ToArray();
       var dp = new StaticRangePartitioner(Enumerable.Range(0, list.Length+1).ToArray(), 0.5);
       dp.AsParallel().ForAll(range => {
@@ -275,8 +327,8 @@ namespace HedgeHog.Bars {
           var l = new double[i];
           Array.Copy(list, l, i);
           try {
-            var stDev = rates[i - 1].PriceStdDev = l.StDevP();
-            rates[i - 1].Corridorness = i / stDev;
+            var stDev = l.StDevP();
+            setPrice(rates[i - 1], stDev);
           } catch {
             Debugger.Break();
           }

@@ -723,7 +723,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trade By Rate Direction")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public bool TradeByRateDirection_ {
       get { return TradeByRateDirection; }
       set { TradeByRateDirection = value; }
