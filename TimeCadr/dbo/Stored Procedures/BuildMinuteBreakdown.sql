@@ -7,8 +7,14 @@ SET NOCOUNT ON
 SET FMTONLY OFF
 DECLARE @TypePriority int,@LayerPriority int SELECT @TypePriority = -1,@LayerPriority = -1
 
-SELECT * INTO #Breakdown_00
-FROM vMinuteBreakdown
+SELECT WorkShiftStart,PunchPairStart,MinuteDate,MinuteDateTime,RateCodeId,RuleId,RateCodeLayerPriority,RateCodeTypePriority,IsRuleOver,IsRuleExtra,GracePeriod
+INTO #Breakdown_00
+FROM 
+(
+SELECT WorkShiftStart,PunchPairStart,MinuteDate,MinuteDateTime,RateCodeId,RuleId,RateCodeLayerPriority,RateCodeTypePriority,IsRuleOver,IsRuleExtra,0 AS GracePeriod FROM vMinuteBreakdown
+UNION ALL
+SELECT WorkShiftStart,PunchPairStart,MinuteDate,MinuteDateTime,RateCodeId,RuleId,RateCodeLayerPriority,RateCodeTypePriority,IsRuleOver,IsRuleExtra,GracePeriod FROM vMinuteBreakdownAbsolute_New
+)T
 
 SELECT TOP (0) * INTO #Breakdown_10
 FROM #Breakdown_00
@@ -91,6 +97,7 @@ DECLARE @Out TABLE( WorkShiftStart datetimeoffset NOT NULL
                   , RateCodeLayerPriority int NOT NULL
                   , RulePriority int NOT NULL
                   , [Rule] varchar(1) NOT NULL
+                  , GracePeriod int
                   )
 
 INSERT INTO @Out
@@ -99,9 +106,11 @@ SELECT BD.WorkShiftStart
 , COUNT(*)Minutes, dbo.CalcHour(COUNT(*))Hour,dbo.CalcHourMinute(COUNT(*))Minute
 , RC.Name RateCode,BD.RateCodeId,RC.Layer,RC.Type,RC.RateCodeTypePriority,RC.RateCodeLayerPriority
 , RC.RulePriority, LEFT(RC.[Rule],1)[Rule]
+, BD.GracePeriod
 FROM #Breakdown BD
 INNER JOIN vRateCode RC ON BD.RateCodeId = RC.Id
-GROUP BY BD.RateCodeId, BD.MinuteDate, BD.PunchPairStart, BD.WorkShiftStart,BD.RateCodeId,RC.Name,RC.Layer,RC.Type,RC.RateCodeLayerPriority,RC.RateCodeTypePriority,RC.RulePriority,RC.[Rule]
+GROUP BY BD.RateCodeId, BD.MinuteDate, BD.PunchPairStart, BD.WorkShiftStart,BD.RateCodeId,RC.Name,RC.Layer,RC.Type,RC.RateCodeLayerPriority,RC.RateCodeTypePriority,RC.RulePriority,RC.[Rule],BD.GracePeriod
+--HAVING COUNT(*) >= BD.GracePeriod
 ORDER BY BD.WorkShiftStart, BD.PunchPairStart, BD.MinuteDate,RC.RateCodeLayerPriority,RC.RateCodeTypePriority,RC.RulePriority
 
 SELECT  WorkShiftStart

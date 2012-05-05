@@ -6,11 +6,15 @@
     [IsOutOfSequence] BIT                CONSTRAINT [DF_Punch_IsOutOffSequence] DEFAULT ((0)) NOT NULL,
     [TimeUTC]         AS                 (switchoffset([Time],(0))) PERSISTED,
     [TimeZoneOffset]  AS                 (datepart(tzoffset,[Time])) PERSISTED,
+    [InputMethodId]   INT                CONSTRAINT [DF_Punch_InputMethodId] DEFAULT ((1)) NOT NULL,
     CONSTRAINT [PK_Punch] PRIMARY KEY NONCLUSTERED ([Id] ASC),
     CONSTRAINT [CK_Punch_Time] CHECK ([Time]>'1/1/1999'),
     CONSTRAINT [FK_Punch_PunchDirection] FOREIGN KEY ([DirectionId]) REFERENCES [dbo].[PunchDirection] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE,
+    CONSTRAINT [FK_Punch_PunchInputMethod] FOREIGN KEY ([InputMethodId]) REFERENCES [dbo].[PunchInputMethod] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE,
     CONSTRAINT [FK_Punch_PunchType] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[PunchType] ([Id]) ON DELETE NO ACTION ON UPDATE CASCADE
 );
+
+
 
 
 

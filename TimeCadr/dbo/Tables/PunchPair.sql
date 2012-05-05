@@ -79,6 +79,35 @@ BEGIN --1
 IF @@ROWCOUNT = 0 RETURN
 SET NOCOUNT ON;
 
+-- Auto Meal Break
+--PRINT 'Here'
+DECLARE @MWDM int = config.MealBreakWorkMinimum()
+DECLARE @MBDS int = config.MealBreakDeductionStart()
+DECLARE @AMB int = config.AutoMealBreak()
+--SELECT 'D',* FROM deleted
+SELECT Row = ROW_NUMBER()OVER(ORDER BY(SELECT Start)),* 
+INTO #New
+FROM inserted i
+WHERE DATEDIFF(MI,i.Start,i.Stop) >= @MWDM
+
+--SELECT * FROM #New
+
+DECLARE @Row int = (SELECT MIN(Row) FROM #New)
+WHILE @Row > 0 BEGIN
+
+INSERT INTO Punch(Time,DirectionId,TypeId,InputMethodId)
+SELECT *,const.PunchInputMethodCalculated() InputMethodId
+FROM
+(
+SELECT DATEADD(MI,@MBDS, N.Start)Start,const.PunchDirectionOut()DirectionId,const.PuncTypeLunch() TypeId FROM #New N WHERE Row = @Row
+UNION ALL
+SELECT DATEADD(MI,@MBDS + @AMB, N.Start),const.PunchDirectionIn(),const.PuncTypeLunch() FROM #New N WHERE Row = @Row
+)T
+
+SELECT @Row = Row FROM #New WHERE Row > @Row
+IF @@ROWCOUNT = 0 BREAK  
+END
+
 DELETE FROM WS
 FROM WorkShift WS
 INNER JOIN deleted d ON d.Stop = WS.Start 

@@ -192,6 +192,11 @@
     <Build Include="dbo\Tables\SalaryBreakdown.sql" />
     <Build Include="dbo\Views\vMinuteBreakdownAbsolute_New.sql" />
     <Build Include="dbo\Views\vMinuteBreakdownAbsolute.sql" />
+    <Build Include="dbo\Tables\PunchInputMethod.sql" />
+    <Build Include="const\Functions\PunchInputMethodCalculated.sql" />
+    <Build Include="config\Functions\MealBreakWorkMinimum.sql" />
+    <Build Include="config\Functions\MealBreakDeductionStart.sql" />
+    <Build Include="config\Functions\AutoMealBreak.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SqlSchemaCompare.scmp" />
