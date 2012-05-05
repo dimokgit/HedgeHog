@@ -26,7 +26,9 @@
       [vPunch].[Type] AS [Type], 
       [vPunch].[TypeId] AS [TypeId], 
       [vPunch].[IsOutOfSequence] AS [IsOutOfSequence], 
-      [vPunch].[PairStart] AS [PairStart]
+      [vPunch].[PairStart] AS [PairStart], 
+      [vPunch].[InputMethod] AS [InputMethod], 
+      [vPunch].[InputMethodId] AS [InputMethodId]
       FROM [dbo].[vPunch] AS [vPunch]</DefiningQuery>
           </EntitySet>
           <EntitySet Name="vPunchPair" EntityType="TimeCardEntities.Store.vPunchPair" store:Type="Views" store:Schema="dbo" store:Name="vPunchPair">
@@ -60,6 +62,9 @@
             <DefiningQuery>SELECT 
       [vRateCodeByRange].[Id] AS [Id], 
       [vRateCodeByRange].[TimeStart] AS [TimeStart], 
+      [vRateCodeByRange].[TimeStart_] AS [TimeStart_], 
+      [vRateCodeByRange].[TimeStop] AS [TimeStop], 
+      [vRateCodeByRange].[IsTimeBetween] AS [IsTimeBetween], 
       [vRateCodeByRange].[GracePeriod] AS [GracePeriod], 
       [vRateCodeByRange].[HourStart] AS [HourStart], 
       [vRateCodeByRange].[HourStop] AS [HourStop], 
@@ -185,6 +190,7 @@
           <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
           <Property Name="TimeUTC" Type="datetimeoffset" StoreGeneratedPattern="Computed" />
           <Property Name="TimeZoneOffset" Type="int" StoreGeneratedPattern="Computed" />
+          <Property Name="InputMethodId" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="PunchDirection">
           <Key>
@@ -224,6 +230,9 @@
           </Key>
           <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
           <Property Name="TimeStart" Type="int" />
+          <Property Name="TimeStart_" Type="time" Precision="0" StoreGeneratedPattern="Computed" />
+          <Property Name="TimeStop" Type="time" Precision="0" StoreGeneratedPattern="Computed" />
+          <Property Name="IsTimeBetween" Type="int" Nullable="false" StoreGeneratedPattern="Computed" />
           <Property Name="GracePeriod" Type="int" />
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
@@ -275,6 +284,7 @@
             <PropertyRef Name="DirectionId" />
             <PropertyRef Name="TypeId" />
             <PropertyRef Name="IsOutOfSequence" />
+            <PropertyRef Name="InputMethodId" />
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
@@ -284,6 +294,8 @@
           <Property Name="TypeId" Type="int" Nullable="false" />
           <Property Name="IsOutOfSequence" Type="bit" Nullable="false" />
           <Property Name="PairStart" Type="datetimeoffset" />
+          <Property Name="InputMethod" Type="varchar" MaxLength="3" />
+          <Property Name="InputMethodId" Type="int" Nullable="false" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'TimeCard.dbo.vPunchPair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -340,6 +352,7 @@
         <EntityType Name="vRateCodeByRange">
           <Key>
             <PropertyRef Name="Id" />
+            <PropertyRef Name="IsTimeBetween" />
             <PropertyRef Name="HourStart" />
             <PropertyRef Name="HourStop" />
             <PropertyRef Name="RateCode" />
@@ -358,6 +371,9 @@
           </Key>
           <Property Name="Id" Type="int" Nullable="false" />
           <Property Name="TimeStart" Type="int" />
+          <Property Name="TimeStart_" Type="time" Precision="0" />
+          <Property Name="TimeStop" Type="time" Precision="0" />
+          <Property Name="IsTimeBetween" Type="int" Nullable="false" />
           <Property Name="GracePeriod" Type="int" />
           <Property Name="HourStart" Type="int" Nullable="false" />
           <Property Name="HourStop" Type="int" Nullable="false" />
@@ -582,7 +598,6 @@
           <EntitySet Name="RateCodes" EntityType="TimeCardEntities.RateCode" />
           <EntitySet Name="vWorkDayRates" EntityType="TimeCardEntities.vWorkDayRate" />
           <EntitySet Name="Configs" EntityType="TimeCardEntities.Config" />
-          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
           <EntitySet Name="vPunchPairs" EntityType="TimeCardEntities.vPunchPair" />
           <EntitySet Name="vWorkDayMinutes" EntityType="TimeCardEntities.vWorkDayMinute" />
           <EntitySet Name="RateCodeLayers" EntityType="TimeCardEntities.RateCodeLayer" />
@@ -611,6 +626,7 @@
             <End Role="RateCode" EntitySet="RateCodes" />
             <End Role="RateCodeByRange" EntitySet="RateCodeByRanges" />
           </AssociationSet>
+          <EntitySet Name="vPunches" EntityType="TimeCardEntities.vPunch" />
           </EntityContainer>
         <EntityType Name="PunchDirection">
           <Key>
@@ -639,6 +655,7 @@
           <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
           <Property Type="DateTimeOffset" Name="TimeUTC" annotation:StoreGeneratedPattern="Computed" />
           <Property Type="Int32" Name="TimeZoneOffset" annotation:StoreGeneratedPattern="Computed" />
+          <Property Type="Int32" Name="InputMethodId" Nullable="false" />
         </EntityType>
         <Association Name="FK_Punch_PunchDirection">
           <End Type="TimeCardEntities.PunchDirection" Role="PunchDirection" Multiplicity="1" />
@@ -743,24 +760,6 @@
           <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Type="String" Name="Value" Nullable="false" MaxLength="4000" FixedLength="false" Unicode="true" />
-        </EntityType>
-        <EntityType Name="vPunch">
-          <Key>
-            <PropertyRef Name="Id" />
-            <PropertyRef Name="Time" />
-            <PropertyRef Name="Direction" />
-            <PropertyRef Name="DirectionId" />
-            <PropertyRef Name="TypeId" />
-            <PropertyRef Name="IsOutOfSequence" />
-          </Key>
-          <Property Type="Int32" Name="Id" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
-          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="DirectionId" Nullable="false" />
-          <Property Type="String" Name="Type" MaxLength="41" FixedLength="false" Unicode="false" />
-          <Property Type="Int32" Name="TypeId" Nullable="false" />
-          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="PairStart" />
         </EntityType>
         <EntityType Name="vPunchPair">
           <Key>
@@ -937,6 +936,7 @@
             <PropertyRef Name="RateCodeTypePriority" />
             <PropertyRef Name="RateCodeLayerPriority" />
             <PropertyRef Name="RulePriority" />
+            <PropertyRef Name="IsTimeBetween" />
           </Key>
           <Property Type="Int32" Name="Id" Nullable="false" />
           <Property Type="Int32" Name="TimeStart" />
@@ -956,6 +956,9 @@
           <Property Type="Int32" Name="RateCodeTypePriority" Nullable="false" />
           <Property Type="Int32" Name="RateCodeLayerPriority" Nullable="false" />
           <Property Type="Int32" Name="RulePriority" Nullable="false" />
+          <Property Type="Time" Name="TimeStart_" />
+          <Property Type="Time" Name="TimeStop" />
+          <Property Type="Int32" Name="IsTimeBetween" Nullable="false" />
         </EntityType>
         <EntityType Name="RateCodeByRange">
           <Key>
@@ -967,6 +970,9 @@
           <Property Type="Int32" Name="HourStop" Nullable="false" />
           <Property Type="Int32" Name="RateCodeId" Nullable="false" />
           <NavigationProperty Name="RateCode" Relationship="TimeCardEntities.FK_RateCodeByRange_RateCode" FromRole="RateCodeByRange" ToRole="RateCode" />
+          <Property Type="Time" Name="TimeStart_" annotation:StoreGeneratedPattern="Computed" />
+          <Property Type="Time" Name="TimeStop" annotation:StoreGeneratedPattern="Computed" />
+          <Property Type="Int32" Name="IsTimeBetween" Nullable="false" annotation:StoreGeneratedPattern="Computed" />
         </EntityType>
         <Association Name="FK_RateCodeByRange_RateCode">
           <End Type="TimeCardEntities.RateCode" Role="RateCode" Multiplicity="1" />
@@ -980,6 +986,27 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <EntityType Name="vPunch">
+          <Key>
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="Direction" />
+            <PropertyRef Name="DirectionId" />
+            <PropertyRef Name="TypeId" />
+            <PropertyRef Name="IsOutOfSequence" />
+            <PropertyRef Name="InputMethodId" />
+          </Key>
+          <Property Type="Int32" Name="Id" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="String" Name="Direction" Nullable="false" MaxLength="21" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="DirectionId" Nullable="false" />
+          <Property Type="String" Name="Type" MaxLength="41" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="TypeId" Nullable="false" />
+          <Property Type="Boolean" Name="IsOutOfSequence" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="PairStart" />
+          <Property Type="String" Name="InputMethod" MaxLength="3" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="InputMethodId" Nullable="false" />
+        </EntityType>
         </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -1007,6 +1034,7 @@
           <EntitySetMapping Name="Punches">
             <EntityTypeMapping TypeName="TimeCardEntities.Punch">
               <MappingFragment StoreEntitySet="Punch">
+                <ScalarProperty Name="InputMethodId" ColumnName="InputMethodId" />
                 <ScalarProperty Name="TimeZoneOffset" ColumnName="TimeZoneOffset" />
                 <ScalarProperty Name="TimeUTC" ColumnName="TimeUTC" />
                 <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
@@ -1087,20 +1115,6 @@
               <MappingFragment StoreEntitySet="Config">
                 <ScalarProperty Name="Value" ColumnName="Value" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="vPunches">
-            <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
-              <MappingFragment StoreEntitySet="vPunch">
-                <ScalarProperty Name="PairStart" ColumnName="PairStart" />
-                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
-                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
-                <ScalarProperty Name="Type" ColumnName="Type" />
-                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
-                <ScalarProperty Name="Direction" ColumnName="Direction" />
-                <ScalarProperty Name="Time" ColumnName="Time" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
@@ -1218,6 +1232,9 @@
           <EntitySetMapping Name="vRateCodeByRanges">
             <EntityTypeMapping TypeName="TimeCardEntities.vRateCodeByRange">
               <MappingFragment StoreEntitySet="vRateCodeByRange">
+                <ScalarProperty Name="IsTimeBetween" ColumnName="IsTimeBetween" />
+                <ScalarProperty Name="TimeStop" ColumnName="TimeStop" />
+                <ScalarProperty Name="TimeStart_" ColumnName="TimeStart_" />
                 <ScalarProperty Name="RulePriority" ColumnName="RulePriority" />
                 <ScalarProperty Name="RateCodeLayerPriority" ColumnName="RateCodeLayerPriority" />
                 <ScalarProperty Name="RateCodeTypePriority" ColumnName="RateCodeTypePriority" />
@@ -1242,10 +1259,29 @@
           <EntitySetMapping Name="RateCodeByRanges">
             <EntityTypeMapping TypeName="TimeCardEntities.RateCodeByRange">
               <MappingFragment StoreEntitySet="RateCodeByRange">
+                <ScalarProperty Name="IsTimeBetween" ColumnName="IsTimeBetween" />
+                <ScalarProperty Name="TimeStop" ColumnName="TimeStop" />
+                <ScalarProperty Name="TimeStart_" ColumnName="TimeStart_" />
                 <ScalarProperty Name="RateCodeId" ColumnName="RateCodeId" />
                 <ScalarProperty Name="HourStop" ColumnName="HourStop" />
                 <ScalarProperty Name="HourStart" ColumnName="HourStart" />
                 <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="vPunches">
+            <EntityTypeMapping TypeName="TimeCardEntities.vPunch">
+              <MappingFragment StoreEntitySet="vPunch">
+                <ScalarProperty Name="InputMethodId" ColumnName="InputMethodId" />
+                <ScalarProperty Name="InputMethod" ColumnName="InputMethod" />
+                <ScalarProperty Name="PairStart" ColumnName="PairStart" />
+                <ScalarProperty Name="IsOutOfSequence" ColumnName="IsOutOfSequence" />
+                <ScalarProperty Name="TypeId" ColumnName="TypeId" />
+                <ScalarProperty Name="Type" ColumnName="Type" />
+                <ScalarProperty Name="DirectionId" ColumnName="DirectionId" />
+                <ScalarProperty Name="Direction" ColumnName="Direction" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
@@ -1271,7 +1307,7 @@
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram Name="TimeCardEntities" ZoomLevel="98" >
+      <Diagram Name="TimeCardEntities" ZoomLevel="112" >
         <EntityTypeShape EntityType="TimeCardEntities.PunchDirection" Width="1.5" PointX="3.25" PointY="0.5" Height="1.4033821614583331" />
         <EntityTypeShape EntityType="TimeCardEntities.PunchType" Width="1.5" PointX="3.25" PointY="2.25" Height="1.4033821614583326" />
         <EntityTypeShape EntityType="TimeCardEntities.Punch" Width="1.5" PointX="5.625" PointY="0.75" Height="2.7494921875" />
@@ -1290,8 +1326,7 @@
         <EntityTypeShape EntityType="TimeCardEntities.RateCode" Width="1.5" PointX="4.5" PointY="6.5" Height="1.9802864583333317" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkDayRate" Width="1.5" PointX="6.5" PointY="6" Height="2.3648893229166674" />
         <EntityTypeShape EntityType="TimeCardEntities.Config" Width="1.5" PointX="8.375" PointY="9.125" Height="1.5956835937500031" />
-        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="0.875" PointY="0.625" Height="2.5571907552083388" />
-        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.875" PointY="3.375" Height="1.9802864583333388" />
+        <EntityTypeShape EntityType="TimeCardEntities.vPunchPair" Width="1.5" PointX="0.875" PointY="3.75" Height="1.9802864583333388" />
         <EntityTypeShape EntityType="TimeCardEntities.vWorkDayMinute" Width="1.5" PointX="8.375" PointY="5.625" Height="1.4033821614583388" />
         <EntityTypeShape EntityType="TimeCardEntities.RateCodeLayer" Width="1.5" PointX="6.625" PointY="8.75" Height="1.5956835937499996" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCode_RateCodeLayer" >
@@ -1305,14 +1340,16 @@
           <ConnectorPoint PointX="3.9999999999999991" PointY="6.1148893229166665" />
           <ConnectorPoint PointX="4.5" PointY="6.5" />
         </AssociationConnector>
-        <EntityTypeShape EntityType="TimeCardEntities.RateCodeRule" Width="1.5" PointX="0.75" PointY="8.75" Height="1.5956835937499996" />
+        <EntityTypeShape EntityType="TimeCardEntities.RateCodeRule" Width="1.5" PointX="0.875" PointY="9" Height="1.5956835937499996" />
         <AssociationConnector Association="TimeCardEntities.FK_RateCodeType_RateCodeRule" >
-          <ConnectorPoint PointX="0.78125" PointY="8.75" />
-          <ConnectorPoint PointX="0.78125" PointY="5.5526432291666694" />
-          <ConnectorPoint PointX="2.5" PointY="5.5526432291666694" />
+          <ConnectorPoint PointX="2.375" PointY="9.797841796875" />
+          <ConnectorPoint PointX="2.5625" PointY="9.797841796875" />
+          <ConnectorPoint PointX="2.5625" PointY="6.3125" />
+          <ConnectorPoint PointX="3.2187479999999997" PointY="6.3125" />
+          <ConnectorPoint PointX="3.2187479999999997" PointY="6.1148893229166665" />
         </AssociationConnector>
         <EntityTypeShape EntityType="TimeCardEntities.vRateCode" Width="1.5" PointX="2.625" PointY="6.375" Height="3.7109993489583282" />
-        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeType" Width="1.5" PointX="0.875" PointY="5.75" Height="2.5571907552083335" />
+        <EntityTypeShape EntityType="TimeCardEntities.vRateCodeType" Width="1.5" PointX="0.875" PointY="6" Height="2.5571907552083335" />
         <EntityTypeShape EntityType="TimeCardEntities.SalaryBreakdown" Width="1.5" PointX="8.375" PointY="7.25" Height="1.5956835937500102" />
         <EntityTypeShape EntityType="TimeCardEntities.vRateCodeByRange" Width="1.5" PointX="4.5" PointY="9.375" Height="4.480205078125" />
         <EntityTypeShape EntityType="TimeCardEntities.RateCodeByRange" Width="1.5" PointX="6.5" PointY="10.75" Height="2.1725878906249996" />
@@ -1323,6 +1360,7 @@
           <ConnectorPoint PointX="7.25" PointY="10.59568359375" />
           <ConnectorPoint PointX="7.25" PointY="10.75" />
         </AssociationConnector>
+        <EntityTypeShape EntityType="TimeCardEntities.vPunch" Width="1.5" PointX="1.125" PointY="0.625" Height="2.9417936197916674" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

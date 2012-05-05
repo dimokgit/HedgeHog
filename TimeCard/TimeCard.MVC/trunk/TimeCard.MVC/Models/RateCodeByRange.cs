@@ -19,6 +19,9 @@ namespace TimeCard.MVC.Models
         public int HourStart { get; set; }
         public int HourStop { get; set; }
         public int RateCodeId { get; set; }
+        public Nullable<System.TimeSpan> TimeStart_ { get; set; }
+        public Nullable<System.TimeSpan> TimeStop { get; set; }
+        public int IsTimeBetween { get; set; }
     
         public virtual RateCode RateCode { get; set; }
     }

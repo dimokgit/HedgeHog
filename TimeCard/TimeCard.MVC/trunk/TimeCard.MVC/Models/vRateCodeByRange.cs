@@ -32,6 +32,9 @@ namespace TimeCard.MVC.Models
         public int RateCodeTypePriority { get; set; }
         public int RateCodeLayerPriority { get; set; }
         public int RulePriority { get; set; }
+        public Nullable<System.TimeSpan> TimeStart_ { get; set; }
+        public Nullable<System.TimeSpan> TimeStop { get; set; }
+        public int IsTimeBetween { get; set; }
     }
     
 }

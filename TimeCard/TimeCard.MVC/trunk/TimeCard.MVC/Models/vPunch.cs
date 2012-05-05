@@ -22,6 +22,8 @@ namespace TimeCard.MVC.Models
         public int TypeId { get; set; }
         public bool IsOutOfSequence { get; set; }
         public Nullable<System.DateTimeOffset> PairStart { get; set; }
+        public string InputMethod { get; set; }
+        public int InputMethodId { get; set; }
     }
     
 }

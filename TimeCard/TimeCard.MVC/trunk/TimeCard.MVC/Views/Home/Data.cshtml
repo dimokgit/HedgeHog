@@ -141,6 +141,7 @@ DIV.ui-layout-east
             format: self.formatDateDay
           },
           Direction: { header: "Dir" },
+          InputMethod: { header: "IM" },
           Date: { header: "Date", format: self.formatDate }
         },
         punchPairs: {
@@ -286,7 +287,7 @@ DIV.ui-layout-east
     defs.push(vm.GetData("workDayMinutes", "#workDayMinutesTemplate"));
     defs.push(vm.GetData("buildMinuteBreakdown", "#buildMinuteBreakdownTemplate").done(function () {
       vm.GetData("salaryBreakdowns", "#salaryBreakdownsTemplate");
-      $('#main').layout({ applyDefaultStyles: true, west__initClosed: false, west__size: "auto", east__size: "auto" });
+      $('#main').layout({ applyDefaultStyles: true, west__initClosed: true, west__size: "auto", east__size: "auto" });
     }));
     $.when.apply($, defs()).done(function () {
       defs.push(vm.GetData("punches", "#punchesTemplate"));
