@@ -238,14 +238,36 @@ namespace HedgeHog.Bars {
 
     public static LinkedList<T> ToLinkedList<T>(this IList<T> list) { return new LinkedList<T>(list); }
     public static IList<IList<T>> Partition<T>(this IList<T> list, Func<T, bool> condition) {
+      var alist = list.ToArray();
+      var o = new List<IList<T>>();
+      int start = 0, end = 0;
+      var ts = new List<Tuple<int, int>>();
+      while (end < alist.Length) {
+        if (condition(alist[end])) {
+          end++;
+        } else {
+          ts.Add(new Tuple<int, int>(start, end));
+          start = ++end;
+        }
+      }
+      --end;
+      if (start <= end)
+        ts.Add(new Tuple<int, int>(start, end));
+      foreach (var t in ts) {
+        var a = new T[t.Item2 - t.Item1 + 1];
+        Array.Copy(alist, t.Item1, a, 0, a.Length);
+        o.Add(a);
+      }
+      return o;
+    }
+    public static IList<IList<T>> Partition_<T>(this IList<T> list, Func<T, bool> condition) {
       list = list.ToList();
       var o = new List<IList<T>>();
-      var ll = new LinkedList<T>(list);
       while (list.Count > 0) {
         var l = list.TakeWhile(condition).ToList();
         if (list.Count > l.Count)
           l.Add(list[l.Count]);
-        list.RemoveRange(0, l.Count);
+        list = list.Skip(l.Count).ToList();
         o.Add(l);
       }
       return o;

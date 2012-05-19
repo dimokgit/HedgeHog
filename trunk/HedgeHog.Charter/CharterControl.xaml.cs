@@ -142,14 +142,14 @@ namespace HedgeHog {
       }
     }
 
-    private double _StDev;
-    public double StDev {
-      get { return _StDev; }
+    private double _WaveHeightInPips;
+    public double WaveHeightInPips {
+      get { return _WaveHeightInPips; }
       set {
-        if (_StDev != value) {
-          _StDev = value;
-          OnPropertyChanged(CharterControlMetadata.StDev);
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+        if (_WaveHeightInPips != value) {
+          _WaveHeightInPips = value;
+          OnPropertyChanged(CharterControlMetadata.WaveHeightInPips);
+          OnPropertyChanged(Metadata.CharterControlMetadata.WaveHeightInPips);
         }
       }
     }
@@ -205,17 +205,16 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{7:n0}:{6:n2}∆{9:n1}/{8:n1}s"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{6:n1}∆{8:n1}/{7:n1}s"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
           /*3*/, CorridorAngle
           /*4*/, HeightInPips
           /*5*/, CorridorHeightInPips
-          /*6*/, CorridorStDevToRatesStDevRatio
-          /*7*/, StDev
-          /*8*/, SpreadForCorridor
-          /*9*/, CorridorSpread
+          /*6*/, WaveHeightInPips
+          /*7*/, SpreadForCorridor
+          /*8*/, CorridorSpread
           );
       }
     }

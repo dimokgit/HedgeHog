@@ -556,12 +556,15 @@ namespace HedgeHog.Alice.Client {
     }
 
     public bool IsLogPinned { get { return !IsLogExpanded; } }
+    bool _IsLogExpanded = false;
     public bool IsLogExpanded {
       get { 
         var ts = DateTime.Now - lastLogTime;
         var ret = ts < TimeSpan.FromSeconds(10);
-        if (ret)
-          LogExoandedTargetBlock.Post(null);
+        if (_IsLogExpanded != ret) {
+          LogExoandedTargetBlock.SendAsync(null);
+          _IsLogExpanded = ret;
+        }
         return ret;
       }
     }
@@ -1223,7 +1226,7 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
-        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 10000, CommissionByTrade);
+        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 1000, CommissionByTrade);
         var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
         this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)

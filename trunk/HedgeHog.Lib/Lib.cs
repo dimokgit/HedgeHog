@@ -31,6 +31,9 @@ namespace HedgeHog {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
     }
 
+    public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list,int count) {
+      return count >= 0 ? list.Take(count) : list.Skip(list.Count() + count);
+    }
     public static T LastByCount<T>(this IList<T> list) {
       return list[list.Count - 1];
     }

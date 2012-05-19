@@ -146,20 +146,23 @@ namespace HedgeHog.Alice.Store {
         double height;
         #endregion
 
-        var stDevDict = new Dictionary<CorridorCalculationMethod, double>(){
-          {CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP()},
-            {CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()},
-            {CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP()}
-        };
+        var stDevDict = new Dictionary<CorridorCalculationMethod, double>();
+        if( corridorMethod == CorridorCalculationMethod.Minimum || corridorMethod == CorridorCalculationMethod.Maximum){
+          stDevDict.Add(CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
+          stDevDict.Add(CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP());
+          stDevDict.Add(CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP());
+        }
         switch (corridorMethod) {
           case CorridorCalculationMethod.Minimum:
             stDev = stDevDict.Values.Min(); break;
           case CorridorCalculationMethod.Maximum:
             stDev = stDevDict.Values.Max(); break;
           case CorridorCalculationMethod.Height:
+            stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP(); break;
           case CorridorCalculationMethod.HeightUD:
+            stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP(); break;
           case CorridorCalculationMethod.Price:
-            stDev = stDevDict[corridorMethod]; break;
+            stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP(); break;
           default:
             throw new NotSupportedException(new { corridorMethod } + "");
         }

@@ -373,7 +373,7 @@
 		</ResourceDictionary>
 	</Window.Resources>
 	<!-- DockSite -->
-	<Grid>
+	<Grid KeyDown="Grid_KeyDown">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>

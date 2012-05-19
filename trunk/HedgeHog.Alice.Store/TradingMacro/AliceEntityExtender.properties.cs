@@ -221,7 +221,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price Cma Levels")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public int PriceCmaLevels_ {
       get { return PriceCmaLevels; }
       set {
@@ -690,7 +690,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Price CMA Period")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public int PriceCmaPeriod {
       get { return LongMAPeriod; }
       set {

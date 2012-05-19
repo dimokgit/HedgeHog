@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace HedgeHog {
 
-  public class Regression {
+  public static class Regression {
     static void LinearRegression(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
@@ -36,7 +36,7 @@ namespace HedgeHog {
 
     }
 
-    public static double[] Regress(double[] dY, int polyOrder) {
+    public static double[] Regress(this double[] dY, int polyOrder) {
       return Regress(dY.Select((y, i) => (double)i).ToArray(), dY, polyOrder);
     }
     public static double[] Regress(double[] dX,double[] dY, int polyOrder) {
