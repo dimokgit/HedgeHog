@@ -112,6 +112,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
+    <Compile Include="TradingMacro\TradingMacroExtentions.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
     <EntityDeploy Include="Model\Model1.edmx">
       <Generator>EntityModelCodeGenerator</Generator>

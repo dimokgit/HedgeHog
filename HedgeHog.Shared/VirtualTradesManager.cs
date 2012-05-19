@@ -39,8 +39,7 @@ namespace HedgeHog.Shared {
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(CommissionByTrade); }
 
     public bool IsLoggedIn { get { return true; } }
-    int minimumQuantity;
-    public int MinimumQuantity { get { return minimumQuantity; } }
+    public int MinimumQuantity { get; private set; }
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
     public DateTime ServerTime {
       get {
@@ -102,7 +101,7 @@ namespace HedgeHog.Shared {
     static long tradeId = 0;
     public VirtualTradesManager(string accountId,int minimumQuantity,  Func<Trade,double> commissionByTrade) {
       this.accountId = accountId;
-      this.minimumQuantity = minimumQuantity;
+      this.MinimumQuantity = minimumQuantity;
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
     }

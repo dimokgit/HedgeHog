@@ -844,9 +844,9 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
-        var corridorTime0 = tm.CorridorsRates[0][0].StartDateContinuous;
-        var corridorTime1 = tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
-        var corridorTime2 = tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
+        var corridorTime0 = tm.CorridorStats.Rates.LastByCount().StartDateContinuous;
+        var corridorTime1 = tm.WaveQuick == null ? DateTime.MinValue : tm.WaveQuick.LastByCount().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
+        var corridorTime2 = tm.WaveHigh.LastByCount().StartDateContinuous;// tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
@@ -873,7 +873,7 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
           charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
-          charter.StDev = tm.RatesStDevInPips;
+          charter.WaveHeightInPips = tm.WaveAverageInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
           charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
@@ -887,7 +887,7 @@ namespace HedgeHog.Alice.Client {
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
           charter.AddTicks(price, rates, new PriceBar[1][] { stDevBars }, info, null,
-            tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages[1]) : 0, tm.InPips(tm.StDevAverages[0]),
+            tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.ToArray().Reverse().Take(2).Last()) : 0, tm.InPips(tm.StDevAverages.LastByCount()),
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2,

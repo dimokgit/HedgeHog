@@ -217,6 +217,34 @@ namespace HedgeHog {
       return values.Count < 2 || iterations == 0 ? values : values.AsParallel().Where(r => compare(r, avg)).ToList().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }
 
+    public static IList<T> AverageByPercentage<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
+      var avg = values.DefaultIfEmpty().Average(getValue);
+      if (averagesOut != null) averagesOut.Insert(0, avg);
+      var countMax = values.Count * iterations;
+      while( values.Count > countMax ) {
+        var vs = values.Where(v => compare(getValue(v), avg)).ToArray();
+        if (vs.Count() == 0) break;
+        avg = vs.Average(getValue);
+        if (averagesOut != null) averagesOut.Insert(0, avg);
+        values = vs;
+        if (values.Count == 1) break;
+      }
+      return values;
+    }
+    public static IList<T> AverageByCount<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double countMin, List<double> averagesOut = null) {
+      var avg = values.DefaultIfEmpty().Average(getValue);
+      if (averagesOut != null) averagesOut.Insert(0, avg);
+      while (values.Count > countMin) {
+        var vs = values.Where(v => compare(getValue(v), avg)).ToArray();
+        if (vs.Count() == 0) break;
+        avg = vs.Average(getValue);
+        if (averagesOut != null) averagesOut.Insert(0, avg);
+        values = vs;
+        if (values.Count == 1) break;
+      }
+      return values;
+    }
+
     public static int Floor(this double d) { return (int)Math.Floor(d); }
     public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
     public static int ToInt(this double d, bool useCeiling) {

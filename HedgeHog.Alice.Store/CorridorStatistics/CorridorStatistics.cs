@@ -175,7 +175,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private DateTime _StartDate = DateTime.MinValue.AddYears(100);
+    private DateTime _StartDate = DateTime.MinValue;
     public DateTime StartDate {
       get { return _StartDate; }
       private set {

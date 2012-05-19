@@ -48,8 +48,9 @@ namespace HedgeHog.Alice.Store {
     Corridor_RH_2 = 4,
     CorridorPrev = 5,
     RatesHeight = 10,
-    RatesHeight_2 = 12,
     RatesStDev = 11,
+    RatesHeight_2 = 12,
+    WaveAverage = 13,
     SpreadX = 19,
     Spread = 20,
     Spread2 = 21,
@@ -68,6 +69,9 @@ namespace HedgeHog.Alice.Store {
     Gann = 64, Brange = 128, Breakout_2Corrs = 256 + Breakout, Breakout_2Corrs_A = 256 + Breakout + Auto, Hot = 1024,
     Hot_A = Hot + Auto, Breakout7 = Breakout + 512,
     LongWave = 1024 * 2,
+    LongWave95 = LongWave * 2,
+    WaveAvg = LongWave95 * 2,
+    LongWave95A = LongWave95 + Auto,
     LongWaveA = LongWave + Auto
   }
   public struct Playback {

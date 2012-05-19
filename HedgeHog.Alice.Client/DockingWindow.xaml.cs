@@ -23,6 +23,7 @@ using System.Collections.ObjectModel;
 using HedgeHog.Alice.Store;
 using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -445,6 +446,18 @@ namespace HedgeHog.Alice.Client {
       return chart.GetParent<RadSplitContainer>() ?? ChartsSplitter;
     }
     #endregion
+
+    private void Grid_KeyDown(object sender, KeyEventArgs e) {
+      switch (e.Key) {
+        case Key.Oem2:
+        case Key.P:
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new RepayPauseMessage()); break;
+        case Key.OemComma:
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new RepayBackMessage()); break;
+        case Key.OemPeriod:
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new RepayForwardMessage()); break;
+      }
+    }
 
   }
 }
