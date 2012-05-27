@@ -71,8 +71,10 @@ namespace HedgeHog.Alice.Store {
     LongWave = 1024 * 2,
     LongWave95 = LongWave * 2,
     WaveAvg = LongWave95 * 2,
+    WaveQuick = WaveAvg * 2,
     LongWave95A = LongWave95 + Auto,
-    LongWaveA = LongWave + Auto
+    LongWaveA = LongWave + Auto,
+    WaveQuickA = WaveQuick + Auto
   }
   public struct Playback {
     public bool Play;
