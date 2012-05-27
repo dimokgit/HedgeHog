@@ -139,7 +139,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       if (tm.CorridorStartDate == e.NewPosition) return;
       tm.CorridorStartDate = e.NewPosition;
-      if (!IsInVirtualTrading && tm.Strategy != Strategies.Massa && !tm.IsHotStrategy)
+      if (!IsInVirtualTrading && !tm.IsHotStrategy)
         tm.Strategy = Strategies.None;
       tm.ScanCorridor(tm.RatesArray);
       ShowChart(tm);

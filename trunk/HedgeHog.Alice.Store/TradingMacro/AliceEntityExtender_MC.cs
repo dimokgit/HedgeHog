@@ -64,17 +64,18 @@ namespace HedgeHog.Alice.Store {
   public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
   [Flags]
   public enum Strategies {
-    None = 0, Auto = 1, Breakout = 2, Range = 4, Wave = 8,
-    Breakout_A = Breakout + Auto, Range_A = Range + Auto, Massa = 16, Reverse = 32, Momentum_R = Massa + Reverse,
-    Gann = 64, Brange = 128, Breakout_2Corrs = 256 + Breakout, Breakout_2Corrs_A = 256 + Breakout + Auto, Hot = 1024,
+    None = 0,
+    Auto = 1,
+    Breakout = 2, Breakout_A = Breakout + Auto,
+    Range = 4, Range_A = Range + Auto,
+    Wave = 8,
+    Hot = 1024,
     Hot_A = Hot + Auto, Breakout7 = Breakout + 512,
-    LongWave = 1024 * 2,
-    LongWave95 = LongWave * 2,
+    LongWave = 1024 * 2, LongWaveA = LongWave + Auto,
+    LongWave95 = LongWave * 2, LongWave95A = LongWave95 + Auto,
     WaveAvg = LongWave95 * 2,
-    WaveQuick = WaveAvg * 2,
-    LongWave95A = LongWave95 + Auto,
-    LongWaveA = LongWave + Auto,
-    WaveQuickA = WaveQuick + Auto
+    WaveQuick = WaveAvg * 2, WaveQuickA = WaveQuick + Auto,
+    WaveBig = WaveQuick * 2, WaveBigA = WaveBig + Auto
   }
   public struct Playback {
     public bool Play;
