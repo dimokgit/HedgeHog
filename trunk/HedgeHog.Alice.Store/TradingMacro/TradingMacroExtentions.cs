@@ -343,8 +343,9 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region Pending Action
-    MemoryCache _pendingEntryOrders;
+    static MemoryCache _pendingEntryOrders;
     MemoryCache PendingEntryOrders {
+      [MethodImpl(MethodImplOptions.Synchronized)]
       get {
         if (_pendingEntryOrders == null)
           _pendingEntryOrders = new MemoryCache(Pair);
@@ -2575,8 +2576,8 @@ namespace HedgeHog.Alice.Store {
             return StrategyBreakout;
           case Strategies.Breakout_2Corrs:
             return StrategyBreakout2Corr;
-          case Strategies.Range:
-            return StrategyEnterRange09;
+          case Strategies.WaveQuick:
+            return StrategyEnterRange091;
           case Strategies.Wave:
             return StrategyEnterBreakout096;
           case Strategies.None:
@@ -2630,11 +2631,11 @@ namespace HedgeHog.Alice.Store {
         CalculatePriceLastAndPrev(out priceLast, out pricePrev);
 
         Func<double, bool> canBuy = level => (CurrentPrice.Ask - level).Abs() < SpreadForCorridor*2;
-        Func<double, bool> mustCloseSell = level => priceLast > level && pricePrev <= level;
+        Func<double, bool> mustCloseSell = level => priceLast >= level && pricePrev <= level;
         openTrade(true, mustCloseSell, canBuy);
 
         Func<double, bool> canSell = level => (CurrentPrice.Bid - level).Abs() < SpreadForCorridor*2;
-        Func<double, bool> mustCloseBuy = level => priceLast < level && pricePrev >= level;
+        Func<double, bool> mustCloseBuy = level => priceLast <= level && pricePrev >= level;
         openTrade(false, mustCloseBuy, canSell);
       } 
       #endregion
@@ -5457,7 +5458,7 @@ namespace HedgeHog.Alice.Store {
       if (lot > 0)
         CheckPendingAction("CT", pa => {
           pa();
-          Log = new Exception(string.Format("{0}:Closing {1} from {2} in {3}", Pair, lot, Trades.Lots(), MethodBase.GetCurrentMethod().Name));
+          Log = new Exception(string.Format("{0}:Closing {1} from {2} in {3}", Pair, lot, Trades.Lots(), new StackFrame(2).GetMethod().Name));
           if (!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
             ReleasePendingAction("CT");
         });
@@ -5913,7 +5914,7 @@ namespace HedgeHog.Alice.Store {
         && (WaveHigh == null || waves2.Last().w.LastByCount().StartDate > WaveHigh.LastByCount().StartDate || WaveHigh.Count < waves2.Average(w => w.w.Count))) {
         _waveHighOnOff = new ValueWithOnOff<IList<Rate>>(WaveHigh = waves2.Last().w);
       }
-      var stDevMin = StDevAverages.TakeEx(-2).Last();
+      var stDevMin = StDevAverages.TakeEx(-2).First();
       var waves3 = _waves.Select(w => new { w, s = w[0].PriceStdDev, h = w[0].PriceStdDev / w.Count }).ToList();
       var waves4 = waves3.AverageByCount(w => w.h, (v, avg) => v >= avg, this.StDevTresholdIterations).Where(w => w.s >= stDevMin).ToArray();
       if (waves4.Length > 0 && (WaveQuick == null || WaveQuick.LastByCount() < waves4.LastByCount().w.LastByCount()))
