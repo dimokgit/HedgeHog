@@ -2159,9 +2159,7 @@ namespace HedgeHog.Alice.Store {
       //new Action(() => BarPeriod = countNew > 0 ? 1 : 5).BeginInvoke(a => { }, null);
     }
 
-    public double CorridorToRangeMinimumRatio { get { return 0; } }
 
-    public static Strategies[] StrategiesToClose = new Strategies[] { Strategies.Brange };
     private Strategies _Strategy;
     [Category(categoryCorridor)]
     public Strategies Strategy {
@@ -2574,8 +2572,6 @@ namespace HedgeHog.Alice.Store {
             return StrategyEnterBreakout095;
           case Strategies.Breakout:
             return StrategyBreakout;
-          case Strategies.Breakout_2Corrs:
-            return StrategyBreakout2Corr;
           case Strategies.WaveQuick:
             return StrategyEnterRange091;
           case Strategies.Wave:
@@ -5055,68 +5051,6 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    private void StrategyBreakout2Corr() {
-      #region Init SuppReses
-      if (_strategyExecuteOnTradeClose == null) {
-        SuppResLevelsCount = 2;
-        _strategyExecuteOnTradeClose = (t) => {
-          if (!Trades.IsBuy(t.IsBuy).Any()) {
-            _useTakeProfitMin = false;
-            _waitBuyClose = _waitSellClose = false;
-            _tradingDistanceMax = 0;
-          }
-          CanSell = CanBuy = false;
-        };
-        _strategyExecuteOnTradeOpen = () => {
-          _useTakeProfitMin = true;
-          CanSell = CanBuy = false;
-        };
-      }
-      #endregion
-
-      #region Suppres levels
-      _buyLevel = Resistance0();
-      var buyCloseLevel = Support1();
-      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(_buyLevel.Rate);
-      _sellLevel = Support0();
-      var sellCloseLevel = Resistance1();
-      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(_sellLevel.Rate);
-      #endregion
-
-      var tp = CalculateTakeProfit();// InPoints(TakeProfitPips);
-      var tpColse = InPoints(TakeProfitPips - (Trades.Any() ? CurrentLossInPips : 0));
-
-      if (_waitBuyClose && Trades.IsBuy(true).Any() && RateLast.PriceAvg < buyCloseLevel.Rate
-        || _waitSellClose && Trades.IsBuy(false).Any() && RateLast.PriceAvg > sellCloseLevel.Rate
-        ) {
-        TradesManager.ClosePair(Pair);
-        return;
-      }
-      StrategyExitByGross061();
-
-      #region Run
-      Func<Func<Rate, bool>, List<double>> getRates = p => CorridorStats.Rates.TakeWhile(p)
-        .Select(r => r.PriceAvg).DefaultIfEmpty(double.NaN).OrderBy(d => d).ToList();
-      var ratesUp = getRates(r => r.PriceAvg > r.PriceAvg1);
-      var ratesDown = getRates(r => r.PriceAvg < r.PriceAvg1);
-      var isAuto = IsInPlayback || IsHotStrategy||IsAutoStrategy;
-      if (isAuto) {
-        _tradingDistanceMax = _tradingDistanceMax.Max(TradingDistanceInPips);
-        var corridorAverageLast = MagnetPrice;
-        var corridorAveragePrev = CorridorsRates[1].Average(r => r.PriceAvg);
-        _buyLevel.Rate = corridorAverageLast.Max(corridorAveragePrev);
-        _sellLevel.Rate = corridorAverageLast.Min(corridorAveragePrev);
-        _buyLevel.CanTrade = _sellLevel.CanTrade = true;
-        buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
-      }
-      if (IsBreakpoutStrategy) {
-        var minCloseOffset = (_buyLevel.Rate - _sellLevel.Rate).Abs() * 1.1;
-        buyCloseLevel.Rate = ratesUp.LastByCount().Max(buyNetOpen() + tpColse.Max(minCloseOffset));
-        sellCloseLevel.Rate = ratesDown[0].Min(sellNetOpen() - tpColse.Max(minCloseOffset));
-      }
-      #endregion
-    }
-
     #endregion
     //
     void StrategyBreakout() {
@@ -5934,6 +5868,38 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
 
+    private CorridorStatistics ScanCorridorByBigWave09(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      _waves = ratesForCorridor.Partition(r => r.PriceStdDev != 0).Where(l => l.Count > 1).ToList();
+      var waves1 = _waves.Select(w => new { w, h = w.Sum(r => r.PriceStdDev) * w.Count }).ToList();
+      var waves2 = waves1.AverageByCount(w => w.h, (v, avg) => v >= avg, this.StDevTresholdIterations);
+      _wavesBig = waves2.Select(w => w.w).ToList();
+      {
+        var a = _waves.Select(w => w.Height()).ToArray();
+        WaveAverage = a.AverageByIterations(2).Average();
+      }
+      WaveHigh = waves2.Last().w;
+
+      {// Quick wave
+        var stDevMin = StDevAverages.TakeEx(-2).First();
+        var waves3 = _waves.Select(w => new { w, s = w[0].PriceStdDev, h = w[0].PriceStdDev / w.Count }).ToList();
+        var waves4 = waves3.AverageByCount(w => w.h, (v, avg) => v >= avg, this.StDevTresholdIterations).Where(w => w.s >= stDevMin).ToArray();
+        if (waves4.Length > 0 && (WaveQuick == null || WaveQuick.LastByCount() < waves4.LastByCount().w.LastByCount()))
+          WaveQuick = waves4.LastByCount().w;
+        else
+          WaveQuick = waves4.Select(w => w.w).FirstOrDefault(w => WaveQuick[0].StartDate.Between(w[0].StartDate, w.LastByCount().StartDate)) ?? WaveQuick;
+      }
+      var bigBarStart = WaveHigh[0].StartDate;//.AddMinutes(-15 * BarPeriodInt).Max(CorridorStats.StartDate.AddMinutes(-15 * BarPeriodInt));// _bigWave.Item1.StartDate.Min(_bigWave.Item2.StartDate);// peaks.AverageByIterations(r => r.PriceStdDev, DensityMin).OrderBarsDescending().First();
+      {
+        var b = RatesArray.Where(r => r.StartDate >= bigBarStart).ToList();
+        if (b.Count > 1) {
+          CorridorsRates.Clear();
+          CorridorsRates.Add(b);
+          return CorridorsRates[0].ReverseIfNot().ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);
+        }
+      }
+      return null;
+    }
+
     public double CalculateLastPrice(Rate rate, Func<Rate, double> price) {
       try {
         if (TradesManager.IsInTest || IsInPlayback) return price(rate);
@@ -6515,7 +6481,7 @@ namespace HedgeHog.Alice.Store {
       if (newLimitBar == (int)BarPeriod) return;
       OnLoadRates();
     }
-    Strategies[] _exceptionStrategies = new[] { Strategies.Massa, Strategies.Hot };
+    Strategies[] _exceptionStrategies = new[] {  Strategies.Hot };
     partial void OnCorridorBarMinutesChanging(int value) {
       if (value == CorridorBarMinutes) return;
       if (!_exceptionStrategies.Any(s => Strategy.HasFlag(s)))
