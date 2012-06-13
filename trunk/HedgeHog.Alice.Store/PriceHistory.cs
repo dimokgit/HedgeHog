@@ -9,18 +9,15 @@ using Order2GoAddIn;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Reactive;
+using HedgeHog.Shared;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
     public static void LoadBars(FXCoreWrapper fw,string pairToLoad,Action<object> progressCallback = null) {
-      var pairsAvl = fw.CoreFX.Instruments;
-      var pairs = new ForexEntities().v_Pair.Select(p => p.Pair).ToArray();
-      if (!string.IsNullOrWhiteSpace(pairToLoad)) pairs = pairs.Where(p => p == pairToLoad).ToArray();
-      foreach (var minutes in new[] { 15, 30, 60 })
-        foreach (var pair in pairs) {
-          fw.CoreFX.SetOfferSubscription(pair);
-          AddTicks(fw,minutes, pair, DateTime.Now.AddYears(-4),progressCallback);
-        }
+      var pairsToLoad = new RequestPairForHistoryMessage();
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<RequestPairForHistoryMessage>(pairsToLoad);
+      foreach (var pair in pairsToLoad.Pairs)
+        AddTicks(fw, pair.Item2, pair.Item1, DateTime.Now.AddYears(-1), progressCallback);
     }
     static Task saveTicksTask;
     public static void AddTicks(FXCoreWrapper fw, int period, string pair, DateTime dateStart, Action<object> progressCallback) {
