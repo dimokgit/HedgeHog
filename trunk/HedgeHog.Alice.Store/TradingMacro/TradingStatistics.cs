@@ -266,5 +266,9 @@ namespace HedgeHog.Alice.Store {
 
       throw new InvalidOperationException("This method can only by invoked within a property setter.");
     }
+
+    public double CurrentLossInPips { get; set; }
+
+    public IList<TradingMacro> TradingMacros { get; set; }
   }
 }

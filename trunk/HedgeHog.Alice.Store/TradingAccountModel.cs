@@ -139,8 +139,10 @@ namespace HedgeHog.Alice.Store {
         accountRow.TradingStatistics = tradingStatistics;
         accountRow.TakeProfit = tradingStatistics.TakeProfitDistanceInPips;
         accountRow.CurrentGrossInPips = tradingStatistics.CurrentGrossInPips;
-        if(accountRow.CurrentGrossInPips>= GrossToExitInPips)
+        if (accountRow.CurrentGrossInPips >= GrossToExitInPips) {
           RaiseCloseAllTrades();
+          GrossToExitInPips = null;
+        }
         if (accountRow.PL >= accountRow.TakeProfit) {
           RaiseCloseAllTrades();
           PipsToExit = null;

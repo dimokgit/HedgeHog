@@ -221,7 +221,7 @@ namespace HedgeHog.Alice.Client {
     }
     void CopyTradingMacros(object tradingMacro) {
       var tms = GetTradingMacros().Where(tm => tm.IsSelectedInUI).ToList();
-      if (tms.Count > 0) {
+      if (tms.Count > 1) {
         tms.ForEach(tm => {
           var tmName = tm.TradingMacroName.Split(' ')[0] + ' ' + (int.Parse(tm.TradingMacroName.Split(' ')[1]) + 1).ToString("00");
           CopyTradingMacro(tm, tmName);
@@ -315,7 +315,7 @@ namespace HedgeHog.Alice.Client {
     public ICommand StartReplayCommand {
       get {
         if (_StartReplayCommand == null) {
-          _StartReplayCommand = new Gala.RelayCommand<TradingMacro>(StartReplay, tm => true);
+          _StartReplayCommand = new Gala.RelayCommand<TradingMacro>(StartReplay, tm => !_replayTasks.Any(t => t.Status == TaskStatus.Running));
         }
         return _StartReplayCommand;
       }
@@ -325,16 +325,27 @@ namespace HedgeHog.Alice.Client {
       get { return _replayArguments; }
     }
 
-    void StartReplay(TradingMacro tm) {
+    List<Task> _replayTasks = new List<Task>();
+    void StartReplay(TradingMacro tmOriginal) {
       if (IsInVirtualTrading) {
-        tradesManager.ClosePair(tm.Pair);
+        if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
+          MessageBox.Show("Replay is running.");
+          return;
+        }
+        _replayTasks.Clear();
         MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
         tradesManager.GetAccount().Balance = tradesManager.GetAccount().Equity = 50000;
-        tm.ResetSessionId();
       }
-      Task.Factory.StartNew(() =>
-        tm.Replay(ReplayArguments)
-      );
+      var tms = GetTradingMacros().Where(t => t.Strategy != Strategies.None).ToList();
+      ReplayArguments.SetTradingMacros(tms);
+      foreach (var tm in tms) {
+        if (IsInVirtualTrading) {
+          tradesManager.ClosePair(tm.Pair);
+          tm.ResetSessionId();
+        }
+        var tmToRun = tm;
+        _replayTasks.Add(Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments)));
+      }
     }
     #endregion
 
@@ -537,15 +548,16 @@ namespace HedgeHog.Alice.Client {
     void UpdateTradingStatistics() {
       try {
         if (GetTradingMacros().Any(tm => !tm.RatesArray.Any())) return;
-        var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToList();
+        var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
         if (tms.Any() && tms.All(tm => tm.RatesArray.Any())) {
-          var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Count;
+          var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
           _tradingStatistics.TakeProfitDistanceInPips = tp;
         } else {
           _tradingStatistics.TakeProfitDistanceInPips = double.NaN;
         }
-        tms = GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToList();
+        tms = GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToArray();
         if (tms.Any()) {
+          _tradingStatistics.TradingMacros = tms;
           _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(1).Average();
           _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
           _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
@@ -557,6 +569,7 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
           _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips);
+          _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
         }
       } catch (Exception exc) {
         Log = exc;
@@ -845,8 +858,8 @@ namespace HedgeHog.Alice.Client {
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
         var corridorTime0 = tm.CorridorStats.Rates.LastByCount().StartDateContinuous;
-        var corridorTime1 = tm.WaveQuick == null ? DateTime.MinValue : tm.WaveQuick.LastByCount().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
-        var corridorTime2 = tm.WaveHigh.LastByCount().StartDateContinuous;// tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
+        var corridorTime1 = tm.WaveQuick == null ? DateTime.MinValue : tm.WaveQuick[0].StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
+        var corridorTime2 = tm.WaveHigh == null ? DateTime.MinValue : tm.WaveHigh[0].StartDateContinuous;// tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
@@ -876,8 +889,9 @@ namespace HedgeHog.Alice.Client {
           charter.WaveHeightInPips = tm.WaveAverageInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
-          charter.CorridorStDevToRatesStDevRatio = tm.CorridorStDevToRatesStDevRatio;
-          charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
+          charter.MagnetPricePosition = tm.MagnetPricePosition;
+          if (!tm.Strategy.HasFlag(Strategies.WaveClub) /*&& tm.Strategy != Strategies.AutoPilot*/)
+            charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
@@ -886,6 +900,7 @@ namespace HedgeHog.Alice.Client {
           //var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
+          //var rateHieghttoWaveAvg = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = (r.PriceRlw.GetValueOrDefault()) }).ToArray();
           charter.AddTicks(price, rates, new PriceBar[1][] { stDevBars }, info, null,
             tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.ToArray().Reverse().Take(2).Last()) : 0, tm.InPips(tm.StDevAverages.LastByCount()),
             0, 0,
@@ -1212,9 +1227,6 @@ namespace HedgeHog.Alice.Client {
       var isFilterOk = TradingMacroFilter(tm) && tm.IsActive;
       if (!unwind && isFilterOk) {
         tm.TradingStatistics = _tradingStatistics;
-        if (tm.CorridorStatsArray.Count == 0)
-          foreach (var i in tm.CorridorIterationsArray)
-            tm.CorridorStatsArray.Add(new CorridorStatistics(tm) { Iterations = i });
         try {
           tm.SubscribeToTradeClosedEVent(() => tradesManager);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {

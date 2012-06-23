@@ -44,19 +44,18 @@ namespace HedgeHog.Alice.Store {
   public enum TradingMacroTakeProfitFunction {
     Corridor = 1,
     Corridor0 = 2,
-    Corridor1 = 3,
+    CorridorStDev = 3,
     Corridor_RH_2 = 4,
-    CorridorPrev = 5,
+    CorridorHeight = 5,
+    BuySellLevels = 6,
     RatesHeight = 10,
     RatesStDev = 11,
     RatesHeight_2 = 12,
     WaveAverage = 13,
-    SpreadX = 19,
     Spread = 20,
-    Spread2 = 21,
-    Spread3 = 22,
-    Spread4 = 23,
-    BuySellLevels = 6
+    CorridorFib = 24,
+    Zero = 25,
+    PriceSpread = 26
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
@@ -69,13 +68,18 @@ namespace HedgeHog.Alice.Store {
     Breakout = 2, Breakout_A = Breakout + Auto,
     Range = 4, Range_A = Range + Auto,
     Wave = 8,
+    AutoPilot = Wave * 2,
     Hot = 1024,
     Hot_A = Hot + Auto, Breakout7 = Breakout + 512,
     LongWave = 1024 * 2, LongWaveA = LongWave + Auto,
     LongWave95 = LongWave * 2, LongWave95A = LongWave95 + Auto,
     WaveAvg = LongWave95 * 2,
     WaveQuick = WaveAvg * 2, WaveQuickA = WaveQuick + Auto,
-    WaveBig = WaveQuick * 2, WaveBigA = WaveBig + Auto
+    WaveBig = WaveQuick * 2, WaveBigA = WaveBig + Auto,
+    WaveClub = WaveBig * 2, WaveClubA = WaveClub + Auto,
+    WaveCorr = WaveClub * 2, WaveCorrA = WaveCorr + Auto,
+    WaveStDev = WaveCorr * 2, WaveStDevA = WaveStDev + Auto,
+    RomanCandle = WaveStDev * 2, RomanCandleA = RomanCandle + Auto
   }
   public struct Playback {
     public bool Play;

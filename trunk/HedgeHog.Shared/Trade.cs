@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.ComponentModel;
 using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
@@ -74,8 +75,15 @@ namespace HedgeHog.Shared {
   public class Trade : PositionBase {
     [DataMember]
     public string Id { get; set; }
+    string _Pair;
+
     [DataMember]
-    public string Pair { get; set; }
+    public string Pair {
+      get { return _Pair; }
+      set {
+        _Pair = value;
+      }
+    }
     [DataMember]
     [DisplayName("BS")]
     public bool Buy { get; set; }
@@ -128,10 +136,17 @@ namespace HedgeHog.Shared {
     [DataMember]
     [UpdateOnUpdate]
     public double PL { get; set; }
+
+    double _GrossPL;
     [DataMember]
     [DisplayName("")]
     [UpdateOnUpdate]
-    public double GrossPL { get; set; }
+    public double GrossPL {
+      get { return _GrossPL; }
+      set {
+        _GrossPL = value;
+      }
+    }
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     public DateTime Time { get; set; }
@@ -177,10 +192,12 @@ namespace HedgeHog.Shared {
       UpdateByPrice(sender as ITradesManager, e.Price);
     }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
-      if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
-      TimeClose = price.Time;
-      Close = Buy ? price.Bid : price.Ask;
-      //Close = Buy ? price.BuyClose : price.SellClose;
+      if (price.Pair == Pair) {
+        if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
+        TimeClose = price.Time;
+        Close = Buy ? price.Bid : price.Ask;
+        //Close = Buy ? price.BuyClose : price.SellClose;
+      }
     }
 
     public double NetPL { get { return GrossPL + Commission; } }
@@ -237,8 +254,15 @@ namespace HedgeHog.Shared {
       this.Remark = new TradeRemark(xmlElement.Attribute("CQTXT").Value);
     }
 
+    double _PipSize;
+
     [UpdateOnUpdate]
-    public double PipSize { get; set; }
+    public double PipSize {
+      get { return _PipSize; }
+      set {
+        _PipSize = value; 
+      }
+    }
 
 
   }

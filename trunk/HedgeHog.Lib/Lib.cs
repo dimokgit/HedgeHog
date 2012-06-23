@@ -37,6 +37,12 @@ namespace HedgeHog {
     public static T LastByCount<T>(this IList<T> list) {
       return list[list.Count - 1];
     }
+    public static T LastByCountOrDefault<T>(this IList<T> list) {
+      return list.Count == 0 ? default(T) : list.LastByCount();
+    }
+    public static T LastByCountOrDefault<T>(this IList<T> list,T defaultValue) {
+      return list.Count == 0 ? defaultValue : list.LastByCount();
+    }
     public static T Pop<T>(this List<T> list, int position = 0) {
       try {
         return list[position];
@@ -190,6 +196,13 @@ namespace HedgeHog {
       Sample
     }
 
+    public static double MeanAverage(this IList<double> values, int iterations = 3) {
+      var valueLow = values.AverageByIterations(iterations, true);
+      var valueHight = values.AverageByIterations(iterations, false);
+      if (valueLow.Count == 0 && valueHight.Count == 0)
+        return values.MeanAverage(iterations - 1);
+      return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
+    }
 
     public static double StDevRatio(this ICollection<double> values) {
       var stDev = values.StDev();

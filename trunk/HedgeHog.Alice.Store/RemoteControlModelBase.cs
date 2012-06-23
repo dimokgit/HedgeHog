@@ -204,7 +204,7 @@ namespace HedgeHog.Alice.Store {
         } else {
           if (_tradingMacrosCopy.Count == 0)
             _tradingMacrosCopy = TradingMacros.ToList();
-          var isAnySelected = _tradingMacrosCopy.Any(tm => tm.IsSelectedInUI);
+          var isAnySelected = false;// _tradingMacrosCopy.Any(tm => tm.IsSelectedInUI);
           return _tradingMacrosCopy.Where(tm => IsInVirtualTrading && isAnySelected  ? tm.IsSelectedInUI : (TradingMacroFilter(tm) || ShowAllMacrosFilter)).ToArray();
         }
       }
