@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
 		Performance10.psess = Performance10.psess
+		Performance11.psess = Performance11.psess
+		Performance12.psess = Performance12.psess
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
 EndProject
@@ -971,7 +973,6 @@ Global
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Mixed Platforms.Deploy.0 = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Win32.ActiveCfg = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Part1|Any CPU.ActiveCfg = Release|Any CPU

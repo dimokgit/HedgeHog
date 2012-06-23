@@ -190,12 +190,12 @@ namespace HedgeHog {
     }
 
     #endregion
-    private double _CorridorStDevToRatesStDevRatio;
-    public double CorridorStDevToRatesStDevRatio {
-      get { return _CorridorStDevToRatesStDevRatio; }
+    private double _MagnetPricePosition;
+    public double MagnetPricePosition {
+      get { return _MagnetPricePosition; }
       set {
-        if (_CorridorStDevToRatesStDevRatio != value) {
-          _CorridorStDevToRatesStDevRatio = value;
+        if (_MagnetPricePosition != value) {
+          _MagnetPricePosition = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -205,7 +205,7 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}‡{6:n1}∆{8:n1}/{7:n1}s"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}w{6:n1}∆{8:n1}/{7:n1}‡{9:n2}"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
@@ -215,6 +215,7 @@ namespace HedgeHog {
           /*6*/, WaveHeightInPips
           /*7*/, SpreadForCorridor
           /*8*/, CorridorSpread
+          /*9*/, MagnetPricePosition
           );
       }
     }

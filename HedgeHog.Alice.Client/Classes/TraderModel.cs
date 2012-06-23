@@ -1506,11 +1506,13 @@ namespace HedgeHog.Alice.Client {
         addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
         foreach (var trade in tradesList) {
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
-          if (trd != null)
-            trd.Update(trade,
+          if (trd != null) {
+            var t = trade;
+            trd.Update(t,
               o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnLimit = trd.Limit == 0 ? 0 : account.Balance + trd.LimitAmount; },
               o => { trd.InitUnKnown<TradeUnKNown>().BalanceOnStop = account.Balance + trd.StopAmount; }
               );
+          }
         }
         RaisePropertyChanged(Metadata.TraderModelMetadata.ServerTradesList);
       } catch (Exception exc) {

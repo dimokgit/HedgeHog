@@ -181,6 +181,19 @@ namespace HedgeHog {
       return adjacentCathetus * Math.Tan(angleInDegrees.Radians());
     }
 
+    public static IEnumerable<double> AverageInRange(this IList<double> a, int high) {
+      return a.AverageInRange(high, high - 1);
+    }
+    public static IEnumerable<double> AverageInRange(this IList<double> a, int high, int low) {
+      double b = double.NaN, c = double.NaN;
+      return a.Where(v => {
+        if (double.IsNaN(b)) {
+          b = a.AverageByIterations(high, false).Average();
+          c = a.AverageByIterations(low).Average();
+        }
+        return v.Between(c, b); 
+      });
+    }
 
     public static IList<double> AverageByIterations(this IList<double> values, double iterations, List<double> averagesOut = null) {
       return values.AverageByIterations(Math.Abs(iterations), iterations < 0, averagesOut);

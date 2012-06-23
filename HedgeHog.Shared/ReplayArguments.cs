@@ -97,7 +97,18 @@ namespace HedgeHog.Shared {
         }
       }
     }
-
-
+    public List<object> TradingMacros = new List<object>();
+    public void SetTradingMacros<T>(IList<T> tms) {
+      TradingMacros.Clear();
+      TradingMacros.AddRange(tms.Cast<object>());
+      _TradingMacrosIndex = 0;
+    }
+    int _TradingMacrosIndex = 0;
+    public bool IsMyTurn(object tm) {
+      return TradingMacros[_TradingMacrosIndex] == tm;
+    }
+    public void NextTradingMacro() {
+      _TradingMacrosIndex = (_TradingMacrosIndex + 1) % TradingMacros.Count;
+    }
   }
 }

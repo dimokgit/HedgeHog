@@ -319,7 +319,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Corridor Crosses Count")]
     [Description("Corridor Crosses Count Minimum")]
-    [Category(categoryCorridor)]
+    [Category(categoryXXX)]
     public int CorridorCrossesCountMinimum_ {
       get { return CorridorCrossesCountMinimum; }
       set {
@@ -379,23 +379,39 @@ namespace HedgeHog.Alice.Store {
       set { DoStreatchRates = value; }
     }
 
-    [DisplayName("Trade On Level Cross")]
-    [Category(categoryXXX)]
-    public bool TradeOnLevelCrossOnly {
+    [DisplayName("Corridor Follows Price")]
+    [Category(categoryCorridor)]
+    public bool CorridorFollowsPrice {
       get { return StrictTradeClose; }
       set { StrictTradeClose = value; }
     }
 
-    [DisplayName("Wave Length Min")]
+    [DisplayName("WaveAverage Iteration")]
     [Category(categoryActive)]
-    public double WaveLengthMin {
+    public double WaveAverageIteration {
       get { return SpreadShortToLongTreshold; }
       set {
         if (SpreadShortToLongTreshold == value) return;
         SpreadShortToLongTreshold = value;
-        OnPropertyChanged(TradingMacroMetadata.WaveLengthMin);
+        OnPropertyChanged(TradingMacroMetadata.WaveAverageIteration);
       }
     }
+
+    private bool IsTradingHour(DateTime time) {
+      var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
+      return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0], hours[1]);
+    }
+    [DisplayName("Trading Hours Range")]
+    [Category(categoryActive)]
+    public string TradingHoursRange {
+      get { return CorridorIterations; }
+      set {
+        if (CorridorIterations == value) return;
+        CorridorIterations = value;
+        OnPropertyChanged(TradingMacroMetadata.TradingHoursRange);
+      }
+    }
+
 
     [DisplayName("SuppRes Levels Count")]
     [Category(categoryCorridor)]
@@ -481,7 +497,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Extream Close Offset")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     [Description("Extream Close Offset in pips")]
     public int ExtreamCloseOffset_ {
       get { return ExtreamCloseOffset; }
@@ -494,7 +510,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Current Loss Close Adjustment")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     [Description("CurrentLossInPips * 0.9")]
     public double CurrentLossInPipsCloseAdjustment_ {
       get { return CurrentLossInPipsCloseAdjustment; }
@@ -521,7 +537,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("TakeProfit Multiplier")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     [Description("Ex: TakeProfit = Spread * X")]
     public double TakeProfitMultiplier {
       get { return CorridornessMin; }
@@ -629,9 +645,9 @@ namespace HedgeHog.Alice.Store {
       set { CorrelationTreshold = value; }
     }
 
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     [DisplayName("Range Ratio For TradeLimit")]
-    [Description("Ex:Exit when PL > Range * X")]
+    [Description("Ex:Limit = TakeProfit * Log(Angle,X)")]
     public double RangeRatioForTradeLimit_ {
       get { return RangeRatioForTradeLimit; }
       set { 
@@ -712,7 +728,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reset On Balance")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public double ResetOnBalance_ {
       get { return ResetOnBalance.GetValueOrDefault(0); }
       set {
@@ -723,7 +739,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trade By Rate Direction")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public bool TradeByRateDirection_ {
       get { return TradeByRateDirection; }
       set { TradeByRateDirection = value; }
@@ -781,14 +797,14 @@ namespace HedgeHog.Alice.Store {
 
 
 
-    [DisplayName("Corridor StDev To SpreadMin")]
-    [Description("CorridorStDev/Spread > X")]
+    [DisplayName("Wave Lines12 Ratio")]
+    [Description("Wave's Line1 and Line2 ratio")]
     [Category(categoryActive)]
-    public double CorridorStDevToSpreadMin {
+    public double WaveLines12Ratio {
       get { return FibMin; }
       set { 
         FibMin = value;
-        OnPropertyChanged(TradingMacroMetadata.CorridorStDevToSpreadMin);
+        OnPropertyChanged(TradingMacroMetadata.WaveLines12Ratio);
       }
     }
 
@@ -1176,10 +1192,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    Price GetVirtualCurrentPrice() {
+      try {
+        var rate = RatesArray.LastOrDefault();
+        return new Price(Pair, rate, TradesManager.ServerTime, PointSize, TradesManager.GetDigits(Pair), true);
+      } catch {
+        throw;
+      }
+    }
     double? _currentSpread;
     Price _currentPrice;
     public Price CurrentPrice {
-      get { return IsInVitualTrading ? TradesManager.GetPrice(Pair) : _currentPrice; }
+      get {
+        return IsInVitualTrading ? GetVirtualCurrentPrice() : _currentPrice;
+      }
       set {
         _currentPrice = value;
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);

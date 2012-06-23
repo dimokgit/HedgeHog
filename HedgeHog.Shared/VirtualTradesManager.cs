@@ -43,10 +43,7 @@ namespace HedgeHog.Shared {
     public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
     public DateTime ServerTime {
       get {
-        var rates = RatesByPair().First().Value;
-        if (rates == null || !rates.Any()) return DateTime.MinValue;
-        var rateLast = rates[rates.Count - 1];
-        return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
+        return TradesManagerStatic.GetVirtualServerTime(RatesByPair().First().Value, barMinutes);
       }
     }
 

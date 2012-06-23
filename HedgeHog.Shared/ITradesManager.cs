@@ -131,6 +131,12 @@ namespace HedgeHog.Shared {
 
   public static class TradesManagerStatic {
 
+    public static DateTime GetVirtualServerTime(IList<Rate> rates, int barMinutes) {
+      if (rates == null || !rates.Any()) return DateTime.MinValue;
+      var rateLast = rates[rates.Count - 1];
+      return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
+    }
+
     public static void RaisePriceChanged(this ITradesManager me, string pair, Rate rate) {
       me.RaisePriceChanged(pair, new Price(pair, rate, me.ServerTime, me.GetPipSize(pair), me.GetDigits(pair), true));
     }
