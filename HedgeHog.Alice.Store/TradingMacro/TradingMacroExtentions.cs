@@ -751,7 +751,7 @@ namespace HedgeHog.Alice.Store {
               , CorridorStats.HeightUp0, CorridorStats.HeightDown0
               , CorridorStats.HeightUp, CorridorStats.HeightDown
               , CorridorStats.HeightUp0 * 3, CorridorStats.HeightDown0 * 3
-              , r => Strategy == Strategies.AutoPilot ? r.PriceAvg1 : MagnetPrice, (r, d) => r.PriceAvg1 = d
+              , r => (Strategy == Strategies.LongRanner || Strategy == Strategies.Bounce) ? r.PriceAvg1 : MagnetPrice, (r, d) => r.PriceAvg1 = d
               , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
               , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
               , (r, d) => r.PriceAvg21 = d, (r, d) => r.PriceAvg31 = d
@@ -1407,7 +1407,8 @@ namespace HedgeHog.Alice.Store {
                 else {
                   Debugger.Break();
                 }
-              while (RatesInternal.Count > BarsCount)
+              while (RatesInternal.Count > BarsCount 
+                  && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || RatesInternal[0] < CorridorStats.Rates.LastByCount())))
                 RatesInternal.RemoveAt(0);
             }
             if (RatesArraySafe.Count < BarsCount)
@@ -1443,6 +1444,7 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         Log = exc;
       } finally {
+        TradesManager.ClosePair(Pair);
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, pra);
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, sba);
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, sfa);
@@ -1921,7 +1923,7 @@ namespace HedgeHog.Alice.Store {
               _rateArray = GetRatesSafe().ToList();
               if (IsInVitualTrading)
                 Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
-              RatesHeight = _rateArray.Height();//CorridorStats.priceHigh, CorridorStats.priceLow);
+              RatesHeight = _rateArray.Height(r => r.PriceAvg, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
               PriceSpreadAverage = _rateArray.Select(r => r.PriceSpread).Average();//.ToList().AverageByIterations(2).Average();
               #endregion
 
@@ -2172,8 +2174,9 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("TradeDirection");
       }
     }
-
-    List<Trade> _trades = new List<Trade>();
+    public int GetTradesGlobalCount() {
+      return TradesManager.GetTrades().Select(t => t.Pair).Distinct().Count();
+    }
     int _tradesCount = 0;
     public Trade[] Trades {
       get {
@@ -2623,8 +2626,12 @@ namespace HedgeHog.Alice.Store {
             return StrategyRomanCandle;
           case Strategies.Wave:
             return StrategyEnterBreakout096;
-          case Strategies.AutoPilot:
-            return StrategyEnterAutoPilot;
+          case Strategies.LongRanner:
+            return StrategyEnterAutoPilot_LongRunner;
+          case Strategies.Bounce:
+            return StrategyEnterBounce;
+          case Strategies.Bouncer:
+            return StrategyEnterBouncer;
           case Strategies.None:
             return () => { };
         }
@@ -4936,7 +4943,7 @@ namespace HedgeHog.Alice.Store {
     bool StrategyExitByGross061(Func<bool> mustCloseExcess = null) {
       mustCloseExcess = mustCloseExcess ?? _false;
       if (Trades.Lots() > LotSize && (CurrentGrossInPips > 0 || mustCloseExcess())) {
-        CloseExcessiveTrades();
+        TrimTrades();
         return true;
       }
       if (TakeProfitFunction == TradingMacroTakeProfitFunction.Zero && CurrentGross > 0) {
@@ -4954,14 +4961,23 @@ namespace HedgeHog.Alice.Store {
     }
     bool StrategyExitByTotalGross(Func<bool> mustCloseExcess = null) {
       mustCloseExcess = mustCloseExcess ?? _false;
-      if (TradingStatistics.TradingMacros.Count > 1 && TradingStatistics.CurrentGrossInPips > TradingStatistics.TakeProfitPips / TradingStatistics.TradingMacros.Count) {
+      var tradesCount = TradingStatistics.TakeProfitPips / TradesManager.GetTrades().Select(t => t.Pair).Distinct().Count();
+      if (TradingStatistics.TradingMacros.Count > 1 && TradingStatistics.CurrentGrossInPips > tradesCount) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(new CloseAllTradesMessage());
         return true;
       }
       return false;
     }
 
-    private void CloseExcessiveTrades() { CloseTrades(Trades.Lots() - LotSize); }
+    private bool TrimTradesOnBreakEven(Func<bool> mustCloseExcess = null) {
+      if (Trades.Lots() > LotSize && (CurrentGrossInPips > 0 || (mustCloseExcess ?? _false)())) {
+        TrimTrades();
+        return true;
+      }
+      return false;
+    }
+
+    private void TrimTrades() { CloseTrades(Trades.Lots() - LotSize); }
     private void CloseTrades(int lot) {
       if (lot > 0)
         CheckPendingAction("CT", pa => {
@@ -5673,11 +5689,12 @@ namespace HedgeHog.Alice.Store {
       var rev = RatesArray.ReverseIfNot().ToArray();
       double line1 = 0, line2 = 0;
       double? line1Max = null, line2Max = null;
-      decimal avg = 0;
+      double avg = 0;
       double distance = double.MinValue;
-      decimal mp1 = 0, mp2 = 0;
+      double mp1 = 0;
+        int mp2 = 0;
       double min = double.NaN, max = double.NaN;
-      double waveHightMin = WaveAverage;
+      double waveHightMin = 0;
       Func<IList<Rate>, double, double, double, bool> isWaveOk = (wave, a, l1, l2) => {
         if (a.Between(l1, l2)) return false;
         var up = wave[0].PriceAvg < wave.LastByCount().PriceAvg;
@@ -5695,8 +5712,10 @@ namespace HedgeHog.Alice.Store {
         line2 = min + height * 1 / WaveLines12Ratio;
         //avg = double.IsNaN(avg) ? rates.Average() : (avg * (index - 1) + rates.LastByCount()) / index;
         //avg = CalcMagnetPrice(wave);
-        mp1 += (decimal)rate.PriceAvg / (decimal)(rate.Spread*rate.Spread);
-        mp2 += 1 / (decimal)(rate.Spread * rate.Spread);
+        //mp1 += (decimal)rate.PriceAvg / (decimal)(rate.Spread * rate.Spread);
+        //mp2 += 1 / (decimal)(rate.Spread * rate.Spread);
+        mp1 += rate.PriceAvg;
+        mp2 ++;
         if (height < waveHightMin) return double.NaN;
         avg = (mp1 / mp2);
         return ((double)avg - middle).Abs();
@@ -5708,8 +5727,10 @@ namespace HedgeHog.Alice.Store {
           var rates1 = rev.Take(index).Where(r => r.Spread > 0).ToArray();
           min = rates1.Min(r => r.PriceAvg);
           max = rates1.Max(r => r.PriceAvg);
-          mp1 = (decimal)rates1.Sum(r => r.PriceAvg / (r.Spread * r.Spread));
-          mp2 = (decimal)rates1.Sum(r => 1 / (r.Spread * r.Spread));
+          //mp1 = (decimal)rates1.Sum(r => r.PriceAvg / (r.Spread * r.Spread));
+          //mp2 = (decimal)rates1.Sum(r => 1 / (r.Spread * r.Spread));
+          mp1 = rates1.Sum(r => r.PriceAvg);
+          mp2 = rates1.Length;
           index++;
         } catch (Exception exc) {
           Log = exc;
@@ -5718,7 +5739,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
       var length = CorridorStats.Rates.Count > 0 && false ? (CorridorStats.Rates.Count * 1.1).ToInt().Min(rev.Length) : rev.Length;
       int indexMax = length;
-      for (; index < length; index++) {
+      for (; index <= length; index++) {
         var rates = new Rate[index];
         Array.Copy(rev, rates, index);
         var d = getWaveLevels(rates);
@@ -6001,7 +6022,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
         case TradingMacroTakeProfitFunction.BuySellLevels:
           if (_buyLevel == null || _sellLevel == null) return double.NaN;
-          tp = ((_buyLevel.Rate - _sellLevel.Rate).Abs() + PriceSpreadAverage.GetValueOrDefault(SpreadForCorridor) * 2); break;
+          tp = ((_buyLevel.Rate - _sellLevel.Rate).Abs() + PriceSpreadAverage.GetValueOrDefault(SpreadForCorridor) * 2).Min(RatesHeight); break;
         default:
           throw new NotImplementedException(new { function } + "");
       }
@@ -6328,9 +6349,8 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.TradingAngleRange:
         case TradingMacroMetadata.StDevAverageLeewayRatio:
         case TradingMacroMetadata.StDevTresholdIterations:
-          RatesArray = null;
           CorridorStats = null;
-          OnScanCorridor(RatesArraySafe);
+          OnScanCorridor(RatesArray);
           break;
         case TradingMacroMetadata.Pair:
           _pointSize = double.NaN;
@@ -6354,6 +6374,7 @@ namespace HedgeHog.Alice.Store {
           goto case TradingMacroMetadata.IsSuppResManual;
         case TradingMacroMetadata.IsSuppResManual:
         case TradingMacroMetadata.TakeProfitFunction:
+          CorridorStats = null;
           OnScanCorridor(RatesArray);
           goto case TradingMacroMetadata.RangeRatioForTradeLimit;
         case TradingMacroMetadata.RangeRatioForTradeLimit:
@@ -6566,5 +6587,9 @@ namespace HedgeHog.Alice.Store {
     }
 
     public Tuple<Rate, Rate, int> _waveLong { get; set; }
+
+    public double _RatesMax = 0;
+
+    public double _RatesMin = 0;
   }
 }

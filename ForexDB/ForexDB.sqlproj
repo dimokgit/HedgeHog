@@ -148,6 +148,11 @@
     <Folder Include="Schema Objects\Views\Indexes\" />
     <Folder Include="Schema Objects\Views\Triggers\" />
     <Folder Include="Schema Objects\Views\Statistics\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Functions\" />
+    <Folder Include="dbo\Stored Procedures\" />
+    <Folder Include="Assemblies\" />
   </ItemGroup>
   <ItemGroup>
     <BuildContributorArgument Include="OutDir=$(OutDir)" />
@@ -434,26 +439,33 @@
     <Build Include="Schema Objects\Views\dbo.v_BarStats_1.view.sql">
       <SubType>Code</SubType>
     </Build>
+    <Build Include="Security\RoleMemberships.sql" />
+    <Build Include="dbo\Functions\ISOweek.sql" />
+    <Build Include="dbo\Functions\RunningBalanceStats.sql" />
+    <Build Include="dbo\Functions\RunningBalanceMinimumAverage.sql" />
+    <Build Include="dbo\Stored Procedures\ProcessTrades.sql" />
+    <Build Include="Security\Permissions.sql" />
+    <Build Include="ExtendedProperties.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
       <SubType>NotInBuild</SubType>
     </None>
-    <Build Include="Schema Objects\Assemblies\LightLib.supporting.sql">
-      <SubType>NotInBuild</SubType>
-    </Build>
     <None Include="Schema Objects\Assemblies\SQLCLR.dll">
       <SubType>NotInBuild</SubType>
     </None>
-    <Build Include="Schema Objects\Assemblies\SQLCLR.supporting.sql">
-      <SubType>NotInBuild</SubType>
-    </Build>
     <None Include="Schema Objects\Assemblies\TA-Lib-Core.dll">
       <SubType>NotInBuild</SubType>
     </None>
     <None Include="Schema Comparisons\SchemaComparison1.scmp">
       <SubType>NotInBuild</SubType>
     </None>
+    <None Include="Assemblies\TA-Lib-Core.dll" />
+    <None Include="Assemblies\SQLCLR.dll" />
+    <None Include="Assemblies\LightLib.dll" />
+    <None Include="Assemblies\TA-Lib-Core_1.dll" />
+    <None Include="Assemblies\SQLCLR_1.dll" />
+    <None Include="Assemblies\LightLib_1.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">

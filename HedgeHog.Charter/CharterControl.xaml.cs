@@ -328,17 +328,18 @@ namespace HedgeHog {
     #region Lines
     public LineGraph PriceLineGraph { get; set; }
     public LineGraph PriceLineGraphBid { get; set; }
-    static Color priceLineGraphColorAsk = Colors.Maroon;
+    static Color priceLineGraphColorAsk = Colors.Black;
     static Color priceLineGraphColorBid = Colors.Navy;
     static Color priceLineGraphColorBuy = Colors.DarkGreen;
     static Color priceLineGraphColorSell = Colors.DarkRed;
-    bool? buySell;
-    public void SetPriceLineColor(bool? buySell) {
-      if (PriceLineGraph!=null && this.buySell != buySell) {
+    bool? isBuyOrSell;
+    public void SetPriceLineColor(bool? isBuyOrSell) {
+      if (PriceLineGraph!=null && this.isBuyOrSell != isBuyOrSell) {
         GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-          PriceLineGraph.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
-          PriceLineGraphBid.LinePen.Brush = new SolidColorBrush(buySell.HasValue ? buySell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorBid);
-          this.buySell = buySell;
+          PriceLineGraph.LinePen.Brush = new SolidColorBrush(isBuyOrSell.HasValue ? isBuyOrSell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
+          if (PriceLineGraphBid != null)
+            PriceLineGraphBid.LinePen.Brush = new SolidColorBrush(isBuyOrSell.HasValue ? isBuyOrSell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorBid);
+          this.isBuyOrSell = isBuyOrSell;
         });
       }
     }
@@ -894,10 +895,12 @@ namespace HedgeHog {
         plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
           .Description.LegendItem.Visibility = Visibility.Collapsed;
 
-        animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
-        animatedDataSourceBid.SetYMapping(y => y);
-        this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
-        this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
+        if (false) {
+          animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
+          animatedDataSourceBid.SetYMapping(y => y);
+          this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
+          this.PriceLineGraphBid.Description.LegendItem.Visibility = Visibility.Collapsed;
+        }
 
         Border infoBorder = new Border() {
           BorderBrush = new SolidColorBrush(Colors.Maroon), BorderThickness = new Thickness(1)
@@ -1147,7 +1150,7 @@ namespace HedgeHog {
                           double voltageHigh, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
-      var voltsByTick = voltsByTicks[0];
+      PriceBar[] voltsByTick = voltsByTicks.FirstOrDefault();
       #region Conversion Functions
       var roundTo = lastPrice.Digits - 1;
       var rateToPoint = new Func<Rate, Point>(t =>

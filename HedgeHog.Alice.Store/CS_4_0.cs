@@ -4766,7 +4766,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.StrategyExitByGross061"/></summary>
         public const string StrategyExitByGross061 = "StrategyExitByGross061";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CloseExcessiveTrades"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.TrimTrades"/></summary>
         public const string CloseExcessiveTrades = "CloseExcessiveTrades";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CloseTrades"/></summary>

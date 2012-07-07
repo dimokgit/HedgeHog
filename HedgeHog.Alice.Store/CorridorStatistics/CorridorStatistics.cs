@@ -101,6 +101,11 @@ namespace HedgeHog.Alice.Store {
     public Func<Rate,double> priceLow { get; set; }
 
     #region RatesHeight
+    private double _RatesMin;
+    public double RatesMin { get { return _RatesMin; } }
+    private double _RatesMax;
+    public double RatesMax { get { return _RatesMax; } }
+
     private double _RatesHeight;
     public double RatesHeight {
       get { return _RatesHeight; }
@@ -276,7 +281,7 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
       this.CorridorCrossesCount = corridorCrossesCount;
-      this.RatesHeight = this.Rates.Height();
+      this.RatesHeight = this.Rates.Height(out _RatesMin,out _RatesMax);
       // Must the last one
       this.StartDate = startDate;
       RaisePropertyChanged("Height");
