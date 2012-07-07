@@ -528,7 +528,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.priceLineGraphColorSell"/></summary>
         public const string priceLineGraphColorSell = "priceLineGraphColorSell";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.buySell"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.isBuyOrSell"/></summary>
         public const string buySell = "buySell";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetPriceLineColor"/></summary>

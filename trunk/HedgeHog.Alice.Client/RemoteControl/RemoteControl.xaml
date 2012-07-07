@@ -390,7 +390,7 @@
               
               <TextBlock Text="{Binding RatesInternal.Count}"/>
                 <TextBlock Text="{Binding LimitBar,StringFormat=[{0}]}"/>
-              <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd HH:mm}">
+              <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd HH:mm ddd}">
                 <TextBlock.ToolTip>
                   <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd/yyyy HH:mm}"/>
                 </TextBlock.ToolTip>

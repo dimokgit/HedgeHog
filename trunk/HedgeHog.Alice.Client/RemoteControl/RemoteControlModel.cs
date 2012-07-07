@@ -875,11 +875,11 @@ namespace HedgeHog.Alice.Client {
           charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
           charter.GetPriceHigh = tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
           charter.GetPriceLow = tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
-          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
-          charter.CenterOfMassSell = tm.CenterOfMassSell;
+          charter.CenterOfMassBuy = 0;// tm.CenterOfMassBuy;
+          charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
-          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
-          charter.CenterOfMassSell = tm.CenterOfMassSell;
+          charter.CenterOfMassBuy = 0; //tm.CenterOfMassBuy;
+          charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Count;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
@@ -890,7 +890,7 @@ namespace HedgeHog.Alice.Client {
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
           charter.MagnetPricePosition = tm.MagnetPricePosition;
-          if (!tm.Strategy.HasFlag(Strategies.WaveClub) /*&& tm.Strategy != Strategies.AutoPilot*/)
+          if (false && !tm.Strategy.HasFlag(Strategies.WaveClub) /*&& tm.Strategy != Strategies.AutoPilot*/)
             charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
           charter.CalculateLastPrice = tm.CalculateLastPrice;
@@ -901,7 +901,7 @@ namespace HedgeHog.Alice.Client {
           //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
           //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
           //var rateHieghttoWaveAvg = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = (r.PriceRlw.GetValueOrDefault()) }).ToArray();
-          charter.AddTicks(price, rates, new PriceBar[1][] { stDevBars }, info, null,
+          charter.AddTicks(price, rates, tm.DoShowWaves ? new PriceBar[1][] { stDevBars } : new PriceBar[0][], info, null,
             tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.ToArray().Reverse().Take(2).Last()) : 0, tm.InPips(tm.StDevAverages.LastByCount()),
             0, 0,
             tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),

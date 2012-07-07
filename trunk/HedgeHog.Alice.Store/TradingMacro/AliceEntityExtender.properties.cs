@@ -127,6 +127,33 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region TradesCountChanging Event
+    public class TradesCountChangingEventArgs : EventArgs {
+      public double NewValue { get; set; }
+    }
+    event EventHandler<TradesCountChangingEventArgs> TradesCountChangingEvent;
+    public event EventHandler<TradesCountChangingEventArgs> TradesCountChanging {
+      add {
+        if (TradesCountChangingEvent == null || !TradesCountChangingEvent.GetInvocationList().Contains(value))
+          TradesCountChangingEvent += value;
+      }
+      remove {
+        TradesCountChangingEvent -= value;
+      }
+    }
+    protected void RaiseTradesCountChanging(double newValue) {
+      if (TradesCountChangingEvent != null) TradesCountChangingEvent(this, new TradesCountChangingEventArgs { NewValue = newValue });
+    }
+    double _tradesCountPrev = double.NaN;
+    partial void OnTradesCountChanging(global::System.Double value) {
+      if (_tradesCountPrev == TradesCount) return;
+      _tradesCountPrev = TradesCount;
+      RaiseTradesCountChanging(value);
+    }
+    #endregion
+
+
+
     event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChangedEvent;
     public event EventHandler<EntryOrderIdEventArgs> EntryOrderIdChanged {
       add {
@@ -317,9 +344,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Corridor Crosses Count")]
+    [DisplayName("Crosses Count")]
     [Description("Corridor Crosses Count Minimum")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public int CorridorCrossesCountMinimum_ {
       get { return CorridorCrossesCountMinimum; }
       set {
@@ -348,10 +375,11 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.TakeProfitFunction);
       }
     }
-    
-    [DisplayName("Trade On Cross Only")]
-    [Category(categoryTrading)]
-    public bool TradeOnCrossOnly_ {
+
+    [DisplayName("Symmetrical Buy/Sell")]
+    [Description("Move Buy level up when Sell moves down.")]
+    [Category(categoryActive)]
+    public bool SymmetricalBuySell {
       get { return TradeOnCrossOnly; }
       set { TradeOnCrossOnly = value; }
     }
@@ -373,7 +401,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
@@ -547,10 +575,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Streach Trading Distance")]
-    [Category(categoryTrading)]
-    [Description("Ex: PL < tradingDistance * (X ? trades.Length:1)")]
-    public bool StreachTradingDistance_ {
+    [DisplayName("Streatch TakeProfit")]
+    [Category(categoryActive)]
+    [Description("Ex: TakeProfitCurr = TakeProfit + CurrentLoss")]
+    public bool StreatchTakeProfit {
       get { return StreachTradingDistance; }
       set { 
         StreachTradingDistance = value;
@@ -645,9 +673,9 @@ namespace HedgeHog.Alice.Store {
       set { CorrelationTreshold = value; }
     }
 
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     [DisplayName("Range Ratio For TradeLimit")]
-    [Description("Ex:Limit = TakeProfit * Log(Angle,X)")]
+    [Description("Not in use.")]
     public double RangeRatioForTradeLimit_ {
       get { return RangeRatioForTradeLimit; }
       set { 
@@ -822,15 +850,13 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
-    [DisplayName("Is Cold On Trades")]
-    [Description("Is not Hot when has trades")]
-    [Category(categoryTrading)]
-    public bool IsColdOnTrades_ {
+    [DisplayName("Show Waves")]
+    [Category(categoryCorridor)]
+    public bool DoShowWaves {
       get { return IsColdOnTrades; }
       set {
         if (IsColdOnTrades == value) return;
         IsColdOnTrades = value;
-        OnPropertyChanged(TradingMacroMetadata.IsColdOnTrades_);
       }
     }
 
@@ -919,7 +945,6 @@ namespace HedgeHog.Alice.Store {
     public bool IsBreakpoutStrategy { get { return Strategy.HasFlag(Strategies.Breakout); } }
     public bool IsHotStrategy { get { return Strategy.HasFlag(Strategies.Hot); } }
     public bool IsAutoStrategy { get { return Strategy.HasFlag(Strategies.Auto); } }
-    public bool IsCold { get { return IsColdOnTrades && Trades.Length > 0; } }
 
     private bool _IsAutoSync;
     [DisplayName("Is Auto Sync")]

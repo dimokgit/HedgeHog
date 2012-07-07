@@ -68,7 +68,10 @@ namespace HedgeHog.Alice.Store {
     Breakout = 2, Breakout_A = Breakout + Auto,
     Range = 4, Range_A = Range + Auto,
     Wave = 8,
-    AutoPilot = Wave * 2,
+    LongRanner = Wave * 2,//16
+    Bounce = LongRanner * 2,//32
+    Bouncer = Bounce * 2,//64
+    BouncerA = Bouncer + Auto,
     Hot = 1024,
     Hot_A = Hot + Auto, Breakout7 = Breakout + 512,
     LongWave = 1024 * 2, LongWaveA = LongWave + Auto,
