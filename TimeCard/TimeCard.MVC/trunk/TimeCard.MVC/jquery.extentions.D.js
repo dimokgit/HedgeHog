@@ -4,6 +4,9 @@
 
 jQuery.extend({
   D: {
+    odataParam: function (param) {
+      return typeof param == "string" ? "'" + escape(param) + "'" : param;
+    },
     inRange: function (f, min, max) { return f < min ? min : f > max ? max : f; },
     round: function (f, d) { return d >= 0 ? parseFloat(f.toFixed(d)) : f; },
     gradient: function (reds, greens, blues, min, max, steps, decimals) {
@@ -13,7 +16,7 @@ jQuery.extend({
       var r1 = [r[1], reds[2]];
       var g1 = [g[1], greens[2]];
       var b1 = [b[1], blues[2]];
-      var step = (max - min) / (steps-1);
+      var step = (max - min) / (steps - 1);
       function RGBs(r, g, b, min, max, steps) {
         var rgb = [r, g, b];
         var rgbs = [];
