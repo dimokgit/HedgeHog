@@ -1,7 +1,8 @@
-﻿CREATE VIEW dbo.v_TradeSession
+﻿
+CREATE VIEW [dbo].[v_TradeSession]
 AS
 SELECT     Pair, SessionId, TimeStamp, Count, GrossPL, Days, Lot / 1000 AS Lot, LotA / 1000 AS LotA, LotSD / 1000 AS LotSD, DollarsPerMonth, PL, MinutesInTest, 
-                      DaysPerMinute, DollarsPerMonth / Lot * 1000 AS DollarPerLot
+                      DaysPerMinute, DollarsPerMonth / Lot * 1000 AS DollarPerLot,SessionInfo
 FROM         dbo.v_TradeSession_10
 
 GO
@@ -10,7 +11,7 @@ Begin DesignProperties =
    Begin PaneConfigurations = 
       Begin PaneConfiguration = 0
          NumPanes = 4
-         Configuration = "(H (1[41] 4[20] 2[10] 3) )"
+         Configuration = "(H (1[40] 4[20] 2[20] 3) )"
       End
       Begin PaneConfiguration = 1
          NumPanes = 3
@@ -76,12 +77,12 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "t_Trade"
+         Begin Table = "v_TradeSession_10"
             Begin Extent = 
                Top = 6
                Left = 38
-               Bottom = 338
-               Right = 217
+               Bottom = 125
+               Right = 205
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -93,11 +94,17 @@ Begin DesignProperties =
    Begin DataPane = 
       Begin ParameterDefaults = ""
       End
-      Begin ColumnWidths = 9
+      Begin ColumnWidths = 15
          Width = 284
-         Width = 780
-         Width = 1995
-         Width = 1995
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
+         Width = 1500
          Width = 1500
          Width = 1500
          Width = 1500
@@ -106,8 +113,8 @@ Begin DesignProperties =
       End
    End
    Begin CriteriaPane = 
-      Begin ColumnWidths = 12
-         Column = 3750
+      Begin ColumnWidths = 11
+         Column = 1440
          Alias = 900
          Table = 1170
          Output = 720
@@ -123,6 +130,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'v_TradeSession';
+
+
 
 
 GO

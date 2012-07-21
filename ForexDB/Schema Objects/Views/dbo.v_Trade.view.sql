@@ -1,10 +1,10 @@
 ﻿CREATE VIEW dbo.v_Trade
 AS
 SELECT     Buy, PL - Commission AS PL, GrossPL - Commission * Lot / 10000.0 AS GrossPL, Lot, Pair, TimeOpen, TimeClose, Commission, TimeStamp, 
-                      CorridorHeightInPips AS PLMax, CorridorMinutesBack AS CorridorHeight, SessionId, DATEDIFF(hh, TimeOpen, TimeClose) AS TradeLength, 
-                      CONVERT(bit, CASE WHEN pl > 0 THEN 1 ELSE 0 END) AS HasProfit, DATEDIFF(n, TimeOpen, TimeClose) AS TradeLengthInMinutes, 
-                      ISNULL(CorridorHeightInPips / NULLIF (CorridorMinutesBack, 0) / 1000, 0) AS PLToCorr, dbo.Date(TimeOpen) AS DateOpen, dbo.Date(TimeClose) 
-                      AS DateClose
+                      CorridorHeightInPips AS PLMax, CorridorMinutesBack AS CorridorHeight, SessionId, DATEDIFF(hh, TimeOpen, TimeClose) AS TradeLength, CONVERT(bit, 
+                      CASE WHEN pl > 0 THEN 1 ELSE 0 END) AS HasProfit, DATEDIFF(n, TimeOpen, TimeClose) AS TradeLengthInMinutes, 
+                      ISNULL(CorridorHeightInPips / NULLIF (CorridorMinutesBack, 0) / 1000, 0) AS PLToCorr, dbo.Date(TimeOpen) AS DateOpen, dbo.Date(TimeClose) AS DateClose, 
+                      DATEPART(dw, TimeOpen) AS DW, dbo.ISOweek(TimeOpen) AS WM
 FROM         dbo.t_Trade
 
 GO

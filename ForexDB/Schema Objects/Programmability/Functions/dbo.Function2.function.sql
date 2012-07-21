@@ -4,3 +4,7 @@ RETURNS NVARCHAR (4000)
 AS
  EXTERNAL NAME [SQLCLR].[UserDefinedFunctions].[Function2]
 
+
+
+
+

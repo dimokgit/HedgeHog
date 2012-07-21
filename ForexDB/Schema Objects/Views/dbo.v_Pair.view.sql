@@ -1,11 +1,14 @@
 ﻿/*ORDER BY p1.Weight,p2.Weight*/
 CREATE VIEW dbo.v_Pair
 AS
-SELECT     TOP (100) PERCENT p1.Name + '/' + p2.Name AS Pair, p1.Weight AS Weight1, p2.Weight AS Weight2
-FROM         dbo.t_Currency AS p1 INNER JOIN
-                      dbo.t_Currency AS p2 ON p1.Weight < p2.Weight
-WHERE     (p1.IsOn = 1) AND (p2.IsOn = 1) AND (p1.IsPrime = 0) OR
-                      (p1.IsOn = 1) AND (p2.IsOn = 1) AND (p2.IsPrime = 0)
+SELECT        TOP (1000000) Pair, Weight1, Weight2
+FROM            (SELECT        p1.Name + '/' + p2.Name AS Pair, p1.Weight AS Weight1, p2.Weight AS Weight2
+                          FROM            dbo.t_Currency AS p1 INNER JOIN
+                                                    dbo.t_Currency AS p2 ON p1.Weight < p2.Weight
+                          WHERE        (p1.IsOn = 1) AND (p2.IsOn = 1) AND (p1.IsPrime = 0) OR
+                                                    (p1.IsOn = 1) AND (p2.IsOn = 1) AND (p2.IsPrime = 0)
+                          UNION ALL
+                          SELECT        'USDOLLAR' AS Expr1, 0 AS Expr2, 0 AS Expr3) AS T
 ORDER BY Weight1, Weight2
 
 GO
@@ -81,22 +84,12 @@ Begin DesignProperties =
          Left = 0
       End
       Begin Tables = 
-         Begin Table = "p1"
+         Begin Table = "T"
             Begin Extent = 
-               Top = 6
+               Top = 486
                Left = 38
-               Bottom = 113
-               Right = 189
-            End
-            DisplayFlags = 280
-            TopColumn = 0
-         End
-         Begin Table = "p2"
-            Begin Extent = 
-               Top = 6
-               Left = 227
-               Bottom = 115
-               Right = 378
+               Bottom = 598
+               Right = 208
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -138,6 +131,8 @@ Begin DesignProperties =
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'v_Pair';
+
+
 
 
 GO

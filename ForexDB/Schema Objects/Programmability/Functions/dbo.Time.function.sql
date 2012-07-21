@@ -4,3 +4,7 @@ RETURNS DATETIME
 AS
  EXTERNAL NAME [SQLCLR].[UserDefinedFunctions].[Time]
 
+
+
+
+
