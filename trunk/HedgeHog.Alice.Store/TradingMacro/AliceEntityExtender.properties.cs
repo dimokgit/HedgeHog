@@ -130,6 +130,7 @@ namespace HedgeHog.Alice.Store {
     #region TradesCountChanging Event
     public class TradesCountChangingEventArgs : EventArgs {
       public double NewValue { get; set; }
+      public double OldValue { get; set; }
     }
     event EventHandler<TradesCountChangingEventArgs> TradesCountChangingEvent;
     public event EventHandler<TradesCountChangingEventArgs> TradesCountChanging {
@@ -142,7 +143,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     protected void RaiseTradesCountChanging(double newValue) {
-      if (TradesCountChangingEvent != null) TradesCountChangingEvent(this, new TradesCountChangingEventArgs { NewValue = newValue });
+      if (TradesCountChangingEvent != null)
+        TradesCountChangingEvent(this, new TradesCountChangingEventArgs { NewValue = newValue, OldValue = TradesCount });
     }
     double _tradesCountPrev = double.NaN;
     partial void OnTradesCountChanging(global::System.Double value) {
@@ -550,15 +552,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Corridor Big/Small")]
-    [Category(categoryXXX)]
-    [Description("CorridorBigToSmallRatio")]
-    public double CorridorBigToSmallRatio_ {
-      get { return CorridorBigToSmallRatio; }
+    [DisplayName("Magnet Cross Minimum")]
+    [Category(categoryActive)]
+    [Description("CorridorStats.Rates.Skip(N)")]
+    public int MagnetCrossMinimum {
+      get { return CorridorBigToSmallRatio.ToInt(); }
       set {
         if (CorridorBigToSmallRatio != value) {
           CorridorBigToSmallRatio = value;
-          OnPropertyChanged(TradingMacroMetadata.CorridorBigToSmallRatio_);
+          OnPropertyChanged(TradingMacroMetadata.MagnetCrossMinimum);
         }
       }
     }
@@ -582,7 +584,7 @@ namespace HedgeHog.Alice.Store {
       get { return StreachTradingDistance; }
       set { 
         StreachTradingDistance = value;
-        OnPropertyChanged(TradingMacroMetadata.StreachTradingDistance_);
+        OnPropertyChanged(TradingMacroMetadata.StreatchTakeProfit);
       }
     }
 
@@ -642,11 +644,14 @@ namespace HedgeHog.Alice.Store {
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
 
-    [Category(categoryXXX)]
-    [DisplayName("Ratio For Breakout")]
-    public double CorridorRatioForBreakout_ {
-      get { return CorridorRatioForBreakout; }
-      set { CorridorRatioForBreakout = value; }
+    [Category(categoryActive)]
+    [DisplayName("Corridor Crosses Maximum")]
+    public int CorridorCrossesMaximum {
+      get { return CorridorRatioForBreakout.ToInt(); }
+      set { 
+        CorridorRatioForBreakout = value;
+        OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
+      }
     }
     [Category(categoryXXX)]
     [DisplayName("Ratio For Range")]
@@ -745,7 +750,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
@@ -791,8 +796,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Corridor Minimum Length Ratio")]
-    [Category(categoryCorridor)]
-    [Description("corr.Perios < rates.Periods * X/10")]
+    [Category(categoryActive)]
+    [Description("corr.Rates.Count >  rates.Count / N")]
     public int CorridorMinimumLengthRatio {
       get { return BarPeriodsHigh; }
       set {
@@ -987,10 +992,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #region VolumeTresholdIterations
-    [DisplayName("Volume Iterations")]
-    [Description("Volume Treshold Iterations")]
+    [DisplayName("Corridor Minimum Ratio")]
+    [Description("Cooridor.Rates.Count > Rates.Count/N")]
     [Category(categoryCorridor)]
-    public int VolumeTresholdIterations_ {
+    public int CorridorMinimumRatio {
       get { return VolumeTresholdIterations; }
       set {
         if (VolumeTresholdIterations != value) {
@@ -1001,16 +1006,16 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    #region StDevAverageLeewayRatio
-    [DisplayName("StDev Leeway Ratio")]
-    [Description("StDev Average Leeway Ratio")]
-    [Category(categoryXXX)]
-    public double StDevAverageLeewayRatio_ {
+    #region MagnetPriceWaveRatio
+    [DisplayName("Magnet Price Wave Ratio")]
+    [Description("(RateCross - RateCross).Duration>Rates.Count/X")]
+    [Category(categoryActive)]
+    public double MagnetPriceWaveRatio {
       get { return StDevAverageLeewayRatio; }
       set {
         if (StDevAverageLeewayRatio != value) {
           StDevAverageLeewayRatio = value;
-          OnPropertyChanged("StDevAverageLeewayRatio_");
+          OnPropertyChanged("MagnetPriceWaveRatio");
         }
       }
     }

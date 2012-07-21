@@ -390,10 +390,10 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
         public const string CorridorSpread = "CorridorSpread";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._MagnetPricePosition"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveLength"/></summary>
         public const string _CorridorStDevToRatesStDevRatio = "_CorridorStDevToRatesStDevRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.MagnetPricePosition"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
         public const string CorridorStDevToRatesStDevRatio = "CorridorStDevToRatesStDevRatio";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
@@ -1027,7 +1027,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
         public static PropertyPath CorridorSpreadPath { get { return new PropertyPath("CorridorSpread"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.MagnetPricePosition"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
         public static PropertyPath CorridorStDevToRatesStDevRatioPath { get { return new PropertyPath("CorridorStDevToRatesStDevRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>

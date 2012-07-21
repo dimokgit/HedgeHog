@@ -938,14 +938,10 @@ namespace HedgeHog.Bars {
       bar.PriceSpeed = HedgeHog.Regression.Regress(bars.Select(price).ToArray(),1)[1];
     }
 
-    public static double Spread(this IList<Rate> rates, int iterations = 3) {
-        var spreads = rates.Select(r => r.AskHigh - r.BidLow).ToList();
-        if (spreads.Count == 0) return double.NaN;
-        var spreadLow = spreads.AverageByIterations(iterations, true);
-        var spreadHight = spreads.AverageByIterations(iterations, false);
-        if (spreadLow.Count == 0 && spreadHight.Count == 0)
-          return rates.Spread(iterations - 1);
-        return spreads.Except(spreadLow.Concat(spreadHight)).DefaultIfEmpty(spreads.Average()).Average();
+    public static double Spread(this IList<Rate> rates, int iterations = 2) {
+        var spreads = rates.Select(r => r.PriceHigh - r.PriceLow).ToArray();
+        if (spreads.Length == 0) return double.NaN;
+        return spreads.AverageInRange(iterations).Average();
     }
 
     public static void AddUp<TBar>(this List<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {

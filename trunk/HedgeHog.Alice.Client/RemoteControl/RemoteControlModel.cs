@@ -568,7 +568,7 @@ namespace HedgeHog.Alice.Client {
           var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
-          _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips);
+          _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips * tm.Trades.Lots()) / tms.Sum(tm => tm.Trades.Lots());
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
         }
       } catch (Exception exc) {
@@ -878,7 +878,7 @@ namespace HedgeHog.Alice.Client {
           charter.CenterOfMassBuy = 0;// tm.CenterOfMassBuy;
           charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
-          charter.CenterOfMassBuy = 0; //tm.CenterOfMassBuy;
+          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Count;
@@ -889,7 +889,7 @@ namespace HedgeHog.Alice.Client {
           charter.WaveHeightInPips = tm.WaveAverageInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
-          charter.MagnetPricePosition = tm.MagnetPricePosition;
+          charter.WaveLength = tm.WaveLength;
           if (false && !tm.Strategy.HasFlag(Strategies.WaveClub) /*&& tm.Strategy != Strategies.AutoPilot*/)
             charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
