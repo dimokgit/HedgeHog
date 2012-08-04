@@ -192,6 +192,11 @@ namespace HedgeHog.Bars {
     [DataMember]
     public double Corridorness { get; set; }
 
+    double _Kurtosis = double.NaN;
+    public double Kurtosis { get { return _Kurtosis; } set { _Kurtosis = value; } }
+    double _Skewness = double.NaN;
+    public double Skewness { get { return _Skewness; } set { _Skewness = value; } }
+
     double _density = double.NaN;
     [DataMember]
     public double Density {

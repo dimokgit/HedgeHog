@@ -11,19 +11,19 @@
 >
   <UserControl.Resources>
     <ControlTemplate x:Key="DraggArrowUp" TargetType="{x:Type Control}">
-      <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+      <StackPanel Orientation="Horizontal" Margin="0,0,0,11">
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" ToolTip="{Binding CrossesCount}">
-                <CheckBox IsChecked="{Binding CanTrade}"/>
-                <TextBox Text="{Binding TradesCount}" BorderBrush="Transparent" Background="Transparent" />
+                <CheckBox IsChecked="{Binding CanTrade}" VerticalAlignment="Bottom"/>
                 <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
                   <Image.LayoutTransform>
                     <ScaleTransform ScaleY="-0.5" ScaleX="-0.5"/>
                   </Image.LayoutTransform>
                 </Image>
-                <TextBlock Text="{Binding CrossesCount}" />
+                <TextBox Text="{Binding TradesCount}" BorderBrush="Transparent" Background="Transparent" />
+                <!--<TextBlock Text="{Binding CrossesCount}" />-->
               </StackPanel>
             </DataTemplate>
           </ContentPresenter.ContentTemplate>
@@ -31,19 +31,19 @@
       </StackPanel>
     </ControlTemplate>
     <ControlTemplate x:Key="DraggArrowDown" TargetType="{x:Type Control}">
-      <StackPanel Orientation="Horizontal" Margin="0,16,0,0" ToolTip="{Binding CrossesCount}">
+      <StackPanel Orientation="Horizontal" Margin="10,11,0,0" ToolTip="{Binding CrossesCount}">
         <ContentPresenter Content="{Binding}">
           <ContentPresenter.ContentTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                <CheckBox IsChecked="{Binding CanTrade}" VerticalAlignment="Bottom"/>
+                <CheckBox IsChecked="{Binding CanTrade}" VerticalAlignment="Top"/>
                 <TextBox Text="{Binding TradesCount}" BorderBrush="Transparent" Background="Transparent" />
                 <Image Source="/HedgeHog.Charter;component/Images/DownArrow-32.png">
                   <Image.LayoutTransform>
                     <ScaleTransform ScaleY="0.5" ScaleX="0.5"/>
                   </Image.LayoutTransform>
                 </Image>
-                <TextBlock Text="{Binding CrossesCount}"  />
+                <!--<TextBlock Text="{Binding CrossesCount}"  />-->
               </StackPanel>
             </DataTemplate>
           </ContentPresenter.ContentTemplate>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace HedgeHog.Shared {
+namespace HedgeHog.Shared.Messages {
   public class CloseAllTradesMessage : Object { }
   public class RepayPauseMessage { }
   public class RepayBackMessage { }

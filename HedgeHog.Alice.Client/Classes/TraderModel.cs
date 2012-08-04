@@ -26,6 +26,7 @@ using System.Reactive.Concurrency;
 using NotifyCollectionChangedWrapper;
 using HedgeHog.Alice.Store.Metadata;
 using System.Threading.Tasks.Dataflow;
+using HedgeHog.Shared.Messages;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }

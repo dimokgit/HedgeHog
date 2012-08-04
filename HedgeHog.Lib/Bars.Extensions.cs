@@ -474,6 +474,11 @@ namespace HedgeHog.Bars {
       clusters.Skip(1).ToList().ForEach(c => list.AddRange(c));
       return list.ToArray();
     }
+    public static double Distance<TBar>(this IList<TBar> rates) where TBar : BarBase {
+      double distance = 0;
+      rates.Aggregate((p, n) => { distance += (p.PriceAvg - n.PriceAvg).Abs(); return n; });
+      return distance;
+    }
     static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, bool up) where TBar : BarBase {
       return rates.DistanceAverage(up ? (Func<TBar, double>)(r => r.PriceHigh) : r => r.PriceLow);
     }

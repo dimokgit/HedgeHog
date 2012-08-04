@@ -378,11 +378,11 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightInPips"/></summary>
         public const string CorridorHeightInPips = "CorridorHeightInPips";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._SpreadForCorridor"/></summary>
-        public const string _SpreadForCorridor = "_SpreadForCorridor";
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorDistance"/></summary>
+        public const string _CorridorDistance = "_CorridorDistance";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SpreadForCorridor"/></summary>
-        public const string SpreadForCorridor = "SpreadForCorridor";
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorDistance"/></summary>
+        public const string CorridorDistance = "CorridorDistance";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorSpread"/></summary>
         public const string _CorridorSpread = "_CorridorSpread";
@@ -391,10 +391,10 @@ namespace HedgeHog.Metadata
         public const string CorridorSpread = "CorridorSpread";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveLength"/></summary>
-        public const string _CorridorStDevToRatesStDevRatio = "_CorridorStDevToRatesStDevRatio";
+        public const string _WaveLength = "_WaveLength";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
-        public const string CorridorStDevToRatesStDevRatio = "CorridorStDevToRatesStDevRatio";
+        public const string WaveLength = "WaveLength";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public const string Header = "Header";
@@ -529,7 +529,7 @@ namespace HedgeHog.Metadata
         public const string priceLineGraphColorSell = "priceLineGraphColorSell";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.isBuyOrSell"/></summary>
-        public const string buySell = "buySell";
+        public const string isBuyOrSell = "isBuyOrSell";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetPriceLineColor"/></summary>
         public const string SetPriceLineColor = "SetPriceLineColor";
@@ -921,6 +921,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.AdjustDraggablePointByPip"/></summary>
         public const string AdjustDraggablePointByPip = "AdjustDraggablePointByPip";
 
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseToggleCanTrade"/></summary>
+        public const string RaiseToggleCanTrade = "RaiseToggleCanTrade";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseClearStartTime"/></summary>
+        public const string RaiseClearStartTime = "RaiseClearStartTime";
+
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.plotter_KeyDown"/></summary>
         public const string plotter_KeyDown = "plotter_KeyDown";
 
@@ -1021,14 +1027,14 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightInPips"/></summary>
         public static PropertyPath CorridorHeightInPipsPath { get { return new PropertyPath("CorridorHeightInPips"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.SpreadForCorridor"/></summary>
-        public static PropertyPath SpreadForCorridorPath { get { return new PropertyPath("SpreadForCorridor"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorDistance"/></summary>
+        public static PropertyPath CorridorDistancePath { get { return new PropertyPath("CorridorDistance"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
         public static PropertyPath CorridorSpreadPath { get { return new PropertyPath("CorridorSpread"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
-        public static PropertyPath CorridorStDevToRatesStDevRatioPath { get { return new PropertyPath("CorridorStDevToRatesStDevRatio"); } }
+        public static PropertyPath WaveLengthPath { get { return new PropertyPath("WaveLength"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public static PropertyPath HeaderPath { get { return new PropertyPath("Header"); } }

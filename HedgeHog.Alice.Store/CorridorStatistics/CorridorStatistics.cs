@@ -441,7 +441,21 @@ namespace HedgeHog.Alice.Store {
 
     public IList<Rate> Rates {
       get { return _Rates; }
-      set { _Rates = value; }
+      set {
+        _Rates = value;
+        this._Distance = value.Distance();
+      }
+    }
+
+    private double _Distance;
+
+    public double Distance {
+      get { return _Distance; }
+      set {
+        if (_Distance != value) return;
+        _Distance = value;
+        RaisePropertyChanged("Distance");
+      }
     }
 
     private double _Spread;

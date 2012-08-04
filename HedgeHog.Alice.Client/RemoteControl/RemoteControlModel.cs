@@ -67,6 +67,8 @@ namespace HedgeHog.Alice.Client {
         charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
         charterNew.BuySellAdded += charter_BuySellAdded;
         charterNew.BuySellRemoved += charter_BuySellRemoved;
+        charterNew.ToggleCanTrade += new EventHandler<EventArgs>(charterNew_ToggleCanTrade);
+        charterNew.ClearStartTime += new EventHandler<EventArgs>(charterNew_ClearStartTime);
         var isSelectedBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
         var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.HasCorridor)) { Source = tradingMacro };
@@ -94,6 +96,20 @@ namespace HedgeHog.Alice.Client {
       if (charterOld.Parent == null)
         RequestAddCharterToUI(charterOld);
       return charterOld;
+    }
+
+    void charterNew_ClearStartTime(object sender, EventArgs e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      tm.CorridorStartDate = null;
+    }
+
+    void charterNew_ToggleCanTrade(object sender, EventArgs e) {
+      try {
+        var tm = GetTradingMacro((CharterControl)sender);
+        tm.ToggleCanTrade();
+      } catch (Exception exc) {
+        Log = exc;
+      }
     }
 
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
@@ -139,10 +155,6 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       if (tm.CorridorStartDate == e.NewPosition) return;
       tm.CorridorStartDate = e.NewPosition;
-      if (!IsInVirtualTrading && !tm.IsHotStrategy)
-        tm.Strategy = Strategies.None;
-      tm.ScanCorridor(tm.RatesArray);
-      ShowChart(tm);
     }
 
     private TradingMacro GetTradingMacro(CharterControl sender) {
@@ -875,7 +887,7 @@ namespace HedgeHog.Alice.Client {
           charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
           charter.GetPriceHigh = tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
           charter.GetPriceLow = tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
-          charter.CenterOfMassBuy = 0;// tm.CenterOfMassBuy;
+          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
@@ -887,24 +899,20 @@ namespace HedgeHog.Alice.Client {
           charter.HeightInPips = tm.RatesHeightInPips;
           charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
           charter.WaveHeightInPips = tm.WaveAverageInPips;
-          charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
+          charter.CorridorDistance = tm.BellRatio * 100;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
           charter.WaveLength = tm.WaveLength;
-          if (false && !tm.Strategy.HasFlag(Strategies.WaveClub) /*&& tm.Strategy != Strategies.AutoPilot*/)
-            charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
+          charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
           charter.GetPriceMA = tm.GetPriceMA();
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          //var volumes = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Volume }).ToArray();
-          //var density = rates.Where(r => r.Density > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Density) }).ToArray();
-          //var corridornesses = rates.Take(rates.Length - 30).Where(r => r.Corridorness > 0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPoints(r.Corridorness) }).ToArray();
-          //var rateHieghttoWaveAvg = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = (r.PriceRlw.GetValueOrDefault()) }).ToArray();
-          charter.AddTicks(price, rates, tm.DoShowWaves ? new PriceBar[1][] { stDevBars } : new PriceBar[0][], info, null,
-            tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.ToArray().Reverse().Take(2).Last()) : 0, tm.InPips(tm.StDevAverages.LastByCount()),
-            0, 0,
-            tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+          var voltage1 = rates.SkipWhile(r => double.IsNaN(r.Kurtosis)).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Kurtosis.IfNaN(0)*10 }).ToArray();
+          var voltageHigh = tm.VoltageHight.IfNaN(tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.TakeEx(-2).First()) : 0);
+          var voltageLow = tm.VoltageAverage.IfNaN(tm.InPips(tm.StDevAverages.Last()));
+          charter.AddTicks(price, rates, tm.DoShowWaves ? new PriceBar[2][] { stDevBars, voltage1 } : new PriceBar[0][], info, null,
+            voltageHigh, voltageLow,0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2,
             //timeCurr, timeLow,
             new double[0]);

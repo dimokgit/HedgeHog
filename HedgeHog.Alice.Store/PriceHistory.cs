@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Reactive;
 using HedgeHog.Shared;
+using HedgeHog.Shared.Messages;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
