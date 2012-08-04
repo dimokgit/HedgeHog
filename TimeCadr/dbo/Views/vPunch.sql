@@ -2,11 +2,12 @@
 WITH  VIEW_METADATA
 AS
 SELECT        dbo.Punch.Id, dbo.Punch.Time, dbo.PunchDirection.Name + '' AS Direction, dbo.Punch.DirectionId, PDS.Salutation + ' ' + dbo.PunchType.Name AS Type, 
-                         dbo.Punch.TypeId, dbo.Punch.IsOutOfSequence, ISNULL(ppStart.Start, ppStop.Start) AS PairStart
+                         dbo.Punch.TypeId, dbo.Punch.IsOutOfSequence, ISNULL(ppStart.Start, ppStop.Start) AS PairStart, PIM.Short AS InputMethod, dbo.Punch.InputMethodId
 FROM            dbo.Punch INNER JOIN
                          dbo.PunchDirection ON dbo.Punch.DirectionId = dbo.PunchDirection.Id INNER JOIN
                          dbo.PunchType ON dbo.Punch.TypeId = dbo.PunchType.Id INNER JOIN
-                         dbo.PunchDirectionSalutation AS PDS ON dbo.PunchDirection.Id = PDS.PunchDirectionId AND dbo.PunchType.Id = PDS.PunchTypeId LEFT OUTER JOIN
+                         dbo.PunchDirectionSalutation AS PDS ON dbo.PunchDirection.Id = PDS.PunchDirectionId AND dbo.PunchType.Id = PDS.PunchTypeId INNER JOIN
+                         dbo.PunchInputMethod AS PIM ON dbo.Punch.InputMethodId = PIM.Id LEFT OUTER JOIN
                          dbo.PunchPair AS ppStop ON dbo.Punch.Time = ppStop.Stop LEFT OUTER JOIN
                          dbo.PunchPair AS ppStart ON dbo.Punch.Time = ppStart.Start
 GO
@@ -145,10 +146,10 @@ Begin DesignProperties =
          End
          Begin Table = "ppStop"
             Begin Extent = 
-               Top = 352
-               Left = 660
-               Bottom = 447
-               Right = 830
+               Top = 18
+               Left = 903
+               Bottom = 113
+               Right = 1073
             End
             DisplayFlags = 280
             TopColumn = 0
@@ -163,17 +164,16 @@ Begin DesignProperties =
             DisplayFlags = 280
             TopColumn = 0
          End
-      End
-   End
-   Begin SQLPane = 
-   End
-   Begin DataPane = 
-      Begin ParameterDefaults = ""
-      End
-      Begin ColumnWidths = 10
-         Width = 284
-         Width = 2910
-         Width = 1500', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunch';
+         Begin Table = "PIM"
+            Begin Extent = 
+               Top = 258
+               Left = 636
+               Bottom = 370
+               Right = 806
+            End
+            DisplayFlags = 280', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunch';
+
+
 
 
 
@@ -181,11 +181,25 @@ Begin DesignProperties =
 
 
 GO
-EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane2', @value = N'Width = 1500
+EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane2', @value = N'TopColumn = 0
+         End
+      End
+   End
+   Begin SQLPane = 
+   End
+   Begin DataPane = 
+      Begin ParameterDefaults = ""
+      End
+      Begin ColumnWidths = 11
+         Width = 284
+         Width = 2910
+         Width = 1500
+         Width = 1500
          Width = 1500
          Width = 1500
          Width = 2430
          Width = 3375
+         Width = 1500
          Width = 1500
          Width = 1500
       End
@@ -208,4 +222,6 @@ EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane2', @value = N'Width = 15
       End
    End
 End', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'VIEW', @level1name = N'vPunch';
+
+
 
