@@ -357,8 +357,22 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Trading Distance Function")]
+    [DisplayName("Trailing Distance")]
     [Category(categoryActive)]
+    [Description("TrailingDistanceFunction")]
+    public TradingMacroTakeProfitFunction TrailingDistanceFunction {
+      get { return (TradingMacroTakeProfitFunction)this.FreezLimit; }
+      set {
+        if (this.FreezLimit != (int)value) {
+          this.FreezLimit = (int)value;
+          OnPropertyChanged("TrailingDistanceFunction");
+        }
+      }
+    }
+
+    [DisplayName("Trading Distance")]
+    [Category(categoryActive)]
+    [Description("TradingDistanceFunction")]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
       set {
@@ -368,8 +382,9 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Take Profit Function")]
+    [DisplayName("Take Profit")]
     [Category(categoryActive)]
+    [Description("TakeProfitFunction")]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
       get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
       set { 
@@ -486,9 +501,9 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("StDev Ratio Min")]
-    [Category(categoryCorridor)]
-    [Description("BigCorr.StDev / CurrCorr.StDev")]
+    [DisplayName("StDev Min")]
+    [Category(categoryActive)]
+    [Description("CanTrade = Corridor.StDev * X > WaveAverage")]
     public double CorridorStDevRatioMin {
       get { return StDevToSpreadRatio; }
       set {
@@ -512,11 +527,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
-    [DisplayName("StDev Ratio Max")]
-    [Category(categoryCorridor)]
-    [Description("BigCorr.StDev / CurrCorr.StDev")]
-    public double CorridorStDevRatioMax_ {
+    [DisplayName("Distance Ratio")]
+    [Category(categoryActive)]
+    [Description("CanTrade = Corridor.Distance / RatesHeight > X")]
+    public double CorridorDistanceRatio {
       get { return CorridorStDevRatioMax; }
       set {
         if (CorridorStDevRatioMax != value) {
@@ -858,14 +872,12 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
+    bool _DoShowWaves = true;
     [DisplayName("Show Waves")]
     [Category(categoryCorridor)]
     public bool DoShowWaves {
-      get { return IsColdOnTrades; }
-      set {
-        if (IsColdOnTrades == value) return;
-        IsColdOnTrades = value;
-      }
+      get { return _DoShowWaves; }
+      set { _DoShowWaves = value; }
     }
 
     #region MaximumPositions
@@ -1058,16 +1070,6 @@ namespace HedgeHog.Alice.Store {
         if (_CalculatedLotSize != value) {
           _CalculatedLotSize = value;
           OnPropertyChanged(TradingMacroMetadata.CalculatedLotSize);
-        }
-      }
-    }
-
-    public Freezing FreezeType {
-      get { return (Freezing)this.FreezLimit; }
-      set {
-        if (this.FreezLimit != (int)value) {
-          this.FreezLimit = (int)value;
-          OnPropertyChanged(TradingMacroMetadata.FreezeType);
         }
       }
     }

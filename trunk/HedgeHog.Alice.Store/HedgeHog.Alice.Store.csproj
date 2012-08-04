@@ -105,7 +105,7 @@
       <DependentUpon>Model1.edmx</DependentUpon>
     </Compile>
     <Compile Include="TradingAccountModel.cs" />
-    <Compile Include="TradingMacro\AliceEntityExtender.properties.cs" />
+    <Compile Include="TradingMacro\AliceEntity.properties.cs" />
     <Compile Include="TradingMacro\AliceEntityExtender_MC.cs" />
     <Compile Include="Service References\PriceService\Reference.cs">
       <AutoGen>True</AutoGen>
@@ -113,7 +113,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
-    <Compile Include="TradingMacro\TradingMacroExtentions.Strategies.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
     <EntityDeploy Include="Model\Model1.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
@@ -165,6 +165,10 @@
     <ProjectReference Include="..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
       <Project>{8883734D-B6B0-4210-9746-108A126EB84A}</Project>
       <Name>NotifyCollectionChangedWrapper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">
+      <Project>{7A8203A2-9BFC-4711-9836-9DFF55D9D1D0}</Project>
+      <Name>VTClasses</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>

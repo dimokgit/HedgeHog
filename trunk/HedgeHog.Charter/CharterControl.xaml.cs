@@ -29,6 +29,7 @@ using System.ComponentModel.Composition.Hosting;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Reactive.Concurrency;
+using HedgeHog.Shared.Messages;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -166,13 +167,13 @@ namespace HedgeHog {
       }
     }
 
-    private double _SpreadForCorridor;
-    public double SpreadForCorridor {
-      get { return _SpreadForCorridor; }
+    private double _CorridorDistance;
+    public double CorridorDistance {
+      get { return _CorridorDistance; }
       set {
-        if (_SpreadForCorridor != value) {
-          _SpreadForCorridor = value;
-          OnPropertyChanged(CharterControlMetadata.SpreadForCorridor);
+        if (_CorridorDistance != value) {
+          _CorridorDistance = value;
+          OnPropertyChanged(CharterControlMetadata.CorridorDistance);
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
@@ -213,7 +214,7 @@ namespace HedgeHog {
           /*4*/, HeightInPips
           /*5*/, CorridorHeightInPips
           /*6*/, WaveHeightInPips
-          /*7*/, SpreadForCorridor
+          /*7*/, CorridorDistance
           /*8*/, CorridorSpread
           /*9*/, WaveLength
           );
@@ -349,7 +350,7 @@ namespace HedgeHog {
     HorizontalLine voltageHigh {
       get {
         if (_voltageHigh == null) {
-          _voltageHigh = new HorizontalLine { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
+          _voltageHigh = new HorizontalLine { Stroke = new SolidColorBrush(Colors.OrangeRed), StrokeThickness = 1 };
           if (innerPlotter != null)
             innerPlotter.Children.Add(_voltageHigh);
         }
@@ -1061,9 +1062,51 @@ namespace HedgeHog {
       }
     }
 
-    void plotter_KeyDown(object sender, KeyEventArgs e) {
+    #region ToggleCanTrade Event
+    event EventHandler<EventArgs> ToggleCanTradeEvent;
+    public event EventHandler<EventArgs> ToggleCanTrade {
+      add {
+        if (ToggleCanTradeEvent == null || !ToggleCanTradeEvent.GetInvocationList().Contains(value))
+          ToggleCanTradeEvent += value;
+      }
+      remove {
+        ToggleCanTradeEvent -= value;
+      }
+    }
+    protected void RaiseToggleCanTrade() {
+      if (ToggleCanTradeEvent != null) ToggleCanTradeEvent(this, new EventArgs());
+    }
+    #endregion
 
-      e.Handled = true;
+    #region ClearStartTime Event
+    event EventHandler<EventArgs> ClearStartTimeEvent;
+    public event EventHandler<EventArgs> ClearStartTime {
+      add {
+        if (ClearStartTimeEvent == null || !ClearStartTimeEvent.GetInvocationList().Contains(value))
+          ClearStartTimeEvent += value;
+      }
+      remove {
+        ClearStartTimeEvent -= value;
+      }
+    }
+    protected void RaiseClearStartTime() {
+      if (ClearStartTimeEvent != null) ClearStartTimeEvent(this, new EventArgs());
+    }
+    #endregion
+
+    void plotter_KeyDown(object sender, KeyEventArgs e) {
+      if (!new[] { Key.Oem2, Key.OemComma, Key.OemPeriod, Key.P }.Contains(e.Key))
+        e.Handled = true;
+      try {
+        switch (e.Key) {
+          case Key.T:
+            RaiseToggleCanTrade(); break;
+          case Key.C:
+            RaiseClearStartTime(); break;
+        }
+      } catch (Exception exc) {
+        MessageBox.Show(exc + "");
+      }
     }
 
     #region Event Handlers

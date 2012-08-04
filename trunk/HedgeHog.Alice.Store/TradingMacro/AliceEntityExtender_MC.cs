@@ -68,8 +68,8 @@ namespace HedgeHog.Alice.Store {
     Breakout = 2, Breakout_A = Breakout + Auto,
     Range = 4, Range_A = Range + Auto,
     Wave = 8,
-    LongRanner = Wave * 2,//16
-    Bounce = LongRanner * 2,//32
+    Trailer = Wave * 2, TrailerA = Trailer + Auto,//16
+    Bounce = Trailer * 2,//32
     Bouncer = Bounce * 2,//64
     BouncerA = Bouncer + Auto,
     ZigZagger = Bouncer * 2,//128
@@ -78,15 +78,14 @@ namespace HedgeHog.Alice.Store {
     RoadRunnerA = RoadRunner + Auto,
     Manual = RoadRunner * 2,//512
     Hot = 1024,
-    Hot_A = Hot + Auto, 
+    Hot_A = Hot + Auto,
     LongWave = 1024 * 2, LongWaveA = LongWave + Auto,
     LongWave95 = LongWave * 2, LongWave95A = LongWave95 + Auto,
-    WaveAvg = LongWave95 * 2,
-    WaveQuick = WaveAvg * 2, WaveQuickA = WaveQuick + Auto,
+    WaveQuick = LongWave95 * 2, WaveQuickA = WaveQuick + Auto,
     WaveBig = WaveQuick * 2, WaveBigA = WaveBig + Auto,
     WaveClub = WaveBig * 2, WaveClubA = WaveClub + Auto,
     WaveStDev = WaveClub * 2, WaveStDevA = WaveStDev + Auto,
-    RomanCandle = WaveStDev * 2, RomanCandleA = RomanCandle + Auto
+    Corridor = WaveStDev * 2, CorridorA = Corridor + Auto
   }
   public struct Playback {
     public bool Play;
