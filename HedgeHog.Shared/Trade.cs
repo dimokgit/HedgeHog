@@ -111,10 +111,11 @@ namespace HedgeHog.Shared {
       get { return _Close; }
       set {
         _Close = value;
-        if (PipSize == 0) return;
+        if (BaseUnitSize == 0) return;
         var gross = Buy ? Close - Open : Open - Close;
         PL = gross / PipSize;
-        GrossPL = gross * (Lots / 10000.0) / PipSize;
+        var offset = Pair == "USDOLLAR" ? 1 : 10.0;
+        GrossPL = gross * (Lots / (offset * BaseUnitSize)) / PipSize;
       }
     }
     [DataMember]
@@ -157,7 +158,7 @@ namespace HedgeHog.Shared {
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
     public int Lots { get; set; }
-    public int AmountK { get { return Lots / 1000; } }
+    public int AmountK { get { return Lots / BaseUnitSize; } }
 
     [DataMember]
     public string OpenOrderID { get; set; }
@@ -191,9 +192,11 @@ namespace HedgeHog.Shared {
     public void UpdateByPrice(object sender, PriceChangedEventArgs e) {
       UpdateByPrice(sender as ITradesManager, e.Price);
     }
+    public int BaseUnitSize { get; set; }
     public void UpdateByPrice(ITradesManager tradesManager, Price price) {
       if (price.Pair == Pair) {
         if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
+        if (BaseUnitSize == 0) BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
         TimeClose = price.Time;
         Close = Buy ? price.Bid : price.Ask;
         //Close = Buy ? price.BuyClose : price.SellClose;

@@ -519,29 +519,42 @@ namespace HedgeHog.Alice.Client {
       }
     }
     }
+    private IDisposable _logExpandedTargetBlock;
     Queue<string> _logQueue = new Queue<string>();
     Exception _log;
     public override Exception Log {
       get { return _log; }
       set {
-        if (isInDesign) return;
-        _log = value;
-        var exc = value is Exception ? value : null;
-        //var comExc = exc as System.Runtime.InteropServices.COMException;
-        //if (comExc != null && comExc.ErrorCode == -2147467259)
-        //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
-        lock (_logQueue) {
-          if (_logQueue.Count > 5) _logQueue.Dequeue();
-          var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + value.GetExceptionShort() });
-          while (value.InnerException != null) {
-            messages.Add(value.InnerException.GetExceptionShort());
-            value = value.InnerException;
+        try {
+          if (isInDesign) return;
+          _log = value;
+          var exc = value is Exception ? value : null;
+          //var comExc = exc as System.Runtime.InteropServices.COMException;
+          //if (comExc != null && comExc.ErrorCode == -2147467259)
+          //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
+          lock (_logQueue) {
+            if (_logQueue.Count > 5) _logQueue.Dequeue();
+            var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + value.GetExceptionShort() });
+            while (value.InnerException != null) {
+              messages.Add(value.InnerException.GetExceptionShort());
+              value = value.InnerException;
+            }
+            _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
           }
-          _logQueue.Enqueue(string.Join(Environment.NewLine + "-", messages));
+          exc = FileLogger.LogToFile(exc);
+          lastLogTime = DateTime.Now;
+          RaisePropertyChanged(() => LogText, () => IsLogExpanded, () => IsLogPinned);
+          IsLogExpanded = true;
+          if (_logExpandedTargetBlock != null) {
+            _logExpandedTargetBlock.Dispose();
+          }
+
+          //GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() =>
+          _logExpandedTargetBlock = new Action(() => IsLogExpanded = false).ScheduleOnUI(10.FromSeconds());
+          //);
+        } catch (Exception exc) {
+          MessageBox.Show(exc + "");
         }
-        exc = FileLogger.LogToFile(exc);
-        lastLogTime = DateTime.Now;
-        RaisePropertyChanged(() => LogText, () => IsLogExpanded,()=>IsLogPinned);
       }
     }
 
@@ -559,14 +572,14 @@ namespace HedgeHog.Alice.Client {
     public bool IsLogPinned { get { return !IsLogExpanded; } }
     bool _IsLogExpanded = false;
     public bool IsLogExpanded {
-      get { 
-        var ts = DateTime.Now - lastLogTime;
-        var ret = ts < TimeSpan.FromSeconds(10);
-        if (_IsLogExpanded != ret) {
-          LogExoandedTargetBlock.SendAsync(null);
-          _IsLogExpanded = ret;
+      get {
+        return _IsLogExpanded;
+      }
+      set {
+        if (_IsLogExpanded != value) {
+          _IsLogExpanded = value;
+          RaisePropertyChanged("IsLogExpanded");
         }
-        return ret;
       }
     }
     #endregion
@@ -1103,7 +1116,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     private void LoginAsync(string account, string password, bool isDemo) {
-      DispatcherScheduler.Instance.Schedule(() => Login(account, password, isDemo));
+      new Action(() => Login(account, password, isDemo)).ScheduleOnUI();
     }
 
     #endregion
@@ -1227,13 +1240,13 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
-        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, 1000, CommissionByTrade);
+        virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
         var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
         this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
         CoreFX.LoggedIn += (s, e) => {
-          DispatcherScheduler.Instance.Schedule(() => App.Current.MainWindow.WindowState = WindowState.Maximized);
+          new Action(() => App.Current.MainWindow.WindowState = WindowState.Maximized).ScheduleOnUI();
           IsInLogin = false;
           TradesManager.Error += fwMaster_Error;
           TradesManager.TradeAdded += fwMaster_TradeAdded;

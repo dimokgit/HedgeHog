@@ -177,8 +177,42 @@ namespace HedgeHog {
       return y;
     }
 
+    public static double StDevRatio(this ICollection<double> values) {
+      var stDev = values.StDev();
+      var range = values.Max() - values.Min();
+      return stDev / range;
+    }
+    public static double StDev<T>(this ICollection<T> values, Func<T, int, double> value) {
+      return values.Select((v, i) => value(v, i)).ToArray().StDev();
+    }
+    public static double StDev<T>(this ICollection<T> values, Func<T, double> value) {
+      return values.Select(v => value(v)).ToArray().StDev();
+    }
+    public static double StDev<T>(this ICollection<T> values, Func<T, double?> value) {
+      return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
+    }
+    public static double StDev(this ICollection<double> values) {
+      double ret = 0;
+      if (values.Count() > 0) {
+        double avg = values.Average();
+        double sum = values.Sum(d => (d - avg) * (d - avg));
+        ret = Math.Sqrt(sum / (values.Count() - 1));
+      }
+      return ret;
+    }
+
+
     public static double OpsiteCathetusByFegrees(this double adjacentCathetus, double angleInDegrees) {
       return adjacentCathetus * Math.Tan(angleInDegrees.Radians());
+    }
+
+    public static IEnumerable<double> AverageByStDev(this IList<double> values) {
+      if (values.Count < 2) return values.DefaultIfEmpty(double.NaN);
+      var avg = values.Average();
+      var stDev = values.StDev();
+      var r1 = avg - stDev;
+      var r2 = avg + stDev;
+      return values.Where(v => v.Between(r1, r2));
     }
 
     public static IEnumerable<double> AverageInRange(this IList<double> a, int high) {
@@ -256,6 +290,10 @@ namespace HedgeHog {
         if (values.Count == 1) break;
       }
       return values;
+    }
+
+    public static double Average(this IEnumerable<double> values, Func<double> defaultValue) {
+      return values.Count() == 0 ? defaultValue() : values.Average();
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }

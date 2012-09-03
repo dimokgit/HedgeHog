@@ -2372,11 +2372,11 @@ namespace Order2GoAddIn {
       return pips * lots * pipCost / baseUnitSize;
     }
     public double PipsAndLotInMoney(double pips, int lot, string pair) {
-      return PipsAndLotToMoney(pips, lot, GetPipCost(pair), MinimumQuantity);
+      return PipsAndLotToMoney(pips, lot, GetPipCost(pair), GetBaseUnitSize(pair));
     }
 
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
+      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), GetBaseUnitSize(pair));
     }
 
     #endregion
@@ -2740,7 +2740,7 @@ namespace Order2GoAddIn {
         var timeClose = DateTime.Parse(getData(3).Value);
         var grossPL = double.Parse(getData(6).Value);
         var pipSize = GetPipCost(pair);
-        var pl = TradesManagerStatic.MoneyAndLotToPips(grossPL, volume, pipSize, MinimumQuantity);
+        var pl = TradesManagerStatic.MoneyAndLotToPips(grossPL, volume, pipSize, GetBaseUnitSize(pair));
         var commission = double.Parse(getData(7).Value);
         var rollover = double.Parse(getData(8).Value);
         trades.Add(new Trade() { Pair = pair, Buy = isBuy, Open = priceOpen, Close = priceClose, Commission = commission + rollover, GrossPL = grossPL, PL = pl, Id = ticket.Value, IsBuy = isBuy, Lots = volume, Time = timeOpen, TimeClose = timeClose, OpenOrderID = "", OpenOrderReqID = "" });
@@ -2775,12 +2775,23 @@ namespace Order2GoAddIn {
     public int MinimumQuantity {
       get {
         if (!IsLoggedIn) return 0;
-        if (TradingSettingsProvider == null) return 10000;
+        //if (TradingSettingsProvider == null) return 10000;
         if (_minimumQuantity == 0){
-          _minimumQuantity = TradingSettingsProvider.GetMinQuantity("EUR/USD", AccountID);
+          _minimumQuantity = TradingSettingsProvider.GetMinQuantity(Pair, AccountID);
         }
         return _minimumQuantity;
       }
+    }
+    private C.ConcurrentDictionary<string, int> _baseUnitSize = new C.ConcurrentDictionary<string, int>();
+    public int GetBaseUnitSize(string pair) {
+        if (!IsLoggedIn) return 0;
+
+        pair = pair.ToUpper();
+        Func<string, int> foo = p => {
+          return TradingSettingsProvider.GetBaseUnitSize(p, AccountID);
+        };
+
+      return _baseUnitSize.GetOrAdd(pair, foo(pair));
     }
 
     private new Dictionary<string, int> _MMR = new Dictionary<string, int>();
@@ -2851,7 +2862,7 @@ namespace Order2GoAddIn {
       Func<string, double> addLeverage = p => {
         CoreFX.SetOfferSubscription(p);
         var offer = GetOffer(p);
-        return MinimumQuantity / offer.MMR;
+        return GetBaseUnitSize(pair) / offer.MMR;
       };
       return leverages.GetOrAdd(pair,addLeverage);
     }

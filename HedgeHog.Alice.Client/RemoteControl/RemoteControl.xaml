@@ -87,7 +87,7 @@
             Command="{Binding DataContext.SellCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
+              <TextBlock Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
@@ -95,7 +95,7 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0}K,Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
+              <TextBlock Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
@@ -128,7 +128,7 @@
         <TextBlock Text="{Binding PositionsBuy}" ToolTip="Positions Buy"/>
         <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
         <TextBlock Text="{Binding PipsPerPosition,StringFormat=[{0:n0}}" ToolTip="Pips Per Position"/>
-        <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}K],Converter={x:Static lib:PerMilleConverter.Default}}" ToolTip="Total Lot"/>
+        <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}],Converter={x:Static lib:PerMilleConverter.Default}}" ToolTip="Total Lot"/>
         <TextBlock Visibility="{Binding IsInVirtualTrading,Converter={StaticResource BooleanToVisibilityConverter}}">
           <TextBlock Text="{Binding Profitability,StringFormat=c0}" ToolTip="Profitability Per Month"/>
           <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
@@ -158,9 +158,14 @@
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
-      <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
-              Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
-              ContentTemplate="{StaticResource SmallButtonTemplate}"/>
+      <StackPanel Orientation="Horizontal">
+        <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
+                Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                ContentTemplate="{StaticResource SmallButtonTemplate}"/>
+        <Button Content="Trim" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
+                Command="{Binding DataContext.TrimPairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                ContentTemplate="{StaticResource SmallButtonTemplate}"/>
+      </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="ReverseCellTemplate">
       <Button Content="Reverse" CommandParameter="{Binding BindsDirectlyToSource=True}" 
@@ -264,55 +269,24 @@
             <DataTemplate>
               <StackPanel>
                 <WrapPanel Name="CorridorBlock" Background="PapayaWhip">
-                <TextBlock Text="{Binding CorridorAngle,StringFormat=[{0:n0}}" ToolTip="Corridor Angle"/>
-                <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=|{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-2,0"/>
-                <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips,StringFormat=[{0:n0}}" ToolTip="Corridor Height By Regression In Pips[Take Profit]" />
-                <TextBlock Text="{Binding CorridorHeightByRegressionInPips0,StringFormat=/{0:n1}]}" ToolTip="Corridor Height0 By Regression In Pips" />
-                <TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}" Margin="-3,0" ToolTipService.ShowDuration="300000">
-                  <TextBlock.ToolTip>
-                    <StackPanel>
-                      <TextBlock>
-                        CloseOpenRatioCma.Last :<TextBlock Text="{Binding CloseOpenRatioCma.Last,StringFormat=n1}"/> > 
-                        CloseOpenRatioCma.Prev :<TextBlock Text="{Binding CloseOpenRatioCma.Prev,StringFormat=n1}"/>
-                      </TextBlock>
-                      <TextBlock>
-                        CorridorCrossesCount :<TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/>
-                      </TextBlock>
-                      <!--<TextBlock>
-                        SpreadForTrade :<TextBlock Text="{Binding SpreadForTradeInPips,StringFormat=n1}"/>
-                      </TextBlock>-->
-                      <TextBlock>
-                        Corridor.StDev :<TextBlock Text="{Binding CorridorStats.StDevInPips,StringFormat=n1}"/>/
-                        Corridor.Spread :<TextBlock Text="{Binding CorridorStats.SpreadInPips,StringFormat=n1}" ToolTip="Spread For Corridor"/>
-                      </TextBlock>
-                      <TextBlock>
-                        Corridor.StDev :<TextBlock Text="{Binding CorridorStats.StDevInPips,StringFormat=n1}"/>/
-                        Corridor.RatesHeight :<TextBlock Text="{Binding CorridorStats.RatesHeightInPips,StringFormat=n1}" ToolTip="Spread For Corridor"/>
-                        = <TextBlock Text="{Binding CorridorStats.StDevToRatesHeight,StringFormat=.000}"/>/
-                      </TextBlock>
-                      <TextBlock>
-                        RateStDev[<TextBlock Text="{Binding RatesStDevInPips,StringFormat=[{0:n1}]}"/>]
-                        /CorridorHeight0[<TextBlock Text="{Binding CorridorStats.HeightUpDown0InPips,StringFormat=n1}"/>]
-                        :<TextBlock Text="{Binding StDevToCorridorHeight0Real,StringFormat=n1}"/>
-                      </TextBlock>
-                      <TextBlock>
-                        CorridorHeight0[<TextBlock Text="{Binding CorridorStats.HeightUpDown0InPips,StringFormat=n1}"/>]
-                        /CorridorSpread[<TextBlock Text="{Binding CorridorStats.SpreadInPips,StringFormat=[{0:n1}]}"/>]
-                        :<TextBlock Text="{Binding CorridorStats.HeightUpDown0ToSpreadRatio,StringFormat=n1}"/>
-                      </TextBlock>
-                      <TextBlock>
-                        Legs Angle StDev Ratio:<TextBlock Text="{Binding CorridorStats.LegsAngleAverage,StringFormat=n0}"/></TextBlock>
-                      <ListBox ItemsSource="{Binding CorridorStats.LegInfos}">
-                        <ListBox.ItemTemplate>
-                          <DataTemplate>
-                            <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
-                          </DataTemplate>
-                        </ListBox.ItemTemplate>
-                      </ListBox>
-                    </StackPanel>
-                  </TextBlock.ToolTip>
-                </TextBlock>
+                  <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-1,0"/>
+                  <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
+                  <TextBlock Text="{Binding CorridorStats.StDevInPips,StringFormat=[{0:n0}}" Margin="-3,0,-2,0" ToolTip="CorridorStats.StDev" />
+                  <TextBlock Text="{Binding RatesStDevInPips,StringFormat=|{0:n0}]}" Margin="0,0" ToolTipService.ShowDuration="300000">
+                    <TextBlock.ToolTip>
+                      <StackPanel>
+                        <TextBlock>CmaLotSize :<TextBlock Text="{Binding CmaLotSize}"/></TextBlock>
+                        <TextBlock>CmaOffset :<TextBlock Text="{Binding CmaOffset,StringFormat=n1}"/></TextBlock>
+                        <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                       </ListBox>
+                      </StackPanel>
+                    </TextBlock.ToolTip>
+                  </TextBlock>
                 <!--<LineBreak/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>

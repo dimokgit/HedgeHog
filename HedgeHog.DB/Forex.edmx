@@ -40,11 +40,12 @@
           <Key>
             <PropertyRef Name="Pair" />
           </Key>
-          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="7" />
+          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="8" />
           <Property Name="Digits" Type="int" Nullable="false" />
           <Property Name="PipCost" Type="float" Nullable="false" />
           <Property Name="MMR" Type="float" Nullable="false" />
           <Property Name="PipSize" Type="float" Nullable="false" />
+          <Property Name="BaseUnitSize" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -81,9 +82,10 @@
           <Property Name="PriceClose" Type="float" Nullable="false" />
           <Property Name="SessionInfo" Type="nvarchar" />
           <Property Name="RunningBalance" Type="float" />
+          <Property Name="RunningBalanceTotal" Type="float" />
         </EntityType>
         <!--Errors Found During Generation:
-      warning 6002: The table/view 'Forex.dbo.v_Pair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      warning 6002: The table/view 'FOREX.dbo.v_Pair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
       -->
         <EntityType Name="v_Pair">
           <Key>
@@ -91,7 +93,7 @@
             <PropertyRef Name="Weight1" />
             <PropertyRef Name="Weight2" />
           </Key>
-          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="7" />
+          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="8" />
           <Property Name="Weight1" Type="int" Nullable="false" />
           <Property Name="Weight2" Type="int" Nullable="false" />
         </EntityType>
@@ -187,6 +189,7 @@
           <Property Type="Double" Name="PipCost" Nullable="false" />
           <Property Type="Double" Name="MMR" Nullable="false" />
           <Property Type="Double" Name="PipSize" Nullable="false" />
+          <Property Type="Int32" Name="BaseUnitSize" Nullable="false" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -241,6 +244,7 @@
           <Property Type="Double" Name="PriceClose" Nullable="false" />
           <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
           <Property Type="Double" Name="RunningBalance" />
+          <Property Type="Double" Name="RunningBalanceTotal" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -285,6 +289,7 @@
           <EntitySetMapping Name="t_Offer">
             <EntityTypeMapping TypeName="ForexModel.t_Offer">
               <MappingFragment StoreEntitySet="t_Offer">
+                <ScalarProperty Name="BaseUnitSize" ColumnName="BaseUnitSize" />
                 <ScalarProperty Name="PipSize" ColumnName="PipSize" />
                 <ScalarProperty Name="MMR" ColumnName="MMR" />
                 <ScalarProperty Name="PipCost" ColumnName="PipCost" />
@@ -328,6 +333,7 @@
           <EntitySetMapping Name="t_Trade">
             <EntityTypeMapping TypeName="ForexModel.t_Trade">
               <MappingFragment StoreEntitySet="t_Trade">
+                <ScalarProperty Name="RunningBalanceTotal" ColumnName="RunningBalanceTotal" />
                 <ScalarProperty Name="RunningBalance" ColumnName="RunningBalance" />
                 <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
                 <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />

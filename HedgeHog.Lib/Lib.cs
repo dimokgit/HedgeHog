@@ -34,14 +34,20 @@ namespace HedgeHog {
     public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list,int count) {
       return count >= 0 ? list.Take(count) : list.Skip(list.Count() + count);
     }
-    public static T LastByCount<T>(this IList<T> list) {
+    /// <summary>
+    /// Last By Count
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="list"></param>
+    /// <returns></returns>
+    public static T LastBC<T>(this IList<T> list) {
       return list[list.Count - 1];
     }
     public static T LastByCountOrDefault<T>(this IList<T> list) {
-      return list.Count == 0 ? default(T) : list.LastByCount();
+      return list.Count == 0 ? default(T) : list.LastBC();
     }
     public static T LastByCountOrDefault<T>(this IList<T> list,T defaultValue) {
-      return list.Count == 0 ? defaultValue : list.LastByCount();
+      return list.Count == 0 ? defaultValue : list.LastBC();
     }
     public static T Pop<T>(this List<T> list, int position = 0) {
       try {
@@ -171,7 +177,7 @@ namespace HedgeHog {
 
     public static double Mean(this IEnumerable<double> values) {
       var vs = values.OrderBy(v => v).ToList();
-      return (vs.LastByCount() - vs[0]) / 2;
+      return (vs.LastBC() - vs[0]) / 2;
     }
     public static double Deviation(IEnumerable<double> Values, DeviationType CalculationType) {
       double SumOfValuesSquared = 0;
@@ -204,36 +210,51 @@ namespace HedgeHog {
       return values.Except(valueLow.Concat(valueHight)).DefaultIfEmpty(values.Average()).Average();
     }
 
-    public static double StDevRatio(this ICollection<double> values) {
-      var stDev = values.StDev();
-      var range = values.Max() - values.Min();
-      return stDev / range;
-    }
-    public static double StDev<T>(this ICollection<T> values, Func<T,int, double> value) {
-      return values.Select((v,i) => value(v,i)).ToArray().StDev();
-    }
-    public static double StDev<T>(this ICollection<T> values, Func<T, double> value) {
-      return values.Select(v => value(v)).ToArray().StDev();
-    }
-    public static double StDev<T>(this ICollection<T> values, Func<T, double?> value) {
-      return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
-    }
-    public static double StDev(this ICollection<double> values) {
-      double ret = 0;
-      if (values.Count() > 0) {
-        double avg = values.Average();
-        double sum = values.Sum(d => (d - avg) * (d - avg));
-        ret = Math.Sqrt(sum / (values.Count() - 1));
-      }
-      return ret;
-    }
-
     public static double StandardDeviation(this List<double> doubleList) {
       double average = doubleList.Average();
       double sumOfDerivation = 0;
       doubleList.ForEach(v => sumOfDerivation += Math.Pow(v, 2));
       double sumOfDerivationAverage = sumOfDerivation / doubleList.Count;
       return Math.Sqrt(sumOfDerivationAverage - Math.Pow(average, 2));
+    }
+
+    public class MovingStDevP {
+      double _total = 0;
+      double _max = double.NaN;
+      double _min = double.NaN;
+      int _count = 0;
+      
+      private double _sumOfDerivation;
+      double _average { get { return _total / _count; } }
+      double _height { get { return _max - _min; } }
+
+      public double NextR(double d,double heightMin) {
+        var std = Next(d);
+        return std / _height.Max(heightMin);
+      }
+      public double Next(double d) {
+        _total += d;
+        _max = _max.Max();
+        _min = _min.Max();
+        _count++;
+        _sumOfDerivation += d * d;
+        double sumOfDerivationAverage = _sumOfDerivation / _count;
+        return Math.Sqrt(sumOfDerivationAverage - Math.Pow(_average, 2)).IfNaN(0);
+      }
+
+      public double FirstR(IList<double> n, double heightMin) {
+        var std = First(n);
+        return std / _height.Max(heightMin);
+      }
+      public double First(IList<double> n) {
+        _total = n.Sum();
+        _count = n.Count;
+        _max = n.Max();
+        _min = n.Min();
+        _sumOfDerivation = n.Sum(v => v * v);
+        double sumOfDerivationAverage = _sumOfDerivation / _count;
+        return Math.Sqrt(sumOfDerivationAverage - Math.Pow(_average, 2)).IfNaN(0);
+      }
     }
 
     public static double StDevP(this ICollection<double> n) {
@@ -510,6 +531,9 @@ namespace HedgeHog {
     }
     public static double AverageHeight(this IEnumerable<double> values) {
       return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();
+    }
+    public static double Height(this IList<double> values) {
+      return values.Max() - values.Min();
     }
 
     public static double Position(this double Price,double Up,double Down){

@@ -235,6 +235,7 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Phycics
+    public double Distance { get; set; }
     [DataMember]
     public double? Mass { get; set; }
 

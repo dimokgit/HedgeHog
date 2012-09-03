@@ -52,10 +52,10 @@ namespace HedgeHog {
     private static readonly PerMilleConverter defaultInstance = new PerMilleConverter();
     public static PerMilleConverter Default { get { return defaultInstance; } }
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-      if (value is int || value is long) return (int)value / 1000;
+      if (value is int || value is long) return (int)value >= 1000 ? ((int)value / 1000) + "K" : value+"";
       var output = double.NaN;
       double.TryParse(value + "", out output);
-      return output / 1000;
+      return output >= 1000 ? (output / 1000) + "K" : output+"";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {

@@ -11,15 +11,27 @@ using HedgeHog.DB;
 namespace HedgeHog.Shared {
   public class VirtualTradesManager : ITradesManager {
     const string TRADE_ID_FORMAT = "yyMMddhhmmssffff";
+    IDictionary<string, int> _baseUnits = null;
     ObservableCollection<Offer> _offersCollection;
     ObservableCollection<Offer> offersCollection {
       get {
-        if (_offersCollection == null) {
-          var dbOffers = new ForexEntities().t_Offer.Select(o => new Offer() { 
-            Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize }).ToArray();
+        if (_offersCollection == null || _baseUnits == null) {
+          var offers = new ForexEntities().t_Offer;
+          var dbOffers = offers.Select(o => new Offer() {
+            Pair = o.Pair, Digits = o.Digits, MMR = o.MMR, PipCost = o.PipCost, PointSize = o.PipSize, ContractSize = o.BaseUnitSize
+          }).ToArray();
           _offersCollection = new ObservableCollection<Offer>(dbOffers);
+          _baseUnits = offers.ToArray().ToDictionary(o => o.Pair, o => o.BaseUnitSize);
         }
         return _offersCollection;
+      }
+    }
+    IDictionary<string, int> baseUnits {
+      get {
+        if (_baseUnits == null) {
+          var o = offersCollection;
+        }
+        return _baseUnits;
       }
     }
     ObservableCollection<Trade> tradesOpened = new ObservableCollection<Trade>();
@@ -34,22 +46,22 @@ namespace HedgeHog.Shared {
     public double GetPipSize(string pair) { return GetOffer(pair).PointSize; }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
     public double GetPipCost(string pair) { return GetOffer(pair).PipCost; }
+    public int GetBaseUnitSize(string pair) { return baseUnits[pair]; }
 
     public Func<Trade, double> CommissionByTrade { get; set; }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(CommissionByTrade); }
 
     public bool IsLoggedIn { get { return true; } }
-    public int MinimumQuantity { get; private set; }
-    public double Leverage(string pair) { return MinimumQuantity/ GetOffer(pair).MMR; }
+    public double Leverage(string pair) { return (double)GetBaseUnitSize(pair)/ GetOffer(pair).MMR; }
     public DateTime ServerTime {
       get {
-        return TradesManagerStatic.GetVirtualServerTime(RatesByPair().First().Value, barMinutes);
+        return RatesByPair().First().Value.GetVirtualServerTime(barMinutes);
       }
     }
 
     #region Money
     public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), MinimumQuantity);
+      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), GetBaseUnitSize(pair));
     }
     #endregion
 
@@ -96,9 +108,8 @@ namespace HedgeHog.Shared {
     #endregion
 
     static long tradeId = 0;
-    public VirtualTradesManager(string accountId,int minimumQuantity,  Func<Trade,double> commissionByTrade) {
+    public VirtualTradesManager(string accountId,Func<Trade,double> commissionByTrade) {
       this.accountId = accountId;
-      this.MinimumQuantity = minimumQuantity;
       this.tradesOpened.CollectionChanged += VirualPortfolio_CollectionChanged;
       this.CommissionByTrade = commissionByTrade;
     }
