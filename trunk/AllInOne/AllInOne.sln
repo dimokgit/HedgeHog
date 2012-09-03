@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
 		Performance10.psess = Performance10.psess
-		Performance11.psess = Performance11.psess
-		Performance12.psess = Performance12.psess
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
 EndProject
@@ -126,6 +124,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FrequencyTable", "FrequencyTable", "{C29763C9-371F-413E-B61A-D77D911932D6}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SetupAlice", "SetupAlice\SetupAlice.vdproj", "{9E7C23C8-8A7E-48D4-9E31-8ED9840FBD07}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{48EBA120-3BE8-4F93-89E3-DC564723D606}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution

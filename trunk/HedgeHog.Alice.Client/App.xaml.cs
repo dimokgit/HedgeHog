@@ -20,6 +20,7 @@ namespace HedgeHog.Alice.Client {
   static public List<Window> ChildWindows = new List<Window>();
     App() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
+      DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
     }
 

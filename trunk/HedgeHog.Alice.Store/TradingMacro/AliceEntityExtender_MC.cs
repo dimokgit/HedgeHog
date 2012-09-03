@@ -42,8 +42,6 @@ namespace HedgeHog.Alice.Store {
     public SessionInfoAttribute() { }
   }
   public enum TradingMacroTakeProfitFunction {
-    Corridor = 1,
-    Corridor0 = 2,
     CorridorStDev = 3,
     Corridor_RH_2 = 4,
     CorridorHeight = 5,
@@ -52,8 +50,8 @@ namespace HedgeHog.Alice.Store {
     RatesStDev = 11,
     RatesHeight_2 = 12,
     WaveAverage = 13,
+    WaveDistance = 14,
     Spread = 20,
-    CorridorFib = 24,
     Zero = 25,
     PriceSpread = 26
   }
@@ -65,27 +63,9 @@ namespace HedgeHog.Alice.Store {
   public enum Strategies {
     None = 0,
     Auto = 1,
-    Breakout = 2, Breakout_A = Breakout + Auto,
-    Range = 4, Range_A = Range + Auto,
-    Wave = 8,
-    Trailer = Wave * 2, TrailerA = Trailer + Auto,//16
-    Bounce = Trailer * 2,//32
-    Bouncer = Bounce * 2,//64
-    BouncerA = Bouncer + Auto,
-    ZigZagger = Bouncer * 2,//128
-    ZigZaggerA = ZigZagger + Auto,
-    RoadRunner = ZigZagger * 2,//256
-    RoadRunnerA = RoadRunner + Auto,
-    Manual = RoadRunner * 2,//512
-    Hot = 1024,
-    Hot_A = Hot + Auto,
-    LongWave = 1024 * 2, LongWaveA = LongWave + Auto,
-    LongWave95 = LongWave * 2, LongWave95A = LongWave95 + Auto,
-    WaveQuick = LongWave95 * 2, WaveQuickA = WaveQuick + Auto,
-    WaveBig = WaveQuick * 2, WaveBigA = WaveBig + Auto,
-    WaveClub = WaveBig * 2, WaveClubA = WaveClub + Auto,
-    WaveStDev = WaveClub * 2, WaveStDevA = WaveStDev + Auto,
-    Corridor = WaveStDev * 2, CorridorA = Corridor + Auto
+    Hot = 2,
+    Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
+    Trailer = Trailer01 * 2, TrailerA = Trailer + Auto//8
   }
   public struct Playback {
     public bool Play;

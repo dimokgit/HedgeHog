@@ -180,6 +180,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    Rate _stopRateDefault = null;
+    Rate _StopRate;
+    public Rate StopRate {
+      get { return _StopRate; }
+      set {
+        if ((object)_StopRate != (object)value) {
+          _StopRate = value;
+          RaisePropertyChanged("StopRate");
+        }
+      }
+    }
+
     private DateTime _StartDate = DateTime.MinValue;
     public DateTime StartDate {
       get { return _StartDate; }
@@ -198,8 +210,9 @@ namespace HedgeHog.Alice.Store {
       public DateTime New { get; set; }
       public DateTime Old { get; set; }
     }
-    event EventHandler<StartDateEventArgs> StartDateChangedEvent;
-    public event EventHandler<StartDateEventArgs> StartDateChanged {
+    public delegate void StartDateChangedDelegate(object selder,StartDateEventArgs e);
+    public StartDateChangedDelegate StartDateChangedEvent;
+    public event StartDateChangedDelegate StartDateChanged {
       add {
         if (StartDateChangedEvent == null || !StartDateChangedEvent.GetInvocationList().Contains(value))
           StartDateChangedEvent += value;

@@ -762,7 +762,8 @@ namespace HedgeHog.DB
         /// <param name="pipCost">Initial value of the PipCost property.</param>
         /// <param name="mMR">Initial value of the MMR property.</param>
         /// <param name="pipSize">Initial value of the PipSize property.</param>
-        public static t_Offer Createt_Offer(global::System.String pair, global::System.Int32 digits, global::System.Double pipCost, global::System.Double mMR, global::System.Double pipSize)
+        /// <param name="baseUnitSize">Initial value of the BaseUnitSize property.</param>
+        public static t_Offer Createt_Offer(global::System.String pair, global::System.Int32 digits, global::System.Double pipCost, global::System.Double mMR, global::System.Double pipSize, global::System.Int32 baseUnitSize)
         {
             t_Offer t_Offer = new t_Offer();
             t_Offer.Pair = pair;
@@ -770,6 +771,7 @@ namespace HedgeHog.DB
             t_Offer.PipCost = pipCost;
             t_Offer.MMR = mMR;
             t_Offer.PipSize = pipSize;
+            t_Offer.BaseUnitSize = baseUnitSize;
             return t_Offer;
         }
 
@@ -898,6 +900,30 @@ namespace HedgeHog.DB
         private global::System.Double _PipSize;
         partial void OnPipSizeChanging(global::System.Double value);
         partial void OnPipSizeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 BaseUnitSize
+        {
+            get
+            {
+                return _BaseUnitSize;
+            }
+            set
+            {
+                OnBaseUnitSizeChanging(value);
+                ReportPropertyChanging("BaseUnitSize");
+                _BaseUnitSize = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BaseUnitSize");
+                OnBaseUnitSizeChanged();
+            }
+        }
+        private global::System.Int32 _BaseUnitSize;
+        partial void OnBaseUnitSizeChanging(global::System.Int32 value);
+        partial void OnBaseUnitSizeChanged();
 
         #endregion
     
@@ -1626,6 +1652,30 @@ namespace HedgeHog.DB
         private Nullable<global::System.Double> _RunningBalance;
         partial void OnRunningBalanceChanging(Nullable<global::System.Double> value);
         partial void OnRunningBalanceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> RunningBalanceTotal
+        {
+            get
+            {
+                return _RunningBalanceTotal;
+            }
+            set
+            {
+                OnRunningBalanceTotalChanging(value);
+                ReportPropertyChanging("RunningBalanceTotal");
+                _RunningBalanceTotal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("RunningBalanceTotal");
+                OnRunningBalanceTotalChanged();
+            }
+        }
+        private Nullable<global::System.Double> _RunningBalanceTotal;
+        partial void OnRunningBalanceTotalChanging(Nullable<global::System.Double> value);
+        partial void OnRunningBalanceTotalChanged();
 
         #endregion
     

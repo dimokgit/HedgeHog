@@ -240,7 +240,7 @@ namespace HedgeHog.Alice.Client {
             if (Log.IsPinned != isPinned)
               Log.IsPinned = isPinned;
           } catch (Exception exc) {
-            Debug.WriteLine(exc);
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
           }
         });
       }

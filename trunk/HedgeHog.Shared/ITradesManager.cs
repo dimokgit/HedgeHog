@@ -12,7 +12,6 @@ namespace HedgeHog.Shared {
 
     #region Common Info
     DateTime ServerTime { get; }
-    int MinimumQuantity { get; }
     double Leverage(string pair);
 
     double Round(string pair, double value,int digitOffset = 0);
@@ -21,6 +20,7 @@ namespace HedgeHog.Shared {
     double GetPipSize(string pair);
     int GetDigits(string pair);
     double GetPipCost(string pair);
+    int GetBaseUnitSize(string pair);
     #endregion
 
     #region Offers
@@ -131,7 +131,7 @@ namespace HedgeHog.Shared {
 
   public static class TradesManagerStatic {
 
-    public static DateTime GetVirtualServerTime(IList<Rate> rates, int barMinutes) {
+    public static DateTime GetVirtualServerTime(this IList<Rate> rates, int barMinutes) {
       if (rates == null || !rates.Any()) return DateTime.MinValue;
       var rateLast = rates[rates.Count - 1];
       return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
@@ -142,9 +142,6 @@ namespace HedgeHog.Shared {
     }
 
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
-    public static int GetLotSize(this ITradesManager tm, double lot, bool useCeiling) {
-      return GetLotSize(lot, tm.MinimumQuantity, useCeiling);
-    }
     public static int GetLotSize(double lot, int baseUnitSize,bool useCeiling) {
       return (lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize;
     }
@@ -159,7 +156,7 @@ namespace HedgeHog.Shared {
       return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, double lots, string pair) {
-      return tm == null ? double.NaN: MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.MinimumQuantity);
+      return tm == null ? double.NaN: MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.GetBaseUnitSize(pair));
     }
     public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
       return money / lots / pipCost * baseUnitSize;

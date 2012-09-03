@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
+using HedgeHog;
 
 
 namespace Order2GoAddIn {
@@ -170,10 +171,10 @@ namespace Order2GoAddIn {
     }
 
     private void ReLoginDefered() {
-      DispatcherScheduler.Instance.Schedule(TimeSpan.FromMinutes(1), () => {
+      new Action(() => {
         if (!ReLogin())
           ReLoginDefered();
-      });
+      }).ScheduleOnUI(1.FromMinutes());
     }
 
     public enum Tables { Accounts, Orders, Offers, Trades, ClosedTrades, Summary, Messages };

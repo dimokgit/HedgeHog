@@ -390,10 +390,10 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
         public const string CorridorSpread = "CorridorSpread";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveLength"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveDistance"/></summary>
         public const string _WaveLength = "_WaveLength";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveDistance"/></summary>
         public const string WaveLength = "WaveLength";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
@@ -1033,7 +1033,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
         public static PropertyPath CorridorSpreadPath { get { return new PropertyPath("CorridorSpread"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveLength"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveDistance"/></summary>
         public static PropertyPath WaveLengthPath { get { return new PropertyPath("WaveLength"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>

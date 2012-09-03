@@ -63,15 +63,17 @@ namespace HedgeHog.Alice.Client {
         charters.Add(tradingMacro, charterNew);
         charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
         charterNew.SupportResistanceChanged += charter_SupportResistanceChanged;
+        charterNew.LineTimeShortChanged += charterNew_LineTimeShortChanged;
+        charterNew.LineTimeMiddleChanged += charterNew_LineTimeMiddleChanged;
         charterNew.Play += charter_Play;
         charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
         charterNew.BuySellAdded += charter_BuySellAdded;
         charterNew.BuySellRemoved += charter_BuySellRemoved;
-        charterNew.ToggleCanTrade += new EventHandler<EventArgs>(charterNew_ToggleCanTrade);
-        charterNew.ClearStartTime += new EventHandler<EventArgs>(charterNew_ClearStartTime);
+        charterNew.ClearStartTime += charterNew_ClearStartTime;
+        charterNew.ActivateTrading += charterNew_ActivateTrading;
         var isSelectedBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
-        var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.HasCorridor)) { Source = tradingMacro };
+        var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
         //charter.Show();
 
@@ -98,18 +100,31 @@ namespace HedgeHog.Alice.Client {
       return charterOld;
     }
 
-    void charterNew_ClearStartTime(object sender, EventArgs e) {
+    void charterNew_ActivateTrading(object sender, EventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
-      tm.CorridorStartDate = null;
+      tm.IsTradingActive = true;
     }
 
-    void charterNew_ToggleCanTrade(object sender, EventArgs e) {
-      try {
-        var tm = GetTradingMacro((CharterControl)sender);
-        tm.ToggleCanTrade();
-      } catch (Exception exc) {
-        Log = exc;
-      }
+    void charterNew_LineTimeMiddleChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      tm.IsTradingActive = false;
+      tm.CorridorStopDate = e.NewPosition;
+      tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
+    }
+
+    void charterNew_LineTimeShortChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      tm.IsTradingActive = false;
+      tm.WaveShort.Distance = tm.RatesArray.FindBar(e.NewPosition).Distance;
+      tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
+    }
+
+    void charterNew_ClearStartTime(object sender, EventArgs e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      tm.IsTradingActive = false;
+      tm.CorridorStartDate = null;
+      tm.CorridorStopDate = DateTime.MinValue;
+      tm.WaveShort.ClearDistance();
     }
 
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
@@ -153,8 +168,11 @@ namespace HedgeHog.Alice.Client {
 
     void charter_CorridorStartPositionChanged(object sender, CorridorPositionChangedEventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
+      tm.IsTradingActive = false;
       if (tm.CorridorStartDate == e.NewPosition) return;
-      tm.CorridorStartDate = e.NewPosition;
+      var index = tm.RatesArray.IndexOf(new Rate() { StartDate = e.NewPosition });
+      var rate = tm.RatesArray.GetRange(index - 5, 10).OrderByDescending(r => r.PriceHigh - r.PriceLow).First();
+      tm.CorridorStartDate = rate.StartDate;
     }
 
     private TradingMacro GetTradingMacro(CharterControl sender) {
@@ -391,6 +409,22 @@ namespace HedgeHog.Alice.Client {
     }
 
 
+
+    #region TrimPairCommand
+    ICommand _TrimPairCommandCommand;
+    public ICommand TrimPairCommandCommand {
+      get {
+        if (_TrimPairCommandCommand == null) {
+          _TrimPairCommandCommand = new Gala.RelayCommand<TradingMacro>(TrimPairCommand, (tm) => true);
+        }
+
+        return _TrimPairCommandCommand;
+      }
+    }
+    void TrimPairCommand(TradingMacro tradingMacro) { 
+    }
+    #endregion
+
     ICommand _ClosePairCommand;
     public ICommand ClosePairCommand {
       get {
@@ -529,6 +563,7 @@ namespace HedgeHog.Alice.Client {
         if (!IsInDesigh) {
           InitializeModel();
           App.container.SatisfyImportsOnce(this);
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<LogMessage>(this, lm => Log = lm.Exception);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)false, SellOrderCommand);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)true, BuyOrderCommand);
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
@@ -581,6 +616,7 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
           _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips * tm.Trades.Lots()) / tms.Sum(tm => tm.Trades.Lots());
+          _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
         }
       } catch (Exception exc) {
@@ -631,7 +667,7 @@ namespace HedgeHog.Alice.Client {
       if (tm == null) return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
       tm.ShowChart += TradingMacro_ShowChart;
-      DispatcherScheduler.Instance.Schedule(2.FromSeconds(), () => InitTradingMacro(tm));
+      new Action(() => InitTradingMacro(tm)).ScheduleOnUI(2.FromSeconds());
     }
 
     internal IScheduler findDispatcherScheduler() {
@@ -695,14 +731,14 @@ namespace HedgeHog.Alice.Client {
           RaisePropertyChanged(() => TradingMacrosCopy);
 
         if (e.PropertyName == TradingMacroMetadata.CurrentLoss) {
-          DispatcherScheduler.Instance.Schedule(new Action(() => {
+          new Action(() => {
             try {
               MasterModel.CurrentLoss = CurrentLoss;
               GlobalStorage.UseAliceContext(c => { }, true);
             } catch (Exception exc) {
               Log = exc;
             }
-          }));
+          }).ScheduleOnUI();
         }
         if (e.PropertyName == TradingMacroMetadata.SyncAll) {
           if (tm.SyncAll) {
@@ -869,16 +905,13 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
-        var corridorTime0 = tm.CorridorStats.Rates.LastByCount().StartDateContinuous;
-        var corridorTime1 = tm.WaveQuick == null ? DateTime.MinValue : tm.WaveQuick[0].StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
-        var corridorTime2 = tm.WaveHigh == null ? DateTime.MinValue : tm.WaveHigh[0].StartDateContinuous;// tm.CorridorsRates.Count < 3 ? DateTime.MinValue : tm.CorridorsRates[2][0].StartDateContinuous;
+        var corridorTime0 = tm.CorridorStats.Rates.LastBC().StartDateContinuous;
+        var waveQuickRate = tm.WaveTradeStart == null || tm.WaveTradeStart.Count == 0 ? null : tm.WaveTradeStart.OrderBy(r => r.StartDateContinuous).First();
+        var corridorTime1 = waveQuickRate == null ? DateTime.MinValue : tm.WaveTradeStart.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
-        string[] info = new string[] { 
-          "Range:" + string.Format("{0:n0} @ {1:HH:mm:ss}", tm.RatesHeight,tradesManager.ServerTime),
-          "Spred:" + string.Format("{2:00.0}/{0:00.0}={1:n1}",tm.SpreadForCorridorInPips,tm.CorridorHeightToSpreadRatio,tm.CorridorHeightByRegressionInPips)
-        };
+        string[] info = new string[] { };
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
         //charter.Dispatcher.Invoke(new Action(() => {
         try {
@@ -897,26 +930,29 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
-          charter.CorridorHeightInPips = tm.CorridorHeightByRegressionInPips;
+          charter.CorridorHeightInPips = tm.CorridorStats.RatesHeight;
           charter.WaveHeightInPips = tm.WaveAverageInPips;
-          charter.CorridorDistance = tm.BellRatio * 100;
           charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
-          charter.WaveLength = tm.WaveLength;
-          charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray());
+          charter.CorridorDistance = tm.CorridorDistanceInPips;
+          charter.WaveDistance = tm.WaveDistanceInPips.ToInt();
+          charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray(), tm.ShowTrendLines);
           charter.GetPriceMA = tm.GetPriceMA();
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
           var voltage1 = rates.SkipWhile(r => double.IsNaN(r.Kurtosis)).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Kurtosis.IfNaN(0)*10 }).ToArray();
-          var voltageHigh = tm.VoltageHight.IfNaN(tm.StDevAverages.Count > 1 ? tm.InPips(tm.StDevAverages.TakeEx(-2).First()) : 0);
-          var voltageLow = tm.VoltageAverage.IfNaN(tm.InPips(tm.StDevAverages.Last()));
-          charter.AddTicks(price, rates, tm.DoShowWaves ? new PriceBar[2][] { stDevBars, voltage1 } : new PriceBar[0][], info, null,
+          var voltageHigh = tm.VoltageHight.IfNaN(tm.InPips(tm.StDevAverages.FirstOrDefault()));
+          var voltageLow = tm.VoltageAverage.IfNaN(tm.InPips(tm.StDevAverages.LastOrDefault()));
+          charter.AddTicks(price, rates, tm.ShowTrendLines || true ? new PriceBar[2][] { stDevBars, voltage1 } : new PriceBar[0][], info, null,
             voltageHigh, voltageLow,0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
-            corridorTime0, corridorTime1, corridorTime2,
+            corridorTime0, corridorTime1, DateTime.MinValue,
             //timeCurr, timeLow,
             new double[0]);
-          var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, true));
+          if (tm.CorridorStats.StopRate != null)
+            charter.LineTimeMiddle = tm.CorridorStats.StopRate;
+          charter.LineTimeShort = tm.WaveShort.SetRateByDistance(tm.RatesArray) ?? TradingMacro.WaveInfo.RateByDistance(tm.RatesArray, tm.WaveDistance);
+          var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));
           charter.SetSellRates(dic);

@@ -12,7 +12,21 @@ using System.Diagnostics;
 namespace HedgeHog.Models {
   public class ModelBase : INotifyPropertyChanged {
     #region INotifyPropertyChanged Members
-    public event PropertyChangedEventHandler PropertyChanged;
+
+    #region PropertyChanged Event
+    event PropertyChangedEventHandler PropertyChangedEvent;
+    public event PropertyChangedEventHandler PropertyChanged {
+      add {
+        if (PropertyChangedEvent == null || !PropertyChangedEvent.GetInvocationList().Contains(value))
+          PropertyChangedEvent += value;
+      }
+      remove {
+        PropertyChangedEvent -= value;
+      }
+    }
+    #endregion
+
+
     protected void RaisePropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       if (propertyLamdas == null || propertyLamdas.Length == 0) RaisePropertyChangedCore();
       else
@@ -34,12 +48,12 @@ namespace HedgeHog.Models {
       RaisePropertyChangedCore(propertyName);
     }
     protected void RaisePropertyChangedCore(params string[] propertyNames) {
-      if (PropertyChanged == null) return;
+      if (PropertyChangedEvent == null) return;
       if (propertyNames.Length == 0)
         propertyNames = new[] { new StackFrame(1).GetMethod().Name.Substring(4) };
       foreach (var pn in propertyNames)
         //Application.Current.MainWindow.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() => {
-          PropertyChanged(this, new PropertyChangedEventArgs(pn));
+          PropertyChangedEvent(this, new PropertyChangedEventArgs(pn));
         //}));
     }
     #endregion

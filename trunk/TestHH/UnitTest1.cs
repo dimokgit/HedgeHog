@@ -67,8 +67,8 @@ namespace TestHH {
       //if (!core.LogOn("6519040180", "Tziplyonak713", false)) UT.Assert.Fail("Login");
       ////if (!core.LogOn("6519048070", "Toby2523", false)) UT.Assert.Fail("Login");
       //if (!core.LogOn("65245768", "1962", false)) UT.Assert.Fail("Login");
-      //if (!core.LogOn("MICR485510001", "9071", true)) UT.Assert.Fail("Login");
-      if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
+      if (!core.LogOn("D31712988001", "8482", true)) UT.Assert.Fail("Login");
+      //if (!core.LogOn("dturbo", "1234", true)) UT.Assert.Fail("Login");
       o2g.OrderRemoved += new OrderRemovedEventHandler(o2g_OrderRemovedEvent);
     }
 
@@ -233,7 +233,6 @@ namespace TestHH {
         dateTo = dateTo.AddDays(-7);
       }
     }
-    [TestMethod]
     public void LinearRegression() {
       var rates = new List<Rate>();
       o2g.GetBarsBase<Rate>("EUR/USD", 1,500,DateTime.FromOADate(0),DateTime.FromOADate(0),rates,null);
@@ -297,8 +296,11 @@ namespace TestHH {
     public void Legerages() {
       o2g.GetOffers().Select(o => o.Pair).ToList().ForEach(p => Debug.WriteLine("{0}:{1:n2}", p, o2g.Leverage(p)));
     }
+    [TestMethod]
     public void GetTradingSettings() {
-      Debug.WriteLine(o2g.GetTradingSettings("USD/JPY").PropertiesToString(Environment.NewLine));
+      var o = o2g.GetOffers();
+      Debug.WriteLine(o2g.GetTradingSettings("USDOLLAR").PropertiesToString(Environment.NewLine));
+      Debug.WriteLine(o2g.GetTradingSettings("EUR/USD").PropertiesToString(Environment.NewLine));
     }
     public void GetOrders() {
       var orders = o2g.GetOrders("");
@@ -396,7 +398,7 @@ namespace TestHH {
       Debug.WriteLine("StopAmount:{0}", account.StopAmount);
       var aID = account.ID;
       var pair = "USD/JPY";
-      var baseUnitSize = o2g.MinimumQuantity;
+      var baseUnitSize = o2g.GetBaseUnitSize(pair);
       var pipCost = o2g.GetPipCost(pair);
       var lots = 10000;
       var pips = 10;

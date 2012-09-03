@@ -107,7 +107,6 @@ namespace HedgeHog.Alice.Store {
             tm.MinimumGross = 0;
             tm.HistoryMaximumLot = 0;
             tm.RunningBalance = 0;
-            tm.StrategyScoresReset();
             tm.RateGannCurrentLast = null;
           }
           ManualResetEvent suspendEvent = new ManualResetEvent(false);
