@@ -102,7 +102,7 @@ namespace HedgeHog.Alice.Client {
 
     void charterNew_ActivateTrading(object sender, EventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
-      tm.IsTradingActive = true;
+      tm.IsTradingActive = !tm.IsTradingActive;
     }
 
     void charterNew_LineTimeMiddleChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
@@ -940,12 +940,12 @@ namespace HedgeHog.Alice.Client {
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var voltage1 = rates.SkipWhile(r => double.IsNaN(r.Kurtosis)).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Kurtosis.IfNaN(0)*10 }).ToArray();
-          var voltageHigh = tm.VoltageHight.IfNaN(tm.InPips(tm.StDevAverages.FirstOrDefault()));
-          var voltageLow = tm.VoltageAverage.IfNaN(tm.InPips(tm.StDevAverages.LastOrDefault()));
-          charter.AddTicks(price, rates, tm.ShowTrendLines || true ? new PriceBar[2][] { stDevBars, voltage1 } : new PriceBar[0][], info, null,
-            voltageHigh, voltageLow,0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.PriceStdDev }).ToArray();
+          //var voltage1 = rates.SkipWhile(r => double.IsNaN(r.Kurtosis)).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Kurtosis.IfNaN(0)*10 }).ToArray();
+          var voltageHigh = tm.VoltageHight.IfNaN(tm.StDevAverages.FirstOrDefault());
+          var voltageLow = tm.VoltageAverage.IfNaN(tm.StDevAverages.LastOrDefault());
+          charter.AddTicks(price, rates, tm.ShowTrendLines || true ? new PriceBar[1][] { stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
+            voltageHigh, voltageLow, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, DateTime.MinValue,
             //timeCurr, timeLow,
             new double[0]);

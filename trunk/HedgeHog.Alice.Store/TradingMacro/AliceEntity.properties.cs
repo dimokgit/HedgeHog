@@ -490,15 +490,15 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("BuySellRangeRatioMin")]
-    [Category(categoryXXX_NU)]
-    [Description("Not Used")]
-    public double BuySellRangeRatioMin {
+    [DisplayName("StDev Minimum")]
+    [Category(categoryActive)]
+    [Description("canTrade = StDevAverages[0] > X")]
+    public double StDevMinimum {
       get { return StDevToSpreadRatio; }
       set {
         if (StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
-          OnPropertyChanged("BuySellRangeRatioMin");
+          OnPropertyChanged(() => StDevMinimum);
         }
       }
     }
@@ -524,7 +524,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (CorridorStDevRatioMax != value) {
           CorridorStDevRatioMax = value;
-          OnPropertyChanged("CorridorDistanceRatio");
+          OnPropertyChanged(() => CorridorDistanceRatio);
         }
       }
     }

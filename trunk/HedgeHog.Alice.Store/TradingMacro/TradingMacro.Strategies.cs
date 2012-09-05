@@ -171,6 +171,7 @@ namespace HedgeHog.Alice.Store {
       _broadcastCorridorDateChanged();
     }
 
+    bool _isCorridorStopDateManual { get { return CorridorStopDate != DateTime.MinValue; } }
     DateTime _CorridorStopDate;
     public DateTime CorridorStopDate {
       get { return _CorridorStopDate; }
@@ -330,7 +331,22 @@ namespace HedgeHog.Alice.Store {
 
       var corridorDistance = CorridorStats.Rates.LastBC().Distance - CorridorStats.StopRate.Distance;
       WaveTradeStart = RatesArray.ReverseIfNot().TakeWhile(r => r.Distance <= corridorDistance)/*.TakeEx(-WaveLength * 2)*/.ToArray();
+
+      var waveTradeStartDate = WaveTradeStart.LastBC().StartDate;
+      var corridorStartTimeSpan = CorridorStats.Rates.LastBC().StartDate - RateLast.StartDate;
+      CorridorTimeByTradeStartTimeRatio = corridorStartTimeSpan.Ratio(waveTradeStartDate - RateLast.StartDate);
+
       return true;
+    }
+
+    double _CorridorTimeByTradeStartTimeRatio;
+    public double CorridorTimeByTradeStartTimeRatio {
+      get { return _CorridorTimeByTradeStartTimeRatio; }
+      set {
+        if (_CorridorTimeByTradeStartTimeRatio == value) return;
+        _CorridorTimeByTradeStartTimeRatio = value;
+        OnPropertyChanged(() => CorridorTimeByTradeStartTimeRatio);
+      }
     }
 
     private void StrategyEnterTrailer() {
@@ -339,6 +355,7 @@ namespace HedgeHog.Alice.Store {
       #region Local globals
       _buyLevel = Resistance0();
       _sellLevel = Support0();
+      Func<bool> isManual = () => CorridorStartDate.HasValue || _isCorridorStopDateManual;
       Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
       Func<double> currentGross = () => TradingStatistics.CurrentGross;
       Func<double> currentGrossInPips = () => TradingStatistics.CurrentGrossInPips;
@@ -358,11 +375,13 @@ namespace HedgeHog.Alice.Store {
           CmaLotSize = 0;
           if (isCurrentGrossOk()) {
             _buyLevel.CanTrade = _sellLevel.CanTrade = false;
+            _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
+            if (IsInVitualTrading && isManual())
+              IsTradingActive = false;
             CorridorStartDate = null;
             CorridorStopDate = DateTime.MinValue;
             WaveShort.ClearDistance();
             LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
-            _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
           }
           _closeAtZero = false;
         };
@@ -389,8 +408,15 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       if (!EnsureCorridorStopRate()) return;
-      var waveQuickOk = WaveTradeStart.LastBC() >= CorridorStats.StopRate;
-      bool canTrade = CorridorStats.Rates.LastBC().Distance <= WaveTradeStart.LastBC().Distance * CorridorDistanceRatio;
+      var waveTradeStartDate = WaveTradeStart.LastBC().StartDate;
+      var waveQuickOk = true;// waveTradeStartDate >= CorridorStats.StopRate.StartDate;
+      var corridorStartTimeSpan = CorridorStats.Rates.LastBC().StartDate - RateLast.StartDate;
+      var ratesForTrade = RatesArray.ReverseIfNot().TakeWhile(r => r.Distance <= WaveShort.Distance.IfNaN(WaveDistance)).OrderBy(r => r.PriceAvg).ToArray();
+      bool canTrade = isManual() ||
+        (CorridorTimeByTradeStartTimeRatio <= CorridorDistanceRatio
+          && ratesForTrade.Height() > WaveAverage
+          && StDevAverages.LastBC() >= StDevMinimum
+        );
       //var wave = TrailBuySellCorridor(buyCloseLevel, sellCloseLevel);
 
       if (!IsInVitualTrading && CorridorStats.StopRate != null) {
@@ -421,17 +447,18 @@ namespace HedgeHog.Alice.Store {
       if (!_closeAtZero) {
         var a = (LotSize / BaseUnitSize) * TradesManager.GetPipCost(Pair) * 100;
         var pipsOffset = currentLoss() / a;
-        _closeAtZero = currentGrossInPips() > pipsOffset
+        _closeAtZero = currentGrossInPips() > pipsOffset.Max(-2)
           && (Trades.Lots() > LotSize || Trades.GrossInPips() * 2 > InPips(_buyLevel.Rate - _sellLevel.Rate) || !canTrade);
       }
       #endregion
 
       #region Run
 
-      var ratesForTrade = RatesArray.ReverseIfNot().TakeWhile(r => r.Distance <= WaveShort.Distance.IfNaN(WaveDistance)).OrderBy(r => r.PriceAvg).ToArray();
       MagnetPrice = WaveTradeStart.Middle();
       if (MagnetPrice.Between(RateLast.PriceLow, RateLast.PriceHigh))
         _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
+      if(!canTrade)
+        _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
 
       _buyLevel.Rate = ratesForTrade.LastBC().PriceAvg;
       _sellLevel.Rate = ratesForTrade[0].PriceAvg;

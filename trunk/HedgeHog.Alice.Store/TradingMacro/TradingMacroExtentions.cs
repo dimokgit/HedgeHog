@@ -1411,10 +1411,11 @@ namespace HedgeHog.Alice.Store {
               } else
                 Log = new Exception("Replay:End");
               Thread.Sleep((args.DelayInSeconds - d.Elapsed.TotalSeconds).Max(0).FromSeconds());
-              if (args.InPause) {
+              Func<bool> inPause = () => args.InPause || !IsTradingActive;
+              if (inPause()) {
                 args.StepBack = args.StepForward = false;
                 Task.Factory.StartNew(() => {
-                  while (args.InPause && !args.StepBack && !args.StepForward && !args.MustStop)
+                  while (inPause() && !args.StepBack && !args.StepForward && !args.MustStop)
                     Thread.Sleep(200);
                 }).Wait();
               }
@@ -1936,6 +1937,7 @@ namespace HedgeHog.Alice.Store {
                 SuppRes.ToList().ForEach(sr => sr.CrossesCount = GetCrossesCount(_rateArray, sr.Rate));
               OnScanCorridor(_rateArray);
               OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
+              OnPropertyChanged("StDevAverages");
             }
             return _rateArray;
           } catch (Exception exc) {
@@ -3300,12 +3302,13 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByWaveRelative(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       RatesArray.ReverseIfNot().FillDistanceByHeight();
       _waves = RatesArray.ReverseIfNot().Partition(r => r.PriceStdDev != 0).ToArray();
+      Func<IList<Rate>, double> getMesure = w => w.MaxStDev() * w.Distance();
       var wavesDistanceMin = StDevAverages.LastBC();// _waves.Select(w => w.MaxStDev()).Average();///.ToArray().AverageByIterations(-1).Average();
       var waves = _waves.Where(w => w.MaxStDev() >= wavesDistanceMin);
       WaveAverage = _waves.Select(w => w.Height()).ToArray().AverageInRange(WaveAverageIteration.ToInt()).Average();
       WaveLength = _waves.Select(w => (double)w.Count).ToArray().AverageInRange(WaveAverageIteration.ToInt()).Average().ToInt();
-      var waveMax = waves.OrderByDescending(w => w.MaxStDev()).First();
-      WaveHigh = waves.TakeWhile(w => w != waveMax).DefaultIfEmpty(waveMax).OrderByDescending(w => w.Distance()).Take(3).OrderByDescending(w => w[0].StartDate).First();
+      var waveMax = waves.SkipWhile(w => w.MaxStDev() < StDevAverages[0]).First();//.OrderByDescending(w => w.MaxStDev()).First();
+      WaveHigh = waves.TakeWhile(w => w != waveMax).DefaultIfEmpty(waveMax).OrderByDescending(getMesure).Take(2).OrderByDescending(w => w[0].StartDate).First();
 
       WaveDistance = WaveHigh.Distance();// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
       WaveShort.Rates = WaveInfo.RatesByDistance(RatesArray, WaveShort.Distance.IfNaN(WaveDistance)).ToArray();
