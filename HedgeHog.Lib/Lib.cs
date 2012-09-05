@@ -524,6 +524,9 @@ namespace HedgeHog {
     public static TimeSpan Divide(this TimeSpan span, TimeSpan d) {
       return TimeSpan.FromMilliseconds(span.TotalMilliseconds / d.TotalMilliseconds);
     }
+    public static double Ratio(this TimeSpan span, TimeSpan d) {
+      return span.TotalMilliseconds / d.TotalMilliseconds;
+    }
     #endregion
 
     public static T FirstOrLast<T>(this IEnumerable<T> e, bool last) {

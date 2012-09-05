@@ -357,7 +357,10 @@ namespace HedgeHog {
         return _voltageHigh;
       }
     }
-    public double VoltageHigh { set { voltageHigh.Value = value; } }
+    public double VoltageHigh { set { 
+      voltageHigh.Value = value;
+      voltageHigh.ToolTip = value;
+    } }
 
     HorizontalLine _voltageAverage;
     HorizontalLine voltageAverage {
@@ -370,7 +373,12 @@ namespace HedgeHog {
         return _voltageAverage;
       }
     }
-    public double VoltageAverage { set { voltageAverage.Value = value; } }
+    public double VoltageAverage {
+      set {
+        voltageAverage.Value = value;
+        voltageAverage.ToolTip = value;
+      }
+    }
     
     HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
     public double LineMax { set { lineMax.Value = value; } }
