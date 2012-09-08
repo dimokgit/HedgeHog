@@ -2379,7 +2379,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public class WaveInfo {
+    public class WaveInfo :Models.ModelBase{
       #region Distance
       public Rate DistanceRate { get; set; }
       double _Distance = double.NaN;
@@ -2404,6 +2404,19 @@ namespace HedgeHog.Alice.Store {
 
       public WaveInfo() { }
 
+      #region LengthCma
+      private double _LengthCma = double.NaN;
+      public double LengthCma {
+        get { return _LengthCma; }
+        set {
+          if (_LengthCma != value) {
+            _LengthCma = value;
+            RaisePropertyChanged("LengthCma");
+          }
+        }
+      }
+
+      #endregion
       IList<Rate> _Rates;
       public IList<Rate> Rates {
         get { return _Rates; }
@@ -2411,6 +2424,7 @@ namespace HedgeHog.Alice.Store {
           _Rates = value;
           RatesMax = value.Max(r => r.PriceAvg);
           RatesMin = value.Min(r => r.PriceAvg);
+          LengthCma = LengthCma.Cma(30, value.Count);
         }
       }
       public Rate Rate { get; set; }
@@ -3300,7 +3314,8 @@ namespace HedgeHog.Alice.Store {
 
 
     private CorridorStatistics ScanCorridorByWaveRelative(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      RatesArray.ReverseIfNot().FillDistanceByHeight();
+      //RatesArray.ReverseIfNot().FillDistanceByHeight();
+      RatesArray.ReverseIfNot().FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => (p.PriceHigh - p.PriceLow) * p.Volume);
       _waves = RatesArray.ReverseIfNot().Partition(r => r.PriceStdDev != 0).ToArray();
       Func<IList<Rate>, double> getMesure = w => w.MaxStDev() * w.Distance();
       var wavesDistanceMin = StDevAverages.LastBC();// _waves.Select(w => w.MaxStDev()).Average();///.ToArray().AverageByIterations(-1).Average();
@@ -3903,16 +3918,6 @@ namespace HedgeHog.Alice.Store {
           _tradingDistanceMax = 0;
           SetLotSize();
           break;
-        case TradingMacroMetadata.CorridorCalcMethod:
-        case TradingMacroMetadata.CorridorCrossHighLowMethod:
-        case TradingMacroMetadata.CorridorCrossesCountMinimum:
-        case TradingMacroMetadata.CorridorHighLowMethod:
-        case TradingMacroMetadata.CorridorStDevRatioMax:
-        case TradingMacroMetadata.TradingAngleRange:
-        case TradingMacroMetadata.StDevAverageLeewayRatio:
-        case TradingMacroMetadata.StDevTresholdIterations:
-          OnScanCorridor(RatesArray);
-          break;
         case TradingMacroMetadata.Pair:
           _pointSize = double.NaN;
           _BaseUnitSize = 0;
@@ -3948,11 +3953,21 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.IsPriceSpreadOk:
           SetEntryOrdersBySuppResLevels();
           break;
+        case TradingMacroMetadata.CorridorCalcMethod:
+        case TradingMacroMetadata.CorridorCrossHighLowMethod:
+        case TradingMacroMetadata.CorridorCrossesCountMinimum:
+        case TradingMacroMetadata.CorridorHighLowMethod:
+        case TradingMacroMetadata.CorridorStDevRatioMax:
+        case TradingMacroMetadata.TradingAngleRange:
+        case TradingMacroMetadata.StDevAverageLeewayRatio:
+        case TradingMacroMetadata.StDevTresholdIterations:
         case TradingMacroMetadata.MovingAverageType:
         case TradingMacroMetadata.PriceCmaPeriod:
         case TradingMacroMetadata.PriceCmaLevels:
-          SetMA();
-          RaiseShowChart();
+          if (RatesArray.Any()) {
+            RatesArray.Clear();
+            RatesArraySafe.Count();
+          }
           break;
         case TradingMacroMetadata.SuppResLevelsCount_:
           AdjustSuppResCount();

@@ -977,7 +977,7 @@ namespace HedgeHog.Alice.Client {
         if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
         var trades = tradesManager.GetTradesInternal(trade.Pair);
         tm.CurrentLot = trades.Sum(t => t.Lots);
-        var amountK = tm.CurrentLot / 1000;
+        var amountK = tm.CurrentLot / tm.BaseUnitSize;
         if (tm.HistoryMaximumLot < amountK) tm.HistoryMaximumLot = amountK;
         var ts = tm.SetTradeStatistics(GetCurrentPrice(tm.Pair), trade);
       } catch (Exception exc) {

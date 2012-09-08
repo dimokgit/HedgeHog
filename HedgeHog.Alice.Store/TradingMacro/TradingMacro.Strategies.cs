@@ -371,6 +371,7 @@ namespace HedgeHog.Alice.Store {
         LastProfitStartDate = null;
         CmaLotSize = 0;
         ShowTrendLines = false;
+        WaveShort.LengthCma = double.NaN;
         _strategyExecuteOnTradeClose = t => {
           CmaLotSize = 0;
           if (isCurrentGrossOk()) {
@@ -458,7 +459,7 @@ namespace HedgeHog.Alice.Store {
       if (MagnetPrice.Between(RateLast.PriceLow, RateLast.PriceHigh))
         _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
       if(!canTrade)
-        _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
+        _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
 
       _buyLevel.Rate = ratesForTrade.LastBC().PriceAvg;
       _sellLevel.Rate = ratesForTrade[0].PriceAvg;

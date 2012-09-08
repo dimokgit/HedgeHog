@@ -278,6 +278,7 @@
                         <TextBlock>CmaLotSize :<TextBlock Text="{Binding CmaLotSize}"/></TextBlock>
                         <TextBlock>CmaOffset :<TextBlock Text="{Binding CmaOffset,StringFormat=n1}"/></TextBlock>
                         <TextBlock ToolTip="CorridorTimeByTradeStartTimeRatio">CorTmByTrdTmRatio :<TextBlock Text="{Binding CorridorTimeByTradeStartTimeRatio,StringFormat=n1}"/></TextBlock>
+                        <TextBlock>WaveShort.Length :<TextBlock Text="{Binding WaveShort.LengthCma,StringFormat=n0}"/></TextBlock>
                         <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
                           <ListBox.ItemTemplate>
                             <DataTemplate>
