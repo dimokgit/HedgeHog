@@ -492,6 +492,14 @@ namespace HedgeHog.Bars {
       return distance;
     }
 
+    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar,TBar, double> getValue) where TBar : BarBase {
+      bars.First().Distance = 0;
+      bars.Aggregate((p, n) => {
+        setRunningValue(n, getRunningValue(p) + getValue(p, n));
+        return n;
+      });
+    }
+
     public static void FillDistanceByHeight<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       bars.First().Distance = 0;
       bars.Aggregate((p, n) => {

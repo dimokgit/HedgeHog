@@ -384,7 +384,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Symmetrical Buy/Sell")]
     [Description("Move Buy level up when Sell moves down.")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public bool SymmetricalBuySell {
       get { return TradeOnCrossOnly; }
       set { TradeOnCrossOnly = value; }
@@ -636,9 +636,9 @@ namespace HedgeHog.Alice.Store {
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
 
-    [Category(categoryXXX_NU)]
+    [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
-    [Description("Not used")]
+    [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int CorridorCrossesMaximum {
       get { return CorridorRatioForBreakout.ToInt(); }
       set { 
