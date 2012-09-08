@@ -13,7 +13,7 @@
     <RootPath>
     </RootPath>
     <IncludeSchemaNameInFileName>False</IncludeSchemaNameInFileName>
-    <ModelCollation>1033, CI</ModelCollation>
+    <ModelCollation>1033,CI</ModelCollation>
     <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
     <DeployToDatabaseAddToServerExplorer>True</DeployToDatabaseAddToServerExplorer>
     <LoadSqlClrTypes>True</LoadSqlClrTypes>
@@ -28,26 +28,26 @@
     <SqlServerVerification>False</SqlServerVerification>
     <TargetLanguage>CS</TargetLanguage>
     <AllowSnapshotIsolation>False</AllowSnapshotIsolation>
-    <AnsiNullDefault>True</AnsiNullDefault>
+    <AnsiNullDefault>False</AnsiNullDefault>
     <AnsiNulls>True</AnsiNulls>
-    <AnsiPadding>True</AnsiPadding>
-    <AnsiWarnings>True</AnsiWarnings>
-    <ArithAbort>True</ArithAbort>
-    <AutoClose>False</AutoClose>
+    <AnsiPadding>False</AnsiPadding>
+    <AnsiWarnings>False</AnsiWarnings>
+    <ArithAbort>False</ArithAbort>
+    <AutoClose>True</AutoClose>
     <AutoCreateStatistics>True</AutoCreateStatistics>
-    <AutoShrink>False</AutoShrink>
+    <AutoShrink>True</AutoShrink>
     <AutoUpdateStatistics>True</AutoUpdateStatistics>
     <AutoUpdateStatisticsAsynchronously>False</AutoUpdateStatisticsAsynchronously>
     <ChangeTrackingRetentionPeriod>2</ChangeTrackingRetentionPeriod>
     <ChangeTrackingRetentionUnit>Days</ChangeTrackingRetentionUnit>
     <CloseCursorOnCommitEnabled>False</CloseCursorOnCommitEnabled>
-    <ConcatNullYieldsNull>True</ConcatNullYieldsNull>
+    <ConcatNullYieldsNull>False</ConcatNullYieldsNull>
     <DatabaseAccess>MULTI_USER</DatabaseAccess>
     <DatabaseChaining>False</DatabaseChaining>
     <DatabaseState>ONLINE</DatabaseState>
     <DateCorrelationOptimizationOn>False</DateCorrelationOptimizationOn>
     <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
-    <DefaultCursor>LOCAL</DefaultCursor>
+    <DefaultCursor>GLOBAL</DefaultCursor>
     <DefaultFilegroup>PRIMARY</DefaultFilegroup>
     <EnableFullTextSearch>True</EnableFullTextSearch>
     <IsBrokerPriorityHonored>False</IsBrokerPriorityHonored>
@@ -55,11 +55,11 @@
     <IsChangeTrackingOn>False</IsChangeTrackingOn>
     <IsEncryptionOn>False</IsEncryptionOn>
     <NumericRoundAbort>False</NumericRoundAbort>
-    <PageVerify>NONE</PageVerify>
+    <PageVerify>CHECKSUM</PageVerify>
     <Parameterization>SIMPLE</Parameterization>
     <QuotedIdentifier>True</QuotedIdentifier>
     <ReadCommittedSnapshot>False</ReadCommittedSnapshot>
-    <Recovery>FULL</Recovery>
+    <Recovery>SIMPLE</Recovery>
     <RecursiveTriggersEnabled>False</RecursiveTriggersEnabled>
     <ServiceBrokerOption>DisableBroker</ServiceBrokerOption>
     <SupplementalLoggingOn>False</SupplementalLoggingOn>
@@ -71,6 +71,7 @@
     <PostConversionRemoveFromScc>;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqldeployment;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqlsettings;Properties\Database.sqlsettings;Properties\Database.sqldeployment;Properties\Database.sqlcmdvars;Properties\Database.sqlpermissions;Schema Objects\Storage\Files\Forex_log.sqlfile.sql;Schema Objects\Storage\Files\PRIMARY.Forex.sqlfile.sql;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\ForexDB.dbproj</PostConversionRemoveFromScc>
     <PostConversionAddToScc>
     </PostConversionAddToScc>
+    <CompatibilityMode>100</CompatibilityMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>.\sql\release\</OutputPath>
@@ -153,6 +154,7 @@
     <Folder Include="dbo\Functions\" />
     <Folder Include="dbo\Stored Procedures\" />
     <Folder Include="Assemblies\" />
+    <Folder Include="Server Objects\" />
   </ItemGroup>
   <ItemGroup>
     <BuildContributorArgument Include="OutDir=$(OutDir)" />
@@ -446,6 +448,19 @@
     <Build Include="dbo\Stored Procedures\ProcessTrades.sql" />
     <Build Include="Security\Permissions.sql" />
     <Build Include="ExtendedProperties.sql" />
+    <Build Include="Security\sa.sql" />
+    <Build Include="Security\NT SERVICE_Winmgmt.sql" />
+    <Build Include="Security\NT SERVICE_SQLWriter.sql" />
+    <Build Include="Security\NT Service_MSSQLSERVER.sql" />
+    <Build Include="Security\NT AUTHORITY_SYSTEM.sql" />
+    <Build Include="Security\DimonFX_dimon.sql" />
+    <Build Include="Security\BUILTIN_Users.sql" />
+    <Build Include="Security\SQLCLRTestLogin.sql" />
+    <Build Include="Security\DIMONFX_Traders.sql" />
+    <Build Include="Security\DHOME_User.sql" />
+    <Build Include="Security\DHOME_lesha.sql" />
+    <Build Include="Security\DHOME_ForexTrader.sql" />
+    <Build Include="Server Objects\AlwaysOn_health.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
@@ -466,6 +481,9 @@
     <None Include="Assemblies\TA-Lib-Core_1.dll" />
     <None Include="Assemblies\SQLCLR_1.dll" />
     <None Include="Assemblies\LightLib_1.dll" />
+    <None Include="Assemblies\TA-Lib-Core_2.dll" />
+    <None Include="Assemblies\SQLCLR_2.dll" />
+    <None Include="Assemblies\LightLib_2.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
