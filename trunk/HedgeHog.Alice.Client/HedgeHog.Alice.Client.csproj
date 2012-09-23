@@ -49,7 +49,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Debug_RealMicro\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -167,15 +167,6 @@
     </Reference>
     <Reference Include="UIAutomationProvider" />
     <Reference Include="UIAutomationTypes" />
-    <Reference Include="VIBlend.WPF.Editors">
-      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Editors.dll</HintPath>
-    </Reference>
-    <Reference Include="VIBlend.WPF.Theme.Office2010Blue">
-      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Blue.dll</HintPath>
-    </Reference>
-    <Reference Include="VIBlend.WPF.Theme.Office2010Silver">
-      <HintPath>..\..\..\..\..\..\Program Files\VIBlend\WPF Controls v.3.0.0\VIBlend.WPF.Theme.Office2010Silver.dll</HintPath>
-    </Reference>
     <Reference Include="WebActivator, Version=1.4.1.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\WebActivator.1.4.1\lib\net40\WebActivator.dll</HintPath>

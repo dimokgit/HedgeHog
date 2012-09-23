@@ -57,7 +57,6 @@ namespace HedgeHog.Alice.Client {
     [MethodImpl(MethodImplOptions.Synchronized)]
     CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
-        ObservableValue<CharterControl> charterObserver = new ObservableValue<CharterControl>();
         var charterNew = Dispatcher.CurrentDispatcher.Invoke(new Func<CharterControl>(() => new CharterControl(tradingMacro.CompositeId, App.container))) as CharterControl;
         RequestAddCharterToUI(charterNew);
         charters.Add(tradingMacro, charterNew);
@@ -355,8 +354,47 @@ namespace HedgeHog.Alice.Client {
       get { return _replayArguments; }
     }
 
+    class TestParameter {
+      public int PriceCmaLevel { get; set; }
+      public int StopRateWaveOffset { get; set; }
+      public double PLToCorridorExitRatio { get; set; }
+      public double CorridorDistanceRatio { get; set; }
+    }
+
+    static class TestParameters {
+      public static int[] PriceCmaLevels = new int[0];
+      public static int[] StopRateWaveOffsets = new int[0];
+      public static double[] PLToCorridorExitRatios = new double[0];
+      public static double[] CorridorDistanceRatio = new double[0];
+      
+      public static Queue<TestParameter> GenerateTestParameters() {
+        var ret = from p in PriceCmaLevels
+                  from s in StopRateWaveOffsets
+                  from pl in PLToCorridorExitRatios
+                  from cd in CorridorDistanceRatio
+                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, PLToCorridorExitRatio = pl, CorridorDistanceRatio = cd };
+        return new Queue<TestParameter>(ret);
+      }
+    }
     List<Task> _replayTasks = new List<Task>();
     void StartReplay(TradingMacro tmOriginal) {
+      if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
+        MessageBox.Show("Replay is running.");
+        return;
+      }
+      var c = new[] { ',', ' ' };
+      TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
+      TestParameters.StopRateWaveOffsets = tmOriginal.TestStopRateWaveOffset.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
+      TestParameters.PLToCorridorExitRatios = tmOriginal.TestPLToCorridorExitRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s)).ToArray();
+      TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s)).ToArray();
+      var testQueue = TestParameters.GenerateTestParameters();
+      StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
+    }
+    void ContinueReplayWith (TradingMacro tm, Queue<TestParameter> testParams)  {
+      if (testParams.Any())
+        StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
+    }
+    void StartReplayInternal(TradingMacro tmOriginal,TestParameter testParameter, Action<Task> continueWith) {
       if (IsInVirtualTrading) {
         if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
           MessageBox.Show("Replay is running.");
@@ -372,9 +410,17 @@ namespace HedgeHog.Alice.Client {
         if (IsInVirtualTrading) {
           tradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId();
+          if (testParameter != null) {
+            tm.PriceCmaLevels_ = tm.PriceCmaPeriod = testParameter.PriceCmaLevel;
+            tm.StopRateWaveOffset = testParameter.StopRateWaveOffset;
+            tm.PLToCorridorExitRatio = testParameter.PLToCorridorExitRatio;
+            tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
+          }
         }
         var tmToRun = tm;
-        _replayTasks.Add(Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments)));
+        var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments));
+        task.ContinueWith(continueWith);
+        _replayTasks.Add(task);
       }
     }
     #endregion
@@ -605,7 +651,7 @@ namespace HedgeHog.Alice.Client {
         tms = GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToArray();
         if (tms.Any()) {
           _tradingStatistics.TradingMacros = tms;
-          _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.RatesStDev.Max(tm.CorridorStats.StDev))).ToList().AverageByIterations(1).Average();
+          _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.CorridorStats.RatesStDev)).ToList().AverageByIterations(1).Average();
           _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
           _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
           _tradingStatistics.VolumeRatioL = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2, true).Average();
@@ -693,6 +739,7 @@ namespace HedgeHog.Alice.Client {
         var tm = sender as TradingMacro;
 
         if (e.PropertyName == TradingMacroMetadata.IsActive) {
+          _tradingMacrosDictionary.Clear();
           InitTradingMacro(tm);
         }
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
@@ -905,9 +952,9 @@ namespace HedgeHog.Alice.Client {
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
-        var corridorTime0 = tm.CorridorStats.Rates.LastBC().StartDateContinuous;
-        var waveQuickRate = tm.WaveTradeStart == null || tm.WaveTradeStart.Count == 0 ? null : tm.WaveTradeStart.OrderBy(r => r.StartDateContinuous).First();
-        var corridorTime1 = waveQuickRate == null ? DateTime.MinValue : tm.WaveTradeStart.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
+        var corridorTime0 = DateTime.MinValue;// tm.CorridorStats.Rates.LastBC().StartDateContinuous;
+        var waveQuickRate = tm.WaveTradeStart == null || tm.WaveTradeStart.Rates.Count == 0 ? null : tm.WaveTradeStart.Rates.OrderBy(r => r.StartDateContinuous).First();
+        var corridorTime1 = waveQuickRate == null ? DateTime.MinValue : tm.WaveTradeStart.Rates.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
         var dateMin = rates.Min(r => r.StartDateContinuous);
@@ -921,37 +968,40 @@ namespace HedgeHog.Alice.Client {
           charter.GetPriceHigh = tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
           charter.GetPriceLow = tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
-          charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
+          charter.CenterOfMassSell = tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
-          charter.CenterOfMassBuy = tm.CenterOfMassBuy;
-          charter.CenterOfMassSell = 0;// tm.CenterOfMassSell;
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Count;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
-          charter.CorridorHeightInPips = tm.CorridorStats.RatesHeight;
-          charter.WaveHeightInPips = tm.WaveAverageInPips;
-          charter.CorridorSpread = tm.CorridorStats.SpreadInPips;
-          charter.CorridorDistance = tm.CorridorDistanceInPips;
-          charter.WaveDistance = tm.WaveDistanceInPips.ToInt();
-          charter.SetTrendLines(tm.CorridorStats.Rates.OrderBars().ToArray(), tm.ShowTrendLines);
-          charter.GetPriceMA = tm.GetPriceMA();
+          charter.CorridorHeightInPips = tm.CorridorStats.RatesHeightInPips;
+          charter.CorridorRatesStDevInPips = tm.CorridorStats.RatesStDevInPips;
+          charter.RatesStDevInPips = tm.RatesStDevInPips;
+          charter.WaveDistance = tm.WaveShortDistanceInPips;
+          var ratesForTrand = !tm.ShowTrendLines && tm.Strategy.HasFlag(Strategies.FreeRoam) ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
+          charter.SetTrendLines(ratesForTrand, tm.ShowTrendLines);
+          charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.PriceStdDev }).ToArray();
-          //var voltage1 = rates.SkipWhile(r => double.IsNaN(r.Kurtosis)).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Kurtosis.IfNaN(0)*10 }).ToArray();
-          var voltageHigh = tm.VoltageHight.IfNaN(tm.StDevAverages.FirstOrDefault());
-          var voltageLow = tm.VoltageAverage.IfNaN(tm.StDevAverages.LastOrDefault());
+
+          Func<Rate, double> speedFoo = r => (tm.InPips(r.Mass.Value));//PriceStdDev
+          var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = speedFoo(r) }).ToArray();
+          var speedAverages = new List<double>();
+          stDevBars.AverageByIterations(pb => pb.Speed, (v, a) => v >= a, tm.StDevTresholdIterations, speedAverages);
+          var voltageHigh = tm.VoltageHight.IfNaN(speedAverages.FirstOrDefault());
+          var voltageLow = tm.VoltageAverage.IfNaN(speedAverages.LastOrDefault());
+
+
           charter.AddTicks(price, rates, tm.ShowTrendLines || true ? new PriceBar[1][] { stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
             voltageHigh, voltageLow, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, DateTime.MinValue,
             //timeCurr, timeLow,
             new double[0]);
-          if (tm.CorridorStats.StopRate != null)
+          if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
-          charter.LineTimeShort = tm.WaveShort.SetRateByDistance(tm.RatesArray) ?? TradingMacro.WaveInfo.RateByDistance(tm.RatesArray, tm.WaveDistance);
+          charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));

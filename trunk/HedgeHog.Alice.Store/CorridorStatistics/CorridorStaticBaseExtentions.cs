@@ -139,7 +139,6 @@ namespace HedgeHog.Alice.Store {
         Func<Rate, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
         #endregion
         #region Locals
-        var periods = rates.Count();
         var lineLow = new LineInfo(new Rate[0], 0, 0);
         var lineHigh = new LineInfo(new Rate[0], 0, 0);
         double stDev = double.NaN;
@@ -167,7 +166,7 @@ namespace HedgeHog.Alice.Store {
             throw new NotSupportedException(new { corridorMethod } + "");
         }
         height = stDev * 2;
-        return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height, lineHigh, lineLow, periods, rates.First().StartDate, rates.Last().StartDate) {
+        return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
         };
       } catch (Exception exc) {

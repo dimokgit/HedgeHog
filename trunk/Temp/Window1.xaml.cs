@@ -107,8 +107,8 @@ namespace Temp {
         fw.GetBars(fw.Pair, Period,0, DateTime.Now.AddMinutes(-minutesBack), DateTime.FromOADate(0), rates);
         AddLog("Scan with StDev:" + UseStDev + ". " + CorridorIterations+" iterations.");
         CorridorStatistics corridorStats = null;// rates.ScanCorridornesses(CorridorIterations, rates.GetCorridornesses(UseStDev, 30, 180), CorridorIterations, 0);
-        var corridorMinutes = corridorStats.Periods * Period;
-        AddLog("Chart Corridor["+corridorStats.Periods+"] minutes.");
+        var corridorMinutes = corridorStats.Rates.Count * Period;
+        AddLog("Chart Corridor["+corridorStats.Rates.Count+"] minutes.");
         //new HedgeHog.Schedulers.Scheduler(charter.Dispatcher).Command = () =>
         //  charter.AddTicks(null, rates, null, 0, 0, 0, 0, 0, 0, rates.Last().StartDate.AddMinutes(-corridorStats.Periods*Period), DateTime.MinValue, new double[0]);
       }

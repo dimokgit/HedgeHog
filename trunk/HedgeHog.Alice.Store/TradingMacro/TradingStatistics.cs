@@ -32,7 +32,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_CurrentGrossAverage != value) {
           _CurrentGrossAverage = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("CurrentGrossAverage");
         }
       }
     }
@@ -45,7 +45,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_CurrentGross != value) {
           _CurrentGross = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("CurrentGross");
         }
       }
     }
@@ -59,7 +59,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_AllowedLotMinimum != value) {
           _AllowedLotMinimum = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("AllowedLotMinimum");
         }
       }
     }
@@ -73,7 +73,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_StDevPips != value) {
           _StDevPips = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("StDevPips");
         }
       }
     }
@@ -86,7 +86,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_TakeProfitPips != value) {
           _TakeProfitPips = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("TakeProfitPips");
         }
       }
     }
@@ -99,7 +99,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_TakeProfitDistanceInPips != value) {
           _TakeProfitDistanceInPips = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("TakeProfitDistanceInPips");
         }
       }
     }
@@ -111,7 +111,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_VolumeRatioH != value) {
           _VolumeRatioH = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("VolumeRatioH");
         }
       }
     }
@@ -123,7 +123,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_VolumeRatioL != value) {
           _VolumeRatioL = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("VolumeRatioL");
         }
       }
     }
@@ -137,7 +137,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_RatesStDevToRatesHeightRatioH != value) {
           _RatesStDevToRatesHeightRatioH = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("RatesStDevToRatesHeightRatioH");
         }
       }
     }
@@ -149,7 +149,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_RatesStDevToRatesHeightRatioL != value) {
           _RatesStDevToRatesHeightRatioL = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("RatesStDevToRatesHeightRatioL");
         }
       }
     }
@@ -162,7 +162,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_RateStDevAverage != value) {
           _RateStDevAverage = value;
-          RaisePropertyChanged();
+          RaisePropertyChanged("RateStDevAverage");
         }
       }
     }
@@ -252,7 +252,7 @@ namespace HedgeHog.Alice.Store {
     /// of a property setter.</exception>
     [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate",
         Justification = "This cannot be an event")]
-    protected virtual void RaisePropertyChanged() {
+    protected virtual void RaisePropertyChanged_() {
       var frames = new StackTrace();
 
       for (var i = 0; i < frames.FrameCount; i++) {

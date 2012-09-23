@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using XLinq = System.Xml.Linq;
 using System.ServiceModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1669,6 +1670,7 @@ namespace HedgeHog.Alice.Client {
               context.SaveChanges();
             } catch {
               context.DeleteObject(ct);
+              Log = new Exception(ct.ToXml());
               throw;
             }
           }

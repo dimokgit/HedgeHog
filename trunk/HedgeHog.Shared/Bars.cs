@@ -36,26 +36,65 @@ namespace HedgeHog.Bars {
     public bool IsHistory;
 
     #region Bid/Ask
+    #region Ask
+    double _AskHigh = double.NaN;
     [DataMember]
-    public double AskHigh { get; set; }
+    public double AskHigh {
+      get { return _AskHigh; }
+      set {
+        _AskHigh = value;
+        AskAvg = (_AskHigh + _AskLow) / 2;
+      }
+    }
     [DataMember]
-    public double AskLow { get; set; }
+    double _AskLow = double.NaN;
+    public double AskLow {
+      get { return _AskLow; }
+      set { 
+        _AskLow = value;
+         AskAvg = (_AskHigh + _AskLow) / 2;
+      }
+    }
     [DataMember]
-    private double? _askAvg = null;
+    private double _askAvg = double.NaN;
     public double AskAvg {
-      get { return _askAvg.HasValue ? _askAvg.Value : (AskHigh + AskLow) / 2; }
-      set { _askAvg = value; }
+      get { return _askAvg; }
+      set { 
+        _askAvg = value;
+        PriceAvg = (AskAvg + BidAvg) / 2;
+      }
+    }
+    #endregion
+
+    #region Bid
+    double _BidHigh = double.NaN;
+    [DataMember]
+    public double BidHigh {
+      get { return _BidHigh; }
+      set { 
+        _BidHigh = value;
+        BidAvg = (_BidHigh + _BidLow) / 2;
+      }
+    }
+    double _BidLow = double.NaN;
+    [DataMember]
+    public double BidLow {
+      get { return _BidLow; }
+      set {
+        _BidLow = value;
+        BidAvg = (_BidHigh + _BidLow) / 2;
+      }
     }
     [DataMember]
-    public double BidHigh { get; set; }
-    [DataMember]
-    public double BidLow { get; set; }
-    [DataMember]
-    private double? _bidAvg = null;
+    private double _bidAvg = double.NaN;
     public double BidAvg { 
-      get { return _bidAvg.HasValue ? _bidAvg.Value : (BidHigh + BidLow) / 2; }
-      set { _bidAvg = value; }
+      get { return _bidAvg; }
+      set { 
+        _bidAvg = value;
+        PriceAvg = (AskAvg + BidAvg) / 2;
+      }
     }
+    #endregion
     [DataMember]
     public double AskClose { get; set; }
     [DataMember]
@@ -77,10 +116,16 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Spread
+    /// <summary>
+    /// Spread between Ask and Bid
+    /// </summary>
     public double Spread { get { return (AskHigh - AskLow + BidHigh - BidLow) / 2; } }
     public double SpreadMax { get { return Math.Max(AskHigh - AskLow, BidHigh - BidLow); } }
     public double SpreadMin { get { return Math.Min(AskHigh - AskLow, BidHigh - BidLow); } }
-    public double PriceSpread { get { return (AskHigh - BidHigh + AskLow - BidLow) / 2; } }
+    /// <summary>
+    /// Bar height
+    /// </summary>
+    public double PriceHeight { get { return (AskHigh - BidHigh + AskLow - BidLow) / 2; } }
     #endregion
 
     #region Price
@@ -88,9 +133,16 @@ namespace HedgeHog.Bars {
     public virtual double PriceLow { get { return (AskLow + BidLow) / 2; } }
     public double PriceClose { get { return (AskClose + BidClose) / 2; } }
     public double PriceOpen { get { return (AskOpen + BidOpen) / 2; } }
-    public double PriceAvg { get { return (AskAvg + BidAvg) / 2; } }
+    double _PriceAvg;
+    public double PriceAvg {
+      get { return _PriceAvg; }
+      set {
+        _PriceAvg = value;
+        RunningLow = RunningHigh = value;
+      }
+    }
     public double PriceHLC { get { return (PriceHigh + PriceLow + PriceClose) / 3; } }
-    public double PriceHeight(BarBase bar) { return Math.Abs(PriceAvg - bar.PriceAvg); }
+    //public double PriceHeight(BarBase bar) { return Math.Abs(PriceAvg - bar.PriceAvg); }
     #endregion
 
     #region PriceAvgs
@@ -180,6 +232,8 @@ namespace HedgeHog.Bars {
       }
     }
 
+    public List<double> PriceCMAOther { get; set; }
+
     double _PriceTrima = double.NaN;
     [DataMember]
     public double PriceTrima {
@@ -206,6 +260,20 @@ namespace HedgeHog.Bars {
     #endregion
 
     public double? RunningTotal { get; set; }
+
+    double _RunningHigh = double.NaN;
+    public double RunningHigh {
+      get { return _RunningHigh; }
+      set { _RunningHigh = value; }
+    }
+
+    double _RunningLow = double.NaN;
+    public double RunningLow {
+      get { return _RunningLow; }
+      set { _RunningLow = value; }
+    }
+
+    public double RunningHeight { get { return RunningHigh - RunningLow; } }
 
     #region Fractals
     public FractalType Fractal {

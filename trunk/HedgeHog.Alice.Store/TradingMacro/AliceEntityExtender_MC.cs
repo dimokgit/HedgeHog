@@ -41,6 +41,18 @@ namespace HedgeHog.Alice.Store {
     }
     public SessionInfoAttribute() { }
   }
+  public enum ScanCorridorFunction {
+    WaveDistance = 1,
+    WaveRelative = 2,
+    WaveDistance1 = 3,
+    WaveDistanceByHeight = 4
+  }
+  public enum TrailingWaveMethod {
+    WaveShort = 1,
+    WaveTrade = 2,
+    WaveMax = 3,
+    WaveMin = 4
+  }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
     Corridor_RH_2 = 4,
@@ -49,8 +61,8 @@ namespace HedgeHog.Alice.Store {
     RatesHeight = 10,
     RatesStDev = 11,
     RatesHeight_2 = 12,
-    WaveAverage = 13,
-    WaveDistance = 14,
+    WaveShort = 13,
+    WaveTradeStart = 14,
     Spread = 20,
     Zero = 25,
     PriceSpread = 26
@@ -65,8 +77,10 @@ namespace HedgeHog.Alice.Store {
     Auto = 1,
     Hot = 2,
     Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
-    Trailer = Trailer01 * 2, TrailerA = Trailer + Auto//8
+    Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
+    FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto//16
   }
+  public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {
     public bool Play;
     public DateTime StartDate;

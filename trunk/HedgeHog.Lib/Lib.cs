@@ -16,6 +16,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.ComponentModel;
 using System.Reactive.Linq;
+using System.Xml.Linq;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -40,8 +41,8 @@ namespace HedgeHog {
     /// <typeparam name="T"></typeparam>
     /// <param name="list"></param>
     /// <returns></returns>
-    public static T LastBC<T>(this IList<T> list) {
-      return list[list.Count - 1];
+    public static T LastBC<T>(this IList<T> list,int positionFromEnd = 1) {
+      return list[list.Count - positionFromEnd];
     }
     public static T LastByCountOrDefault<T>(this IList<T> list) {
       return list.Count == 0 ? default(T) : list.LastBC();
@@ -132,6 +133,12 @@ namespace HedgeHog {
         return body.Member.Name;
     }
 
+
+    public static string ToXml(this object o, SaveOptions saveOptions = SaveOptions.None) {
+      var x = new XElement(o.GetType().Name,
+      o.GetType().GetProperties().Select(p => new XElement(p.Name, p.GetValue(o, null) + "")));
+      return x.ToString(saveOptions);
+    }
 
     public static object ToDataObject(this object o) {
       var d = o.GetType().GetProperties().Select(s => new DynamicProperty(s.Name, s.PropertyType));

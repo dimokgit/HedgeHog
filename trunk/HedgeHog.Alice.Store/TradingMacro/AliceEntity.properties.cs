@@ -248,6 +248,62 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+
+
+    string _TestCorridorDistanceRatio = "";
+    [DisplayName("TestCorridorDistanceRatio")]
+    [Category(categoryTest)]
+    public string TestCorridorDistanceRatio {
+      get { return _TestCorridorDistanceRatio; }
+      set {
+        if (_TestCorridorDistanceRatio != value) {
+          _TestCorridorDistanceRatio = value;
+          OnPropertyChanged("TestCorridorDistanceRatio");
+        }
+      }
+    }
+
+    string _TestPriceCmaLevels = "";
+    [DisplayName("Price CMA Levels")]
+    [Category(categoryTest)]
+    public string TestPriceCmaLevels {
+      get { return _TestPriceCmaLevels; }
+      set {
+        if (_TestPriceCmaLevels != value) {
+          _TestPriceCmaLevels = value;
+          OnPropertyChanged("TestPriceCmaLevels");
+        }
+      }
+    }
+
+    string _TestStopRateWaveOffset = "";
+    [DisplayName("Stop Rate Wave Offset")]
+    [Category(categoryTest)]
+    public string TestStopRateWaveOffset {
+      get { return _TestStopRateWaveOffset; }
+      set {
+        if (_TestStopRateWaveOffset != value) {
+          _TestStopRateWaveOffset = value;
+          OnPropertyChanged("TestStopRateWaveOffset");
+        }
+      }
+    }
+
+    string _TestPLToCorridorExitRatio = "";
+    [DisplayName("PLToCorridorExitRatio")]
+    [Category(categoryTest)]
+    public string TestPLToCorridorExitRatio {
+      get { return _TestPLToCorridorExitRatio; }
+      set {
+        if (_TestPLToCorridorExitRatio != value) {
+          _TestPLToCorridorExitRatio = value;
+          OnPropertyChanged("TestPLToCorridorExitRatio");
+        }
+      }
+    }
+
+
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
     [Category(categoryActive)]
@@ -273,6 +329,20 @@ namespace HedgeHog.Alice.Store {
           MovingAverageTypeInt = (int)value;
           OnPropertyChanged(TradingMacroMetadata.MovingAverageType);
         }
+      }
+    }
+
+    #endregion
+
+    #region LogTrades
+    bool _logTrades;
+    [DisplayName("Log Trades")]
+    [Category(categoryActive)]
+    public bool LogTRades{
+      get { return _logTrades; }
+      set {
+          _logTrades = value;
+          OnPropertyChanged("LohTrades");
       }
     }
 
@@ -346,11 +416,24 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    [DisplayName("Scan Corridor By")]
+    [Category(categoryActive)]
+    [Description("ScanCorridor By")]
+    public ScanCorridorFunction ScanCorridorBy {
+      get { return (ScanCorridorFunction)StDevAverageLeewayRatio; }
+      set {
+        if (StDevAverageLeewayRatio != (int)value) {
+          StDevAverageLeewayRatio = (int)value;
+          OnPropertyChanged("ScanCorridorBy");
+        }
+      }
+    }
+
     [DisplayName("Trailing Distance")]
     [Category(categoryActive)]
     [Description("TrailingDistanceFunction")]
-    public TradingMacroTakeProfitFunction TrailingDistanceFunction {
-      get { return (TradingMacroTakeProfitFunction)this.FreezLimit; }
+    public TrailingWaveMethod TrailingDistanceFunction {
+      get { return (TrailingWaveMethod)this.FreezLimit; }
       set {
         if (this.FreezLimit != (int)value) {
           this.FreezLimit = (int)value;
@@ -490,15 +573,15 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("StDev Minimum")]
+    [DisplayName("PLToCorridorExitRatio")]
     [Category(categoryActive)]
-    [Description("canTrade = StDevAverages[0] > X")]
-    public double StDevMinimum {
+    [Description("exit = PL * X > CorridorHeight")]
+    public double PLToCorridorExitRatio {
       get { return StDevToSpreadRatio; }
       set {
         if (StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
-          OnPropertyChanged(() => StDevMinimum);
+          OnPropertyChanged("PLToCorridorExitRatio");
         }
       }
     }
@@ -518,7 +601,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("CorridorDistanceRatio")]
     [Category(categoryActive)]
-    [Description("CanTrade = StartRate.Distance < TradingDistance * X")]
+    [Description("CanTrade = MagnetPrice.Between CenterOfMass")]
     public double CorridorDistanceRatio {
       get { return CorridorStDevRatioMax; }
       set {
@@ -599,7 +682,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Profit Only")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     [Description("Ex: if( PL > Limit) OpenTrade()")]
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
@@ -635,6 +718,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryCorridor = "Corridor";
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
+    public const string categoryTest = "Test";
 
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
@@ -657,12 +741,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryXXX)]
-    [DisplayName("Reverse Power")]
-    [Description("Calc power from rates.OrderBarsDescending().")]
-    public bool ReversePower_ {
+    [Category(categoryActive)]
+    [DisplayName("Corr.Forward Only")]
+    [Description("IsCorridorForwardOnly")]
+    public bool IsCorridorForwardOnly {
       get { return ReversePower; }
-      set { ReversePower = value; }
+      set {
+        if (ReversePower == value) return;
+        ReversePower = value;
+        OnPropertyChanged(() => IsCorridorForwardOnly);
+      }
     }
 
 
@@ -791,15 +879,15 @@ namespace HedgeHog.Alice.Store {
 
     }
 
-    [DisplayName("Corridor Minimum Length Ratio")]
-    [Category(categoryXXX_NU)]
-    [Description("Not used")]
-    public int CorridorMinimumLengthRatio {
-      get { return BarPeriodsHigh; }
+    [DisplayName("Price CMA Value")]
+    [Category(categoryActive)]
+    [Description("MovingAverageValue enum")]
+    public MovingAverageValues MovingAverageValue {
+      get { return (MovingAverageValues)BarPeriodsHigh; }
       set {
-        if (BarPeriodsHigh != value) {
-          BarPeriodsHigh = value;
-          OnPropertyChanged(TradingMacroMetadata.CorridorMinimumLengthRatio);
+        if (BarPeriodsHigh != (int)value) {
+          BarPeriodsHigh = (int)value;
+          OnPropertyChanged(() => MovingAverageValue);
         }
       }
     }
@@ -1009,21 +1097,6 @@ namespace HedgeHog.Alice.Store {
         if (VolumeTresholdIterations != value) {
           VolumeTresholdIterations = value;
           OnPropertyChanged("VolumeTresholdIterations_");
-        }
-      }
-    }
-
-    #endregion
-    #region MagnetPriceWaveRatio
-    [DisplayName("Magnet Price Wave Ratio")]
-    [Description("(RateCross - RateCross).Duration>Rates.Count/X")]
-    [Category(categoryXXX_NU)]
-    public double MagnetPriceWaveRatio {
-      get { return StDevAverageLeewayRatio; }
-      set {
-        if (StDevAverageLeewayRatio != value) {
-          StDevAverageLeewayRatio = value;
-          OnPropertyChanged("MagnetPriceWaveRatio");
         }
       }
     }
@@ -1264,7 +1337,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    WaveInfo _waveShort = new WaveInfo();
+    readonly WaveInfo _waveShort;
     public WaveInfo WaveShort { get { return _waveShort; } }
   }
 }
