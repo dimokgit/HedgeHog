@@ -55,6 +55,9 @@ namespace HedgeHog.Charter.FileMetadata.Metadata
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Charter;component/CharterControl.xaml")); } }
 
+            /// <summary>Represents x:Key="BoolToColorConverter"/></summary>
+            public static string BoolToColorConverterKey { get { return "BoolToColorConverter"; } }
+
             /// <summary>Represents x:Key="DraggArrowUp"/></summary>
             public static string DraggArrowUpKey { get { return "DraggArrowUp"; } }
 
@@ -293,8 +296,8 @@ namespace HedgeHog.Charter.Metadata
     /// <summary>Metadata for class <see cref="HedgeHog.Charter.DraggableManager"/></summary>
     public static class DraggableManagerMetadata
     {
-                /// <summary>Refers to method <see cref="HedgeHog.Charter.DraggableManager.SetHorizontalAnchor"/></summary>
-        public const string SetHorizontalAnchor = "SetHorizontalAnchor";
+                /// <summary>Refers to method <see cref="HedgeHog.Charter.DraggableManager.SetAnchor"/></summary>
+        public const string SetAnchor = "SetAnchor";
 
 
     }
@@ -366,11 +369,11 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.HeightInPips"/></summary>
         public const string HeightInPips = "HeightInPips";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveHeightInPips"/></summary>
-        public const string _WaveHeightInPips = "_WaveHeightInPips";
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._RatesStDevInPips"/></summary>
+        public const string _RatesStDevInPips = "_RatesStDevInPips";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveHeightInPips"/></summary>
-        public const string WaveHeightInPips = "WaveHeightInPips";
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RatesStDevInPips"/></summary>
+        public const string RatesStDevInPips = "RatesStDevInPips";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorHeightInPips"/></summary>
         public const string _CorridorHeightInPips = "_CorridorHeightInPips";
@@ -378,23 +381,23 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightInPips"/></summary>
         public const string CorridorHeightInPips = "CorridorHeightInPips";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorDistance"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._RatesStDevInPips"/></summary>
         public const string _CorridorDistance = "_CorridorDistance";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorDistance"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RatesStDevInPips"/></summary>
         public const string CorridorDistance = "CorridorDistance";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorSpread"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorRatesStDevInPips"/></summary>
         public const string _CorridorSpread = "_CorridorSpread";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorRatesStDevInPips"/></summary>
         public const string CorridorSpread = "CorridorSpread";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._WaveDistance"/></summary>
-        public const string _WaveLength = "_WaveLength";
+        public const string _WaveDistance = "_WaveDistance";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveDistance"/></summary>
-        public const string WaveLength = "WaveLength";
+        public const string WaveDistance = "WaveDistance";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public const string Header = "Header";
@@ -458,9 +461,6 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedPrice1Y"/></summary>
         public const string animatedPrice1Y = "animatedPrice1Y";
-
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedDataSource1"/></summary>
-        public const string animatedDataSource1 = "animatedDataSource1";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.animatedVoltTimeX"/></summary>
         public const string animatedVoltTimeX = "animatedVoltTimeX";
@@ -639,6 +639,30 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineAvgBid"/></summary>
         public const string LineAvgBid = "LineAvgBid";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._lineTimeShortDraggablePoint"/></summary>
+        public const string _lineTimeShortDraggablePoint = "_lineTimeShortDraggablePoint";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._lineTimeShort"/></summary>
+        public const string _lineTimeShort = "_lineTimeShort";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineTimeShort"/></summary>
+        public const string LineTimeShort = "LineTimeShort";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl._lineTimeShortDraggablePoint_PositionChanged"/></summary>
+        public const string _lineTimeShortDraggablePoint_PositionChanged = "_lineTimeShortDraggablePoint_PositionChanged";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._lineTimeMiddleDraggablePoint"/></summary>
+        public const string _lineTimeMiddleDraggablePoint = "_lineTimeMiddleDraggablePoint";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._lineTimeMiddle"/></summary>
+        public const string _lineTimeMiddle = "_lineTimeMiddle";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineTimeMiddle"/></summary>
+        public const string LineTimeMiddle = "LineTimeMiddle";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl._lineTimeMiddleDraggablePoint_PositionChanged"/></summary>
+        public const string _lineTimeMiddleDraggablePoint_PositionChanged = "_lineTimeMiddleDraggablePoint_PositionChanged";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._lineTimeMax"/></summary>
         public const string _lineTimeMax = "_lineTimeMax";
 
@@ -695,6 +719,12 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GannLine"/></summary>
         public const string GannLine = "GannLine";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._trendLinesH"/></summary>
+        public const string _trendLinesH = "_trendLinesH";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._trendLinesY"/></summary>
+        public const string _trendLinesY = "_trendLinesY";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.SetTrendLines"/></summary>
         public const string SetTrendLines = "SetTrendLines";
@@ -756,14 +786,23 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnGannAngleChanged"/></summary>
         public const string OnGannAngleChanged = "OnGannAngleChanged";
 
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorStopPointX"/></summary>
+        public const string _CorridorStopPointX = "_CorridorStopPointX";
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStopPointX"/></summary>
+        public const string CorridorStopPointX = "CorridorStopPointX";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl._CorridorStopPointX_GotFocus"/></summary>
+        public const string _CorridorStopPointX_GotFocus = "_CorridorStopPointX_GotFocus";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl._CorridorStopPointX_PreviewMouseLeftButtonDown"/></summary>
+        public const string _CorridorStopPointX_PreviewMouseLeftButtonDown = "_CorridorStopPointX_PreviewMouseLeftButtonDown";
+
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._CorridorStartPointX"/></summary>
         public const string _CorridorStartPointX = "_CorridorStartPointX";
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStartPointX"/></summary>
         public const string CorridorStartPointX = "CorridorStartPointX";
-
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl._CorridorStartPointX_PreviewMouseUp"/></summary>
-        public const string _CorridorStartPointX_PreviewMouseUp = "_CorridorStartPointX_PreviewMouseUp";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl._CorridorStartPointX_GotFocus"/></summary>
         public const string _CorridorStartPointX_GotFocus = "_CorridorStartPointX_GotFocus";
@@ -921,14 +960,17 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.AdjustDraggablePointByPip"/></summary>
         public const string AdjustDraggablePointByPip = "AdjustDraggablePointByPip";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseToggleCanTrade"/></summary>
-        public const string RaiseToggleCanTrade = "RaiseToggleCanTrade";
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseActivateTrading"/></summary>
+        public const string RaiseActivateTrading = "RaiseActivateTrading";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseClearStartTime"/></summary>
         public const string RaiseClearStartTime = "RaiseClearStartTime";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.plotter_KeyDown"/></summary>
         public const string plotter_KeyDown = "plotter_KeyDown";
+
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.CorridorStopPositionOld"/></summary>
+        public const string CorridorStopPositionOld = "CorridorStopPositionOld";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.CorridorStartPositionOld"/></summary>
         public const string CorridorStartPositionOld = "CorridorStartPositionOld";
@@ -938,6 +980,12 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.corridorStartDateScheduler"/></summary>
         public const string corridorStartDateScheduler = "corridorStartDateScheduler";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.CorridorStopPointX_IsMouseCapturedChanged"/></summary>
+        public const string CorridorStopPointX_IsMouseCapturedChanged = "CorridorStopPointX_IsMouseCapturedChanged";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.CorridorStopPointX_PositionChanged"/></summary>
+        public const string CorridorStopPointX_PositionChanged = "CorridorStopPointX_PositionChanged";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.CorridorStartPointX_IsMouseCapturedChanged"/></summary>
         public const string CorridorStartPointX_IsMouseCapturedChanged = "CorridorStartPointX_IsMouseCapturedChanged";
@@ -953,6 +1001,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnPlay"/></summary>
         public const string OnPlay = "OnPlay";
+
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnCorridorStopPositionChanged"/></summary>
+        public const string OnCorridorStopPositionChanged = "OnCorridorStopPositionChanged";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.OnCorridorStartPositionChanged"/></summary>
         public const string OnCorridorStartPositionChanged = "OnCorridorStartPositionChanged";
@@ -1021,20 +1072,20 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.HeightInPips"/></summary>
         public static PropertyPath HeightInPipsPath { get { return new PropertyPath("HeightInPips"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveHeightInPips"/></summary>
-        public static PropertyPath WaveHeightInPipsPath { get { return new PropertyPath("WaveHeightInPips"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RatesStDevInPips"/></summary>
+        public static PropertyPath RatesStDevInPipsPath { get { return new PropertyPath("RatesStDevInPips"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorHeightInPips"/></summary>
         public static PropertyPath CorridorHeightInPipsPath { get { return new PropertyPath("CorridorHeightInPips"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorDistance"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.RatesStDevInPips"/></summary>
         public static PropertyPath CorridorDistancePath { get { return new PropertyPath("CorridorDistance"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorSpread"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorRatesStDevInPips"/></summary>
         public static PropertyPath CorridorSpreadPath { get { return new PropertyPath("CorridorSpread"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.WaveDistance"/></summary>
-        public static PropertyPath WaveLengthPath { get { return new PropertyPath("WaveLength"); } }
+        public static PropertyPath WaveDistancePath { get { return new PropertyPath("WaveDistance"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.Header"/></summary>
         public static PropertyPath HeaderPath { get { return new PropertyPath("Header"); } }
@@ -1144,6 +1195,12 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineAvgBid"/></summary>
         public static PropertyPath LineAvgBidPath { get { return new PropertyPath("LineAvgBid"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineTimeShort"/></summary>
+        public static PropertyPath LineTimeShortPath { get { return new PropertyPath("LineTimeShort"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LineTimeMiddle"/></summary>
+        public static PropertyPath LineTimeMiddlePath { get { return new PropertyPath("LineTimeMiddle"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.lineTimeMax"/></summary>
         public static PropertyPath lineTimeMaxPath { get { return new PropertyPath("lineTimeMax"); } }
 
@@ -1197,6 +1254,9 @@ namespace HedgeHog.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.GannAngleOffsetPoint"/></summary>
         public static PropertyPath GannAngleOffsetPointPath { get { return new PropertyPath("GannAngleOffsetPoint"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStopPointX"/></summary>
+        public static PropertyPath CorridorStopPointXPath { get { return new PropertyPath("CorridorStopPointX"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.CorridorStartPointX"/></summary>
         public static PropertyPath CorridorStartPointXPath { get { return new PropertyPath("CorridorStartPointX"); } }

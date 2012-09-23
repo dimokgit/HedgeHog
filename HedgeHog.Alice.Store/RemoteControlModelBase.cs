@@ -229,7 +229,11 @@ namespace HedgeHog.Alice.Store {
     protected TradingMacro GetTradingMacro(string pair,int period) {
       return GetTradingMacros(pair).Where(tm => (int)tm.BarPeriod == period).SingleOrDefault();
     }
+    protected Dictionary<string, List<TradingMacro>> _tradingMacrosDictionary = new Dictionary<string, List<TradingMacro>>();
     protected List<TradingMacro> GetTradingMacros(string pair = "") {
+      if (!_tradingMacrosDictionary.ContainsKey(pair))
+        _tradingMacrosDictionary.Add(pair, TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && tm.IsActive && TradingMacroFilter(tm)).OrderBy(tm => tm.PairIndex).ToList());
+      return _tradingMacrosDictionary[pair];
       return TradingMacrosCopy.Where(tm => new[] { tm.Pair, "" }.Contains(pair) && tm.IsActive && TradingMacroFilter(tm)).OrderBy(tm => tm.PairIndex).ToList();
     }
     #endregion

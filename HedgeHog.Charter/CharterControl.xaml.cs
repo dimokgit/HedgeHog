@@ -143,18 +143,6 @@ namespace HedgeHog {
       }
     }
 
-    private double _WaveHeightInPips;
-    public double WaveHeightInPips {
-      get { return _WaveHeightInPips; }
-      set {
-        if (_WaveHeightInPips != value) {
-          _WaveHeightInPips = value;
-          OnPropertyChanged(CharterControlMetadata.WaveHeightInPips);
-          OnPropertyChanged(Metadata.CharterControlMetadata.WaveHeightInPips);
-        }
-      }
-    }
-
     private double _CorridorHeightInPips;
     public double CorridorHeightInPips {
       get { return _CorridorHeightInPips; }
@@ -167,32 +155,31 @@ namespace HedgeHog {
       }
     }
 
-    private double _CorridorDistance;
-    public double CorridorDistance {
-      get { return _CorridorDistance; }
+    private double _RatesStDevInPips;
+    public double RatesStDevInPips {
+      get { return _RatesStDevInPips; }
       set {
-        if (_CorridorDistance != value) {
-          _CorridorDistance = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorDistance);
+        if (_RatesStDevInPips != value) {
+          _RatesStDevInPips = value;
           OnPropertyChanged(Metadata.CharterControlMetadata.Header);
         }
       }
     }
     #region CorridorSpread
-    private double _CorridorSpread;
-    public double CorridorSpread {
-      get { return _CorridorSpread; }
+    private double _CorridorRatesStDevInPips;
+    public double CorridorRatesStDevInPips {
+      get { return _CorridorRatesStDevInPips; }
       set {
-        if (_CorridorSpread != value) {
-          _CorridorSpread = value;
-          OnPropertyChanged("CorridorSpread");
+        if (_CorridorRatesStDevInPips != value) {
+          _CorridorRatesStDevInPips = value;
+          OnPropertyChanged("CorridorRatesStDevInPips");
         }
       }
     }
 
     #endregion
-    private int _WaveDistance;
-    public int WaveDistance {
+    private double _WaveDistance;
+    public double WaveDistance {
       get { return _WaveDistance; }
       set {
         if (_WaveDistance != value) {
@@ -206,17 +193,16 @@ namespace HedgeHog {
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}w{6:n1}∆{7:n1}/{8:n0}‡{9:n0}"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}w{6:n1}∆{7:n1}/{8:n0}‡"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
           /*3*/, CorridorAngle
           /*4*/, HeightInPips
           /*5*/, CorridorHeightInPips
-          /*6*/, WaveHeightInPips
-          /*7*/, CorridorSpread
-          /*8*/, CorridorDistance
-          /*9*/, WaveDistance
+          /*6*/, RatesStDevInPips
+          /*7*/, CorridorRatesStDevInPips
+          /*8*/, WaveDistance
           );
       }
     }
@@ -299,7 +285,6 @@ namespace HedgeHog {
     EnumerableDataSource<double> animatedDataSourceBid = null;
 
     List<double> animatedPrice1Y = new List<double>();
-    EnumerableDataSource<double> animatedDataSource1 = null;
 
     List<DateTime> animatedVoltTimeX = new List<DateTime>();
     List<double> animatedVoltValueY = new List<double>();
@@ -1019,18 +1004,20 @@ namespace HedgeHog {
 
       #region Add Main Graph
       {
+
         EnumerableDataSource<DateTime> xSrc = new EnumerableDataSource<DateTime>(animatedTimeX);
+
+        EnumerableDataSource<double> animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
+        animatedDataSource1.SetYMapping(y => y);
+        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
+          .Description.LegendItem.Visibility = Visibility.Collapsed;
+
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedDataSource = new EnumerableDataSource<double>(animatedPriceY);
         animatedDataSource.SetYMapping(y => y);
         this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColorAsk, 1, "");
         this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
-
-        animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
-        animatedDataSource1.SetYMapping(y => y);
-        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
-          .Description.LegendItem.Visibility = Visibility.Collapsed;
-
+        
         if (false) {
           animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
           animatedDataSourceBid.SetYMapping(y => y);
@@ -1394,6 +1381,10 @@ namespace HedgeHog {
           ReAdjustXY(animatedTime0X, ticks.Count());
           ReAdjustXY(animatedPriceBidY, ticks.Count());
           ReAdjustXY(animatedPrice1Y, ticks.Count());
+          var min = animatedPriceY.Min();
+          var max = animatedPriceY.Max();
+          _trendLinesH = max - min;
+          _trendLinesY = min + (_trendLinesH) / 2;
           {
             var i = 0;
             var lastRate = ticks.Aggregate((rp, rn) => {

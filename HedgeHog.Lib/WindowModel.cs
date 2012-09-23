@@ -141,7 +141,7 @@ namespace HedgeHog.Models {
     #endregion
   }
 
-  public class ObservableValue<TValue> : ModelBase{
+  public class ObservableValue<TValue>:ModelBase{
     private TValue _Value;
     public TValue Value {
       get { return _Value; }
@@ -149,11 +149,31 @@ namespace HedgeHog.Models {
         if (_Value != null && _Value.Equals(value)) return;
         _Value = value;
         RaisePropertyChanged("Value");
+        RaiseValueChanged();
       }
     }
-    public ObservableValue() {
+    #region ValueChanged Event
+    event EventHandler<EventArgs> ValueChangedEvent;
+    public event EventHandler<EventArgs> ValueChanged {
+      add {
+        if (ValueChangedEvent == null || !ValueChangedEvent.GetInvocationList().Contains(value))
+          ValueChangedEvent += value;
+      }
+      remove {
+        ValueChangedEvent -= value;
+      }
+    }
+    protected void RaiseValueChanged() {
+      if (ValueChangedEvent != null) ValueChangedEvent(this, new EventArgs());
+    }
+    #endregion
+
+    public ObservableValue(TValue value) {
+      this.Value = value;
     }
     ~ObservableValue() {
+      if (ValueChangedEvent!=null)
+        ValueChangedEvent.GetInvocationList().OfType<EventHandler<EventArgs>>().ToList().ForEach(eh => ValueChangedEvent -= eh);
     }
 
   }

@@ -114,7 +114,6 @@ namespace HedgeHog.Alice.Store {
           _RatesHeight = value;
           RaisePropertyChanged(() => RatesHeight);
           RaisePropertyChanged(() => RatesHeightInPips);
-          RaisePropertyChanged(()=>StDevToRatesHeight);
         }
       }
     }
@@ -122,24 +121,30 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    public double StDevToRatesHeight { get { return StDev / RatesHeight; } }
     private double _StDev = double.NaN;
     public double StDev {
-      get { return _StDev; }
+      get {
+        if (double.IsNaN(_StDev)) throw new NullReferenceException();
+        return _StDev;
+      }
       set {
         if (_StDev == value) return;
         _StDev = value;
         RaisePropertyChanged(() => StDev);
         RaisePropertyChanged(() => StDevInPips);
-        RaisePropertyChanged(() => StDevToRatesHeight);
       }
     }
     public double StDevInPips { get { return TradesManagerStatic.InPips(StDev, _pipSize); } }
 
-    public double Slope { get; private set; }
+    double _Slope = double.NaN;
+    public double Slope {
+      get {
+        if (double.IsNaN(_Slope)) throw new NullReferenceException();
+        return _Slope; 
+      }
+      set { _Slope = value; }
+    }
     public double Angle { get { return Slope.Angle(_pipSize); } }
-
-    public Rate[] GetRates(IEnumerable<Rate> rates) { return rates.Skip(rates.Count() - Periods).ToArray(); }
 
     double _HeightUp0= double.NaN;
     public double HeightUp0 {
@@ -243,16 +248,6 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    int _periods;
-    public int Periods {
-      get { return _periods; }
-      set {
-        var raise = _periods / value > 2;
-        _periods = value;
-        if (raise)
-          RaisePeriodsJumped();
-      }
-    }
     public int Iterations { get; set; }
 
     public CorridorStatistics() {
@@ -260,10 +255,10 @@ namespace HedgeHog.Alice.Store {
     }
     public CorridorStatistics(TradingMacro tm, IList<Rate> rates, double stDev,double[] coeffs) {
       this.TradingMacro = tm;
-      Init(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2,rates.Count, rates.Min(r => r.StartDate), rates.Max(r => r.StartDate), 0, 0);
+      Init(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2, 0, 0);
     }
-    public CorridorStatistics(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, LineInfo lineHigh, LineInfo lineLow, int periods, DateTime endDate, DateTime startDate) {
-      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, periods, endDate, startDate, 0,0);
+    public CorridorStatistics(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown) {
+      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, 0,0);
     }
 
     public void Init(CorridorStatistics cs,double pipSize) {
@@ -271,7 +266,7 @@ namespace HedgeHog.Alice.Store {
       this.priceLine = cs.priceLine;
       this.priceHigh = cs.priceHigh;
       this.priceLow = cs.priceLow;
-      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.Periods, cs.EndDate, cs.StartDate, cs.Iterations, cs.CorridorCrossesCount);
+      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown,  cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         LegInfos.Clear();
@@ -281,13 +276,13 @@ namespace HedgeHog.Alice.Store {
         () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
     }
 
-    public void Init(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int periods, DateTime endDate, DateTime startDate, int iterations, int corridorCrossesCount) {
+    public void Init(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int iterations, int corridorCrossesCount) {
       this.Rates = rates;
-      this.StDev = stDev;
-      this.EndDate = endDate;
+      this.RatesStDev = this.Rates.StDev(r => r.PriceAvg);
+      this.StDev = stDev.IfNaN(this.RatesStDev);
+      this.EndDate = rates[0].StartDate;
       this.Coeffs = coeffs;
       this.Slope = rates.IsReversed() ? -coeffs[1] : coeffs[1];
-      this.Periods = periods;
       this.Iterations = iterations;
       this.HeightUp = heightUp;
       this.HeightUp0 = heightUp0;
@@ -296,11 +291,25 @@ namespace HedgeHog.Alice.Store {
       this.CorridorCrossesCount = corridorCrossesCount;
       this.RatesHeight = this.Rates.Height(out _RatesMin,out _RatesMax);
       // Must the last one
-      this.StartDate = startDate;
+      this.StartDate = rates.LastBC().StartDate;
       RaisePropertyChanged("Height");
       RaisePropertyChanged("HeightInPips");
     }
 
+    #region RatesStDev
+    private double _RatesStDev;
+    public double RatesStDev {
+      get { return _RatesStDev; }
+      set {
+        if (_RatesStDev != value) {
+          _RatesStDev = value;
+          RaisePropertyChanged("RatesStDev");
+          RaisePropertyChanged("RatesStDevInPips");
+        }
+      }
+    }
+    public double RatesStDevInPips { get { return TradesManagerStatic.InPips(RatesStDev, _pipSize); } }
+    #endregion
 
     #region CorridorFib
     private double _buyStopByCorridor;
@@ -456,18 +465,6 @@ namespace HedgeHog.Alice.Store {
       get { return _Rates; }
       set {
         _Rates = value;
-        this._Distance = value.Distance();
-      }
-    }
-
-    private double _Distance;
-
-    public double Distance {
-      get { return _Distance; }
-      set {
-        if (_Distance != value) return;
-        _Distance = value;
-        RaisePropertyChanged("Distance");
       }
     }
 

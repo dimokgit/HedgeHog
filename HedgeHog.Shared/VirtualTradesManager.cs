@@ -43,9 +43,23 @@ namespace HedgeHog.Shared {
       set { barMinutes = value; }
     }
     public Func< Dictionary<string, List<Rate>>> RatesByPair;
-    public double GetPipSize(string pair) { return GetOffer(pair).PointSize; }
+
+    Dictionary<string, double> _pipSizeDictionary = new Dictionary<string, double>();
+    public double GetPipSize(string pair) { 
+      if(!_pipSizeDictionary.ContainsKey(pair))
+        _pipSizeDictionary.Add(pair,GetOffer(pair).PointSize);
+      return _pipSizeDictionary[pair];
+    }
     public int GetDigits(string pair) { return GetOffer(pair).Digits; }
-    public double GetPipCost(string pair) { return GetOffer(pair).PipCost; }
+
+    IDictionary<string, double> _pipCostDictionary = new Dictionary<string, double>();
+    public double GetPipCost(string pair) {
+      if (!_pipCostDictionary.ContainsKey(pair)) {
+        _pipCostDictionary.Add(pair, GetOffer(pair).PipCost);
+        }
+      return _pipCostDictionary[pair];
+    }
+    
     public int GetBaseUnitSize(string pair) { return baseUnits[pair]; }
 
     public Func<Trade, double> CommissionByTrade { get; set; }
@@ -53,9 +67,12 @@ namespace HedgeHog.Shared {
 
     public bool IsLoggedIn { get { return true; } }
     public double Leverage(string pair) { return (double)GetBaseUnitSize(pair)/ GetOffer(pair).MMR; }
+    IList<Rate> _serverTimeRates;
     public DateTime ServerTime {
       get {
-        return RatesByPair().First().Value.GetVirtualServerTime(barMinutes);
+        if(_serverTimeRates == null)
+          _serverTimeRates = RatesByPair().First().Value;
+        return _serverTimeRates.GetVirtualServerTime(barMinutes);
       }
     }
 
@@ -235,7 +252,12 @@ namespace HedgeHog.Shared {
     }
 
     public Offer[] GetOffers() { return offersCollection.ToArray(); }
-    public Offer GetOffer(string pair) { return offersCollection.Where(o => o.Pair == pair).Single(); }
+    Dictionary<string, Offer> _offersDictionary = new Dictionary<string, Offer>();
+    public Offer GetOffer(string pair) {
+      if (!_offersDictionary.ContainsKey(pair))
+      _offersDictionary.Add(pair, offersCollection.Where(o => o.Pair == pair).Single());
+      return _offersDictionary[pair];
+    }
 
     public event EventHandler<RequestEventArgs> RequestFailed;
     public event OrderRemovedEventHandler OrderRemoved;

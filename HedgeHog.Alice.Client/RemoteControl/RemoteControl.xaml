@@ -271,23 +271,7 @@
                 <WrapPanel Name="CorridorBlock" Background="PapayaWhip">
                   <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-1,0"/>
                   <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
-                  <TextBlock Text="{Binding StDevAverages[0],StringFormat=[{0:n1}}" Margin="-3,0,-2,0" ToolTip="StDevAverages[0]" />
-                  <TextBlock Text="{Binding RatesStDevInPips,StringFormat=|{0:n0}]}" Margin="0,0" ToolTipService.ShowDuration="300000">
-                    <TextBlock.ToolTip>
-                      <StackPanel>
-                        <TextBlock>CmaLotSize :<TextBlock Text="{Binding CmaLotSize}"/></TextBlock>
-                        <TextBlock>CmaOffset :<TextBlock Text="{Binding CmaOffset,StringFormat=n1}"/></TextBlock>
-                        <TextBlock ToolTip="CorridorTimeByTradeStartTimeRatio">CorTmByTrdTmRatio :<TextBlock Text="{Binding CorridorTimeByTradeStartTimeRatio,StringFormat=n1}"/></TextBlock>
-                        <TextBlock>WaveShort.Length :<TextBlock Text="{Binding WaveShort.LengthCma,StringFormat=n0}"/></TextBlock>
-                        <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
-                          <ListBox.ItemTemplate>
-                            <DataTemplate>
-                              <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
-                            </DataTemplate>
-                          </ListBox.ItemTemplate>
-                       </ListBox>
-                      </StackPanel>
-                    </TextBlock.ToolTip>
+                  <TextBlock Text="{Binding CorridorStats.RatesStDevInPips,StringFormat=|{0:n0}]}" Margin="0,0">
                   </TextBlock>
                 <!--<LineBreak/>
                 <TextBlock Margin="-3">/</TextBlock>
@@ -346,7 +330,29 @@
             <DataTemplate>
               <TextBlock Text="{Binding Strategy}" 
                          Background="{Binding Strategy,Converter={x:Static Member=lib:CompareValueConverter.Default},ConverterParameter=None}"
-                         ></TextBlock>
+                          ToolTipService.ShowDuration="3000000">
+                    <TextBlock.ToolTip>
+                      <StackPanel>
+                        <StackPanel.Resources>
+                          <Style BasedOn="{StaticResource {x:Type TextBlock}}"  TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Courier New"/>
+                          </Style>
+                        </StackPanel.Resources>
+                        <TextBlock>WaveLength....... :<TextBlock Text="{Binding WaveLength}"/></TextBlock>
+                        <TextBlock>WaveShort.Length  :<TextBlock Text="{Binding WaveShort.Rates.Count,StringFormat=n0}"/></TextBlock>
+                        <TextBlock>WaveShort.StDev.. :<TextBlock Text="{Binding WaveShort.RatesStDevInPips,StringFormat=n0}"/></TextBlock>
+                        
+                        <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
+                          <ListBox.ItemTemplate>
+                            <DataTemplate>
+                              <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
+                            </DataTemplate>
+                          </ListBox.ItemTemplate>
+                       </ListBox>
+                      </StackPanel>
+                    </TextBlock.ToolTip>
+                
+              </TextBlock>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>
