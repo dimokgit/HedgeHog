@@ -1,19 +1,18 @@
-﻿using HedgeHog;
+﻿using HedgeHog.Alice.Store;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Diagnostics;
-using System.Threading;
+using System.Linq.Expressions;
 
 namespace TestHH
 {
     
     
     /// <summary>
-    ///This is a test class for BlockingConsumerBaseTest and is intended
-    ///to contain all BlockingConsumerBaseTest Unit Tests
+    ///This is a test class for TradingMacroTest and is intended
+    ///to contain all TradingMacroTest Unit Tests
     ///</summary>
   [TestClass()]
-  public class BlockingConsumerBaseTest {
+  public class TradingMacroTest {
 
 
     private TestContext testContextInstance;
@@ -62,20 +61,16 @@ namespace TestHH
     #endregion
 
 
-    public void AddTestHelper<T>() {
-    }
-
+    /// <summary>
+    ///A test for OnPropertyChanged
+    ///</summary>
     [TestMethod()]
-    public void AddTest() {
-      BlockingConsumerBase<string> target = new BlockingConsumerBase<string>(s=>TestContext.WriteLine(s));
-      target.Add("A");
-      target.Add("A");
-      target.Add("B");
-      target.Add("A");
-      target.Add("C");
-      target.Add("B");
-      Thread.Sleep(1000);
-      target.Add("C");
+    [DeploymentItem("HedgeHog.Alice.Store.dll")]
+    public void OnPropertyChangedTest() {
+      TradingMacro_Accessor target = new TradingMacro_Accessor(); // TODO: Initialize to an appropriate value
+      Expression<Func<object>> property = ()=>target.RateLast; // TODO: Initialize to an appropriate value
+      target.OnPropertyChanged(property);
+      Assert.Inconclusive("A method that does not return a value cannot be verified.");
     }
   }
 }

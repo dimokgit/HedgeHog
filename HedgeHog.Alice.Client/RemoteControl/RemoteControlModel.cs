@@ -359,6 +359,7 @@ namespace HedgeHog.Alice.Client {
       public int StopRateWaveOffset { get; set; }
       public double PLToCorridorExitRatio { get; set; }
       public double CorridorDistanceRatio { get; set; }
+      public int BarsCount { get; set; }
     }
 
     static class TestParameters {
@@ -366,13 +367,15 @@ namespace HedgeHog.Alice.Client {
       public static int[] StopRateWaveOffsets = new int[0];
       public static double[] PLToCorridorExitRatios = new double[0];
       public static double[] CorridorDistanceRatio = new double[0];
+      public static int[] BarsCount = new int[0];
       
       public static Queue<TestParameter> GenerateTestParameters() {
         var ret = from p in PriceCmaLevels
                   from s in StopRateWaveOffsets
                   from pl in PLToCorridorExitRatios
                   from cd in CorridorDistanceRatio
-                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, PLToCorridorExitRatio = pl, CorridorDistanceRatio = cd };
+                  from pler in BarsCount
+                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, PLToCorridorExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -383,10 +386,25 @@ namespace HedgeHog.Alice.Client {
         return;
       }
       var c = new[] { ',', ' ' };
-      TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
-      TestParameters.StopRateWaveOffsets = tmOriginal.TestStopRateWaveOffset.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
-      TestParameters.PLToCorridorExitRatios = tmOriginal.TestPLToCorridorExitRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s)).ToArray();
-      TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s)).ToArray();
+
+      if (tmOriginal.UseTestFile) {
+        var paramsDict = Lib.ReadTestParameters();
+        foreach (var p in paramsDict) {
+          tmOriginal.SetProperty(p.Key, p.Value);
+        }
+      }
+
+      TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
+        .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
+      TestParameters.StopRateWaveOffsets = tmOriginal.TestStopRateWaveOffset.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
+        .DefaultIfEmpty(tmOriginal.StopRateWaveOffset).ToArray();
+      TestParameters.PLToCorridorExitRatios = tmOriginal.TestPLToCorridorExitRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+        .DefaultIfEmpty(tmOriginal.PLToCorridorExitRatio).ToArray();
+      TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+        .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
+      TestParameters.BarsCount = tmOriginal.TestBarsCount.Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
+        .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
+
       var testQueue = TestParameters.GenerateTestParameters();
       StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
     }
@@ -415,6 +433,7 @@ namespace HedgeHog.Alice.Client {
             tm.StopRateWaveOffset = testParameter.StopRateWaveOffset;
             tm.PLToCorridorExitRatio = testParameter.PLToCorridorExitRatio;
             tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
+            tm.BarsCount = testParameter.BarsCount;
           }
         }
         var tmToRun = tm;
@@ -985,11 +1004,13 @@ namespace HedgeHog.Alice.Client {
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-
-          Func<Rate, double> speedFoo = r => (tm.InPips(r.Mass.Value));//PriceStdDev
+          var mass = tm.RateLast.Mass;
+          Func<Rate, double> speedFoo = r => ((r.Mass.GetValueOrDefault(mass.GetValueOrDefault(0))));//PriceStdDev
           var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = speedFoo(r) }).ToArray();
           var speedAverages = new List<double>();
-          stDevBars.AverageByIterations(pb => pb.Speed, (v, a) => v >= a, tm.StDevTresholdIterations, speedAverages);
+          if (double.IsNaN(tm.MassLevelMax))
+            stDevBars.AverageByIterations(pb => pb.Speed, (v, a) => v >= a, tm.StDevTresholdIterations, speedAverages);
+          else speedAverages.AddRange(new[] { tm.MassLevelMax, tm.MassLevelMin });
           var voltageHigh = tm.VoltageHight.IfNaN(speedAverages.FirstOrDefault());
           var voltageLow = tm.VoltageAverage.IfNaN(speedAverages.LastOrDefault());
 

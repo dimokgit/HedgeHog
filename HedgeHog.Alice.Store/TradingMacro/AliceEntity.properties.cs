@@ -251,8 +251,21 @@ namespace HedgeHog.Alice.Store {
 
 
 
+    public string _TestBarsCount = "";
+    [DisplayName("BarsCount")]
+    [Category(categoryTest)]
+    public string TestBarsCount {
+      get { return _TestBarsCount; }
+      set {
+        if (_TestBarsCount != value) {
+          _TestBarsCount = value;
+          OnPropertyChanged("TestBarsCount");
+        }
+      }
+    }
+
     string _TestCorridorDistanceRatio = "";
-    [DisplayName("TestCorridorDistanceRatio")]
+    [DisplayName("CorridorDistanceRatio")]
     [Category(categoryTest)]
     public string TestCorridorDistanceRatio {
       get { return _TestCorridorDistanceRatio; }
@@ -263,6 +276,9 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+
+    [Category(categoryTest)]
+    public bool UseTestFile { get; set; }
 
     string _TestPriceCmaLevels = "";
     [DisplayName("Price CMA Levels")]
@@ -719,6 +735,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
     public const string categoryTest = "Test";
+    public const string categorySession = "Session";
 
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
@@ -730,14 +747,23 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
       }
     }
-    [Category(categoryXXX_NU)]
-    [DisplayName("Skewness Treshold")]
-    [Description("Skew.Between(-X,X)")]
-    public double SkewnessTreshold {
+    [Category(categoryActive)]
+    [DisplayName("RatesToStDev Min")]
+    public double RatesToStDevRatioMinimum {
       get { return CorridorRatioForRange; }
       set { 
         CorridorRatioForRange = value;
-        OnPropertyChanged("SkewnessTreshold");
+        OnPropertyChanged("RatesToStDevRatioMinimum");
+      }
+    }
+
+    [DisplayName("RatesToStDev Max")]
+    [Category(categoryActive)]
+    public double RatesToStDevRatioMaximum {
+      get { return FibMin; }
+      set {
+        FibMin = value;
+        OnPropertyChanged("RatesToStDevRatioMaximum");
       }
     }
 
@@ -754,13 +780,18 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [Category(categoryXXX)]
-    [DisplayName("Correlation Treshold")]
-    [Description("Ex: if(Corr >  X) return sell")]
-    public double CorrelationTreshold_ {
+    [Category(categoryActive)]
+    [DisplayName("RatesHeight Min")]
+    public double RatesHeightMinimum {
       get { return CorrelationTreshold; }
-      set { CorrelationTreshold = value; }
+      set {
+        if (CorrelationTreshold == value) return;
+        CorrelationTreshold = value;
+        OnPropertyChanged("RatesHeightMinimum");
+        OnPropertyChanged("RatesHeightMinimumInPips");
+      }
     }
+    public double RatesHeightMinimumInPips { get { return InPips(RatesHeightMinimum); } }
 
     [Category(categoryXXX)]
     [DisplayName("Range Ratio For TradeLimit")]
@@ -893,13 +924,13 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Price CMA Period Max")]
+    [DisplayName("Blackout Hours")]
     [Category(categoryActive)]
-    public int PriceCmaPeriodMax {
+    public int BlackoutHoursTimeframe {
       get { return CorridorIterationsIn; }
       set {
         CorridorIterationsIn = value;
-        OnPropertyChanged("PriceCmaPeriodMax");
+        OnPropertyChanged("BlackoutHoursTimeframe");
       }
     }
     [DisplayName("StopRate Wave Offset")]
@@ -909,19 +940,6 @@ namespace HedgeHog.Alice.Store {
       set {
         CorridorIterationsOut = value;
         OnPropertyChanged("StopRateWaveOffset");
-      }
-    }
-
-
-
-    [DisplayName("Wave Lines12 Ratio")]
-    [Description("Wave's Line1 and Line2 ratio")]
-    [Category(categoryXXX_NU)]
-    public double WaveLines12Ratio {
-      get { return FibMin; }
-      set { 
-        FibMin = value;
-        OnPropertyChanged(TradingMacroMetadata.WaveLines12Ratio);
       }
     }
 

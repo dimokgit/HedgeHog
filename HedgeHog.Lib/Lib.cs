@@ -17,6 +17,7 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Reactive.Linq;
 using System.Xml.Linq;
+using System.IO;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -27,6 +28,15 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static class Lib {
+
+    public static Dictionary<string, string> ReadTestParameters(string testFileName = "TestParams.txt") {
+      var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      var paramsText = File.ReadAllText(Path.Combine(path, testFileName));
+      var paramLines = paramsText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+      var paramsArray = paramLines.Select(pl => pl.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
+      var paramDict = paramsArray.Where(a => a.Length > 1).ToDictionary(pa => pa[0], pa => pa[1].Trim());
+      return paramDict;
+    }
 
     public static string CallingMethod(int skipFrames=1) {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
@@ -41,8 +51,11 @@ namespace HedgeHog {
     /// <typeparam name="T"></typeparam>
     /// <param name="list"></param>
     /// <returns></returns>
-    public static T LastBC<T>(this IList<T> list,int positionFromEnd = 1) {
+    public static T LastBC<T>(this IList<T> list, int positionFromEnd = 1) {
       return list[list.Count - positionFromEnd];
+    }
+    public static IEnumerable<T> LastBCs<T>(this IList<T> list, int positionFromEnd = 1) {
+      return list.Skip(list.Count - positionFromEnd);
     }
     public static T LastByCountOrDefault<T>(this IList<T> list) {
       return list.Count == 0 ? default(T) : list.LastBC();

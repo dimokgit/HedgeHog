@@ -45,7 +45,8 @@ namespace HedgeHog.Alice.Store {
     WaveDistance = 1,
     WaveRelative = 2,
     WaveDistance1 = 3,
-    WaveDistanceByHeight = 4
+    WaveDistanceByHeight = 4,
+    WaveStDev = 5
   }
   public enum TrailingWaveMethod {
     WaveShort = 1,
@@ -78,7 +79,11 @@ namespace HedgeHog.Alice.Store {
     Hot = 2,
     Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
     Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
-    FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto//16
+    FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto,//16
+    Deviator = FreeRoam * 2, DeviatorA = Deviator + Auto,//32
+    AfterWaver = Deviator * 2, AfterWaverA = AfterWaver + Auto,//64
+    Minimalist = AfterWaver * 2, MinimalistA = Minimalist + Auto,//128
+    Distancer = Minimalist * 2, DistancerA = Distancer + Auto//256
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {

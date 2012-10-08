@@ -144,6 +144,54 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<t_Trade> _t_Trade;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_BarHeight> t_BarHeight
+        {
+            get
+            {
+                if ((_t_BarHeight == null))
+                {
+                    _t_BarHeight = base.CreateObjectSet<t_BarHeight>("t_BarHeight");
+                }
+                return _t_BarHeight;
+            }
+        }
+        private ObjectSet<t_BarHeight> _t_BarHeight;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Report> t_Report
+        {
+            get
+            {
+                if ((_t_Report == null))
+                {
+                    _t_Report = base.CreateObjectSet<t_Report>("t_Report");
+                }
+                return _t_Report;
+            }
+        }
+        private ObjectSet<t_Report> _t_Report;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<v_BlackoutTime> v_BlackoutTime
+        {
+            get
+            {
+                if ((_v_BlackoutTime == null))
+                {
+                    _v_BlackoutTime = base.CreateObjectSet<v_BlackoutTime>("v_BlackoutTime");
+                }
+                return _v_BlackoutTime;
+            }
+        }
+        private ObjectSet<v_BlackoutTime> _v_BlackoutTime;
 
         #endregion
         #region AddTo Methods
@@ -186,6 +234,30 @@ namespace HedgeHog.DB
         public void AddTot_Trade(t_Trade t_Trade)
         {
             base.AddObject("t_Trade", t_Trade);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_BarHeight EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_BarHeight(t_BarHeight t_BarHeight)
+        {
+            base.AddObject("t_BarHeight", t_BarHeight);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Report EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Report(t_Report t_Report)
+        {
+            base.AddObject("t_Report", t_Report);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the v_BlackoutTime EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTov_BlackoutTime(v_BlackoutTime v_BlackoutTime)
+        {
+            base.AddObject("v_BlackoutTime", v_BlackoutTime);
         }
 
         #endregion
@@ -367,6 +439,58 @@ namespace HedgeHog.DB
             }
     
             return base.ExecuteFunction<BarsByMinutes_Result>("BarsByMinutes", pairParameter, periodParameter, dateEndParameter, barMinutesParameter, barsCountParameter);
+        }
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        /// <param name="pair">No Metadata Documentation available.</param>
+        /// <param name="period">No Metadata Documentation available.</param>
+        /// <param name="length">No Metadata Documentation available.</param>
+        /// <param name="startDate">No Metadata Documentation available.</param>
+        public ObjectResult<s_GetBarStats_Result> s_GetBarStats(global::System.String pair, Nullable<global::System.Int32> period, Nullable<global::System.Int32> length, Nullable<global::System.DateTime> startDate)
+        {
+            ObjectParameter pairParameter;
+            if (pair != null)
+            {
+                pairParameter = new ObjectParameter("Pair", pair);
+            }
+            else
+            {
+                pairParameter = new ObjectParameter("Pair", typeof(global::System.String));
+            }
+    
+            ObjectParameter periodParameter;
+            if (period.HasValue)
+            {
+                periodParameter = new ObjectParameter("Period", period);
+            }
+            else
+            {
+                periodParameter = new ObjectParameter("Period", typeof(global::System.Int32));
+            }
+    
+            ObjectParameter lengthParameter;
+            if (length.HasValue)
+            {
+                lengthParameter = new ObjectParameter("Length", length);
+            }
+            else
+            {
+                lengthParameter = new ObjectParameter("Length", typeof(global::System.Int32));
+            }
+    
+            ObjectParameter startDateParameter;
+            if (startDate.HasValue)
+            {
+                startDateParameter = new ObjectParameter("StartDate", startDate);
+            }
+            else
+            {
+                startDateParameter = new ObjectParameter("StartDate", typeof(global::System.DateTime));
+            }
+    
+            return base.ExecuteFunction<s_GetBarStats_Result>("s_GetBarStats", pairParameter, periodParameter, lengthParameter, startDateParameter);
         }
 
         #endregion
@@ -739,6 +863,248 @@ namespace HedgeHog.DB
         private global::System.Int32 _ID;
         partial void OnIDChanging(global::System.Int32 value);
         partial void OnIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> StartDateLocal
+        {
+            get
+            {
+                return _StartDateLocal;
+            }
+            set
+            {
+                OnStartDateLocalChanging(value);
+                ReportPropertyChanging("StartDateLocal");
+                _StartDateLocal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StartDateLocal");
+                OnStartDateLocalChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _StartDateLocal;
+        partial void OnStartDateLocalChanging(Nullable<global::System.DateTime> value);
+        partial void OnStartDateLocalChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> Row
+        {
+            get
+            {
+                return _Row;
+            }
+            set
+            {
+                OnRowChanging(value);
+                ReportPropertyChanging("Row");
+                _Row = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Row");
+                OnRowChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _Row;
+        partial void OnRowChanging(Nullable<global::System.Int32> value);
+        partial void OnRowChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_BarHeight")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_BarHeight : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_BarHeight object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="period">Initial value of the Period property.</param>
+        /// <param name="startDate">Initial value of the StartDate property.</param>
+        /// <param name="avgHeight">Initial value of the AvgHeight property.</param>
+        /// <param name="length">Initial value of the Length property.</param>
+        /// <param name="stDevHeight">Initial value of the StDevHeight property.</param>
+        public static t_BarHeight Createt_BarHeight(global::System.String pair, global::System.Int32 period, global::System.DateTimeOffset startDate, global::System.Double avgHeight, global::System.Int32 length, global::System.Double stDevHeight)
+        {
+            t_BarHeight t_BarHeight = new t_BarHeight();
+            t_BarHeight.Pair = pair;
+            t_BarHeight.Period = period;
+            t_BarHeight.StartDate = startDate;
+            t_BarHeight.AvgHeight = avgHeight;
+            t_BarHeight.Length = length;
+            t_BarHeight.StDevHeight = stDevHeight;
+            return t_BarHeight;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Period
+        {
+            get
+            {
+                return _Period;
+            }
+            set
+            {
+                if (_Period != value)
+                {
+                    OnPeriodChanging(value);
+                    ReportPropertyChanging("Period");
+                    _Period = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Period");
+                    OnPeriodChanged();
+                }
+            }
+        }
+        private global::System.Int32 _Period;
+        partial void OnPeriodChanging(global::System.Int32 value);
+        partial void OnPeriodChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTimeOffset StartDate
+        {
+            get
+            {
+                return _StartDate;
+            }
+            set
+            {
+                if (_StartDate != value)
+                {
+                    OnStartDateChanging(value);
+                    ReportPropertyChanging("StartDate");
+                    _StartDate = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("StartDate");
+                    OnStartDateChanged();
+                }
+            }
+        }
+        private global::System.DateTimeOffset _StartDate;
+        partial void OnStartDateChanging(global::System.DateTimeOffset value);
+        partial void OnStartDateChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double AvgHeight
+        {
+            get
+            {
+                return _AvgHeight;
+            }
+            set
+            {
+                OnAvgHeightChanging(value);
+                ReportPropertyChanging("AvgHeight");
+                _AvgHeight = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("AvgHeight");
+                OnAvgHeightChanged();
+            }
+        }
+        private global::System.Double _AvgHeight;
+        partial void OnAvgHeightChanging(global::System.Double value);
+        partial void OnAvgHeightChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Length
+        {
+            get
+            {
+                return _Length;
+            }
+            set
+            {
+                if (_Length != value)
+                {
+                    OnLengthChanging(value);
+                    ReportPropertyChanging("Length");
+                    _Length = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Length");
+                    OnLengthChanged();
+                }
+            }
+        }
+        private global::System.Int32 _Length;
+        partial void OnLengthChanging(global::System.Int32 value);
+        partial void OnLengthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double StDevHeight
+        {
+            get
+            {
+                return _StDevHeight;
+            }
+            set
+            {
+                OnStDevHeightChanging(value);
+                ReportPropertyChanging("StDevHeight");
+                _StDevHeight = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StDevHeight");
+                OnStDevHeightChanged();
+            }
+        }
+        private global::System.Double _StDevHeight;
+        partial void OnStDevHeightChanging(global::System.Double value);
+        partial void OnStDevHeightChanged();
 
         #endregion
     
@@ -924,6 +1290,111 @@ namespace HedgeHog.DB
         private global::System.Int32 _BaseUnitSize;
         partial void OnBaseUnitSizeChanging(global::System.Int32 value);
         partial void OnBaseUnitSizeChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Report")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_Report : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_Report object.
+        /// </summary>
+        /// <param name="time">Initial value of the Time property.</param>
+        /// <param name="eventType">Initial value of the EventType property.</param>
+        public static t_Report Createt_Report(global::System.DateTimeOffset time, global::System.String eventType)
+        {
+            t_Report t_Report = new t_Report();
+            t_Report.Time = time;
+            t_Report.EventType = eventType;
+            return t_Report;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTimeOffset Time
+        {
+            get
+            {
+                return _Time;
+            }
+            set
+            {
+                if (_Time != value)
+                {
+                    OnTimeChanging(value);
+                    ReportPropertyChanging("Time");
+                    _Time = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Time");
+                    OnTimeChanged();
+                }
+            }
+        }
+        private global::System.DateTimeOffset _Time;
+        partial void OnTimeChanging(global::System.DateTimeOffset value);
+        partial void OnTimeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String EventType
+        {
+            get
+            {
+                return _EventType;
+            }
+            set
+            {
+                OnEventTypeChanging(value);
+                ReportPropertyChanging("EventType");
+                _EventType = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("EventType");
+                OnEventTypeChanged();
+            }
+        }
+        private global::System.String _EventType;
+        partial void OnEventTypeChanging(global::System.String value);
+        partial void OnEventTypeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> TimeLocal
+        {
+            get
+            {
+                return _TimeLocal;
+            }
+            set
+            {
+                OnTimeLocalChanging(value);
+                ReportPropertyChanging("TimeLocal");
+                _TimeLocal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeLocal");
+                OnTimeLocalChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _TimeLocal;
+        partial void OnTimeLocalChanging(Nullable<global::System.DateTime> value);
+        partial void OnTimeLocalChanged();
 
         #endregion
     
@@ -1684,6 +2155,215 @@ namespace HedgeHog.DB
     /// <summary>
     /// No Metadata Documentation available.
     /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="v_BlackoutTime")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class v_BlackoutTime : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new v_BlackoutTime object.
+        /// </summary>
+        /// <param name="time">Initial value of the Time property.</param>
+        /// <param name="eventType">Initial value of the EventType property.</param>
+        /// <param name="timeStop">Initial value of the TimeStop property.</param>
+        public static v_BlackoutTime Createv_BlackoutTime(global::System.DateTimeOffset time, global::System.String eventType, global::System.DateTimeOffset timeStop)
+        {
+            v_BlackoutTime v_BlackoutTime = new v_BlackoutTime();
+            v_BlackoutTime.Time = time;
+            v_BlackoutTime.EventType = eventType;
+            v_BlackoutTime.TimeStop = timeStop;
+            return v_BlackoutTime;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTimeOffset Time
+        {
+            get
+            {
+                return _Time;
+            }
+            set
+            {
+                if (_Time != value)
+                {
+                    OnTimeChanging(value);
+                    ReportPropertyChanging("Time");
+                    _Time = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Time");
+                    OnTimeChanged();
+                }
+            }
+        }
+        private global::System.DateTimeOffset _Time;
+        partial void OnTimeChanging(global::System.DateTimeOffset value);
+        partial void OnTimeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String EventType
+        {
+            get
+            {
+                return _EventType;
+            }
+            set
+            {
+                if (_EventType != value)
+                {
+                    OnEventTypeChanging(value);
+                    ReportPropertyChanging("EventType");
+                    _EventType = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("EventType");
+                    OnEventTypeChanged();
+                }
+            }
+        }
+        private global::System.String _EventType;
+        partial void OnEventTypeChanging(global::System.String value);
+        partial void OnEventTypeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> TimeLocal
+        {
+            get
+            {
+                return _TimeLocal;
+            }
+            set
+            {
+                OnTimeLocalChanging(value);
+                ReportPropertyChanging("TimeLocal");
+                _TimeLocal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeLocal");
+                OnTimeLocalChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _TimeLocal;
+        partial void OnTimeLocalChanging(Nullable<global::System.DateTime> value);
+        partial void OnTimeLocalChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTimeOffset> TimeStart
+        {
+            get
+            {
+                return _TimeStart;
+            }
+            set
+            {
+                OnTimeStartChanging(value);
+                ReportPropertyChanging("TimeStart");
+                _TimeStart = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeStart");
+                OnTimeStartChanged();
+            }
+        }
+        private Nullable<global::System.DateTimeOffset> _TimeStart;
+        partial void OnTimeStartChanging(Nullable<global::System.DateTimeOffset> value);
+        partial void OnTimeStartChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTimeOffset TimeStop
+        {
+            get
+            {
+                return _TimeStop;
+            }
+            set
+            {
+                if (_TimeStop != value)
+                {
+                    OnTimeStopChanging(value);
+                    ReportPropertyChanging("TimeStop");
+                    _TimeStop = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("TimeStop");
+                    OnTimeStopChanged();
+                }
+            }
+        }
+        private global::System.DateTimeOffset _TimeStop;
+        partial void OnTimeStopChanging(global::System.DateTimeOffset value);
+        partial void OnTimeStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> TimeStartLocal
+        {
+            get
+            {
+                return _TimeStartLocal;
+            }
+            set
+            {
+                OnTimeStartLocalChanging(value);
+                ReportPropertyChanging("TimeStartLocal");
+                _TimeStartLocal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeStartLocal");
+                OnTimeStartLocalChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _TimeStartLocal;
+        partial void OnTimeStartLocalChanging(Nullable<global::System.DateTime> value);
+        partial void OnTimeStartLocalChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> TimeStopLocal
+        {
+            get
+            {
+                return _TimeStopLocal;
+            }
+            set
+            {
+                OnTimeStopLocalChanging(value);
+                ReportPropertyChanging("TimeStopLocal");
+                _TimeStopLocal = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeStopLocal");
+                OnTimeStopLocalChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _TimeStopLocal;
+        partial void OnTimeStopLocalChanging(Nullable<global::System.DateTime> value);
+        partial void OnTimeStopLocalChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
     [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="v_Pair")]
     [Serializable()]
     [DataContractAttribute(IsReference=true)]
@@ -2107,6 +2787,403 @@ namespace HedgeHog.DB
         private Nullable<global::System.Double> _StDev;
         partial void OnStDevChanging(Nullable<global::System.Double> value);
         partial void OnStDevChanged();
+
+        #endregion
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmComplexTypeAttribute(NamespaceName="ForexModel", Name="s_GetBarStats_Result")]
+    [DataContractAttribute(IsReference=true)]
+    [Serializable()]
+    public partial class s_GetBarStats_Result : ComplexObject
+    {
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> StopDateMonth
+        {
+            get
+            {
+                return _StopDateMonth;
+            }
+            set
+            {
+                OnStopDateMonthChanging(value);
+                ReportPropertyChanging("StopDateMonth");
+                _StopDateMonth = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StopDateMonth");
+                OnStopDateMonthChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _StopDateMonth;
+        partial void OnStopDateMonthChanging(Nullable<global::System.DateTime> value);
+        partial void OnStopDateMonthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> StopDateHour
+        {
+            get
+            {
+                return _StopDateHour;
+            }
+            set
+            {
+                OnStopDateHourChanging(value);
+                ReportPropertyChanging("StopDateHour");
+                _StopDateHour = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StopDateHour");
+                OnStopDateHourChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _StopDateHour;
+        partial void OnStopDateHourChanging(Nullable<global::System.Int32> value);
+        partial void OnStopDateHourChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> BarsHeightAvg
+        {
+            get
+            {
+                return _BarsHeightAvg;
+            }
+            set
+            {
+                OnBarsHeightAvgChanging(value);
+                ReportPropertyChanging("BarsHeightAvg");
+                _BarsHeightAvg = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BarsHeightAvg");
+                OnBarsHeightAvgChanged();
+            }
+        }
+        private Nullable<global::System.Double> _BarsHeightAvg;
+        partial void OnBarsHeightAvgChanging(Nullable<global::System.Double> value);
+        partial void OnBarsHeightAvgChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> BarsHeightStd
+        {
+            get
+            {
+                return _BarsHeightStd;
+            }
+            set
+            {
+                OnBarsHeightStdChanging(value);
+                ReportPropertyChanging("BarsHeightStd");
+                _BarsHeightStd = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BarsHeightStd");
+                OnBarsHeightStdChanged();
+            }
+        }
+        private Nullable<global::System.Double> _BarsHeightStd;
+        partial void OnBarsHeightStdChanging(Nullable<global::System.Double> value);
+        partial void OnBarsHeightStdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> BarsHeight_N
+        {
+            get
+            {
+                return _BarsHeight_N;
+            }
+            set
+            {
+                OnBarsHeight_NChanging(value);
+                ReportPropertyChanging("BarsHeight_N");
+                _BarsHeight_N = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("BarsHeight_N");
+                OnBarsHeight_NChanged();
+            }
+        }
+        private Nullable<global::System.Double> _BarsHeight_N;
+        partial void OnBarsHeight_NChanging(Nullable<global::System.Double> value);
+        partial void OnBarsHeight_NChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> Distance
+        {
+            get
+            {
+                return _Distance;
+            }
+            set
+            {
+                OnDistanceChanging(value);
+                ReportPropertyChanging("Distance");
+                _Distance = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Distance");
+                OnDistanceChanged();
+            }
+        }
+        private Nullable<global::System.Double> _Distance;
+        partial void OnDistanceChanging(Nullable<global::System.Double> value);
+        partial void OnDistanceChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DistToHeightAvg
+        {
+            get
+            {
+                return _DistToHeightAvg;
+            }
+            set
+            {
+                OnDistToHeightAvgChanging(value);
+                ReportPropertyChanging("DistToHeightAvg");
+                _DistToHeightAvg = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DistToHeightAvg");
+                OnDistToHeightAvgChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DistToHeightAvg;
+        partial void OnDistToHeightAvgChanging(Nullable<global::System.Double> value);
+        partial void OnDistToHeightAvgChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DistToHeightStd
+        {
+            get
+            {
+                return _DistToHeightStd;
+            }
+            set
+            {
+                OnDistToHeightStdChanging(value);
+                ReportPropertyChanging("DistToHeightStd");
+                _DistToHeightStd = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DistToHeightStd");
+                OnDistToHeightStdChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DistToHeightStd;
+        partial void OnDistToHeightStdChanging(Nullable<global::System.Double> value);
+        partial void OnDistToHeightStdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DistToHeightVol
+        {
+            get
+            {
+                return _DistToHeightVol;
+            }
+            set
+            {
+                OnDistToHeightVolChanging(value);
+                ReportPropertyChanging("DistToHeightVol");
+                _DistToHeightVol = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DistToHeightVol");
+                OnDistToHeightVolChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DistToHeightVol;
+        partial void OnDistToHeightVolChanging(Nullable<global::System.Double> value);
+        partial void OnDistToHeightVolChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DistToHeightMax
+        {
+            get
+            {
+                return _DistToHeightMax;
+            }
+            set
+            {
+                OnDistToHeightMaxChanging(value);
+                ReportPropertyChanging("DistToHeightMax");
+                _DistToHeightMax = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DistToHeightMax");
+                OnDistToHeightMaxChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DistToHeightMax;
+        partial void OnDistToHeightMaxChanging(Nullable<global::System.Double> value);
+        partial void OnDistToHeightMaxChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DistToHeightMin
+        {
+            get
+            {
+                return _DistToHeightMin;
+            }
+            set
+            {
+                OnDistToHeightMinChanging(value);
+                ReportPropertyChanging("DistToHeightMin");
+                _DistToHeightMin = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DistToHeightMin");
+                OnDistToHeightMinChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DistToHeightMin;
+        partial void OnDistToHeightMinChanging(Nullable<global::System.Double> value);
+        partial void OnDistToHeightMinChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> HeightToStDevAvg
+        {
+            get
+            {
+                return _HeightToStDevAvg;
+            }
+            set
+            {
+                OnHeightToStDevAvgChanging(value);
+                ReportPropertyChanging("HeightToStDevAvg");
+                _HeightToStDevAvg = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("HeightToStDevAvg");
+                OnHeightToStDevAvgChanged();
+            }
+        }
+        private Nullable<global::System.Double> _HeightToStDevAvg;
+        partial void OnHeightToStDevAvgChanging(Nullable<global::System.Double> value);
+        partial void OnHeightToStDevAvgChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> HeightToStDevStd
+        {
+            get
+            {
+                return _HeightToStDevStd;
+            }
+            set
+            {
+                OnHeightToStDevStdChanging(value);
+                ReportPropertyChanging("HeightToStDevStd");
+                _HeightToStDevStd = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("HeightToStDevStd");
+                OnHeightToStDevStdChanged();
+            }
+        }
+        private Nullable<global::System.Double> _HeightToStDevStd;
+        partial void OnHeightToStDevStdChanging(Nullable<global::System.Double> value);
+        partial void OnHeightToStDevStdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> HeightToStDev_N
+        {
+            get
+            {
+                return _HeightToStDev_N;
+            }
+            set
+            {
+                OnHeightToStDev_NChanging(value);
+                ReportPropertyChanging("HeightToStDev_N");
+                _HeightToStDev_N = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("HeightToStDev_N");
+                OnHeightToStDev_NChanged();
+            }
+        }
+        private Nullable<global::System.Double> _HeightToStDev_N;
+        partial void OnHeightToStDev_NChanging(Nullable<global::System.Double> value);
+        partial void OnHeightToStDev_NChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> HeightToStDev_NStd
+        {
+            get
+            {
+                return _HeightToStDev_NStd;
+            }
+            set
+            {
+                OnHeightToStDev_NStdChanging(value);
+                ReportPropertyChanging("HeightToStDev_NStd");
+                _HeightToStDev_NStd = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("HeightToStDev_NStd");
+                OnHeightToStDev_NStdChanged();
+            }
+        }
+        private Nullable<global::System.Double> _HeightToStDev_NStd;
+        partial void OnHeightToStDev_NStdChanging(Nullable<global::System.Double> value);
+        partial void OnHeightToStDev_NStdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> HeightToStDevVol
+        {
+            get
+            {
+                return _HeightToStDevVol;
+            }
+            set
+            {
+                OnHeightToStDevVolChanging(value);
+                ReportPropertyChanging("HeightToStDevVol");
+                _HeightToStDevVol = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("HeightToStDevVol");
+                OnHeightToStDevVolChanged();
+            }
+        }
+        private Nullable<global::System.Double> _HeightToStDevVol;
+        partial void OnHeightToStDevVolChanging(Nullable<global::System.Double> value);
+        partial void OnHeightToStDevVolChanged();
 
         #endregion
     }

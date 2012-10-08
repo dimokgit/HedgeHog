@@ -7,9 +7,22 @@
     <Schema Namespace="ForexModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="ForexModelStoreContainer">
           <EntitySet Name="t_Bar" EntityType="ForexModel.Store.t_Bar" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="t_BarHeight" EntityType="ForexModel.Store.t_BarHeight" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.Store.t_Offer" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="t_Report" EntityType="ForexModel.Store.t_Report" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.Store.t_Stat" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.Store.t_Trade" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.Store.v_BlackoutTime" store:Type="Views" store:Schema="dbo" store:Name="v_BlackoutTime">
+            <DefiningQuery>SELECT 
+      [v_BlackoutTime].[Time] AS [Time], 
+      [v_BlackoutTime].[EventType] AS [EventType], 
+      [v_BlackoutTime].[TimeLocal] AS [TimeLocal], 
+      [v_BlackoutTime].[TimeStart] AS [TimeStart], 
+      [v_BlackoutTime].[TimeStop] AS [TimeStop], 
+      [v_BlackoutTime].[TimeStartLocal] AS [TimeStartLocal], 
+      [v_BlackoutTime].[TimeStopLocal] AS [TimeStopLocal]
+      FROM [dbo].[v_BlackoutTime] AS [v_BlackoutTime]</DefiningQuery>
+          </EntitySet>
           <EntitySet Name="v_Pair" EntityType="ForexModel.Store.v_Pair" store:Type="Views" store:Schema="dbo" store:Name="v_Pair">
             <DefiningQuery>SELECT 
       [v_Pair].[Pair] AS [Pair], 
@@ -35,6 +48,22 @@
           <Property Name="BidClose" Type="real" Nullable="false" />
           <Property Name="Volume" Type="int" Nullable="false" />
           <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="StartDateLocal" Type="datetime" StoreGeneratedPattern="Computed" />
+          <Property Name="Row" Type="int" />
+        </EntityType>
+        <EntityType Name="t_BarHeight">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="Length" />
+            <PropertyRef Name="StartDate" />
+          </Key>
+          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="30" />
+          <Property Name="Period" Type="int" Nullable="false" />
+          <Property Name="Length" Type="int" Nullable="false" />
+          <Property Name="StartDate" Type="datetimeoffset" Nullable="false" />
+          <Property Name="AvgHeight" Type="float" Nullable="false" />
+          <Property Name="StDevHeight" Type="float" Nullable="false" />
         </EntityType>
         <EntityType Name="t_Offer">
           <Key>
@@ -46,6 +75,14 @@
           <Property Name="MMR" Type="float" Nullable="false" />
           <Property Name="PipSize" Type="float" Nullable="false" />
           <Property Name="BaseUnitSize" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="t_Report">
+          <Key>
+            <PropertyRef Name="Time" />
+          </Key>
+          <Property Name="Time" Type="datetimeoffset" Nullable="false" />
+          <Property Name="EventType" Type="char" Nullable="false" MaxLength="1" />
+          <Property Name="TimeLocal" Type="datetime" StoreGeneratedPattern="Computed" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -68,7 +105,7 @@
           <Property Name="PL" Type="float" Nullable="false" />
           <Property Name="GrossPL" Type="float" Nullable="false" />
           <Property Name="Lot" Type="float" Nullable="false" />
-          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="8" />
           <Property Name="TimeOpen" Type="datetime" Nullable="false" />
           <Property Name="TimeClose" Type="datetime" Nullable="false" />
           <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
@@ -83,6 +120,23 @@
           <Property Name="SessionInfo" Type="nvarchar" />
           <Property Name="RunningBalance" Type="float" />
           <Property Name="RunningBalanceTotal" Type="float" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'FOREX.dbo.v_BlackoutTime' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="v_BlackoutTime">
+          <Key>
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="EventType" />
+            <PropertyRef Name="TimeStop" />
+          </Key>
+          <Property Name="Time" Type="datetimeoffset" Nullable="false" />
+          <Property Name="EventType" Type="char" Nullable="false" MaxLength="1" />
+          <Property Name="TimeLocal" Type="datetime" />
+          <Property Name="TimeStart" Type="datetimeoffset" />
+          <Property Name="TimeStop" Type="datetimeoffset" Nullable="false" />
+          <Property Name="TimeStartLocal" Type="datetime" />
+          <Property Name="TimeStopLocal" Type="datetime" />
         </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'FOREX.dbo.v_Pair' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
@@ -123,6 +177,12 @@
           <Parameter Name="CorridorPeriods" Type="int" Mode="In" />
           <Parameter Name="BarMinutes" Type="int" Mode="In" />
         </Function>
+        <Function Name="s_GetBarStats" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="Pair" Type="varchar" Mode="In" />
+          <Parameter Name="Period" Type="int" Mode="In" />
+          <Parameter Name="Length" Type="int" Mode="In" />
+          <Parameter Name="StartDate" Type="datetime" Mode="In" />
+        </Function>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -153,6 +213,15 @@
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
           <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
+          <EntitySet Name="t_BarHeight" EntityType="ForexModel.t_BarHeight" />
+          <EntitySet Name="t_Report" EntityType="ForexModel.t_Report" />
+          <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.v_BlackoutTime" />
+          <FunctionImport Name="s_GetBarStats" ReturnType="Collection(ForexModel.s_GetBarStats_Result)">
+            <Parameter Name="Pair" Mode="In" Type="String" />
+            <Parameter Name="Period" Mode="In" Type="Int32" />
+            <Parameter Name="Length" Mode="In" Type="Int32" />
+            <Parameter Name="StartDate" Mode="In" Type="DateTime" />
+          </FunctionImport>
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -220,6 +289,8 @@
           <Property Type="Single" Name="BidClose" Nullable="false" />
           <Property Type="Int32" Name="Volume" Nullable="false" />
           <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Type="DateTime" Name="StartDateLocal" annotation:StoreGeneratedPattern="Computed" />
+          <Property Type="Int32" Name="Row" />
         </EntityType>
         <EntityType Name="t_Trade">
           <Key>
@@ -246,6 +317,60 @@
           <Property Type="Double" Name="RunningBalance" />
           <Property Type="Double" Name="RunningBalanceTotal" />
         </EntityType>
+        <EntityType Name="t_BarHeight">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="StartDate" />
+            <PropertyRef Name="Length" />
+          </Key>
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="30" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Period" Nullable="false" />
+          <Property Type="DateTimeOffset" Name="StartDate" Nullable="false" />
+          <Property Type="Double" Name="AvgHeight" Nullable="false" />
+          <Property Type="Int32" Name="Length" Nullable="false" />
+          <Property Type="Double" Name="StDevHeight" Nullable="false" />
+        </EntityType>
+        <EntityType Name="t_Report">
+          <Key>
+            <PropertyRef Name="Time" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="String" Name="EventType" Nullable="false" MaxLength="1" FixedLength="true" Unicode="false" />
+          <Property Type="DateTime" Name="TimeLocal" annotation:StoreGeneratedPattern="Computed" />
+        </EntityType>
+        <EntityType Name="v_BlackoutTime">
+          <Key>
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="EventType" />
+            <PropertyRef Name="TimeStop" />
+          </Key>
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <Property Type="String" Name="EventType" Nullable="false" MaxLength="1" FixedLength="true" Unicode="false" />
+          <Property Type="DateTime" Name="TimeLocal" />
+          <Property Type="DateTimeOffset" Name="TimeStart" />
+          <Property Type="DateTimeOffset" Name="TimeStop" Nullable="false" />
+          <Property Type="DateTime" Name="TimeStartLocal" />
+          <Property Type="DateTime" Name="TimeStopLocal" />
+        </EntityType>
+        <ComplexType Name="s_GetBarStats_Result">
+          <Property Type="DateTime" Name="StopDateMonth" Nullable="true" />
+          <Property Type="Int32" Name="StopDateHour" Nullable="true" />
+          <Property Type="Double" Name="BarsHeightAvg" Nullable="true" />
+          <Property Type="Double" Name="BarsHeightStd" Nullable="true" />
+          <Property Type="Double" Name="BarsHeight_N" Nullable="true" />
+          <Property Type="Double" Name="Distance" Nullable="true" />
+          <Property Type="Double" Name="DistToHeightAvg" Nullable="true" />
+          <Property Type="Double" Name="DistToHeightStd" Nullable="true" />
+          <Property Type="Double" Name="DistToHeightVol" Nullable="true" />
+          <Property Type="Double" Name="DistToHeightMax" Nullable="true" />
+          <Property Type="Double" Name="DistToHeightMin" Nullable="true" />
+          <Property Type="Double" Name="HeightToStDevAvg" Nullable="true" />
+          <Property Type="Double" Name="HeightToStDevStd" Nullable="true" />
+          <Property Type="Double" Name="HeightToStDev_N" Nullable="true" />
+          <Property Type="Double" Name="HeightToStDev_NStd" Nullable="true" />
+          <Property Type="Double" Name="HeightToStDevVol" Nullable="true" />
+        </ComplexType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -314,6 +439,8 @@
           <EntitySetMapping Name="t_Bar">
             <EntityTypeMapping TypeName="ForexModel.t_Bar">
               <MappingFragment StoreEntitySet="t_Bar">
+                <ScalarProperty Name="Row" ColumnName="Row" />
+                <ScalarProperty Name="StartDateLocal" ColumnName="StartDateLocal" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Volume" ColumnName="Volume" />
                 <ScalarProperty Name="BidClose" ColumnName="BidClose" />
@@ -356,6 +483,62 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_BarHeight">
+            <EntityTypeMapping TypeName="ForexModel.t_BarHeight">
+              <MappingFragment StoreEntitySet="t_BarHeight">
+                <ScalarProperty Name="StDevHeight" ColumnName="StDevHeight" />
+                <ScalarProperty Name="Length" ColumnName="Length" />
+                <ScalarProperty Name="AvgHeight" ColumnName="AvgHeight" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="t_Report">
+            <EntityTypeMapping TypeName="ForexModel.t_Report">
+              <MappingFragment StoreEntitySet="t_Report">
+                <ScalarProperty Name="TimeLocal" ColumnName="TimeLocal" />
+                <ScalarProperty Name="EventType" ColumnName="EventType" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="v_BlackoutTime">
+            <EntityTypeMapping TypeName="ForexModel.v_BlackoutTime">
+              <MappingFragment StoreEntitySet="v_BlackoutTime">
+                <ScalarProperty Name="TimeStopLocal" ColumnName="TimeStopLocal" />
+                <ScalarProperty Name="TimeStartLocal" ColumnName="TimeStartLocal" />
+                <ScalarProperty Name="TimeStop" ColumnName="TimeStop" />
+                <ScalarProperty Name="TimeStart" ColumnName="TimeStart" />
+                <ScalarProperty Name="TimeLocal" ColumnName="TimeLocal" />
+                <ScalarProperty Name="EventType" ColumnName="EventType" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <FunctionImportMapping FunctionImportName="s_GetBarStats" FunctionName="ForexModel.Store.s_GetBarStats">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ForexModel.s_GetBarStats_Result">
+                <ScalarProperty Name="StopDateMonth" ColumnName="StopDateMonth" />
+                <ScalarProperty Name="StopDateHour" ColumnName="StopDateHour" />
+                <ScalarProperty Name="BarsHeightAvg" ColumnName="BarsHeightAvg" />
+                <ScalarProperty Name="BarsHeightStd" ColumnName="BarsHeightStd" />
+                <ScalarProperty Name="BarsHeight_N" ColumnName="BarsHeight_N" />
+                <ScalarProperty Name="Distance" ColumnName="Distance" />
+                <ScalarProperty Name="DistToHeightAvg" ColumnName="DistToHeightAvg" />
+                <ScalarProperty Name="DistToHeightStd" ColumnName="DistToHeightStd" />
+                <ScalarProperty Name="DistToHeightVol" ColumnName="DistToHeightVol" />
+                <ScalarProperty Name="DistToHeightMax" ColumnName="DistToHeightMax" />
+                <ScalarProperty Name="DistToHeightMin" ColumnName="DistToHeightMin" />
+                <ScalarProperty Name="HeightToStDevAvg" ColumnName="HeightToStDevAvg" />
+                <ScalarProperty Name="HeightToStDevStd" ColumnName="HeightToStDevStd" />
+                <ScalarProperty Name="HeightToStDev_N" ColumnName="HeightToStDev_N" />
+                <ScalarProperty Name="HeightToStDev_NStd" ColumnName="HeightToStDev_NStd" />
+                <ScalarProperty Name="HeightToStDevVol" ColumnName="HeightToStDevVol" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -382,6 +565,9 @@
         <EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916674" />
         <EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.5" PointY="0.5" Height="3.5186979166666674" />
         <EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="2.75" PointY="0.875" Height="4.6725065104166674" />
+        <EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="3.375" PointY="6.75" Height="1.7879850260416674" />
+        <EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="5.375" PointY="6.75" Height="1.5956835937499996" />
+        <EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="7.375" PointY="0.75" Height="2.3648893229166674" />
       </Diagram>
     </Diagrams>
   </Designer>

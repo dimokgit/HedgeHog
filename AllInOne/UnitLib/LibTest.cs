@@ -15,6 +15,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive;
 using System.Reactive.Concurrency;
+using System.IO;
 
 namespace UnitLib
 {
@@ -73,6 +74,20 @@ namespace UnitLib
     //
     #endregion
 
+    [TestMethod]
+    public void TestToParams() {
+      var paramsText = @"\
+Dimok:1 2 3
+Dimon:aaa bbb ccc
+Privet:2.3 3.4
+";
+      var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      paramsText = File.ReadAllText(Path.Combine(path, "TestParams.txt"));
+      var paramLines = paramsText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+      var paramsArray = paramLines.Select(pl => pl.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
+      var paramDict = paramsArray.Where(a=>a.Length>1).ToDictionary(pa => pa[0], pa => pa[1] );
+      var params1 = paramDict.ToArray();
+    }
     public void ToListSpeed() {
       var array = Enumerable.Range(0, 1000000).ToArray();
       Stopwatch sw = Stopwatch.StartNew();
