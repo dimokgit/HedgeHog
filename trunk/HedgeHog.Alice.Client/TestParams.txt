@@ -1,0 +1,5 @@
+TestPriceCmaLevels:
+TestStopRateWaveOffset:0
+TestPLToCorridorExitRatio:
+TestCorridorDistanceRatio:1.4 1.6 3 3.2 3.4 3.6
+TestProfitToLossExitRatio:

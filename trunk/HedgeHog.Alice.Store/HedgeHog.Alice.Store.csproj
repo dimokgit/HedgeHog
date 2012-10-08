@@ -120,6 +120,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
+    <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
@@ -165,6 +166,7 @@
       <SubType>Designer</SubType>
     </None>
     <Compile Include="TradingMacro\TradingMacro.BreakoutInfo.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">

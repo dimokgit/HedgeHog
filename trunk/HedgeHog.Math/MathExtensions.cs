@@ -255,7 +255,7 @@ namespace HedgeHog {
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
       var avg = values.DefaultIfEmpty().Average(getValue);
       if (averagesOut != null) averagesOut.Insert(0, avg);
-      return values.Count < 2 || iterations == 0 ? values : values.Where(r => compare(getValue(r), avg)).ToArray().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
+      return values.Distinct().Count() < 2 || iterations == 0 ? values : values.Where(r => compare(getValue(r), avg)).ToArray().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }
 
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
@@ -304,7 +304,7 @@ namespace HedgeHog {
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, Hour, Day }
+    public enum RoundTo { Second, Minute, Hour, Day,Month,MonthEnd }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch (rt) {
@@ -324,6 +324,12 @@ namespace HedgeHog {
           dtRounded = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0);
           if (d.Hour >= 12) dtRounded = dtRounded.AddDays(1);
           break;
+        case RoundTo.Month:
+          dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0);
+          break;
+        case RoundTo.MonthEnd:
+          dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0).AddMonths(1).AddDays(-1);
+          break;
       }
       return dtRounded;
     }
@@ -342,6 +348,9 @@ namespace HedgeHog {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
+      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
+    }
+    public static bool Between(this DateTime value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {

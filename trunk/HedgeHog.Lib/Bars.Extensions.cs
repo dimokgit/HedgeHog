@@ -502,9 +502,12 @@ namespace HedgeHog.Bars {
       return list.ToArray();
     }
     public static double Distance<TBar>(this IList<TBar> rates) where TBar : BarBase {
+      return rates.Distance(r => r.PriceAvg);
+    }
+    public static double Distance<TBar>(this IList<TBar> rates,Func<TBar,double> getPrice ) where TBar : BarBase {
       double distance = (rates.LastBC().Distance - rates[0].Distance).Abs();
       if (distance == 0)
-        rates.Aggregate((p, n) => { distance += (p.PriceAvg - n.PriceAvg).Abs(); return n; });
+        rates.Aggregate((p, n) => { distance += (getPrice(p) - getPrice(n)).Abs(); return n; });
       return distance;
     }
 
