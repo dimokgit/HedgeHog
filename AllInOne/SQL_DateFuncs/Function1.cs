@@ -6,9 +6,8 @@ using Microsoft.SqlServer.Server;
 
 public partial class UserDefinedFunctions {
   [Microsoft.SqlServer.Server.SqlFunction]
-  public static SqlString Function1() {
-    // Put your code here
-    return new SqlString("Hello");
+  public static DateTimeOffset ToDateTimeOffset(DateTime date) {
+    return new DateTimeOffset(date);
   }
 };
 
