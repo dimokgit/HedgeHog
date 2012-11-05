@@ -86,6 +86,8 @@
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="Test Scripts\" />
+    <Folder Include="bin\" />
+    <Folder Include="bin\Release\" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="bin\Release\SQL_DateFuncs.publish.sql" />

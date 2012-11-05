@@ -1005,7 +1005,6 @@ Global
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Win32.ActiveCfg = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|x86.ActiveCfg = Release|Any CPU
 		{4B3D8BBE-EB26-4257-B8C1-89B167E410AD}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU

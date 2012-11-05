@@ -192,6 +192,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<v_BlackoutTime> _v_BlackoutTime;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_Session> t_Session
+        {
+            get
+            {
+                if ((_t_Session == null))
+                {
+                    _t_Session = base.CreateObjectSet<t_Session>("t_Session");
+                }
+                return _t_Session;
+            }
+        }
+        private ObjectSet<t_Session> _t_Session;
 
         #endregion
         #region AddTo Methods
@@ -258,6 +274,14 @@ namespace HedgeHog.DB
         public void AddTov_BlackoutTime(v_BlackoutTime v_BlackoutTime)
         {
             base.AddObject("v_BlackoutTime", v_BlackoutTime);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_Session EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_Session(t_Session t_Session)
+        {
+            base.AddObject("t_Session", t_Session);
         }
 
         #endregion
@@ -1395,6 +1419,113 @@ namespace HedgeHog.DB
         private Nullable<global::System.DateTime> _TimeLocal;
         partial void OnTimeLocalChanging(Nullable<global::System.DateTime> value);
         partial void OnTimeLocalChanged();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_Session")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_Session : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_Session object.
+        /// </summary>
+        /// <param name="uid">Initial value of the Uid property.</param>
+        /// <param name="minimumGross">Initial value of the MinimumGross property.</param>
+        /// <param name="maximumLot">Initial value of the MaximumLot property.</param>
+        public static t_Session Createt_Session(global::System.Guid uid, global::System.Double minimumGross, global::System.Int32 maximumLot)
+        {
+            t_Session t_Session = new t_Session();
+            t_Session.Uid = uid;
+            t_Session.MinimumGross = minimumGross;
+            t_Session.MaximumLot = maximumLot;
+            return t_Session;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Guid Uid
+        {
+            get
+            {
+                return _Uid;
+            }
+            set
+            {
+                if (_Uid != value)
+                {
+                    OnUidChanging(value);
+                    ReportPropertyChanging("Uid");
+                    _Uid = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Uid");
+                    OnUidChanged();
+                }
+            }
+        }
+        private global::System.Guid _Uid;
+        partial void OnUidChanging(global::System.Guid value);
+        partial void OnUidChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double MinimumGross
+        {
+            get
+            {
+                return _MinimumGross;
+            }
+            set
+            {
+                OnMinimumGrossChanging(value);
+                ReportPropertyChanging("MinimumGross");
+                _MinimumGross = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MinimumGross");
+                OnMinimumGrossChanged();
+            }
+        }
+        private global::System.Double _MinimumGross;
+        partial void OnMinimumGrossChanging(global::System.Double value);
+        partial void OnMinimumGrossChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 MaximumLot
+        {
+            get
+            {
+                return _MaximumLot;
+            }
+            set
+            {
+                OnMaximumLotChanging(value);
+                ReportPropertyChanging("MaximumLot");
+                _MaximumLot = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MaximumLot");
+                OnMaximumLotChanged();
+            }
+        }
+        private global::System.Int32 _MaximumLot;
+        partial void OnMaximumLotChanging(global::System.Int32 value);
+        partial void OnMaximumLotChanged();
 
         #endregion
     

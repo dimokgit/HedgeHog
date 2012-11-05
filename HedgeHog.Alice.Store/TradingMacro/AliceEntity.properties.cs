@@ -51,8 +51,25 @@ namespace HedgeHog.Alice.Store {
         if (_CanTrade != value) {
           _CanTrade = value;
           OnPropertyChanged("CanTrade");
+          RaiseCanTradeChanged();
         }
       }
+    }
+    #endregion
+
+    #region CanTradeChanged Event
+    event EventHandler<EventArgs> CanTradeChangedEvent;
+    public event EventHandler<EventArgs> CanTradeChanged {
+      add {
+        if (CanTradeChangedEvent == null || !CanTradeChangedEvent.GetInvocationList().Contains(value))
+          CanTradeChangedEvent += value;
+      }
+      remove {
+        CanTradeChangedEvent -= value;
+      }
+    }
+    protected void RaiseCanTradeChanged() {
+      if (CanTradeChangedEvent != null) CanTradeChangedEvent(this, new EventArgs());
     }
     #endregion
 
@@ -306,15 +323,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    string _TestPLToCorridorExitRatio = "";
-    [DisplayName("PLToCorridorExitRatio")]
+    string _TestProfitToLossExitRatio = "";
+    [DisplayName("ProfitToLossExitRatio")]
     [Category(categoryTest)]
-    public string TestPLToCorridorExitRatio {
-      get { return _TestPLToCorridorExitRatio; }
+    public string TestProfitToLossExitRatio {
+      get { return _TestProfitToLossExitRatio; }
       set {
-        if (_TestPLToCorridorExitRatio != value) {
-          _TestPLToCorridorExitRatio = value;
-          OnPropertyChanged("TestPLToCorridorExitRatio");
+        if (_TestProfitToLossExitRatio != value) {
+          _TestProfitToLossExitRatio = value;
+          OnPropertyChanged("TestProfitToLossExitRatio");
         }
       }
     }
@@ -590,7 +607,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [DisplayName("PLToCorridorExitRatio")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     [Description("exit = PL * X > CorridorHeight")]
     public double PLToCorridorExitRatio {
       get { return StDevToSpreadRatio; }
@@ -747,7 +764,7 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
       }
     }
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     [DisplayName("RatesToStDev Min")]
     public double RatesToStDevRatioMinimum {
       get { return CorridorRatioForRange; }
@@ -758,7 +775,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("RatesToStDev Max")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     public double RatesToStDevRatioMaximum {
       get { return FibMin; }
       set {
@@ -1047,7 +1064,6 @@ namespace HedgeHog.Alice.Store {
 
     public int GannAngle1x1Index { get { return GannAnglesList.Angle1x1Index; } }
 
-    public bool IsHotStrategy { get { return Strategy.HasFlag(Strategies.Hot); } }
     public bool IsAutoStrategy { get { return Strategy.HasFlag(Strategies.Auto); } }
 
     private bool _IsAutoSync;
@@ -1357,5 +1373,7 @@ namespace HedgeHog.Alice.Store {
 
     readonly WaveInfo _waveShort;
     public WaveInfo WaveShort { get { return _waveShort; } }
+    WaveInfo _waveShortLeft;
+    public WaveInfo WaveShortLeft { get { return _waveShortLeft ?? (_waveShortLeft = new WaveInfo(this)); } }
   }
 }

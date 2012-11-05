@@ -75,6 +75,20 @@ namespace UnitLib
     #endregion
 
     [TestMethod]
+    public void HourPlusMinus() {
+      var i = (24 + 3) % 24;
+      var j = (24 - 3) % 24;
+      var k = i + j;
+      Assert.IsTrue(k > 0);
+    }
+    public void DateTimeOffsetTest() {
+      var d = DateTime.Parse("1/1/2011");
+      var d1 = TimeZoneInfo.ConvertTimeToUtc(d);
+      var d2 = new DateTimeOffset(d, d - d1);
+      Assert.AreEqual(d,d1);
+    }
+
+    [TestMethod]
     public void TestToParams() {
       var paramsText = @"\
 Dimok:1 2 3
@@ -249,6 +263,18 @@ Privet:2.3 3.4
       Assert.AreEqual(3, actual);
       actual = b.Min(a, c);
       Assert.AreEqual(1, actual);
+    }
+
+    /// <summary>
+    ///A test for ParseRaramRange
+    ///</summary>
+    [TestMethod()]
+    public void ParseRaramRangeTest() {
+      string param = "2-4,1"; // TODO: Initialize to an appropriate value
+      string expected = "2 3 4"; // TODO: Initialize to an appropriate value
+      string actual;
+      actual = Lib.ParseParamRange(param);
+      Assert.AreEqual(expected, actual);
     }
   }
 }

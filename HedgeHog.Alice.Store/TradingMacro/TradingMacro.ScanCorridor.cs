@@ -22,6 +22,107 @@ namespace HedgeHog.Alice.Store {
     public double RatesDistanceToRatesHeight { get { return RatesDistance / RatesHeight; } }
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorByStDevHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var pipSize = 1 / PointSize;
+      ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
+        n.RunningLow = p.RunningLow.Min(n.PriceAvg);
+        n.RunningHigh = p.RunningHigh.Max(n.PriceAvg);
+        return 0;// (p.PriceHigh - p.PriceLow) * (p.PriceCMALast - n.PriceCMALast).Abs() * pipSize;
+      });
+      this.RatesDistance = 0;// ratesForCorridor.Distance();
+      RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
+
+      this.RatesStDevAdjusted = RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio;
+      var waveByDistance = ratesReversed.TakeWhile(r => r.RunningHeight <= RatesStDev).ToArray();
+      WaveDistance = waveByDistance.LastBC().Distance;// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
+      if (!WaveShort.HasDistance) {
+        WaveShort.Rates = null;
+        WaveShort.Rates = waveByDistance;
+      } else
+        WaveShort.SetRatesByDistance(ratesReversed);
+
+      var startStopRates = WaveShort.Rates.ReverseIfNot();
+      var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate)
+        .Max(IsCorridorForwardOnly ? CorridorStats.StartDate : DateTime.MinValue);
+      var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
+      if (corridorRates.Length > 1) {
+        return new CorridorStatistics(this, corridorRates, double.NaN, new[] { corridorRates.Average(r => r.PriceAvg), 0.0 });
+      }
+      return null;
+    }
+    private CorridorStatistics ScanCorridorByDistanceHalf(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var pipSize = 1 / PointSize;
+      ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
+        n.RunningLow = p.RunningLow.Min(n.PriceAvg);
+        n.RunningHigh = p.RunningHigh.Max(n.PriceAvg);
+        return 1/(p.PriceHigh - p.PriceLow) /** (p.PriceCMALast - n.PriceCMALast).Abs()*/ * pipSize;
+      });
+      this.RatesDistance = ratesForCorridor.Distance();
+      RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
+
+      this.RatesStDevAdjusted = RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio;
+      var c = ratesReversed.TakeWhile(r => r.Distance <= RatesDistance / 2).Count();
+      var waveByDistance = ratesReversed.Take(/*ratesReversed.Count -*/ c).ToArray();
+      WaveDistance = waveByDistance.LastBC().Distance;// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
+      if (!WaveShort.HasDistance) {
+        WaveShort.Rates = null;
+        WaveShort.Rates = waveByDistance;
+      } else
+        WaveShort.SetRatesByDistance(ratesReversed);
+      WaveShortLeft.Rates = null;
+      WaveShortLeft.Rates = ratesForCorridor.Take(ratesForCorridor.Count- WaveShort.Rates.Count).ToArray();
+
+      var startStopRates = WaveShort.Rates.ReverseIfNot();
+      var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate)
+        .Max(IsCorridorForwardOnly ? CorridorStats.StartDate : DateTime.MinValue);
+      var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
+      if (corridorRates.Length > 1) {
+        return new CorridorStatistics(this, corridorRates, double.NaN, new[] { corridorRates.Average(r => r.PriceAvg), 0.0 });
+      }
+      return null;
+    }
+
+    private CorridorStatistics ScanCorridorByDistanceQuater(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var pipSize = 1 / PointSize;
+      ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
+        n.RunningLow = p.RunningLow.Min(n.PriceAvg);
+        n.RunningHigh = p.RunningHigh.Max(n.PriceAvg);
+        return 1 / (p.PriceHigh - p.PriceLow);
+      });
+      this.RatesDistance = ratesForCorridor.Distance();
+      RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
+
+      this.RatesStDevAdjusted = RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio;
+      var c = ratesReversed.TakeWhile(r => r.Distance <= RatesDistance / 2).Count();
+      var waveByDistance = ratesReversed.Take(/*ratesReversed.Count -*/ c).ToArray();
+      WaveDistance = waveByDistance.LastBC().Distance;// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
+      if (!WaveShort.HasDistance) {
+        WaveShort.Rates = null;
+        WaveShort.Rates = waveByDistance;
+      } else
+        WaveShort.SetRatesByDistance(ratesReversed);
+      WaveShortLeft.Rates = null;
+      WaveShortLeft.Rates = ratesForCorridor.Take(ratesForCorridor.Count - WaveShort.Rates.Count).ToArray();
+
+      WaveShort.Rates.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => p.PriceHigh - p.PriceLow);
+
+      var distanceShort = WaveShort.Rates.Distance() / 2;
+      WaveTradeStart.Rates = null;
+      WaveTradeStart.Rates = WaveShort.Rates.TakeWhile(r => r.Distance < distanceShort).ToArray();
+
+      var startStopRates = WaveShort.Rates.ReverseIfNot();
+      var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate)
+        .Max(IsCorridorForwardOnly ? CorridorStats.StartDate : DateTime.MinValue);
+      var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
+      if (corridorRates.Length > 1) {
+        return new CorridorStatistics(this, corridorRates, double.NaN, new[] { corridorRates.Average(r => r.PriceAvg), 0.0 });
+      }
+      return null;
+    }
+
     private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       ratesReversed.FillRunningValue((r, d) => { }, r => r.Distance, (p, n) => {
@@ -29,11 +130,12 @@ namespace HedgeHog.Alice.Store {
         n.RunningHigh = p.RunningHigh.Max(n.PriceAvg);
         return double.NaN;
       });
-      this.RatesDistance = WaveAverageIteration == 0 ? 0 : ratesForCorridor.Distance(r => r.PriceCMALast);
-      RateLast.Mass = RatesDistanceToRatesHeight;
+      //this.RatesDistance = WaveAverageIteration == 0 ? 0 : ratesForCorridor.Distance(r => r.PriceCMALast);
+      RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
 
       this.RatesStDevAdjusted = RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio;
       var waveByStDev = ratesReversed.TakeWhile(r => !(r.RunningHeight >= RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio)).ToArray();
+      if (waveByStDev.Length == 1) waveByStDev = ratesReversed.Take(2).ToArray();
       WaveDistance = waveByStDev.LastBC().Distance;// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
       if (!WaveShort.HasDistance)
         WaveShort.Rates = waveByStDev;

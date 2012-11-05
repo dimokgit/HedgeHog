@@ -907,6 +907,7 @@ namespace HedgeHog {
       }
     }
     bool _isShiftDown;
+    bool _dragPointPositionChanged;
     void SetBuySellRates(Dictionary<Guid, BuySellLevel> suppReses) {
       foreach (var suppRes in suppReses) {
         var isBuy = suppRes.Value.IsBuy;
@@ -924,8 +925,19 @@ namespace HedgeHog {
           //dragPoint.SetBinding(DraggablePoint.PositionProperty, new Binding("Value") { Source = ov });
           dragPoint.PositionChanged += (s, e) => {
             OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, e.Position);
+            if (!dragPoint.IsMouseOver) return;
+            _dragPointPositionChanged = true;
           };
           //dragPoint.ToolTip = "UID:" + uid;
+          plotter.PreviewMouseLeftButtonDown += (s, e) => {
+            if (!dragPoint.IsMouseOver) return;
+            _dragPointPositionChanged = false;
+            Action a = () => {
+              if (!_dragPointPositionChanged)
+                dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
+            };
+            a.ScheduleOnUI(0.5.FromSeconds());
+          };
           plotter.PreviewKeyDown += (s, e) => {
             var numericKeys = new[] { Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9 };
             _isShiftDown = e.Key == Key.LeftShift || e.Key == Key.RightShift;

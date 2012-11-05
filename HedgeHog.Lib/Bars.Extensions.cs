@@ -511,6 +511,16 @@ namespace HedgeHog.Bars {
       return distance;
     }
 
+    public static double WeightedAverage<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
+      double wa = 0, s = 0;
+      bars.Aggregate((p, n) => {
+        var d = p.PriceHeight;
+        wa += p.PriceAvg * d;
+        s += d;
+        return n;
+      });
+      return wa / s;
+    }
     public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar,TBar, double> getValue) where TBar : BarBase {
       bars.First().Distance = 0;
       bars.Aggregate((p, n) => {

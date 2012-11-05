@@ -10,6 +10,7 @@
           <EntitySet Name="t_BarHeight" EntityType="ForexModel.Store.t_BarHeight" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.Store.t_Offer" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Report" EntityType="ForexModel.Store.t_Report" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="t_Session" EntityType="ForexModel.Store.t_Session" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.Store.t_Stat" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.Store.t_Trade" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.Store.v_BlackoutTime" store:Type="Views" store:Schema="dbo" store:Name="v_BlackoutTime">
@@ -83,6 +84,14 @@
           <Property Name="Time" Type="datetimeoffset" Nullable="false" />
           <Property Name="EventType" Type="char" Nullable="false" MaxLength="1" />
           <Property Name="TimeLocal" Type="datetime" StoreGeneratedPattern="Computed" />
+        </EntityType>
+        <EntityType Name="t_Session">
+          <Key>
+            <PropertyRef Name="Uid" />
+          </Key>
+          <Property Name="Uid" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="MinimumGross" Type="float" Nullable="false" />
+          <Property Name="MaximumLot" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -222,6 +231,7 @@
             <Parameter Name="Length" Mode="In" Type="Int32" />
             <Parameter Name="StartDate" Mode="In" Type="DateTime" />
           </FunctionImport>
+          <EntitySet Name="t_Session" EntityType="ForexModel.t_Session" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -371,6 +381,14 @@
           <Property Type="Double" Name="HeightToStDev_NStd" Nullable="true" />
           <Property Type="Double" Name="HeightToStDevVol" Nullable="true" />
         </ComplexType>
+        <EntityType Name="t_Session">
+          <Key>
+            <PropertyRef Name="Uid" />
+          </Key>
+          <Property Type="Guid" Name="Uid" Nullable="false" />
+          <Property Type="Double" Name="MinimumGross" Nullable="false" />
+          <Property Type="Int32" Name="MaximumLot" Nullable="false" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -539,6 +557,15 @@
               </ComplexTypeMapping>
             </ResultMapping>
           </FunctionImportMapping>
+          <EntitySetMapping Name="t_Session">
+            <EntityTypeMapping TypeName="ForexModel.t_Session">
+              <MappingFragment StoreEntitySet="t_Session">
+                <ScalarProperty Name="MaximumLot" ColumnName="MaximumLot" />
+                <ScalarProperty Name="MinimumGross" ColumnName="MinimumGross" />
+                <ScalarProperty Name="Uid" ColumnName="Uid" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -568,6 +595,7 @@
         <EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="3.375" PointY="6.75" Height="1.7879850260416674" />
         <EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="5.375" PointY="6.75" Height="1.5956835937499996" />
         <EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="7.375" PointY="0.75" Height="2.3648893229166674" />
+        <EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="1.5956835937499996" />
       </Diagram>
     </Diagrams>
   </Designer>
