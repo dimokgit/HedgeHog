@@ -142,11 +142,17 @@ namespace HedgeHog.Models {
   }
 
   public class ObservableValue<TValue>:ModelBase{
+    TValue _Previous;
+    public TValue Previous {
+      get { return _Previous; }
+      set { _Previous = value; }
+    }
     private TValue _Value;
     public TValue Value {
       get { return _Value; }
       set {
         if (_Value != null && _Value.Equals(value)) return;
+        Previous = _Value;
         _Value = value;
         RaisePropertyChanged("Value");
         RaiseValueChanged();

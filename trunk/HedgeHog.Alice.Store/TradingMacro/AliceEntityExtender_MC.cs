@@ -16,7 +16,13 @@ namespace HedgeHog.Alice.Store {
           Debug.Fail(exc + "");
         }
         try {
-          return base.SaveChanges(options);
+          var a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Count();
+          a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Deleted).Count().Max(a);
+          a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Modified).Count().Max(a);
+          if (a > 0)
+            return base.SaveChanges(options);
+          else
+            return 0;
         } catch (Exception exc) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
           return 0;
@@ -24,9 +30,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void InitGuidField<TEntity>(Func<TEntity, Guid> getField, Action<TEntity, Guid> setField) {
-      var d = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added)
-        .Select(o => o.Entity).OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
-      d.ForEach(e => setField(e, Guid.NewGuid()));
+      var d = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).ToArray();
+      var f = d.Select(o => o.Entity).ToArray();
+      var g = f.OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
+      g.ForEach(e => setField(e, Guid.NewGuid()));
+      var h = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Modified).ToArray();
+      var i = d.Select(o => o.Entity).ToArray();
+      var j = f.OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
+      j.ForEach(e => { });
     }
   }
 
@@ -46,7 +57,10 @@ namespace HedgeHog.Alice.Store {
     WaveRelative = 2,
     WaveDistance1 = 3,
     WaveDistanceByHeight = 4,
-    WaveStDev = 5
+    WaveStDev = 5,
+    WaveDistance2 = 6,
+    WaveDistance4 = 7,
+    WaveStDevHeight = 8,
   }
   public enum TrailingWaveMethod {
     WaveShort = 1,
@@ -64,9 +78,13 @@ namespace HedgeHog.Alice.Store {
     RatesHeight_2 = 12,
     WaveShort = 13,
     WaveTradeStart = 14,
+    RatesStDevAdj = 15,
     Spread = 20,
     Zero = 25,
-    PriceSpread = 26
+    PriceSpread = 26,
+    WaveShortStDev = 27,
+    WaveTradeStartStDev = 28,
+
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
@@ -77,13 +95,17 @@ namespace HedgeHog.Alice.Store {
     None = 0,
     Auto = 1,
     Hot = 2,
+    Manual = 3,
     Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
     Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
     FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto,//16
     Deviator = FreeRoam * 2, DeviatorA = Deviator + Auto,//32
     AfterWaver = Deviator * 2, AfterWaverA = AfterWaver + Auto,//64
     Minimalist = AfterWaver * 2, MinimalistA = Minimalist + Auto,//128
-    Distancer = Minimalist * 2, DistancerA = Distancer + Auto//256
+    Distancer = Minimalist * 2, DistancerA = Distancer + Auto,//256
+    Distancer2 = Distancer * 2, Distancer2A = Distancer2 + Auto,//512
+    Distancer4 = Distancer2 * 2, Distancer4A = Distancer4 + Auto,//1024
+    Averager = Distancer4 * 2, AveragerA = Averager + Auto//2048
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {

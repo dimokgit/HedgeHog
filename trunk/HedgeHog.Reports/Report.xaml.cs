@@ -100,10 +100,8 @@ namespace HedgeHog.Reports {
       var isDemo = true;
       var logOff = false;
       logOff = !fw.IsLoggedIn && fw.CoreFX.LogOn(accountId, password, isDemo);
-      if (fw.IsLoggedIn)
-        #region Load Report
-        try {
-
+      if (fw.IsLoggedIn) {
+        try {// Load Report
           var trades = fw.GetTradesFromReport(DateTime.Now.AddMonths(-1), DateTime.Now.AddDays(1).Date);
           if (logOff) fw.CoreFX.Logout();
           // Load data by setting the CollectionViewSource.Source property:
@@ -111,10 +109,8 @@ namespace HedgeHog.Reports {
         } catch (Exception exc) {
           MessageBox.Show(exc.ToString());
         }
-        #endregion
- else
+      } else
         tradeViewSource.Source = new Trade[] { };
-
     }
     #endregion
 

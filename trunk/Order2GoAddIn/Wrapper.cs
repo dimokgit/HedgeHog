@@ -580,18 +580,7 @@ namespace Order2GoAddIn {
       }
     }
 
-    bool _isLoggedIn;
-    public bool IsLoggedIn {
-      get {
-        try {
-          return _isLoggedIn;// Desk != null && Desk.IsLoggedIn();
-        } catch { }
-        return false;
-      }
-      set {
-        _isLoggedIn = value;
-      }
-    }
+    public bool IsLoggedIn { get; set; }
     #endregion
 
     #region Constructor

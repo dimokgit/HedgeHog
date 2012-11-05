@@ -304,7 +304,7 @@ namespace HedgeHog {
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, Hour, Day,Month,MonthEnd }
+    public enum RoundTo { Second, Minute, Hour, Day,Month,MonthEnd,Week }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch (rt) {
@@ -329,6 +329,9 @@ namespace HedgeHog {
           break;
         case RoundTo.MonthEnd:
           dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0).AddMonths(1).AddDays(-1);
+          break;
+        case RoundTo.Week:
+          dtRounded = d.AddDays(-(int)d.DayOfWeek - 6); 
           break;
       }
       return dtRounded;

@@ -141,6 +141,9 @@ namespace HedgeHog.Shared {
       me.RaisePriceChanged(pair, new Price(pair, rate, me.ServerTime, me.GetPipSize(pair), me.GetDigits(pair), true));
     }
 
+    public static double RelativeDollar(int baseLotSize,int baseUnitSize,double pipCost) {
+      return (baseLotSize / baseUnitSize) * pipCost;
+    }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double lot, int baseUnitSize,bool useCeiling) {
       return (lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize;

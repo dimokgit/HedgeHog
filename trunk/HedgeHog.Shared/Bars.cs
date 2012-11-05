@@ -231,6 +231,7 @@ namespace HedgeHog.Bars {
         _PriceCMALast = value;
       }
     }
+    public double PriceCmaRatio { get { return Math.Abs((PriceCMA[0] - PriceCMALast) / PriceCMALast); } }
 
     public List<double> PriceCMAOther { get; set; }
 

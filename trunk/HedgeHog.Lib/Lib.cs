@@ -29,12 +29,24 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
+    public static string ParseParamRange(this string param) {
+      var range = new System.Text.RegularExpressions.Regex(@"(?<from>\d+)-(?<to>\d+),(?<step>\d+)");
+      var m = range.Match(param);
+      if (!m.Success) return param;
+      var l = new List<double>();
+      var from = double.Parse(m.Groups["from"].Value);
+      var to = double.Parse(m.Groups["to"].Value);
+      var step = double.Parse(m.Groups["step"].Value);
+      for (var d = from; d <= to; d += step)
+        l.Add(d);
+      return string.Join(" ", l);
+    }
     public static Dictionary<string, string> ReadTestParameters(string testFileName = "TestParams.txt") {
       var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
       var paramsText = File.ReadAllText(Path.Combine(path, testFileName));
       var paramLines = paramsText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
       var paramsArray = paramLines.Select(pl => pl.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
-      var paramDict = paramsArray.Where(a => a.Length > 1).ToDictionary(pa => pa[0], pa => pa[1].Trim());
+      var paramDict = paramsArray.Where(a => a.Length > 1).ToDictionary(pa => pa[0], pa => ParseParamRange(pa[1].Trim()));
       return paramDict;
     }
 
