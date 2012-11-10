@@ -30,7 +30,7 @@ namespace HedgeHog {
   public static class Lib {
 
     public static string ParseParamRange(this string param) {
-      var range = new System.Text.RegularExpressions.Regex(@"(?<from>\d+)-(?<to>\d+),(?<step>\d+)");
+      var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[\d.]+)");
       var m = range.Match(param);
       if (!m.Success) return param;
       var l = new List<double>();

@@ -982,7 +982,6 @@ Global
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|Win32.ActiveCfg = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Part1|Any CPU.ActiveCfg = Release|Any CPU
@@ -997,8 +996,6 @@ Global
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Any CPU.Build.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Any CPU.Deploy.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Mixed Platforms.Build.0 = Release|Any CPU
-		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Mixed Platforms.Deploy.0 = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|Win32.ActiveCfg = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release SubArray|x86.ActiveCfg = Release|Any CPU
 		{7BAA63E3-798E-4A06-8A2C-70EB50FE3923}.Release|Any CPU.ActiveCfg = Release|Any CPU

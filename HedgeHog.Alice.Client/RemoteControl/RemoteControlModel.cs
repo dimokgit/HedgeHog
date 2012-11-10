@@ -476,17 +476,17 @@ namespace HedgeHog.Alice.Client {
 
 
     #region TrimPairCommand
-    ICommand _TrimPairCommandCommand;
-    public ICommand TrimPairCommandCommand {
+    ICommand _TrimPairCommand;
+    public ICommand TrimPairCommand {
       get {
-        if (_TrimPairCommandCommand == null) {
-          _TrimPairCommandCommand = new Gala.RelayCommand<TradingMacro>(TrimPairCommand, (tm) => true);
+        if (_TrimPairCommand == null) {
+          _TrimPairCommand = new Gala.RelayCommand<TradingMacro>(TrimPair, (tm) => true);
         }
 
-        return _TrimPairCommandCommand;
+        return _TrimPairCommand;
       }
     }
-    void TrimPairCommand(TradingMacro tradingMacro) {
+    void TrimPair(TradingMacro tradingMacro) {
       tradingMacro.TrimTrades();
     }
     #endregion
@@ -893,7 +893,7 @@ namespace HedgeHog.Alice.Client {
           }
           tm.SetLotSize(tradesManager.GetAccount());
         }
-        runPriceQueue.ToObservable(System.Reactive.Concurrency.Scheduler.TaskPool).Subscribe(rp => rp());
+        runPriceQueue.ToObservable(Scheduler.Default).Subscribe(rp => rp());
         InitInstruments();
         MasterModel.CurrentLoss = CurrentLoss;
         //var a = new Action(() => {

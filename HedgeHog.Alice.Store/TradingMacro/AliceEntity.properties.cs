@@ -254,7 +254,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [DisplayName("Calc Method")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return (CorridorCalculationMethod)this.CorridorMethod; }
       set {

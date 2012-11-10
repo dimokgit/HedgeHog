@@ -87,7 +87,7 @@ namespace HedgeHog.Alice.Store {
 
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
-  public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5 }
+  public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5,PriceAverage = 6 }
   [Flags]
   public enum LevelType { CenterOfMass = 1, Magnet = 2, CoM_Magnet = CenterOfMass | Magnet }
   [Flags]
@@ -95,7 +95,6 @@ namespace HedgeHog.Alice.Store {
     None = 0,
     Auto = 1,
     Hot = 2,
-    Manual = 3,
     Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
     Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
     FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto,//16
@@ -105,7 +104,8 @@ namespace HedgeHog.Alice.Store {
     Distancer = Minimalist * 2, DistancerA = Distancer + Auto,//256
     Distancer2 = Distancer * 2, Distancer2A = Distancer2 + Auto,//512
     Distancer4 = Distancer2 * 2, Distancer4A = Distancer4 + Auto,//1024
-    Averager = Distancer4 * 2, AveragerA = Averager + Auto//2048
+    Averager = Distancer4 * 2, AveragerA = Averager + Auto,//2048
+    MiddleMan = Averager * 2, MiddleManA = MiddleMan + Auto//4069
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {
