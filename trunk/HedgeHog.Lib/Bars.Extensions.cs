@@ -1025,9 +1025,10 @@ namespace HedgeHog.Bars {
       return bars.StDev(r => r.PriceAvg > r.PriceCMALast ? r.PriceHigh : r.PriceLow);
     }
     public static double Spread(this IList<Rate> rates, int iterations = 2) {
-        var spreads = rates.Select(r => r.PriceHigh - r.PriceLow).ToArray();
-        if (spreads.Length == 0) return double.NaN;
-        return spreads.AverageInRange(iterations).Average();
+      return rates.Average(r => r.PriceHigh - r.PriceLow);
+      //var spreads = rates.Select(r => r.PriceHigh - r.PriceLow).ToArray();
+      //if (spreads.Length == 0) return double.NaN;
+      //return spreads.AverageInRange(iterations).Average();
     }
 
     public static void AddUp<TBar>(this List<TBar> ticks, IEnumerable<TBar> ticksToAdd) where TBar : BarBase {

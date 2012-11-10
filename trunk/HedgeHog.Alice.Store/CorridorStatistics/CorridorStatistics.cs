@@ -480,6 +480,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
+
+    public Dictionary<CorridorCalculationMethod, double> StDevs { get; set; }
   }
 
   public enum TrendLevel { None, Resistance, Support }

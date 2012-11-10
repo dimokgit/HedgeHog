@@ -149,7 +149,10 @@ namespace HedgeHog.Alice.Store {
         if( corridorMethod == CorridorCalculationMethod.Minimum || corridorMethod == CorridorCalculationMethod.Maximum){
           stDevDict.Add(CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
           stDevDict.Add(CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP());
-          stDevDict.Add(CorridorCalculationMethod.Price,rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP());
+          if (corridorMethod == CorridorCalculationMethod.Minimum)
+            stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP());
+          else
+            stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(r => r.PriceAvg));
         }
         switch (corridorMethod) {
           case CorridorCalculationMethod.Minimum:
@@ -162,12 +165,14 @@ namespace HedgeHog.Alice.Store {
             stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP(); break;
           case CorridorCalculationMethod.Price:
             stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP(); break;
+          case CorridorCalculationMethod.PriceAverage:
+            stDev = rates.StDev(r=>r.PriceAvg); break;
           default:
             throw new NotSupportedException(new { corridorMethod } + "");
         }
         height = stDev * 2;
-        return new CorridorStatistics(rates,stDev, coeffs, stDev, stDev, height, height) {
-          priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow
+        return new CorridorStatistics(rates, stDev, coeffs, stDev, stDev, height, height) {
+          priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow, StDevs = stDevDict
         };
       } catch (Exception exc) {
         Debug.WriteLine(exc);
