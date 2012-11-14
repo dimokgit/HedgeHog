@@ -405,6 +405,7 @@ namespace HedgeHog.Alice.Client {
       }));
     }
     public void AddCharter(CharterControl charter) {
+
       var pane = FindChartPaneByName(charter.Name);
       var createPane = pane == null;
       if (pane == null) {

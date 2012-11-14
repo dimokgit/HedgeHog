@@ -963,7 +963,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseActivateTrading"/></summary>
         public const string RaiseActivateTrading = "RaiseActivateTrading";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseClearStartTime"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.RaiseCloseTrades"/></summary>
         public const string RaiseClearStartTime = "RaiseClearStartTime";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.plotter_KeyDown"/></summary>
