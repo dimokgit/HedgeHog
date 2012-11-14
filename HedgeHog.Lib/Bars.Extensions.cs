@@ -68,6 +68,16 @@ namespace HedgeHog.Bars {
       return crossesOut.ToArray();
     }
 
+    public static double PriceMin<TBar>(this IEnumerable<TBar> list, int count = 0) where TBar : BarBase {
+      return list.Any() ? (count == 0 ? list : list.Take(count)).Min(b => b.PriceAvg) : double.NaN;
+    }
+    public static double PriceMax<TBar>(this IEnumerable<TBar> list, int count = 0) where TBar : BarBase {
+      return list.Any() ? (count == 0 ? list : list.Take(count)).Max(b => b.PriceAvg) : double.NaN;
+    }
+    public static double PriceAvg<TBar>(this IEnumerable<TBar> list, int count = 0) where TBar : BarBase {
+      return list.Any() ? (count == 0 ? list : list.Take(count)).Average(b => b.PriceAvg) : double.NaN;
+    }
+
     public static TBar Next<TBar>(this List<TBar> rates, TBar rate) where TBar : BarBase {
       var i = rates.IndexOf(rate) + 1;
       return i.Between(1, rates.Count - 1) ? rates[i] : null;
@@ -522,7 +532,7 @@ namespace HedgeHog.Bars {
       return wa / s;
     }
     public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar,TBar, double> getValue) where TBar : BarBase {
-      bars.First().Distance = 0;
+      setRunningValue(bars.First(), 0);
       bars.Aggregate((p, n) => {
         setRunningValue(n, getRunningValue(p) + getValue(p, n));
         return n;

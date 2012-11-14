@@ -27,6 +27,7 @@ using System.Reactive.Subjects;
 using System.Reflection;
 using HedgeHog.Charter;
 using System.Reactive.Concurrency;
+using System.Threading;
 namespace HedgeHog.Alice.Client {
   [Export]
   public class RemoteControlModel : RemoteControlModelBase {
@@ -52,7 +53,9 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void RequestAddCharterToUI(CharterControl charter) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
+      });
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     CharterControl GetCharter(TradingMacro tradingMacro) {
@@ -68,8 +71,7 @@ namespace HedgeHog.Alice.Client {
         charterNew.GannAngleOffsetChanged += charter_GannAngleOffsetChanged;
         charterNew.BuySellAdded += charter_BuySellAdded;
         charterNew.BuySellRemoved += charter_BuySellRemoved;
-        charterNew.ClearStartTime += charterNew_ClearStartTime;
-        charterNew.ActivateTrading += charterNew_ActivateTrading;
+        charterNew.PlotterKeyDown += charterNew_PlotterKeyDown;
         var isSelectedBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsSelectedInUI)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
         var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
@@ -99,9 +101,39 @@ namespace HedgeHog.Alice.Client {
       return charterOld;
     }
 
-    void charterNew_ActivateTrading(object sender, EventArgs e) {
-      var tm = GetTradingMacro((CharterControl)sender);
-      tm.IsTradingActive = !tm.IsTradingActive;
+    void charterNew_PlotterKeyDown(object sender, CharterControl.PlotterKeyDownEventArgs e) {
+      var charter = (CharterControl)sender;
+      var tm = GetTradingMacro(charter);
+      switch (e.Key) {
+        case Key.D0:
+        case Key.NumPad0:
+          tm.SetTradeCount(0);
+          break;
+        case Key.D1:
+        case Key.NumPad1:
+          tm.SetTradeCount(1);
+          break;
+        case Key.A:
+          tm.IsTradingActive = !tm.IsTradingActive;
+          if(!tm.IsTradingActive)
+            tm.ResetSuppResesInManual();
+          charter.FitToView();
+          break;
+        case Key.C:
+          tm.IsTradingActive = false;
+          tm.CloseTrades();
+          tm.SetCanTrade(false);
+          tm.SetTradeCount(0);
+          charter.FitToView();
+          break;
+        case Key.M:
+          tm.ResetSuppResesInManual();
+          break;
+        case Key.T:
+          tm.ToggleCanTrade();
+          tm.SetTradeCount(0);
+          break;
+      }
     }
 
     void charterNew_LineTimeMiddleChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
@@ -116,14 +148,19 @@ namespace HedgeHog.Alice.Client {
       tm.IsTradingActive = false;
       tm.WaveShort.Distance = tm.RatesArray.FindBar(e.NewPosition).Distance;
       tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
+      tm.ScanCorridor(tm.RatesArray);
     }
 
     void charterNew_ClearStartTime(object sender, EventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.IsTradingActive = false;
-      tm.CorridorStartDate = null;
-      tm.CorridorStopDate = DateTime.MinValue;
-      tm.WaveShort.ClearDistance();
+      tm.CloseTrades();
+      ((CharterControl)sender).FitToView();
+      if (false) {
+        tm.CorridorStartDate = null;
+        tm.CorridorStopDate = DateTime.MinValue;
+        tm.WaveShort.ClearDistance();
+      }
     }
 
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
@@ -160,6 +197,7 @@ namespace HedgeHog.Alice.Client {
       try {
         var tm = GetTradingMacro((CharterControl)sender);
         tm.UpdateSuppRes(e.UID, e.NewPosition);
+        tm.IsTradingActive = false;
       } catch (Exception exc) {
         Log = exc;
       }
@@ -412,6 +450,7 @@ namespace HedgeHog.Alice.Client {
       if (testParams.Any())
         StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
     }
+    CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();
     void StartReplayInternal(TradingMacro tmOriginal,TestParameter testParameter, Action<Task> continueWith) {
       if (IsInVirtualTrading) {
         if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
@@ -437,7 +476,8 @@ namespace HedgeHog.Alice.Client {
           }
         }
         var tmToRun = tm;
-        var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments));
+        tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
+        var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments),tmToRun.ReplayCancelationToken , TaskCreationOptions.LongRunning,TaskScheduler.Default);
         task.ContinueWith(continueWith);
         _replayTasks.Add(task);
       }
@@ -623,6 +663,7 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
       }
     }
+    CancellationTokenSource _threadCancelation = new CancellationTokenSource();
     public RemoteControlModel() {
       try {
         if (!IsInDesigh) {
@@ -631,6 +672,14 @@ namespace HedgeHog.Alice.Client {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<LogMessage>(this, lm => Log = lm.Exception);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)false, SellOrderCommand);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Store.OrderTemplate>(this, (object)true, BuyOrderCommand);
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<string>("Shutdown", (m) => {
+            try {
+              _replayTaskCancellationToken.Cancel();
+            } catch (Exception exc) {
+              Log = exc;
+            }
+          });
+
           //GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<bool>(this, typeof(VirtualTradesManager), vt => { MessageBox.Show("VirtualTradesManager:" + vt); });
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Window>(this, typeof(WindowState), IsMinimized);
           MasterModel.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
@@ -981,6 +1030,7 @@ namespace HedgeHog.Alice.Client {
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
         //charter.Dispatcher.Invoke(new Action(() => {
         try {
+          charter.PipSize = tm.PointSize;
           charter.CorridorHeightMultiplier = csFirst.HeightUpDown0 / csFirst.HeightUpDown;// tm.CorridorHeightMultiplier;
           charter.SetPriceLineColor(tm.Trades.HaveBuy() ? true : tm.Trades.HaveSell() ? false : (bool?)null);
           charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
@@ -995,9 +1045,9 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
           charter.CorridorHeightInPips = tm.CorridorStats.RatesHeightInPips;
-          charter.CorridorRatesStDevInPips = tm.CorridorStats.RatesStDevInPips;
-          charter.RatesStDevInPips = tm.RatesStDevInPips;
-          charter.WaveDistance = tm.WaveShortDistanceInPips;
+          charter.CorridorRatesStDevInPips = tm.InPips(tm.CorridorStats.StDevsByPriceAvg);// tm.StDevByPriceAvgInPips;
+          charter.RatesStDevInPips = tm.InPips(tm.CorridorStats.StDevsByHeight);// tm.StDevByHeightInPips;
+          charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           var ratesForTrand = !tm.ShowTrendLines && tm.Strategy.HasFlag(Strategies.FreeRoam) ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
           charter.SetTrendLines(ratesForTrand, tm.ShowTrendLines);
           charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;

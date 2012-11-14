@@ -153,23 +153,22 @@ namespace HedgeHog.Alice.Store {
             stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP());
           else
             stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(r => r.PriceAvg));
-        }
-        switch (corridorMethod) {
-          case CorridorCalculationMethod.Minimum:
-            stDev = stDevDict.Values.Min(); break;
-          case CorridorCalculationMethod.Maximum:
-            stDev = stDevDict.Values.Max(); break;
-          case CorridorCalculationMethod.Height:
-            stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP(); break;
-          case CorridorCalculationMethod.HeightUD:
-            stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP(); break;
-          case CorridorCalculationMethod.Price:
-            stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP(); break;
-          case CorridorCalculationMethod.PriceAverage:
-            stDev = rates.StDev(r=>r.PriceAvg); break;
-          default:
-            throw new NotSupportedException(new { corridorMethod } + "");
-        }
+        }else
+          switch (corridorMethod) {
+            case CorridorCalculationMethod.Minimum:
+              stDevDict.Add(CorridorCalculationMethod.Minimum, stDev = stDevDict.Values.Min()); break;
+            case CorridorCalculationMethod.Maximum:
+              stDevDict.Add(CorridorCalculationMethod.Maximum, stDev = stDevDict.Values.Max()); break;
+            case CorridorCalculationMethod.Height:
+              stDevDict.Add(CorridorCalculationMethod.Height, stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()); break;
+            case CorridorCalculationMethod.HeightUD:
+              stDevDict.Add(CorridorCalculationMethod.HeightUD, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP()); break;
+            case CorridorCalculationMethod.Price:
+              stDevDict.Add(CorridorCalculationMethod.Price, stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP()); break;
+            default:
+              throw new NotSupportedException(new { corridorMethod } + "");
+          }
+        stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(r => r.PriceAvg));
         height = stDev * 2;
         return new CorridorStatistics(rates, stDev, coeffs, stDev, stDev, height, height) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow, StDevs = stDevDict

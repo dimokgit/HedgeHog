@@ -340,14 +340,13 @@
                         </StackPanel.Resources>
                         <TextBlock>RatesHeightMin... :<TextBlock Text="{Binding RatesHeightMinimumInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>RatesHeight...... :<TextBlock Text="{Binding RatesHeightInPips,StringFormat=n0}"/></TextBlock>
-                        <TextBlock>RatesDistance.... :<TextBlock Text="{Binding RatesDistanceInPips,StringFormat=n0}"/></TextBlock>
-                        <TextBlock>R.Distance/Height :<TextBlock Text="{Binding RatesDistanceToRatesHeight,StringFormat=n1}"/></TextBlock>
-                        <TextBlock>RatesStDev....... :<TextBlock Text="{Binding RatesStDevInPips,StringFormat=n0}"/></TextBlock>
-                        <TextBlock>RatesStDevAgj.... :<TextBlock Text="{Binding RatesStDevAdjustedInPips,StringFormat=n0}"/></TextBlock>
-                        <TextBlock>RatesHeight/StDev :<TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/></TextBlock>
+                        <TextBlock>StDevByPriceAvg.. :<TextBlock Text="{Binding StDevByPriceAvgInPips,StringFormat=n0}"/></TextBlock>
+                        <TextBlock>StDevByHeight.... :<TextBlock Text="{Binding StDevByHeightInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>WaveShort.Height. :<TextBlock Text="{Binding WaveShort.RatesHeightInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>WaveShort.StDev.. :<TextBlock Text="{Binding WaveShort.RatesStDevInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>Bars Spread...... :<TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/></TextBlock>
+                        <TextBlock>RatesStDevAgj.... :<TextBlock Text="{Binding RatesStDevAdjustedInPips,StringFormat=n0}"/></TextBlock>
+                        <TextBlock>RatesHeight/StDev :<TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/></TextBlock>
                         
                         <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
                           <ListBox.ItemTemplate>
@@ -409,7 +408,7 @@
                 <Expander.Content>
                   <StackPanel>
                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBox Text="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
+                    <tlrkInput:RadNumericUpDown SmallChange=".01" Value="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
               <CheckBox Content="■" IsChecked="{Binding DataContext.ReplayArguments.MustStop,RelativeSource={RelativeSource AncestorType=DataGrid}}" VerticalAlignment="Center" Margin="0,-4" />
               <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
                       Command="{Binding DataContext.StartReplayCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"

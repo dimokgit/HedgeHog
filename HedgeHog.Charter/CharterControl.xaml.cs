@@ -178,22 +178,13 @@ namespace HedgeHog {
     }
 
     #endregion
-    private double _WaveDistance;
-    public double WaveDistance {
-      get { return _WaveDistance; }
-      set {
-        if (_WaveDistance != value) {
-          _WaveDistance = value;
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
+    public double SpreadForCorridor { get; set; }
 
     //†‡∆
     public string Header {
       get {
         return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}|{5:n0}w{6:n1}∆{7:n1}/{8:n0}‡"
+          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}‡{5:n0}∆[{6:n0}/{7:n0}]|{8:n1}"
           /*0*/, Name
           /*1*/, (BarsPeriodType)BarsPeriod
           /*2*/, BarsCount
@@ -202,7 +193,7 @@ namespace HedgeHog {
           /*5*/, CorridorHeightInPips
           /*6*/, RatesStDevInPips
           /*7*/, CorridorRatesStDevInPips
-          /*8*/, WaveDistance
+          /*8*/, SpreadForCorridor
           );
       }
     }
@@ -472,7 +463,7 @@ namespace HedgeHog {
             plotter.Children.Add(_lineTimeShortDraggablePoint);
             _lineTimeShortDraggablePoint.PositionChanged += _lineTimeShortDraggablePoint_PositionChanged;
           }
-          _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), _trendLinesY + _trendLinesH / 10);
+          _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y - 20 * PipSize);
           _lineTimeShortDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
         }));
       }
@@ -504,7 +495,7 @@ namespace HedgeHog {
             plotter.Children.Add(_lineTimeMiddleDraggablePoint);
             _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
           }
-          _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), _trendLinesY - _trendLinesH / 10);
+          _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
           _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
         }));
       }
@@ -1124,9 +1115,11 @@ namespace HedgeHog {
 
       plotter.KeyDown += new KeyEventHandler(plotter_KeyDown);
       plotter.PreviewKeyDown += new KeyEventHandler(plotter_PreviewKeyDown);
+      plotter.MouseDoubleClick += (s, e) => RaisePlotterKeyDown(Key.A);
 
       #endregion
     }
+
 
     private int _gannAnglesCount;
 
@@ -1182,6 +1175,7 @@ namespace HedgeHog {
       }
     }
 
+    public double PipSize { get; set; }
     double GuessPipSize(double price) { return price < 10 ? 0.0001 : 0.01; }
 
     void plotter_PreviewKeyDown(object sender, KeyEventArgs e) {
@@ -1189,7 +1183,7 @@ namespace HedgeHog {
 
     private void AdjustDraggablePointByPip(DraggablePoint dp, KeyEventArgs e) {
       if (dp.IsMouseOver) {
-        var pip = GuessPipSize(dp.Position.Y);
+        var pip = PipSize;
         var step = e.Key == Key.Down ? -pip : e.Key == Key.Up ? pip : 0;
         if (step != 0) {
           e.Handled = true;
@@ -1200,48 +1194,39 @@ namespace HedgeHog {
       }
     }
 
-    #region ActivateTrading Event
-    event EventHandler<EventArgs> ActivateTradingEvent;
-    public event EventHandler<EventArgs> ActivateTrading {
-      add {
-        if (ActivateTradingEvent == null || !ActivateTradingEvent.GetInvocationList().Contains(value))
-          ActivateTradingEvent += value;
-      }
-      remove {
-        ActivateTradingEvent -= value;
+    #region PlotterKeyDown Event
+    public class PlotterKeyDownEventArgs : EventArgs {
+      public Key Key { get; set; }
+      public PlotterKeyDownEventArgs(Key key) {
+        Key = key;
       }
     }
-    protected void RaiseActivateTrading() {
-      if (ActivateTradingEvent != null) ActivateTradingEvent(this, new EventArgs());
+    event EventHandler<PlotterKeyDownEventArgs> PlotterKeyDownEvent;
+    public event EventHandler<PlotterKeyDownEventArgs> PlotterKeyDown {
+      add {
+        if (PlotterKeyDownEvent == null || !PlotterKeyDownEvent.GetInvocationList().Contains(value))
+          PlotterKeyDownEvent += value;
+      }
+      remove {
+        PlotterKeyDownEvent -= value;
+      }
+    }
+    protected void RaisePlotterKeyDown(Key key) {
+      if (PlotterKeyDownEvent != null) PlotterKeyDownEvent(this,new PlotterKeyDownEventArgs(key));
     }
     #endregion
 
-
-    #region ClearStartTime Event
-    event EventHandler<EventArgs> ClearStartTimeEvent;
-    public event EventHandler<EventArgs> ClearStartTime {
-      add {
-        if (ClearStartTimeEvent == null || !ClearStartTimeEvent.GetInvocationList().Contains(value))
-          ClearStartTimeEvent += value;
-      }
-      remove {
-        ClearStartTimeEvent -= value;
-      }
-    }
-    protected void RaiseClearStartTime() {
-      if (ClearStartTimeEvent != null) ClearStartTimeEvent(this, new EventArgs());
-    }
-    #endregion
 
     void plotter_KeyDown(object sender, KeyEventArgs e) {
       if (!new[] { Key.Oem2, Key.OemComma, Key.OemPeriod, Key.P }.Contains(e.Key))
         e.Handled = true;
       try {
         switch (e.Key) {
-          case Key.C:
-            RaiseClearStartTime(); break;
-          case Key.A:
-            RaiseActivateTrading(); break;
+          case Key.H:
+            try { FitToView(); } catch { }
+            break; 
+          default:
+            RaisePlotterKeyDown(e.Key); break;
         }
       } catch (Exception exc) {
         MessageBox.Show(exc + "");
@@ -1344,6 +1329,16 @@ namespace HedgeHog {
 
     #region Update Ticks
     #endregion
+
+    public void FitToView() {
+      plotter.Dispatcher.BeginInvoke(new Action(() => {
+        try {
+          plotter.FitToView();
+        } catch (Exception exc) {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
+        }
+      }), DispatcherPriority.ContextIdle);
+    }
 
     bool inRendering;
     private bool IsPlotterInitialised;
@@ -1623,5 +1618,6 @@ namespace HedgeHog {
 
     public Func<Rate, double> GetPriceMA { get; set; }
     public Func<Rate, Func<Rate, double>, double> CalculateLastPrice { get; set; }
+
   }
 }

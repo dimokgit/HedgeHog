@@ -6,6 +6,7 @@ using System.ComponentModel;
 using HedgeHog.Bars;
 using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Shared;
+using HedgeHog.Models;
 
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
@@ -56,6 +57,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+
+    public double RateEx { set { if (!this.InManual) Rate = value; } }
 
     #region CanTradeChanged Event
     event EventHandler<EventArgs> CanTradeChangedEvent;
@@ -165,9 +168,30 @@ namespace HedgeHog.Alice.Store {
     }
     double _tradesCountPrev = double.NaN;
     partial void OnTradesCountChanging(global::System.Double value) {
-      if (_tradesCountPrev == TradesCount) return;
+      if (_tradesCountPrev == value) return;
       _tradesCountPrev = TradesCount;
       RaiseTradesCountChanging(value);
+    }
+    #endregion
+
+    #region TradeCountChanged Event
+    event EventHandler<EventArgs> TradesCountChangedEvent;
+    public event EventHandler<EventArgs> TradesCountChanged {
+      add {
+        if (TradesCountChangedEvent == null || !TradesCountChangedEvent.GetInvocationList().Contains(value))
+          TradesCountChangedEvent += value;
+      }
+      remove {
+        TradesCountChangedEvent -= value;
+      }
+    }
+    protected void RaiseTradesCountChanged() {
+      if (_tradesCountPrev == TradesCount) return;
+      _tradesCountPrev = TradesCount;
+      if (TradesCountChangedEvent != null) TradesCountChangedEvent(this, new EventArgs());
+    }
+    partial void OnTradesCountChanged() {
+      RaiseTradesCountChanged();
     }
     #endregion
 
@@ -228,6 +252,54 @@ namespace HedgeHog.Alice.Store {
     protected override void OnPropertyChanged(string property) {
       base.OnPropertyChanged(property);
     }
+
+    public bool InManual { get; set; }
+
+    public void ResetPricePosition() { PricePosition = double.NaN; }
+    double _pricePosition = double.NaN;
+    public double PricePosition {
+      get { return _pricePosition; }
+      set {
+        if (_pricePosition != value) {
+          var prev = _pricePosition;
+          _pricePosition = value;
+          if (value != 0 && !double.IsNaN(value) && !double.IsNaN(prev))
+            RaiseCrossed(value);
+        }
+      }
+    }
+
+
+    #region Crossed Event
+    public void ClearCrossedHandlers() {
+      if (CrossedEvent != null)
+        CrossedEvent.GetInvocationList().ToList().ForEach(h => CrossedEvent -= h as EventHandler<CrossedEvetArgs>);
+    }
+    public class CrossedEvetArgs : EventArgs {
+      public double Direction { get; set; }
+      public CrossedEvetArgs(double direction) {
+        this.Direction = direction;
+      }
+    }
+    event EventHandler<CrossedEvetArgs> CrossedEvent;
+    public event EventHandler<CrossedEvetArgs> Crossed {
+      add {
+        if (CrossedEvent == null || !CrossedEvent.GetInvocationList().Contains(value))
+          CrossedEvent += value;
+      }
+      remove {
+        CrossedEvent -= value;
+      }
+    }
+    protected void RaiseCrossed(double pricePosition) {
+      if (CrossedEvent != null) CrossedEvent(this, new CrossedEvetArgs(pricePosition));
+    }
+    #endregion
+
+    public void SetPrice(double price) {
+        PricePosition = (price - Rate).Sign();
+    }
+
   }
   public partial class TradingMacro {
 
@@ -1375,5 +1447,7 @@ namespace HedgeHog.Alice.Store {
     public WaveInfo WaveShort { get { return _waveShort; } }
     WaveInfo _waveShortLeft;
     public WaveInfo WaveShortLeft { get { return _waveShortLeft ?? (_waveShortLeft = new WaveInfo(this)); } }
+
+    public System.Threading.CancellationToken ReplayCancelationToken { get; set; }
   }
 }

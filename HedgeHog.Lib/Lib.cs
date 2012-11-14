@@ -54,7 +54,7 @@ namespace HedgeHog {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
     }
 
-    public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list,int count) {
+    public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list, int count) {
       return count >= 0 ? list.Take(count) : list.Skip(list.Count() + count);
     }
     /// <summary>
@@ -479,6 +479,7 @@ namespace HedgeHog {
       return other.Aggregate(v, (p, n) => p.Min(n));
     }
 
+    public static double PositionByMiddle(this double d, double up, double down) { return (d - down) / (up - down); }
     public static double Round(this double v,int decimals) { return Math.Round(v,decimals); }
     public static double? Round(this double? v,int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
 

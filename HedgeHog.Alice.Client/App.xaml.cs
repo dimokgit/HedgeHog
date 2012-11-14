@@ -51,6 +51,7 @@ namespace HedgeHog.Alice.Client {
         ) + ".backup" + Path.GetExtension(Connection.DataSource);
       if (File.Exists(newName)) File.Delete(newName);
       File.Copy(Connection.DataSource, newName);
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send("Shutdown");
     }
     protected override void OnStartup(StartupEventArgs e) {
       base.OnStartup(e);

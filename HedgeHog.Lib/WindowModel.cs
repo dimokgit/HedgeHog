@@ -154,6 +154,7 @@ namespace HedgeHog.Models {
         if (_Value != null && _Value.Equals(value)) return;
         Previous = _Value;
         _Value = value;
+        HasChanged = true;
         RaisePropertyChanged("Value");
         RaiseValueChanged();
       }
@@ -182,6 +183,8 @@ namespace HedgeHog.Models {
         ValueChangedEvent.GetInvocationList().OfType<EventHandler<EventArgs>>().ToList().ForEach(eh => ValueChangedEvent -= eh);
     }
 
+
+    public bool HasChanged { get; set; }
   }
 
 }

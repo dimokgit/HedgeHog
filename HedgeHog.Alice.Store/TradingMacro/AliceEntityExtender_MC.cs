@@ -66,7 +66,8 @@ namespace HedgeHog.Alice.Store {
     WaveShort = 1,
     WaveTrade = 2,
     WaveMax = 3,
-    WaveMin = 4
+    WaveMin = 4,
+    WaveLeft = 5,
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -105,7 +106,8 @@ namespace HedgeHog.Alice.Store {
     Distancer2 = Distancer * 2, Distancer2A = Distancer2 + Auto,//512
     Distancer4 = Distancer2 * 2, Distancer4A = Distancer4 + Auto,//1024
     Averager = Distancer4 * 2, AveragerA = Averager + Auto,//2048
-    MiddleMan = Averager * 2, MiddleManA = MiddleMan + Auto//4069
+    MiddleMan = Averager * 2, MiddleManA = MiddleMan + Auto,//4096
+    StDevCombo = MiddleMan * 2, StDevComboA = StDevCombo + Auto//8192
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {

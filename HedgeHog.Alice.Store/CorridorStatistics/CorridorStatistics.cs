@@ -29,8 +29,8 @@ namespace HedgeHog.Alice.Store {
       }
       public Rate Rate1 { get; set; }
       public Rate Rate2 { get; set; }
-      public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval,double pointSize = double.NaN)
-        : this(rateBase, new[] { rateOther }, interval,pointSize) {
+      public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval, double pointSize = double.NaN)
+        : this(rateBase, new[] { rateOther }, interval, pointSize) {
       }
       public LegInfo(Rate rateBase, Rate[] ratesOther, TimeSpan interval, double pointSize = double.NaN) {
         this.Rate1 = rateBase;
@@ -46,8 +46,8 @@ namespace HedgeHog.Alice.Store {
         if (!double.IsNaN(pointSize))
           CalcAngle(pointSize);
       }
-      static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval,out Rate rate) {
-        var slopes = new List<Tuple<Rate,double>>();
+      static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval, out Rate rate) {
+        var slopes = new List<Tuple<Rate, double>>();
         rates2.ToList().ForEach(r => {
           slopes.Add(new Tuple<Rate, double>(r, CalculateSlope(rate1, r, interval)));
         });
@@ -97,8 +97,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double[] priceLine { get; set; }
-    public Func<Rate,double> priceHigh { get; set; }
-    public Func<Rate,double> priceLow { get; set; }
+    public Func<Rate, double> priceHigh { get; set; }
+    public Func<Rate, double> priceLow { get; set; }
 
     #region RatesHeight
     private double _RatesMin;
@@ -140,13 +140,13 @@ namespace HedgeHog.Alice.Store {
     public double Slope {
       get {
         if (double.IsNaN(_Slope)) throw new NullReferenceException();
-        return _Slope; 
+        return _Slope;
       }
       set { _Slope = value; }
     }
     public double Angle { get { return Slope.Angle(_pipSize); } }
 
-    double _HeightUp0= double.NaN;
+    double _HeightUp0 = double.NaN;
     public double HeightUp0 {
       get { return _HeightUp0; }
       private set { _HeightUp0 = value; }
@@ -168,7 +168,7 @@ namespace HedgeHog.Alice.Store {
       set { _HeightDown = value; }
     }
     public double HeightUpDown0 { get { return HeightUp0 + HeightDown0; } }
-    public double HeightUpDown0InPips { get { return TradesManagerStatic.InPips(HeightUpDown0,_pipSize) ; } }
+    public double HeightUpDown0InPips { get { return TradesManagerStatic.InPips(HeightUpDown0, _pipSize); } }
     public double HeightUpDown { get { return HeightUp + HeightDown; } }
     public double HeightUpDownInPips { get { return TradesManagerStatic.InPips(HeightUpDown, _pipSize); } }
 
@@ -215,7 +215,7 @@ namespace HedgeHog.Alice.Store {
       public DateTime New { get; set; }
       public DateTime Old { get; set; }
     }
-    public delegate void StartDateChangedDelegate(object selder,StartDateEventArgs e);
+    public delegate void StartDateChangedDelegate(object selder, StartDateEventArgs e);
     public StartDateChangedDelegate StartDateChangedEvent;
     public event StartDateChangedDelegate StartDateChanged {
       add {
@@ -226,7 +226,7 @@ namespace HedgeHog.Alice.Store {
         StartDateChangedEvent -= value;
       }
     }
-    protected void RaiseStartDateChanged(DateTime New,DateTime Old) {
+    protected void RaiseStartDateChanged(DateTime New, DateTime Old) {
       if (StartDateChangedEvent != null) StartDateChangedEvent(this, new StartDateEventArgs() { New = New, Old = Old });
     }
     #endregion
@@ -253,25 +253,26 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(TradingMacro tm, IList<Rate> rates, double stDev,double[] coeffs) {
+    public CorridorStatistics(TradingMacro tm, IList<Rate> rates, double stDev, double[] coeffs) {
       this.TradingMacro = tm;
       Init(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2, 0, 0);
     }
     public CorridorStatistics(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown) {
-      Init(rates,stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, 0,0);
+      Init(rates, stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, 0, 0);
     }
 
-    public void Init(CorridorStatistics cs,double pipSize) {
+    public void Init(CorridorStatistics cs, double pipSize) {
       this._pipSize = pipSize;
       this.priceLine = cs.priceLine;
       this.priceHigh = cs.priceHigh;
       this.priceLow = cs.priceLow;
-      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown,  cs.Iterations, cs.CorridorCrossesCount);
+      Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-        LegInfos.Clear();
-        LegInfos.AddRange(cs.LegInfos);
-      });
+      this.StDevs = cs.StDevs;
+      //GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+      //  LegInfos.Clear();
+      //  LegInfos.AddRange(cs.LegInfos);
+      //});
       RaisePropertyChanged(
         () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
     }
@@ -289,7 +290,7 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
       this.CorridorCrossesCount = corridorCrossesCount;
-      this.RatesHeight = this.Rates.Height(out _RatesMin,out _RatesMax);
+      this.RatesHeight = this.Rates.Height(out _RatesMin, out _RatesMax);
       // Must the last one
       this.StartDate = rates.LastBC().StartDate;
       RaisePropertyChanged("Height");
@@ -427,11 +428,11 @@ namespace HedgeHog.Alice.Store {
       var tm = TradingMacro;
       var a = TradingMacro.TradingAngleRange;
       if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() <= a;
-      return (tm.TradeAndAngleSynced? buy:!buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
+      return (tm.TradeAndAngleSynced ? buy : !buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
     }
 
-    Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceHigh).Last();
-    Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r=>r.PriceLow).First();
+    Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceHigh).Last();
+    Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceLow).First();
     private bool? lastSignal;
 
 
@@ -482,6 +483,8 @@ namespace HedgeHog.Alice.Store {
     public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
 
     public Dictionary<CorridorCalculationMethod, double> StDevs { get; set; }
+    public double StDevsByHeight { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.Height) ? StDevs[CorridorCalculationMethod.Height] : double.NaN; } }
+    public double StDevsByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
   }
 
   public enum TrendLevel { None, Resistance, Support }
