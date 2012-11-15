@@ -1,0 +1,285 @@
+﻿private void StrategyEnterMiddleMan()
+{
+    List<SuppRes> _buySellLevels;
+    Action<Action<SuppRes>> _buySellLevelsForEach;
+    Func<bool> isCurrentGrossOk;
+    IList<Rate> _massRates;
+    Func<IList<Rate>> massRates;
+    Func<double> ratesMedian;
+    Func<SuppRes, bool> suppResCanTrade;
+    Action<SuppRes, bool> enterCrossHandler;
+    Action exitCrossHandler;
+    if (this.RatesArray.Any<Rate>())
+    {
+        this._buyLevel = this.Resistance0();
+        this._sellLevel = this.Support0();
+        _buySellLevels = new SuppRes[] { this._buyLevel, this._sellLevel }.ToList<SuppRes>();
+        _buySellLevelsForEach = a => _buySellLevels.ForEach(sr => a(sr));
+        SuppRes buyCloseLevel = this.Support1();
+        SuppRes sellCloseLevel = this.Resistance1();
+        Func<bool> func1 = delegate {
+            if (!this.CorridorStartDate.HasValue)
+            {
+                return this._isCorridorStopDateManual;
+            }
+            return true;
+        };
+        isCurrentGrossOk = () => this.CurrentGrossInPips >= -this.SpreadForCorridorInPips;
+        Func<double> func2 = () => this.TradingStatistics.CurrentGrossInPips;
+        Func<double> func3 = () => this.TradingStatistics.CurrentLoss;
+        _massRates = null;
+        massRates = () => _massRates ?? (_massRates = this.RatesArray.LastBCs<Rate>(10).ToArray<Rate>());
+        Func<bool> func4 = () => massRates().Max<Rate>(((Func<Rate, double>) (r => r.Mass.GetValueOrDefault(double.NaN)))) > this.MassLevelMax;
+        ratesMedian = () => (this.WaveTradeStart.RatesMax + this.WaveTradeStart.RatesMin) / 2.0;
+        Action adjustLevels = delegate {
+            double pricePosition = this.RateLast.PriceAvg.PositionByMiddle(this.WaveTradeStart.RatesMax, this.WaveTradeStart.RatesMin);
+            this.SetBuySellLevels(pricePosition > 0.5);
+            IEnumerable<Rate> wave = this.WaveShort.Rates.Skip<Rate>(this.WaveTradeStart.Rates.Count);
+            double waveMax = wave.PriceMax<Rate>(0);
+            double waveMin = wave.PriceMin<Rate>(0);
+            double waveHeight = waveMax - waveMin;
+            if (this.TrailingDistanceFunction == TrailingWaveMethod.WaveTrade)
+            {
+                if (this.Trades.HaveBuy())
+                {
+                    this._buyLevel.RateEx = waveMax;
+                    this._sellLevel.RateEx = this.WaveTradeStart.RatesMin;
+                }
+                else if (this.Trades.HaveSell())
+                {
+                    this._sellLevel.RateEx = waveMin;
+                    this._buyLevel.RateEx = this.WaveTradeStart.RatesMax;
+                }
+                else if (this.HasPendingEntryOrders)
+                {
+                    this._buyLevel.RateEx = this._buyLevelRate;
+                    this._sellLevel.RateEx = this._sellLevelRate;
+                }
+                else if (this.IsAutoStrategy && !this.Trades.Any<Trade>())
+                {
+                    this._buyLevel.RateEx = waveMax;
+                    this._sellLevel.RateEx = waveMin;
+                }
+                double stDevByHeight = this.CorridorStats.StDevsByHeight;
+                double stDevByPriceAvg = this.CorridorStats.StDevsByPriceAvg;
+                bool isExpanded = ((waveMax <= this.WaveTradeStart.RatesMax) && (waveMin >= this.WaveTradeStart.RatesMin)) || (this.WaveTradeStart.RatesHeight > (waveHeight * 1.5));
+                ((double) (this._isCorridorOk.Value - ratesMedian())).Abs();
+                double tradingDistance = this.TradingDistance;
+                if (isExpanded)
+                {
+                    this._isCorridorOk.Value = ratesMedian();
+                }
+                if (this._isCorridorOk.HasChanged)
+                {
+                    this._isCorridorOk.HasChanged = false;
+                    if (this.IsAutoStrategy)
+                    {
+                        _buySellLevelsForEach(sr => sr.CanTrade = true);
+                    }
+                    _buySellLevelsForEach(sr => sr.TradesCount = 0.0);
+                }
+                if (stDevByHeight > stDevByPriceAvg)
+                {
+                    _buySellLevelsForEach(sr => sr.TradesCount = this.CorridorCrossesMaximum);
+                }
+                if ((stDevByHeight > stDevByPriceAvg) || ((this.CorridorCrossesMaximum > 0) && (this._buyLevel.TradesCount.Min(this._sellLevel.TradesCount) < -this.CorridorCrossesMaximum)))
+                {
+                    _buySellLevelsForEach(sr => sr.TradesCount = this.CorridorCrossesMaximum);
+                }
+            }
+            else if (this.TrailingDistanceFunction == TrailingWaveMethod.WaveShort)
+            {
+                if (this.IsAutoStrategy || this.Trades.Any<Trade>())
+                {
+                    this._buyLevel.RateEx = wave.Max<Rate>((Func<Rate, double>) (r => r.PriceAvg));
+                    this._sellLevel.RateEx = wave.Min<Rate>((Func<Rate, double>) (r => r.PriceAvg));
+                }
+                this._buyLevel.CanTrade = this._sellLevel.CanTrade = (this._buyLevel.Rate - this._sellLevel.Rate) > (this.RatesHeight * this.CorridorDistanceRatio);
+            }
+            else
+            {
+                double offset = (this.TradingDistanceFunction == TradingMacroTakeProfitFunction.BuySellLevels) ? this.RatesStDev : this.TradingDistance;
+                if ((this._buyLevel.TradesCount == 0.0) && (this._sellLevel.TradesCount == -1.0))
+                {
+                    this._sellLevel.RateEx = this._buyLevel.Rate - offset;
+                    this._buyLevel.TradesCount = -1.0;
+                }
+                if ((this._buyLevel.TradesCount == -1.0) && (this._sellLevel.TradesCount == 0.0))
+                {
+                    this._buyLevel.RateEx = this._sellLevel.Rate + offset;
+                    this._sellLevel.TradesCount = -1.0;
+                }
+            }
+        };
+        suppResCanTrade = sr => (sr.CanTrade && (sr.TradesCount <= 0.0)) && !this.HasTradesByDistance(sr.IsBuy);
+        enterCrossHandler = delegate (SuppRes suppRes, bool isBuy) {
+            if (this.IsTradingActive)
+            {
+                int lot = this.Trades.IsBuy(!isBuy).Lots();
+                if (suppResCanTrade(suppRes))
+                {
+                    lot += this.AllowedLotSizeCore(this.Trades, null);
+                }
+                this.OpenTrade(isBuy, lot);
+            }
+        };
+        exitCrossHandler = delegate {
+            if (this.IsTradingActive)
+            {
+                int lot = this.Trades.Lots() - (this._trimAtZero ? this.AllowedLotSizeCore(this.Trades, null) : 0);
+                this._trimAtZero = false;
+                this.CloseTrades(lot);
+            }
+        };
+        if (this._strategyExecuteOnTradeClose == null)
+        {
+            this.ReloadPairStats();
+            this.SuppResLevelsCount = 2;
+            this.ShowTrendLines = false;
+            this._buyLevelRate = this._sellLevelRate = double.NaN;
+            this.ForEachSuppRes(sr => sr.InManual = false);
+            this.ForEachSuppRes(sr => sr.ResetPricePosition());
+            this.ForEachSuppRes(sr => sr.ClearCrossedHandlers());
+            this._buyLevel.CanTrade = this._sellLevel.CanTrade = this.IsAutoStrategy;
+            this._buyLevel.Crossed += delegate (object s, SuppRes.CrossedEvetArgs e) {
+                if (e.Direction != -1.0)
+                {
+                    if (this._sellLevel.CanTrade || this._buyLevel.CanTrade)
+                    {
+                        this._sellLevel.TradesCount = this._buyLevel.TradesCount - 1.0;
+                    }
+                    enterCrossHandler((SuppRes) s, true);
+                }
+            };
+            this._sellLevel.Crossed += delegate (object s, SuppRes.CrossedEvetArgs e) {
+                if (e.Direction != 1.0)
+                {
+                    if (this._sellLevel.CanTrade || this._buyLevel.CanTrade)
+                    {
+                        this._buyLevel.TradesCount = this._sellLevel.TradesCount - 1.0;
+                    }
+                    enterCrossHandler((SuppRes) s, false);
+                }
+            };
+            buyCloseLevel.Crossed += delegate (object s, SuppRes.CrossedEvetArgs e) {
+                if (e.Direction == -1.0)
+                {
+                    exitCrossHandler();
+                }
+            };
+            sellCloseLevel.Crossed += delegate (object s, SuppRes.CrossedEvetArgs e) {
+                if (e.Direction == 1.0)
+                {
+                    exitCrossHandler();
+                }
+            };
+            this.WaveShort.ClearDistance();
+            this.CloseAtZero = this._trimAtZero;
+            this._strategyExecuteOnTradeClose = delegate (Trade t) {
+                this.ForEachSuppRes(sr => sr.InManual = false);
+                this.CmaLotSize = 0.0;
+                this._isCorridorOk.Value = ratesMedian();
+                this._isCorridorOk.HasChanged = false;
+                if (isCurrentGrossOk())
+                {
+                    if (!this.IsAutoStrategy)
+                    {
+                        this.IsTradingActive = false;
+                    }
+                    this._buyLevel.TradesCount = this._sellLevel.TradesCount = 0.0;
+                    this.CorridorStartDate = null;
+                    this.CorridorStopDate = DateTime.MinValue;
+                    this.LastProfitStartDate = new DateTime?(this.CorridorStats.Rates.LastBC<Rate>(1).StartDate);
+                }
+                this.CloseAtZero = this._trimAtZero = false;
+            };
+            this._strategyExecuteOnTradeOpen = delegate {
+            };
+        }
+        else
+        {
+            if (!this.IsInVitualTrading)
+            {
+                this.TradesManager.TradeClosed += this.TradeCloseHandler;
+                this.TradesManager.TradeAdded += this.TradeAddedHandler;
+            }
+            if (this.CorridorStats.Rates.Any<Rate>())
+            {
+                Func<double> buyNetOpen = () => this.Trades.IsBuy(true).NetOpen(this._buyLevel.Rate);
+                Func<double> sellNetOpen = () => this.Trades.IsBuy(false).NetOpen(this._sellLevel.Rate);
+                buyCloseLevel.CanTrade = sellCloseLevel.CanTrade = false;
+                buyCloseLevel.TradesCount = sellCloseLevel.TradesCount = 9.0;
+                if (this.IsAutoStrategy && (((this.CurrentPrice.Bid > this._buyLevel.Rate) && this.Trades.HaveSell()) || ((this.CurrentPrice.Ask < this._sellLevel.Rate) && this.Trades.HaveBuy())))
+                {
+                    this.CloseTrades();
+                }
+                else
+                {
+                    double als = this.AllowedLotSizeCore(this.Trades, null);
+                    if (this.IsEndOfWeek() && this.Trades.Any<Trade>())
+                    {
+                        this.CloseTrades(this.Trades.Lots());
+                    }
+                    if ((!this.IsAutoStrategy && this.IsEndOfWeek()) || !this.IsTradingHour())
+                    {
+                        this._buyLevel.CanTrade = this._sellLevel.CanTrade = false;
+                    }
+                    else
+                    {
+                        if (((((double) this.Trades.Lots()) / als) > this.ProfitToLossExitRatio) || ((als == this.LotSize) && (this.Trades.Lots() > this.LotSize)))
+                        {
+                            this._trimAtZero = true;
+                        }
+                        this._buyLevel.SetPrice(this.RateLast.PriceAvg);
+                        this._sellLevel.SetPrice(this.RateLast.PriceAvg);
+                        adjustLevels();
+                        if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade)
+                        {
+                            if (!this.Trades.Any<Trade>())
+                            {
+                                buyCloseLevel.Rate = this._RatesMin - this.RatesHeight;
+                                buyCloseLevel.ResetPricePosition();
+                                sellCloseLevel.Rate = this._RatesMax + this.RatesHeight;
+                                sellCloseLevel.ResetPricePosition();
+                            }
+                            else
+                            {
+                                double tpColse = this.InPoints((this.CloseAtZero || this._trimAtZero) ? 0.0 : (this.TakeProfitPips + this.CurrentLossInPips.Min(((double) 0.0)).Abs()));
+                                double priceAvgMax = this.RateLast.PriceAvg.Max(this.RatePrev.PriceAvg) - this.PointSize;
+                                double priceAvgMin = this.RateLast.PriceAvg.Min(this.RatePrev.PriceAvg) + this.PointSize;
+                                if (buyCloseLevel.InManual)
+                                {
+                                    if (buyCloseLevel.Rate <= priceAvgMax)
+                                    {
+                                        buyCloseLevel.Rate = priceAvgMax;
+                                    }
+                                }
+                                else
+                                {
+                                    buyCloseLevel.Rate = (buyNetOpen() + tpColse).Max(this.Trades.HaveBuy() ? priceAvgMax : double.NaN);
+                                }
+                                if (sellCloseLevel.InManual)
+                                {
+                                    if (sellCloseLevel.Rate >= priceAvgMin)
+                                    {
+                                        sellCloseLevel.Rate = priceAvgMin;
+                                    }
+                                }
+                                else
+                                {
+                                    sellCloseLevel.Rate = (sellNetOpen() - tpColse).Min(this.Trades.HaveSell() ? priceAvgMin : double.NaN);
+                                }
+                                buyCloseLevel.SetPrice(this.RateLast.PriceAvg);
+                                sellCloseLevel.SetPrice(this.RateLast.PriceAvg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+ 
+
+ 
