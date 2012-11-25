@@ -181,22 +181,8 @@ namespace HedgeHog {
     public double SpreadForCorridor { get; set; }
 
     //†‡∆
-    public string Header {
-      get {
-        return
-          string.Format("{0}:{1}×{2}:{3:n0}°{4:n0}‡{5:n0}∆[{6:n0}/{7:n0}]|{8:n1}"
-          /*0*/, Name
-          /*1*/, (BarsPeriodType)BarsPeriod
-          /*2*/, BarsCount
-          /*3*/, CorridorAngle
-          /*4*/, HeightInPips
-          /*5*/, CorridorHeightInPips
-          /*6*/, RatesStDevInPips
-          /*7*/, CorridorRatesStDevInPips
-          /*8*/, SpreadForCorridor
-          );
-      }
-    }
+    public string HeaderText;
+    public string Header { get { return Name + HeaderText; } }
 
     public bool IsActive {
       get { return (bool)GetValue(IsActiveProperty); }

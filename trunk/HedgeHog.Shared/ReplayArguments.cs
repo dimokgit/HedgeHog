@@ -5,6 +5,25 @@ using System.Text;
 
 namespace HedgeHog.Shared {
   public class ReplayArguments:GalaSoft.MvvmLight.ViewModelBase {
+
+    #region Session Statistics
+    public class SessionStatistics {
+      public double ProfitToLossRatio { get; set; }
+
+    }
+    SessionStatistics _sessionStats = new SessionStatistics();
+    public SessionStatistics SessionStats {
+      get { return _sessionStats; }
+      set { _sessionStats = value; }
+    }
+    #endregion
+
+    #region SuperSession
+    public Guid SuperSessionId { get; set; }
+    public bool HasSuperSession { get { return SuperSessionId != Guid.Empty; } }
+    public void ResetSuperSession() { SuperSessionId = Guid.Empty; }
+    #endregion
+
     #region CurrentPosition
     private int _CurrentPosition;
     public int CurrentPosition {

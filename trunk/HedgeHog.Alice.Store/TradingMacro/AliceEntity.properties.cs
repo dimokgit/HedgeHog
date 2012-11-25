@@ -57,8 +57,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-
-    public double RateEx { set { if (!this.InManual) Rate = value; } }
+    int _rateExErrorCounter = 0;// This is to ammend some wierd bug in IEntityChangeTracker.EntityMemberChanged or something that it calls
+    public double RateEx {
+      set {
+        if (Rate == value || this.InManual) return;
+        var valuePrev = Rate;
+        try {
+          Rate = value;
+          _rateExErrorCounter = 0;
+        } catch (Exception exc) {
+          if (_rateExErrorCounter > 100) throw;
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: "+new { Prev = valuePrev, Curr = Rate } + ""));
+        }
+      }
+    }
 
     #region CanTradeChanged Event
     event EventHandler<EventArgs> CanTradeChangedEvent;
@@ -381,6 +393,41 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #region TestSuperSessionUid
+
+    public bool TestSuperSessionUidIsEmpty { get { return TestSuperSessionUid == Guid.Empty || TestSuperSessionUid == 1.Guid(); } }
+    private bool _TestSuperSessionUidError = false;
+    private Guid _testSuperSessionUidDefault = 1.Guid();
+    private Guid _TestSuperSessionUid;
+    public Guid TestSuperSessionUid { get { return _TestSuperSessionUid; } }
+    [DisplayName("SuperSession Uid")]
+    [Category(categoryTest)]
+    public string TestSuperSessionUid_ {
+      get {
+        return _TestSuperSessionUid.ToString();
+        if (_TestSuperSessionUid == Guid.Empty && !_TestSuperSessionUidError)
+          try {
+            _TestSuperSessionUid = GlobalStorage.UseForexContext(c =>
+              c.t_Session.ToArray().Where(s => s.SuperUid.GetValueOrDefault(Guid.Empty) != Guid.Empty)
+              .OrderByDescending(s => s.Timestamp).Select(s => s.SuperUid.Value)
+              .DefaultIfEmpty(_testSuperSessionUidDefault).First());
+          } catch (Exception exc) {
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+            _TestSuperSessionUidError = true;
+          }
+      }
+      set {
+        Guid v = Guid.Empty;
+        Guid.TryParse(value, out v);
+        if (_TestSuperSessionUid != v) {
+          _TestSuperSessionUid = v;
+          OnPropertyChanged("TestSuperSessionUid_");
+          OnPropertyChanged("TestSuperSessionUid");
+        }
+      }
+    }
+
+    #endregion
 
     string _TestStopRateWaveOffset = "";
     [DisplayName("Stop Rate Wave Offset")]
@@ -595,7 +642,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }

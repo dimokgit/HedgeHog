@@ -30,14 +30,14 @@ namespace HedgeHog {
   public static class Lib {
 
     public static string ParseParamRange(this string param) {
-      var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[\d.]+)");
+      var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[-\d.]+)");
       var m = range.Match(param);
       if (!m.Success) return param;
       var l = new List<double>();
       var from = double.Parse(m.Groups["from"].Value);
       var to = double.Parse(m.Groups["to"].Value);
       var step = double.Parse(m.Groups["step"].Value);
-      for (var d = from; d <= to; d += step)
+      for (var d = from; step > 0 && d <= to || step < 0 && d >= to; d += step)
         l.Add(d);
       return string.Join(" ", l);
     }
@@ -66,8 +66,8 @@ namespace HedgeHog {
     public static T LastBC<T>(this IList<T> list, int positionFromEnd = 1) {
       return list[list.Count - positionFromEnd];
     }
-    public static IEnumerable<T> LastBCs<T>(this IList<T> list, int positionFromEnd = 1) {
-      return list.Skip(list.Count - positionFromEnd);
+    public static IEnumerable<T> LastBCs<T>(this IEnumerable<T> list, int positionFromEnd = 1) {
+      return list.Skip(list.Count() - positionFromEnd);
     }
     public static T LastByCountOrDefault<T>(this IList<T> list) {
       return list.Count == 0 ? default(T) : list.LastBC();
@@ -403,6 +403,15 @@ namespace HedgeHog {
       }
     }
 
+    static readonly Guid GuidEmpty1 = 1.Guid();
+    public static bool HasValue(this Guid g) {
+      return g != System.Guid.Empty || g == GuidEmpty1;
+    }
+    public static Guid Guid(this int i) {
+      if (!i.Between(0, 255)) throw new ArgumentException("Value must be between 0 and 255.");
+      var b = (byte)i;
+      return new Guid(0, 0, 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, b });
+    }
 
     public static TimeSpan FromSeconds(this int i) { return TimeSpan.FromSeconds(i); }
     public static TimeSpan FromSeconds(this double i) { return TimeSpan.FromSeconds(i); }
@@ -453,6 +462,12 @@ namespace HedgeHog {
     }
     public static double Sign(this double v) {
       return Math.Sign(v);
+    }
+    public static double Ratio(this double v, double other) {
+      return v > other ? v / other : other / v;
+    }
+    public static double Max(this double? v, double? other) {
+      return Math.Max(v.GetValueOrDefault(double.NaN), other.GetValueOrDefault(double.NaN));
     }
     public static double Max(this double v, double other) {
       return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Max(v, other);
@@ -564,6 +579,9 @@ namespace HedgeHog {
 
     public static T FirstOrLast<T>(this IEnumerable<T> e, bool last) {
       return last ? e.Last() : e.First();
+    }
+    public static T[] FirstAndLast<T>(this IList<T> e) {
+      return new[] { e[0], e[e.Count - 1] };
     }
     public static double AverageHeight(this IEnumerable<double> values) {
       return values.Skip(1).Select((d, i) => Math.Abs(d - values.ElementAt(i))).Average();

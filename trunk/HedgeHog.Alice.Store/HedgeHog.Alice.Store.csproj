@@ -120,6 +120,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
+    <Compile Include="TradingMacro\TradingMacro.Strategies.Base.cs" />
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
@@ -265,6 +266,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CopyTradingMacro.sql" />
+    <Content Include="TradingMacro\StrategyEnterMiddleMan.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

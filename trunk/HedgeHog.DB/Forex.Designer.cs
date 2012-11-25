@@ -208,6 +208,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<t_Session> _t_Session;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<v_TradeSession> v_TradeSession
+        {
+            get
+            {
+                if ((_v_TradeSession == null))
+                {
+                    _v_TradeSession = base.CreateObjectSet<v_TradeSession>("v_TradeSession");
+                }
+                return _v_TradeSession;
+            }
+        }
+        private ObjectSet<v_TradeSession> _v_TradeSession;
 
         #endregion
         #region AddTo Methods
@@ -282,6 +298,14 @@ namespace HedgeHog.DB
         public void AddTot_Session(t_Session t_Session)
         {
             base.AddObject("t_Session", t_Session);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the v_TradeSession EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTov_TradeSession(v_TradeSession v_TradeSession)
+        {
+            base.AddObject("v_TradeSession", v_TradeSession);
         }
 
         #endregion
@@ -1440,12 +1464,14 @@ namespace HedgeHog.DB
         /// <param name="uid">Initial value of the Uid property.</param>
         /// <param name="minimumGross">Initial value of the MinimumGross property.</param>
         /// <param name="maximumLot">Initial value of the MaximumLot property.</param>
-        public static t_Session Createt_Session(global::System.Guid uid, global::System.Double minimumGross, global::System.Int32 maximumLot)
+        /// <param name="timestamp">Initial value of the Timestamp property.</param>
+        public static t_Session Createt_Session(global::System.Guid uid, global::System.Double minimumGross, global::System.Int32 maximumLot, global::System.DateTime timestamp)
         {
             t_Session t_Session = new t_Session();
             t_Session.Uid = uid;
             t_Session.MinimumGross = minimumGross;
             t_Session.MaximumLot = maximumLot;
+            t_Session.Timestamp = timestamp;
             return t_Session;
         }
 
@@ -1526,6 +1552,78 @@ namespace HedgeHog.DB
         private global::System.Int32 _MaximumLot;
         partial void OnMaximumLotChanging(global::System.Int32 value);
         partial void OnMaximumLotChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> Profitability
+        {
+            get
+            {
+                return _Profitability;
+            }
+            set
+            {
+                OnProfitabilityChanging(value);
+                ReportPropertyChanging("Profitability");
+                _Profitability = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Profitability");
+                OnProfitabilityChanged();
+            }
+        }
+        private Nullable<global::System.Double> _Profitability;
+        partial void OnProfitabilityChanging(Nullable<global::System.Double> value);
+        partial void OnProfitabilityChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime Timestamp
+        {
+            get
+            {
+                return _Timestamp;
+            }
+            set
+            {
+                OnTimestampChanging(value);
+                ReportPropertyChanging("Timestamp");
+                _Timestamp = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Timestamp");
+                OnTimestampChanged();
+            }
+        }
+        private global::System.DateTime _Timestamp;
+        partial void OnTimestampChanging(global::System.DateTime value);
+        partial void OnTimestampChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Guid> SuperUid
+        {
+            get
+            {
+                return _SuperUid;
+            }
+            set
+            {
+                OnSuperUidChanging(value);
+                ReportPropertyChanging("SuperUid");
+                _SuperUid = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SuperUid");
+                OnSuperUidChanged();
+            }
+        }
+        private Nullable<global::System.Guid> _SuperUid;
+        partial void OnSuperUidChanging(Nullable<global::System.Guid> value);
+        partial void OnSuperUidChanged();
 
         #endregion
     
@@ -2600,6 +2698,642 @@ namespace HedgeHog.DB
         private global::System.Int32 _Weight2;
         partial void OnWeight2Changing(global::System.Int32 value);
         partial void OnWeight2Changed();
+
+        #endregion
+    
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="v_TradeSession")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class v_TradeSession : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new v_TradeSession object.
+        /// </summary>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="sessionId">Initial value of the SessionId property.</param>
+        public static v_TradeSession Createv_TradeSession(global::System.String pair, global::System.Guid sessionId)
+        {
+            v_TradeSession v_TradeSession = new v_TradeSession();
+            v_TradeSession.Pair = pair;
+            v_TradeSession.SessionId = sessionId;
+            return v_TradeSession;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Guid SessionId
+        {
+            get
+            {
+                return _SessionId;
+            }
+            set
+            {
+                if (_SessionId != value)
+                {
+                    OnSessionIdChanging(value);
+                    ReportPropertyChanging("SessionId");
+                    _SessionId = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("SessionId");
+                    OnSessionIdChanged();
+                }
+            }
+        }
+        private global::System.Guid _SessionId;
+        partial void OnSessionIdChanging(global::System.Guid value);
+        partial void OnSessionIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> TimeStamp
+        {
+            get
+            {
+                return _TimeStamp;
+            }
+            set
+            {
+                OnTimeStampChanging(value);
+                ReportPropertyChanging("TimeStamp");
+                _TimeStamp = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeStamp");
+                OnTimeStampChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _TimeStamp;
+        partial void OnTimeStampChanging(Nullable<global::System.DateTime> value);
+        partial void OnTimeStampChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> Count
+        {
+            get
+            {
+                return _Count;
+            }
+            set
+            {
+                OnCountChanging(value);
+                ReportPropertyChanging("Count");
+                _Count = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Count");
+                OnCountChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _Count;
+        partial void OnCountChanging(Nullable<global::System.Int32> value);
+        partial void OnCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> GrossPL
+        {
+            get
+            {
+                return _GrossPL;
+            }
+            set
+            {
+                OnGrossPLChanging(value);
+                ReportPropertyChanging("GrossPL");
+                _GrossPL = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("GrossPL");
+                OnGrossPLChanged();
+            }
+        }
+        private Nullable<global::System.Double> _GrossPL;
+        partial void OnGrossPLChanging(Nullable<global::System.Double> value);
+        partial void OnGrossPLChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> Days
+        {
+            get
+            {
+                return _Days;
+            }
+            set
+            {
+                OnDaysChanging(value);
+                ReportPropertyChanging("Days");
+                _Days = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Days");
+                OnDaysChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _Days;
+        partial void OnDaysChanging(Nullable<global::System.Int32> value);
+        partial void OnDaysChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> Lot
+        {
+            get
+            {
+                return _Lot;
+            }
+            set
+            {
+                OnLotChanging(value);
+                ReportPropertyChanging("Lot");
+                _Lot = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Lot");
+                OnLotChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _Lot;
+        partial void OnLotChanging(Nullable<global::System.Int32> value);
+        partial void OnLotChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> LotA
+        {
+            get
+            {
+                return _LotA;
+            }
+            set
+            {
+                OnLotAChanging(value);
+                ReportPropertyChanging("LotA");
+                _LotA = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LotA");
+                OnLotAChanged();
+            }
+        }
+        private Nullable<global::System.Double> _LotA;
+        partial void OnLotAChanging(Nullable<global::System.Double> value);
+        partial void OnLotAChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> LotSD
+        {
+            get
+            {
+                return _LotSD;
+            }
+            set
+            {
+                OnLotSDChanging(value);
+                ReportPropertyChanging("LotSD");
+                _LotSD = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LotSD");
+                OnLotSDChanged();
+            }
+        }
+        private Nullable<global::System.Double> _LotSD;
+        partial void OnLotSDChanging(Nullable<global::System.Double> value);
+        partial void OnLotSDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DollarsPerMonth
+        {
+            get
+            {
+                return _DollarsPerMonth;
+            }
+            set
+            {
+                OnDollarsPerMonthChanging(value);
+                ReportPropertyChanging("DollarsPerMonth");
+                _DollarsPerMonth = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DollarsPerMonth");
+                OnDollarsPerMonthChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DollarsPerMonth;
+        partial void OnDollarsPerMonthChanging(Nullable<global::System.Double> value);
+        partial void OnDollarsPerMonthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Decimal> PL
+        {
+            get
+            {
+                return _PL;
+            }
+            set
+            {
+                OnPLChanging(value);
+                ReportPropertyChanging("PL");
+                _PL = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PL");
+                OnPLChanged();
+            }
+        }
+        private Nullable<global::System.Decimal> _PL;
+        partial void OnPLChanging(Nullable<global::System.Decimal> value);
+        partial void OnPLChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> MinutesInTest
+        {
+            get
+            {
+                return _MinutesInTest;
+            }
+            set
+            {
+                OnMinutesInTestChanging(value);
+                ReportPropertyChanging("MinutesInTest");
+                _MinutesInTest = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MinutesInTest");
+                OnMinutesInTestChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _MinutesInTest;
+        partial void OnMinutesInTestChanging(Nullable<global::System.Int32> value);
+        partial void OnMinutesInTestChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DaysPerMinute
+        {
+            get
+            {
+                return _DaysPerMinute;
+            }
+            set
+            {
+                OnDaysPerMinuteChanging(value);
+                ReportPropertyChanging("DaysPerMinute");
+                _DaysPerMinute = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DaysPerMinute");
+                OnDaysPerMinuteChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DaysPerMinute;
+        partial void OnDaysPerMinuteChanging(Nullable<global::System.Double> value);
+        partial void OnDaysPerMinuteChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> DollarPerLot
+        {
+            get
+            {
+                return _DollarPerLot;
+            }
+            set
+            {
+                OnDollarPerLotChanging(value);
+                ReportPropertyChanging("DollarPerLot");
+                _DollarPerLot = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DollarPerLot");
+                OnDollarPerLotChanged();
+            }
+        }
+        private Nullable<global::System.Double> _DollarPerLot;
+        partial void OnDollarPerLotChanging(Nullable<global::System.Double> value);
+        partial void OnDollarPerLotChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String SessionInfo
+        {
+            get
+            {
+                return _SessionInfo;
+            }
+            set
+            {
+                OnSessionInfoChanging(value);
+                ReportPropertyChanging("SessionInfo");
+                _SessionInfo = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("SessionInfo");
+                OnSessionInfoChanged();
+            }
+        }
+        private global::System.String _SessionInfo;
+        partial void OnSessionInfoChanging(global::System.String value);
+        partial void OnSessionInfoChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String PriceCmaLevels
+        {
+            get
+            {
+                return _PriceCmaLevels;
+            }
+            set
+            {
+                OnPriceCmaLevelsChanging(value);
+                ReportPropertyChanging("PriceCmaLevels");
+                _PriceCmaLevels = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("PriceCmaLevels");
+                OnPriceCmaLevelsChanged();
+            }
+        }
+        private global::System.String _PriceCmaLevels;
+        partial void OnPriceCmaLevelsChanging(global::System.String value);
+        partial void OnPriceCmaLevelsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> CorridorDistanceRatio
+        {
+            get
+            {
+                return _CorridorDistanceRatio;
+            }
+            set
+            {
+                OnCorridorDistanceRatioChanging(value);
+                ReportPropertyChanging("CorridorDistanceRatio");
+                _CorridorDistanceRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("CorridorDistanceRatio");
+                OnCorridorDistanceRatioChanged();
+            }
+        }
+        private Nullable<global::System.Double> _CorridorDistanceRatio;
+        partial void OnCorridorDistanceRatioChanging(Nullable<global::System.Double> value);
+        partial void OnCorridorDistanceRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String PLToCorridorExitRatio
+        {
+            get
+            {
+                return _PLToCorridorExitRatio;
+            }
+            set
+            {
+                OnPLToCorridorExitRatioChanging(value);
+                ReportPropertyChanging("PLToCorridorExitRatio");
+                _PLToCorridorExitRatio = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("PLToCorridorExitRatio");
+                OnPLToCorridorExitRatioChanged();
+            }
+        }
+        private global::System.String _PLToCorridorExitRatio;
+        partial void OnPLToCorridorExitRatioChanging(global::System.String value);
+        partial void OnPLToCorridorExitRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String ProfitToLossExitRatio
+        {
+            get
+            {
+                return _ProfitToLossExitRatio;
+            }
+            set
+            {
+                OnProfitToLossExitRatioChanging(value);
+                ReportPropertyChanging("ProfitToLossExitRatio");
+                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("ProfitToLossExitRatio");
+                OnProfitToLossExitRatioChanged();
+            }
+        }
+        private global::System.String _ProfitToLossExitRatio;
+        partial void OnProfitToLossExitRatioChanging(global::System.String value);
+        partial void OnProfitToLossExitRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String BarsCount
+        {
+            get
+            {
+                return _BarsCount;
+            }
+            set
+            {
+                OnBarsCountChanging(value);
+                ReportPropertyChanging("BarsCount");
+                _BarsCount = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("BarsCount");
+                OnBarsCountChanged();
+            }
+        }
+        private global::System.String _BarsCount;
+        partial void OnBarsCountChanging(global::System.String value);
+        partial void OnBarsCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> MinimumGross
+        {
+            get
+            {
+                return _MinimumGross;
+            }
+            set
+            {
+                OnMinimumGrossChanging(value);
+                ReportPropertyChanging("MinimumGross");
+                _MinimumGross = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("MinimumGross");
+                OnMinimumGrossChanged();
+            }
+        }
+        private Nullable<global::System.Double> _MinimumGross;
+        partial void OnMinimumGrossChanging(Nullable<global::System.Double> value);
+        partial void OnMinimumGrossChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> DateStart
+        {
+            get
+            {
+                return _DateStart;
+            }
+            set
+            {
+                OnDateStartChanging(value);
+                ReportPropertyChanging("DateStart");
+                _DateStart = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateStart");
+                OnDateStartChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _DateStart;
+        partial void OnDateStartChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateStartChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> LossToProfit
+        {
+            get
+            {
+                return _LossToProfit;
+            }
+            set
+            {
+                OnLossToProfitChanging(value);
+                ReportPropertyChanging("LossToProfit");
+                _LossToProfit = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LossToProfit");
+                OnLossToProfitChanged();
+            }
+        }
+        private Nullable<global::System.Double> _LossToProfit;
+        partial void OnLossToProfitChanging(Nullable<global::System.Double> value);
+        partial void OnLossToProfitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Guid> SuperSessionUid
+        {
+            get
+            {
+                return _SuperSessionUid;
+            }
+            set
+            {
+                OnSuperSessionUidChanging(value);
+                ReportPropertyChanging("SuperSessionUid");
+                _SuperSessionUid = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("SuperSessionUid");
+                OnSuperSessionUidChanged();
+            }
+        }
+        private Nullable<global::System.Guid> _SuperSessionUid;
+        partial void OnSuperSessionUidChanging(Nullable<global::System.Guid> value);
+        partial void OnSuperSessionUidChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.DateTime> DateStop
+        {
+            get
+            {
+                return _DateStop;
+            }
+            set
+            {
+                OnDateStopChanging(value);
+                ReportPropertyChanging("DateStop");
+                _DateStop = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("DateStop");
+                OnDateStopChanged();
+            }
+        }
+        private Nullable<global::System.DateTime> _DateStop;
+        partial void OnDateStopChanging(Nullable<global::System.DateTime> value);
+        partial void OnDateStopChanged();
 
         #endregion
     

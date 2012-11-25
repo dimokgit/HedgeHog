@@ -125,7 +125,7 @@ namespace HedgeHog.Bars {
     /// <summary>
     /// Bar height
     /// </summary>
-    public double PriceHeight { get { return (AskHigh - BidHigh + AskLow - BidLow) / 2; } }
+    public double PriceSpread { get { return (AskHigh - BidHigh + AskLow - BidLow) / 2; } }
     #endregion
 
     #region Price

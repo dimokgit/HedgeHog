@@ -60,14 +60,18 @@ namespace HedgeHog.Alice.Store {
     WaveStDev = 5,
     WaveDistance2 = 6,
     WaveDistance4 = 7,
+    WaveDistance41 = 71,
+    WaveDistance42 = 72,
     WaveStDevHeight = 8,
   }
   public enum TrailingWaveMethod {
+    WaveAuto = 0,
     WaveShort = 1,
     WaveTrade = 2,
     WaveMax = 3,
     WaveMin = 4,
     WaveLeft = 5,
+    WaveRight = 6,
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -79,7 +83,7 @@ namespace HedgeHog.Alice.Store {
     RatesHeight_2 = 12,
     WaveShort = 13,
     WaveTradeStart = 14,
-    RatesStDevAdj = 15,
+    RatesStDevMin = 15,
     Spread = 20,
     Zero = 25,
     PriceSpread = 26,
@@ -100,8 +104,8 @@ namespace HedgeHog.Alice.Store {
     Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
     FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto,//16
     Deviator = FreeRoam * 2, DeviatorA = Deviator + Auto,//32
-    AfterWaver = Deviator * 2, AfterWaverA = AfterWaver + Auto,//64
-    Minimalist = AfterWaver * 2, MinimalistA = Minimalist + Auto,//128
+    Ender = Deviator * 2, EnderA = Ender + Auto,//64
+    Minimalist = Ender * 2, MinimalistA = Minimalist + Auto,//128
     Distancer = Minimalist * 2, DistancerA = Distancer + Auto,//256
     Distancer2 = Distancer * 2, Distancer2A = Distancer2 + Auto,//512
     Distancer4 = Distancer2 * 2, Distancer4A = Distancer4 + Auto,//1024
