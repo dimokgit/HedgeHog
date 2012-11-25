@@ -524,14 +524,14 @@ namespace HedgeHog.Bars {
     public static double WeightedAverage<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       double wa = 0, s = 0;
       bars.Aggregate((p, n) => {
-        var d = p.PriceHeight;
+        var d = p.PriceSpread;
         wa += p.PriceAvg * d;
         s += d;
         return n;
       });
       return wa / s;
     }
-    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar,TBar, double> getValue) where TBar : BarBase {
+    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue) where TBar : BarBase {
       setRunningValue(bars.First(), 0);
       bars.Aggregate((p, n) => {
         setRunningValue(n, getRunningValue(p) + getValue(p, n));
@@ -1034,8 +1034,13 @@ namespace HedgeHog.Bars {
     public static double StDevByCma<TBar>(this IList<TBar> bars) where TBar : BarBase {
       return bars.StDev(r => r.PriceAvg > r.PriceCMALast ? r.PriceHigh : r.PriceLow);
     }
+    public static IEnumerable<double> PriceHikes<TBar>(this IList<TBar> bars) where TBar : BarBase {
+      return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => (r1.PriceAvg - r2.PriceAvg).Abs());
+    }
+
     public static double Spread(this IList<Rate> rates, int iterations = 2) {
-      return rates.Average(r => r.PriceHigh - r.PriceLow);
+      return rates.PriceHikes().Average();
+      //return rates.Average(r => r.Spread);
       //var spreads = rates.Select(r => r.PriceHigh - r.PriceLow).ToArray();
       //if (spreads.Length == 0) return double.NaN;
       //return spreads.AverageInRange(iterations).Average();

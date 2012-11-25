@@ -45,7 +45,7 @@ namespace HedgeHog {
 
       for (int i = 0; i < dY.Length; i++) {
         for (int j = 0; j < nPolyOrder + 1; j++) {
-          dZ[i, j] = Math.Pow(dX[i], (double)j);
+          dZ[i, j] = j == 1 ? dX[i] : j == 2 ? dX[i] * dX[i] : Math.Pow(dX[i], (double)j);
         }
       } 
       return MatrixNumeric.Regress(dZ, dY);

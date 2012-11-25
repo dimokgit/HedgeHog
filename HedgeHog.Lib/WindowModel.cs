@@ -141,7 +141,34 @@ namespace HedgeHog.Models {
     #endregion
   }
 
+  public class ObservableObject : INotifyPropertyChanged {
+    public event PropertyChangedEventHandler PropertyChanged;
+
+    protected virtual void SetAndNotify<T>(ref T field, T value, Expression<Func<T>> property) {
+      if (!object.ReferenceEquals(field, value)) {
+        field = value;
+        this.OnPropertyChanged(property);
+      }
+    }
+
+    protected virtual void OnPropertyChanged<T>(Expression<Func<T>> changedProperty) {
+      if (PropertyChanged != null) {
+        string name = ((MemberExpression)changedProperty.Body).Member.Name;
+        PropertyChanged(this, new PropertyChangedEventArgs(name));
+      }
+    }
+  }
+  public class Customer : ObservableObject {
+    private string name;
+
+    public string Name {
+      get { return this.name; }
+      set { this.SetAndNotify(ref this.name, value, () => this.Name); }
+    }
+  }
   public class ObservableValue<TValue>:ModelBase{
+    bool _changeTo = false;
+    TValue _changeToValue;
     TValue _Previous;
     public TValue Previous {
       get { return _Previous; }
@@ -151,13 +178,22 @@ namespace HedgeHog.Models {
     public TValue Value {
       get { return _Value; }
       set {
+        HasChanged = HasChangedTo = false;
         if (_Value != null && _Value.Equals(value)) return;
         Previous = _Value;
         _Value = value;
         HasChanged = true;
         RaisePropertyChanged("Value");
         RaiseValueChanged();
+        if (_changeTo && _Value.Equals(_changeToValue)) {
+          HasChangedTo = true;
+          RaiseValueChangedTo();
+        }
       }
+    }
+    public ObservableValue<TValue> SetValue(TValue value) {
+      this.Value = value;
+      return this;
     }
     #region ValueChanged Event
     event EventHandler<EventArgs> ValueChangedEvent;
@@ -174,7 +210,26 @@ namespace HedgeHog.Models {
       if (ValueChangedEvent != null) ValueChangedEvent(this, new EventArgs());
     }
     #endregion
+    #region ValueChangedTo Event
+    event EventHandler<EventArgs> ValueChangedToEvent;
+    public event EventHandler<EventArgs> ValueChangedTo {
+      add {
+        if (ValueChangedToEvent == null || !ValueChangedToEvent.GetInvocationList().Contains(value))
+          ValueChangedToEvent += value;
+      }
+      remove {
+        ValueChangedToEvent -= value;
+      }
+    }
+    protected void RaiseValueChangedTo() {
+      if (ValueChangedToEvent != null) ValueChangedToEvent(this, new EventArgs());
+    }
+    #endregion
 
+    public ObservableValue(TValue value,TValue valueTo) :this(value){
+      _changeTo = true;
+      _changeToValue = valueTo;
+    }
     public ObservableValue(TValue value) {
       this.Value = value;
     }
@@ -185,6 +240,7 @@ namespace HedgeHog.Models {
 
 
     public bool HasChanged { get; set; }
+    public bool HasChangedTo { get; set; }
   }
 
 }

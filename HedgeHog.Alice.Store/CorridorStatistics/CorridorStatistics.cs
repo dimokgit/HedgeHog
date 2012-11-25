@@ -482,9 +482,21 @@ namespace HedgeHog.Alice.Store {
     }
     public double SpreadInPips { get { return TradesManagerStatic.InPips(Spread, _pipSize); } }
 
-    public Dictionary<CorridorCalculationMethod, double> StDevs { get; set; }
-    public double StDevsByHeight { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.Height) ? StDevs[CorridorCalculationMethod.Height] : double.NaN; } }
-    public double StDevsByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
+    private Dictionary<CorridorCalculationMethod, double> _StDevs;
+    public Dictionary<CorridorCalculationMethod, double> StDevs {
+      get { return _StDevs; }
+      set {
+        _StDevs = value;
+        RaisePropertyChanged(() => StDevByHeight);
+        RaisePropertyChanged(() => StDevByHeightInPips);
+        RaisePropertyChanged(() => StDevByPriceAvg);
+        RaisePropertyChanged(() => StDevByPriceAvgInPips);
+      }
+    }
+    public double StDevByHeight { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.Height) ? StDevs[CorridorCalculationMethod.Height] : double.NaN; } }
+    public double StDevByHeightInPips { get { return TradesManagerStatic.InPips(StDevByHeight, _pipSize); } }
+    public double StDevByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
+    public double StDevByPriceAvgInPips { get { return TradesManagerStatic.InPips(StDevByPriceAvg, _pipSize); } }
   }
 
   public enum TrendLevel { None, Resistance, Support }

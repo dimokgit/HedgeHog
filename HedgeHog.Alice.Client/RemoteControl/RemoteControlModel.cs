@@ -398,6 +398,7 @@ namespace HedgeHog.Alice.Client {
       public double ProfitToLossExitRatio { get; set; }
       public double CorridorDistanceRatio { get; set; }
       public int BarsCount { get; set; }
+      public Guid SuperessionId { get; set; }
     }
 
     static class TestParameters {
@@ -406,14 +407,15 @@ namespace HedgeHog.Alice.Client {
       public static double[] ProfitToLossExitRatio = new double[0];
       public static double[] CorridorDistanceRatio = new double[0];
       public static int[] BarsCount = new int[0];
-      
-      public static Queue<TestParameter> GenerateTestParameters() {
+
+      public static Queue<TestParameter> GenerateTestParameters() { return GenerateTestParameters(Guid.Empty); }
+      public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
         var ret = from p in PriceCmaLevels
                   from s in StopRateWaveOffsets
                   from pl in ProfitToLossExitRatio
                   from cd in CorridorDistanceRatio
                   from pler in BarsCount
-                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler };
+                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -423,6 +425,8 @@ namespace HedgeHog.Alice.Client {
         MessageBox.Show("Replay is running.");
         return;
       }
+
+      ReplayArguments.SuperSessionId = ReplayArguments.MonthsToTest > 0 ? Guid.NewGuid() : Guid.Empty;
       var c = new[] { ',', ' ', '\t' };
 
       if (tmOriginal.UseTestFile) {
@@ -443,13 +447,70 @@ namespace HedgeHog.Alice.Client {
       TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
         .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
 
-      var testQueue = TestParameters.GenerateTestParameters();
+      if (ReplayArguments.SuperSessionId.HasValue() && tmOriginal.TestSuperSessionUid.HasValue()) {
+        var sessions = GetBestSessions(tmOriginal.TestSuperSessionUid).ToArray();
+        ReplayArguments.DateStart = ReplayArguments.DateStart.GetValueOrDefault(sessions.Min(s => s.DateStart.Value).AddDays(5));
+        SetTestCorridorDistanceRatio(sessions);
+      }
+      var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
       StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
     }
     void ContinueReplayWith (TradingMacro tm, Queue<TestParameter> testParams)  {
-      if (testParams.Any())
+      if (tm.Strategy == Strategies.None) return;
+      Func<bool> shouldContinue = () => {
+        try {
+          if (ReplayArguments.SuperSessionId.HasValue()) {
+            var bestSessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
+            if (bestSessions.Count() < 2) return true;
+            var currentSession = GlobalStorage.UseForexContext(c => c.v_TradeSession.Where(s => s.SessionId == TradingMacro.SessionId).Single());
+            return currentSession.MinimumGross > bestSessions[0].MinimumGross + bestSessions[1].MinimumGross;
+          }
+          return false;
+        } catch (Exception exc) {
+          LogMessage.Send(exc);
+          return true;
+        }
+      };
+      if (testParams.Any() /*&& (testParams.Count() > 1 || shouldContinue())*/) {
         StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
+      } else if (ReplayArguments.HasSuperSession) {
+        var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
+        SetTestCorridorDistanceRatio(super);
+        ReplayArguments.SuperSessionId = Guid.NewGuid();
+        ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
+        var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
+        StartReplayInternal(tm, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tm, testQueue); });
+      }
     }
+
+    #region GetBestSession
+    Func<DB.v_TradeSession, double> _bestSessionCriteria = s => s.DollarPerLot.Value;
+    private DB.v_TradeSession GetBestSession(Guid superSessionUid) {
+      return GetBestSessions(superSessionUid).First();
+    }
+    private IEnumerable<DB.v_TradeSession> GetBestSessions(Guid superSessionUid) {
+      return GlobalStorage.UseForexContext(c => {
+        var sessions = c.v_TradeSession.Where(s => s.SuperSessionUid == superSessionUid).OrderBy(s => s.TimeStamp).ToArray();
+        var sessionTuples = sessions.Select(s => new { p = s, n = s }).Take(0).ToList();
+        sessions.Aggregate((p, n) => { sessionTuples.Add(new { p, n }); return n; });
+        return sessionTuples.OrderByDescending(st => _bestSessionCriteria(st.p) + _bestSessionCriteria(st.n)).Take(1)
+          .Select(st => new[] { st.p, st.n }).First().OrderByDescending(_bestSessionCriteria);
+      });
+    }
+    #endregion
+
+    #region Test params setters
+    private void SetTestCorridorDistanceRatio(DB.v_TradeSession[] sessions) {
+      var testParam = sessions[0].CorridorDistanceRatio.Value;
+      var a = sessions.OrderBy(s => s.TimeStamp).ToArray();
+      var testParamStep = (a[1].CorridorDistanceRatio - a[0].CorridorDistanceRatio).Value.ToInt();
+      var testParamCount = 9;
+      var testParamStepMin = -testParamCount / 2;
+      var startMin = (-(testParam.ToInt() / testParamStep) + 1).Max(testParamStepMin);
+      TestParameters.CorridorDistanceRatio = Enumerable.Range(startMin, testParamCount).Select(r => testParam + r * testParamStep).ToArray();
+    }
+    #endregion
+
     CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();
     void StartReplayInternal(TradingMacro tmOriginal,TestParameter testParameter, Action<Task> continueWith) {
       if (IsInVirtualTrading) {
@@ -466,7 +527,7 @@ namespace HedgeHog.Alice.Client {
       foreach (var tm in tms) {
         if (IsInVirtualTrading) {
           tradesManager.ClosePair(tm.Pair);
-          tm.ResetSessionId();
+          tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if (testParameter != null) {
             tm.PriceCmaLevels_ = tm.PriceCmaPeriod = testParameter.PriceCmaLevel;
             tm.StopRateWaveOffset = testParameter.StopRateWaveOffset;
@@ -1045,9 +1106,22 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorAngle = tm.CorridorAngle;
           charter.HeightInPips = tm.RatesHeightInPips;
           charter.CorridorHeightInPips = tm.CorridorStats.RatesHeightInPips;
-          charter.CorridorRatesStDevInPips = tm.InPips(tm.CorridorStats.StDevsByPriceAvg);// tm.StDevByPriceAvgInPips;
-          charter.RatesStDevInPips = tm.InPips(tm.CorridorStats.StDevsByHeight);// tm.StDevByHeightInPips;
+          charter.RatesStDevInPips = tm.InPips(tm.CorridorStats.StDevByHeight);// tm.StDevByHeightInPips;
+          charter.CorridorRatesStDevInPips = tm.InPips(tm.CorridorStats.StDevByPriceAvg);// tm.StDevByPriceAvgInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
+          charter.HeaderText =
+          string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n2}"
+            /*0*/, tm.BarPeriod
+            /*1*/, tm.BarsCount
+            /*2*/, tm.CorridorAngle
+            /*3*/, tm.RatesHeightInPips
+            /*4*/, tm.CorridorStats.RatesHeightInPips
+            /*5*/, tm.StDevByHeightInPips
+            /*6*/, tm.StDevByPriceAvgInPips
+            /*7*/, tm.CorridorStats.StDevByHeightInPips
+            /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
+            /*9*/, tm.SpreadForCorridorInPips
+          );
           var ratesForTrand = !tm.ShowTrendLines && tm.Strategy.HasFlag(Strategies.FreeRoam) ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
           charter.SetTrendLines(ratesForTrand, tm.ShowTrendLines);
           charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;
@@ -1072,6 +1146,8 @@ namespace HedgeHog.Alice.Client {
             new double[0]);
           if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
+          else if (tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance41 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance42)
+            charter.LineTimeMiddle = tm.WaveShortLeft.Rates.LastBC();
           charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);

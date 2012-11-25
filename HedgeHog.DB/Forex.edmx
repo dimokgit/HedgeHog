@@ -31,6 +31,35 @@
       [v_Pair].[Weight2] AS [Weight2]
       FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
           </EntitySet>
+          <EntitySet Name="v_TradeSession" EntityType="ForexModel.Store.v_TradeSession" store:Type="Views" store:Schema="dbo" store:Name="v_TradeSession">
+            <DefiningQuery>SELECT 
+      [v_TradeSession].[Pair] AS [Pair], 
+      [v_TradeSession].[SessionId] AS [SessionId], 
+      [v_TradeSession].[SuperSessionUid] AS [SuperSessionUid], 
+      [v_TradeSession].[TimeStamp] AS [TimeStamp], 
+      [v_TradeSession].[Count] AS [Count], 
+      [v_TradeSession].[GrossPL] AS [GrossPL], 
+      [v_TradeSession].[Days] AS [Days], 
+      [v_TradeSession].[Lot] AS [Lot], 
+      [v_TradeSession].[LotA] AS [LotA], 
+      [v_TradeSession].[LotSD] AS [LotSD], 
+      [v_TradeSession].[DollarsPerMonth] AS [DollarsPerMonth], 
+      [v_TradeSession].[PL] AS [PL], 
+      [v_TradeSession].[MinutesInTest] AS [MinutesInTest], 
+      [v_TradeSession].[DaysPerMinute] AS [DaysPerMinute], 
+      [v_TradeSession].[DollarPerLot] AS [DollarPerLot], 
+      [v_TradeSession].[SessionInfo] AS [SessionInfo], 
+      [v_TradeSession].[PriceCmaLevels] AS [PriceCmaLevels], 
+      [v_TradeSession].[CorridorDistanceRatio] AS [CorridorDistanceRatio], 
+      [v_TradeSession].[PLToCorridorExitRatio] AS [PLToCorridorExitRatio], 
+      [v_TradeSession].[ProfitToLossExitRatio] AS [ProfitToLossExitRatio], 
+      [v_TradeSession].[BarsCount] AS [BarsCount], 
+      [v_TradeSession].[MinimumGross] AS [MinimumGross], 
+      [v_TradeSession].[DateStart] AS [DateStart], 
+      [v_TradeSession].[DateStop] AS [DateStop], 
+      [v_TradeSession].[LossToProfit] AS [LossToProfit]
+      FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
+          </EntitySet>
         </EntityContainer>
         <EntityType Name="t_Bar">
           <Key>
@@ -92,6 +121,9 @@
           <Property Name="Uid" Type="uniqueidentifier" Nullable="false" />
           <Property Name="MinimumGross" Type="float" Nullable="false" />
           <Property Name="MaximumLot" Type="int" Nullable="false" />
+          <Property Name="Profitability" Type="float" />
+          <Property Name="Timestamp" Type="datetime" Nullable="false" />
+          <Property Name="SuperUid" Type="uniqueidentifier" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -159,6 +191,40 @@
           <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="8" />
           <Property Name="Weight1" Type="int" Nullable="false" />
           <Property Name="Weight2" Type="int" Nullable="false" />
+        </EntityType>
+        <!--Errors Found During Generation:
+      warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
+      -->
+        <EntityType Name="v_TradeSession">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="SessionId" />
+          </Key>
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="8" />
+          <Property Name="SessionId" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="SuperSessionUid" Type="uniqueidentifier" />
+          <Property Name="TimeStamp" Type="datetime" />
+          <Property Name="Count" Type="int" />
+          <Property Name="GrossPL" Type="float" />
+          <Property Name="Days" Type="int" />
+          <Property Name="Lot" Type="int" />
+          <Property Name="LotA" Type="float" />
+          <Property Name="LotSD" Type="float" />
+          <Property Name="DollarsPerMonth" Type="float" />
+          <Property Name="PL" Type="numeric" Precision="10" Scale="2" />
+          <Property Name="MinutesInTest" Type="int" />
+          <Property Name="DaysPerMinute" Type="float" />
+          <Property Name="DollarPerLot" Type="float" />
+          <Property Name="SessionInfo" Type="nvarchar" />
+          <Property Name="PriceCmaLevels" Type="varchar" MaxLength="128" />
+          <Property Name="CorridorDistanceRatio" Type="float" />
+          <Property Name="PLToCorridorExitRatio" Type="varchar" MaxLength="128" />
+          <Property Name="ProfitToLossExitRatio" Type="varchar" MaxLength="128" />
+          <Property Name="BarsCount" Type="varchar" MaxLength="128" />
+          <Property Name="MinimumGross" Type="float" />
+          <Property Name="DateStart" Type="date" />
+          <Property Name="DateStop" Type="date" />
+          <Property Name="LossToProfit" Type="float" />
         </EntityType>
         <Function Name="BarsByMinutes" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
           <Parameter Name="Pair" Type="varchar" Mode="In" />
@@ -232,6 +298,7 @@
             <Parameter Name="StartDate" Mode="In" Type="DateTime" />
           </FunctionImport>
           <EntitySet Name="t_Session" EntityType="ForexModel.t_Session" />
+          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -388,6 +455,40 @@
           <Property Type="Guid" Name="Uid" Nullable="false" />
           <Property Type="Double" Name="MinimumGross" Nullable="false" />
           <Property Type="Int32" Name="MaximumLot" Nullable="false" />
+          <Property Type="Double" Name="Profitability" />
+          <Property Type="DateTime" Name="Timestamp" Nullable="false" />
+          <Property Type="Guid" Name="SuperUid" />
+        </EntityType>
+        <EntityType Name="v_TradeSession">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="SessionId" />
+          </Key>
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
+          <Property Type="Guid" Name="SessionId" Nullable="false" />
+          <Property Type="DateTime" Name="TimeStamp" />
+          <Property Type="Int32" Name="Count" />
+          <Property Type="Double" Name="GrossPL" />
+          <Property Type="Int32" Name="Days" />
+          <Property Type="Int32" Name="Lot" />
+          <Property Type="Double" Name="LotA" />
+          <Property Type="Double" Name="LotSD" />
+          <Property Type="Double" Name="DollarsPerMonth" />
+          <Property Type="Decimal" Name="PL" Precision="10" Scale="2" />
+          <Property Type="Int32" Name="MinutesInTest" />
+          <Property Type="Double" Name="DaysPerMinute" />
+          <Property Type="Double" Name="DollarPerLot" />
+          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="PriceCmaLevels" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="Double" Name="CorridorDistanceRatio" />
+          <Property Type="String" Name="PLToCorridorExitRatio" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="ProfitToLossExitRatio" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="BarsCount" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="Double" Name="MinimumGross" />
+          <Property Type="DateTime" Name="DateStart" />
+          <Property Type="Double" Name="LossToProfit" />
+          <Property Type="Guid" Name="SuperSessionUid" />
+          <Property Type="DateTime" Name="DateStop" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -560,9 +661,43 @@
           <EntitySetMapping Name="t_Session">
             <EntityTypeMapping TypeName="ForexModel.t_Session">
               <MappingFragment StoreEntitySet="t_Session">
+                <ScalarProperty Name="SuperUid" ColumnName="SuperUid" />
+                <ScalarProperty Name="Timestamp" ColumnName="Timestamp" />
+                <ScalarProperty Name="Profitability" ColumnName="Profitability" />
                 <ScalarProperty Name="MaximumLot" ColumnName="MaximumLot" />
                 <ScalarProperty Name="MinimumGross" ColumnName="MinimumGross" />
                 <ScalarProperty Name="Uid" ColumnName="Uid" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="v_TradeSession">
+            <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
+              <MappingFragment StoreEntitySet="v_TradeSession">
+                <ScalarProperty Name="DateStop" ColumnName="DateStop" />
+                <ScalarProperty Name="SuperSessionUid" ColumnName="SuperSessionUid" />
+                <ScalarProperty Name="LossToProfit" ColumnName="LossToProfit" />
+                <ScalarProperty Name="DateStart" ColumnName="DateStart" />
+                <ScalarProperty Name="MinimumGross" ColumnName="MinimumGross" />
+                <ScalarProperty Name="BarsCount" ColumnName="BarsCount" />
+                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
+                <ScalarProperty Name="PLToCorridorExitRatio" ColumnName="PLToCorridorExitRatio" />
+                <ScalarProperty Name="CorridorDistanceRatio" ColumnName="CorridorDistanceRatio" />
+                <ScalarProperty Name="PriceCmaLevels" ColumnName="PriceCmaLevels" />
+                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
+                <ScalarProperty Name="DollarPerLot" ColumnName="DollarPerLot" />
+                <ScalarProperty Name="DaysPerMinute" ColumnName="DaysPerMinute" />
+                <ScalarProperty Name="MinutesInTest" ColumnName="MinutesInTest" />
+                <ScalarProperty Name="PL" ColumnName="PL" />
+                <ScalarProperty Name="DollarsPerMonth" ColumnName="DollarsPerMonth" />
+                <ScalarProperty Name="LotSD" ColumnName="LotSD" />
+                <ScalarProperty Name="LotA" ColumnName="LotA" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="Days" ColumnName="Days" />
+                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+                <ScalarProperty Name="Count" ColumnName="Count" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -595,7 +730,8 @@
         <EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="3.375" PointY="6.75" Height="1.7879850260416674" />
         <EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="5.375" PointY="6.75" Height="1.5956835937499996" />
         <EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="7.375" PointY="0.75" Height="2.3648893229166674" />
-        <EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="1.5956835937499996" />
+        <EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="2.1725878906249996" />
+        <EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="7.375" PointY="7.75" Height="5.4417122395833317" />
       </Diagram>
     </Diagrams>
   </Designer>
