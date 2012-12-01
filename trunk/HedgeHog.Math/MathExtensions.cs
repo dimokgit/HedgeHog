@@ -6,7 +6,22 @@ using System.Diagnostics;
 
 namespace HedgeHog {
   public static class MathExtensions {
-
+    public static int ValueByPosition(this int sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
+      return ((double)sampleCurrent).ValueByPosition(sampleLow, sampleHigh, realLow, realHigh).ToInt();
+    }
+    public static double ValueByPosition(this double sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
+      return sampleCurrent.PositionRatio(sampleLow, sampleHigh) * (realHigh - realLow) + realLow;
+    }
+    /// <summary>
+    /// Realtive position of value between low and high in percent: 0% = low - 100% = hihg
+    /// </summary>
+    /// <param name="current"></param>
+    /// <param name="low"></param>
+    /// <param name="high"></param>
+    /// <returns></returns>
+    public static double PositionRatio(this double current, double low, double high) {
+      return (current - low) / (high - low);
+    }
     public static double StDevP_(this double[] value,  bool fcompensate = true) {
       double[] average = { 0.0, 0.0 };
       double stdev = 0;

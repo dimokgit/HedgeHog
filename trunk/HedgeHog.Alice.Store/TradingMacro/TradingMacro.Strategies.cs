@@ -211,430 +211,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
 
-    private void StrategyEnterTrailer_01() {
-      if (!RatesArray.Any() ) return;
-
-      #region Local globals
-      _buyLevel = Resistance0();
-      _sellLevel = Support0();
-      Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
-      Func<double> currentGross = () => TradingStatistics.CurrentGross;
-      Func<double> currentGrossInPips = () => TradesManager.MoneyAndLotToPips(currentGross(), LotSize, Pair);
-      #endregion
-
-      #region Init
-      if ( _strategyExecuteOnTradeClose == null) {
-        CorridorStats = null;
-        WaveHigh = null;
-        SuppResLevelsCount = 2;
-        LastProfitStartDate = null;
-        CmaLotSize = 0;
-        ShowTrendLines = false;
-        _strategyExecuteOnTradeClose = t => {
-          CmaLotSize = 0;
-          if (isCurrentGrossOk()) {
-            _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-            CorridorStartDate = null;
-            CorridorStopDate = DateTime.MinValue;
-            WaveShort.ClearDistance();
-            LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
-            _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
-          }
-          CloseAtZero = false;
-        };
-        _strategyExecuteOnTradeOpen = () => { };
-        return;
-      }
-      if (!IsInVitualTrading) {
-        this.TradesManager.TradeClosed += TradeCloseHandler;
-        this.TradesManager.TradeAdded += TradeAddedHandler;
-      }
-      #endregion
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Suppres levels
-      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(_buyLevel.Rate);
-      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(_sellLevel.Rate);
-
-      var buyCloseLevel = Support1();
-      var sellCloseLevel = Resistance1();
-      if (!buyCloseLevel.CanTrade && !sellCloseLevel.CanTrade)
-        buyCloseLevel.TradesCount = sellCloseLevel.TradesCount = 9;
-
-      #endregion
-
-      if (!EnsureCorridorStopRate()) return;
-      var waveQuickOk = WaveTradeStart.Rates.LastBC() >= CorridorStats.StopRate;
-      bool canTrade = true;
-      //var wave = TrailBuySellCorridor(buyCloseLevel, sellCloseLevel);
-
-      if (!IsInVitualTrading && CorridorStats.StopRate != null) {
-        CorridorStats.StopRate = RatesArray.FindBar(CorridorStats.StopRate.StartDate);
-      }
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Exit
-      double als = AllowedLotSizeCore(Trades);
-      if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
-        var lot = Trades.Lots() - als.ToInt();
-        CloseTrades(lot);
-        return;
-      }
-      if (IsEndOfWeek()) {
-        if (Trades.Any())
-          CloseTrades(Trades.Lots());
-      }
-      if (IsEndOfWeek() || !IsTradingHour()) {
-        _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        return;
-      }
-      if (IsAutoStrategy) {
-        if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
-        if (CurrentPrice.Ask < _sellLevel.Rate && Trades.HaveBuy()) CloseTrades(Trades.Lots());
-      }
-      if (!CloseAtZero) {
-        CloseAtZero = currentGross() > 0
-          && (Trades.Lots() > LotSize || Trades.GrossInPips() * 2 > InPips(_buyLevel.Rate - _sellLevel.Rate) || !canTrade);
-      }
-      if (!canTrade)
-        CloseTrades();
-      #endregion
-
-      #region Run
-
-      var ratesForTrade = RatesArray.ReverseIfNot().TakeWhile(r => r.Distance <= WaveShort.Distance.IfNaN(WaveDistance)).OrderBy(r => r.PriceAvg).ToArray();
-      MagnetPrice = ratesForTrade.Average(r => r.PriceAvg);
-      if (MagnetPrice.Between(RateLast.PriceLow, RateLast.PriceHigh))
-        _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-
-      _buyLevel.Rate = ratesForTrade.LastBC().PriceAvg;
-      _sellLevel.Rate = ratesForTrade[0].PriceAvg;
-      if (IsAutoStrategy)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade && waveQuickOk;
-
-      if (CorridorStartDate.HasValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = TradingMacro.WaveInfo.RateByDistance(RatesArray, WaveDistance) >= CorridorStats.StopRate &&  waveQuickOk;
-
-
-      if (IsAutoStrategy || CorridorStopDate > DateTime.MinValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade && waveQuickOk;
-
-      if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
-        var tpColse = InPoints((CloseAtZero ? 0 : TakeProfitPips + CurrentLossInPips.Min(0).Abs()));
-        buyCloseLevel.Rate = (buyNetOpen() + tpColse).Max(Trades.HaveBuy() ? RateLast.PriceAvg.Max(RatePrev.PriceAvg) : double.NaN);
-        sellCloseLevel.Rate = (sellNetOpen() - tpColse).Min(Trades.HaveSell() ? RateLast.PriceAvg.Min(RatePrev.PriceAvg) : double.NaN);
-      }
-      #endregion
-    }
-
-    private void StrategyEnterTrailer_02() {
-      if (!RatesArray.Any()) return;
-
-      #region Local globals
-      _buyLevel = Resistance0();
-      _sellLevel = Support0();
-      Func<bool> isManual = () => CorridorStartDate.HasValue || _isCorridorStopDateManual;
-      Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
-      Func<double> currentGross = () => TradingStatistics.CurrentGross;
-      Func<double> currentGrossInPips = () => TradingStatistics.CurrentGrossInPips;
-      Func<double> currentLoss = () => TradingStatistics.CurrentLoss;
-      #endregion
-
-      #region Init
-      if (_strategyExecuteOnTradeClose == null) {
-        CorridorStats = null;
-        WaveHigh = null;
-        SuppResLevelsCount = 2;
-        LastProfitStartDate = null;
-        CmaLotSize = 0;
-        ShowTrendLines = false;
-        WaveShort.LengthCma = double.NaN;
-        _strategyExecuteOnTradeClose = t => {
-          CmaLotSize = 0;
-          if (isCurrentGrossOk()) {
-            _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-            if (IsInVitualTrading && isManual())
-              IsTradingActive = false;
-            CorridorStartDate = null;
-            CorridorStopDate = DateTime.MinValue;
-            WaveShort.ClearDistance();
-            LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
-          }
-          if (CloseAtZero || isCurrentGrossOk() || !CloseOnProfitOnly)
-            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-          CloseAtZero = false;
-          _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        };
-        _strategyExecuteOnTradeOpen = () => { };
-        return;
-      }
-      if (!IsInVitualTrading) {
-        this.TradesManager.TradeClosed += TradeCloseHandler;
-        this.TradesManager.TradeAdded += TradeAddedHandler;
-      }
-      #endregion
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Suppres levels
-      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(_buyLevel.Rate);
-      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(_sellLevel.Rate);
-
-      var buyCloseLevel = Support1();
-      var sellCloseLevel = Resistance1();
-      if (!buyCloseLevel.CanTrade && !sellCloseLevel.CanTrade)
-        buyCloseLevel.TradesCount = sellCloseLevel.TradesCount = 9;
-
-      #endregion
-
-      if (!EnsureCorridorStopRate()) return;
-      {
-        var middle = (_RatesMax + _RatesMin) / 2;
-        var corrHeight = RatesHeight / CorridorDistanceRatio;
-        _CenterOfMassBuy = middle + corrHeight / 2;
-        _CenterOfMassSell = middle - corrHeight / 2;
-      }
-      var waveTradeStartDate = WaveTradeStart.Rates.LastBC().StartDate;
-      var waveQuickOk = true;// waveTradeStartDate >= CorridorStats.StopRate.StartDate;
-      var corridorStartTimeSpan = CorridorStats.Rates.LastBC().StartDate - RateLast.StartDate;
-      var ratesForTrade = RatesArray.SkipWhile(r => r.Distance > WaveShort.Distance.IfNaN(WaveDistance)).OrderBy(r => r.PriceAvg).ToArray();
-      MagnetPrice = ratesForTrade.Sum(r => r.PriceAvg * r.PriceSpread) / ratesForTrade.Sum(r => r.PriceSpread);
-      bool canTrade = isManual() || (
-        (ratesForTrade.LastBC().PriceAvg - ratesForTrade[0].PriceAvg) < RatesHeight / 3
-         && !MagnetPrice.Between(CenterOfMassSell, CenterOfMassBuy));
-      //var wave = TrailBuySellCorridor(buyCloseLevel, sellCloseLevel);
-
-      if (!IsInVitualTrading && CorridorStats.StopRate != null) {
-        CorridorStats.StopRate = RatesArray.FindBar(CorridorStats.StopRate.StartDate);
-      }
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Exit
-      double als = AllowedLotSizeCore(Trades);
-      if (IsTradingActive) {
-        if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
-          var lot = Trades.Lots() - als.ToInt();
-          CloseTrades(lot);
-          return;
-        }
-        if (IsAutoStrategy) {
-          if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
-          if (CurrentPrice.Ask < _sellLevel.Rate && Trades.HaveBuy()) CloseTrades(Trades.Lots());
-        }
-      }
-      if (IsEndOfWeek()) {
-        if (Trades.Any())
-          CloseTrades(Trades.Lots());
-      }
-      if (IsEndOfWeek() || !IsTradingHour()) {
-        _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        return;
-      }
-      if (!CloseAtZero) {
-        var a = (LotSize / BaseUnitSize) * TradesManager.GetPipCost(Pair) * 100;
-        var pipsOffset = currentLoss() / a;
-        var tpOk = Trades.GrossInPips() * 2 > InPips(_buyLevel.Rate - _sellLevel.Rate);
-        CloseAtZero = currentGrossInPips() > pipsOffset
-          && (Trades.Lots() > LotSize || tpOk /*|| !canTrade*/);
-        if (!CloseOnProfitOnly && Trades.GrossInPips() * PLToCorridorExitRatio > InPips(_buyLevel.Rate - _sellLevel.Rate))
-          CloseAtZero = true;
-      }
-      #endregion
-
-      #region Run
-
-      ReArmLevelsTradeCount();
-      if (!canTrade)
-        _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-
-      _buyLevel.Rate = ratesForTrade.LastBC().PriceAvg;
-      _sellLevel.Rate = ratesForTrade[0].PriceAvg;
-      if (IsAutoStrategy)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade && waveQuickOk;
-
-      if (CorridorStartDate.HasValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = TradingMacro.WaveInfo.RateByDistance(RatesArray, WaveDistance) >= CorridorStats.StopRate && waveQuickOk;
-
-
-      if (IsAutoStrategy || CorridorStopDate > DateTime.MinValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade && waveQuickOk;
-
-      if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
-        var tpColse = InPoints((CloseAtZero ? 0 : TakeProfitPips + CurrentLossInPips.Min(0).Abs()));
-        buyCloseLevel.Rate = (buyNetOpen() + tpColse).Max(Trades.HaveBuy() ? RateLast.PriceAvg.Max(RatePrev.PriceAvg) : double.NaN);
-        sellCloseLevel.Rate = (sellNetOpen() - tpColse).Min(Trades.HaveSell() ? RateLast.PriceAvg.Min(RatePrev.PriceAvg) : double.NaN);
-      }
-      #endregion
-    }
-
-
-    private bool EnsureCorridorStopRate() {
-      bool up;
-      return EnsureCorridorStopRate(out up);
-    }
-    private bool EnsureCorridorStopRate(out bool up) {
-      up = false;
-      if (!CorridorStartDate.HasValue && CorridorStopDate == DateTime.MinValue) {
-        //var waves = _waves.Where(w => w.MaxStDev() > StDevAverages.LastBC() / 2).ToArray();
-        var waveIndex = _waves.TakeWhile(w => !CorridorStats.StartDate.Between(w.LastBC().StartDate, w[0].StartDate)).Count() + 1;
-        var wave = waveIndex < StopRateWaveOffset ? WaveHigh : _waves[waveIndex - StopRateWaveOffset];
-        var sd = wave.GetWaveStopRate(out up);
-        //var sd = waveIndex < StopRateWaveOffset ? RatesArray.LastBC() : _waves[waveIndex - StopRateWaveOffset].First();
-        //if (CorridorStats.StopRate == null || sd > CorridorStats.StopRate)
-        CorridorStats.StopRate = sd;
-        //CorridorStats.Rates.Reverse().Skip(1).SkipWhile(r => r.PriceStdDev > 0).SkipWhile(r => r.PriceStdDev == 0).SkipWhile(r => r.PriceStdDev > 0).SkipWhile(r => r.PriceStdDev == 0).SkipWhile(r => r.PriceStdDev > 0).DefaultIfEmpty(CorridorStats.Rates[0]).First();
-      }
-      if (CorridorStats.StopRate == null) {
-        Log = new Exception("CorridorStats.StopRate is null.");
-        return false;
-      }
-
-      var corridorDistance = Strategy.HasFlag(Strategies.FreeRoam) ? WaveDistanceForTrade : CorridorStats.Rates.LastBC().Distance - CorridorStats.StopRate.Distance;
-      WaveTradeStart = new WaveInfo(this) { Rates = RatesArray.SkipWhile(r => r.Distance > corridorDistance)/*.TakeEx(-WaveLength * 2)*/.ToArray() };
-
-      var waveTradeStartDate = WaveTradeStart.Rates.LastBC().StartDate;
-      var corridorStartTimeSpan = CorridorStats.Rates.LastBC().StartDate - RateLast.StartDate;
-
-      return true;
-    }
-
     Models.ObservableValue<bool> _isCorridorDistanceOk = new Models.ObservableValue<bool>(false);
-
-    private void StrategyEnterTrailerFreeRoaming() {
-      if (!RatesArray.Any()) return;
-
-      #region Local globals
-      _buyLevel = Resistance0();
-      _sellLevel = Support0();
-      Func<bool> isManual = () => CorridorStartDate.HasValue || _isCorridorStopDateManual;
-      Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
-      Func<double> currentGross = () => TradingStatistics.CurrentGross;
-      Func<double> currentGrossInPips = () => TradingStatistics.CurrentGrossInPips;
-      Func<double> currentLoss = () => TradingStatistics.CurrentLoss;
-      #endregion
-
-      #region Init
-      if (_strategyExecuteOnTradeClose == null) {
-        CorridorStats = null;
-        WaveHigh = null;
-        SuppResLevelsCount = 2;
-        LastProfitStartDate = null;
-        CmaLotSize = 0;
-        ShowTrendLines = false;
-        WaveShort.LengthCma = double.NaN;
-        WaveShort.ClearEvents();
-        WaveShort.StartDateChanged += (s, e) => { 
-          var length = (e.New-e.Old).Minutes/BarPeriodInt;
-        };
-        _isCorridorDistanceOk.ValueChanged += (s, e) => {
-          if (_isCorridorDistanceOk.Value)
-            _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-        };
-        _strategyExecuteOnTradeClose = t => {
-          CmaLotSize = 0;
-          if (isCurrentGrossOk()) {
-            if (IsInVitualTrading && isManual())
-              IsTradingActive = false;
-            CorridorStartDate = null;
-            CorridorStopDate = DateTime.MinValue;
-            WaveShort.ClearDistance();
-            LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
-          }
-          if (CloseAtZero || isCurrentGrossOk())
-            _buyLevel.TradesCount = _sellLevel.TradesCount = 1;
-          CloseAtZero = false;
-        };
-        _strategyExecuteOnTradeOpen = () => { };
-        return;
-      }
-      if (!IsInVitualTrading) {
-        this.TradesManager.TradeClosed += TradeCloseHandler;
-        this.TradesManager.TradeAdded += TradeAddedHandler;
-      }
-      if (!CorridorStats.Rates.Any()) return;
-      #endregion
-
-      #region Suppres levels
-      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(_buyLevel.Rate);
-      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(_sellLevel.Rate);
-
-      var buyCloseLevel = Support1();
-      var sellCloseLevel = Resistance1();
-      if (!buyCloseLevel.CanTrade && !sellCloseLevel.CanTrade)
-        buyCloseLevel.TradesCount = sellCloseLevel.TradesCount = 9;
-
-      #endregion
-
-      #region Set Trade Levels
-      if (!EnsureCorridorStopRate()) return;
-      //var ratesForTrade = RatesArray.SkipWhile(r => r.Distance > WaveShort.Distance.IfNaN(WaveDistance)).OrderBy(r => r.PriceAvg).ToArray();
-      _buyLevel.Rate = TrailingWave.RatesMax;
-      _sellLevel.Rate = TrailingWave.RatesMin;
-      var canTrade = 
-        (CorridorDistanceRatio == 0 
-         || (CorridorDistanceRatio >= 1
-            ? WaveShort.Rates.Count >= WaveTradeStart.Rates.Count * CorridorDistanceRatio
-            : WaveShort.Rates.Count <= WaveTradeStart.Rates.Count * CorridorDistanceRatio)
-        )
-        && WaveShort.Rates.Count > WaveLength;
-      if (IsInVitualTrading)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade;
-      #endregion
-
-      #region Sanity check
-      if (!IsInVitualTrading && CorridorStats.StopRate != null) {
-        CorridorStats.StopRate = RatesArray.FindBar(CorridorStats.StopRate.StartDate);
-      }
-      #endregion
-
-      #region Exit
-      double als = AllowedLotSizeCore(Trades);
-      if (IsTradingActive) {
-        if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
-          var lot = Trades.Lots() - als.ToInt();
-          CloseTrades(lot);
-          return;
-        }
-        if (IsAutoStrategy) {
-          if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
-          if (CurrentPrice.Ask < _sellLevel.Rate && Trades.HaveBuy()) CloseTrades(Trades.Lots());
-        }
-      }
-      if (IsEndOfWeek()) {
-        if (Trades.Any())
-          CloseTrades(Trades.Lots());
-      }
-      if (IsEndOfWeek() || !IsTradingHour()) {
-        _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        return;
-      }
-      if (!CloseAtZero) {
-        var a = (LotSize / BaseUnitSize) * TradesManager.GetPipCost(Pair) * 100;
-        var pipsOffset = (currentLoss() / a);
-        var tpOk = Trades.GrossInPips() * PLToCorridorExitRatio > InPips(_buyLevel.Rate - _sellLevel.Rate);
-        CloseAtZero = currentGrossInPips() > pipsOffset.Max(-3)
-          && (Trades.Lots() > LotSize || tpOk /*|| !canTrade*/);
-        if ((!CloseOnProfitOnly || pipsOffset < -10) && tpOk)
-          CloseAtZero = true;
-      }
-      #endregion
-
-      #region Run
-
-      ReArmLevelsTradeCount();
- 
-      if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
-        var tpColse = InPoints((CloseAtZero ? 0 : TakeProfitPips + CurrentLossInPips.Min(0).Abs()));
-        var buyRate = Trades.HaveBuy() && Trades.Gross() < 0 ? WaveTradeStart.RatesMin : double.NaN;
-        buyCloseLevel.Rate = buyRate.IfNaN((buyNetOpen() + tpColse).Max(Trades.HaveBuy() ? RateLast.PriceAvg.Max(RatePrev.PriceAvg) : double.NaN));
-        var sellRate = Trades.HaveSell() && Trades.Gross() < 0 ? WaveTradeStart.RatesMax : double.NaN;
-        sellCloseLevel.Rate = sellRate.IfNaN((sellNetOpen() - tpColse).Min(Trades.HaveSell() ? RateLast.PriceAvg.Min(RatePrev.PriceAvg) : double.NaN));
-      }
-      #endregion
-    }
 
     private void StrategyEnterDeviator() {
       if (!RatesArray.Any()) return;
@@ -739,7 +316,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsTradingActive) {
         if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
           var lot = Trades.Lots() - als.ToInt();
@@ -891,7 +468,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsTradingActive) {
         if (Trades.Lots() > LotSize) {
           if (!CloseAtZero && Trades.Lots() / als >= this.ProfitToLossExitRatio)
@@ -1008,7 +585,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsTradingActive) {
         if (IsAutoStrategy) {
           if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
@@ -1107,7 +684,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsTradingActive) {
         if (IsAutoStrategy) {
           if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
@@ -1217,7 +794,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsEndOfWeek()) {
         if (Trades.Length > 0)
           CloseAtZero = true;
@@ -1323,7 +900,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsEndOfWeek()) {
         if (Trades.Any())
           CloseTrades(Trades.Lots());
@@ -1495,7 +1072,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsEndOfWeek()) {
         if (Trades.Any())
           CloseTrades(Trades.Lots());
@@ -1627,13 +1204,13 @@ namespace HedgeHog.Alice.Store {
         if (!IsTradingActive) return;
         var lot = Trades.IsBuy(!isBuy).Lots();
         if (suppResCanTrade(suppRes))
-          lot += AllowedLotSizeCore(Trades);
+          lot += AllowedLotSizeCore();
         OpenTrade(isBuy, lot);
 
       };
       Action exitCrossHandler = () => {
         if (!IsTradingActive) return;
-        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore(Trades) : 0);
+        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore() : 0);
         _trimAtZero = false;
         CloseTrades(lot);
       };
@@ -1722,7 +1299,7 @@ namespace HedgeHog.Alice.Store {
           return;
         }
       }
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsEndOfWeek()) {
         if (Trades.Any())
           CloseTrades(Trades.Lots());
@@ -1896,7 +1473,7 @@ namespace HedgeHog.Alice.Store {
         if (suppResCanTrade(suppRes)) {
           var ha = priceHikes().Average();
           if (ha > SpreadForCorridor) {
-            lot += AllowedLotSizeCore(Trades);
+            lot += AllowedLotSizeCore();
           } else
             _buySellLevelsForEach(sr => sr.ResetPricePosition());
         }
@@ -1905,7 +1482,7 @@ namespace HedgeHog.Alice.Store {
       };
       Action exitCrossHandler = () => {
         if (!IsTradingActive) return;
-        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore(Trades) : 0);
+        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore() : 0);
         _trimAtZero = false;
         CloseTrades(lot);
       };
@@ -1988,7 +1565,7 @@ namespace HedgeHog.Alice.Store {
             return;
           }
         }
-        double als = AllowedLotSizeCore(Trades);
+        double als = AllowedLotSizeCore();
         if (IsEndOfWeek()) {
           if (Trades.Any())
             CloseTrades(Trades.Lots());
@@ -2089,12 +1666,12 @@ namespace HedgeHog.Alice.Store {
         if (!IsTradingActive) return;
         var lot = Trades.IsBuy(!isBuy).Lots();
         if (suppResCanTrade(suppRes))
-          lot += AllowedLotSizeCore(Trades);
+          lot += AllowedLotSizeCore();
         OpenTrade(isBuy, lot);
       };
       Action exitCrossHandler = () => {
         if (!IsTradingActive) return;
-        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore(Trades) : 0);
+        var lot = Trades.Lots() - (_trimAtZero ? AllowedLotSizeCore() : 0);
         _trimAtZero = false;
         CloseTrades(lot);
       };
@@ -2109,7 +1686,7 @@ namespace HedgeHog.Alice.Store {
         ForEachSuppRes(sr => sr.ClearCrossedHandlers());
 
         var turnOffOnProfit = TrailingDistanceFunction == TrailingWaveMethod.WaveRight;
-        _buyLevel.CanTrade = _sellLevel.CanTrade = false;
+        _buyLevel.CanTrade = _sellLevel.CanTrade = true;
         #region Buy/Sell Crossed handlers
         _buyLevel.Crossed += (s, e) => {
           if (e.Direction == -1) return;
@@ -2131,13 +1708,55 @@ namespace HedgeHog.Alice.Store {
         };
         #endregion
         #region adjustLevels
-        ObservableValue<bool> watcherSetCorridor = new ObservableValue<bool>(false, true);
-        ObservableValue<bool> watcherCanTrade = new ObservableValue<bool>(false, true);
+        var firstTime = true;
+        var watcherSetCorridor = new ObservableValue<bool>(false, true);
+        var watcherCanTrade = new ObservableValue<bool>(true, true);
+        var watcherWaveTrade = new ObservableValue<bool>(false, true);
+        var watcherWaveStart = new ObservableValue<DateTime>(DateTime.MinValue);
+        var corridorLengthOld = 0.0;
         _adjustLevels = () => {
           if (!WaveTradeStart.HasRates) return;
           switch (TrailingDistanceFunction) {
+            #region WaveMax
+            case TrailingWaveMethod.WaveMax: {
+                if (firstTime)
+                  _buySellLevelsForEach(sr => sr.CanTrade = false);
+                var median = (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+                var varaince = CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * 2;
+                _CenterOfMassBuy = median + varaince;
+                _CenterOfMassSell = median - varaince;
+                var isSteady = _CenterOfMassBuy < WaveTradeStart.RatesMax && _CenterOfMassSell > WaveTradeStart.RatesMin;
+                if (watcherWaveTrade.SetValue(isSteady).HasChangedTo) {
+                  _buySellLevelsForEach(sr => sr.CanTrade = watcherWaveTrade.Value);
+                  _buyLevel.Rate = WaveTradeStart.RatesMax.Max(RateLast.PriceAvg) + PointSize;
+                  _sellLevel.Rate = WaveTradeStart.RatesMin.Min(RateLast.PriceAvg) - PointSize;
+                } 
+              }
+              break;
+            #endregion
+            #region WaveMin
+            case TrailingWaveMethod.WaveMin: {
+                if (firstTime)
+                  _buySellLevelsForEach(sr => sr.CanTrade = false);
+                var canTradeHeight = (CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight)*2;// Math.Sqrt(StDevByHeight * StDevByPriceAvg);
+                var canTradeRatio = 1 + Fibonacci.FibRatioSign(WaveShort.Rates.Count, CorridorLength);
+                if (watcherWaveTrade.SetValue(WaveTradeStart.RatesHeight > canTradeHeight * canTradeRatio).HasChanged) {
+                  _buySellLevelsForEach(sr => sr.CanTrade = watcherWaveTrade.Value);
+                } else if (!watcherWaveTrade.Value || corridorLengthOld < CorridorLength) {
+                  _buyLevel.Rate = WaveTradeStart.RatesMax.Max(RateLast.PriceAvg) + PointSize;
+                  _sellLevel.Rate = WaveTradeStart.RatesMin.Min(RateLast.PriceAvg) - PointSize;
+                }
+                corridorLengthOld = CorridorLength;
+                var median = (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+                var varaince = CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
+                _CenterOfMassBuy = median + varaince;
+                _CenterOfMassSell = median - varaince;
+              }
+              break;
+            #endregion
+            #region WaveAuto
             case TrailingWaveMethod.WaveAuto: {
-                var waveTradeOk = WaveShort.Rates.Count - WaveTradeStart.Rates.Count > CorridorLength;
+                var waveTradeOk = WaveShort.Rates.Count - WaveTradeStart.Rates.Count > CorridorLength && CorridorLength < CorridorDistanceRatio;
                 var waveShortOk = WaveShort.HasRates && CorridorStats.StDevByHeightInPips.ToInt() >= CorridorStats.StDevByPriceAvgInPips.ToInt();
                 if (watcherSetCorridor.SetValue(waveTradeOk && waveShortOk).HasChangedTo) {
                   _buyLevel.RateEx = WaveShort.RatesMax;
@@ -2147,6 +1766,7 @@ namespace HedgeHog.Alice.Store {
                   _buySellLevelsForEach(sr => { if (!sr.InManual) { sr.CanTrade = watcherCanTrade.Value; sr.TradesCount = 0; } });
               }
               break;
+            #endregion
             #region WaveRight
             case TrailingWaveMethod.WaveRight: {
                 var waveTradeOk = WaveShort.Rates.Count - WaveTradeStart.Rates.Count > CorridorDistanceRatio;
@@ -2163,10 +1783,14 @@ namespace HedgeHog.Alice.Store {
             #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }
-          if (Trades.GrossInPips() > TakeProfitPips
+          if (!CloseOnProfitOnly && Trades.GrossInPips() > TakeProfitPips
             //|| currentGrossInPips() >= PriceSpreadAverage && WaveTradeStart.Rates.Take(5).ToArray().PriceHikes().Max() < SpreadForCorridor
             )
             CloseAtZero = true;
+          if (firstTime) {
+            firstTime = false;
+            ForEachSuppRes(sr => sr.ResetPricePosition());
+          }
         };
         #endregion
 
@@ -2178,8 +1802,7 @@ namespace HedgeHog.Alice.Store {
             if (!IsAutoStrategy)
               IsTradingActive = false;
             _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-            if (turnOffOnProfit)
-              _buySellLevelsForEach(sr => sr.CanTrade = false);
+            _buySellLevelsForEach(sr => sr.CanTrade = false);
             CorridorStartDate = null;
             CorridorStopDate = DateTime.MinValue;
             LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
@@ -2198,43 +1821,34 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Suppres levels
-      Action<SuppRes> a1 = (sr) => {
+      Action<SuppRes> setCloseLevel = (sr) => {
         if (sr.InManual) return;
         sr.CanTrade = false;
         if (sr.TradesCount != 9) sr.TradesCount = 9;
       };
-      a1(buyCloseLevel); a1(sellCloseLevel);
+      setCloseLevel(buyCloseLevel); setCloseLevel(sellCloseLevel);
       #endregion
 
       #region Exit
       Action exitAction = () => {
-        if (IsAutoStrategy) {
-          if (RateLast.PriceAvg > _buyLevel.Rate && Trades.HaveSell()
-              || RateLast.PriceAvg < _sellLevel.Rate && Trades.HaveBuy()) {
-            CloseTrades();
-            return;
-          }
-        }
-        double als = AllowedLotSizeCore(Trades);
-        if (IsEndOfWeek()) {
+        double als = AllowedLotSizeCore();
+        if (IsEndOfWeek() || !IsTradingHour()) {
           if (Trades.Any())
             CloseTrades(Trades.Lots());
-        }
-        if (!IsAutoStrategy && IsEndOfWeek() || !IsTradingHour()) {
           _buyLevel.CanTrade = _sellLevel.CanTrade = false;
           return;
         }
         if (Trades.Lots() / als > ProfitToLossExitRatio
-            || CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
+            || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
           )
           _trimAtZero = true;
       };
       #endregion
 
       #region Run
+      _adjustLevels();
       _buyLevel.SetPrice(RateLast.PriceAvg);
       _sellLevel.SetPrice(RateLast.PriceAvg);
-      _adjustLevels();
       exitAction();
 
       if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
@@ -2246,7 +1860,7 @@ namespace HedgeHog.Alice.Store {
         } else {
           //var phH = WaveTradeStart.Rates.Take(5).ToArray().PriceHikes().DefaultIfEmpty(SpreadForCorridor).Max();
           var tpRatioBySpread = 1;// +Math.Log(phH.Ratio(SpreadForCorridor), 1.5);
-          var tpColse = InPoints((CloseAtZero || _trimAtZero ? 0 : (TakeProfitPips / tpRatioBySpread)/* + CurrentLossInPips.Min(0).Abs()*/));
+          var tpColse = InPoints((CloseAtZero || _trimAtZero ? 0 : (TakeProfitPips / tpRatioBySpread) + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0)));
           var priceAvgMax = RateLast.PriceAvg.Max(RatePrev.PriceAvg) - PointSize;
           var priceAvgMin = RateLast.PriceAvg.Min(RatePrev.PriceAvg) + PointSize;
           if (buyCloseLevel.InManual) {
@@ -2362,7 +1976,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsTradingActive) {
         if (!CloseAtZero && Trades.Lots() / als >= this.ProfitToLossExitRatio) 
           _trimAtZero = true;
@@ -2399,158 +2013,6 @@ namespace HedgeHog.Alice.Store {
 
       if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
         var tpColse = InPoints((CloseAtZero || _trimAtZero ? 0 : TakeProfitPips + CurrentLossInPips.Min(0).Abs()));
-        buyCloseLevel.Rate = (buyNetOpen() + tpColse).Max(Trades.HaveBuy() ? RateLast.PriceAvg.Max(RatePrev.PriceAvg) : double.NaN);
-        sellCloseLevel.Rate = (sellNetOpen() - tpColse).Min(Trades.HaveSell() ? RateLast.PriceAvg.Min(RatePrev.PriceAvg) : double.NaN);
-      }
-      #endregion
-    }
-
-    private void StrategyEnterTrailer() {
-      if (!RatesArray.Any()) return;
-
-      #region Local globals
-      _buyLevel = Resistance0();
-      _sellLevel = Support0();
-      Func<bool> isManual = () => CorridorStartDate.HasValue || _isCorridorStopDateManual;
-      Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
-      Func<double> currentGross = () => TradingStatistics.CurrentGross;
-      Func<double> currentGrossInPips = () => TradingStatistics.CurrentGrossInPips;
-      Func<double> currentLoss = () => TradingStatistics.CurrentLoss;
-      #endregion
-
-      #region Init
-      if (_strategyExecuteOnTradeClose == null) {
-        CorridorStats = null;
-        WaveHigh = null;
-        SuppResLevelsCount = 2;
-        LastProfitStartDate = null;
-        CmaLotSize = 0;
-        ShowTrendLines = false;
-        WaveShort.LengthCma = double.NaN;
-        _isCorridorDistanceOk.ValueChanged += (s, e) => {
-          if (_isCorridorDistanceOk.Value)
-            _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-        };
-        _strategyExecuteOnTradeClose = t => {
-          CmaLotSize = 0;
-          if (isCurrentGrossOk()) {
-            _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-            if (IsInVitualTrading && isManual())
-              IsTradingActive = false;
-            CorridorStartDate = null;
-            CorridorStopDate = DateTime.MinValue;
-            WaveShort.ClearDistance();
-            LastProfitStartDate = CorridorStats.Rates.LastBC().StartDate;
-          }
-          if (CloseAtZero || isCurrentGrossOk() || !CloseOnProfitOnly)
-            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-          CloseAtZero = false;
-          _trimAtZero = false;
-          _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        };
-        _strategyExecuteOnTradeOpen = () => { };
-        return;
-      }
-      if (!IsInVitualTrading) {
-        this.TradesManager.TradeClosed += TradeCloseHandler;
-        this.TradesManager.TradeAdded += TradeAddedHandler;
-      }
-      #endregion
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Suppres levels
-      Func<double> buyNetOpen = () => Trades.IsBuy(true).NetOpen(_buyLevel.Rate);
-      Func<double> sellNetOpen = () => Trades.IsBuy(false).NetOpen(_sellLevel.Rate);
-
-      var buyCloseLevel = Support1();
-      var sellCloseLevel = Resistance1();
-      if (!buyCloseLevel.CanTrade && !sellCloseLevel.CanTrade)
-        buyCloseLevel.TradesCount = sellCloseLevel.TradesCount = 9;
-
-      #endregion
-
-      bool up;
-      if (!EnsureCorridorStopRate(out up)) return;
-      var countMin = _waves.Select(w => (double)w.Count).ToArray().AverageByIterations(-1).Average().ToInt();
-      var distanceMin = new[] { RatesArray.LastBC(countMin), CorridorStats.StopRate }.Min().Distance;
-      var ratesForTrade = RatesArray.SkipWhile(r => r.Distance > WaveShort.Distance.IfNaN(WaveDistance.Min(distanceMin))).OrderBy(r => r.PriceAvg).ToArray();
-
-      MagnetPrice = ratesForTrade.Sum(r => r.PriceAvg / r.PriceSpread) / ratesForTrade.Sum(r => 1 / r.PriceSpread);
-      _buyLevel.Rate = ratesForTrade.LastBC().PriceAvg;
-      _sellLevel.Rate = ratesForTrade[0].PriceAvg;
-      var tradeCorridor = _buyLevel.Rate - _sellLevel.Rate;
-      
-      bool canTrade = isManual() || (
-        tradeCorridor.Between(CorridorStats.RatesStDev, RatesHeight / 3)
-        && (_isCorridorDistanceOk.Value = (CorridorStats.StopRate.Distance > WaveDistance * CorridorDistanceRatio))
-        );
-      //var wave = TrailBuySellCorridor(buyCloseLevel, sellCloseLevel);
-
-      if (!IsInVitualTrading && CorridorStats.StopRate != null) {
-        CorridorStats.StopRate = RatesArray.FindBar(CorridorStats.StopRate.StartDate);
-      }
-
-      if (!CorridorStats.Rates.Any()) return;
-
-      #region Exit
-      double als = AllowedLotSizeCore(Trades);
-      if (IsTradingActive) {
-        if (Trades.Lots() / als >= this.ProfitToLossExitRatio) {
-          var lot = Trades.Lots() - als.ToInt();
-          CloseTrades(lot);
-          return;
-        }
-        if (IsAutoStrategy) {
-          if (CurrentPrice.Bid > _buyLevel.Rate && Trades.HaveSell()) CloseTrades(Trades.Lots());
-          if (CurrentPrice.Ask < _sellLevel.Rate && Trades.HaveBuy()) CloseTrades(Trades.Lots());
-        }
-      }
-      if (IsEndOfWeek()) {
-        if (Trades.Any())
-          CloseTrades(Trades.Lots());
-      }
-      if (IsEndOfWeek() || !IsTradingHour()) {
-        _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-        return;
-      }
-      if (!CloseAtZero) {
-        var a = (LotSize / BaseUnitSize) * TradesManager.GetPipCost(Pair) * 100;
-        var pipsOffset = currentLoss() / a;
-        var tpOk = Trades.GrossInPips() * 2 > InPips(_buyLevel.Rate - _sellLevel.Rate);
-        CloseAtZero = currentGrossInPips() > pipsOffset
-          && (Trades.Lots() > LotSize || tpOk /*|| !canTrade*/);
-        if (!CloseOnProfitOnly && Trades.GrossInPips() * PLToCorridorExitRatio > InPips(_buyLevel.Rate - _sellLevel.Rate))
-          CloseAtZero = true;
-      }
-      #endregion
-
-      #region Run
-
-      ReArmLevelsTradeCount();
-      if (!canTrade)
-        _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-
-      //if (up) {
-      //  _buyLevel.Rate = _buyLevel.Rate.Max(CorridorStats.StopRate.PriceHigh);
-      //  _sellLevel.Rate = _sellLevel.Rate.Min(_buyLevel.Rate - CorridorStats.RatesStDev);
-      //}else {
-      //  _sellLevel.Rate = _sellLevel.Rate.Min(CorridorStats.StopRate.PriceLow);
-      //  _buyLevel.Rate = _buyLevel.Rate.Max(_sellLevel.Rate + CorridorStats.RatesStDev);
-      //}
-
-      if (IsAutoStrategy)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade;
-
-      if (CorridorStartDate.HasValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = TradingMacro.WaveInfo.RateByDistance(RatesArray, WaveDistance) >= CorridorStats.StopRate;
-
-
-      if (IsAutoStrategy || CorridorStopDate > DateTime.MinValue)
-        _buyLevel.CanTrade = _sellLevel.CanTrade = canTrade;
-
-      if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
-        var tpColse = InPoints((CloseAtZero ? 0 : TakeProfitPips + CurrentLossInPips.Min(0).Abs()));
         buyCloseLevel.Rate = (buyNetOpen() + tpColse).Max(Trades.HaveBuy() ? RateLast.PriceAvg.Max(RatePrev.PriceAvg) : double.NaN);
         sellCloseLevel.Rate = (sellNetOpen() - tpColse).Min(Trades.HaveSell() ? RateLast.PriceAvg.Min(RatePrev.PriceAvg) : double.NaN);
       }

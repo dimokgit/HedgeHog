@@ -53,8 +53,6 @@ namespace HedgeHog.Alice.Store {
     public SessionInfoAttribute() { }
   }
   public enum ScanCorridorFunction {
-    WaveDistance = 1,
-    WaveRelative = 2,
     WaveDistance1 = 3,
     WaveDistanceByHeight = 4,
     WaveStDev = 5,
@@ -62,6 +60,7 @@ namespace HedgeHog.Alice.Store {
     WaveDistance4 = 7,
     WaveDistance41 = 71,
     WaveDistance42 = 72,
+    WaveDistance43 = 73,
     WaveStDevHeight = 8,
   }
   public enum TrailingWaveMethod {
@@ -100,10 +99,7 @@ namespace HedgeHog.Alice.Store {
     None = 0,
     Auto = 1,
     Hot = 2,
-    Trailer01 = Hot * 2, Trailer01A = Trailer01 + Auto,//4
-    Trailer = Trailer01 * 2, TrailerA = Trailer + Auto,//8
-    FreeRoam = Trailer * 2, FreeRoamA = FreeRoam + Auto,//16
-    Deviator = FreeRoam * 2, DeviatorA = Deviator + Auto,//32
+    Deviator = Hot * 2, DeviatorA = Deviator + Auto,//32
     Ender = Deviator * 2, EnderA = Ender + Auto,//64
     Minimalist = Ender * 2, MinimalistA = Minimalist + Auto,//128
     Distancer = Minimalist * 2, DistancerA = Distancer + Auto,//256

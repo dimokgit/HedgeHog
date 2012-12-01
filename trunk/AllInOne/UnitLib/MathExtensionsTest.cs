@@ -84,5 +84,21 @@ namespace UnitLib
       Debug.WriteLine("{0}:{1:n1}ms" + Environment.NewLine + "{2}", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
       Assert.IsFalse(averagesOut.Except(averagesOut2).Any());
     }
+
+    /// <summary>
+    ///A test for ValueByPisition
+    ///</summary>
+    [TestMethod()]
+    public void ValueByPisitionTest() {
+      int sampleCurrent = 601; // TODO: Initialize to an appropriate value
+      double sampleLow = 10; // TODO: Initialize to an appropriate value
+      double sampleHigh = 1000; // TODO: Initialize to an appropriate value
+      double realLow = 120; // TODO: Initialize to an appropriate value
+      double realHigh = 840; // TODO: Initialize to an appropriate value
+      int expected = 550; // TODO: Initialize to an appropriate value
+      int actual;
+      actual = sampleCurrent.ValueByPosition(sampleLow, sampleHigh, realLow, realHigh);
+      Assert.AreEqual(expected, actual);
+    }
   }
 }
