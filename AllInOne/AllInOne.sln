@@ -16,8 +16,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
 		Performance10.psess = Performance10.psess
-		Performance11.psess = Performance11.psess
-		Performance12.psess = Performance12.psess
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
 EndProject
