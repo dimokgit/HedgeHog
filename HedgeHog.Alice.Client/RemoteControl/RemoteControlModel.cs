@@ -318,7 +318,7 @@ namespace HedgeHog.Alice.Client {
         loadRatesSecondsWarning: tm.LoadRatesSecondsWarning, corridorHighLowMethodInt: tm.CorridorHighLowMethodInt,
         corridorStDevRatioMax: tm.CorridorStDevRatioMax,
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
-        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations_,
+        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.DistanceIterations,
         stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio, 
         extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment,corridorBigToSmallRatio:tm.CorridorBigToSmallRatio);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
@@ -394,28 +394,29 @@ namespace HedgeHog.Alice.Client {
 
     class TestParameter {
       public int PriceCmaLevel { get; set; }
-      public int StopRateWaveOffset { get; set; }
       public double ProfitToLossExitRatio { get; set; }
       public double CorridorDistanceRatio { get; set; }
       public int BarsCount { get; set; }
+      public double RatesHeightMinimum { get; set; }
       public Guid SuperessionId { get; set; }
     }
 
     static class TestParameters {
       public static int[] PriceCmaLevels = new int[0];
-      public static int[] StopRateWaveOffsets = new int[0];
       public static double[] ProfitToLossExitRatio = new double[0];
       public static double[] CorridorDistanceRatio = new double[0];
       public static int[] BarsCount = new int[0];
+      public static double[] RatesHeightMinimum = new double[0];
+      
 
       public static Queue<TestParameter> GenerateTestParameters() { return GenerateTestParameters(Guid.Empty); }
       public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
         var ret = from p in PriceCmaLevels
-                  from s in StopRateWaveOffsets
                   from pl in ProfitToLossExitRatio
                   from cd in CorridorDistanceRatio
                   from pler in BarsCount
-                  select new TestParameter() { PriceCmaLevel = p, StopRateWaveOffset = s, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId };
+                  from rhm in RatesHeightMinimum
+                  select new TestParameter() { PriceCmaLevel = p, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,RatesHeightMinimum = rhm };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -438,14 +439,14 @@ namespace HedgeHog.Alice.Client {
 
       TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
         .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
-      TestParameters.StopRateWaveOffsets = tmOriginal.TestStopRateWaveOffset.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-        .DefaultIfEmpty(tmOriginal.StopRateWaveOffset).ToArray();
       TestParameters.ProfitToLossExitRatio = tmOriginal.TestProfitToLossExitRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
         .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
       TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
         .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
       TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
         .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
+      TestParameters.RatesHeightMinimum = tmOriginal.TestRatesHeightMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+        .DefaultIfEmpty(tmOriginal.RatesHeightMinimum).ToArray();
 
       if (ReplayArguments.SuperSessionId.HasValue() && tmOriginal.TestSuperSessionUid.HasValue()) {
         var sessions = GetBestSessions(tmOriginal.TestSuperSessionUid).ToArray();
@@ -530,10 +531,10 @@ namespace HedgeHog.Alice.Client {
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if (testParameter != null) {
             tm.PriceCmaLevels_ = tm.PriceCmaPeriod = testParameter.PriceCmaLevel;
-            tm.StopRateWaveOffset = testParameter.StopRateWaveOffset;
             tm.ProfitToLossExitRatio = testParameter.ProfitToLossExitRatio;
             tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
             tm.BarsCount = testParameter.BarsCount;
+            tm.RatesHeightMinimum = testParameter.RatesHeightMinimum;
           }
         }
         var tmToRun = tm;
@@ -625,7 +626,7 @@ namespace HedgeHog.Alice.Client {
     void Buy(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        var lot = tm.AllowedLotSize(tm.Trades, true);
+        var lot = tm.AllowedLotSizeCore();
         if (!tradesManager.GetAccount().Hedging)
           lot += tradesManager.GetTradesInternal(tm.Pair).IsBuy(false).Sum(t => t.Lots);
         OpenTrade(true, tm.Pair, lot, 0, 0, 0, "");
@@ -649,7 +650,7 @@ namespace HedgeHog.Alice.Client {
     void Sell(object tradingMacro) {
       try {
         var tm = tradingMacro as TradingMacro;
-        var lot = tm.AllowedLotSize(tm.Trades, false);
+        var lot = tm.AllowedLotSizeCore();
         if (!tradesManager.GetAccount().Hedging)
           lot += tradesManager.GetTradesInternal(tm.Pair).IsBuy(true).Sum(t => t.Lots);
         OpenTrade(false, tm.Pair, lot, 0, 0, 0, "");
@@ -1110,7 +1111,7 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorRatesStDevInPips = tm.InPips(tm.CorridorStats.StDevByPriceAvg);// tm.StDevByPriceAvgInPips;
           charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
           charter.HeaderText =
-          string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n2}"
+          string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}<{10:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n2}"
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -1121,8 +1122,9 @@ namespace HedgeHog.Alice.Client {
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
             /*9*/, tm.SpreadForCorridorInPips
+           /*10*/, tm.CorridorStDevSqrtInPips*4
           );
-          var ratesForTrand = !tm.ShowTrendLines && tm.Strategy.HasFlag(Strategies.FreeRoam) ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
+          var ratesForTrand = !tm.ShowTrendLines ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
           charter.SetTrendLines(ratesForTrand, tm.ShowTrendLines);
           charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;
           charter.CalculateLastPrice = tm.CalculateLastPrice;
@@ -1146,9 +1148,10 @@ namespace HedgeHog.Alice.Client {
             new double[0]);
           if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
-          else if (tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance41 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance42)
+          else if (tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance41 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance42 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance43)
             charter.LineTimeMiddle = tm.WaveShortLeft.Rates.LastBC();
           charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
+          charter.LineTimeTakeProfit = ((IList<Rate>)tm.RatesArray).Reverse().Take(tm.CorridorDistanceRatio.ToInt()).Last().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));

@@ -1125,11 +1125,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double CurrentGrossInPips {
-      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, Trades.Length == 0 ? AllowedLotSizeCore(Trades) : Trades.NetLots().Abs(), Pair); }
+      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(), Pair); }
     }
 
     public double CurrentLossInPips {
-      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentLoss, Trades.Length == 0 ? AllowedLotSizeCore(Trades) : Trades.NetLots().Abs(), Pair); }
+      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentLoss, Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(), Pair); }
     }
 
     public int PositionsBuy { get { return Trades.IsBuy(true).Length; } }
@@ -1993,34 +1993,14 @@ namespace HedgeHog.Alice.Store {
 
             SpreadForCorridor = RatesArray.Spread();
 
-            SetMA();
+            //SetMA();
             var corridor = _rateArray.ScanCorridorWithAngle(r => r.PriceAvg, r => r.PriceAvg, TimeSpan.Zero, PointSize, CorridorCalcMethod);
             RatesStDev = corridor.StDev;
             StDevByPriceAvg = corridor.StDevs[CorridorCalculationMethod.PriceAverage];
             StDevByHeight = corridor.StDevs.ContainsKey(CorridorCalculationMethod.Height) ? corridor.StDevs[CorridorCalculationMethod.Height] : double.NaN;
             Angle = corridor.Slope.Angle(PointSize);
-            #region Fill StDev
-            {
-              if (false) {
-                _rateArray.Skip(this.PriceCmaPeriod).Reverse().ToArray().SetStDevPricesFast(GetPriceMA, this.PointSize);
-                var first = _rateArray.Skip(this.PriceCmaPeriod).First();
-                foreach (var r in _rateArray.Take(PriceCmaPeriod))
-                  r.PriceStdDev = first.PriceStdDev;
-              }
-            }
-            if (false) {
-              StDevAverages.Clear();
-              var stDevs = _rateArray.Where(r => r.PriceStdDev > 0).Select(r => r.PriceStdDev).ToArray();
-              List<double> stDevAvgs = new List<double>();
-              stDevs.AverageByIterations(StDevTresholdIterations, stDevAvgs);
-              for (var i = 0; i < StDevTresholdIterations; i++) {
-                StDevAverages.Add(stDevAvgs.Where(d => d.Between(stDevAvgs[i], stDevAvgs[i + 1])).Average());
-              }
-            }
-            #endregion
             OnScanCorridor(_rateArray);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
-            OnPropertyChanged("StDevAverages");
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
           }
@@ -2262,10 +2242,13 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     public double TradingDistanceInPips { get { return InPips(TradingDistance).Max(_tradingDistanceMax); } }
+    double _tradingDistance = double.NaN;
     public double TradingDistance {
       get {
         if (!HasRates) return double.NaN;
         var td = GetValueByTakeProfitFunction(TradingDistanceFunction);
+        var td1 = AllowedLotSizeCore(_tradingDistance.IfNaN(td)).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, td, RatesHeight);
+        if ((td1 - td).Abs() / td > .1 )_tradingDistance = td1;
         return td;
       }
     }
@@ -2343,7 +2326,7 @@ namespace HedgeHog.Alice.Store {
 
     private int EntryOrderAllowedLot(bool isBuy, double? takeProfitPips = null) {
       var lotByStats = (int)_tradingStatistics.AllowedLotMinimum;
-      var lot = false && !_isInPipserMode && lotByStats > 0 ? lotByStats : AllowedLotSizeCore(Trades.IsBuy(isBuy), takeProfitPips);
+      var lot = false && !_isInPipserMode && lotByStats > 0 ? lotByStats : AllowedLotSizeCore();
       return lot + (TradesManager.IsHedged ? 0 : Trades.IsBuy(!isBuy).Lots());
     }
 
@@ -2609,12 +2592,6 @@ namespace HedgeHog.Alice.Store {
         switch ((Strategy & ~Strategies.Auto)) {
           case Strategies.Hot:
             return StrategyEnterDistancerManual;
-          case Strategies.Trailer01:
-            return StrategyEnterTrailer_01;
-          case Strategies.Trailer:
-            return StrategyEnterTrailer;
-          case Strategies.FreeRoam:
-            return StrategyEnterTrailerFreeRoaming;
           case Strategies.Deviator:
             return StrategyEnterDeviator;
           case Strategies.Ender:
@@ -2667,7 +2644,7 @@ namespace HedgeHog.Alice.Store {
 
             var canTrade = suppRes.CanTrade && suppRes.TradesCount <= 0 && !HasTradesByDistance(isBuy);
             CheckPendingAction("OT", (pa) => {
-              var als = AllowedLotSizeCore(Trades);
+              var als = AllowedLotSizeCore();
               if (_trimAtZero) {
                 var lot = Trades.Lots() - als;
                 if (lot > 0)
@@ -2712,7 +2689,7 @@ namespace HedgeHog.Alice.Store {
     private void OpenTradeWithReverse(bool isBuy) {
       CheckPendingAction("OT", (pa) => {
         var lotClose = Trades.IsBuy(!isBuy).Lots();
-        var lotOpen = AllowedLotSizeCore(Trades);
+        var lotOpen = AllowedLotSizeCore();
         var lot = lotClose + lotOpen;
         if (lot > 0) {
           pa();
@@ -2911,7 +2888,7 @@ namespace HedgeHog.Alice.Store {
           if (period.HasValue)
             RatesArray.SetCma(period.Value, period.Value);
           else {
-            CmaLotSize = CmaLotSize.Max(AllowedLotSizeCore(Trades));
+            CmaLotSize = CmaLotSize.Max(AllowedLotSizeCore());
             //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
@@ -3056,7 +3033,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
         case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
         case TradingMacroTakeProfitFunction.RatesStDev: tp = RatesStDev; break;
-        case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
+        case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg, Math.Sqrt(CorridorStats.StDevByHeight * CorridorStats.StDevByPriceAvg) * 4); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
         case TradingMacroTakeProfitFunction.BuySellLevels:
@@ -3065,7 +3042,7 @@ namespace HedgeHog.Alice.Store {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
-          tp = (tp - PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2).Min(RatesHeight).Max(StDevByHeight.Min(StDevByPriceAvg));
+          tp -= PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2;
           break;
         default:
           throw new NotImplementedException(new { function } + "");
@@ -3075,7 +3052,6 @@ namespace HedgeHog.Alice.Store {
 
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch (function) {
-        case ScanCorridorFunction.WaveDistance: return ScanCorridorByWaveDistance;
         case ScanCorridorFunction.WaveDistance1: return ScanCorridorByWaveDistance1;
         case ScanCorridorFunction.WaveDistanceByHeight: return ScanCorridorByDistanceByRatesHeight;
         case ScanCorridorFunction.WaveStDev: return ScanCorridorByStDev;
@@ -3083,8 +3059,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.WaveDistance2: return ScanCorridorByDistanceHalf;
         case ScanCorridorFunction.WaveDistance4: return ScanCorridorByDistanceQuater;
         case ScanCorridorFunction.WaveDistance41: return ScanCorridorByDistanceQuater1;
-        case ScanCorridorFunction.WaveDistance42: return ScanCorridorByDistanceQuater2;
-        case ScanCorridorFunction.WaveRelative: return ScanCorridorByWaveRelative;
+        case ScanCorridorFunction.WaveDistance42: return ScanCorridorByDistance42;
+        case ScanCorridorFunction.WaveDistance43: return ScanCorridorByDistance43;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3151,8 +3127,8 @@ namespace HedgeHog.Alice.Store {
       LotSize = TradingRatio <= 0 ? 0 : TradingRatio >= 1 ? (TradingRatio * BaseUnitSize).ToInt()
         : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
       LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
-      LotSizeByLossBuy = AllowedLotSize(trades, true);
-      LotSizeByLossSell = AllowedLotSize(trades, false);
+      LotSizeByLossBuy = AllowedLotSizeCore();
+      LotSizeByLossSell = AllowedLotSizeCore();
       //Math.Max(tm.LotSize, FXW.GetLotSize(Math.Ceiling(tm.CurrentLossPercent.Abs() / tm.LotSizePercent) * tm.LotSize, fw.MinimumQuantity));
       var stopAmount = 0.0;
       var limitAmount = 0.0;
@@ -3164,12 +3140,12 @@ namespace HedgeHog.Alice.Store {
       LimitAmount = limitAmount;
     }
 
-    int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplier) {
+    int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
       var bus = tradesManager.GetBaseUnitSize(Pair);
-      return TradesManagerStatic.GetLotSize(-(loss / lotMultiplier) * bus / TradesManager.GetPipCost(Pair), bus, true);
+      return TradesManagerStatic.GetLotSize(-(loss / lotMultiplierInPips) * bus / TradesManager.GetPipCost(Pair), bus, true);
     }
-    int LotSizeByLoss() {
-      return LotSizeByLoss(TradesManager, CurrentGross, LotSize, TradingDistanceInPips);
+    int LotSizeByLoss(double? lotMultiplierInPips = null) {
+      return LotSizeByLoss(TradesManager, CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
@@ -3188,14 +3164,10 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public int AllowedLotSizeCore(ICollection<Trade> trades, double? takeProfitPips = null) {
+    public int AllowedLotSizeCore( double? lotMultiplierInPips = null) {
       if (!HasRates) return 0;
-      return LotSizeByLoss().Max(LotSize).Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
+      return LotSizeByLoss(lotMultiplierInPips).Max(LotSize).Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
     }
-    public int AllowedLotSize(ICollection<Trade> trades, bool isBuy, double? takeProfitPips = null) {
-      return AllowedLotSizeCore(trades.IsBuy(isBuy), takeProfitPips);
-    }
-
     private int CalculateLotCore(double totalGross, double? takeProfitPips = null) {
       //return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TakeProfitPips), Pair);
       return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TradingStatistics.TakeProfitPips), Pair);
@@ -3598,12 +3570,6 @@ namespace HedgeHog.Alice.Store {
     public IList<WaveInfo> WaveRates {
       get { return _waveRates; }
       set { _waveRates = value; }
-    }
-
-    private IList<double> _StDevAverages = new List<double>();
-    public IList<double> StDevAverages {
-      get { return _StDevAverages; }
-      set { _StDevAverages = value; }
     }
 
     public double VolumeAverageLow { get; set; }
@@ -4064,6 +4030,8 @@ namespace HedgeHog.Alice.Store {
     public double StDevByHeightInPips { get { return InPips(StDevByHeight); } }
     #endregion
 
+    public double CorridorStDevSqrt { get { return Math.Pow(CorridorStats.StDevByPriceAvg * CorridorStats.StDevByHeight, .52); } }
+    public double CorridorStDevSqrtInPips { get { return InPips(CorridorStDevSqrt); } }
     public double RatesStDevInPips { get { return InPips(RatesStDev); } }
     private double _RatesStDev;
     public double RatesStDev {

@@ -351,6 +351,19 @@ namespace HedgeHog.Alice.Store {
 
 
 
+    //RatesHeightMinimum
+    public string _TestRatesHeightMinimum = "";
+    [DisplayName("RatesHeightMinimum")]
+    [Category(categoryTest)]
+    public string TestRatesHeightMinimum {
+      get { return _TestRatesHeightMinimum; }
+      set {
+        if (_TestRatesHeightMinimum != value) {
+          _TestRatesHeightMinimum = value;
+          OnPropertyChanged("TestRatesHeightMinimum");
+        }
+      }
+    }
 
     public string _TestBarsCount = "";
     [DisplayName("BarsCount")]
@@ -428,19 +441,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-
-    string _TestStopRateWaveOffset = "";
-    [DisplayName("Stop Rate Wave Offset")]
-    [Category(categoryTest)]
-    public string TestStopRateWaveOffset {
-      get { return _TestStopRateWaveOffset; }
-      set {
-        if (_TestStopRateWaveOffset != value) {
-          _TestStopRateWaveOffset = value;
-          OnPropertyChanged("TestStopRateWaveOffset");
-        }
-      }
-    }
 
     string _TestProfitToLossExitRatio = "";
     [DisplayName("ProfitToLossExitRatio")]
@@ -1069,9 +1069,9 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("BlackoutHoursTimeframe");
       }
     }
-    [DisplayName("StopRate Wave Offset")]
+    [DisplayName("Wave Distance Max")]
     [Category(categoryActive)]
-    public int StopRateWaveOffset {
+    public int WaveDistanceMax {
       get { return CorridorIterationsOut; }
       set {
         CorridorIterationsOut = value;
@@ -1256,10 +1256,10 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     #region StDevTresholdIterations
-    [DisplayName("StDev Iterations")]
-    [Description("StDev Treshold Iterations")]
+    [DisplayName("Distance Iterations")]
+    [Description("Math.Pow(height,N)")]
     [Category(categoryActive)]
-    public int StDevTresholdIterations_ {
+    public int DistanceIterations {
       get { return StDevTresholdIterations; }
       set {
         if (StDevTresholdIterations != value) {

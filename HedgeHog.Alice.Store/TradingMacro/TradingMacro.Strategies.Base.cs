@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region Exit
-      double als = AllowedLotSizeCore(Trades);
+      double als = AllowedLotSizeCore();
       if (IsEndOfWeek()) {
         if (Trades.Any())
           CloseTrades(Trades.Lots());
