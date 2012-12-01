@@ -1709,11 +1709,14 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region adjustLevels
         var firstTime = true;
+        #region Watchers
         var watcherSetCorridor = new ObservableValue<bool>(false, true);
         var watcherCanTrade = new ObservableValue<bool>(true, true);
         var watcherWaveTrade = new ObservableValue<bool>(false, true);
         var watcherWaveStart = new ObservableValue<DateTime>(DateTime.MinValue);
-        var corridorLengthOld = 0.0;
+        var watcherTradeCounter = new ObservableValue<bool>(false, true);
+        #endregion
+        #region _adjustLevels
         _adjustLevels = () => {
           if (!WaveTradeStart.HasRates) return;
           switch (TrailingDistanceFunction) {
@@ -1730,27 +1733,30 @@ namespace HedgeHog.Alice.Store {
                   _buySellLevelsForEach(sr => sr.CanTrade = watcherWaveTrade.Value);
                   _buyLevel.Rate = WaveTradeStart.RatesMax.Max(RateLast.PriceAvg) + PointSize;
                   _sellLevel.Rate = WaveTradeStart.RatesMin.Min(RateLast.PriceAvg) - PointSize;
-                } 
+                  _buySellLevelsForEach(sr => { sr.CanTrade = true; sr.TradesCount = 0; });
+                }
+                if (CorridorCrossesMaximum < 0 && watcherTradeCounter.SetValue(_buyLevel.TradesCount.Max(_sellLevel.TradesCount) < CorridorCrossesMaximum).HasChangedTo)
+                  NewThreadScheduler.Default.Schedule(() => _buyLevel.CanTrade = _sellLevel.CanTrade = false);
               }
               break;
             #endregion
-            #region WaveMin
-            case TrailingWaveMethod.WaveMin: {
+            #region WaveMax1
+            case TrailingWaveMethod.WaveMax1: {
                 if (firstTime)
                   _buySellLevelsForEach(sr => sr.CanTrade = false);
-                var canTradeHeight = (CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight)*2;// Math.Sqrt(StDevByHeight * StDevByPriceAvg);
-                var canTradeRatio = 1 + Fibonacci.FibRatioSign(WaveShort.Rates.Count, CorridorLength);
-                if (watcherWaveTrade.SetValue(WaveTradeStart.RatesHeight > canTradeHeight * canTradeRatio).HasChanged) {
-                  _buySellLevelsForEach(sr => sr.CanTrade = watcherWaveTrade.Value);
-                } else if (!watcherWaveTrade.Value || corridorLengthOld < CorridorLength) {
-                  _buyLevel.Rate = WaveTradeStart.RatesMax.Max(RateLast.PriceAvg) + PointSize;
-                  _sellLevel.Rate = WaveTradeStart.RatesMin.Min(RateLast.PriceAvg) - PointSize;
-                }
-                corridorLengthOld = CorridorLength;
                 var median = (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
-                var varaince = CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
+                var varaince = CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) / MathExtensions.StDevRatioMax / 2;
                 _CenterOfMassBuy = median + varaince;
                 _CenterOfMassSell = median - varaince;
+                var isSteady = _CenterOfMassBuy < WaveTradeStart.RatesMax && _CenterOfMassSell > WaveTradeStart.RatesMin;
+                if (watcherWaveTrade.SetValue(isSteady).HasChangedTo) {
+                  _buySellLevelsForEach(sr => sr.CanTrade = watcherWaveTrade.Value);
+                  _buyLevel.Rate = WaveTradeStart.RatesMax.Max(RateLast.PriceAvg) + PointSize;
+                  _sellLevel.Rate = WaveTradeStart.RatesMin.Min(RateLast.PriceAvg) - PointSize;
+                  _buySellLevelsForEach(sr => { sr.CanTrade = true; sr.TradesCount = 0; });
+                }
+                if (CorridorCrossesMaximum < 0 && watcherTradeCounter.SetValue(_buyLevel.TradesCount.Max(_sellLevel.TradesCount) < CorridorCrossesMaximum).HasChangedTo)
+                  NewThreadScheduler.Default.Schedule(() => _buyLevel.CanTrade = _sellLevel.CanTrade = false);
               }
               break;
             #endregion
@@ -1793,6 +1799,7 @@ namespace HedgeHog.Alice.Store {
           }
         };
         #endregion
+        #endregion
 
         #region On Trade Close
         _strategyExecuteOnTradeClose = t => {
@@ -1801,7 +1808,7 @@ namespace HedgeHog.Alice.Store {
           if (isCurrentGrossOk()) {
             if (!IsAutoStrategy)
               IsTradingActive = false;
-            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
+            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum.Max(0);
             _buySellLevelsForEach(sr => sr.CanTrade = false);
             CorridorStartDate = null;
             CorridorStopDate = DateTime.MinValue;

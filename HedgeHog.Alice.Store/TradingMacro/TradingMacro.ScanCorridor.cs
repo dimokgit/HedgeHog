@@ -170,7 +170,7 @@ namespace HedgeHog.Alice.Store {
       ratesReversed[0].RunningLow = double.MaxValue;
       var hikeMin = PointSize / 10;
       ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
-        var height = ((p.PriceAvg - n.PriceAvg).Abs() / PointSize).Max(hikeMin);
+        var height = (p.PriceAvg - n.PriceAvg).Abs().Max(hikeMin) / PointSize;
         for (double i = 0, h = height; i < DistanceIterations; i++)
           height *= h; 
           n.Distance1 = p.Distance1 + (IsCorridorForwardOnly ? 1 / height : height);
