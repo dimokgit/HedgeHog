@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace HedgeHog {
   public static class MathExtensions {
+    public static readonly double StDevRatioMax = 0.288675135;
     public static int ValueByPosition(this int sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
       return ((double)sampleCurrent).ValueByPosition(sampleLow, sampleHigh, realLow, realHigh).ToInt();
     }
@@ -192,7 +193,7 @@ namespace HedgeHog {
       return y;
     }
 
-    public static double StDevRatio(this ICollection<double> values) {
+    public static double StDevRatio(this IList<double> values) {
       var stDev = values.StDev();
       var range = values.Max() - values.Min();
       return stDev / range;

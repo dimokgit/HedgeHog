@@ -68,6 +68,7 @@ namespace HedgeHog.Alice.Store {
     WaveShort = 1,
     WaveTrade = 2,
     WaveMax = 3,
+    WaveMax1 = 31,
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
