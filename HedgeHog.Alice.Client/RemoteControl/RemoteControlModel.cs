@@ -396,6 +396,7 @@ namespace HedgeHog.Alice.Client {
       public int PriceCmaLevel { get; set; }
       public double ProfitToLossExitRatio { get; set; }
       public double CorridorDistanceRatio { get; set; }
+      public double WaveStDevRatio { get; set; }
       public int BarsCount { get; set; }
       public double RatesHeightMinimum { get; set; }
       public Guid SuperessionId { get; set; }
@@ -405,6 +406,7 @@ namespace HedgeHog.Alice.Client {
       public static int[] PriceCmaLevels = new int[0];
       public static double[] ProfitToLossExitRatio = new double[0];
       public static double[] CorridorDistanceRatio = new double[0];
+      public static double[] WaveStDevRatio = new double[0];
       public static int[] BarsCount = new int[0];
       public static double[] RatesHeightMinimum = new double[0];
       
@@ -414,9 +416,10 @@ namespace HedgeHog.Alice.Client {
         var ret = from p in PriceCmaLevels
                   from pl in ProfitToLossExitRatio
                   from cd in CorridorDistanceRatio
+                  from wr in WaveStDevRatio
                   from pler in BarsCount
                   from rhm in RatesHeightMinimum
-                  select new TestParameter() { PriceCmaLevel = p, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,RatesHeightMinimum = rhm };
+                  select new TestParameter() { PriceCmaLevel = p, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,RatesHeightMinimum = rhm,WaveStDevRatio = wr  };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -443,6 +446,8 @@ namespace HedgeHog.Alice.Client {
         .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
       TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
         .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
+      TestParameters.WaveStDevRatio = tmOriginal.TestWaveStDevRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+        .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
       TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
         .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
       TestParameters.RatesHeightMinimum = tmOriginal.TestRatesHeightMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
@@ -533,6 +538,7 @@ namespace HedgeHog.Alice.Client {
             tm.PriceCmaLevels_ = tm.PriceCmaPeriod = testParameter.PriceCmaLevel;
             tm.ProfitToLossExitRatio = testParameter.ProfitToLossExitRatio;
             tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
+            tm.WaveStDevRatio = testParameter.WaveStDevRatio;
             tm.BarsCount = testParameter.BarsCount;
             tm.RatesHeightMinimum = testParameter.RatesHeightMinimum;
           }
@@ -1125,7 +1131,7 @@ namespace HedgeHog.Alice.Client {
            /*10*/, tm.CorridorStDevSqrtInPips*4
           );
           var ratesForTrand = !tm.ShowTrendLines ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
-          charter.SetTrendLines(ratesForTrand, tm.ShowTrendLines);
+          charter.SetTrendLines(tm.SetTrendLines(), tm.ShowTrendLines);
           charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";

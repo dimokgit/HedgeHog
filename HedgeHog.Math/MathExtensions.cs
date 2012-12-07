@@ -7,8 +7,8 @@ using System.Diagnostics;
 namespace HedgeHog {
   public static class MathExtensions {
     public static readonly double StDevRatioMax = 0.288675135;
-    public static int ValueByPosition(this int sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
-      return ((double)sampleCurrent).ValueByPosition(sampleLow, sampleHigh, realLow, realHigh).ToInt();
+    public static double ValueByPosition(this int sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
+      return ((double)sampleCurrent).ValueByPosition(sampleLow, sampleHigh, realLow, realHigh);
     }
     public static double ValueByPosition(this double sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
       return sampleCurrent.PositionRatio(sampleLow, sampleHigh) * (realHigh - realLow) + realLow;

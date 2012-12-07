@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using HedgeHog;
 using HedgeHog.Bars;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -171,8 +172,9 @@ namespace HedgeHog.Alice.Store {
       var hikeMin = PointSize / 10;
       ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
         var height = (p.PriceAvg - n.PriceAvg).Abs().Max(hikeMin) / PointSize;
-        for (double i = 0, h = height; i < DistanceIterations; i++)
-          height *= h; 
+        for (double i = 110, h = height; i < DistanceIterations; i++)
+          height *= h;
+        height = Math.Pow(height, DistanceIterations);
           n.Distance1 = p.Distance1 + (IsCorridorForwardOnly ? 1 / height : height);
         return /*1 /*/ height;
       });
@@ -217,16 +219,23 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByDistance43(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       ratesReversed[0].Distance1 = 0;
+      ratesReversed[0].RunningHigh = double.MinValue;
+      ratesReversed[0].RunningLow = double.MaxValue;
+      var hikeMin = PointSize / 10;
+      DistanceIterationsReal = LotSizeByLossBuy.ValueByPosition(LotSize, MaxLotSize, DistanceIterations, DistanceIterations * 3);
       ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
-        var height = (p.PriceAvg - n.PriceAvg).Abs() / PointSize;
+        var height = (p.PriceAvg - n.PriceAvg).Abs().Max(hikeMin) / PointSize;
+        for (double i = 110, h = height; i < DistanceIterations; i++)
+          height *= h;
+        height = Math.Pow(height, DistanceIterationsReal);
         n.Distance1 = p.Distance1 + (IsCorridorForwardOnly ? 1 / height : height);
         return /*1 /*/ height;
       });
       var ratesDistance = ratesForCorridor.Distance();
+      RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
 
-      var corridorDistance = AllowedLotSizeCore().ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, CorridorDistanceRatio, WaveDistanceMax);
-      CorridorLength = corridorDistance * (1 + Fibonacci.FibRatioSign(CorridorStats.StDevByHeight, CorridorStats.StDevByPriceAvg ).IfNaN(0).Max(0));
-      var halfRatio = ratesDistance / (BarsCount / CorridorLength);
+      CorridorLength = CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight));
+      var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorLength);
       var c = ratesReversed.Count(r => r.Distance <= halfRatio);
       if (c < 5) {
         c = 30;
@@ -238,9 +247,12 @@ namespace HedgeHog.Alice.Store {
       if (!WaveShort.HasDistance) WaveShort.Rates = waveByDistance;
       else WaveShort.SetRatesByDistance(ratesReversed);
 
-      var distanceShort = WaveShort.Rates.LastBC().Distance1 / 2;
+      var distanceShort = WaveShort.Rates.LastBC().Distance / 2;
+      var distanceShort1 = WaveShort.Rates.LastBC().Distance1 / 2;
       WaveTradeStart.Rates = null;
-      WaveTradeStart.Rates = WaveShort.Rates.TakeWhile(r => r.Distance1 < distanceShort).ToArray();
+      var tradeWave = WaveShort.Rates.TakeWhile(r => r.Distance < distanceShort).ToArray();
+      var tradeWave1 = WaveShort.Rates.TakeWhile(r => r.Distance1 < distanceShort1).ToArray();
+      WaveTradeStart.Rates = tradeWave.Length < tradeWave1.Length ? tradeWave : tradeWave1;
 
       var distanceLeft = WaveDistance * 2;
       WaveShortLeft.Rates = null;
@@ -256,7 +268,6 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-
 
     private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
@@ -305,8 +316,8 @@ namespace HedgeHog.Alice.Store {
       var waveMax = _waves.OrderByDescending(getMesure).First();//.OrderByDescending(w => w.MaxStDev()).First();
       WaveHigh = _waves.SkipWhile(w => w.Distance() * 2 < waveMax.Distance()).TakeWhile(w => w != waveMax).DefaultIfEmpty(waveMax).OrderByDescending(getMesure).Take(1).OrderByDescending(w => w[0].StartDate).First();
 
-      WaveLength = _waves.Select(w => (double)w.Count).ToArray().AverageInRange(WaveAverageIteration.ToInt() - 1, WaveAverageIteration.ToInt() - 1).Average().ToInt();
-      if (false) WaveAverage = _waves.Select(w => w.Height()).ToArray().AverageInRange(WaveAverageIteration.ToInt()).Average();
+      WaveLength = _waves.Select(w => (double)w.Count).ToArray().AverageInRange(WaveAverageIteration - 1, WaveAverageIteration - 1).Average().ToInt();
+      if (false) WaveAverage = _waves.Select(w => w.Height()).ToArray().AverageInRange(WaveAverageIteration).Average();
 
       WaveDistanceForTrade = RatesHeight;
       this.RatesStDevAdjusted = RatesStDev * RatesStDevToRatesHeightRatio / CorridorDistanceRatio;
@@ -337,7 +348,7 @@ namespace HedgeHog.Alice.Store {
         var c = a.AverageByIterations(WaveAverageIteration - 1).Average();
         WaveAverage = a.Where(v => v.Between(c, b)).Average();
         a = _waves.Select(w => (double)w.Count).ToArray();
-        WaveLength = a.AverageInRange(WaveAverageIteration.ToInt()).Average().ToInt();
+        WaveLength = a.AverageInRange(WaveAverageIteration).Average().ToInt();
       }
       int indexMax = CorridorStartDate.HasValue ? RatesArray.Count(r => r.StartDate >= CorridorStartDate.Value) : 0;
       if (indexMax == 0) {
@@ -409,7 +420,7 @@ namespace HedgeHog.Alice.Store {
         var c = a.AverageByIterations(WaveAverageIteration - 1).Average();
         WaveAverage = a.Where(v => v.Between(c, b)).Average();
         a = _waves.Select(w => (double)w.Count).ToArray();
-        WaveLength = a.AverageInRange(WaveAverageIteration.ToInt()).Average().ToInt();
+        WaveLength = a.AverageInRange(WaveAverageIteration).Average().ToInt();
       }
       int indexMax = CorridorStartDate.HasValue ? RatesArray.Count(r => r.StartDate >= CorridorStartDate.Value) : 0;
       if (indexMax == 0) {
@@ -527,9 +538,9 @@ namespace HedgeHog.Alice.Store {
       var waveMax = _waves.OrderByDescending(getMesure).First();//.OrderByDescending(w => w.MaxStDev()).First();
       WaveHigh = _waves.SkipWhile(w => w.Distance() * 2 < waveMax.Distance()).TakeWhile(w => w != waveMax).DefaultIfEmpty(waveMax).OrderByDescending(getMesure).Take(1).OrderByDescending(w => w[0].StartDate).First();
 
-      WaveLength = _waves.Select(w => (double)w.Count).ToArray().AverageInRange(WaveAverageIteration.ToInt()).Average().ToInt();
+      WaveLength = _waves.Select(w => (double)w.Count).ToArray().AverageInRange(WaveAverageIteration).Average().ToInt();
       if (false)
-        WaveAverage = _waves.Select(w => w.Height()).ToArray().AverageInRange(WaveAverageIteration.ToInt()).Average();
+        WaveAverage = _waves.Select(w => w.Height()).ToArray().AverageInRange(WaveAverageIteration).Average();
       var startStopRates = WaveHigh.GetWaveStartStopRates();
       WaveDistance = startStopRates[0].Distance - startStopRates[1].Distance;// waves.Where(w => w[0] > WaveHigh[0]).Select(w => w.Distance()).OrderByDescending(d => d).Take(2).Average(() => WaveHigh.Distance());
       WaveShort.Rates = WaveInfo.RatesByDistance(RatesArray, WaveShort.Distance.IfNaN(WaveDistance)).ToArray();
@@ -626,6 +637,24 @@ namespace HedgeHog.Alice.Store {
       return null;
     }
     #endregion
+    #endregion
+
+    #region DistanceIterationsReal
+    void DistanceIterationsRealClear() { _DistanceIterationsReal = 0; }
+    private double _DistanceIterationsReal;
+    [DisplayName("Distance Iterations")]
+    [Description("DistanceIterationsReal=F(DistanceIterations,X)")]
+    [Category(categoryCorridor)]
+    public double DistanceIterationsReal {
+      get { return _DistanceIterationsReal; }
+      set {
+        if (_DistanceIterationsReal < value) {
+          _DistanceIterationsReal = value;
+          OnPropertyChanged(() => DistanceIterationsReal);
+        }
+      }
+    }
+
     #endregion
   }
 }

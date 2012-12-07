@@ -391,6 +391,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public string _TestWaveStDevRatio = "";
+    [DisplayName("Wave StDev Ratio")]
+    [Category(categoryTest)]
+    public string TestWaveStDevRatio {
+      get { return _TestWaveStDevRatio; }
+      set {
+        if (_TestWaveStDevRatio != value) {
+          _TestWaveStDevRatio = value;
+          OnPropertyChanged("TestWaveStDevRatio");
+        }
+      }
+    }
+
     [Category(categoryTest)]
     public bool UseTestFile { get; set; }
 
@@ -559,7 +572,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("MaxLot By TakeProfit Ratio")]
     [Description("MaxLotSize < LotSize*N")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public double MaxLotByTakeProfitRatio_ {
       get { return MaxLotByTakeProfitRatio; }
       set {
@@ -647,23 +660,12 @@ namespace HedgeHog.Alice.Store {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
     }
-
+    [Description("TradingDistance=F(AllowedLotSize)")]
     [DisplayName("Corridor Follows Price")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public bool CorridorFollowsPrice {
       get { return StrictTradeClose; }
       set { StrictTradeClose = value; }
-    }
-
-    [DisplayName("WaveAverage Iteration")]
-    [Category(categoryActive)]
-    public double WaveAverageIteration {
-      get { return SpreadShortToLongTreshold; }
-      set {
-        if (SpreadShortToLongTreshold == value) return;
-        SpreadShortToLongTreshold = value;
-        OnPropertyChanged(TradingMacroMetadata.WaveAverageIteration);
-      }
     }
 
     private bool IsTradingHour(DateTime time) {
@@ -1069,13 +1071,29 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged("BlackoutHoursTimeframe");
       }
     }
-    [DisplayName("Wave Distance Max")]
+    double _waveStDevRatioSqrt = double.NaN;
+    partial void OnSpreadShortToLongTresholdChanged() {
+      _waveStDevRatioSqrt = Math.Sqrt(WaveStDevRatio);
+    }
+    [DisplayName("Wave StDev Ratio")]
+    [Description("Wave Corridor = StDev*sqrt(X)")]
     [Category(categoryActive)]
-    public int WaveDistanceMax {
+    public double WaveStDevRatio {
+      get { return SpreadShortToLongTreshold; }
+      set {
+        SpreadShortToLongTreshold = value;
+        OnPropertyChanged(() => WaveStDevRatio);
+      }
+    }
+
+    [DisplayName("WaveAverage Iteration")]
+    [Category(categoryActive)]
+    public int WaveAverageIteration {
       get { return CorridorIterationsOut; }
       set {
+        if (CorridorIterationsOut == value) return;
         CorridorIterationsOut = value;
-        OnPropertyChanged("StopRateWaveOffset");
+        OnPropertyChanged("WaveAverageIteration");
       }
     }
 

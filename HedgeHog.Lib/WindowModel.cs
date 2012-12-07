@@ -166,6 +166,19 @@ namespace HedgeHog.Models {
       set { this.SetAndNotify(ref this.name, value, () => this.Name); }
     }
   }
+  public class ValueTrigger {
+    bool _on = false;
+    public bool On { get { return _on; } }
+    public ValueTrigger(bool on) {
+      this._on = on;
+    }
+    public bool Set(bool on) {
+      if (!_on)
+        _on = on;
+      return _on;
+    }
+    public void Off() { _on = false; }
+  }
   public class ObservableValue<TValue>:ModelBase{
     bool _changeTo = false;
     TValue _changeToValue;
@@ -194,6 +207,9 @@ namespace HedgeHog.Models {
     public ObservableValue<TValue> SetValue(TValue value) {
       this.Value = value;
       return this;
+    }
+    public bool ChangedTo(TValue value) {
+      return HasChanged && Value.Equals(value);
     }
     #region ValueChanged Event
     event EventHandler<EventArgs> ValueChangedEvent;
