@@ -628,7 +628,6 @@ namespace HedgeHog.Alice.Store {
       GlobalStorage.UseForexContext(f => {
         this._blackoutTimes = f.v_BlackoutTime.ToArray();
       });
-      ReloadPairStats();
       OnPropertyChanged(TradingMacroMetadata.CompositeName);
     }
     partial void OnLimitBarChanged() { OnPropertyChanged(TradingMacroMetadata.CompositeName); }
@@ -854,18 +853,21 @@ namespace HedgeHog.Alice.Store {
         if (value != null) {
           var doRegressionLevels = false;// Strategy.HasFlag(Strategies.Trailer01);
           if (doRegressionLevels) {
-            RatesArray.ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = r.PriceAvg21 = r.PriceAvg31 = double.NaN);
-            CorridorStats.Rates
-              .SetCorridorPrices(CorridorStats.Coeffs
-                , CorridorStats.HeightUp0, CorridorStats.HeightDown0
-                , CorridorStats.HeightUp, CorridorStats.HeightDown
-                , CorridorStats.HeightUp0 * 3, CorridorStats.HeightDown0 * 3
-                , r => doRegressionLevels ? r.PriceAvg1 : MagnetPrice, (r, d) => r.PriceAvg1 = d
-                , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
-                , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
-                , (r, d) => r.PriceAvg21 = d, (r, d) => r.PriceAvg31 = d
-              );
-            BellRatio = CorridorStats.Rates.Count(r => r.PriceAvg.Between(r.PriceAvg03, r.PriceAvg02)) / (double)CorridorStats.Rates.Count;
+            if (SetTrendLines != null)
+              SetTrendLines();
+            else {
+              RatesArray.ForEach(r => r.PriceAvg1 = r.PriceAvg2 = r.PriceAvg3 = r.PriceAvg02 = r.PriceAvg03 = r.PriceAvg21 = r.PriceAvg31 = double.NaN);
+              CorridorStats.Rates
+                .SetCorridorPrices(CorridorStats.Coeffs
+                  , CorridorStats.HeightUp0, CorridorStats.HeightDown0
+                  , CorridorStats.HeightUp, CorridorStats.HeightDown
+                  , CorridorStats.HeightUp0 * 3, CorridorStats.HeightDown0 * 3
+                  , r => doRegressionLevels ? r.PriceAvg1 : MagnetPrice, (r, d) => r.PriceAvg1 = d
+                  , (r, d) => r.PriceAvg02 = d, (r, d) => r.PriceAvg03 = d
+                  , (r, d) => r.PriceAvg2 = d, (r, d) => r.PriceAvg3 = d
+                  , (r, d) => r.PriceAvg21 = d, (r, d) => r.PriceAvg31 = d
+                );
+            }
             OnOpenTradeByMA(RatesArray.LastOrDefault(r => r.PriceAvg1 > 0));
           }
           CorridorAngle = CorridorStats.Slope;
@@ -1452,7 +1454,12 @@ namespace HedgeHog.Alice.Store {
         WaveShort.ClearDistance();
         CloseAtZero = _trimAtZero = false;
         CurrentLoss = MinimumGross = HistoryMaximumLot = 0;
-        ForEachSuppRes(sr => { sr.CanTrade = false; sr.TradesCount = 0; sr.CorridorDate = DateTime.MinValue; });
+        ForEachSuppRes(sr => {
+          sr.CanTrade = false; 
+          sr.TradesCount = 0;
+          sr.InManual = false;
+          sr.CorridorDate = DateTime.MinValue;
+        });
         CorridorStartDate = null;
         CorridorStats = null;
         WaveHigh = null;
@@ -2241,15 +2248,21 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    public double TradingDistanceInPips { get { return InPips(TradingDistance).Max(_tradingDistanceMax); } }
+    public double TradingDistanceInPips { get { return InPips(_tradingDistance).Max(_tradingDistanceMax); } }
     double _tradingDistance = double.NaN;
     public double TradingDistance {
       get {
         if (!HasRates) return double.NaN;
-        var td = GetValueByTakeProfitFunction(TradingDistanceFunction);
-        var td1 = AllowedLotSizeCore(_tradingDistance.IfNaN(td)).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, td, RatesHeight);
-        if ((td1 - td).Abs() / td > .1 )_tradingDistance = td1;
-        return td;
+        _tradingDistance = GetValueByTakeProfitFunction(TradingDistanceFunction);
+        if (CorridorFollowsPrice) {
+          var td1 = AllowedLotSizeCore(TradingDistanceInPips).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight);
+          if (td1 > 0) {
+            if ((td1 - _tradingDistance).Abs() / _tradingDistance > .1) _tradingDistance = td1;
+          } else {
+            td1 = _tradingDistance;
+          }
+        }
+        return _tradingDistance;// td;
       }
     }
 
@@ -2592,24 +2605,10 @@ namespace HedgeHog.Alice.Store {
         switch ((Strategy & ~Strategies.Auto)) {
           case Strategies.Hot:
             return StrategyEnterDistancerManual;
-          case Strategies.Deviator:
-            return StrategyEnterDeviator;
           case Strategies.Ender:
             return StrategyEnterEnder;
-          case Strategies.Minimalist:
-            return StrategyEnterMinimalist;
-          case Strategies.Distancer:
-            return StrategyEnterDistancer;
-          case Strategies.Distancer2:
-            return StrategyEnterDistancerAndAHalf;
-          case Strategies.Distancer4:
-            return StrategyEnterDistancerAndAQuater;
-          case Strategies.Averager:
-            return StrategyEnterAverager;
-          case Strategies.MiddleMan:
-            return StrategyEnterMiddleMan;
-          case Strategies.StDevCombo:
-            return StrategyEnterStDevCombo;
+          case Strategies.Universal:
+            return StrategyEnterUniversal;
           case Strategies.None:
             return () => { };
         }
@@ -2738,7 +2737,7 @@ namespace HedgeHog.Alice.Store {
     private void TurnOffSuppRes(double level = double.NaN) {
       var rate = double.IsNaN(level) ? SuppRes.Average(sr => sr.Rate) : level;
       foreach (var sr in SuppRes)
-        sr.Rate = rate;
+        sr.RateEx = rate;
     }
 
     public void TrimTrades() { CloseTrades(Trades.Lots() - LotSize); }
@@ -3145,7 +3144,8 @@ namespace HedgeHog.Alice.Store {
       return TradesManagerStatic.GetLotSize(-(loss / lotMultiplierInPips) * bus / TradesManager.GetPipCost(Pair), bus, true);
     }
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
-      return LotSizeByLoss(TradesManager, CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
+      var lotSize = LotSizeByLoss(TradesManager, CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
+      return lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, CurrentGross, LotSize, RatesHeightInPips);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
@@ -3166,7 +3166,7 @@ namespace HedgeHog.Alice.Store {
 
     public int AllowedLotSizeCore( double? lotMultiplierInPips = null) {
       if (!HasRates) return 0;
-      return LotSizeByLoss(lotMultiplierInPips).Max(LotSize).Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
+      return LotSizeByLoss(lotMultiplierInPips).Max(LotSize);//.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
     }
     private int CalculateLotCore(double totalGross, double? takeProfitPips = null) {
       //return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TakeProfitPips), Pair);
@@ -3389,7 +3389,6 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.BarsCount:
         case TradingMacroMetadata.CorridorBarMinutes:
         case TradingMacroMetadata.LimitBar:
-          ReloadPairStats();
           CorridorStats = null;
           CorridorStartDate = null;
           //Strategy = Strategies.None;
@@ -3955,9 +3954,6 @@ namespace HedgeHog.Alice.Store {
         if (_IsTradingActive != value) {
           _IsTradingActive = value;
           OnPropertyChanged(() => IsTradingActive);
-          if (Strategy == Strategies.MiddleMan && value) {
-            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum;
-          }
         }
       }
     }
@@ -4071,8 +4067,6 @@ namespace HedgeHog.Alice.Store {
     }
     public double WaveShortDistance { get { return WaveShort.Distance.IfNaN(WaveDistance); } }
     public double WaveShortDistanceInPips { get { return InPips(WaveShortDistance); } }
-
-    public double BellRatio { get; set; }
 
     double _RatesStDevAdjusted = double.NaN;
     private DB.v_BlackoutTime[] _blackoutTimes;

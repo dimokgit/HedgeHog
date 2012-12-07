@@ -595,8 +595,9 @@ namespace HedgeHog {
         if (value == null)
           trendLine.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine.Visibility = System.Windows.Visibility.Visible;
           trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg1);
-          trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg1);
+          trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg1);
         }
       }
     }
@@ -607,8 +608,9 @@ namespace HedgeHog {
         if (value == null)
           trendLine21.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine21.Visibility = System.Windows.Visibility.Visible;
           trendLine21.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg21);
-          trendLine21.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg21);
+          trendLine21.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg21);
         }
       }
     }
@@ -619,8 +621,9 @@ namespace HedgeHog {
         if (value == null)
           trendLine2.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine2.Visibility = System.Windows.Visibility.Visible;
           trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
-          trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg2);
+          trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg2);
         }
       }
     }
@@ -631,8 +634,9 @@ namespace HedgeHog {
         if (value == null)
           trendLine02.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine02.Visibility = System.Windows.Visibility.Visible;
           trendLine02.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg02);
-          trendLine02.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg02);
+          trendLine02.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg02);
         }
       }
     }
@@ -643,8 +647,9 @@ namespace HedgeHog {
         if (value == null)
           trendLine31.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine31.Visibility = System.Windows.Visibility.Visible;
           trendLine31.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg31);
-          trendLine31.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg31);
+          trendLine31.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg31);
         }
       }
     }
@@ -655,6 +660,7 @@ namespace HedgeHog {
         if (value == null)
           trendLine3.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine3.Visibility = System.Windows.Visibility.Visible;
           trendLine3.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
           trendLine3.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg3);
         }
@@ -667,6 +673,7 @@ namespace HedgeHog {
         if (value == null)
           trendLine03.Visibility = System.Windows.Visibility.Collapsed;
         else {
+          trendLine03.Visibility = System.Windows.Visibility.Visible;
           trendLine03.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg03);
           trendLine03.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg03);
         }

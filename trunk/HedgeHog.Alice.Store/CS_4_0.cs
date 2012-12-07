@@ -3335,7 +3335,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BlackoutHoursTimeframe"/></summary>
         public const string BlackoutHoursTimeframe = "BlackoutHoursTimeframe";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveDistanceMax"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveStDevRatio"/></summary>
         public const string StopRateWaveOffset = "StopRateWaveOffset";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSuppResManual_"/></summary>
@@ -3836,7 +3836,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro._sellLevelNetOpen"/></summary>
         public const string _sellLevelNetOpen = "_sellLevelNetOpen";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._adjustLevels"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._adjustEnterLevels"/></summary>
         public const string _adjustLevels = "_adjustLevels";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.StrategyEnterEnder"/></summary>
@@ -6378,7 +6378,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.BlackoutHoursTimeframe"/></summary>
         public static PropertyPath BlackoutHoursTimeframePath { get { return new PropertyPath("BlackoutHoursTimeframe"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveDistanceMax"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.WaveStDevRatio"/></summary>
         public static PropertyPath StopRateWaveOffsetPath { get { return new PropertyPath("StopRateWaveOffset"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsSuppResManual_"/></summary>

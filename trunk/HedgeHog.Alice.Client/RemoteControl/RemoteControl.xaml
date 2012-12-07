@@ -350,7 +350,7 @@
                         </TextBlock>
                         <TextBlock>WaveShort.Height. :<TextBlock Text="{Binding WaveShort.RatesHeightInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>Bars Spread...... :<TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/></TextBlock>
-                        <TextBlock>RatesStDevAgj.... :<TextBlock Text="{Binding RatesStDevAdjustedInPips,StringFormat=n0}"/></TextBlock>
+                        <TextBlock>DistanceIterations:<TextBlock Text="{Binding DistanceIterationsReal,StringFormat=n1}"/></TextBlock>
                         <TextBlock>RatesHeight/StDev :<TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/></TextBlock>
                         
                         <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">

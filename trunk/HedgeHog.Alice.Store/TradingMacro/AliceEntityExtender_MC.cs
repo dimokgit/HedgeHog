@@ -100,15 +100,8 @@ namespace HedgeHog.Alice.Store {
     None = 0,
     Auto = 1,
     Hot = 2,
-    Deviator = Hot * 2, DeviatorA = Deviator + Auto,//32
-    Ender = Deviator * 2, EnderA = Ender + Auto,//64
-    Minimalist = Ender * 2, MinimalistA = Minimalist + Auto,//128
-    Distancer = Minimalist * 2, DistancerA = Distancer + Auto,//256
-    Distancer2 = Distancer * 2, Distancer2A = Distancer2 + Auto,//512
-    Distancer4 = Distancer2 * 2, Distancer4A = Distancer4 + Auto,//1024
-    Averager = Distancer4 * 2, AveragerA = Averager + Auto,//2048
-    MiddleMan = Averager * 2, MiddleManA = MiddleMan + Auto,//4096
-    StDevCombo = MiddleMan * 2, StDevComboA = StDevCombo + Auto//8192
+    Ender = Hot * 2, EnderA = Ender + Auto,
+    Universal = Ender * 2, UniversalA = Universal + Auto
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public struct Playback {
