@@ -225,7 +225,7 @@ namespace HedgeHog.Bars {
       get {
         return !double.IsNaN(_PriceCMALast) 
           ? _PriceCMALast 
-          : PriceCMA == null || PriceCMA.Count == 0 ? double.NaN : PriceCMA[PriceCMA.Count - 1];
+          : PriceCMA == null || PriceCMA.Count == 0 ? PriceAvg : PriceCMA[PriceCMA.Count - 1];
       }
       set {
         _PriceCMALast = value;

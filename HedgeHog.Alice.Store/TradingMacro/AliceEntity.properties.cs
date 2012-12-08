@@ -561,7 +561,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     [DisplayName("High/Low Method")]
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     public CorridorHighLowMethod CorridorHighLowMethod {
       get { return (CorridorHighLowMethod)CorridorHighLowMethodInt; }
       set {

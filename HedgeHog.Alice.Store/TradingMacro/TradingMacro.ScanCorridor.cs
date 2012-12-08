@@ -170,8 +170,9 @@ namespace HedgeHog.Alice.Store {
       ratesReversed[0].RunningHigh = double.MinValue;
       ratesReversed[0].RunningLow = double.MaxValue;
       var hikeMin = PointSize / 10;
+      var cp = CorridorPrice();
       ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
-        var height = (p.PriceAvg - n.PriceAvg).Abs().Max(hikeMin) / PointSize;
+        var height = (cp(p) - cp(n)).Abs().Max(hikeMin) / PointSize;
         for (double i = 110, h = height; i < DistanceIterations; i++)
           height *= h;
         height = Math.Pow(height, DistanceIterations);
@@ -211,7 +212,7 @@ namespace HedgeHog.Alice.Store {
       var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate);
       var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
       if (corridorRates.Length > 1) {
-        return WaveShort.Rates.ScanCorridorWithAngle(r => r.PriceAvg, r => r.PriceAvg, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        return WaveShort.Rates.ScanCorridorWithAngle(cp, cp, TimeSpan.Zero, PointSize, CorridorCalcMethod);
       }
       return null;
     }
