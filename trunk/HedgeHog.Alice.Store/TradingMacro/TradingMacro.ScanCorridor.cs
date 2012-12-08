@@ -182,7 +182,7 @@ namespace HedgeHog.Alice.Store {
       var ratesDistance = ratesForCorridor.Distance();
       RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
 
-      CorridorLength = CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight));
+      CorridorLength = (CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight))).Max(1);
       var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorLength);
       var c = ratesReversed.Count(r => r.Distance <= halfRatio);
       if (c < 5) {
@@ -223,20 +223,19 @@ namespace HedgeHog.Alice.Store {
       ratesReversed[0].RunningHigh = double.MinValue;
       ratesReversed[0].RunningLow = double.MaxValue;
       var hikeMin = PointSize / 10;
-      DistanceIterationsReal = LotSizeByLossBuy.ValueByPosition(LotSize, MaxLotSize, DistanceIterations, DistanceIterations * 3);
+      var cp = CorridorPrice();
       ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
-        var height = (p.PriceAvg - n.PriceAvg).Abs().Max(hikeMin) / PointSize;
+        var height = (cp(p) - cp(n)).Abs().Max(hikeMin) / PointSize;
         for (double i = 110, h = height; i < DistanceIterations; i++)
           height *= h;
-        height = Math.Pow(height, DistanceIterationsReal);
+        height = Math.Pow(height, DistanceIterations);
         n.Distance1 = p.Distance1 + (IsCorridorForwardOnly ? 1 / height : height);
         return /*1 /*/ height;
       });
       var ratesDistance = ratesForCorridor.Distance();
       RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
 
-      CorridorLength = CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight));
-      var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorLength);
+      var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorDistanceRatio);
       var c = ratesReversed.Count(r => r.Distance <= halfRatio);
       if (c < 5) {
         c = 30;
@@ -255,7 +254,7 @@ namespace HedgeHog.Alice.Store {
       var tradeWave1 = WaveShort.Rates.TakeWhile(r => r.Distance1 < distanceShort1).ToArray();
       WaveTradeStart.Rates = tradeWave.Length < tradeWave1.Length ? tradeWave : tradeWave1;
 
-      var distanceLeft = WaveDistance * 2;
+      CorridorLength = CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight)).Max(1);
       WaveShortLeft.Rates = null;
       WaveShortLeft.Rates = ratesReversed.Take(CorridorLength.ToInt()).ToArray();
 
@@ -265,10 +264,11 @@ namespace HedgeHog.Alice.Store {
       var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate);
       var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
       if (corridorRates.Length > 1) {
-        return WaveShort.Rates.ScanCorridorWithAngle(r => r.PriceAvg, r => r.PriceAvg, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        return WaveShort.Rates.ScanCorridorWithAngle(cp, cp, TimeSpan.Zero, PointSize, CorridorCalcMethod);
       }
       return null;
     }
+
 
     private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();

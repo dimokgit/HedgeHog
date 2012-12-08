@@ -44,7 +44,7 @@ namespace HedgeHog {
       if (container != null) container.SatisfyImportsOnce(this);
       this.Name = name.Replace("/", "");
       InitializeComponent();
-      OnPropertyChanged(Metadata.CharterControlMetadata.Header);
+      DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
     }
     #region Attached Properties
     #region IsInteractive
