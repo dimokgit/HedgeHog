@@ -1466,7 +1466,6 @@ namespace HedgeHog.Alice.Store {
         LastProfitStartDate = null;
         DisposeOpenTradeByMASubject();
         _waveRates.Clear();
-        _waveLast = new WaveLast();
         _strategyExecuteOnTradeClose = null;
         var currentPosition = -1;
         var indexCurrent = 0;

@@ -1136,22 +1136,9 @@ namespace HedgeHog.Alice.Client {
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          //var mass = tm.RateLast.Mass;
-          //Func<Rate, double> speedFoo = r => ((r.Mass.GetValueOrDefault(mass.GetValueOrDefault(0))));//PriceStdDev
-          //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = speedFoo(r) }).ToArray();
-          //var speedAverages = new List<double>();
-          //if (double.IsNaN(tm.MassLevelMax))
-          //  stDevBars.AverageByIterations(pb => pb.Speed, (v, a) => v >= a, tm.StDevTresholdIterations, speedAverages);
-          //else speedAverages.AddRange(new[] { tm.MassLevelMax, tm.MassLevelMin });
-          var voltageHigh = 0;// tm.VoltageHight.IfNaN(speedAverages.FirstOrDefault());
-          var voltageLow = 0;// tm.VoltageAverage.IfNaN(speedAverages.LastOrDefault());
-
-
           charter.AddTicks(price, rates, tm.ShowTrendLines && false ? new PriceBar[0][] { /*stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
-            voltageHigh, voltageLow, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
-            corridorTime0, corridorTime1, DateTime.MinValue,
-            //timeCurr, timeLow,
-            new double[0]);
+            0, 0, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+            corridorTime0, corridorTime1, DateTime.MinValue, new double[0]);
           if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if (tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance41 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance42 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance43)

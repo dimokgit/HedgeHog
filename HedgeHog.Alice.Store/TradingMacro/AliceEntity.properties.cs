@@ -59,6 +59,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     int _rateExErrorCounter = 0;// This is to ammend some wierd bug in IEntityChangeTracker.EntityMemberChanged or something that it calls
     public double RateEx {
+      get { return Rate; }
       set {
         if (Rate == value || this.InManual) return;
         var valuePrev = Rate;

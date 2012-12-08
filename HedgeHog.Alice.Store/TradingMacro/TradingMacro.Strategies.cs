@@ -766,7 +766,7 @@ namespace HedgeHog.Alice.Store {
         #region Exit Trade
         _exitTrade = () => {
           double als = LotSizeByLossBuy;
-          if (!isCorridorFrozen() &&( IsEndOfWeek() || !IsTradingHour())) {
+          if (!isCorridorFrozen() && IsAutoStrategy && ( IsEndOfWeek() || !IsTradingHour())) {
             if (Trades.Any())
               CloseTrades(Trades.Lots());
             _buyLevel.CanTrade = _sellLevel.CanTrade = false;
@@ -791,8 +791,8 @@ namespace HedgeHog.Alice.Store {
               //var phH = WaveTradeStart.Rates.Take(5).ToArray().PriceHikes().DefaultIfEmpty(SpreadForCorridor).Max();
               var tpRatioBySpread = 1;// +Math.Log(phH.Ratio(SpreadForCorridor), 1.5);
               var tpColse = InPoints((CloseAtZero || _trimAtZero ? 0 : (TakeProfitPips / tpRatioBySpread) + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0)));
-              var priceAvgMax = WaveShort.Rates.Take(PriceCmaPeriod).Max(r => CorridorPrice(r)) - PointSize;
-              var priceAvgMin = WaveShort.Rates.Take(PriceCmaPeriod).Min(r => CorridorPrice(r)) + PointSize;
+              var priceAvgMax = WaveShort.Rates.Take(PriceCmaPeriod).Max(r => CorridorPrice(r)) - PointSize / 100;
+              var priceAvgMin = WaveShort.Rates.Take(PriceCmaPeriod).Min(r => CorridorPrice(r)) + PointSize / 100;
               if (buyCloseLevel.InManual) {
                 if (buyCloseLevel.Rate <= priceAvgMax)
                   buyCloseLevel.Rate = priceAvgMax;
@@ -850,138 +850,6 @@ namespace HedgeHog.Alice.Store {
       _exitTrade();
       #endregion
     }
-
-    private void ReArmLevelsTradeCount() {
-      _CenterOfMassBuy = _buyLevel.Rate - WaveShort.RatesStDev;
-      _CenterOfMassSell = _sellLevel.Rate + WaveShort.RatesStDev;
-      if (RateLast.PriceAvg.Between(_CenterOfMassSell, _CenterOfMassBuy))
-        _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-    }
-
-    private void ReArmLevelsTradeCount_02() {
-      if (MagnetPrice.Between(RateLast.PriceLow, RateLast.PriceHigh))
-        _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-    }
-
-    private void ReArmLevelsTradeCount_01() {
-      if ((_buyLevel.Rate - RateLast.PriceAvg).Max(RateLast.PriceAvg - _sellLevel.Rate) > PriceSpreadAverage * 2)
-        _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
-    }
-
-
-    private double[] GetWaveByStDev(double stDev) {
-      var level = CorridorStats.Rates.SkipWhile(r => r.PriceStdDev < stDev)
-        .SkipWhile(r => r.PriceStdDev > 0).SkipWhile(r => r.PriceStdDev == 0).SkipWhile(r => r.PriceStdDev > 0)
-        .DefaultIfEmpty(CorridorStats.Rates.LastBC()).First();
-      var levels = CorridorStats.Rates.TakeWhile(r => r > level).Select(r => r.PriceAvg).OrderBy(d => d).ToArray();
-      return levels;
-    }
-
-    #region 09s
-
-    WaveLast _waveLast = new WaveLast();
-    class WaveLast {
-      private Rate _rateStart = new Rate();
-      private Rate _rateEnd = new Rate();
-      private List<Rate> ratesOrdered;
-      IList<Rate> _Rates;
-      private double average;
-      private DateTime startDate;
-      public IList<Rate> Rates {
-        get { return _Rates; }
-        set {
-          _Rates = value;
-          this.IsUp = this.Rates.Select(r => r.PriceAvg).ToArray().Regress(1)[1] > 0;
-        }
-      }
-      public bool IsHot { get; set; }
-      public Rate High { get; set; }
-      public Rate Low { get; set; }
-      public bool IsUp { get; private set; }
-      public Rate Sell {
-        get {
-          var a = this.Rates.ReverseIfNot();
-          var b = a.TakeWhile(r => r.PriceAvg < this.High.PriceAvg).ToList();
-          var c = b.OrderBy(r => r.PriceAvg).ToList();
-          return c.DefaultIfEmpty(this.High).First();
-        }
-      }
-      public Rate Buy {
-        get {
-          return this.Rates.ReverseIfNot().TakeWhile(r => r.PriceAvg > this.Low.PriceAvg)
-            .OrderByDescending(r => r.PriceAvg).DefaultIfEmpty(this.Low).First();
-        }
-      }
-      void SetWave(IList<Rate> rates) {
-        var prices = rates.Select(r => r.PriceAvg).OrderBy(p => p).ToArray();
-        var average = prices.Average();
-        var mean = (prices.LastBC() - prices[0]) / 2 + prices[0];
-        IsHot = IsUp && average < mean || !IsUp && average > mean;
-      }
-      public bool HasChanged(IList<Rate> wave, Func<Rate, Rate, bool> hasChanged = null) {
-        if (wave == null || wave.Count == 0) return false;
-        var changed = (hasChanged ?? HasChanged)(wave[0], wave.LastBC());
-        if (changed) {
-          this.Rates = wave.ToList();
-          this.ratesOrdered = wave.OrderBy(r => r.PriceAvg).ToList();
-          this.High = ratesOrdered.LastBC();
-          this.Low = ratesOrdered[0];
-        }
-        return changed;
-      }
-      public bool HasChanged(Tuple<Rate, Rate, int> t) { return HasChanged(t.Item1, t.Item2); }
-      public bool HasChanged(Rate rateStart, Rate rateEnd) {
-        if ((rateStart.StartDate - this._rateStart.StartDate).Duration().TotalMinutes > 115 /*&& this._rateEnd.StartDate != rateEnd.StartDate*/) {
-          this._rateStart = rateStart;
-          this._rateEnd = rateEnd;
-          return true;
-        }
-        return false;
-      }
-      public bool HasChanged4(IList<Rate> wave) {
-        if (wave[0].StartDate - this.startDate > 60.FromMinutes()) {
-          bool ret = Rates != null && Rates.Count > 0;
-          this.Rates = wave.ToArray();
-          this.startDate = wave[0].StartDate;
-          SetWave(wave);
-          return ret;
-        }
-        return false;
-      }
-      public bool HasChanged3(IList<Rate> wave, double price, double distance) {
-        if (wave != null && !price.Between(this.average - distance, this.average + distance) && wave[0].StartDate > this.startDate) {
-          this.Rates = wave.ToArray();
-          this.average = price;
-          this.startDate = wave[0].StartDate;
-          return true;
-        }
-        return false;
-      }
-      public bool HasChanged(Rate rateStart) {
-        if (rateStart.StartDate != this._rateStart.StartDate) {
-          this._rateStart = rateStart;
-          return true;
-        }
-        return false;
-      }
-      public bool HasChanged2(Rate rateStart, Rate rateEnd) {
-        if (rateEnd.StartDate != this._rateEnd.StartDate) {
-          this._rateStart = rateStart;
-          this._rateEnd = rateEnd;
-          return true;
-        }
-        return false;
-      }
-      public bool HasChanged1(Rate rateStart, Rate rateEnd) {
-        if (rateStart.StartDate != this._rateStart.StartDate || this._rateEnd.StartDate != rateEnd.StartDate) {
-          this._rateStart = rateStart;
-          this._rateEnd = rateEnd;
-          return true;
-        }
-        return false;
-      }
-    }
-    #endregion
 
     double _VoltageAverage = double.NaN;
     public double VoltageAverage { get { return _VoltageAverage; } set { _VoltageAverage = value; } }
