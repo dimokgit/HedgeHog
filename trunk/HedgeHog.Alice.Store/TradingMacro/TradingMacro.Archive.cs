@@ -6,6 +6,20 @@ using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    private double CorridorPrice(Rate rate) {
+      return CorridorPrice()(rate);
+    }
+    private Func<Rate, double> CorridorPrice() {
+      switch (CorridorHighLowMethod) {
+        case CorridorHighLowMethod.Average: return r => r.PriceAvg;
+        case CorridorHighLowMethod.PriceByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.PriceHigh : r.PriceLow;
+        case CorridorHighLowMethod.PriceMA: return GetPriceMA();
+      }
+      throw new NotSupportedException(new { CorridorHighLowMethod } + "");
+    }
+
+
+
     public double CalculateLastPrice(Rate rate, Func<Rate, double> price) {
       try {
         if (TradesManager.IsInTest || IsInPlayback) return price(rate);

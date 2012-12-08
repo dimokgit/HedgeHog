@@ -1464,7 +1464,6 @@ namespace HedgeHog.Alice.Store {
         CorridorStats = null;
         WaveHigh = null;
         LastProfitStartDate = null;
-        CmaLotSize = 0;
         DisposeOpenTradeByMASubject();
         _waveRates.Clear();
         _waveLast = new WaveLast();
@@ -2000,8 +1999,9 @@ namespace HedgeHog.Alice.Store {
 
             SpreadForCorridor = RatesArray.Spread();
 
-            //SetMA();
-            var corridor = _rateArray.ScanCorridorWithAngle(r => r.PriceAvg, r => r.PriceAvg, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+            SetMA();
+            var cp = CorridorPrice();
+            var corridor = _rateArray.ScanCorridorWithAngle(cp, cp, TimeSpan.Zero, PointSize, CorridorCalcMethod);
             RatesStDev = corridor.StDev;
             StDevByPriceAvg = corridor.StDevs[CorridorCalculationMethod.PriceAverage];
             StDevByHeight = corridor.StDevs.ContainsKey(CorridorCalculationMethod.Height) ? corridor.StDevs[CorridorCalculationMethod.Height] : double.NaN;
@@ -2862,15 +2862,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     double _sqrt2 = 1.5;// Math.Sqrt(1.5);
-    double _cmaLotSize = 0;
-    public double CmaLotSize {
-      get { return _cmaLotSize; }
-      set {
-        if (_cmaLotSize == value) return;
-        _cmaLotSize = value;
-        OnPropertyChanged(() => CmaLotSize);
-      }
-    }
 
     Func<Rate,Rate, double> GetMovingAverageValueFunction() {
       switch (MovingAverageValue) {
@@ -2886,8 +2877,7 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.Cma:
           if (period.HasValue)
             RatesArray.SetCma(period.Value, period.Value);
-          else {
-            CmaLotSize = CmaLotSize.Max(AllowedLotSizeCore());
+          else if (PriceCmaPeriod > 0) {
             //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
@@ -3672,7 +3662,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesMax {
         get {
           if (double.IsNaN(_RatesMax) && HasRates)
-            _RatesMax = Rates.Max(r => r.PriceAvg);
+            _RatesMax = Rates.Max(r => r.PriceCMALast);
           return _RatesMax;
         }
         set {
@@ -3683,7 +3673,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesMin {
         get {
           if (double.IsNaN(_RatesMin) && HasRates)
-            _RatesMin = Rates.Min(r => r.PriceAvg);
+            _RatesMin = Rates.Min(r => r.PriceCMALast);
           return _RatesMin;
         }
         set {
@@ -3695,7 +3685,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesStDev {
         get {
           if (double.IsNaN(_RatesStDev) && HasRates && _Rates.Count > 1) {
-            var corridor = Rates.ScanCorridorWithAngle(r => r.PriceAvg, r => r.PriceAvg, TimeSpan.Zero, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
+            var corridor = Rates.ScanCorridorWithAngle(r => r.PriceCMALast, r => r.PriceCMALast, TimeSpan.Zero, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
             _RatesStDev = corridor.StDev;
             _Angle = corridor.Slope.Angle(_tradingMacro.PointSize);
           }
