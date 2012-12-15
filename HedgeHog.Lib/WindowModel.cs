@@ -168,14 +168,19 @@ namespace HedgeHog.Models {
   }
   public class ValueTrigger {
     bool _on = false;
+    public bool HasChangedToOn;
     public bool On { get { return _on; } }
-    public ValueTrigger(bool on) {
-      this._on = on;
+    public ValueTrigger(bool initialValue) {
+      this._on = initialValue;
     }
-    public bool Set(bool on) {
-      if (!_on)
+    public ValueTrigger Set(bool on,Action onAction = null) {
+      if (!_on) {
         _on = on;
-      return _on;
+        this.HasChangedToOn = on;
+        if (on && onAction != null) onAction();
+      }
+      this.HasChangedToOn = false;
+      return this;
     }
     public void Off() { _on = false; }
   }

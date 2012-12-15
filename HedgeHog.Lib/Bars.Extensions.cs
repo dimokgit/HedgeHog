@@ -531,6 +531,31 @@ namespace HedgeHog.Bars {
       });
       return wa / s;
     }
+    public static IList<Rate> TouchDowns(this IList<Rate> rates, double high, double low)  {
+      int tochType = 0;//1-high,-1 low
+      var tochDowns = new List<Rate>();
+      foreach (var rate in rates)
+        switch (tochType) {
+          case 1:
+            if (high.Between(rate.PriceLow, rate.PriceHigh)) {
+              tochDowns.Add(rate);
+              tochType = 1;
+            }
+            break;
+          case -1:
+            if (low.Between(rate.PriceLow, rate.PriceHigh)) {
+              tochDowns.Add(rate);
+              tochType = -1;
+            }
+            break;
+          case 0:
+            if (high.Between(rate.PriceLow, rate.PriceHigh)) goto case 1;
+            if (low.Between(rate.PriceLow, rate.PriceHigh)) goto case -1;
+            break;
+        }
+      return tochDowns.ToArray();
+    }
+
     public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue) where TBar : BarBase {
       setRunningValue(bars.First(), 0);
       bars.Aggregate((p, n) => {

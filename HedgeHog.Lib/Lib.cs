@@ -29,6 +29,13 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
+    public static T Evaluate<T>(this string expression) {
+      return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(new ParameterExpression[0], typeof(T), expression).Compile().DynamicInvoke();
+    }
+    public static void ForEach<T>(this IEnumerable<T> es,Action<T> a) {
+      foreach(T e in es)
+        a(e);
+    }
     public static string ParseParamRange(this string param) {
       var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[-\d.]+)");
       var m = range.Match(param);
@@ -467,7 +474,7 @@ namespace HedgeHog {
       return v > other ? v / other : other / v;
     }
     public static double Max(this double? v, double? other) {
-      return Math.Max(v.GetValueOrDefault(double.NaN), other.GetValueOrDefault(double.NaN));
+      return !v.HasValue ? other.GetValueOrDefault(double.NaN) : !other.HasValue ? v.GetValueOrDefault(double.NaN) : Math.Max(v.Value, other.Value);
     }
     public static double Max(this double v, double other) {
       return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Max(v, other);
@@ -481,10 +488,13 @@ namespace HedgeHog {
     public static int Max(this int v, params int[] other) {
       return other.Aggregate(v, (p, n) => p.Max(n));
     }
+    public static double Min(this double? v, double? other) {
+      return !v.HasValue ? other.GetValueOrDefault(double.NaN) : !other.HasValue ? v.GetValueOrDefault(double.NaN) : Math.Min(v.Value, other.Value);
+    }
     public static double Min(this double v, double other) {
       return double.IsNaN(v) ? other : double.IsNaN(other) ? v : Math.Min(v, other);
     }
-    public static double Min(this double v,params double[] other) {
+    public static double Min(this double v, params double[] other) {
       return other.Aggregate(v, (p, n) => p.Min(n));
     }
     public static int Min(this int v, int other) {
