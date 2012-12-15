@@ -57,6 +57,23 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+
+
+    public bool CanTradeEx {
+      get { return CanTrade; }
+      set {
+        if (CanTradeEx == value || InManual) return;
+        CanTrade = value;
+      }
+    }
+    public double TradesCountEx {
+      get { return TradesCount; }
+      set {
+        if (TradesCount == value || InManual) return;
+        TradesCount = value;
+      }
+    }
+
     int _rateExErrorCounter = 0;// This is to ammend some wierd bug in IEntityChangeTracker.EntityMemberChanged or something that it calls
     public double RateEx {
       get { return Rate; }
@@ -266,7 +283,28 @@ namespace HedgeHog.Alice.Store {
       base.OnPropertyChanged(property);
     }
 
-    public bool InManual { get; set; }
+    #region IsExitOnly
+    private bool _IsExitOnly;
+    public bool IsExitOnly {
+      get { return _IsExitOnly; }
+      set {
+        if (_IsExitOnly != value) {
+          _IsExitOnly = value;
+          OnPropertyChanged("IsExitOnly");
+        }
+      }
+    }
+
+    #endregion
+    bool _InManual;
+    public bool InManual {
+      get { return _InManual; }
+      set {
+        if (_InManual == value) return;
+        _InManual = value;
+        OnPropertyChanged("InManual");
+      }
+    }
 
     public void ResetPricePosition() { PricePosition = double.NaN; }
     double _pricePosition = double.NaN;
@@ -405,6 +443,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public string _TestDistanceIterations = "";
+    [DisplayName("Distance Iterations")]
+    [Category(categoryTest)]
+    public string TestDistanceIterations {
+      get { return _TestDistanceIterations; }
+      set {
+        if (_TestDistanceIterations != value) {
+          _TestDistanceIterations = value;
+          OnPropertyChanged("TestDistanceIterations");
+        }
+      }
+    }
+
     [Category(categoryTest)]
     public bool UseTestFile { get; set; }
 
@@ -503,7 +554,7 @@ namespace HedgeHog.Alice.Store {
     #region LogTrades
     bool _logTrades;
     [DisplayName("Log Trades")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public bool LogTRades{
       get { return _logTrades; }
       set {
@@ -631,12 +682,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Symmetrical Buy/Sell")]
-    [Description("Move Buy level up when Sell moves down.")]
-    [Category(categoryTrading)]
-    public bool SymmetricalBuySell {
+    [DisplayName("Reversed Corridorness")]
+    [Description("Corridor length adjusted by Fib(StDevByPrice/StDevByHeight) or visa vrsa if X=TRUE")]
+    [Category(categoryXXX_NU)]
+    public bool ReversedCorridorness {
       get { return TradeOnCrossOnly; }
-      set { TradeOnCrossOnly = value; }
+      set {
+        if (TradeOnCrossOnly == value) return;
+        TradeOnCrossOnly = value;
+        OnPropertyChanged(() => ReversedCorridorness);
+      }
     }
 
 
@@ -917,20 +972,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => IsCorridorForwardOnly);
       }
     }
-
-
-    [Category(categoryActive)]
-    [DisplayName("RatesHeight Min")]
-    public double RatesHeightMinimum {
-      get { return CorrelationTreshold; }
-      set {
-        if (CorrelationTreshold == value) return;
-        CorrelationTreshold = value;
-        OnPropertyChanged("RatesHeightMinimum");
-        OnPropertyChanged("RatesHeightMinimumInPips");
-      }
-    }
-    public double RatesHeightMinimumInPips { get { return InPips(RatesHeightMinimum); } }
 
     [Category(categoryXXX)]
     [DisplayName("Range Ratio For TradeLimit")]
@@ -1278,11 +1319,24 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Distance Iterations")]
     [Description("Math.Pow(height,N)")]
     [Category(categoryActive)]
-    public int DistanceIterations {
-      get { return StDevTresholdIterations; }
+    public double DistanceIterations {
+      get { return CorrelationTreshold; }
+      set {
+        if (CorrelationTreshold != value) {
+          CorrelationTreshold = value;
+          OnPropertyChanged("DistanceIterations");
+        }
+      }
+    }
+    #endregion
+
+    #region StDevTresholdIterations
+    [Category(categoryXXX_NU)]
+    public int StDevTresholdIterations_ {
+      get { return _StDevTresholdIterations; }
       set {
         if (StDevTresholdIterations != value) {
-          StDevTresholdIterations = value;
+          _StDevTresholdIterations = value;
           OnPropertyChanged("StDevTresholdIterations_");
         }
       }

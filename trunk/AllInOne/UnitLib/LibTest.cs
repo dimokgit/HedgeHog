@@ -276,5 +276,14 @@ Privet:2.3 3.4
       actual = Lib.ParseParamRange(param);
       Assert.AreEqual(expected, actual);
     }
+
+    [TestMethod()]
+    public void EvaluateTest() {
+      string expression = "Math.Pow(10,2)"; // TODO: Initialize to an appropriate value
+      double expected = 100; // TODO: Initialize to an appropriate value
+      double actual;
+      actual = Lib.Evaluate<double>(expression);
+      Assert.AreEqual(expected, actual);
+    }
   }
 }

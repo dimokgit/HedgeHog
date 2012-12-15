@@ -115,8 +115,6 @@ namespace HedgeHog.Alice.Client {
           break;
         case Key.A:
           tm.IsTradingActive = !tm.IsTradingActive;
-          if(!tm.IsTradingActive)
-            tm.ResetSuppResesInManual();
           charter.FitToView();
           break;
         case Key.C:
@@ -318,7 +316,7 @@ namespace HedgeHog.Alice.Client {
         loadRatesSecondsWarning: tm.LoadRatesSecondsWarning, corridorHighLowMethodInt: tm.CorridorHighLowMethodInt,
         corridorStDevRatioMax: tm.CorridorStDevRatioMax,
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
-        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.DistanceIterations,
+        priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations,
         stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio, 
         extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment,corridorBigToSmallRatio:tm.CorridorBigToSmallRatio);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
@@ -398,7 +396,7 @@ namespace HedgeHog.Alice.Client {
       public double CorridorDistanceRatio { get; set; }
       public double WaveStDevRatio { get; set; }
       public int BarsCount { get; set; }
-      public double RatesHeightMinimum { get; set; }
+      public double DistanceIterations { get; set; }
       public Guid SuperessionId { get; set; }
     }
 
@@ -408,18 +406,18 @@ namespace HedgeHog.Alice.Client {
       public static double[] CorridorDistanceRatio = new double[0];
       public static double[] WaveStDevRatio = new double[0];
       public static int[] BarsCount = new int[0];
-      public static double[] RatesHeightMinimum = new double[0];
+      public static double[] DistanceIterations = new double[0];
       
 
       public static Queue<TestParameter> GenerateTestParameters() { return GenerateTestParameters(Guid.Empty); }
       public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
         var ret = from p in PriceCmaLevels
+                  from rhm in DistanceIterations
+                  from wr in WaveStDevRatio
                   from pl in ProfitToLossExitRatio
                   from cd in CorridorDistanceRatio
-                  from wr in WaveStDevRatio
                   from pler in BarsCount
-                  from rhm in RatesHeightMinimum
-                  select new TestParameter() { PriceCmaLevel = p, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,RatesHeightMinimum = rhm,WaveStDevRatio = wr  };
+                  select new TestParameter() { PriceCmaLevel = p, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,DistanceIterations = rhm,WaveStDevRatio = wr  };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -450,8 +448,8 @@ namespace HedgeHog.Alice.Client {
         .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
       TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
         .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
-      TestParameters.RatesHeightMinimum = tmOriginal.TestRatesHeightMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.RatesHeightMinimum).ToArray();
+      TestParameters.DistanceIterations = tmOriginal.TestDistanceIterations.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+        .DefaultIfEmpty(tmOriginal.DistanceIterations).ToArray();
 
       if (ReplayArguments.SuperSessionId.HasValue() && tmOriginal.TestSuperSessionUid.HasValue()) {
         var sessions = GetBestSessions(tmOriginal.TestSuperSessionUid).ToArray();
@@ -540,7 +538,7 @@ namespace HedgeHog.Alice.Client {
             tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
             tm.WaveStDevRatio = testParameter.WaveStDevRatio;
             tm.BarsCount = testParameter.BarsCount;
-            tm.RatesHeightMinimum = testParameter.RatesHeightMinimum;
+            tm.DistanceIterations = testParameter.DistanceIterations;
           }
         }
         var tmToRun = tm;

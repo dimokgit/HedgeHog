@@ -338,7 +338,6 @@
                             <Setter Property="FontFamily" Value="Courier New"/>
                           </Style>
                         </StackPanel.Resources>
-                        <TextBlock>RatesHeightMin... :<TextBlock Text="{Binding RatesHeightMinimumInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>RatesHeight...... :<TextBlock Text="{Binding RatesHeightInPips,StringFormat=n0}"/></TextBlock>
                         <TextBlock>StDevBy(H/P)..... :
                           <TextBlock Text="{Binding StDevByHeightInPips,StringFormat=n0}"/>/
