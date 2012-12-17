@@ -29,8 +29,8 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
-    public static T Evaluate<T>(this string expression) {
-      return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(new ParameterExpression[0], typeof(T), expression).Compile().DynamicInvoke();
+    public static T Evaluate<T>(this string expression,params ParameterExpression[] parameters) {
+      return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
     }
     public static void ForEach<T>(this IEnumerable<T> es,Action<T> a) {
       foreach(T e in es)

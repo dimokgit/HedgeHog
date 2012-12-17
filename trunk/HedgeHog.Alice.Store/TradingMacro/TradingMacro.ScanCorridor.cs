@@ -235,7 +235,8 @@ namespace HedgeHog.Alice.Store {
       var ratesDistance = ratesForCorridor.Distance();
       RateLast.Mass = 0;// ratesReversed.Take(ratesReversed.Count).Average(r => r.PriceCmaRatio);
 
-      var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorDistanceRatio);
+      CorridorLength = (CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight))).Max(1);
+      var halfRatio = ratesDistance / (CorridorDistanceRatio < 10 ? CorridorDistanceRatio.Max(1) : BarsCount / CorridorLength);
       var c = ratesReversed.Count(r => r.Distance <= halfRatio);
       if (c < 5) {
         c = 30;
@@ -254,7 +255,14 @@ namespace HedgeHog.Alice.Store {
       var tradeWave1 = WaveShort.Rates.TakeWhile(r => r.Distance1 < distanceShort1).ToArray();
       WaveTradeStart.Rates = tradeWave.Length < tradeWave1.Length ? tradeWave : tradeWave1;
 
-      CorridorLength = CorridorDistanceRatio * (1 + Fibonacci.FibRatioSign(StDevByPriceAvg, StDevByHeight)).Max(1);
+      distanceShort = WaveTradeStart.Rates.LastBC().Distance / 2;
+      distanceShort1 = WaveTradeStart.Rates.LastBC().Distance1 / 2;
+      WaveTradeStart1.Rates = null;
+      tradeWave = WaveTradeStart.Rates.TakeWhile(r => r.Distance < distanceShort).ToArray();
+      tradeWave1 = WaveTradeStart.Rates.TakeWhile(r => r.Distance1 < distanceShort1).ToArray();
+      WaveTradeStart1.Rates = tradeWave.Length < tradeWave1.Length ? tradeWave : tradeWave1;
+
+      var distanceLeft = WaveDistance * 2;
       WaveShortLeft.Rates = null;
       WaveShortLeft.Rates = ratesReversed.Take(CorridorLength.ToInt()).ToArray();
 
@@ -268,7 +276,6 @@ namespace HedgeHog.Alice.Store {
       }
       return null;
     }
-
 
     private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();

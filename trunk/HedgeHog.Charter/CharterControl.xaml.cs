@@ -436,6 +436,7 @@ namespace HedgeHog {
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
     #region TimeLines
+    bool showDrags = true;
     #region TimeShort
     DraggablePoint _lineTimeShortDraggablePoint;
     VerticalLine _lineTimeShort;
@@ -444,13 +445,17 @@ namespace HedgeHog {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeShort == null) {
             _lineTimeShort = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.OrangeRed) };
-            _lineTimeShort.SetAnchor(_lineTimeShortDraggablePoint = new DraggablePoint());
-            plotter.Children.Add(_lineTimeShort);
-            plotter.Children.Add(_lineTimeShortDraggablePoint);
-            _lineTimeShortDraggablePoint.PositionChanged += _lineTimeShortDraggablePoint_PositionChanged;
+            if (showDrags) {
+              _lineTimeShort.SetAnchor(_lineTimeShortDraggablePoint = new DraggablePoint());
+              plotter.Children.Add(_lineTimeShort);
+              plotter.Children.Add(_lineTimeShortDraggablePoint);
+              _lineTimeShortDraggablePoint.PositionChanged += _lineTimeShortDraggablePoint_PositionChanged;
+            }
           }
-          _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y - 20 * PipSize);
-          _lineTimeShortDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
+          if (showDrags) {
+            _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y - 20 * PipSize);
+            _lineTimeShortDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
+          }
         }));
       }
     }
@@ -475,14 +480,18 @@ namespace HedgeHog {
       set {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeMiddle == null) {
-            _lineTimeMiddle = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
-            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
-            plotter.Children.Add(_lineTimeMiddle);
-            plotter.Children.Add(_lineTimeMiddleDraggablePoint);
-            _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
+            _lineTimeMiddle = new VerticalLine() { StrokeDashArray = { 3,1 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+            if (showDrags) {
+              _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
+              plotter.Children.Add(_lineTimeMiddle);
+              plotter.Children.Add(_lineTimeMiddleDraggablePoint);
+              _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
+            }
           }
-          _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
-          _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
+          if (showDrags) {
+            _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
+            _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
+          }
         }));
       }
     }
@@ -521,11 +530,11 @@ namespace HedgeHog {
     VerticalLine lineTimeMin = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy) };
     DateTime LineTimeMin { set { lineTimeMin.Value = dateAxis.ConvertToDouble(value); } }
 
-    VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGreen) };
+    VerticalLine lineTimeAvg = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy), Opacity = .5 };
     DateTime LineTimeAvg {
       set {
         lineTimeAvg.Value = dateAxis.ConvertToDouble(value);
-        if (!CorridorStopPointX.IsMouseCaptured) {
+        if (showDrags && !CorridorStopPointX.IsMouseCaptured) {
           CorridorStopPointX.Position = new Point(dateAxis.ConvertToDouble(value), CorridorStartPointX.Position.Y);
           CorridorStopPointX.ToolTip = value.ToString("MM/dd/yyyy HH:mm");
         }
