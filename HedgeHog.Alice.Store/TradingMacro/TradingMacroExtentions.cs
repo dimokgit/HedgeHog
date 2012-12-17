@@ -3914,6 +3914,11 @@ namespace HedgeHog.Alice.Store {
       get { return _waveTradeStart ?? (_waveTradeStart = new WaveInfo(this)); }
       set { _waveTradeStart = value; }
     }
+    private WaveInfo _waveTradeStart1;
+    public WaveInfo WaveTradeStart1 {
+      get { return _waveTradeStart1 ?? (_waveTradeStart1 = new WaveInfo(this)); }
+      set { _waveTradeStart1 = value; }
+    }
     public List<List<Rate>> CorridorsRates {
       get { return _CorridorsRates; }
       set { _CorridorsRates = value; }

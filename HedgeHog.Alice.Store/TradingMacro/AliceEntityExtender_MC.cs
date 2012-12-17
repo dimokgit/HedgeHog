@@ -64,6 +64,7 @@ namespace HedgeHog.Alice.Store {
     WaveStDevHeight = 8,
   }
   public enum TrailingWaveMethod {
+    WaveCommon = -1,
     WaveAuto = 0,
     WaveShort = 1,
     WaveTrade = 2,
