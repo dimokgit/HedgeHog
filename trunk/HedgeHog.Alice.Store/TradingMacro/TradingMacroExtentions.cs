@@ -2247,7 +2247,7 @@ namespace HedgeHog.Alice.Store {
         if (!HasRates) return double.NaN;
         _tradingDistance = GetValueByTakeProfitFunction(TradingDistanceFunction);
         if (CorridorFollowsPrice) {
-          var td1 = AllowedLotSizeCore(TradingDistanceInPips).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight);
+          var td1 = AllowedLotSizeCore(TradingDistanceInPips).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight).Min(RatesHeight);
           if (td1 > 0) {
             if ((td1 - _tradingDistance).Abs() / _tradingDistance > .1) _tradingDistance = td1;
           } else {
