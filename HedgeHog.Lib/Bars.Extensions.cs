@@ -531,28 +531,33 @@ namespace HedgeHog.Bars {
       });
       return wa / s;
     }
-    public static IList<Rate> TouchDowns(this IList<Rate> rates, double high, double low)  {
+    public static IEnumerable<TBar> TouchDowns<TBar>(this IList<TBar> rates, double high, double low,Func<TBar,double> getPrice = null)where TBar:BarBase {
+      if (getPrice == null) getPrice = (r) => r.PriceAvg;
+      int tochType = 0;//1-high,-1 low
+      foreach (var rate in rates) {
+        if (tochType != 1 && getPrice(rate) > high) {
+          tochType = 1;
+          yield return rate;
+        }
+        if (tochType != -1 && getPrice(rate) < low) {
+          tochType = -1;
+          yield return rate;
+        }
+      }
+    }
+    public static IList<Rate> TouchDowns(this IList<Rate> rates, double high, double low) {
       int tochType = 0;//1-high,-1 low
       var tochDowns = new List<Rate>();
-      foreach (var rate in rates)
-        switch (tochType) {
-          case 1:
-            if (high.Between(rate.PriceLow, rate.PriceHigh)) {
-              tochDowns.Add(rate);
-              tochType = 1;
-            }
-            break;
-          case -1:
-            if (low.Between(rate.PriceLow, rate.PriceHigh)) {
-              tochDowns.Add(rate);
-              tochType = -1;
-            }
-            break;
-          case 0:
-            if (high.Between(rate.PriceLow, rate.PriceHigh)) goto case 1;
-            if (low.Between(rate.PriceLow, rate.PriceHigh)) goto case -1;
-            break;
+      foreach (var rate in rates) {
+        if (tochType != 1 && high.Between(rate.PriceLow, rate.PriceHigh)) {
+          tochDowns.Add(rate);
+          tochType = 1;
         }
+        if (tochType != -1 && low.Between(rate.PriceLow, rate.PriceHigh)) {
+          tochDowns.Add(rate);
+          tochType = -1;
+        }
+      }
       return tochDowns.ToArray();
     }
 

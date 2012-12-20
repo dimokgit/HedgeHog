@@ -979,6 +979,27 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         Action onEOW = () => { };
         #region Exit Funcs
+        Func<bool> exitByLossGross = () => Trades.Lots() > LotSize && currentLoss() < CurrentGross * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
+        #region exitWave0
+        Action exitWave0 = () => {
+          double als = LotSizeByLossBuy;
+          if (!SuppRes.Any(sr => sr.InManual)) {
+            bool isEOW = !isCorridorFrozen() && IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
+            if (isEOW) {
+              if (Trades.Any())
+                CloseTrades(Trades.Lots());
+              _buyLevel.CanTrade = _sellLevel.CanTrade = false;
+              return;
+            }
+          }
+          if (exitByLossGross())
+            CloseAtZero = true;
+          else if (Trades.Lots() / als >= ProfitToLossExitRatio
+                     || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
+                   )
+            _trimAtZero = true;
+        };
+        #endregion
         #region exitWave
         Action exitWave = () => {
           double als = LotSizeByLossBuy;
@@ -1019,8 +1040,7 @@ namespace HedgeHog.Alice.Store {
               return;
             }
           }
-          var exitByLossGross = Trades.Lots() > LotSize && currentLoss() < CurrentGross * ProfitToLossExitRatio && als <= LotSize;
-          if (exitByLossGross
+          if (exitByLossGross()
               || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
             )
             _trimAtZero = true;
@@ -1040,15 +1060,25 @@ namespace HedgeHog.Alice.Store {
               return;
             }
           }
-          var exitByLossGross = Trades.Lots() > LotSize && currentLoss() < CurrentGross * ProfitToLossExitRatio;
-          if (exitByLossGross
+          if (exitByLossGross()
               || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
             )
             _trimToLotSize = true;
         };
         #endregion
+        Func<Action> exitFunc = () => {
+          switch (ExitFunction) {
+            case Store.ExitFunction.Exit0: return exitWave0;
+            case Store.ExitFunction.Exit: return exitWave;
+            case Store.ExitFunction.Exit1: return exitWave1;
+            case Store.ExitFunction.Exit2: return exitWave2;
+          }
+          throw new NotSupportedException(ExitFunction + " exit function is not supported.");
+        };
         #endregion
 
+        if (_adjustEnterLevels != null)
+          _adjustEnterLevels.GetInvocationList().Cast<Action>().ForEach(d => _adjustEnterLevels -= d);
         bool exitCrossed = false;
         Action<Trade> onCloseTradeLocal = null;
 
@@ -1168,10 +1198,29 @@ namespace HedgeHog.Alice.Store {
         var waveTradeOverTrigger = new ValueTrigger(false);
         var corridorMoved = new ValueTrigger(false);
         double corridorLevel = 0;
-        Func<Rate, double> cp;
+        #endregion
+        #region Funcs
+        Func<Rate, double> cp = CorridorPrice();
         Func<double> calcVariance = null;
-        Func<double> calcMedial = null;
+        Func<double> calcMedian = null;
+        Func<bool> isSteady = () => _CenterOfMassBuy < WaveTradeStart.RatesMax && _CenterOfMassSell > WaveTradeStart.RatesMin;
         WaveInfo waveToTrade = null;
+        Func<Func<double>> medianFunc = () => {
+          switch (MedianFunction) {
+            case Store.MedianFunction.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+            case Store.MedianFunction.WaveTrade: return () => (WaveTradeStart.RatesMax + WaveTradeStart.RatesMin) / 2;
+          }
+          throw new NotSupportedException(MedianFunction + " Median function is not supported.");
+        };
+        Func<Func<double>> varianceFunc = () => {
+          switch (VarianceFunction) {
+            case Store.VarainceFunction.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
+            case Store.VarainceFunction.Hight: return () => CorridorStats.StDevByHeight * _waveStDevRatioSqrt / 2;
+            case VarainceFunction.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
+            case VarainceFunction.Summ: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
+          }
+          throw new NotSupportedException(VarianceFunction + " Variance function is not supported.");
+        };
         #endregion
 
         #region _adjustExitLevels
@@ -1209,10 +1258,11 @@ namespace HedgeHog.Alice.Store {
             Log = exc;
           }
         };
+        Action adjustExitLevels0 = () => adjustExitLevels(double.NaN, double.NaN);
         #endregion
 
         #region _adjustLevels
-        _adjustEnterLevels = () => {
+        _adjustEnterLevels += () => {
           if (!WaveTradeStart.HasRates) return;
           setCloseLevels(false);
           switch (TrailingDistanceFunction) {
@@ -1220,8 +1270,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.WaveMax: {
                 if (firstTime) {
                   _buySellLevelsForEach(sr => sr.CanTrade = false);
-                  _exitTrade = exitWave;
-                  calcMedial = () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+                  calcMedian = () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
                   calcVariance = () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
                 }
                 cp = CorridorPrice();
@@ -1229,8 +1278,7 @@ namespace HedgeHog.Alice.Store {
                 var varaince = CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
                 _CenterOfMassBuy = median + varaince;
                 _CenterOfMassSell = median - varaince;
-                var isSteady = _CenterOfMassBuy < WaveTradeStart.RatesMax && _CenterOfMassSell > WaveTradeStart.RatesMin;
-                if (watcherWaveTrade.SetValue(isSteady).HasChangedTo) {
+                if (watcherWaveTrade.SetValue(isSteady()).HasChangedTo) {
                   _buyLevel.RateEx = WaveTradeStart.RatesMax.Max(cp(RateLast)) + PointSize;
                   _sellLevel.RateEx = WaveTradeStart.RatesMin.Min(cp(RateLast)) - PointSize;
                   _buySellLevelsForEach(sr => { sr.CanTradeEx = watcherWaveTrade.Value; sr.TradesCountEx = 0; });
@@ -1247,10 +1295,22 @@ namespace HedgeHog.Alice.Store {
               #region firstTime
               if (firstTime) {
                 _buySellLevelsForEach(sr => sr.CanTrade = false);
-                _exitTrade = exitWave;
                 waveToTrade = WaveTradeStart;
-                calcMedial = () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+                calcMedian = () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
                 calcVariance = () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
+                onEOW += () => corridorLevel = 0;
+                onEOW += () => corridorMoved.Off();
+              }
+              #endregion
+              goto case TrailingWaveMethod.WaveCommon;
+            #endregion
+            #region WaveMax2
+            case TrailingWaveMethod.WaveMax2:
+              #region firstTime
+              if (firstTime) {
+                _buySellLevelsForEach(sr => sr.CanTrade = false);
+                waveToTrade = WaveTradeStart;
+                isSteady = () => WaveTradeStart.Rates.TouchDowns(_CenterOfMassBuy, _CenterOfMassSell, cp).Count() >= 3;
                 onEOW += () => corridorLevel = 0;
                 onEOW += () => corridorMoved.Off();
               }
@@ -1262,20 +1322,20 @@ namespace HedgeHog.Alice.Store {
                 if (firstTime) {
                 }
                 cp = CorridorPrice();
-                var median = calcMedial();
-                var varaince = calcVariance();
+                var median = medianFunc()();
+                var varaince = varianceFunc()();
                 _CenterOfMassBuy = median + varaince;
                 _CenterOfMassSell = median - varaince;
-                var isSteady = _CenterOfMassBuy < WaveTradeStart.RatesMax && _CenterOfMassSell > WaveTradeStart.RatesMin;
-                if (watcherWaveTrade.SetValue(isSteady).HasChangedTo
-                  && corridorMoved.Set((corridorLevel - median).Abs() > StDevByPriceAvg, () => corridorLevel = median).On) {
+                if (watcherWaveTrade.SetValue(isSteady()).HasChangedTo
+                  //&& corridorMoved.Set((corridorLevel - median).Abs() > StDevByPriceAvg, () => corridorLevel = median).On
+                  ) {
                   corridorMoved.Off();
                   _buyLevel.RateEx = waveToTrade.RatesMax.Max(cp(RateLast)) + PointSize;
                   _sellLevel.RateEx = waveToTrade.RatesMin.Min(cp(RateLast)) - PointSize;
-                  _buySellLevelsForEach(sr => { sr.CanTradeEx = watcherWaveTrade.Value; sr.TradesCountEx = 0; });
+                  _buySellLevelsForEach(sr => { sr.CanTradeEx = watcherWaveTrade.Value; sr.TradesCountEx = CorridorCrossesMaximum.Abs(); });
                 }
               }
-              adjustExitLevels(_buyLevel.Rate, _sellLevel.Rate);
+              adjustExitLevels0();
               break;
             #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
@@ -1289,6 +1349,10 @@ namespace HedgeHog.Alice.Store {
             ForEachSuppRes(sr => sr.ResetPricePosition());
           }
         };
+        _adjustEnterLevels += () => exitFunc()();
+        _adjustEnterLevels += () => _buyLevel.SetPrice(CorridorPrice(RateLast));
+        _adjustEnterLevels += () => _sellLevel.SetPrice(CorridorPrice(RateLast));
+
         #endregion
         #endregion
 
@@ -1326,9 +1390,6 @@ namespace HedgeHog.Alice.Store {
 
       #region ============ Run =============
       _adjustEnterLevels();
-      _buyLevel.SetPrice(CorridorPrice(RateLast));
-      _sellLevel.SetPrice(CorridorPrice(RateLast));
-      _exitTrade();
       #endregion
     }
 
