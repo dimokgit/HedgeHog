@@ -822,15 +822,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Extream Close Offset")]
-    [Category(categoryXXX)]
-    [Description("Extream Close Offset in pips")]
-    public int ExtreamCloseOffset_ {
-      get { return ExtreamCloseOffset; }
+    [DisplayName("Median Function")]
+    [Category(categoryActive)]
+    public MedianFunction MedianFunction {
+      get { return (MedianFunction)ExtreamCloseOffset; }
       set {
-        if (ExtreamCloseOffset != value) {
-          ExtreamCloseOffset = value;
-          OnPropertyChanged(TradingMacroMetadata.ExtreamCloseOffset_);
+        if (ExtreamCloseOffset != (int)value) {
+          ExtreamCloseOffset = (int)value;
+          OnPropertyChanged("MedianFunction");
         }
       }
     }
@@ -848,15 +847,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("MagnetCrossMinimum")]
-    [Category(categoryXXX_NU)]
-    [Description("Not Used")]
-    public int MagnetCrossMinimum {
-      get { return CorridorBigToSmallRatio.ToInt(); }
+    [DisplayName("Variance Function")]
+    [Category(categoryActive)]
+    public VarainceFunction VarianceFunction {
+      get { return (VarainceFunction)CorridorBigToSmallRatio.ToInt(); }
       set {
-        if (CorridorBigToSmallRatio != value) {
-          CorridorBigToSmallRatio = value;
-          OnPropertyChanged(TradingMacroMetadata.MagnetCrossMinimum);
+        if (CorridorBigToSmallRatio != (double)value) {
+          CorridorBigToSmallRatio = (double)value;
+          OnPropertyChanged("VarianceFunction");
         }
       }
     }
@@ -1300,16 +1298,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    #region VolumeTresholdIterations
-    [DisplayName("Corridor Minimum Ratio")]
-    [Description("Cooridor.Rates.Count > Rates.Count/N")]
-    [Category(categoryCorridor)]
-    public int CorridorMinimumRatio {
-      get { return VolumeTresholdIterations; }
+    #region ExitFunction
+    [DisplayName("ExitFunction")]
+    [Category(categoryActive)]
+    public ExitFunction ExitFunction {
+      get { return (ExitFunction)VolumeTresholdIterations; }
       set {
-        if (VolumeTresholdIterations != value) {
-          VolumeTresholdIterations = value;
-          OnPropertyChanged("VolumeTresholdIterations_");
+        if (VolumeTresholdIterations != (int)value) {
+          VolumeTresholdIterations = (int)value;
+          OnPropertyChanged("ExitFunction");
         }
       }
     }

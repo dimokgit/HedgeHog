@@ -93,6 +93,22 @@ namespace HedgeHog.Alice.Store {
     WaveTradeStartStDev = 28,
 
   }
+  public enum ExitFunction {
+    Exit0 = 0,
+    Exit,
+    Exit1,
+    Exit2
+  }
+  public enum MedianFunction {
+    WaveShort = 0,
+    WaveTrade = 1
+  }
+  public enum VarainceFunction {
+    Price = 0,
+    Hight = 1,
+    Max = 2,
+    Summ = 3
+  }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5,PriceAverage = 6 }
   [Flags]

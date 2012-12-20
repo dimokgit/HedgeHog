@@ -3224,7 +3224,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorDistanceRatio"/></summary>
         public const string CorridorDistanceRatio = "CorridorDistanceRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ExtreamCloseOffset_"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MedianFunction"/></summary>
         public const string ExtreamCloseOffset_ = "ExtreamCloseOffset_";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentLossInPipsCloseAdjustment_"/></summary>
@@ -3398,7 +3398,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LastProfitStartDate"/></summary>
         public const string LastProfitStartDate = "LastProfitStartDate";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorMinimumRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ExitFunction"/></summary>
         public const string CorridorMinimumRatio = "CorridorMinimumRatio";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DistanceIterations"/></summary>
@@ -6288,7 +6288,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorDistanceRatio"/></summary>
         public static PropertyPath CorridorDistanceRatioPath { get { return new PropertyPath("CorridorDistanceRatio"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ExtreamCloseOffset_"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MedianFunction"/></summary>
         public static PropertyPath ExtreamCloseOffset_Path { get { return new PropertyPath("ExtreamCloseOffset_"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CurrentLossInPipsCloseAdjustment_"/></summary>
@@ -6429,7 +6429,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LastProfitStartDate"/></summary>
         public static PropertyPath LastProfitStartDatePath { get { return new PropertyPath("LastProfitStartDate"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorMinimumRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ExitFunction"/></summary>
         public static PropertyPath CorridorMinimumRatioPath { get { return new PropertyPath("CorridorMinimumRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DistanceIterations"/></summary>
