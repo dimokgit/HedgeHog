@@ -979,7 +979,7 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         Action onEOW = () => { };
         #region Exit Funcs
-        Func<bool> exitByLossGross = () => Trades.Lots() > LotSize && currentLoss() < CurrentGross * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
+        Func<bool> exitByLossGross = () => Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < CurrentGross * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
         #region exitWave0
         Action exitWave0 = () => {
           double als = LotSizeByLossBuy;
@@ -1217,7 +1217,8 @@ namespace HedgeHog.Alice.Store {
             case Store.VarainceFunction.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
             case Store.VarainceFunction.Hight: return () => CorridorStats.StDevByHeight * _waveStDevRatioSqrt / 2;
             case VarainceFunction.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
-            case VarainceFunction.Summ: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
+            case VarainceFunction.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
+            case VarainceFunction.Sum: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
           }
           throw new NotSupportedException(VarianceFunction + " Variance function is not supported.");
         };
