@@ -105,9 +105,10 @@ namespace HedgeHog.Alice.Store {
   }
   public enum VarainceFunction {
     Price = 0,
-    Hight = 1,
-    Max = 2,
-    Summ = 3
+    Hight = 10,
+    Max = 20,
+    Min = 30,
+    Sum = 40
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5,PriceAverage = 6 }
