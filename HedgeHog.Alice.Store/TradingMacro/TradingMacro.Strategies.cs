@@ -1267,6 +1267,20 @@ namespace HedgeHog.Alice.Store {
           if (!WaveTradeStart.HasRates) return;
           setCloseLevels(false);
           switch (TrailingDistanceFunction) {
+            #region WaveTrade
+            case TrailingWaveMethod.WaveTrade: {
+                if (firstTime) { }
+                var median = medianFunc()();
+                var varaince = varianceFunc()();
+                _CenterOfMassBuy = median + varaince;
+                _CenterOfMassSell = median - varaince;
+                _buyLevel.RateEx = _CenterOfMassBuy;
+                _sellLevel.RateEx = _CenterOfMassSell;
+                _buySellLevelsForEach(sr => sr.CanTrade = true);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
             #region WaveMax
             case TrailingWaveMethod.WaveMax: {
                 if (firstTime) {
