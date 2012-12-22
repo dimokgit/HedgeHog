@@ -480,7 +480,7 @@ namespace HedgeHog {
       set {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeMiddle == null) {
-            _lineTimeMiddle = new VerticalLine() { StrokeDashArray = { 3,1 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+            _lineTimeMiddle = new VerticalLine() { StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
             if (showDrags) {
               _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
               plotter.Children.Add(_lineTimeMiddle);
