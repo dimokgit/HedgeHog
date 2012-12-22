@@ -824,8 +824,8 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Median Function")]
     [Category(categoryActive)]
-    public MedianFunction MedianFunction {
-      get { return (MedianFunction)ExtreamCloseOffset; }
+    public MedianFunctions MedianFunction {
+      get { return (MedianFunctions)ExtreamCloseOffset; }
       set {
         if (ExtreamCloseOffset != (int)value) {
           ExtreamCloseOffset = (int)value;
@@ -849,8 +849,8 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Variance Function")]
     [Category(categoryActive)]
-    public VarainceFunction VarianceFunction {
-      get { return (VarainceFunction)CorridorBigToSmallRatio.ToInt(); }
+    public VarainceFunctions VarianceFunction {
+      get { return (VarainceFunctions)CorridorBigToSmallRatio.ToInt(); }
       set {
         if (CorridorBigToSmallRatio != (double)value) {
           CorridorBigToSmallRatio = (double)value;
@@ -1102,13 +1102,14 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Blackout Hours")]
+    [DisplayName("Turn Off Function")]
     [Category(categoryActive)]
-    public int BlackoutHoursTimeframe {
-      get { return CorridorIterationsIn; }
+    public TurnOffFunctions TurnOffFunction {
+      get { return (TurnOffFunctions)CorridorIterationsIn; }
       set {
-        CorridorIterationsIn = value;
-        OnPropertyChanged("BlackoutHoursTimeframe");
+        if (CorridorIterationsIn == (int)value) return;
+        CorridorIterationsIn = (int)value;
+        OnPropertyChanged("TurnOffFunction");
       }
     }
     double _waveStDevRatioSqrt = double.NaN;
@@ -1301,8 +1302,8 @@ namespace HedgeHog.Alice.Store {
     #region ExitFunction
     [DisplayName("ExitFunction")]
     [Category(categoryActive)]
-    public ExitFunction ExitFunction {
-      get { return (ExitFunction)VolumeTresholdIterations; }
+    public ExitFunctions ExitFunction {
+      get { return (ExitFunctions)VolumeTresholdIterations; }
       set {
         if (VolumeTresholdIterations != (int)value) {
           VolumeTresholdIterations = (int)value;

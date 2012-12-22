@@ -93,17 +93,21 @@ namespace HedgeHog.Alice.Store {
     WaveTradeStartStDev = 28,
 
   }
-  public enum ExitFunction {
+  public enum TurnOffFunctions {
+    WaveShortLeft = 0
+  }
+  public enum ExitFunctions {
+    Void = -1,
     Exit0 = 0,
     Exit,
     Exit1,
     Exit2
   }
-  public enum MedianFunction {
+  public enum MedianFunctions {
     WaveShort = 0,
     WaveTrade = 1
   }
-  public enum VarainceFunction {
+  public enum VarainceFunctions {
     Price = 0,
     Hight = 10,
     Max = 20,

@@ -979,7 +979,24 @@ namespace HedgeHog.Alice.Store {
       if (_strategyExecuteOnTradeClose == null) {
         Action onEOW = () => { };
         #region Exit Funcs
+        Func<bool> exitOnFriday = () => {
+          if (!SuppRes.Any(sr => sr.InManual)) {
+            bool isEOW = !isCorridorFrozen() && IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
+            if (isEOW) {
+              if (Trades.Any())
+                CloseTrades(Trades.Lots());
+              _buyLevel.CanTrade = _sellLevel.CanTrade = false;
+              return true;
+            }
+          }
+          return false;
+        };
         Func<bool> exitByLossGross = () => Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < CurrentGross * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
+        #region exitVoid
+        Action exitVoid = () => {
+          if (exitOnFriday()) return;
+        };
+        #endregion
         #region exitWave0
         Action exitWave0 = () => {
           double als = LotSizeByLossBuy;
@@ -1068,15 +1085,25 @@ namespace HedgeHog.Alice.Store {
         #endregion
         Func<Action> exitFunc = () => {
           switch (ExitFunction) {
-            case Store.ExitFunction.Exit0: return exitWave0;
-            case Store.ExitFunction.Exit: return exitWave;
-            case Store.ExitFunction.Exit1: return exitWave1;
-            case Store.ExitFunction.Exit2: return exitWave2;
+            case Store.ExitFunctions.Void: return exitVoid;
+            case Store.ExitFunctions.Exit0: return exitWave0;
+            case Store.ExitFunctions.Exit: return exitWave;
+            case Store.ExitFunctions.Exit1: return exitWave1;
+            case Store.ExitFunctions.Exit2: return exitWave2;
           }
           throw new NotSupportedException(ExitFunction + " exit function is not supported.");
         };
         #endregion
 
+        #region TurnOff Funcs
+        Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
+        Action<Action> turnOff = a => {
+          switch (TurnOffFunction) {
+            case Store.TurnOffFunctions.WaveShortLeft: turnOffByWaveShortLeft(a); return;
+          }
+          throw new NotSupportedException(TurnOffFunction + " Turnoff function is not supported.");
+        };
+        #endregion
         if (_adjustEnterLevels != null)
           _adjustEnterLevels.GetInvocationList().Cast<Action>().ForEach(d => _adjustEnterLevels -= d);
         bool exitCrossed = false;
@@ -1207,18 +1234,18 @@ namespace HedgeHog.Alice.Store {
         WaveInfo waveToTrade = null;
         Func<Func<double>> medianFunc = () => {
           switch (MedianFunction) {
-            case Store.MedianFunction.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
-            case Store.MedianFunction.WaveTrade: return () => (WaveTradeStart.RatesMax + WaveTradeStart.RatesMin) / 2;
+            case Store.MedianFunctions.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
+            case Store.MedianFunctions.WaveTrade: return () => (WaveTradeStart.RatesMax + WaveTradeStart.RatesMin) / 2;
           }
           throw new NotSupportedException(MedianFunction + " Median function is not supported.");
         };
         Func<Func<double>> varianceFunc = () => {
           switch (VarianceFunction) {
-            case Store.VarainceFunction.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
-            case Store.VarainceFunction.Hight: return () => CorridorStats.StDevByHeight * _waveStDevRatioSqrt / 2;
-            case VarainceFunction.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
-            case VarainceFunction.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
-            case VarainceFunction.Sum: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
+            case Store.VarainceFunctions.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
+            case Store.VarainceFunctions.Hight: return () => CorridorStats.StDevByHeight * _waveStDevRatioSqrt / 2;
+            case VarainceFunctions.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
+            case VarainceFunctions.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
+            case VarainceFunctions.Sum: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
           }
           throw new NotSupportedException(VarianceFunction + " Variance function is not supported.");
         };
@@ -1262,8 +1289,8 @@ namespace HedgeHog.Alice.Store {
         Action adjustExitLevels0 = () => adjustExitLevels(double.NaN, double.NaN);
         #endregion
 
-        #region _adjustLevels
-        _adjustEnterLevels += () => {
+        #region adjustEnterLevels
+        Action adjustEnterLevels = () => {
           if (!WaveTradeStart.HasRates) return;
           setCloseLevels(false);
           switch (TrailingDistanceFunction) {
@@ -1364,10 +1391,6 @@ namespace HedgeHog.Alice.Store {
             ForEachSuppRes(sr => sr.ResetPricePosition());
           }
         };
-        _adjustEnterLevels += () => exitFunc()();
-        _adjustEnterLevels += () => _buyLevel.SetPrice(CorridorPrice(RateLast));
-        _adjustEnterLevels += () => _sellLevel.SetPrice(CorridorPrice(RateLast));
-
         #endregion
         #endregion
 
@@ -1395,6 +1418,12 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         _strategyExecuteOnTradeOpen = () => { };
+
+        _adjustEnterLevels += () => adjustEnterLevels();
+        _adjustEnterLevels += () => turnOff(() => _buySellLevelsForEach(sr => sr.CanTrade = false));
+        _adjustEnterLevels += () => exitFunc()();
+        _adjustEnterLevels += () => _buyLevel.SetPrice(CorridorPrice(RateLast));
+        _adjustEnterLevels += () => _sellLevel.SetPrice(CorridorPrice(RateLast));
       }
 
       if (!IsInVitualTrading) {

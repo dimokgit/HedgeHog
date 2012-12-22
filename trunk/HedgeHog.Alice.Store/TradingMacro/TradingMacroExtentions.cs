@@ -629,6 +629,7 @@ namespace HedgeHog.Alice.Store {
 
     public bool IsBlackoutTime {
       get {
+        var BlackoutHoursTimeframe = 0;
         if (BlackoutHoursTimeframe == 0) return false;
         var r = _blackoutTimes.Any(b => RateLast.StartDate.Between(b.Time.AddHours(-BlackoutHoursTimeframe), b.Time));
         return r;
