@@ -968,7 +968,6 @@ namespace HedgeHog.Alice.Store {
       Func<bool> isCorridorFrozen = () => LotSizeByLossBuy >= MaxLotSize;
       Func<bool> isProfitOk = () => false;
       #endregion
-      ShowTrendLines = false;
       _isSelfStrategy = true;
       Func<bool, double> crossLevelDefault = isBuy => isBuy ? _RatesMax + RatesHeight / 10 : _RatesMin - RatesHeight / 10;
       Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
@@ -977,6 +976,14 @@ namespace HedgeHog.Alice.Store {
       #region ============ Init =================
 
       if (_strategyExecuteOnTradeClose == null) {
+        #region SetTrendLines
+        SetTrendLines = () => {
+          var rates = new[] { CorridorStats.Rates.LastBC(), CorridorStats.Rates[0] };
+          rates[0].PriceAvg1 = CorridorStats.Coeffs.RegressionValue(0);
+          rates[1].PriceAvg1 = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
+          return rates;
+        };
+        #endregion
         Action onEOW = () => { };
         #region Exit Funcs
         Func<bool> exitOnFriday = () => {
@@ -1099,6 +1106,7 @@ namespace HedgeHog.Alice.Store {
         Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOff = a => {
           switch (TurnOffFunction) {
+            case Store.TurnOffFunctions.Void: return;
             case Store.TurnOffFunctions.WaveShortLeft: turnOffByWaveShortLeft(a); return;
           }
           throw new NotSupportedException(TurnOffFunction + " Turnoff function is not supported.");
@@ -1234,8 +1242,23 @@ namespace HedgeHog.Alice.Store {
         WaveInfo waveToTrade = null;
         Func<Func<double>> medianFunc = () => {
           switch (MedianFunction) {
+            case Store.MedianFunctions.Regression: return () => WaveShort.Rates[0].PriceAvg1;
             case Store.MedianFunctions.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
             case Store.MedianFunctions.WaveTrade: return () => (WaveTradeStart.RatesMax + WaveTradeStart.RatesMin) / 2;
+            case Store.MedianFunctions.WaveStart: return () => CorridorPrice(WaveTradeStart.Rates.LastBC());
+            case Store.MedianFunctions.WaveStart1: return () => {
+              if (!WaveTradeStart.HasRates) return double.NaN;
+              var skip = WaveTradeStart1.HasRates ? WaveTradeStart1.Rates.Count : 0;
+              var wave = WaveTradeStart.Rates.Skip(skip).Reverse().Select(r => CorridorPrice(r)).ToArray();
+              double h = WaveTradeStart.RatesMax, l = WaveTradeStart.RatesMin;
+              var ret = wave.Where(r => r >= h || r <= l).DefaultIfEmpty(double.NaN).First();
+              return ret;
+              if (double.IsNaN(ret)) {
+                h = wave.Max(); l = wave.Min();
+                ret = wave.Where(r => r >= h || r <= l).DefaultIfEmpty(double.NaN).First();
+              }
+              return ret;
+            };
           }
           throw new NotSupportedException(MedianFunction + " Median function is not supported.");
         };
@@ -1295,9 +1318,26 @@ namespace HedgeHog.Alice.Store {
           setCloseLevels(false);
           switch (TrailingDistanceFunction) {
             #region WaveTrade
+            case TrailingWaveMethod.WaveExtream: {
+                if (firstTime) { }
+                var median = medianFunc()();
+                var varaince = varianceFunc()();
+                _CenterOfMassBuy = median + varaince;
+                _CenterOfMassSell = median - varaince;
+                if (WaveShort.Rates.Count > CorridorDistanceRatio) {
+                  _buyLevel.RateEx = _CenterOfMassBuy;
+                  _sellLevel.RateEx = _CenterOfMassSell;
+                }
+                _buySellLevelsForEach(sr => sr.CanTrade = true);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region WaveTrade
             case TrailingWaveMethod.WaveTrade: {
                 if (firstTime) { }
                 var median = medianFunc()();
+                if (double.IsNaN(median)) break;
                 var varaince = varianceFunc()();
                 _CenterOfMassBuy = median + varaince;
                 _CenterOfMassSell = median - varaince;

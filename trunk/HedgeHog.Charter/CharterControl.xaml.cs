@@ -436,8 +436,17 @@ namespace HedgeHog {
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
 
     #region TimeLines
-    bool showDrags = true;
+    bool showDrags = false;
+    public bool ShowDrags {
+      get { return showDrags; }
+      set {
+        if (showDrags == value) return;
+        showDrags = value;
+        OnPropertyChanged("ShowDrags");
+      }
+    }
     #region TimeShort
+    Binding ShowDragBindingFactory() { return new Binding("ShowDrags") { Converter = new BooleanToVisibilityConverter() }; }
     DraggablePoint _lineTimeShortDraggablePoint;
     VerticalLine _lineTimeShort;
     public Rate LineTimeShort {
@@ -445,17 +454,14 @@ namespace HedgeHog {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeShort == null) {
             _lineTimeShort = new VerticalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.OrangeRed) };
-            if (showDrags) {
-              _lineTimeShort.SetAnchor(_lineTimeShortDraggablePoint = new DraggablePoint());
-              plotter.Children.Add(_lineTimeShort);
-              plotter.Children.Add(_lineTimeShortDraggablePoint);
-              _lineTimeShortDraggablePoint.PositionChanged += _lineTimeShortDraggablePoint_PositionChanged;
-            }
+            _lineTimeShort.SetAnchor(_lineTimeShortDraggablePoint = new DraggablePoint());
+            plotter.Children.Add(_lineTimeShort);
+            plotter.Children.Add(_lineTimeShortDraggablePoint);
+            _lineTimeShortDraggablePoint.PositionChanged += _lineTimeShortDraggablePoint_PositionChanged;
+            _lineTimeShortDraggablePoint.SetBinding(DraggablePoint.VisibilityProperty, ShowDragBindingFactory());
           }
-          if (showDrags) {
-            _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y - 20 * PipSize);
-            _lineTimeShortDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
-          }
+          _lineTimeShortDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y - 20 * PipSize);
+          _lineTimeShortDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
         }));
       }
     }
@@ -481,17 +487,14 @@ namespace HedgeHog {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeMiddle == null) {
             _lineTimeMiddle = new VerticalLine() { StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
-            if (showDrags) {
-              _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
-              plotter.Children.Add(_lineTimeMiddle);
-              plotter.Children.Add(_lineTimeMiddleDraggablePoint);
-              _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
-            }
+            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
+            plotter.Children.Add(_lineTimeMiddle);
+            plotter.Children.Add(_lineTimeMiddleDraggablePoint);
+            _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
+            _lineTimeMiddleDraggablePoint.SetBinding(DraggablePoint.VisibilityProperty, ShowDragBindingFactory());
           }
-          if (showDrags) {
-            _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
-            _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
-          }
+          _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
+          _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
         }));
       }
     }
@@ -534,9 +537,10 @@ namespace HedgeHog {
     DateTime LineTimeAvg {
       set {
         lineTimeAvg.Value = dateAxis.ConvertToDouble(value);
-        if (showDrags && !CorridorStopPointX.IsMouseCaptured) {
+        if (!CorridorStopPointX.IsMouseCaptured) {
           CorridorStopPointX.Position = new Point(dateAxis.ConvertToDouble(value), CorridorStartPointX.Position.Y);
           CorridorStopPointX.ToolTip = value.ToString("MM/dd/yyyy HH:mm");
+          CorridorStopPointX.SetBinding(DraggablePoint.VisibilityProperty, ShowDragBindingFactory());
         }
 
       }
@@ -614,7 +618,7 @@ namespace HedgeHog {
     Segment trendLine21 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine21 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg21 == 0)
           trendLine21.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine21.Visibility = System.Windows.Visibility.Visible;
@@ -627,7 +631,7 @@ namespace HedgeHog {
     Segment trendLine2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine2 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg2 == 0)
           trendLine2.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine2.Visibility = System.Windows.Visibility.Visible;
@@ -640,7 +644,7 @@ namespace HedgeHog {
     Segment trendLine02 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine02 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg02 == 0)
           trendLine02.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine02.Visibility = System.Windows.Visibility.Visible;
@@ -653,7 +657,7 @@ namespace HedgeHog {
     Segment trendLine31 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine31 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg31 == 0)
           trendLine31.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine31.Visibility = System.Windows.Visibility.Visible;
@@ -666,7 +670,7 @@ namespace HedgeHog {
     Segment trendLine3 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine3 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg3 == 0)
           trendLine3.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine3.Visibility = System.Windows.Visibility.Visible;
@@ -679,7 +683,7 @@ namespace HedgeHog {
     Segment trendLine03 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine03 {
       set {
-        if (value == null)
+        if (value == null || value[0].PriceAvg03 == 0)
           trendLine03.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine03.Visibility = System.Windows.Visibility.Visible;
@@ -747,6 +751,7 @@ namespace HedgeHog {
 
           _CorridorStartPointX.PositionChanged += CorridorStartPointX_PositionChanged;
           _CorridorStartPointX.IsMouseCapturedChanged += CorridorStartPointX_IsMouseCapturedChanged;
+          _CorridorStartPointX.SetBinding(DraggablePoint.VisibilityProperty, ShowDragBindingFactory());
 
           //_CorridorStartPointX.MouseLeftButtonDown += new MouseButtonEventHandler(DraggablePoint_MouseLeftButtonDown);
           //_CorridorStartPointX.PreviewMouseLeftButtonUp += new MouseButtonEventHandler(_CorridorStartPointX_PreviewMouseLeftButtonDown);

@@ -68,6 +68,7 @@ namespace HedgeHog.Alice.Store {
     WaveAuto = 0,
     WaveShort = 1,
     WaveTrade = 2,
+    WaveExtream = 21,
     WaveMax = 3,
     WaveMax1 = 31,
     WaveMax2 = 32,
@@ -94,6 +95,7 @@ namespace HedgeHog.Alice.Store {
 
   }
   public enum TurnOffFunctions {
+    Void = -1,
     WaveShortLeft = 0
   }
   public enum ExitFunctions {
@@ -105,7 +107,10 @@ namespace HedgeHog.Alice.Store {
   }
   public enum MedianFunctions {
     WaveShort = 0,
-    WaveTrade = 1
+    WaveTrade = 1,
+    WaveStart = 20,
+    WaveStart1 = 21,
+    Regression = 30
   }
   public enum VarainceFunctions {
     Price = 0,

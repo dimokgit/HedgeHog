@@ -682,15 +682,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Reversed Corridorness")]
-    [Description("Corridor length adjusted by Fib(StDevByPrice/StDevByHeight) or visa vrsa if X=TRUE")]
-    [Category(categoryXXX_NU)]
-    public bool ReversedCorridorness {
+    [DisplayName("Show Chart On Trade")]
+    [Category(categoryCorridor)]
+    public bool ShowChartOnTrade {
       get { return TradeOnCrossOnly; }
       set {
         if (TradeOnCrossOnly == value) return;
         TradeOnCrossOnly = value;
-        OnPropertyChanged(() => ReversedCorridorness);
+        OnPropertyChanged(() => ShowChartOnTrade);
       }
     }
 
@@ -1157,7 +1156,11 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryCorridor)]
     public bool ShowTrendLines {
       get { return _ShowTrendLines; }
-      set { _ShowTrendLines = value; }
+      set {
+        if (_ShowTrendLines == value) return;
+        _ShowTrendLines = value;
+        OnPropertyChanged(() => ShowTrendLines);
+      }
     }
 
     #region MaximumPositions

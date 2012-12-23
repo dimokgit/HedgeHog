@@ -847,7 +847,7 @@ namespace HedgeHog.Alice.Store {
           _CorridorStats.PeriodsJumped += CorridorStats_PeriodsJumped;
         }
         if (value != null) {
-          var doRegressionLevels = false;// Strategy.HasFlag(Strategies.Trailer01);
+          var doRegressionLevels = true;// Strategy.HasFlag(Strategies.Trailer01);
           if (doRegressionLevels) {
             if (SetTrendLines != null)
               SetTrendLines();
@@ -3011,7 +3011,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShort: tp = WaveShort.RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;
-        case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight; break;
+        case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
         case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
         case TradingMacroTakeProfitFunction.RatesStDev: tp = RatesStDev; break;
