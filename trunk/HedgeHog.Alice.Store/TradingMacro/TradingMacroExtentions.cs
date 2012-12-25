@@ -1342,7 +1342,7 @@ namespace HedgeHog.Alice.Store {
       EnsureActiveSuppReses();
       SetEntryOrdersBySuppResLevels();
       RaisePositionsChanged();
-      if (_strategyExecuteOnTradeOpen != null) _strategyExecuteOnTradeOpen();
+      if (_strategyExecuteOnTradeOpen != null) _strategyExecuteOnTradeOpen(e.Trade);
     }
 
     bool IsMyTrade(Trade trade) { return trade.Pair == Pair; }
@@ -2248,7 +2248,9 @@ namespace HedgeHog.Alice.Store {
         if (!HasRates) return double.NaN;
         _tradingDistance = GetValueByTakeProfitFunction(TradingDistanceFunction);
         if (CorridorFollowsPrice) {
-          var td1 = AllowedLotSizeCore(TradingDistanceInPips).ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight).Min(RatesHeight);
+          var td1 = AllowedLotSizeCore(TradingDistanceInPips)
+            .ValueByPosition(LotSize, LotSize * MaxLotByTakeProfitRatio, _tradingDistance, RatesHeight / _ratesHeightAdjustmentForAls)
+            .Min(RatesHeight / _ratesHeightAdjustmentForAls);
           if (td1 > 0) {
             if ((td1 - _tradingDistance).Abs() / _tradingDistance > .1) _tradingDistance = td1;
           } else {
@@ -2697,7 +2699,7 @@ namespace HedgeHog.Alice.Store {
 
     bool _useTakeProfitMin = false;
     Action<Trade> _strategyExecuteOnTradeClose;
-    Action _strategyExecuteOnTradeOpen;
+    Action<Trade> _strategyExecuteOnTradeOpen;
     double _tradingDistanceMax = 0;
 
     #region New
@@ -2712,7 +2714,7 @@ namespace HedgeHog.Alice.Store {
             _tradingDistanceMax = 0;
           }
         };
-        _strategyExecuteOnTradeOpen = () => {
+        _strategyExecuteOnTradeOpen = trade => {
           _useTakeProfitMin = true;
         };
       }
@@ -3034,13 +3036,7 @@ namespace HedgeHog.Alice.Store {
 
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch (function) {
-        case ScanCorridorFunction.WaveDistance1: return ScanCorridorByWaveDistance1;
-        case ScanCorridorFunction.WaveDistanceByHeight: return ScanCorridorByDistanceByRatesHeight;
-        case ScanCorridorFunction.WaveStDev: return ScanCorridorByStDev;
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
-        case ScanCorridorFunction.WaveDistance2: return ScanCorridorByDistanceHalf;
-        case ScanCorridorFunction.WaveDistance4: return ScanCorridorByDistanceQuater;
-        case ScanCorridorFunction.WaveDistance41: return ScanCorridorByDistanceQuater1;
         case ScanCorridorFunction.WaveDistance42: return ScanCorridorByDistance42;
         case ScanCorridorFunction.WaveDistance43: return ScanCorridorByDistance43;
       }
@@ -3129,7 +3125,7 @@ namespace HedgeHog.Alice.Store {
     }
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
       var lotSize = LotSizeByLoss(TradesManager, CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, CurrentGross, LotSize, RatesHeightInPips);
+      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, CurrentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
@@ -4061,6 +4057,7 @@ namespace HedgeHog.Alice.Store {
     private DB.v_BlackoutTime[] _blackoutTimes;
 
     private IList<DB.s_GetBarStats_Result> _TimeFrameStats;
+    private double _ratesHeightAdjustmentForAls = 2;
 
     public IList<DB.s_GetBarStats_Result> TimeFrameStats {
       get { return _TimeFrameStats; }

@@ -100,5 +100,22 @@ namespace UnitLib
       actual = sampleCurrent.ValueByPosition(sampleLow, sampleHigh, realLow, realHigh);
       Assert.AreEqual(expected, actual.ToInt());
     }
+
+    /// <summary>
+    ///A test for Between
+    ///</summary>
+    [TestMethod()]
+    public void BetweenTest() {
+      double value = 5; // TODO: Initialize to an appropriate value
+      Assert.IsTrue(value.Between(1,5));
+      Assert.IsTrue(value.Between(5, 5));
+      Assert.IsTrue(value.Between(5, 15));
+      Assert.IsTrue(value.Between(15, 5));
+      Assert.IsFalse(value.Between(15, 6));
+      Assert.IsFalse(value.Between(double.NaN, 5));
+      Assert.IsFalse(value.Between(3, double.NaN));
+      Assert.IsFalse(double.NaN.Between(double.NaN, double.NaN));
+      Assert.IsFalse(double.NaN.Between(double.NaN, 8));
+    }
   }
 }

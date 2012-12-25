@@ -53,12 +53,6 @@ namespace HedgeHog.Alice.Store {
     public SessionInfoAttribute() { }
   }
   public enum ScanCorridorFunction {
-    WaveDistance1 = 3,
-    WaveDistanceByHeight = 4,
-    WaveStDev = 5,
-    WaveDistance2 = 6,
-    WaveDistance4 = 7,
-    WaveDistance41 = 71,
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
@@ -72,9 +66,12 @@ namespace HedgeHog.Alice.Store {
     WaveMax = 3,
     WaveMax1 = 31,
     WaveMax2 = 32,
+    WaveMax3 = 33,
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
+    WaveAngle = 70,
+    WaveAngle1 = 71
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -96,14 +93,17 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TurnOffFunctions {
     Void = -1,
-    WaveShortLeft = 0
+    WaveShortLeft = 0,
+    WaveShortAndLeft = 10,
+    WaveHeight = 20
   }
   public enum ExitFunctions {
     Void = -1,
     Exit0 = 0,
-    Exit,
-    Exit1,
-    Exit2
+    Exit = 1,
+    Exit1 = 2,
+    Exit2 = 3,
+    Reversed = 4
   }
   public enum MedianFunctions {
     WaveShort = 0,
@@ -117,7 +117,8 @@ namespace HedgeHog.Alice.Store {
     Hight = 10,
     Max = 20,
     Min = 30,
-    Sum = 40
+    Sum = 40,
+    Wave = 50
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3,Minimum = 4,Maximum = 5,PriceAverage = 6 }

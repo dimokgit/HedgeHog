@@ -428,7 +428,7 @@ namespace HedgeHog.Alice.Client {
         return;
       }
 
-      ReplayArguments.SuperSessionId = ReplayArguments.MonthsToTest > 0 ? Guid.NewGuid() : Guid.Empty;
+      ReplayArguments.SuperSessionId = tmOriginal.TestUseSuperSession ? Guid.NewGuid() : Guid.Empty;
       var c = new[] { ',', ' ', '\t' };
 
       if (tmOriginal.UseTestFile) {
@@ -1140,10 +1140,10 @@ namespace HedgeHog.Alice.Client {
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
-          else if (tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance41 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance42 || tm.ScanCorridorBy == ScanCorridorFunction.WaveDistance43)
+          else if (tm.WaveShortLeft.HasRates)
             charter.LineTimeMiddle = tm.WaveShortLeft.Rates.LastBC();
           charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
-          charter.LineTimeTakeProfit = ((IList<Rate>)tm.RatesArray).Reverse().Take(tm.CorridorDistanceRatio.ToInt()).Last().StartDateContinuous;
+          charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistanceRatio.ToInt()).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));
