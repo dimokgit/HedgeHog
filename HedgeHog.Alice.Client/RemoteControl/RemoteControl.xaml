@@ -59,7 +59,7 @@
             <Expander Header="Gann" IsExpanded="False" Background="AliceBlue">
               <localModels:GannAnglesEdit Height="200" />
             </Expander>
-            <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="400"/>
+            <wpg:PropertyGrid Instance="{Binding BindsDirectlyToSource=True}" Width="300" Height="550"/>
           </StackPanel>
         </Popup>
         <!--<i:Interaction.Triggers>

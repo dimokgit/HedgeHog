@@ -364,7 +364,7 @@ namespace HedgeHog {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
     }
     public static bool Between(this double value, double d1, double d2) {
-      return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
+      return d1 < d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;

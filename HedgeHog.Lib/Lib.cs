@@ -467,7 +467,7 @@ namespace HedgeHog {
     public static int Abs(this int v) {
       return Math.Abs(v);
     }
-    public static double Sign(this double v) {
+    public static int Sign(this double v) {
       return Math.Sign(v);
     }
     public static double Ratio(this double v, double other) {

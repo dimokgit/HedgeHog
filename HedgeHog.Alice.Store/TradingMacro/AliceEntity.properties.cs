@@ -347,10 +347,17 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    double _pricePrev = double.NaN;
     public void SetPrice(double price) {
-        PricePosition = (price - Rate).Sign();
+      if (Rate.Between(price, _pricePrev)) {
+        _pricePosition = _pricePrev - Rate;
+      }
+      _pricePrev = price;
+      PricePosition = (price - Rate).Sign();
     }
 
+
+    public DateTime? TradeDate { get; set; }
   }
   public partial class TradingMacro {
 
@@ -458,6 +465,9 @@ namespace HedgeHog.Alice.Store {
 
     [Category(categoryTest)]
     public bool UseTestFile { get; set; }
+    [Category(categoryTest)]
+    [Description("Use Super Session")]
+    public bool TestUseSuperSession { get; set; }
 
     string _TestPriceCmaLevels = "";
     [DisplayName("Price CMA Levels")]
@@ -728,7 +738,7 @@ namespace HedgeHog.Alice.Store {
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0], hours[1]);
     }
     [DisplayName("Trading Hours Range")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public string TradingHoursRange {
       get { return CorridorIterations; }
       set {
@@ -901,7 +911,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reverse Strategy")]
-    [Category(categoryTrading)]
+    [Category(categoryActive)]
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
       set {
@@ -1127,7 +1137,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("WaveAverage Iteration")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     public int WaveAverageIteration {
       get { return CorridorIterationsOut; }
       set {
@@ -1263,7 +1273,7 @@ namespace HedgeHog.Alice.Store {
     #region SyncAll
     private bool _SyncAll;
     [DisplayName("Sync All")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public bool SyncAll {
       get { return _SyncAll; }
       set {
