@@ -1011,28 +1011,12 @@ namespace HedgeHog.Alice.Store {
           if (exitOnFriday()) return;
         };
         #endregion
-        #region exitByStDev
-        Action exitReversed = () => {
-          double als = LotSizeByLossBuy;
-          if (exitOnFriday()) return;
-          if (!ReverseStrategy && Trades.Lots() > 0)
-            CloseTrades();
-        };
-        #endregion
         #region exitWave0
         Action exitWave0 = () => {
           double als = LotSizeByLossBuy;
-          if (!SuppRes.Any(sr => sr.InManual)) {
-            bool isEOW = !isCorridorFrozen() && IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
-            if (isEOW) {
-              if (Trades.Any())
-                CloseTrades(Trades.Lots());
-              _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-              return;
-            }
-          }
+          if (exitOnFriday()) return;
           if (exitByLossGross())
-            CloseAtZero = true;
+            _trimAtZero = true;
           else if (Trades.Lots() / als >= ProfitToLossExitRatio
                      || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
                    )
@@ -1087,28 +1071,14 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region exitWave2
         Action exitWave2 = () => {
-          double als = LotSizeByLossBuy;
-          if (!SuppRes.Any(sr => sr.InManual)) {
-            bool isEOW = !isCorridorFrozen() && IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
-            if (isEOW) {
-              if (Trades.Any())
-                CloseTrades(Trades.Lots());
-              resetCloseAndTrim();
-              _buyLevel.CanTrade = _sellLevel.CanTrade = false;
-              onEOW();
-              return;
-            }
-          }
-          if (exitByLossGross()
-              || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
-            )
-            _trimToLotSize = true;
+          if (exitOnFriday()) return;
+          if (exitByLossGross())
+            CloseTrades(Trades.Lots() - LotSizeByLossBuy);
         };
         #endregion
         #region exitFunc
         Func<Action> exitFunc = () => {
           switch (ExitFunction) {
-            case Store.ExitFunctions.Reversed: return exitReversed;
             case Store.ExitFunctions.Void: return exitVoid;
             case Store.ExitFunctions.Exit0: return exitWave0;
             case Store.ExitFunctions.Exit: return exitWave;
@@ -1139,7 +1109,7 @@ namespace HedgeHog.Alice.Store {
         Action<Trade> onOpenTradeLocal = null;
 
         #region Levels
-        SuppResLevelsCount = 2;
+        if (SuppResLevelsCount != 2) SuppResLevelsCount = 2;
         SuppRes.ForEach(sr => sr.IsExitOnly = false);
         var buyCloseLevel = Support1(); buyCloseLevel.IsExitOnly = true;
         var sellCloseLevel = Resistance1(); sellCloseLevel.IsExitOnly = true;
@@ -1251,7 +1221,7 @@ namespace HedgeHog.Alice.Store {
           if (buyLevel.Min(sellLevel) < .5)
             Debugger.Break();
           if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
-            if (ReverseStrategy || !Trades.Any()) {
+            if (!Trades.Any()) {
               buyCloseLevel.RateEx = crossLevelDefault(true);
               buyCloseLevel.ResetPricePosition();
               sellCloseLevel.RateEx = crossLevelDefault(false);
@@ -1350,68 +1320,8 @@ namespace HedgeHog.Alice.Store {
 
         #region adjustEnterLevels
         Action adjustEnterLevels = () => {
-          if (!WaveTradeStart.HasRates) return;
+          if (!WaveShort.HasRates) return;
           switch (TrailingDistanceFunction) {
-            #region WaveExtream
-            case TrailingWaveMethod.WaveExtream: {
-                if (firstTime) {
-                  #region onCloseTradeLocal
-                  onOpenTradeLocal = trade => {
-                    if (trade.IsBuy) {
-                      if (sellCloseLevel.TradeDate.HasValue) {
-                        sellCloseLevel.CanTrade = false;
-                        sellCloseLevel.TradeDate = null;
-                      } else {
-                        runOnce = () => {
-                          buyCloseLevel.Rate = WaveShort.RatesMin + PointSize;
-                          buyCloseLevel.CanTrade = true;
-                          buyCloseLevel.TradesCount = 0;
-                          sellCloseLevel.Rate = 10000000;
-                          sellCloseLevel.CanTrade = false;
-                        };
-                      }
-                    } else {
-                      if (buyCloseLevel.TradeDate.HasValue) {
-                        buyCloseLevel.CanTrade = false;
-                        buyCloseLevel.TradeDate = null;
-                      } else {
-                        runOnce = () => {
-                          sellCloseLevel.Rate = WaveShort.RatesMax - PointSize;
-                          sellCloseLevel.CanTrade = true;
-                          sellCloseLevel.TradesCount = 0;
-                          buyCloseLevel.Rate = 0;
-                          buyCloseLevel.CanTrade = false;
-                        };
-                      }
-                    }
-                    buyCloseLevel.ResetPricePosition();
-                    sellCloseLevel.ResetPricePosition();
-                  };
-                  #endregion
-                }
-                var median = medianFunc()();
-                var varaince = varianceFunc()();
-                var h = median + varaince;
-                var l = median - varaince;
-                var m = (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
-                var v = WaveShort.RatesHeight / 2;
-                _CenterOfMassBuy = m + v;
-                _CenterOfMassSell = m - v;
-                ReverseStrategy = true;// !(h > _CenterOfMassBuy || l < _CenterOfMassSell);
-                if (watcherReverseStrategy.SetValue(ReverseStrategy).HasChanged || firstTime)
-                  SuppRes.ForEach(sr => sr.ResetPricePosition());
-                if (ReverseStrategy) {
-                  _buyLevel.RateEx = _CenterOfMassSell + v / 5;
-                  _sellLevel.RateEx = _CenterOfMassBuy - v / 5;
-                } else {
-                  _buyLevel.RateEx = h;
-                  _sellLevel.RateEx = l;
-                }
-                _buySellLevelsForEach(sr => sr.CanTrade = true);
-              }
-              if (!Trades.Any()) adjustExitLevels0();
-              break;
-            #endregion
             #region WaveTrade
             case TrailingWaveMethod.WaveTrade: {
                 if (firstTime) { }
@@ -1586,6 +1496,9 @@ namespace HedgeHog.Alice.Store {
       #region ============ Run =============
       _adjustEnterLevels();
       #endregion
+    }
+
+    private void StrategyEnterRegression() {
     }
 
     double _VoltageAverage = double.NaN;

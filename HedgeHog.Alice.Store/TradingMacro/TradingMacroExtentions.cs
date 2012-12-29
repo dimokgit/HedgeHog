@@ -1384,6 +1384,7 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged("PositionsBuy");
       OnPropertyChanged("PipsPerPosition");
     }
+    string[] sessionInfoCategories = new[] { categoryActive, categorySession, categoryActiveFuncs };
     string _sessionInfo = "";
     public string SessionInfo {
       get {
@@ -1391,7 +1392,7 @@ namespace HedgeHog.Alice.Store {
           var l = new List<string>();
           foreach (var p in GetType().GetProperties()) {
             var ca = p.GetCustomAttributes(typeof(CategoryAttribute), false).FirstOrDefault() as CategoryAttribute;
-            if (ca != null && (ca.Category == categoryActive||ca.Category == categorySession)) {
+            if (ca != null && sessionInfoCategories.Contains(ca.Category)) {
               l.Add(p.Name + ":" + p.GetValue(this, null));
             }
           }
@@ -1454,8 +1455,8 @@ namespace HedgeHog.Alice.Store {
           sr.InManual = false;
           sr.CorridorDate = DateTime.MinValue;
         });
-        CorridorStartDate = null;
-        CorridorStats = null;
+        if (CorridorStartDate != null) CorridorStartDate = null;
+        if (CorridorStats != null) CorridorStats = null;
         WaveHigh = null;
         LastProfitStartDate = null;
         DisposeOpenTradeByMASubject();
@@ -3039,6 +3040,9 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
         case ScanCorridorFunction.WaveDistance42: return ScanCorridorByDistance42;
         case ScanCorridorFunction.WaveDistance43: return ScanCorridorByDistance43;
+        case ScanCorridorFunction.DayDistance: return ScanCorridorByDayDistance;
+        case ScanCorridorFunction.Regression: return ScanCorridorByRegression;
+        case ScanCorridorFunction.Parabola: return ScanCorridorByParabola;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3652,7 +3656,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesMax {
         get {
           if (double.IsNaN(_RatesMax) && HasRates)
-            _RatesMax = Rates.Max(r => r.PriceCMALast);
+            _RatesMax = Rates.Max(_tradingMacro.CorridorPrice());
           return _RatesMax;
         }
         set {
@@ -3663,7 +3667,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesMin {
         get {
           if (double.IsNaN(_RatesMin) && HasRates)
-            _RatesMin = Rates.Min(r => r.PriceCMALast);
+            _RatesMin = Rates.Min(_tradingMacro.CorridorPrice());
           return _RatesMin;
         }
         set {
@@ -3675,7 +3679,7 @@ namespace HedgeHog.Alice.Store {
       public double RatesStDev {
         get {
           if (double.IsNaN(_RatesStDev) && HasRates && _Rates.Count > 1) {
-            var corridor = Rates.ScanCorridorWithAngle(r => r.PriceCMALast, r => r.PriceCMALast, TimeSpan.Zero, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
+            var corridor = Rates.ScanCorridorWithAngle(_tradingMacro.CorridorPrice, _tradingMacro.CorridorPrice, TimeSpan.Zero, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
             _RatesStDev = corridor.StDev;
             _Angle = corridor.Slope.Angle(_tradingMacro.PointSize);
           }

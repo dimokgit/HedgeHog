@@ -56,13 +56,15 @@ namespace HedgeHog.Alice.Store {
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
+    DayDistance = 90,
+    Regression = 100,
+    Parabola = 110
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
     WaveAuto = 0,
     WaveShort = 1,
     WaveTrade = 2,
-    WaveExtream = 21,
     WaveMax = 3,
     WaveMax1 = 31,
     WaveMax2 = 32,
@@ -102,8 +104,7 @@ namespace HedgeHog.Alice.Store {
     Exit0 = 0,
     Exit = 1,
     Exit1 = 2,
-    Exit2 = 3,
-    Reversed = 4
+    Exit2 = 3
   }
   public enum MedianFunctions {
     WaveShort = 0,

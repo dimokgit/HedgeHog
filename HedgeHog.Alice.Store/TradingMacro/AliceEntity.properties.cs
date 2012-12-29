@@ -384,7 +384,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     [DisplayName("Calc Method")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return (CorridorCalculationMethod)this.CorridorMethod; }
       set {
@@ -578,7 +578,7 @@ namespace HedgeHog.Alice.Store {
     #region ForceOpenTrade
     private bool? _ForceOpenTrade;
     [DisplayName("Force Open Trade")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX)]
     public bool? ForceOpenTrade {
       get { return _ForceOpenTrade; }
       set {
@@ -623,7 +623,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     [DisplayName("High/Low Method")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public CorridorHighLowMethod CorridorHighLowMethod {
       get { return (CorridorHighLowMethod)CorridorHighLowMethodInt; }
       set {
@@ -644,7 +644,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Scan Corridor By")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     [Description("ScanCorridor By")]
     public ScanCorridorFunction ScanCorridorBy {
       get { return (ScanCorridorFunction)StDevAverageLeewayRatio; }
@@ -657,7 +657,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trailing Distance")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     [Description("TrailingDistanceFunction")]
     public TrailingWaveMethod TrailingDistanceFunction {
       get { return (TrailingWaveMethod)this.FreezLimit; }
@@ -670,7 +670,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Distance")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     [Description("TradingDistanceFunction")]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
@@ -682,7 +682,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Take Profit")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     [Description("TakeProfitFunction")]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
       get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
@@ -760,38 +760,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #region StDevAverateRatioThreshold
-    private double _StDevAverateRatioMin;
-    [DisplayName("StDev Averate Ratio Min")]
-    [Category(categoryTrading)]
-    public double StDevAverateRatioMin {
-      get { return _StDevAverateRatioMin; }
-      set {
-        if (_StDevAverateRatioMin != value) {
-          _StDevAverateRatioMin = value;
-          OnPropertyChanged("StDevAverateRatioMin");
-        }
-      }
-    }
-
-    #endregion
-
-    #region StDevAverateRatioMax
-    private double _StDevAverateRatioMax;
-    [DisplayName("StDev Averate Ratio Max")]
-    [Category(categoryTrading)]
-    public double StDevAverateRatioMax {
-      get { return _StDevAverateRatioMax; }
-      set {
-        if (_StDevAverateRatioMax != value) {
-          _StDevAverateRatioMax = value;
-          OnPropertyChanged("StDevAverateRatioMax");
-        }
-      }
-    }
-
-    #endregion
-
     [DisplayName("PLToCorridorExitRatio")]
     [Category(categoryXXX_NU)]
     [Description("exit = PL * X > CorridorHeight")]
@@ -832,7 +800,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Median Function")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public MedianFunctions MedianFunction {
       get { return (MedianFunctions)ExtreamCloseOffset; }
       set {
@@ -857,7 +825,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Variance Function")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public VarainceFunctions VarianceFunction {
       get { return (VarainceFunctions)CorridorBigToSmallRatio.ToInt(); }
       set {
@@ -880,7 +848,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Open Only")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX)]
     [Description("Close position only when opposite opens.")]
     public bool CloseOnOpen_ {
       get { return CloseOnOpen; }
@@ -891,7 +859,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Profit")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [Description("Ex: if( PL > Limit) CloseTrade()")]
     public bool CloseOnProfit_ {
       get { return CloseOnProfit; }
@@ -911,7 +879,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reverse Strategy")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public bool ReverseStrategy_ {
       get { return ReverseStrategy; }
       set {
@@ -923,7 +891,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Close All On Profit")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [Description("Ex: if(trade.PL > Profit) ClosePair()")]
     public bool CloseAllOnProfit_ {
       get { return CloseAllOnProfit; }
@@ -935,6 +903,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryCorridor = "Corridor";
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
+    public const string categoryActiveFuncs = "Active Funcs";
     public const string categoryTest = "Test";
     public const string categorySession = "Session";
 
@@ -1002,21 +971,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [DisplayName("Trade By Angle")]
     public bool TradeByAngle_ {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
     }
 
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [DisplayName("Trade And Angle Are Synced")]
     public bool TradeAndAngleSynced_ {
       get { return TradeAndAngleSynced; }
       set { TradeAndAngleSynced = value; }
     }
 
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [DisplayName("Trade By First Wave")]
     [Description("If not - will trade by last wave")]
     public bool? TradeByFirstWave_ {
@@ -1052,7 +1021,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
@@ -1063,7 +1032,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Reset On Balance")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     public double ResetOnBalance_ {
       get { return ResetOnBalance.GetValueOrDefault(0); }
       set {
@@ -1074,14 +1043,14 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trade By Rate Direction")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     public bool TradeByRateDirection_ {
       get { return TradeByRateDirection; }
       set { TradeByRateDirection = value; }
     }
 
     [DisplayName("Close By Momentum")]
-    [Category(categoryTrading)]
+    [Category(categoryXXX_NU)]
     [Description("Close trade when rate changes direction.")]
     public bool CloseByMomentum_ {
       get { return CloseByMomentum; }
@@ -1112,7 +1081,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Turn Off Function")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public TurnOffFunctions TurnOffFunction {
       get { return (TurnOffFunctions)CorridorIterationsIn; }
       set {
@@ -1175,7 +1144,7 @@ namespace HedgeHog.Alice.Store {
 
     #region MaximumPositions
     [DisplayName("Maximum Positions")]
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public int MaximumPositions_ {
       get { return MaximumPositions; }
       set {
@@ -1314,7 +1283,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region ExitFunction
     [DisplayName("ExitFunction")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public ExitFunctions ExitFunction {
       get { return (ExitFunctions)VolumeTresholdIterations; }
       set {
