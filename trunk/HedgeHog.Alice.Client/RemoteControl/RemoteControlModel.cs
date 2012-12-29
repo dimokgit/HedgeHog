@@ -1087,7 +1087,7 @@ namespace HedgeHog.Alice.Client {
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
         var corridorTime0 = DateTime.MinValue;// tm.CorridorStats.Rates.LastBC().StartDateContinuous;
-        var waveQuickRate = tm.WaveTradeStart == null || tm.WaveTradeStart.Rates.Count == 0 ? null : tm.WaveTradeStart.Rates.OrderBy(r => r.StartDateContinuous).First();
+        var waveQuickRate = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? null : tm.WaveTradeStart.Rates.OrderBy(r => r.StartDateContinuous).First();
         var corridorTime1 = waveQuickRate == null ? DateTime.MinValue : tm.WaveTradeStart.Rates.Min(r => r.StartDateContinuous);// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var corridorTime2 = !tm.WaveTradeStart1.HasRates ? DateTime.MinValue : tm.WaveTradeStart1.Rates.LastBC().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;

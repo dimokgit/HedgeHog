@@ -29,6 +29,9 @@ namespace ControlExtentions {
 namespace HedgeHog {
   public static class Lib {
 
+    public static IEnumerable<T> IEnumerable<T>(this T v) where T : class {
+      return new[] { v }.Take(0);
+    }
     public static T Evaluate<T>(this string expression,params ParameterExpression[] parameters) {
       return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
     }
@@ -59,6 +62,17 @@ namespace HedgeHog {
 
     public static string CallingMethod(int skipFrames=1) {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
+    }
+
+    public static IEnumerable<double> Shrink(this IList<double> values, int groupLength) {
+      return from r in values.Select((r, i) => new { r, i = i / groupLength })
+             group r by r.i into g
+             select g.Average(a => a.r);
+    }
+    public static IEnumerable<double> Shrink<T>(this IList<T> values, Func<T, double> getValue, int groupLength) {
+      return from r in values.Select((r, i) => new { r = getValue(r), i = i / groupLength })
+             group r by r.i into g
+             select g.Average(a => a.r);
     }
 
     public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list, int count) {

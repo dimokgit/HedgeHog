@@ -27,9 +27,9 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURUSD_1.10]IsChecked" value="True" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="-1" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="2" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="818" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="4" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="7" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="872" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1202" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.MasterPanel]IsSelected" value="False" />

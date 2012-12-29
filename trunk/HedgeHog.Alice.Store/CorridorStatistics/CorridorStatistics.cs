@@ -424,13 +424,6 @@ namespace HedgeHog.Alice.Store {
       this.TradingMacro = tradingMacro;
     }
 
-    bool IsAngleOk(bool buy) {
-      var tm = TradingMacro;
-      var a = TradingMacro.TradingAngleRange;
-      if (!tm.TradeByAngle) return TradingMacro.CorridorAngle.Abs() <= a;
-      return (tm.TradeAndAngleSynced ? buy : !buy) ? TradingMacro.CorridorAngle > a : TradingMacro.CorridorAngle < -a;
-    }
-
     Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceHigh).Last();
     Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceLow).First();
     private bool? lastSignal;
