@@ -1444,9 +1444,7 @@ namespace HedgeHog.Alice.Store {
         _sessionInfo = "";
         _buyLevelRate = _sellLevelRate = double.NaN;
         _isSelfStrategy = false;
-        WaveShort.LengthCma = double.NaN;
-        WaveShort.ClearEvents();
-        WaveShort.ClearDistance();
+        WaveShort.Reset();
         CloseAtZero = _trimAtZero = false;
         CurrentLoss = MinimumGross = HistoryMaximumLot = 0;
         ForEachSuppRes(sr => {
@@ -3128,7 +3126,7 @@ namespace HedgeHog.Alice.Store {
       return TradesManagerStatic.GetLotSize(-(loss / lotMultiplierInPips) * bus / TradesManager.GetPipCost(Pair), bus, true);
     }
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
-      var lotSize = LotSizeByLoss(TradesManager, CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
+      var lotSize = LotSizeByLoss(TradesManager, this.TradingStatistics.CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
       return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, CurrentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls);
     }
 
@@ -3680,6 +3678,7 @@ namespace HedgeHog.Alice.Store {
         get {
           if (double.IsNaN(_RatesStDev) && HasRates && _Rates.Count > 1) {
             var corridor = Rates.ScanCorridorWithAngle(_tradingMacro.CorridorPrice, _tradingMacro.CorridorPrice, TimeSpan.Zero, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
+            //var stDevs = Rates.Shrink(_tradingMacro.CorridorPrice, 5).ToArray().ScanWaveWithAngle(v => v, _tradingMacro.PointSize, _tradingMacro.CorridorCalcMethod);
             _RatesStDev = corridor.StDev;
             _Angle = corridor.Slope.Angle(_tradingMacro.PointSize);
           }
@@ -3699,19 +3698,6 @@ namespace HedgeHog.Alice.Store {
         this.Rates = rates;
       }
 
-      #region LengthCma
-      private double _LengthCma = double.NaN;
-      public double LengthCma {
-        get { return _LengthCma; }
-        set {
-          if (_LengthCma != value) {
-            _LengthCma = value;
-            RaisePropertyChanged("LengthCma");
-          }
-        }
-      }
-
-      #endregion
       public bool HasRates { get { return _Rates != null && _Rates.Any(); } }
       IList<Rate> _Rates;
       private TradingMacro _tradingMacro;
@@ -3734,7 +3720,6 @@ namespace HedgeHog.Alice.Store {
           RatesStDev = double.NaN;
           Angle = double.NaN;
           if (_Rates != null && _Rates.Any()) {
-            LengthCma = LengthCma.Cma(30, value.Count);
             StartDate = _Rates.LastBC().StartDate;
             IsUp = isUp;
           }
@@ -3743,6 +3728,11 @@ namespace HedgeHog.Alice.Store {
           RaisePropertyChanged("RatesStDevInPips");
           RaisePropertyChanged("RatesHeightInPips");
         }
+      }
+      public void Reset() {
+        ClearDistance();
+        ClearEvents();
+        Rates = null;
       }
 
       #region Events
@@ -4082,5 +4072,57 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public double RatesStDevAdjustedInPips { get { return InPips(RatesStDevAdjusted); } }
+  }
+  public static class WaveInfoExtentions {
+    public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price , double pointSize, CorridorCalculationMethod corridorMethod) {
+      return rates.ScanWaveWithAngle(price, price, price, pointSize, corridorMethod);
+    }
+    public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, Func<T, double> priceHigh, Func<T, double> priceLow, double pointSize, CorridorCalculationMethod corridorMethod) {
+      try {
+        #region Funcs
+        double[] linePrices = new double[rates.Count()];
+        Func<int, double> priceLine = index => linePrices[index];
+        Action<int, double> lineSet = (index, d) => linePrices[index] = d;
+        var coeffs = rates.SetRegressionPrice(1, price, lineSet);
+        var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
+        Func<T, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
+        Func<T, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
+        #endregion
+        #region Locals
+        var lineLow = new LineInfo(new Rate[0], 0, 0);
+        var lineHigh = new LineInfo(new Rate[0], 0, 0);
+        #endregion
+
+        var stDevDict = new Dictionary<CorridorCalculationMethod, double>();
+        if (corridorMethod == CorridorCalculationMethod.Minimum || corridorMethod == CorridorCalculationMethod.Maximum) {
+          stDevDict.Add(CorridorCalculationMethod.HeightUD, rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
+          stDevDict.Add(CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP());
+          if (corridorMethod == CorridorCalculationMethod.Minimum)
+            stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(price, priceLine, priceHigh, priceLow).ToList().StDevP());
+          else
+            stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
+        } else
+          switch (corridorMethod) {
+            case CorridorCalculationMethod.Minimum:
+              stDevDict.Add(CorridorCalculationMethod.Minimum, stDevDict.Values.Min()); break;
+            case CorridorCalculationMethod.Maximum:
+              stDevDict.Add(CorridorCalculationMethod.Maximum, stDevDict.Values.Max()); break;
+            case CorridorCalculationMethod.Height:
+              stDevDict.Add(CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()); break;
+            case CorridorCalculationMethod.HeightUD:
+              stDevDict.Add(CorridorCalculationMethod.HeightUD, rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP()); break;
+            case CorridorCalculationMethod.Price:
+              stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(price, priceLine, priceHigh, priceLow).ToList().StDevP()); break;
+            default:
+              throw new NotSupportedException(new { corridorMethod } + "");
+          }
+        stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
+        return stDevDict;
+      } catch (Exception exc) {
+        Debug.WriteLine(exc);
+        throw;
+      }
+    }
+
   }
 }

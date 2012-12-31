@@ -128,15 +128,18 @@ namespace HedgeHog.Alice.Store {
     public static Func<double, double, bool> priceHeightComparer = (d1, d2) => d1 >= d2;
 
     public static CorridorStatistics ScanCorridorWithAngle(this IList<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
+      return rates.ScanCorridorWithAngle(r => r.PriceAvg, priceHigh, priceLow, barsInterval, pointSize, corridorMethod);
+    }
+    public static CorridorStatistics ScanCorridorWithAngle<T>(this IList<T> rates,Func<T,double>price, Func<T, double> priceHigh, Func<T, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod)where T: Rate {
       try {
         #region Funcs
         double[] linePrices = new double[rates.Count()];
         Func<int, double> priceLine = index => linePrices[index];
         Action<int, double> lineSet = (index, d) => linePrices[index] = d;
-        var coeffs = rates.SetRegressionPrice(1, rate => rate.PriceAvg, lineSet);
+        var coeffs = rates.SetRegressionPrice(1, price, lineSet);
         var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
-        Func<Rate, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
-        Func<Rate, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
+        Func<T, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
+        Func<T, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
         #endregion
         #region Locals
         var lineLow = new LineInfo(new Rate[0], 0, 0);
@@ -150,9 +153,9 @@ namespace HedgeHog.Alice.Store {
           stDevDict.Add(CorridorCalculationMethod.HeightUD,rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
           stDevDict.Add(CorridorCalculationMethod.Height, rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP());
           if (corridorMethod == CorridorCalculationMethod.Minimum)
-            stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP());
+            stDevDict.Add(CorridorCalculationMethod.Price, rates.GetPriceForStats(price, priceLine, priceHigh, priceLow).ToList().StDevP());
           else
-            stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(r => r.PriceAvg));
+            stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
         }else
           switch (corridorMethod) {
             case CorridorCalculationMethod.Minimum:
@@ -162,16 +165,17 @@ namespace HedgeHog.Alice.Store {
             case CorridorCalculationMethod.Height:
               stDevDict.Add(CorridorCalculationMethod.Height, stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()); break;
             case CorridorCalculationMethod.HeightUD:
-              stDevDict.Add(CorridorCalculationMethod.HeightUD, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP()); break;
+              stDevDict.Add(CorridorCalculationMethod.HeightUD, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
+              break;
             case CorridorCalculationMethod.Price:
-              stDevDict.Add(CorridorCalculationMethod.Price, stDev = rates.GetPriceForStats(priceLine, priceHigh, priceLow).ToList().StDevP()); break;
+              stDevDict.Add(CorridorCalculationMethod.Price, stDev = rates.GetPriceForStats(price, priceLine, priceHigh, priceLow).ToList().StDevP()); break;
             default:
               throw new NotSupportedException(new { corridorMethod } + "");
           }
-        stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(r => r.PriceAvg));
+        stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
         height = stDev * 2;
-        return new CorridorStatistics(rates, stDev, coeffs, stDev, stDev, height, height) {
-          priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow, StDevs = stDevDict
+        return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, height, height) {
+          priceLine = linePrices, priceHigh = (Func<Rate, double>)priceHigh, priceLow = (Func<Rate, double>)priceLow, StDevs = stDevDict
         };
       } catch (Exception exc) {
         Debug.WriteLine(exc);

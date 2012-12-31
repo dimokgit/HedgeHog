@@ -353,7 +353,7 @@ namespace HedgeHog.Alice.Store {
         _pricePosition = _pricePrev - Rate;
       }
       _pricePrev = price;
-      PricePosition = (price - Rate).Sign();
+      PricePosition = (price - Rate).IfNaN(0).Sign();
     }
 
 
@@ -1310,14 +1310,14 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    #region StDevTresholdIterations
-    [Category(categoryXXX_NU)]
-    public int StDevTresholdIterations_ {
-      get { return _StDevTresholdIterations; }
+    #region PolyOrder 
+    [Category(categoryActive)]
+    public int PolyOrder {
+      get { return StDevTresholdIterations; }
       set {
         if (StDevTresholdIterations != value) {
-          _StDevTresholdIterations = value;
-          OnPropertyChanged("StDevTresholdIterations_");
+          StDevTresholdIterations = value;
+          OnPropertyChanged("PolyOrder");
         }
       }
     }

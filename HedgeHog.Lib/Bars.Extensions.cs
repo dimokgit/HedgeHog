@@ -175,43 +175,43 @@ namespace HedgeHog.Bars {
     public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<TBar, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow)where TBar:BarBase {
       return rates.Select(r => r.PriceAvg > lineGet(r) ? priceHigh(r) : priceLow(r));
     }
-    public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<int, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
-      return rates.Select((r, i) => r.PriceAvg > lineGet(i) ? priceHigh(r) : priceLow(r));
+    public static IEnumerable<double> GetPriceForStats<T>(this ICollection<T> rates,Func<T,double>price, Func<int, double> lineGet, Func<T, double> priceHigh, Func<T, double> priceLow) {
+      return rates.Select((r, i) => price(r) > lineGet(i) ? priceHigh(r) : priceLow(r));
     }
 
-    static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<Rate, double> a) {
+    static void SetRegressionPrice<T>(this IEnumerable<T> ticks, double[] coeffs, Action<T, double> a) {
       int i1 = 0;
       foreach (var tick in ticks) {
         double y1 = coeffs.RegressionValue(i1++);
         a(tick, y1);// *poly2Wieght + y2 * (1 - poly2Wieght);
       }
     }
-    public static void SetRegressionPrice(this IEnumerable<Rate> ticks, double[] coeffs, Action<int, double> a) {
+    public static void SetRegressionPrice<T>(this IEnumerable<T> ticks, double[] coeffs, Action<int, double> a) {
       int i1 = 0;
       foreach (var tick in ticks) {
         double y1 = coeffs.RegressionValue(i1);
         a(i1++, y1);
       }
     }
-    public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<int, double> writeTo) {
+    public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<int, double> writeTo) {
       var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
-    public static double[] SetRegressionPrice(this IEnumerable<Rate> ticks, int polyOrder, Func<Rate, double> readFrom, Action<Rate, double> writeTo) {
+    public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
       var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
 
-    public static void SetCorridorPrices(this IList<Rate> rates, double[] coeffs
+    public static void SetCorridorPrices<T>(this IList<T> rates, double[] coeffs
       , double heightUp0, double heightDown0
       , double heightUp, double heightDown
       , double heightUp1, double heightDown1
-      , Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
-      , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
-      , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
-      , Action<Rate, double> setPriceHigh1, Action<Rate, double> setPriceLow1
+      , Func<T, double> getPriceLine, Action<T, double> setPriceLine
+      , Action<T, double> setPriceHigh0, Action<T, double> setPriceLow0
+      , Action<T, double> setPriceHigh, Action<T, double> setPriceLow
+      , Action<T, double> setPriceHigh1, Action<T, double> setPriceLow1
       ) {
       rates.SetRegressionPrice(coeffs, setPriceLine);
       rates.AsParallel().ForAll(r => {

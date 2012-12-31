@@ -64,15 +64,40 @@ namespace HedgeHog {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
     }
 
+    public static double[] Parabola(this double[] values, int rates, int polyOrder) {
+      double[] coeffs, prices;
+      return values.Parabola(rates, polyOrder, out coeffs, out prices);
+    }
+    public static double[] Parabola(this double[] values, int rates, int polyOrder, out double[] coeffs) {
+      double[] prices;
+      return values.Parabola(rates, polyOrder, out coeffs, out prices);
+    }
+    public static double[] Parabola(this double[] values, int rates, int polyOrder, out double[] coeffs, out double[] source) {
+      source = new double[rates];
+      Array.Copy(values, source, source.Length);
+      return source.Parabola(polyOrder, out coeffs);
+    }
+
+    public static double[] Parabola(this double[] values, int polyOrder,out double[] coeffs) {
+      coeffs = values.Regress(polyOrder);
+      var parabola = new double[values.Length];
+      for (var i = 0; i < values.Length; i++)
+        parabola[i] = coeffs.RegressionValue(i);
+      return parabola;
+    }
+
     public static IEnumerable<double> Shrink(this IList<double> values, int groupLength) {
       return from r in values.Select((r, i) => new { r, i = i / groupLength })
              group r by r.i into g
              select g.Average(a => a.r);
     }
-    public static IEnumerable<double> Shrink<T>(this IList<T> values, Func<T, double> getValue, int groupLength) {
+    public static IEnumerable<double> Shrink<T>(this IEnumerable<T> values, Func<T, double> getValue, int groupLength) {
       return from r in values.Select((r, i) => new { r = getValue(r), i = i / groupLength })
              group r by r.i into g
              select g.Average(a => a.r);
+    }
+    public static IEnumerable<double> UnShrink(this IEnumerable<double> values, int groupLength) {
+      return values.Select(v => Enumerable.Repeat(v, groupLength)).SelectMany(v => v);
     }
 
     public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list, int count) {
