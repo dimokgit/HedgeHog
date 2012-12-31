@@ -707,12 +707,11 @@ namespace HedgeHog {
       }
     }
 
-    Schedulers.Scheduler GannAngleChangedScheduler = new Schedulers.Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.1));
     void _GannAngleOffsetPoint_PositionChanged(object sender, PositionChangedEventArgs e) {
       var offset = GannAngleOffsetPoint.GetAngleByPosition(e.Position, animatedTimeX.ToArray(), ConvertToDateTime);
       //GannAngleOffsetPoint.ToolTip = string.Format("Tangent:{0}", offset);
       if (GannAngleOffsetPoint.IsMouseCaptured)
-        GannAngleChangedScheduler.TryRun(() => OnGannAngleChanged(offset));
+        DispatcherScheduler.Current.Schedule(() => OnGannAngleChanged(offset));
     }
 
     public event EventHandler<GannAngleOffsetChangedEventArgs> GannAngleOffsetChanged;
@@ -934,7 +933,7 @@ namespace HedgeHog {
               if (!_dragPointPositionChanged)
                 dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
             };
-            a.ScheduleOnUI(0.5.FromSeconds());
+            DispatcherScheduler.Current.Schedule(a);
           };
           plotter.PreviewKeyDown += (s, e) => {
             var numericKeys = new[] { Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9 };
@@ -1312,24 +1311,23 @@ namespace HedgeHog {
       CorridorStartPositionChanged(this, new CorridorPositionChangedEventArgs(x, CorridorStartPositionOld));
     }
 
-    Schedulers.Scheduler _suppResChangeScheduler = new Schedulers.Scheduler(Application.Current.Dispatcher, TimeSpan.FromSeconds(.3));
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
     protected void OnSupportResistanceChanged(DraggablePoint dp, Guid uid, Point positionOld, Point positionNew) {
       var isMouseCaptured = dp.IsMouseCaptured;
       var isInteractive = GetIsInteractive(dp);
       if ((isMouseCaptured || isInteractive) && SupportResistanceChanged != null) {
-        _suppResChangeScheduler.Cancel();
-        _suppResChangeScheduler.Command = () => {
-          SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
-          if (_isShiftDown) {
-            var isBuy = BuyRates.Any(br => br.Key == uid);
-            var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
-            var distance = (isBuy ? -1 : 1) * SuppResMinimumDistance;
-            var newNextPosition = new Point(positionNew.X, positionNew.Y + distance);
-            next.Value.DraggablePoint.Position = newNextPosition;
-            SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(next.Key, newNextPosition.Y, newNextPosition.Y));
-          }
-        };
+        DispatcherScheduler.Current.Schedule(
+         () => {
+           SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
+           if (_isShiftDown) {
+             var isBuy = BuyRates.Any(br => br.Key == uid);
+             var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
+             var distance = (isBuy ? -1 : 1) * SuppResMinimumDistance;
+             var newNextPosition = new Point(positionNew.X, positionNew.Y + distance);
+             next.Value.DraggablePoint.Position = newNextPosition;
+             SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(next.Key, newNextPosition.Y, newNextPosition.Y));
+           }
+         });
       }
     }
     #endregion
@@ -1344,7 +1342,7 @@ namespace HedgeHog {
         } catch (Exception exc) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
         }
-      }), DispatcherPriority.ContextIdle);
+      }), DispatcherPriority.DataBind);
     }
 
     bool inRendering;

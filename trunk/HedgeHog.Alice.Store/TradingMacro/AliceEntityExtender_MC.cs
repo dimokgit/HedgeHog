@@ -72,8 +72,7 @@ namespace HedgeHog.Alice.Store {
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
-    WaveAngle = 70,
-    WaveAngle1 = 71
+    HorseShoe = 70
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
