@@ -233,26 +233,6 @@ namespace TestHH {
         dateTo = dateTo.AddDays(-7);
       }
     }
-    public void LinearRegression() {
-      var rates = new List<Rate>();
-      o2g.GetBarsBase<Rate>("EUR/USD", 1,500,DateTime.FromOADate(0),DateTime.FromOADate(0),rates,null);
-      rates.SetRegressionPrice(1, r => r.PriceAvg, new Action<Rate, double>((r, d) => r.PriceAvg1 = d));
-      
-      var coeffs = HedgeHog.Regression.Regress(rates.Select(r => r.PriceAvg).ToArray(), 1);
-      rates.SetRegressionPrice(coeffs, (i, d) => rates[i].PriceAvg2 = d);
-
-      //double[] linePrices = new double[rates.Count()];
-      //Func<int, double> priceLine = index => linePrices[index];
-      //Action<int, double> lineSet = (index, d) => linePrices[index] = d;
-      //rates.SetRegressionPrice(1, r => r.PriceAvg, lineSet);
-      //var i=0;
-      //rates.ForEach(r=>r.PriceAvg2 = linePrices[i++]);
-
-      var format = "{0},{1},{2},{3}";// "{0:MM/dd/yyyy HH:mm},{1},{2}";
-      var foos = new Func<Rate, object>[] { b => b.StartDate, b => b.PriceAvg, b => b.PriceAvg1, b => b.PriceAvg2 };
-      Debug.WriteLine(rates.Csv("{0},{1},{2}", foos));
-      rates.SavePairCsv("EUR/USD", format, foos);
-    }
     public void ClosedTrades() {
       var trades = o2g.GetClosedTrades("EUR/JPY");
       o2g.CoreFX.Logout();

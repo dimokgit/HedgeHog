@@ -64,30 +64,46 @@ namespace HedgeHog {
       return new StackFrame(skipFrames + 1).GetMethod().Name;
     }
 
-    public static double[] Parabola(this double[] values, int rates, int polyOrder) {
-      double[] coeffs, prices;
-      return values.Parabola(rates, polyOrder, out coeffs, out prices);
-    }
-    public static double[] Parabola(this double[] values, int rates, int polyOrder, out double[] coeffs) {
-      double[] prices;
-      return values.Parabola(rates, polyOrder, out coeffs, out prices);
-    }
-    public static double[] Parabola(this double[] values, int rates, int polyOrder, out double[] coeffs, out double[] source) {
-      source = new double[rates];
-      Array.Copy(values, source, source.Length);
-      return source.Parabola(polyOrder, out coeffs);
+    public static void SetRegressionPrice(this double[] coeffs, int start, int count, Action<int, double> a) {
+      Enumerable.Range(start, count).AsParallel().ForAll(i => a(i, coeffs.RegressionValue(i)));
     }
 
-    public static double[] Parabola(this double[] values, int polyOrder,out double[] coeffs) {
+    public static double[] Regreaaion(this double[] values, int count, int polyOrder) {
+      double[] coeffs, prices;
+      return values.Regression(count, polyOrder, out coeffs, out prices);
+    }
+    public static double[] Regression(this double[] values, int count, int polyOrder, out double[] coeffs) {
+      double[] prices;
+      return values.Regression(count, polyOrder, out coeffs, out prices);
+    }
+    public static double[] Regression(this double[] values, int count, int polyOrder, out double[] coeffs, out double[] regressionSource) {
+      if (values.Length < count) throw new ArgumentException("[values] sise can not be less then [count]");
+      regressionSource = new double[count];
+      Array.Copy(values, regressionSource, count);
+      return regressionSource.Regression(polyOrder, out coeffs);
+    }
+
+    /// <summary>
+    /// Runs regression on values 
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="polyOrder"></param>
+    /// <param name="coeffs"></param>
+    /// <returns>Regression result values example:Line,Parabola</returns>
+    public static double[] Regression(this double[] values, int polyOrder,out double[] coeffs) {
       coeffs = values.Regress(polyOrder);
       var parabola = new double[values.Length];
-      for (var i = 0; i < values.Length; i++)
-        parabola[i] = coeffs.RegressionValue(i);
+      coeffs.SetRegressionPrice(0, values.Length, (i, v) => parabola[i] = v);
       return parabola;
     }
 
     public static IEnumerable<double> Shrink(this IList<double> values, int groupLength) {
       return from r in values.Select((r, i) => new { r, i = i / groupLength })
+             group r by r.i into g
+             select g.Average(a => a.r);
+    }
+    public static IEnumerable<double> Shrink(this IEnumerable<double> values,  int groupLength) {
+      return from r in values.Select((r, i) => new { r = r, i = i / groupLength })
              group r by r.i into g
              select g.Average(a => a.r);
     }

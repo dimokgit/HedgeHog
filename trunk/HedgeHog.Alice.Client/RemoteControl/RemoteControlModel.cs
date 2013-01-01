@@ -804,7 +804,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
     private void InitializeModel() {
-      GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
+      GlobalStorage.AliceMaterializerSubject.Subscribe(e => Context_ObjectMaterialized(null, e));
+      //GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
       GlobalStorage.AliceContext.ObjectStateManager.ObjectStateManagerChanged += ObjectStateManager_ObjectStateManagerChanged;
     }
 

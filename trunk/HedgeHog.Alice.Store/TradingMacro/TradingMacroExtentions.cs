@@ -2847,6 +2847,7 @@ namespace HedgeHog.Alice.Store {
     }
     public Func<Rate, double> GetPriceMA() {
       switch (MovingAverageType) {
+        case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
           return r => r.PriceCMALast;
         case Store.MovingAverageType.Trima:
@@ -2868,6 +2869,10 @@ namespace HedgeHog.Alice.Store {
     }
     private void SetMA(int? period = null) {
       switch (MovingAverageType) {
+        case Store.MovingAverageType.Regression:
+          Action<Rate,double> a = (r,d)=>r.PriceCMALast = d;
+          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, r => r.PriceAvg, a);
+          break;
         case Store.MovingAverageType.Cma:
           if (period.HasValue)
             RatesArray.SetCma(period.Value, period.Value);
@@ -3412,9 +3417,14 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.MovingAverageType:
         case TradingMacroMetadata.PriceCmaPeriod:
         case TradingMacroMetadata.PriceCmaLevels:
-          if (RatesArray.Any()) {
-            RatesArray.Clear();
-            RatesArraySafe.Count();
+        case TradingMacroMetadata.PolyOrder:
+          try {
+            if (RatesArray.Any()) {
+              RatesArray.Clear();
+              RatesArraySafe.Count();
+            }
+          } catch (Exception exc) {
+            Log = exc;
           }
           break;
         case TradingMacroMetadata.SuppResLevelsCount_:

@@ -4,36 +4,13 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.3.5" ProviderManifestToken="3.5" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+    <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="AliceModelStoreContainer">
-          <EntitySet Name="Bar" EntityType="AliceModel.Store.Bar" store:Type="Tables" />
-          <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" />
-          <EntitySet Name="SuppRes" EntityType="AliceModel.Store.SuppRes" store:Type="Tables" />
-          <EntitySet Name="TradeHistory" EntityType="AliceModel.Store.TradeHistory" store:Type="Tables" />
-          <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" />
-          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" />
-          <AssociationSet Name="TradingMacro_SuppRes" Association="AliceModel.Store.TradingMacro_SuppRes">
-            <End Role="TradingMacro" EntitySet="TradingMacro" />
-            <End Role="SuppRes" EntitySet="SuppRes" />
-          </AssociationSet>
+          <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="SuppRes" EntityType="AliceModel.Store.SuppRes" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" Schema="dbo" />
         </EntityContainer>
-        <EntityType Name="Bar">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Pair" Type="nchar" MaxLength="10" />
-          <Property Name="Period" Type="int" />
-          <Property Name="StartDate" Type="datetime" />
-          <Property Name="AskHigh" Type="float" Nullable="false" />
-          <Property Name="AskLow" Type="float" Nullable="false" />
-          <Property Name="AskOpen" Type="float" Nullable="false" />
-          <Property Name="AskClose" Type="float" Nullable="false" />
-          <Property Name="BidHigh" Type="float" Nullable="false" />
-          <Property Name="BidLow" Type="float" Nullable="false" />
-          <Property Name="BidOpen" Type="float" Nullable="false" />
-          <Property Name="BidClose" Type="float" Nullable="false" />
-          <Property Name="Id" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
-        </EntityType>
         <EntityType Name="OrderTemplate">
           <Key>
             <PropertyRef Name="ID" />
@@ -56,26 +33,6 @@
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
           <Property Name="TradesCount" Type="float" Nullable="false" />
         </EntityType>
-        <EntityType Name="TradeHistory">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="16" />
-          <Property Name="Buy" Type="bit" Nullable="false" />
-          <Property Name="PL" Type="real" Nullable="false" />
-          <Property Name="GrossPL" Type="real" Nullable="false" />
-          <Property Name="Lot" Type="int" Nullable="false" />
-          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
-          <Property Name="TimeOpen" Type="datetime" Nullable="false" />
-          <Property Name="TimeClose" Type="datetime" Nullable="false" />
-          <Property Name="AccountId" Type="nvarchar" Nullable="false" MaxLength="16" />
-          <Property Name="Commission" Type="real" Nullable="false" />
-          <Property Name="IsVirtual" Type="bit" Nullable="false" />
-          <Property Name="TimeStamp" Type="datetime" />
-          <Property Name="CorridorHeightInPips" Type="int" Nullable="false" />
-          <Property Name="CorridorMinutesBack" Type="int" Nullable="false" />
-          <Property Name="SessionId" Type="uniqueidentifier" Nullable="false" />
-        </EntityType>
         <EntityType Name="TradingAccount">
           <Key>
             <PropertyRef Name="Id" />
@@ -96,7 +53,7 @@
           <Key>
             <PropertyRef Name="UID" />
           </Key>
-          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="7" />
+          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="8" />
           <Property Name="TradingRatio" Type="float" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
           <Property Name="LimitBar" Type="int" Nullable="false" />
@@ -181,20 +138,6 @@
           <Property Name="CorridorBigToSmallRatio" Type="float" Nullable="false" />
           <Property Name="ResetOnBalance" Type="float" />
         </EntityType>
-        <Association Name="TradingMacro_SuppRes">
-          <End Role="TradingMacro" Type="AliceModel.Store.TradingMacro" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Role="SuppRes" Type="AliceModel.Store.SuppRes" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TradingMacro">
-              <PropertyRef Name="UID" />
-            </Principal>
-            <Dependent Role="SuppRes">
-              <PropertyRef Name="TradingMacroID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -202,8 +145,6 @@
         <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
-          <EntitySet Name="Bars" EntityType="AliceModel.Bar" />
-          <EntitySet Name="TradeHistories" EntityType="AliceModel.TradeHistory" />
           <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
           <EntitySet Name="SuppRes" EntityType="AliceModel.SuppRes" />
           <AssociationSet Name="TradingMacro_SuppRes" Association="AliceModel.TradingMacro_SuppRes">
@@ -317,43 +258,6 @@
           <Property Type="Double" Name="CorridorBigToSmallRatio" Nullable="false" />
           <Property Type="Double" Name="ResetOnBalance" />
         </EntityType>
-        <EntityType Name="Bar">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="String" Name="Pair" MaxLength="10" FixedLength="true" Unicode="true" />
-          <Property Type="Int32" Name="Period" />
-          <Property Type="DateTime" Name="StartDate" />
-          <Property Type="Double" Name="AskHigh" Nullable="false" />
-          <Property Type="Double" Name="AskLow" Nullable="false" />
-          <Property Type="Double" Name="AskOpen" Nullable="false" />
-          <Property Type="Double" Name="AskClose" Nullable="false" />
-          <Property Type="Double" Name="BidHigh" Nullable="false" />
-          <Property Type="Double" Name="BidLow" Nullable="false" />
-          <Property Type="Double" Name="BidOpen" Nullable="false" />
-          <Property Type="Double" Name="BidClose" Nullable="false" />
-          <Property Type="Int32" Name="Id" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-        </EntityType>
-        <EntityType Name="TradeHistory">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Type="String" Name="Id" Nullable="false" MaxLength="10" FixedLength="false" Unicode="true" />
-          <Property Type="Boolean" Name="Buy" Nullable="false" />
-          <Property Type="Single" Name="PL" Nullable="false" />
-          <Property Type="Single" Name="GrossPL" Nullable="false" />
-          <Property Type="Int32" Name="Lot" Nullable="false" />
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="7" FixedLength="false" Unicode="true" />
-          <Property Type="DateTime" Name="TimeOpen" Nullable="false" />
-          <Property Type="DateTime" Name="TimeClose" Nullable="false" />
-          <Property Type="String" Name="AccountId" Nullable="false" MaxLength="16" FixedLength="false" Unicode="true" />
-          <Property Type="Single" Name="Commission" Nullable="false" />
-          <Property Type="Boolean" Name="IsVirtual" Nullable="false" />
-          <Property Type="DateTime" Name="TimeStamp" />
-          <Property Type="Int32" Name="CorridorHeightInPips" Nullable="false" />
-          <Property Type="Int32" Name="CorridorMinutesBack" Nullable="false" />
-          <Property Type="Guid" Name="SessionId" Nullable="false" />
-        </EntityType>
         <EntityType Name="OrderTemplate">
           <Key>
             <PropertyRef Name="ID" />
@@ -395,25 +299,49 @@
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
+          <EntitySetMapping Name="OrderTemplates">
+            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.OrderTemplate)">
+              <MappingFragment StoreEntitySet="OrderTemplate">
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="StopOrderID" ColumnName="StopOrderID" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
+                <ScalarProperty Name="Limit" ColumnName="Limit" />
+                <ScalarProperty Name="Stop" ColumnName="Stop" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="SuppRes">
+            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.SuppRes)">
+              <MappingFragment StoreEntitySet="SuppRes">
+                <ScalarProperty Name="TradesCount" ColumnName="TradesCount" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="TradingMacroID" ColumnName="TradingMacroID" />
+                <ScalarProperty Name="IsSupport" ColumnName="IsSupport" />
+                <ScalarProperty Name="Rate" ColumnName="Rate" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
           <EntitySetMapping Name="TradingAccounts">
-            <EntityTypeMapping TypeName="AliceModel.TradingAccount">
+            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.TradingAccount)">
               <MappingFragment StoreEntitySet="TradingAccount">
                 <ScalarProperty Name="PipsToExit" ColumnName="PipsToExit" />
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
-                <ScalarProperty Name="Password" ColumnName="Password" />
-                <ScalarProperty Name="MasterId" ColumnName="MasterId" />
-                <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
-                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
-                <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
                 <ScalarProperty Name="Commission" ColumnName="Commission" />
+                <ScalarProperty Name="TradeRatio" ColumnName="TradeRatio" />
+                <ScalarProperty Name="IsMaster" ColumnName="IsMaster" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
+                <ScalarProperty Name="IsDemo" ColumnName="IsDemo" />
+                <ScalarProperty Name="MasterId" ColumnName="MasterId" />
+                <ScalarProperty Name="Password" ColumnName="Password" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="TradingMacroes">
-            <EntityTypeMapping TypeName="AliceModel.TradingMacro">
+            <EntityTypeMapping TypeName="IsTypeOf(AliceModel.TradingMacro)">
               <MappingFragment StoreEntitySet="TradingMacro">
                 <ScalarProperty Name="ResetOnBalance" ColumnName="ResetOnBalance" />
                 <ScalarProperty Name="CorridorBigToSmallRatio" ColumnName="CorridorBigToSmallRatio" />
@@ -480,88 +408,25 @@
                 <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
-                <ScalarProperty Name="UID" ColumnName="UID" />
-                <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
-                <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
-                <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
-                <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
-                <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
-                <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
-                <ScalarProperty Name="FibMax" ColumnName="FibMax" />
-                <ScalarProperty Name="FibMin" ColumnName="FibMin" />
-                <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
-                <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
-                <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
-                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
-                <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
-                <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
-                <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
                 <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Bars">
-            <EntityTypeMapping TypeName="AliceModel.Bar">
-              <MappingFragment StoreEntitySet="Bar">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
-                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
-                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
-                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
-                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
-                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
-                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
-                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
-                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
-                <ScalarProperty Name="Period" ColumnName="Period" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="TradeHistories">
-            <EntityTypeMapping TypeName="AliceModel.TradeHistory">
-              <MappingFragment StoreEntitySet="TradeHistory">
-                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
-                <ScalarProperty Name="CorridorMinutesBack" ColumnName="CorridorMinutesBack" />
-                <ScalarProperty Name="CorridorHeightInPips" ColumnName="CorridorHeightInPips" />
-                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
-                <ScalarProperty Name="IsVirtual" ColumnName="IsVirtual" />
-                <ScalarProperty Name="Commission" ColumnName="Commission" />
-                <ScalarProperty Name="AccountId" ColumnName="AccountId" />
-                <ScalarProperty Name="TimeClose" ColumnName="TimeClose" />
-                <ScalarProperty Name="TimeOpen" ColumnName="TimeOpen" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
-                <ScalarProperty Name="PL" ColumnName="PL" />
-                <ScalarProperty Name="Buy" ColumnName="Buy" />
-                <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="OrderTemplates">
-            <EntityTypeMapping TypeName="AliceModel.OrderTemplate">
-              <MappingFragment StoreEntitySet="OrderTemplate">
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-                <ScalarProperty Name="StopOrderID" ColumnName="StopOrderID" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="Price" ColumnName="Price" />
-                <ScalarProperty Name="Limit" ColumnName="Limit" />
-                <ScalarProperty Name="Stop" ColumnName="Stop" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="SuppRes">
-            <EntityTypeMapping TypeName="AliceModel.SuppRes">
-              <MappingFragment StoreEntitySet="SuppRes">
-                <ScalarProperty Name="TradesCount" ColumnName="TradesCount" />
+                <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
+                <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
+                <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
+                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+                <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+                <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
+                <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+                <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+                <ScalarProperty Name="FibMax" ColumnName="FibMax" />
+                <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
+                <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
+                <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+                <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
+                <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
+                <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
                 <ScalarProperty Name="UID" ColumnName="UID" />
-                <ScalarProperty Name="TradingMacroID" ColumnName="TradingMacroID" />
-                <ScalarProperty Name="IsSupport" ColumnName="IsSupport" />
-                <ScalarProperty Name="Rate" ColumnName="Rate" />
+                <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -585,16 +450,14 @@
     </Options>
     <!-- Diagram content (shape and connector positions) -->
     <Diagrams>
-      <Diagram Name="Alice" ZoomLevel="111">
+      <Diagram Name="Alice" ZoomLevel="39">
         <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="3.75" Height="13.425314127604167" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.Bar" Width="1.5" PointX="5.375" PointY="0.75" Height="2.9070849609374996" />
-        <EntityTypeShape EntityType="AliceModel.TradeHistory" Width="1.5" PointX="9.375" PointY="3.125" Height="3.4001269531249996" />
+        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="false" />
         <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
-        <EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="3.875" Height="1.7566536458333317" />
+        <EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="5.375" Height="2.1725878906249996" />
         <AssociationConnector Association="AliceModel.TradingMacro_SuppRes" >
-          <ConnectorPoint PointX="4.625" PointY="4.83550048828125" />
-          <ConnectorPoint PointX="5.375" PointY="4.83550048828125" />
+          <ConnectorPoint PointX="4.6249999999999973" PointY="5.275" />
+          <ConnectorPoint PointX="5.375" PointY="5.375" />
         </AssociationConnector>
       </Diagram>
     </Diagrams>

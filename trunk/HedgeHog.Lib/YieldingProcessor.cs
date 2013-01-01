@@ -15,7 +15,7 @@ namespace HedgeHog {
     #region DispatcherScheduler
     private static DispatcherScheduler _UIDispatcherScheduler;
     public static DispatcherScheduler UIDispatcherScheduler {
-      get { return _UIDispatcherScheduler; }
+      get { return _UIDispatcherScheduler ?? DispatcherScheduler.Current; }
     }
     public static IDisposable ScheduleOnUI(this Action action) { return UIDispatcherScheduler.Schedule(action); }
     public static IDisposable ScheduleOnUI(this Action action, TimeSpan delay) { return UIDispatcherScheduler.Schedule(delay, action); }

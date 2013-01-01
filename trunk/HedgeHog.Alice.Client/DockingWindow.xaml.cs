@@ -18,6 +18,7 @@ using HedgeHog.Models;
 using Telerik.Windows.Controls;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel;
+using System.Reactive.Concurrency;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Collections.ObjectModel;
 using HedgeHog.Alice.Store;
@@ -25,6 +26,8 @@ using System.Threading.Tasks.Dataflow;
 using System.Threading.Tasks;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
+using System.Runtime.InteropServices;
+
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -169,6 +172,7 @@ namespace HedgeHog.Alice.Client {
       RootVisual.PaneStateChange += RootVisual_PaneStateChange;
       RootVisual.ElementCleaning += RootVisual_ElementCleaning;
       RootVisual.ElementLoaded += RootVisual_ElementLoaded;
+      DispatcherScheduler.Current.Schedule(1.FromSeconds(), NoTelerik);
       #endregion
     }
 
@@ -176,6 +180,13 @@ namespace HedgeHog.Alice.Client {
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Window>(this, typeof(WindowState));
     }
     #endregion
+
+    [DllImport("user32.dll")]
+    public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
+
+    void NoTelerik() {
+      keybd_event((byte)0x1B, 0, 0, 0);
+    }
 
     #region RootVisual Event Handlers
     void RootVisual_Loaded(object sender, RoutedEventArgs e) {

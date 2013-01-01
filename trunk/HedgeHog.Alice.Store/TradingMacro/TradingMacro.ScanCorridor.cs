@@ -259,13 +259,17 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
-    private CorridorStatistics ScanCorridorByParabola(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+
+    private CorridorStatistics ScanCorridorByParabola_4(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var groupLength = 5;
       var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(-BarPeriodInt * groupLength * 2) : DateTime.MinValue;
       var polyOrder = PolyOrder;
-      var ratesReversed = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).Shrink(CorridorPrice, groupLength).ToArray();
+      var rates1 = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).Select(CorridorPrice).ToArray();
+      var coeffsCorridor = rates1.Regress(40);
+      coeffsCorridor.SetRegressionPrice(0, rates1.Length, (i, v) => rates1[i] = v);
+      var ratesReversed = rates1.Shrink( groupLength).ToArray();
       var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      var ratesToRegress = ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToList();
+      var ratesToRegress = ratesReversed.Take((CorridorDistanceRatio / groupLength).ToInt().Max(PolyOrder)).ToList();
       foreach (var rate in ratesReversed.Skip(1)) {
         ratesToRegress.Add(rate);
         if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
@@ -274,9 +278,9 @@ namespace HedgeHog.Alice.Store {
       var corr = double.NaN;
       var locker = new object();
       Enumerable.Range(ratesToRegress.Count, (ratesReversed.Length - ratesToRegress.Count).Max(0)).AsParallel().ForAll(rates => {
-        double[] parabola = ratesReversed.Parabola(rates, polyOrder);
+        double[] parabola = ratesReversed.Regreaaion(rates, polyOrder);
         double[] coeffs;
-        double[] line = ratesReversed.Parabola(rates, polyOrder - 1, out coeffs);
+        double[] line = ratesReversed.Regression(rates, polyOrder - 1, out coeffs);
         corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref line, ref parabola, rates));
         //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
         //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
@@ -288,7 +292,7 @@ namespace HedgeHog.Alice.Store {
       if (!correlations.Any()) correlations.Add(new { corr, length = ratesReversed.Length });
       var lengthByCorr = correlations[0].length;
       if (ShowParabola) {
-        var parabola = ratesReversed.Parabola(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
+        var parabola = ratesReversed.Regreaaion(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
         var i = 0;
         foreach (var rfc in ratesForCorridor.ReverseIfNot().Take(parabola.Length))
           rfc.PriceCMALast = parabola[i++];
@@ -302,13 +306,14 @@ namespace HedgeHog.Alice.Store {
       }
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
-    private CorridorStatistics ScanCorridorByParabola_3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+
+    private CorridorStatistics ScanCorridorByParabola(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var groupLength = 5;
-      var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(-BarPeriodInt * groupLength * 2) : DateTime.MinValue;
+      var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(this.IsCorridorForwardOnly ? 0 : -BarPeriodInt * groupLength * 2) : DateTime.MinValue;
       var polyOrder = PolyOrder;
       var ratesReversed = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).Shrink(CorridorPrice, groupLength).ToArray();
       var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      var ratesToRegress = ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToList();
+      var ratesToRegress = ratesReversed.Take((CorridorDistanceRatio / groupLength).ToInt().Max(PolyOrder)).ToList();
       foreach (var rate in ratesReversed.Skip(1)) {
         ratesToRegress.Add(rate);
         if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
@@ -317,10 +322,10 @@ namespace HedgeHog.Alice.Store {
       var corr = double.NaN;
       var locker = new object();
       Enumerable.Range(ratesToRegress.Count, (ratesReversed.Length - ratesToRegress.Count).Max(0)).AsParallel().ForAll(rates => {
-        double[] parabola = ratesReversed.Parabola(rates, polyOrder);
+        double[] parabola = ratesReversed.Regreaaion(rates, polyOrder);
         double[] coeffs;
-        double[] line = ratesReversed.Parabola(rates, polyOrder - 1, out coeffs);
-        corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref line, ref parabola, rates));
+        double[] line = ratesReversed.Regression(rates, polyOrder - 1, out coeffs);
+        corr = corr.Cma(15, alglib.correlation.pearsoncorrelation(ref line, ref parabola, rates)/coeffs[1].Abs());
         //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
         //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
         lock (locker) {
@@ -331,9 +336,9 @@ namespace HedgeHog.Alice.Store {
       if (!correlations.Any()) correlations.Add(new { corr, length = ratesReversed.Length });
       var lengthByCorr = correlations[0].length;
       if (ShowParabola) {
-        var parabola = ratesReversed.Parabola(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
-        var i = 0;
-        foreach (var rfc in ratesForCorridor.ReverseIfNot().Take(parabola.Length))
+        var parabola = ratesReversed.Regreaaion(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
+        var i = 1;
+        foreach (var rfc in ratesForCorridor.ReverseIfNot().Skip(1).Take(parabola.Length-1))
           rfc.PriceCMALast = parabola[i++];
       }
       {
@@ -345,7 +350,6 @@ namespace HedgeHog.Alice.Store {
       }
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
-
     private CorridorStatistics ScanCorridorByParabola_2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate : DateTime.MinValue;
       var groupLength = 5;
@@ -363,7 +367,7 @@ namespace HedgeHog.Alice.Store {
       Enumerable.Range(ratesToRegress.Count, ratesReversed.Length - ratesToRegress.Count).AsParallel().ForAll(rates => {
         double[] coeffs;
         double[] prices;
-        double[] parabola = ratesReversed.Parabola(rates, polyOrder,out coeffs, out prices);
+        double[] parabola = ratesReversed.Regression(rates, polyOrder,out coeffs, out prices);
         corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length));
         lock (locker) {
           correlations.Add(new { corr, length = prices.Length });
@@ -373,7 +377,7 @@ namespace HedgeHog.Alice.Store {
       if (!correlations.Any()) correlations.Add(new { corr, length = ratesReversed.Length });
       var lengthByCorr = correlations[0].length.Max(correlations.LastBC().length);
       {
-        var parabola = ratesReversed.Parabola(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
+        var parabola = ratesReversed.Regreaaion(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
         var i = 0;
         foreach (var rfc in ratesForCorridor.ReverseIfNot().Take(parabola.Length))
           rfc.PriceCMALast = parabola[i++];
