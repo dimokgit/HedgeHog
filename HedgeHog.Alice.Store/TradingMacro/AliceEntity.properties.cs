@@ -1133,12 +1133,12 @@ namespace HedgeHog.Alice.Store {
     bool _ShowTrendLines = true;
     [DisplayName("Show Trend Lines")]
     [Category(categoryCorridor)]
-    public bool ShowTrendLines {
+    public bool ShowParabola {
       get { return _ShowTrendLines; }
       set {
         if (_ShowTrendLines == value) return;
         _ShowTrendLines = value;
-        OnPropertyChanged(() => ShowTrendLines);
+        OnPropertyChanged(() => ShowParabola);
       }
     }
 

@@ -3347,7 +3347,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ShowTrendLines"/></summary>
         public const string _ShowTrendLines = "_ShowTrendLines";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowTrendLines"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowParabola"/></summary>
         public const string ShowTrendLines = "ShowTrendLines";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaximumPositions_"/></summary>
@@ -6387,7 +6387,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsGannAnglesManual_"/></summary>
         public static PropertyPath IsGannAnglesManual_Path { get { return new PropertyPath("IsGannAnglesManual_"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowTrendLines"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowParabola"/></summary>
         public static PropertyPath ShowTrendLinesPath { get { return new PropertyPath("ShowTrendLines"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MaximumPositions_"/></summary>

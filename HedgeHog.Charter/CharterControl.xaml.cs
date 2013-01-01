@@ -119,66 +119,6 @@ namespace HedgeHog {
       }
     }
 
-    private double _CorridorAngle;
-    public double CorridorAngle {
-      get { return _CorridorAngle; }
-      set {
-        if (_CorridorAngle != value) {
-          _CorridorAngle = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorAngle);
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-
-    private double _HeightInPips;
-    public double HeightInPips {
-      get { return _HeightInPips; }
-      set {
-        if (_HeightInPips != value) {
-          _HeightInPips = value;
-          OnPropertyChanged(CharterControlMetadata.HeightInPips);
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-
-    private double _CorridorHeightInPips;
-    public double CorridorHeightInPips {
-      get { return _CorridorHeightInPips; }
-      set {
-        if (_CorridorHeightInPips != value) {
-          _CorridorHeightInPips = value;
-          OnPropertyChanged(CharterControlMetadata.CorridorHeightInPips);
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-
-    private double _RatesStDevInPips;
-    public double RatesStDevInPips {
-      get { return _RatesStDevInPips; }
-      set {
-        if (_RatesStDevInPips != value) {
-          _RatesStDevInPips = value;
-          OnPropertyChanged(Metadata.CharterControlMetadata.Header);
-        }
-      }
-    }
-    #region CorridorSpread
-    private double _CorridorRatesStDevInPips;
-    public double CorridorRatesStDevInPips {
-      get { return _CorridorRatesStDevInPips; }
-      set {
-        if (_CorridorRatesStDevInPips != value) {
-          _CorridorRatesStDevInPips = value;
-          OnPropertyChanged("CorridorRatesStDevInPips");
-        }
-      }
-    }
-
-    #endregion
-    public double SpreadForCorridor { get; set; }
 
     //†‡∆
     public string HeaderText;
@@ -585,10 +525,10 @@ namespace HedgeHog {
 
     double _trendLinesH;
     double _trendLinesY;
-    public void SetTrendLines(Rate[] rates,bool showTrendLines) {
+    public void SetTrendLines(Rate[] rates) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = showTrendLines ? rates : null;
+        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 =  rates;
 
         var timeHigh = rates[0].StartDateContinuous;
         var corridorTime = rates[0].StartDate;
