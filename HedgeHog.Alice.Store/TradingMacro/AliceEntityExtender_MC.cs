@@ -41,10 +41,6 @@ namespace HedgeHog.Alice.Store {
     }
   }
 
-  public partial class TradeHistory {
-    public double NetPL { get { return GrossPL - Commission; } }
-  }
-
   public class SessionInfoAttribute : Attribute {
     public string Nick { get; set; }
     public SessionInfoAttribute(string nick) {

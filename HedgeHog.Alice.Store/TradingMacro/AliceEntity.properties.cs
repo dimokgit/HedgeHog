@@ -1130,7 +1130,7 @@ namespace HedgeHog.Alice.Store {
       set { IsGannAnglesManual = value; }
     }
 
-    bool _ShowTrendLines = true;
+    bool _ShowTrendLines = false;
     [DisplayName("Show Trend Lines")]
     [Category(categoryCorridor)]
     public bool ShowParabola {
@@ -1317,7 +1317,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (StDevTresholdIterations != value) {
           StDevTresholdIterations = value;
-          OnPropertyChanged("PolyOrder");
+          OnPropertyChanged(() => PolyOrder);
         }
       }
     }

@@ -976,7 +976,7 @@ namespace HedgeHog.Alice.Store {
         #region SetTrendLines
         Func<double[]> getStDev = () => {
           var line = new double[CorridorStats.Rates.Count];
-          CorridorStats.Rates.SetRegressionPrice(CorridorStats.Coeffs, (i, d) => line[i] = d);
+          CorridorStats.Coeffs.SetRegressionPrice(0, line.Length, (i, d) => line[i] = d);
           var hl = CorridorStats.Rates.Select((r, i) => CorridorPrice(r) - line[i]).Skip(CorridorStats.Rates.Count / 10).ToArray();
           var h = hl.Max() / 2;
           var l = hl.Min().Abs() / 2;

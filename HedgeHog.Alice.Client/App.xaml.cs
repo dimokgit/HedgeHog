@@ -44,13 +44,15 @@ namespace HedgeHog.Alice.Client {
     private void Application_Exit(object sender, ExitEventArgs e) {
       if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return;
       GlobalStorage.UseAliceContext(c => c.SaveChanges());
-      var Connection = GlobalStorage.UseAliceContext(c => c.Connection);
-      var newName = Path.Combine(
-        Path.GetDirectoryName(Connection.DataSource),
-        Path.GetFileNameWithoutExtension(Connection.DataSource)
-        ) + ".backup" + Path.GetExtension(Connection.DataSource);
-      if (File.Exists(newName)) File.Delete(newName);
-      File.Copy(Connection.DataSource, newName);
+      if (GlobalStorage.IsLocalDB) {
+        var Connection = GlobalStorage.UseAliceContext(c => c.Connection);
+        var newName = Path.Combine(
+          Path.GetDirectoryName(Connection.DataSource),
+          Path.GetFileNameWithoutExtension(Connection.DataSource)
+          ) + ".backup" + Path.GetExtension(Connection.DataSource);
+        if (File.Exists(newName)) File.Delete(newName);
+        File.Copy(Connection.DataSource, newName);
+      }
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send("Shutdown");
     }
     protected override void OnStartup(StartupEventArgs e) {

@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using HedgeHog.Bars;
 using HedgeHog.DB;
 using System.Collections.ObjectModel;
+using System.Reactive.Subjects;
+using System.Data.Objects;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage {
@@ -54,16 +56,41 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public static bool IsLocalDB { get { return false; } }
     static AliceEntities Context {
       get {
         lock (contextLocker)
           if (_context == null)
-            if (false && GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
-              _context = new AliceEntities("metadata=res://*/Models.Alice.csdl|res://*/Models.Alice.ssdl|res://*/Models.Alice.msl;provider=System.Data.SqlServerCe.3.5;provider connection string=\"Data Source=Store\\Alice.sdf\"");
-            else
-              _context = InitAliceEntityContext();
+            if (!IsLocalDB) {
+              _context = new AliceEntities();
+              _context.ObjectMaterialized += new System.Data.Objects.ObjectMaterializedEventHandler(_context_ObjectMaterialized);
+            } else
+              if (false && GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
+                _context = new AliceEntities("metadata=res://*/Models.Alice.csdl|res://*/Models.Alice.ssdl|res://*/Models.Alice.msl;provider=System.Data.SqlServerCe.3.5;provider connection string=\"Data Source=Store\\Alice.sdf\"");
+              else
+                _context = InitAliceEntityContext();
         return _context;
       }
+    }
+    #region AliceMaterializer Subject
+    static object _AliceMaterializerSubjectLocker = new object();
+    static ISubject<ObjectMaterializedEventArgs> _AliceMaterializerSubject;
+    public static ISubject<ObjectMaterializedEventArgs> AliceMaterializerSubject {
+      get {
+        lock (_AliceMaterializerSubjectLocker)
+          if (_AliceMaterializerSubject == null) {
+            _AliceMaterializerSubject = new Subject<ObjectMaterializedEventArgs>();
+          }
+        return _AliceMaterializerSubject;
+      }
+    }
+    static void OnAliceMaterializer(ObjectMaterializedEventArgs p) {
+      AliceMaterializerSubject.OnNext(p);
+    }
+    #endregion
+
+    static void _context_ObjectMaterialized(object sender, System.Data.Objects.ObjectMaterializedEventArgs e) {
+      OnAliceMaterializer(e);
     }
     public static AliceEntities AliceContext { get { return Context; } }
 
