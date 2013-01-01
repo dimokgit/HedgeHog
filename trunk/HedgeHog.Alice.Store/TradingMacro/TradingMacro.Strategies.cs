@@ -199,7 +199,6 @@ namespace HedgeHog.Alice.Store {
       #region Init
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        ShowTrendLines = false;
         _buyLevel.CanTrade = _sellLevel.CanTrade = IsAutoStrategy;
         _strategyExecuteOnTradeClose = t => {
           ResetSuppResesInManual(false);
@@ -350,7 +349,6 @@ namespace HedgeHog.Alice.Store {
       #endregion
       if (_strategyExecuteOnTradeClose == null) {
         SuppResLevelsCount = 2;
-        ShowTrendLines = false;
         _buyLevelRate = _sellLevelRate = double.NaN;
         _isSelfStrategy = true;
         ForEachSuppRes(sr => sr.InManual = false);
@@ -574,7 +572,6 @@ namespace HedgeHog.Alice.Store {
       Func<bool> isCorridorFrozen = () => LotSizeByLossBuy >= MaxLotSize;
       Func<bool> isProfitOk = () => false;
       #endregion
-      ShowTrendLines = false;
       _isSelfStrategy = true;
       Func<bool, double> crossLevelDefault = isBuy => isBuy ? _RatesMax + RatesHeight / 5 : _RatesMin - RatesHeight / 5;
       Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
@@ -977,16 +974,32 @@ namespace HedgeHog.Alice.Store {
 
       if (_strategyExecuteOnTradeClose == null) {
         #region SetTrendLines
+        Func<double[]> getStDev = () => {
+          var line = new double[CorridorStats.Rates.Count];
+          CorridorStats.Rates.SetRegressionPrice(CorridorStats.Coeffs, (i, d) => line[i] = d);
+          var hl = CorridorStats.Rates.Select((r, i) => CorridorPrice(r) - line[i]).Skip(CorridorStats.Rates.Count / 10).ToArray();
+          var h = hl.Max() / 2;
+          var l = hl.Min().Abs() / 2;
+          return new[] { h, l };
+        };
         SetTrendLines = () => {
+          double h, l;
+          if (getStDev == null)
+            h = l = CorridorStats.StDevByHeight;
+          else {
+            var hl = getStDev();
+            h = hl[0];
+            l = hl[1];
+          }
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
           var rates = new[] { CorridorStats.Rates[0], CorridorStats.Rates.LastBC() };
           var coeffs = CorridorStats.Coeffs;
           rates[0].PriceAvg1 = coeffs.RegressionValue(0);
-          rates[0].PriceAvg2 = rates[0].PriceAvg1 + CorridorStats.StDevByHeight * 2;
-          rates[0].PriceAvg3 = rates[0].PriceAvg1 - CorridorStats.StDevByHeight * 2;
+          rates[0].PriceAvg2 = rates[0].PriceAvg1 + h * 2;
+          rates[0].PriceAvg3 = rates[0].PriceAvg1 - l * 2;
           rates[1].PriceAvg1 = coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
-          rates[1].PriceAvg2 = rates[1].PriceAvg1 + CorridorStats.StDevByHeight * 2;
-          rates[1].PriceAvg3 = rates[1].PriceAvg1 - CorridorStats.StDevByHeight * 2;
+          rates[1].PriceAvg2 = rates[1].PriceAvg1 + h * 2;
+          rates[1].PriceAvg3 = rates[1].PriceAvg1 - l * 2;
           return rates;
         };
         #endregion
@@ -1278,7 +1291,8 @@ namespace HedgeHog.Alice.Store {
         #region medianFunc
         Func<Func<double>> medianFunc = () => {
           switch (MedianFunction) {
-            case Store.MedianFunctions.Regression: return () => WaveShort.Rates[0].PriceAvg1;
+            case Store.MedianFunctions.Regression: return () => CorridorStats.Coeffs.RegressionValue(0);
+            case Store.MedianFunctions.Regression1: return () => CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
             case Store.MedianFunctions.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
             case Store.MedianFunctions.WaveTrade: return () => (WaveTradeStart.RatesMax + WaveTradeStart.RatesMin) / 2;
             case Store.MedianFunctions.WaveStart: return () => CorridorPrice(WaveTradeStart.Rates.LastBC());
@@ -1435,9 +1449,10 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) { }
               #endregion
               {
-                var rates = SetTrendLines().Select(r => r.PriceAvg1).ToArray();
-                _buyLevel.Rate = rates[1] + varianceFunc()();
-                _sellLevel.Rate = rates[1] - varianceFunc()();
+                var hl = getStDev();
+                var m = medianFunc()();
+                _buyLevel.RateEx = m + hl[0] * 2;
+                _sellLevel.RateEx = m - hl[1] * 2;
                 _buySellLevelsForEach(sr => sr.CanTradeEx = true);
               }
               adjustExitLevels0();

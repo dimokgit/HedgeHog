@@ -1100,23 +1100,22 @@ namespace HedgeHog.Alice.Client {
           charter.PipSize = tm.PointSize;
           charter.CorridorHeightMultiplier = csFirst.HeightUpDown0 / csFirst.HeightUpDown;// tm.CorridorHeightMultiplier;
           charter.SetPriceLineColor(tm.Trades.HaveBuy() ? true : tm.Trades.HaveSell() ? false : (bool?)null);
-          charter.GetPriceFunc = r => r.PriceAvg > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
-          charter.GetPriceHigh = tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
-          charter.GetPriceLow = tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
+
+          charter.GetPriceFunc = r => r.PriceAvg;// > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
+          charter.GetPriceHigh = r => r.PriceAvg;// tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
+          charter.GetPriceLow = r => r.PriceAvg;// tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
+          charter.GetPriceMA = tm.GetPriceMA();
+          
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = tm.CenterOfMassSell;
           charter.MagnetPrice = tm.MagnetPrice;
+          
           charter.SelectedGannAngleIndex = tm.GannAngleActive;
           charter.GannAnglesCount = tm.GannAnglesArray.Count;
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
-          charter.CorridorAngle = tm.CorridorAngle;
-          charter.HeightInPips = tm.RatesHeightInPips;
-          charter.CorridorHeightInPips = tm.CorridorStats.RatesHeightInPips;
-          charter.RatesStDevInPips = tm.InPips(tm.CorridorStats.StDevByHeight);// tm.StDevByHeightInPips;
-          charter.CorridorRatesStDevInPips = tm.InPips(tm.CorridorStats.StDevByPriceAvg);// tm.StDevByPriceAvgInPips;
-          charter.SpreadForCorridor = tm.SpreadForCorridorInPips;
+
           charter.HeaderText =
-          string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}<{10:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n2}"
+            string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}<{10:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n2}"
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -1127,18 +1126,16 @@ namespace HedgeHog.Alice.Client {
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
             /*9*/, tm.SpreadForCorridorInPips
-           /*10*/, tm.CorridorStDevSqrtInPips*4
+            /*10*/, tm.CorridorStDevSqrtInPips * 4
           );
-          var ratesForTrand = !tm.ShowTrendLines ? new Rate[0] : tm.CorridorStats.Rates.OrderBars().ToArray();
-          charter.SetTrendLines(tm.SetTrendLines(), tm.ShowTrendLines);
-          charter.GetPriceMA = tm.ShowTrendLines ? tm.GetPriceMA() : r => double.NaN;
+          charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          charter.AddTicks(price, rates, tm.ShowTrendLines && false ? new PriceBar[0][] { /*stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
+          charter.AddTicks(price, rates, false ? new PriceBar[0][] { /*stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
             0, 0, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
-          if (tm.CorridorStats.StopRate != null && tm.ShowTrendLines)
+          if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if (tm.WaveShortLeft.HasRates)
             charter.LineTimeMiddle = tm.WaveShortLeft.Rates.LastBC();
