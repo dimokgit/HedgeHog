@@ -348,6 +348,10 @@ namespace HedgeHog.Alice.Store {
           ? ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).ToList()
           : rates;
       }
+      var correlationData = WaveShort.Rates.Select(r => new { price = r.PriceAvg, cma = GetPriceMA(r) }).ToArray();
+      var corrRate = correlationData.Select(d=>d.price).ToArray();
+      var corrCma = correlationData.Select(d=>d.cma).ToArray();
+      CorridorCorrelation = alglib.correlation.pearsoncorrelation(ref corrRate, ref corrCma, corrRate.Length);
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByParabola_2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -457,5 +461,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    public double CorridorCorrelation { get; set; }
   }
 }
