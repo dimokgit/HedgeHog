@@ -424,6 +424,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public string _TestCorrelationMinimum = "";
+    [DisplayName("CorrelationMinimum")]
+    [Category(categoryTest)]
+    public string TestCorrelationMinimum {
+      get { return _TestCorrelationMinimum; }
+      set {
+        if (_TestCorrelationMinimum != value) {
+          _TestCorrelationMinimum = value;
+          OnPropertyChanged("TestCorrelationMinimum");
+        }
+      }
+    }
+
+
     string _TestCorridorDistanceRatio = "";
     [DisplayName("CorridorDistanceRatio")]
     [Category(categoryTest)]
@@ -760,15 +774,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("PLToCorridorExitRatio")]
+    [DisplayName("Correlation Min")]
     [Category(categoryXXX_NU)]
-    [Description("exit = PL * X > CorridorHeight")]
-    public double PLToCorridorExitRatio {
+    public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
         if (StDevToSpreadRatio != value) {
           StDevToSpreadRatio = value;
-          OnPropertyChanged("PLToCorridorExitRatio");
+          OnPropertyChanged(() => CorrelationMinimum);
         }
       }
     }

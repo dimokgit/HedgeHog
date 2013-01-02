@@ -121,7 +121,17 @@ namespace HedgeHog {
 
 
     //†‡∆
-    public string HeaderText;
+    string _HeaderText;
+
+    public string HeaderText {
+      get { return _HeaderText; }
+      set {
+        if (_HeaderText != value) {
+          _HeaderText = value;
+          OnPropertyChanged("Header");
+        }
+      }
+    }
     public string Header { get { return Name + HeaderText; } }
 
     public bool IsActive {
