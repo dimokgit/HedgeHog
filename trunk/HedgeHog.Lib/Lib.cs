@@ -68,7 +68,7 @@ namespace HedgeHog {
       Enumerable.Range(start, count).AsParallel().ForAll(i => a(i, coeffs.RegressionValue(i)));
     }
 
-    public static double[] Regreaaion(this double[] values, int count, int polyOrder) {
+    public static double[] Regression(this double[] values, int count, int polyOrder) {
       double[] coeffs, prices;
       return values.Regression(count, polyOrder, out coeffs, out prices);
     }
@@ -81,6 +81,17 @@ namespace HedgeHog {
       regressionSource = new double[count];
       Array.Copy(values, regressionSource, count);
       return regressionSource.Regression(polyOrder, out coeffs);
+    }
+
+    public static string Csv(this IEnumerable<double> values) {
+      return values.Csv("{0}", d => d);
+    }
+    public static string Csv(this IEnumerable<double> values, string format, params Func<double, object>[] foos) {
+      return values.Csv<double>(format, foos);
+    }
+    public static string Csv<T>(this IEnumerable<T> values, string format, params Func<T, object>[] foos) {
+      Func<T, object[]> parms = bar => foos.Select(foo => foo(bar)).ToArray();
+      return string.Join(Environment.NewLine, values.Select(b => string.Format(format, parms(b))));
     }
 
     /// <summary>

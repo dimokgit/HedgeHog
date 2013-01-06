@@ -54,7 +54,8 @@ namespace HedgeHog.Alice.Store {
     WaveStDevHeight = 8,
     DayDistance = 90,
     Regression = 100,
-    Parabola = 110
+    Parabola = 110,
+    Sinus = 20
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -68,7 +69,8 @@ namespace HedgeHog.Alice.Store {
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
-    HorseShoe = 70
+    HorseShoe = 70,
+    Sinus = 80
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -88,11 +90,16 @@ namespace HedgeHog.Alice.Store {
     WaveTradeStartStDev = 28,
 
   }
+  public enum CorridorHeightMethods {
+    ByMA = 0,
+    ByPriceAvg = 1
+  }
   public enum TurnOffFunctions {
     Void = -1,
     WaveShortLeft = 0,
     WaveShortAndLeft = 10,
-    WaveHeight = 20
+    WaveHeight = 20,
+    Correlation = 30
   }
   public enum ExitFunctions {
     Void = -1,

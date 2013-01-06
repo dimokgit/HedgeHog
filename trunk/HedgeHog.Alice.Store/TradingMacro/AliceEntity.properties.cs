@@ -775,7 +775,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Correlation Min")]
-    [Category(categoryXXX_NU)]
+    [Category(categoryActive)]
     public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
@@ -920,7 +920,7 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTest = "Test";
     public const string categorySession = "Session";
 
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int CorridorCrossesMaximum {
@@ -1118,14 +1118,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("WaveAverage Iteration")]
-    [Category(categoryXXX_NU)]
-    public int WaveAverageIteration {
-      get { return CorridorIterationsOut; }
+    [DisplayName("Corridor Height By")]
+    [Category(categoryActive)]
+    public CorridorHeightMethods CorridorHeightMethod {
+      get { return (CorridorHeightMethods)CorridorIterationsOut; }
       set {
-        if (CorridorIterationsOut == value) return;
-        CorridorIterationsOut = value;
-        OnPropertyChanged("WaveAverageIteration");
+        if (CorridorIterationsOut == (int)value) return;
+        CorridorIterationsOut = (int)value;
+        OnPropertyChanged(() => CorridorHeightMethod);
       }
     }
 
@@ -1562,5 +1562,8 @@ namespace HedgeHog.Alice.Store {
     public WaveInfo WaveShortLeft { get { return _waveShortLeft ?? (_waveShortLeft = new WaveInfo(this)); } }
 
     public System.Threading.CancellationToken ReplayCancelationToken { get; set; }
+
+    public Func<Rate, double> ChartPriceHigh { get; set; }
+    public Func<Rate, double> ChartPriceLow { get; set; }
   }
 }
