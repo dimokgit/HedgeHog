@@ -117,5 +117,17 @@ namespace UnitLib
       Assert.IsFalse(double.NaN.Between(double.NaN, double.NaN));
       Assert.IsFalse(double.NaN.Between(double.NaN, 8));
     }
+
+    /// <summary>
+    ///A test for Sin
+    ///</summary>
+    [TestMethod()]
+    public void SinTest() {
+      int sinLength = 180;
+      int waveLength = 300;
+      int wavesCount = 3;
+      double[] actual = MathExtensions.Sin(sinLength, waveLength,100, 1, wavesCount);
+      Assert.IsNotNull(actual);
+    }
   }
 }

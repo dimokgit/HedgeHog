@@ -7,6 +7,14 @@ using System.Diagnostics;
 namespace HedgeHog {
   public static class MathExtensions {
     public static readonly double StDevRatioMax = 0.288675135;
+
+    public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
+      var sin = new double[waveLength];
+      var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;
+      Enumerable.Range(0, waveLength).AsParallel().ForAll(i => sin[i] = Math.Sin(i * xOffset) * aplitude + yOffset);
+      return sin;
+    }
+
     public static double ValueByPosition(this int sampleCurrent, double sampleLow, double sampleHigh, double realLow, double realHigh) {
       return ((double)sampleCurrent).ValueByPosition(sampleLow, sampleHigh, realLow, realHigh);
     }
@@ -23,7 +31,7 @@ namespace HedgeHog {
     public static double PositionRatio(this double current, double low, double high) {
       return (current - low) / (high - low);
     }
-    public static double StDevP_(this double[] value,  bool fcompensate = true) {
+    public static double StDevP_(this double[] value, bool fcompensate = true) {
       double[] average = { 0.0, 0.0 };
       double stdev = 0;
       double mean;
@@ -49,7 +57,7 @@ namespace HedgeHog {
       return Math.Sqrt(variance);
     }
 
-    public static double StDevAL(this double[] x,bool fcompensate = true){//, int n, ref double stddev, ref double mean, bool fcompensate) {
+    public static double StDevAL(this double[] x, bool fcompensate = true) {//, int n, ref double stddev, ref double mean, bool fcompensate) {
       int i;
       double v1 = 0;
       double v2 = 0;
@@ -86,7 +94,7 @@ namespace HedgeHog {
       return 0;
     }
 
-    public static double[] Trima(this double[] inReal,int period,  out int outBegIdx, out int outNBElement) {
+    public static double[] Trima(this double[] inReal, int period, out int outBegIdx, out int outNBElement) {
       try {
         if (inReal.Length < period) {
           outBegIdx = 0;
@@ -127,20 +135,20 @@ namespace HedgeHog {
           double average = total / period;
           result.Add(series.Keys[i], average);
         }
-      } 
+      }
       return result;
     }
     public static double[] Linear(double[] x, double[] y) {
-      double [,] m = new double[x.Length,2];
+      double[,] m = new double[x.Length, 2];
       for (int i = 0; i < x.Length; i++) {
         m[i, 0] = x[i];
         m[i, 1] = y[i];
       }
-      int info,nvars;
+      int info, nvars;
       double[] c;
       alglib.linearmodel lm;
       alglib.lrreport lr;
-      alglib.lrbuild(m,x.Length,1, out info, out lm,out lr);
+      alglib.lrbuild(m, x.Length, 1, out info, out lm, out lr);
       alglib.lrunpack(lm, out c, out nvars);
       return new[] { c[1], c[0] };
     }
@@ -189,7 +197,7 @@ namespace HedgeHog {
       double y = 0; int j = 0;
       for (var ii = 0; ii < coeffs.Length; ii++)
         y += coeffs[ii] * Math.Pow(i, ii);
-        //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
+      //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
     }
 
@@ -241,7 +249,7 @@ namespace HedgeHog {
           b = a.AverageByIterations(high, false).Average();
           c = a.AverageByIterations(low).Average();
         }
-        return v.Between(c, b); 
+        return v.Between(c, b);
       });
     }
 
@@ -249,7 +257,7 @@ namespace HedgeHog {
       return values.AverageByIterations(Math.Abs(iterations), iterations < 0, averagesOut);
     }
     public static IList<double> AverageByIterations(this IList<double> values, double iterations, bool low, List<double> averagesOut = null) {
-      return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations,averagesOut);
+      return values.AverageByIterations(low ? new Func<double, double, bool>((v, a) => v <= a) : new Func<double, double, bool>((v, a) => v >= a), iterations, averagesOut);
     }
     public static IList<double> AverageByIterations(this IList<double> values, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
       return values.AverageByIterations<double>(v => v, compare, iterations, averagesOut);
@@ -284,7 +292,7 @@ namespace HedgeHog {
       var avg = values.DefaultIfEmpty().Average(getValue);
       if (averagesOut != null) averagesOut.Insert(0, avg);
       var countMax = values.Count * iterations;
-      while( values.Count > countMax ) {
+      while (values.Count > countMax) {
         var vs = values.Where(v => compare(getValue(v), avg)).ToArray();
         if (vs.Count() == 0) break;
         avg = vs.Average(getValue);
@@ -320,7 +328,7 @@ namespace HedgeHog {
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, Hour, Day,Month,MonthEnd,Week }
+    public enum RoundTo { Second, Minute, Hour, Day, Month, MonthEnd, Week }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch (rt) {
@@ -347,7 +355,7 @@ namespace HedgeHog {
           dtRounded = new DateTime(d.Year, d.Month, 1, 0, 0, 0).AddMonths(1).AddDays(-1);
           break;
         case RoundTo.Week:
-          dtRounded = d.AddDays(-(int)d.DayOfWeek - 6); 
+          dtRounded = d.AddDays(-(int)d.DayOfWeek - 6);
           break;
       }
       return dtRounded;

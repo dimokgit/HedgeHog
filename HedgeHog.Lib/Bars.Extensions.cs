@@ -46,6 +46,12 @@ namespace HedgeHog.Bars {
       return waves.FirstOrDefault(w => date.Between(w.LastBC().StartDate, w[0].StartDate));
     }
 
+    public static double Volatility<T>(this IList<T> rates, Func<T, double> value1, Func<T, double> value2) {
+      var corr1 = rates.Select(value1).ToArray();
+      var corr2 = rates.Select(value2).ToArray();
+      return alglib.correlation.pearsoncorrelation(ref corr1, ref corr2, corr1.Length);
+    }
+
     /// <summary>
     /// Reverse bars if they are not reversed
     /// </summary>
