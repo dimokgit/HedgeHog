@@ -55,7 +55,8 @@ namespace HedgeHog.Alice.Store {
     DayDistance = 90,
     Regression = 100,
     Parabola = 110,
-    Sinus = 20
+    Sinus = 20,
+    Sinus1 = 21
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
