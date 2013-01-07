@@ -56,7 +56,9 @@ namespace HedgeHog.Alice.Store {
     Regression = 100,
     Parabola = 110,
     Sinus = 20,
-    Sinus1 = 21
+    Sinus1 = 21,
+    Crosses = 30,
+    StDev = 40
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -71,7 +73,8 @@ namespace HedgeHog.Alice.Store {
     WaveLeft = 5,
     WaveRight = 6,
     HorseShoe = 70,
-    Sinus = 80
+    Sinus = 80,
+    Count = 90
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,

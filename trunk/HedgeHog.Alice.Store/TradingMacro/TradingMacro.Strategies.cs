@@ -1506,6 +1506,21 @@ namespace HedgeHog.Alice.Store {
               }
               break;
             #endregion
+            #region Count
+            case TrailingWaveMethod.Count:
+              #region firstTime
+              if (firstTime) { }
+              #endregion
+              {
+                if (CorridorCorrelation >= CorrelationMinimum) {
+                  _buyLevel.RateEx = _CenterOfMassBuy;
+                  _sellLevel.RateEx = _CenterOfMassSell;
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                }
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
 
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }

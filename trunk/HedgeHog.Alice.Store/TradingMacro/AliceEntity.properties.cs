@@ -562,7 +562,7 @@ namespace HedgeHog.Alice.Store {
     #region MovingAverageType
     int _movingAverageTypeDefault = 0;
     [DisplayName("Moving Average Type")]
-    [Category(categoryXXX)]
+    [Category(categoryActiveFuncs)]
     public MovingAverageType MovingAverageType {
       get { return (MovingAverageType)MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault); }
       set {
