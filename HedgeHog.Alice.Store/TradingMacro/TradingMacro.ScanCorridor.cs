@@ -555,31 +555,31 @@ namespace HedgeHog.Alice.Store {
       }
       var correlations = new { corr = 0.0, length = 0, parabola = new double[0] }.IEnumerable().ToList();
       var corr = double.NaN;
+      var locker = new object();
       Enumerable.Range(countMin, (ratesShrunken.Length - countMin).Max(0)).AsParallel().ForAll(rates => {
         var height = 0.0;
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = coeffs[1].Angle(PointSize);
+        var angle = coeffs[1].Angle(PointSize) / groupLength;
         var sineOffset = Math.Cos(-angle * Math.PI / 180);
         var heights = new List<double>(new double[rates]);
         Enumerable.Range(0, rates).ForEach(i => heights[i] = (line[i] - ratesShrunken[i]) * sineOffset);
         heights.Sort();
         height = heights[0].Abs() + heights.LastBC();
-        if (height > stDev && angle.Abs().ToInt() <= 1) {
+        if (height.Between(stDev,stDev*2) && angle.Abs().ToInt() <= 1) {
           //var parabola = MathExtensions.Sin(180, rates, height / 2, coeffs.RegressionValue(rates / 2), WaveStDevRatio.ToInt());
           var parabola = MathExtensions.Sin(180, rates, height / 2, prices.Average(), WaveStDevRatio.ToInt());
-          corr = corr.Cma(13, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs());
-          correlations.Add(new { corr, length = prices.Length, parabola });
+          lock (locker) {
+            var pearson = alglib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs();
+            var spearman = alglib.correlation.spearmanrankcorrelation(prices, parabola, rates).Abs();
+            corr = corr.Cma(13, corr);
+            correlations.Add(new { corr, length = prices.Length, parabola });
+          }
         }
       });
       ChartPriceHigh = ShowParabola ? r => r.PriceTrima : (Func<Rate,double>)null;
-      try {
-        correlations.RemoveAll(c => c == null);
-        correlations.Sort((a, b) => -a.corr.CompareTo(b.corr));
-      } catch (Exception exc) {
-        Debugger.Break();
-      }
+      correlations.Sort((a, b) => -a.corr.CompareTo(b.corr));
       if (correlations.Count > 0) {
         CorridorCorrelation = correlations[0].corr;
         WaveShort.Rates = null;
@@ -595,7 +595,109 @@ namespace HedgeHog.Alice.Store {
       }
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
-    
+
+    private CorridorStatistics ScanCorridorByCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      int groupLength = 5;
+      var cp = CorridorPrice();
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      double max = double.NaN, min = double.NaN;
+      var tests = new { count = 0, height = 0.0, rate = 0.0,fib = 0.0 }.IEnumerable().ToList();
+      var locker = new object();
+      var rateBottom = ratesForCorridor.Min(_priceAvg);
+      var prices = ratesForCorridor.Select(cp).ToArray();
+      var ratesCount = (ratesForCorridor.Count * .9).ToInt();
+      Enumerable.Range(0, RatesHeightInPips.Floor()).AsParallel().ForAll(i => {
+        var line = Enumerable.Range(0,ratesCount ).Select(i1 => rateBottom + i * PointSize).ToArray();
+        var crosses = line.CrossesInMiddle(prices);
+        var crossesCount = crosses.Count;
+        if (crossesCount < 2) return;
+        var h = crosses.Where(d => d > 0).Max();
+        var l = crosses.Where(d => d < 0).Min().Abs();
+        var height = h + l;
+        lock (locker)
+          tests.Add(new { count = crossesCount, height, rate = line[0],fib = Fibonacci.FibRatio(h,l) });
+      });
+      var tests1 = tests//.Where(t => t.height > StDevByHeight.Max(StDevByPriceAvg))
+        .OrderByDescending(t => t.height / t.fib)
+        .ToList();
+      if (tests1.Any()) {
+        var prevIndex = tests1.IndexOf(tests1.OrderBy(t => (t.rate - MagnetPrice).Abs()).First());
+        if (prevIndex < 0 || prevIndex > tests.Count/2) prevIndex = 0;
+        var test = tests1[prevIndex];
+        MagnetPrice = test.rate;
+        _CenterOfMassBuy = MagnetPrice + test.height / 2;
+        _CenterOfMassSell = MagnetPrice - test.height / 2;
+        CorridorCorrelation = InPips(test.height);
+      }else
+        CorridorCorrelation = 0;
+      WaveShort.Rates = null;
+      WaveShort.Rates = ratesReversed;
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+    private CorridorStatistics ScanCorridorByCrosses_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      int groupLength = 5;
+      var cp = CorridorPrice();
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var dateMin =  WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(this.IsCorridorForwardOnly ? 0 : -BarPeriodInt * groupLength * 2) : DateTime.MinValue;
+      var ratesShrunken = ratesReversed.TakeWhile(r => r.StartDate >= dateMin).Shrink(cp, groupLength).ToArray();
+      double max = double.NaN, min = double.NaN;
+      int countMin = 1;
+      var stDev = StDevByHeight.Max(StDevByPriceAvg);
+      foreach (var rate in ratesShrunken) {
+        max = rate.Max(max);
+        min = rate.Min(min);
+        if (max - min > stDev) break;
+        countMin++;
+      }
+      var crossesMax = 0;
+      var tests = new { count = 0, length = 0, height = 0.0, angle = 0.0 }.IEnumerable().ToList();
+      var locker = new object();
+      Enumerable.Range(countMin, (ratesShrunken.Length - countMin).Max(0)).AsParallel().ForAll(rates => {
+        double[] prices = null;
+        double[] coeffs;
+        var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
+        var angle = coeffs[1].Angle(PointSize) / groupLength;
+        var sineOffset = Math.Cos(angle * Math.PI / 180).Abs();
+        var crosses = line.CrossesInMiddle(prices);
+        var crossesCount = crosses.Count;
+        if (crossesCount == 0) return;
+        var height = crosses.Max(d => d.Abs()); ;
+        lock (locker)
+          tests.Add(new { count = crossesCount, length = rates,  height,angle });
+      });
+      var tests1 = tests.Where(t => t.angle.Abs() <= 1 && t.height > StDevByHeight+StDevByPriceAvg)
+        .OrderByDescending(t => t.height)
+        .ThenBy(t => t.length)
+        .ToArray();
+      if (tests1.Any()) {
+        CorridorCorrelation = 1;
+        var lengthMax = tests1[0].length * groupLength;
+        WaveShort.Rates = null;
+        WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(lengthMax).ToArray();
+      } else {
+        CorridorCorrelation = 0;
+        var dm = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate : DateTime.MinValue;
+        WaveShort.Rates = null;
+        WaveShort.Rates = ratesReversed.TakeWhile(r => r.StartDate >= dm).ToArray();
+      }
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
+    private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var cp = _priceAvg ?? CorridorPrice();
+      var ratesReversed = ratesForCorridor.ReverseIfNot().Select(cp).ToArray();
+      var rateLastIndex = 1;
+      ratesReversed.TakeWhile(r => ratesReversed.Take(++rateLastIndex).ToArray().Height() < StDevByPriceAvg+StDevByHeight).Count();
+      for (; rateLastIndex < ratesReversed.Length - 1; rateLastIndex += (rateLastIndex / 100) + 1) {
+        var coeffs = ratesReversed.Take(rateLastIndex).ToArray().Regress(1);
+        if (coeffs[1].Angle(PointSize).Abs() < 1)
+          break;
+      }
+        WaveShort.Rates = null;
+        WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(rateLastIndex).ToArray();
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
     #endregion
     private IList<Rate> DayWaveByDistance(IList<Rate> ratesForCorridor) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();

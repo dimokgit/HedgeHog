@@ -129,5 +129,18 @@ namespace UnitLib
       double[] actual = MathExtensions.Sin(sinLength, waveLength,100, 1, wavesCount);
       Assert.IsNotNull(actual);
     }
+
+    /// <summary>
+    ///A test for Crosses
+    ///</summary>
+    [TestMethod()]
+    public void CrossesTest() {
+      var l = 180*2;
+      IList<double> values1 = Enumerable.Range(0, l).Select(i => Math.Sin(i * Math.PI / 180)).ToArray();
+      IList<double> values2 = Enumerable.Range(0, l).Select(i => Math.Cos(i * Math.PI / 180)).ToArray();
+      int expected = 2;
+      var crosses = MathExtensions.Crosses(values1, values2);
+      Assert.AreEqual(expected, crosses.Count);
+    }
   }
 }

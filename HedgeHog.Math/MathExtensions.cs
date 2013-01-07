@@ -6,8 +6,49 @@ using System.Diagnostics;
 
 namespace HedgeHog {
   public static class MathExtensions {
+    class Box<T> {
+      public T Value { get; set; }
+      public Box(T v) {
+        Value = v;
+      }
+    }
     public static readonly double StDevRatioMax = 0.288675135;
-
+    public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
+      var values = values1.Zip(values2, (v1, v2) => v1 - v2).ToList();
+      var last = new Box<double>(values[0]);
+      var counts = new List<Box<double>>() { last };
+      Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
+      foreach (var v in values.Skip(1)) {
+        var sign = Math.Sign(v);
+        if (sign != 0) {
+          if (sign == Math.Sign(last.Value)) {
+            var compI = sign > 0 ? 2 : 0;
+            last.Value = comp[compI](last.Value, v);
+          } else
+            counts.Add(last = new Box<double>(v));
+        }
+      }
+      return counts.Skip(1).Take(Math.Max(counts.Count - 2, 0)).Select(b => b.Value).ToArray();
+    }
+    public static IList<double[]> Crosses(this IList<double> values1, IList<double> values2) {
+      var values = values1.Zip(values2, (v1, v2) => v1 - v2).ToList();
+      var last = new Box<double>(values[0]);
+      var counts = new List<Box<double>>() { last };
+      Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
+      foreach (var v in values.Skip(1)) {
+        var sign = Math.Sign(v);
+        if (sign != 0) {
+          if (sign == Math.Sign(last.Value)) {
+            var compI = sign > 0 ? 2 : 0;
+            last.Value = comp[compI](last.Value, v);
+          } else
+            counts.Add(last = new Box<double>(v));
+        }
+      }
+      var pos = counts.Where(v => v.Value > 0).Select(b => b.Value).ToArray();
+      var neg = counts.Where(v => v.Value < 0).Select(b => b.Value).ToArray();
+      return new[] { pos, neg };
+    }
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;

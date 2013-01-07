@@ -3048,6 +3048,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Parabola: return ScanCorridorByParabola;
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
+        case ScanCorridorFunction.Crosses: return ScanCorridorByCrosses;
+        case ScanCorridorFunction.StDev: return ScanCorridorByStDev;
       }
       throw new NotSupportedException(function + "");
     }
