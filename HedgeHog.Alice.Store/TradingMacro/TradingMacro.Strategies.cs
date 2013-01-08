@@ -1122,6 +1122,8 @@ namespace HedgeHog.Alice.Store {
         Action<Action> turnOffByWaveHeight = a => { if (WaveShort.RatesHeight < RatesHeight * .75)a(); };
         Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByWaveShortAndLeft = a => { if (WaveShortLeft.Rates.Count < CorridorDistanceRatio && WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
+        Action<Action> turnOffByBuySellHeight = a => { if (_CenterOfMassBuy - _CenterOfMassSell < StDevByHeight.Max(StDevByPriceAvg))a(); };
+        
         Action<Action> turnOff = a => {
           switch (TurnOffFunction) {
             case Store.TurnOffFunctions.Void: return;
@@ -1129,6 +1131,7 @@ namespace HedgeHog.Alice.Store {
             case Store.TurnOffFunctions.WaveHeight: turnOffByWaveHeight(a); return;
             case Store.TurnOffFunctions.WaveShortLeft: turnOffByWaveShortLeft(a); return;
             case Store.TurnOffFunctions.WaveShortAndLeft: turnOffByWaveShortAndLeft(a); return;
+            case Store.TurnOffFunctions.BuySellHeight: turnOffByBuySellHeight(a); return;
           }
           throw new NotSupportedException(TurnOffFunction + " Turnoff function is not supported.");
         };
@@ -1512,6 +1515,9 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) { }
               #endregion
               {
+                var wavelette = WaveShort.Rates.Select(CorridorPrice).ToArray().Wavelette();
+                buyCloseLevel.SetPrice(wavelette.Max());
+                sellCloseLevel.SetPrice(wavelette.Min());
                 if (CorridorCorrelation >= CorrelationMinimum) {
                   _buyLevel.RateEx = _CenterOfMassBuy;
                   _sellLevel.RateEx = _CenterOfMassSell;

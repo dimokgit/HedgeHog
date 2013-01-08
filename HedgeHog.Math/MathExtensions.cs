@@ -13,6 +13,20 @@ namespace HedgeHog {
       }
     }
     public static readonly double StDevRatioMax = 0.288675135;
+
+    public static IList<double> Wavelette(this IList<double> values) {
+      var sign = Math.Sign(values[1] - values[0]);
+      var wavelette = new List<double>(values.Take(2));
+      var prev = values[1];
+      foreach (var curr in values.Skip(2)) {
+        var s = Math.Sign(curr - prev);
+        if (s == -sign) break;
+        if (sign == 0) sign = s;
+        wavelette.Add(curr);
+        prev = curr;
+      }
+      return wavelette;
+    }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
       var values = values1.Zip(values2, (v1, v2) => v1 - v2).ToList();
       var last = new Box<double>(values[0]);
