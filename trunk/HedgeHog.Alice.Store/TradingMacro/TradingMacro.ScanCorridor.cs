@@ -601,7 +601,7 @@ namespace HedgeHog.Alice.Store {
       var cp = CorridorPrice();
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       double max = double.NaN, min = double.NaN;
-      var tests = new { count = 0, height = 0.0, rate = 0.0,fib = 0.0 }.IEnumerable().ToList();
+      var tests = new { count = 0, height = 0.0, rate = 0.0, fib = 0.0, h = 0.0, l = 0.0 }.IEnumerable().ToList();
       var locker = new object();
       var rateBottom = ratesForCorridor.Min(_priceAvg);
       var prices = ratesForCorridor.Select(cp).ToArray();
@@ -611,11 +611,11 @@ namespace HedgeHog.Alice.Store {
         var crosses = line.CrossesInMiddle(prices);
         var crossesCount = crosses.Count;
         if (crossesCount < 2) return;
-        var h = crosses.Where(d => d > 0).Max();
-        var l = crosses.Where(d => d < 0).Min().Abs();
+        var l = crosses.Where(d => d > 0).Max();
+        var h = crosses.Where(d => d < 0).Min().Abs();
         var height = h + l;
         lock (locker)
-          tests.Add(new { count = crossesCount, height, rate = line[0],fib = Fibonacci.FibRatio(h,l) });
+          tests.Add(new { count = crossesCount, height, rate = line[0], fib = Fibonacci.FibRatio(h, l), h, l });
       });
       var tests1 = tests//.Where(t => t.height > StDevByHeight.Max(StDevByPriceAvg))
         .OrderByDescending(t => t.height / t.fib)
@@ -625,13 +625,13 @@ namespace HedgeHog.Alice.Store {
         if (prevIndex < 0 || prevIndex > tests.Count/2) prevIndex = 0;
         var test = tests1[prevIndex];
         MagnetPrice = test.rate;
-        _CenterOfMassBuy = MagnetPrice + test.height / 2;
-        _CenterOfMassSell = MagnetPrice - test.height / 2;
+        _CenterOfMassBuy = MagnetPrice + test.h.Max(test.l);
+        _CenterOfMassSell = MagnetPrice - test.h.Max(test.l);
         CorridorCorrelation = InPips(test.height);
       }else
         CorridorCorrelation = 0;
       WaveShort.Rates = null;
-      WaveShort.Rates = ratesReversed;
+      WaveShort.Rates = ratesReversed.Take((CorridorDistanceRatio).ToInt()).ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByCrosses_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {

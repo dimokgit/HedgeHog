@@ -2847,6 +2847,7 @@ namespace HedgeHog.Alice.Store {
     }
     public Func<Rate, double> GetPriceMA() {
       switch (MovingAverageType) {
+        case Store.MovingAverageType.RegressByMA:
         case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
           return r => r.PriceCMALast;
@@ -2869,9 +2870,13 @@ namespace HedgeHog.Alice.Store {
     }
     private void SetMA(int? period = null) {
       switch (MovingAverageType) {
+        case Store.MovingAverageType.RegressByMA:
+          RatesArray.SetCma(GetMovingAverageValueFunction(), 3, 3);
+          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
+          break;
         case Store.MovingAverageType.Regression:
           Action<Rate,double> a = (r,d)=>r.PriceCMALast = d;
-          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, r => r.PriceAvg, a);
+          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, _priceAvg, a);
           break;
         case Store.MovingAverageType.Cma:
           if (period.HasValue)
@@ -3135,8 +3140,9 @@ namespace HedgeHog.Alice.Store {
       return TradesManagerStatic.GetLotSize(-(loss / lotMultiplierInPips) * bus / TradesManager.GetPipCost(Pair), bus, true);
     }
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
-      var lotSize = LotSizeByLoss(TradesManager, this.TradingStatistics.CurrentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, CurrentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls);
+      var currentGross = this.TradingStatistics.CurrentGross;
+      var lotSize = LotSizeByLoss(TradesManager,currentGross , LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
+      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {

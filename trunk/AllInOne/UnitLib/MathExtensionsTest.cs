@@ -142,5 +142,18 @@ namespace UnitLib
       var crosses = MathExtensions.Crosses(values1, values2);
       Assert.AreEqual(expected, crosses.Count);
     }
+
+    /// <summary>
+    ///A test for Wavelette
+    ///</summary>
+    [TestMethod()]
+    public void WaveletteTest() {
+      IList<double> values = Enumerable.Range(0, 180).Select(i => Math.Sin(i * Math.PI / 180)).ToArray();
+      var actual = MathExtensions.Wavelette(values);
+      Assert.AreEqual(91, actual.Count);
+      var values1 = new[] { 0.0, 0.0, 1.0, 2.0, 1.0 };
+      actual = MathExtensions.Wavelette(values1);
+      Assert.AreEqual(4,actual.Count);
+    }
   }
 }
