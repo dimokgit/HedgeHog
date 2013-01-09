@@ -606,6 +606,7 @@ namespace HedgeHog.Alice.Store {
       var rateBottom = ratesForCorridor.Min(_priceAvg);
       var prices = ratesForCorridor.Select(cp).ToArray();
       var ratesCount = (ratesForCorridor.Count * .9).ToInt();
+      var variance = Math.Sqrt(ratesForCorridor.Select(r => Math.Pow(cp(r) - _priceAvg(r), 2)).Average()); ;
       Enumerable.Range(0, RatesHeightInPips.Floor()).AsParallel().ForAll(i => {
         var line = Enumerable.Range(0,ratesCount ).Select(i1 => rateBottom + i * PointSize).ToArray();
         var crosses = line.CrossesInMiddle(prices);
@@ -625,13 +626,17 @@ namespace HedgeHog.Alice.Store {
         if (prevIndex < 0 || prevIndex > tests.Count/2) prevIndex = 0;
         var test = tests1[prevIndex];
         MagnetPrice = test.rate;
-        _CenterOfMassBuy = MagnetPrice + test.h.Max(test.l);
-        _CenterOfMassSell = MagnetPrice - test.h.Max(test.l);
-        CorridorCorrelation = InPips(test.height);
+        var offset = test.h.Max(test.l) + variance;
+        _CenterOfMassBuy = MagnetPrice +offset ;
+        _CenterOfMassSell = MagnetPrice - offset;
+        CorridorCorrelation = InPips(variance);
       }else
         CorridorCorrelation = 0;
+      var a1 = prices.Take(prices.Length - 1).Zip(prices.Skip(1), (p, n) => new { p, n }).ToArray();
+      var a2 = a1.SkipWhile(pn => !MagnetPrice.Between(pn.p, pn.n)).Count();
+      var a3 = CorridorDistanceRatio.Max(a2).ToInt();
       WaveShort.Rates = null;
-      WaveShort.Rates = ratesReversed.Take((CorridorDistanceRatio).ToInt()).ToArray();
+      WaveShort.Rates = ratesReversed.Take(a3).ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByCrosses_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
