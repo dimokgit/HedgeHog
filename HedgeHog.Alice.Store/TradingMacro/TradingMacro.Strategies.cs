@@ -964,6 +964,7 @@ namespace HedgeHog.Alice.Store {
       Func<bool> isCurrentGrossOk = () => CurrentGrossInPips >= -SpreadForCorridorInPips;
       Func<double> currentGrossInPips = () => CurrentGrossInPips;
       Func<double> currentLoss = () => CurrentLoss;
+      Func<double> currentGross = () => CurrentGross;
       Func<bool> isCorridorFrozen = () => LotSizeByLossBuy >= MaxLotSize;
       Func<bool> isProfitOk = () => false;
       #endregion
@@ -1028,7 +1029,8 @@ namespace HedgeHog.Alice.Store {
           return false;
         };
         #endregion
-        Func<bool> exitByLossGross = () => Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < CurrentGross * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
+        Func<bool> exitByLossGross = () => 
+          Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < currentGross() * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
         #region exitVoid
         Action exitVoid = () => {
           if (exitOnFriday()) return;
@@ -1038,7 +1040,7 @@ namespace HedgeHog.Alice.Store {
         Action exitWave0 = () => {
           double als = LotSizeByLossBuy;
           if (exitOnFriday()) return;
-          if (exitByLossGross())
+          if (exitByLossGross() || als > LotSize && currentGross() > 0)
             _trimAtZero = true;
           else if (Trades.Lots() / als >= ProfitToLossExitRatio
                      || !CloseOnProfitOnly && CurrentGross > 0 && als == LotSize && Trades.Lots() > LotSize
@@ -1519,6 +1521,24 @@ namespace HedgeHog.Alice.Store {
                 buyCloseLevel.SetPrice(wavelette.Max());
                 sellCloseLevel.SetPrice(wavelette.Min());
                 if (CorridorCorrelation >= CorrelationMinimum) {
+                  _buyLevel.RateEx = _CenterOfMassBuy;
+                  _sellLevel.RateEx = _CenterOfMassSell;
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                }
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
+            #region Count
+            case TrailingWaveMethod.Count0:
+              #region firstTime
+              if (firstTime) { }
+              #endregion
+              {
+                var wavelette = WaveShort.Rates.Select(CorridorPrice).ToArray().Wavelette();
+                buyCloseLevel.SetPrice(wavelette.Max());
+                sellCloseLevel.SetPrice(wavelette.Min());
+                if (CorridorCorrelation < CorrelationMinimum) {
                   _buyLevel.RateEx = _CenterOfMassBuy;
                   _sellLevel.RateEx = _CenterOfMassSell;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = true);

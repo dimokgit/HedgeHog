@@ -14,6 +14,10 @@ namespace HedgeHog {
     }
     public static readonly double StDevRatioMax = 0.288675135;
 
+    public static IEnumerable<double[]> PrevNext(this IList<double> bars){
+      return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
+    }
+
     public static IList<double> Wavelette(this IList<double> values) {
       var sign = Math.Sign(values[1] - values[0]);
       var wavelette = new List<double>(values.Take(2));
@@ -27,9 +31,17 @@ namespace HedgeHog {
       }
       return wavelette;
     }
+    public static IList<double> CrossesInMiddle(this IEnumerable<double> valuesIn, double value) {
+      var values = valuesIn.Select(v1 => v1 - value);
+      return CroddesInMiddle(values);
+    }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
-      var values = values1.Zip(values2, (v1, v2) => v1 - v2).ToList();
-      var last = new Box<double>(values[0]);
+      var values = values1.Zip(values2, (v1, v2) => v1 - v2);
+      return CroddesInMiddle(values);
+    }
+
+    private static IList<double> CroddesInMiddle(IEnumerable<double> values) {
+      var last = new Box<double>(values.First());
       var counts = new List<Box<double>>() { last };
       Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
       foreach (var v in values.Skip(1)) {

@@ -43,7 +43,8 @@ namespace HedgeHog {
       int nPolyOrder = polyOrder;
       double[,] dZ = new double[dY.Length, nPolyOrder + 1];
 
-      for (int i = 0; i < dY.Length; i++) {
+      var l = dY.Length;
+      for (int i = 0; i < l; i++) {
         for (int j = 0; j < nPolyOrder + 1; j++) {
           dZ[i, j] = j == 1 ? dX[i] : j == 2 ? dX[i] * dX[i] : Math.Pow(dX[i], (double)j);
         }
