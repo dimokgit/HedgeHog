@@ -74,7 +74,8 @@ namespace HedgeHog.Alice.Store {
     WaveRight = 6,
     HorseShoe = 70,
     Sinus = 80,
-    Count = 90
+    Count = 90,
+    Count0 = 91
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
