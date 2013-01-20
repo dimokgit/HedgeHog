@@ -1079,15 +1079,21 @@ namespace HedgeHog.Alice.Store {
 
     }
 
-    [DisplayName("Price CMA Value")]
-    [Category(categoryActive)]
-    [Description("MovingAverageValue enum")]
-    public MovingAverageValues MovingAverageValue {
-      get { return (MovingAverageValues)BarPeriodsHigh; }
+    Func<Rate, double> GetTradeEnterBy() {
+      switch (TradeEnterBy) {
+        case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
+        case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
+      }
+      throw new NotSupportedException(TradeEnterBy + " is not supported");
+    }
+    [DisplayName("Trade Enter By")]
+    [Category(categoryActiveFuncs)]
+    public TradeCrossMethod TradeEnterBy {
+      get { return (TradeCrossMethod)BarPeriodsHigh; }
       set {
         if (BarPeriodsHigh != (int)value) {
           BarPeriodsHigh = (int)value;
-          OnPropertyChanged(() => MovingAverageValue);
+          OnPropertyChanged(() => TradeEnterBy);
         }
       }
     }

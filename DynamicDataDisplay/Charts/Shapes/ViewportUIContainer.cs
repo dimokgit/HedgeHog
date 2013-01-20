@@ -165,8 +165,11 @@ namespace Microsoft.Research.DynamicDataDisplay.Charts
 		{
 			if (plotter == null)
 				return;
+      ///DDD///
+      if (this is Microsoft.Research.DynamicDataDisplay.Charts.Shapes.DraggablePoint && !this.IsVisible)
+        return;
 
-			var transform = Plotter.Viewport.Transform;
+      var transform = Plotter.Viewport.Transform;
 
 			Point position = Position.DataToScreen(transform);
 			position += Shift;

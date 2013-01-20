@@ -338,19 +338,32 @@
                             <Setter Property="FontFamily" Value="Courier New"/>
                           </Style>
                         </StackPanel.Resources>
-                        <TextBlock>RatesHeight...... :<TextBlock Text="{Binding RatesHeightInPips,StringFormat=n0}"/></TextBlock>
+                        <TextBlock>RatesHeight...... :
+                            <TextBlock Text="{Binding RatesHeightInPips,StringFormat=n0}"/>
+                        </TextBlock>
                         <TextBlock>StDevBy(H/P)..... :
                           <TextBlock Text="{Binding StDevByHeightInPips,StringFormat=n0}"/>/
                           <TextBlock Text="{Binding StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>Wave.StDevBy(H/P) :
+                        <TextBlock>Corridor Crosses. :
+                          <TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/>
+                        </TextBlock>
+                        <TextBlock >Wave.StDevBy(H/P) :
                           <TextBlock Text="{Binding CorridorStats.StDevByHeightInPips,StringFormat=n0}"/>/
                           <TextBlock Text="{Binding CorridorStats.StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>WaveShort.Height. :<TextBlock Text="{Binding WaveShort.RatesHeightInPips,StringFormat=n0}"/></TextBlock>
-                        <TextBlock>Bars Spread...... :<TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/></TextBlock>
-                        <TextBlock>DistanceIterations:<TextBlock Text="{Binding DistanceIterationsReal,StringFormat=n1}"/></TextBlock>
-                        <TextBlock>RatesHeight/StDev :<TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/></TextBlock>
+                        <TextBlock>WaveShort.Height. :
+                          <TextBlock Text="{Binding WaveShort.RatesHeightInPips,StringFormat=n0}"/>
+                        </TextBlock>
+                        <TextBlock>Bars Spread...... :
+                          <TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/>
+                        </TextBlock>
+                        <TextBlock>DistanceIterations:
+                          <TextBlock Text="{Binding DistanceIterationsReal,StringFormat=n1}"/>
+                        </TextBlock>
+                        <TextBlock>RatesHeight/StDev :
+                          <TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/>
+                        </TextBlock>
                         
                         <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
                           <ListBox.ItemTemplate>

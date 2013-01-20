@@ -121,6 +121,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Enums.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
