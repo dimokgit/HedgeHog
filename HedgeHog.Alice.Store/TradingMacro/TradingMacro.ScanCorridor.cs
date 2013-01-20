@@ -602,6 +602,22 @@ namespace HedgeHog.Alice.Store {
       WaveShortLeft.Rates = rates.ReverseIfNot().ToArray();
       return ScanCorridorByCrosses(rates, priceHigh, priceLow);
     }
+    private CorridorStatistics ScanCorridorSimple(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var cp = CorridorPrice();
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      ratesReversed[0].RunningLow = ratesReversed[0].RunningHigh = cp(ratesReversed[0]);
+      ratesReversed.Aggregate((p, n) => {
+        var v = cp(n);
+        n.RunningLow = p.RunningLow.Min(v);
+        n.RunningHigh = p.RunningHigh.Max(v);
+        return n;
+      });
+      var heightMin = StDevByPriceAvg.Max(StDevByHeight);
+      var rates = ratesReversed.TakeWhile(r => r.RunningHeight < heightMin);
+      WaveShort.Rates = null;
+      WaveShort.Rates = rates.ToArray();
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
     private CorridorStatistics ScanCorridorByCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg;// CorridorPrice();
       var ratesReversed = ratesForCorridor.ReverseIfNot();

@@ -1141,7 +1141,14 @@ namespace HedgeHog.Alice.Store {
         Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByWaveShortAndLeft = a => { if (WaveShortLeft.Rates.Count < CorridorDistanceRatio && WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByBuySellHeight = a => { if (_CenterOfMassBuy - _CenterOfMassSell < StDevByHeight.Max(StDevByPriceAvg))a(); };
-        
+        Action<Action> turnOffIfCorridorInMiddle = a => {
+          var sections = 7;
+          var segment = RatesHeight / sections;
+          var bottom = _RatesMin + segment * (sections / 2.0).Floor();
+          var top = bottom + segment;
+          var tradeLevel = (_buyLevel.Rate + _sellLevel.Rate) / 2;
+          if ((_buyLevel.CanTrade || _sellLevel.CanTrade) && IsAutoStrategy && tradeLevel.Between(bottom, top)) a();
+        };
         Action<Action> turnOff = a => {
           switch (TurnOffFunction) {
             case Store.TurnOffFunctions.Void: return;
@@ -1151,6 +1158,7 @@ namespace HedgeHog.Alice.Store {
             case Store.TurnOffFunctions.WaveShortLeft: turnOffByWaveShortLeft(a); return;
             case Store.TurnOffFunctions.WaveShortAndLeft: turnOffByWaveShortAndLeft(a); return;
             case Store.TurnOffFunctions.BuySellHeight: turnOffByBuySellHeight(a); return;
+            case Store.TurnOffFunctions.InMiddle: turnOffIfCorridorInMiddle(a); return;
           }
           throw new NotSupportedException(TurnOffFunction + " Turnoff function is not supported.");
         };
@@ -1344,6 +1352,7 @@ namespace HedgeHog.Alice.Store {
         #region medianFunc
         Func<Store.MedianFunctions, Func<double>> medianFunc0 = (mf) => {
           switch (mf) {
+            case Store.MedianFunctions.Void: return () => double.NaN;
             case Store.MedianFunctions.Regression: return () => CorridorStats.Coeffs.RegressionValue(0);
             case Store.MedianFunctions.Regression1: return () => CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
             case Store.MedianFunctions.WaveShort: return () => (WaveShort.RatesMax + WaveShort.RatesMin) / 2;
@@ -1586,28 +1595,28 @@ namespace HedgeHog.Alice.Store {
               #region firstTime
               if (firstTime) {
                 watcherCanTrade.SetValue(false);
+                VarianceFunction = VarainceFunctions.Zero;
+                MedianFunction = MedianFunctions.Void;
               }
               #endregion
               {
                 var coeffs = CorridorStats.Coeffs;
-                var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= 0;
-                var crossesOk = CorridorStats.CorridorCrossesCount >= WaveStDevRatio;
+                var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= this.TradingAngleRange;
+                var crossesOk = WaveShort.Rates.Count > CorridorDistanceRatio;
                 var level = coeffs[0];
-                if (watcherCanTrade.SetValue(angleOk && crossesOk && corridorLevel.Abs(level) > RatesHeight / 3).ChangedTo(true)) {
+                var levelOk = true;// corridorLevel.Abs(level) > RatesHeight / 3;
+                if (watcherCanTrade.SetValue(angleOk && crossesOk && levelOk).ChangedTo(true)) {
                   corridorLevel = level;
-                  var median = medianFunc()();
-                  var variance = varianceFunc()() * 2;
-                  _buyLevel.RateEx = median + variance;
-                  _sellLevel.RateEx = median - variance;
+                  _buyLevel.RateEx = WaveShort.RatesMax;
+                  _sellLevel.RateEx = WaveShort.RatesMin;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
                 }
-                var a = 7;
-                var segment = RatesHeight / a;
-                var bottom = _RatesMin + segment * (a/2.0).Floor();
-                var top = bottom + segment;
-                var tradeLevel = (_buyLevel.Rate + _sellLevel.Rate) / 2;
-                if ((_buyLevel.CanTrade||_sellLevel.CanTrade) && IsAutoStrategy && tradeLevel.Between(bottom, top))
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
+                if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
+                  var median = (_buyLevel.Rate + _sellLevel.Rate) / 2;
+                  _buyLevel.RateEx = median + heightMin / 2;
+                  _sellLevel.RateEx = median - heightMin / 2;
+                }
                 adjustExitLevels0();
               }
               break;
@@ -1628,7 +1637,7 @@ namespace HedgeHog.Alice.Store {
                   wavelette2First = cp(wavelette2[0]);
                   wavelette2Last = cp(wavelette2.LastBC());
                   var wavelette2Height = wavelette2First.Abs(wavelette2Last);
-                  waveletteOk = wavelette1.Count < 5 && wavelette2Height >= StDevByHeight + StDevByPriceAvg;
+                  waveletteOk = wavelette1.Count < 5 && wavelette2Height >= varianceFunc()();
                 }
                 if (watcherCanTrade.SetValue(waveletteOk).ChangedTo(true)) {
                   var isUp = wavelette2First > wavelette2Last;
@@ -1643,10 +1652,10 @@ namespace HedgeHog.Alice.Store {
                   _sellLevel.RateEx = low;
                   _buySellLevelsForEach(sr => {
                     sr.CanTradeEx = IsAutoStrategy;
-                    sr.TradesCount = 1;
+                    sr.TradesCount = CorridorCrossesMaximum;
                   });
                 }
-                var heightMin = StDevByHeight.Min(StDevByPriceAvg);
+                var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
                 if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
                   var median = (_buyLevel.Rate + _sellLevel.Rate) / 2;
                   _buyLevel.RateEx = median + heightMin / 2;
@@ -1681,7 +1690,7 @@ namespace HedgeHog.Alice.Store {
             DistanceIterationsRealClear();
             if (!IsAutoStrategy)
               IsTradingActive = false;
-            _buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum.Max(0);
+            _buyLevel.TradesCount = _sellLevel.TradesCount = 0;
             _buySellLevelsForEach(sr => sr.CanTrade = false);
             CorridorStartDate = null;
             CorridorStopDate = DateTime.MinValue;

@@ -920,7 +920,7 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTest = "Test";
     public const string categorySession = "Session";
 
-    [Category(categoryCorridor)]
+    [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int CorridorCrossesMaximum {
@@ -1034,13 +1034,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
-    [Category(categoryXXX_NU)]
+    [Category(categoryActive)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
       set {
         if (TradingAngleRange == value) return;
         TradingAngleRange = value;
-        OnPropertyChanged(TradingMacroMetadata.TradingAngleRange_);
+        OnPropertyChanged(() => TradingAngleRange_);
       }
     }
 

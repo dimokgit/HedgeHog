@@ -20,7 +20,7 @@ namespace HedgeHog {
 
     public static IList<T> Wavelette<T>(this IList<T> values, Func<T, double> value) {
       var wavelette = new List<T>(values.Take(2));
-      if (values.Any()) {
+      if (values.Count > 1) {
         var sign = Math.Sign(value(values[1]) - value(values[0]));
         var prev = values[1];
         foreach (var curr in values.Skip(2)) {
