@@ -18,6 +18,21 @@ namespace HedgeHog {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
 
+    public static IList<T> Wavelette<T>(this IList<T> values, Func<T, double> value) {
+      var wavelette = new List<T>(values.Take(2));
+      if (values.Any()) {
+        var sign = Math.Sign(value(values[1]) - value(values[0]));
+        var prev = values[1];
+        foreach (var curr in values.Skip(2)) {
+          var s = Math.Sign(value(curr) - value(prev));
+          if (s == -sign) break;
+          if (sign == 0) sign = s;
+          wavelette.Add(curr);
+          prev = curr;
+        }
+      }
+      return wavelette;
+    }
     public static IList<double> Wavelette(this IList<double> values) {
       var sign = Math.Sign(values[1] - values[0]);
       var wavelette = new List<double>(values.Take(2));
@@ -31,30 +46,46 @@ namespace HedgeHog {
       }
       return wavelette;
     }
-    public static IList<double> CrossesInMiddle(this IEnumerable<double> valuesIn, double value) {
+    public static IList<double> CrossesInMiddle(this IEnumerable<double> valuesIn, double value, out int index) {
       var values = valuesIn.Select(v1 => v1 - value);
-      return CroddesInMiddle(values);
+      return CrossesInMiddle(values,out index);
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
+      int index;
+      return values1.CrossesInMiddle(values2, out index);
+    }
+    public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2, out int index) {
       var values = values1.Zip(values2, (v1, v2) => v1 - v2);
-      return CroddesInMiddle(values);
+      return CrossesInMiddle(values,out index);
     }
 
-    private static IList<double> CroddesInMiddle(IEnumerable<double> values) {
+    private static IList<double> CrossesInMiddle(IEnumerable<double> values) {
+      int index;
+      return values.CrossesInMiddle(out index);
+    }
+    private static IList<double> CrossesInMiddle(this IEnumerable<double> values,out int index) {
       var last = new Box<double>(values.First());
-      var counts = new List<Box<double>>() { last };
+      var counts = "".Select(s=> new {index = new Box<int>(0),last = new Box<double>(0)}).ToList();
+      counts.Add(new { index = new Box<int>(0), last });
       Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
+      index = 0;
       foreach (var v in values.Skip(1)) {
+        index++;
         var sign = Math.Sign(v);
         if (sign != 0) {
           if (sign == Math.Sign(last.Value)) {
             var compI = sign > 0 ? 2 : 0;
             last.Value = comp[compI](last.Value, v);
-          } else
-            counts.Add(last = new Box<double>(v));
+            counts.Last().index.Value = index;
+          } else {
+            last = last = new Box<double>(v);
+            counts.Add(new { index = new Box<int>(index), last });
+          }
         }
       }
-      return counts.Skip(1).Take(Math.Max(counts.Count - 2, 0)).Select(b => b.Value).ToArray();
+      var ret = counts.Skip(1).Take(Math.Max(counts.Count - 2, 0)).ToArray();
+      index = ret.Select(b => b.index.Value).LastOrDefault();
+      return ret.Select(b => b.last.Value).ToArray();
     }
     public static IList<double[]> Crosses(this IList<double> values1, IList<double> values2) {
       var values = values1.Zip(values2, (v1, v2) => v1 - v2).ToList();
@@ -266,6 +297,11 @@ namespace HedgeHog {
         y += coeffs[ii] * Math.Pow(i, ii);
       //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
+    }
+    public static double[] RegressionValues(this double[] coeffs, int count) {
+      var values = new double[count];
+      Enumerable.Range(0, count).AsParallel().ForAll(i => values[i] = coeffs.RegressionValue(i));
+      return values;
     }
 
     public static double StDevRatio(this IList<double> values) {

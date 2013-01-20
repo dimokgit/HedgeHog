@@ -871,7 +871,12 @@ namespace HedgeHog {
           plotter.Children.Add(dragPoint);
           //dragPoint.SetBinding(DraggablePoint.PositionProperty, new Binding("Value") { Source = ov });
           dragPoint.PositionChanged += (s, e) => {
-            OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, e.Position);
+            var position = e.Position;
+            if(double.IsNaN(e.Position.Y)){
+              var y = ((SimpleLine)GetFriend(s as DraggablePoint)).Value;
+              position = new Point(e.Position.X, y);
+            }
+            OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, position);
             if (!dragPoint.IsMouseOver) return;
             _dragPointPositionChanged = true;
           };
@@ -924,7 +929,7 @@ namespace HedgeHog {
         }
         var dp = rates[uid].DraggablePoint;
         dp.Dispatcher.BeginInvoke(new Action(() => {
-          var raiseChanged = rate == 0;
+          var raiseChanged = rate.IfNaN(0) == 0;
           if (raiseChanged)
             try {
               rate = animatedPriceY.Average();
@@ -1421,7 +1426,7 @@ namespace HedgeHog {
         } finally {
           try {
             //GannLine = ratesforTrend;
-            if (viewPortContainer.Visibility == Visibility.Visible) {
+            if ( false && viewPortContainer.Visibility == Visibility.Visible) {
               double[] doubles = new double[animatedPriceY.Count];
               animatedPriceY.CopyTo(doubles);
               var animatedPriceYMax = animatedPriceY.Max();

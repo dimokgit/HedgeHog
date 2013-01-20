@@ -1545,7 +1545,7 @@ namespace HedgeHog.Alice.Store {
                 args.StepBack = args.StepForward = false;
                 Task.Factory.StartNew(() => {
                   while (inPause() && !args.StepBack && !args.StepForward && !args.MustStop)
-                    Thread.Sleep(200);
+                    Thread.Sleep(1000);
                 }).Wait();
               }
             }
@@ -2859,19 +2859,10 @@ namespace HedgeHog.Alice.Store {
     }
     double _sqrt2 = 1.5;// Math.Sqrt(1.5);
 
-    Func<Rate,Rate, double> GetMovingAverageValueFunction() {
-      switch (MovingAverageValue) {
-        case MovingAverageValues.PriceMove: return (p, r) => (r.PriceAvg-p.PriceAvg).Abs();
-        case MovingAverageValues.PriceAverage: return (p, r) => r.PriceAvg;
-        case MovingAverageValues.PriceSpread: return (p, r) => r.PriceSpread;
-        case MovingAverageValues.Volume: return (p, r) => r.Volume;
-      }
-      throw new InvalidEnumArgumentException(MovingAverageValue + " is not supported.");
-    }
     private void SetMA(int? period = null) {
       switch (MovingAverageType) {
         case Store.MovingAverageType.RegressByMA:
-          RatesArray.SetCma(GetMovingAverageValueFunction(), 3, 3);
+          RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
           RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
           break;
         case Store.MovingAverageType.Regression:
@@ -2886,7 +2877,7 @@ namespace HedgeHog.Alice.Store {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
             //}, PriceCmaPeriod + CmaOffset, PriceCmaLevels + CmaOffset.ToInt());
-            RatesArray.SetCma(GetMovingAverageValueFunction(), PriceCmaPeriod, PriceCmaLevels);
+            RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaPeriod, PriceCmaLevels);
           }
           break;
         case Store.MovingAverageType.Trima:
@@ -3025,7 +3016,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
         case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
-        case TradingMacroTakeProfitFunction.RatesStDev: tp = RatesStDev; break;
+        case TradingMacroTakeProfitFunction.RatesStDev: tp = StDevByHeight.Min(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg, Math.Sqrt(CorridorStats.StDevByHeight * CorridorStats.StDevByPriceAvg) * 4); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
@@ -3054,6 +3045,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
         case ScanCorridorFunction.Crosses: return ScanCorridorByCrosses;
+        case ScanCorridorFunction.CrossesWithAngle: return ScanCorridorByCrossesWithAngle;
+        case ScanCorridorFunction.CrossesStarter: return ScanCorridorByCrossesStarter;
         case ScanCorridorFunction.StDev: return ScanCorridorByStDev;
       }
       throw new NotSupportedException(function + "");
@@ -3142,7 +3135,7 @@ namespace HedgeHog.Alice.Store {
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
       var currentGross = this.TradingStatistics.CurrentGross;
       var lotSize = LotSizeByLoss(TradesManager,currentGross , LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls);
+      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls).Max(MaxLotSize);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {
