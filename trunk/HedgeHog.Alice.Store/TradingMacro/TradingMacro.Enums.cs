@@ -16,7 +16,8 @@ namespace HedgeHog.Alice.Store {
     Crosses = 30,
     CrossesStarter = 31,
     CrossesWithAngle = 32,
-    StDev = 40
+    StDev = 40,
+    StDevSimple = 41
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -43,7 +44,7 @@ namespace HedgeHog.Alice.Store {
     CorridorHeight = 5,
     BuySellLevels = 6,
     RatesHeight = 10,
-    RatesStDev = 11,
+    RatesStDevMax = 11,
     RatesHeight_2 = 12,
     WaveShort = 13,
     WaveTradeStart = 14,
@@ -66,7 +67,8 @@ namespace HedgeHog.Alice.Store {
     WaveHeight = 20,
     Correlation = 30,
     Variance = 31,
-    BuySellHeight = 40
+    BuySellHeight = 40,
+    InMiddle = 50
   }
   public enum ExitFunctions {
     Void = -1,
@@ -77,6 +79,7 @@ namespace HedgeHog.Alice.Store {
     GrossTP = 4
   }
   public enum MedianFunctions {
+    Void = -1,
     WaveShort = 0,
     WaveTrade = 1,
     WaveStart = 20,

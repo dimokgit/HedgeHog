@@ -3016,8 +3016,8 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
         case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
-        case TradingMacroTakeProfitFunction.RatesStDev: tp = StDevByHeight.Min(StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg, Math.Sqrt(CorridorStats.StDevByHeight * CorridorStats.StDevByPriceAvg) * 4); break;
+        case TradingMacroTakeProfitFunction.RatesStDevMax: tp = StDevByHeight.Max(StDevByPriceAvg); break;
+        case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
         case TradingMacroTakeProfitFunction.BuySellLevels:
@@ -3048,6 +3048,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.CrossesWithAngle: return ScanCorridorByCrossesWithAngle;
         case ScanCorridorFunction.CrossesStarter: return ScanCorridorByCrossesStarter;
         case ScanCorridorFunction.StDev: return ScanCorridorByStDev;
+        case ScanCorridorFunction.StDevSimple: return ScanCorridorSimple;
       }
       throw new NotSupportedException(function + "");
     }
