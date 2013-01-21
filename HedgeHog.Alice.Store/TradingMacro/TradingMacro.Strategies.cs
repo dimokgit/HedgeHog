@@ -1018,7 +1018,7 @@ namespace HedgeHog.Alice.Store {
         #region exitOnFriday
         Func<bool> exitOnFriday = () => {
           if (!SuppRes.Any(sr => sr.InManual)) {
-            bool isEOW = !isCorridorFrozen() && IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
+            bool isEOW = IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
             if (isEOW) {
               if (Trades.Any())
                 CloseTrades(Trades.Lots());
@@ -1036,6 +1036,19 @@ namespace HedgeHog.Alice.Store {
         #region exitVoid
         Action exitVoid = () => {
           if (exitOnFriday()) return;
+        };
+        #endregion
+        #region exitByWavelette
+        Action exitByWavelette = () => {
+          double als = LotSizeByLossBuy;
+          if (exitOnFriday()) return;
+          Func<double> wavelette = () => RatesArray.ReverseIfNot().Wavelette(CorridorPrice).Height();
+          if (Trades.Lots() > als && wavelette() > RatesHeight / 3)
+            _trimAtZero = true;
+          if (currentGrossInPips() >= TakeProfitPips || currentGross() > 0 && wavelette() > RatesHeight / 3)
+            CloseAtZero = true;
+          else if (Trades.Lots() > LotSize && currentGross() > 0)
+            _trimAtZero = true;
         };
         #endregion
         #region exitByTakeProfit
@@ -1126,6 +1139,7 @@ namespace HedgeHog.Alice.Store {
             case Store.ExitFunctions.Void: return exitVoid;
             case Store.ExitFunctions.Exit0: return exitWave0;
             case Store.ExitFunctions.GrossTP: return exitByTakeProfit;
+            case Store.ExitFunctions.Wavelette: return exitByWavelette;
             case Store.ExitFunctions.Exit: return exitWave;
             case Store.ExitFunctions.Exit1: return exitWave1;
             case Store.ExitFunctions.Exit2: return exitWave2;
@@ -1602,13 +1616,16 @@ namespace HedgeHog.Alice.Store {
               {
                 var coeffs = CorridorStats.Coeffs;
                 var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= this.TradingAngleRange;
-                var crossesOk = WaveShort.Rates.Count > CorridorDistanceRatio;
-                var level = coeffs[0];
-                var levelOk = true;// corridorLevel.Abs(level) > RatesHeight / 3;
+                var countMin = (WaveShortLeft.HasRates ? WaveShortLeft.Rates.Count : CorridorDistanceRatio).Max(CorridorDistanceRatio);
+                var crossesOk = WaveShort.Rates.Count > countMin;
+                var high = WaveShort.RatesMax;
+                var low = WaveShort.RatesMin;
+                var level = (high + low) / 2;
+                var levelOk = corridorLevel.Abs(level) > varianceFunc()();
                 if (watcherCanTrade.SetValue(angleOk && crossesOk && levelOk).ChangedTo(true)) {
                   corridorLevel = level;
-                  _buyLevel.RateEx = WaveShort.RatesMax;
-                  _sellLevel.RateEx = WaveShort.RatesMin;
+                  _buyLevel.RateEx = high;
+                  _sellLevel.RateEx = low;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
                 }
                 var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);

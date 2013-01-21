@@ -76,7 +76,8 @@ namespace HedgeHog.Alice.Store {
     Exit = 1,
     Exit1 = 2,
     Exit2 = 3,
-    GrossTP = 4
+    GrossTP = 4,
+    Wavelette = 5
   }
   public enum MedianFunctions {
     Void = -1,
