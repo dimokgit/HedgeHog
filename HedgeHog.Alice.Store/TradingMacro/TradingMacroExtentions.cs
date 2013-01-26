@@ -3136,7 +3136,7 @@ namespace HedgeHog.Alice.Store {
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
       var currentGross = this.TradingStatistics.CurrentGross;
       var lotSize = LotSizeByLoss(TradesManager,currentGross , LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls).Max(MaxLotSize);
+      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize || !CorridorFollowsPrice? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls).Max(MaxLotSize);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {

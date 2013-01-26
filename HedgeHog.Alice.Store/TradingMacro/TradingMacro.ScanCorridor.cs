@@ -614,7 +614,7 @@ namespace HedgeHog.Alice.Store {
         n.RunningHigh = p.RunningHigh.Max(v);
         return n;
       });
-      var heightMin = StDevByPriceAvg.Max(StDevByHeight);
+      var heightMin = StDevByPriceAvg.Min(StDevByHeight);
       var rates = ratesReversed.TakeWhile(r => r.RunningHeight < heightMin);
       WaveShort.Rates = null;
       WaveShort.Rates = rates.ToArray();
