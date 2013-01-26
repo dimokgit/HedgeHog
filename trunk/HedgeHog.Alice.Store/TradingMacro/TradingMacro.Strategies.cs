@@ -1614,6 +1614,7 @@ namespace HedgeHog.Alice.Store {
               }
               #endregion
               {
+                if (SuppRes.Any(sr => sr.InManual)) break;
                 var coeffs = CorridorStats.Coeffs;
                 var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= this.TradingAngleRange;
                 var countMin = (WaveShortLeft.HasRates ? WaveShortLeft.Rates.Count : CorridorDistanceRatio).Max(CorridorDistanceRatio);
@@ -1626,14 +1627,8 @@ namespace HedgeHog.Alice.Store {
                   corridorLevel = level;
                   _buyLevel.RateEx = high;
                   _sellLevel.RateEx = low;
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
                 }
-                var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
-                if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
-                  var median = (_buyLevel.Rate + _sellLevel.Rate) / 2;
-                  _buyLevel.RateEx = median + heightMin / 2;
-                  _sellLevel.RateEx = median - heightMin / 2;
-                }
+                _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && WaveShort.HasRates && WaveShort.Rates.Count < CorridorDistanceRatio);
                 adjustExitLevels0();
               }
               break;
@@ -1657,20 +1652,24 @@ namespace HedgeHog.Alice.Store {
                   waveletteOk = wavelette1.Count < 5 && wavelette2Height >= varianceFunc()();
                 }
                 if (watcherCanTrade.SetValue(waveletteOk).ChangedTo(true)) {
-                  var isUp = wavelette2First > wavelette2Last;
-                  var sorted = wavelette2.OrderBy(_priceAvg);
-                  var dateSecond = (isUp ? sorted.Last() : sorted.First()).StartDate;
-                  var pricesSecond = WaveShort.Rates.TakeWhile(r => r.StartDate >= dateSecond);
-                  var priceFirst = isUp ? pricesSecond.Min(_priceAvg) : pricesSecond.Max(_priceAvg);
-                  var priceSecond = isUp ? pricesSecond.Max(_priceAvg) : pricesSecond.Min(_priceAvg);
-                  var high = (isUp ? priceSecond : priceFirst) + PointSize;
-                  var low = (isUp ? priceFirst : priceSecond) - PointSize;
-                  _buyLevel.RateEx = high;
-                  _sellLevel.RateEx = low;
-                  _buySellLevelsForEach(sr => {
-                    sr.CanTradeEx = IsAutoStrategy;
-                    sr.TradesCount = CorridorCrossesMaximum;
-                  });
+                  #region Old
+                  if (false){
+                    var isUp = wavelette2First > wavelette2Last;
+                    var sorted = wavelette2.OrderBy(_priceAvg);
+                    var dateSecond = (isUp ? sorted.Last() : sorted.First()).StartDate;
+                    var pricesSecond = WaveShort.Rates.TakeWhile(r => r.StartDate >= dateSecond);
+                    var priceFirst = isUp ? pricesSecond.Min(_priceAvg) : pricesSecond.Max(_priceAvg);
+                    var priceSecond = isUp ? pricesSecond.Max(_priceAvg) : pricesSecond.Min(_priceAvg);
+                    var high = (isUp ? priceSecond : priceFirst) + PointSize;
+                    var low = (isUp ? priceFirst : priceSecond) - PointSize;
+                    _buyLevel.RateEx = high;
+                    _sellLevel.RateEx = low;
+                    _buySellLevelsForEach(sr => {
+                      sr.CanTradeEx = IsAutoStrategy;
+                      sr.TradesCount = CorridorCrossesMaximum;
+                    });
+                  }
+                  #endregion
                 }
                 var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
                 if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
