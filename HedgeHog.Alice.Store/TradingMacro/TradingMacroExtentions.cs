@@ -1545,7 +1545,7 @@ namespace HedgeHog.Alice.Store {
                 args.StepBack = args.StepForward = false;
                 Task.Factory.StartNew(() => {
                   while (inPause() && !args.StepBack && !args.StepForward && !args.MustStop)
-                    Thread.Sleep(1000);
+                    Thread.Sleep(100);
                 }).Wait();
               }
             }
