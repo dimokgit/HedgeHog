@@ -36,7 +36,8 @@ namespace HedgeHog.Alice.Store {
     Count = 90,
     CountWithAngle = 92,
     Count0 = 91,
-    Wavelette = 93
+    Wavelette = 93,
+    Wavelette1 = 94
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -99,6 +100,7 @@ namespace HedgeHog.Alice.Store {
     Rates3 = 60,
     Rates2 = 61,
     Rates = 62,
+    Rates4 = 63,
     StDevSqrt = 70
   }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }

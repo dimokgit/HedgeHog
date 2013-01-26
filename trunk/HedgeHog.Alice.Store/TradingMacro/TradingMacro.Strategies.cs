@@ -1042,10 +1042,10 @@ namespace HedgeHog.Alice.Store {
         Action exitByWavelette = () => {
           double als = LotSizeByLossBuy;
           if (exitOnFriday()) return;
-          Func<double> wavelette = () => RatesArray.ReverseIfNot().Wavelette(CorridorPrice).Height();
-          if (Trades.Lots() > als && wavelette() > RatesHeight / 3)
+          var waveOk = WaveShort.Rates.Count < CorridorDistanceRatio;
+          if (Trades.Lots() > als && waveOk)
             _trimAtZero = true;
-          if (currentGrossInPips() >= TakeProfitPips || currentGross() > 0 && wavelette() > RatesHeight / 3)
+          if (currentGrossInPips() >= TakeProfitPips || currentGross() > 0 && waveOk)
             CloseAtZero = true;
           else if (Trades.Lots() > LotSize && currentGross() > 0)
             _trimAtZero = true;
@@ -1397,6 +1397,7 @@ namespace HedgeHog.Alice.Store {
             case Store.VarainceFunctions.Rates: return () => RatesHeight;
             case Store.VarainceFunctions.Rates2: return () => RatesHeight / 2;
             case Store.VarainceFunctions.Rates3: return () => RatesHeight / 3;
+            case Store.VarainceFunctions.Rates4: return () => RatesHeight / 4;
             case Store.VarainceFunctions.Wave: return () => WaveShort.RatesHeight * .45;
             case Store.VarainceFunctions.StDevSqrt: return () => Math.Sqrt(CorridorStats.StDevByPriceAvg * CorridorStats.StDevByHeight);
             case Store.VarainceFunctions.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
@@ -1643,8 +1644,9 @@ namespace HedgeHog.Alice.Store {
               {
                 var waveletteOk = false;
                 double wavelette2First = double.NaN, wavelette2Last = double.NaN;
-                var wavelette1 = WaveShort.Rates.Wavelette(cp);
-                var wavelette2 = WaveShort.Rates.Skip(wavelette1.Count).ToArray().Wavelette(cp);
+                var ratesReversed = _rateArray.ReverseIfNot();
+                var wavelette1 = ratesReversed.Wavelette(cp);
+                var wavelette2 = ratesReversed.Skip(wavelette1.Count).ToArray().Wavelette(cp);
                 if (wavelette2.Any()) {
                   wavelette2First = cp(wavelette2[0]);
                   wavelette2Last = cp(wavelette2.LastBC());
@@ -1652,9 +1654,17 @@ namespace HedgeHog.Alice.Store {
                   waveletteOk = wavelette1.Count < 5 && wavelette2Height >= varianceFunc()();
                 }
                 if (watcherCanTrade.SetValue(waveletteOk).ChangedTo(true)) {
+                  var isUp = wavelette2First > wavelette2Last;
+                  {
+                    var rates = WaveShort.Rates.Take(wavelette1.Count + wavelette2.Count);
+                    var stDev = wavelette2.StDev(_priceAvg);
+                    var high = isUp ? rates.Max(_priceAvg) : double.NaN;
+                    var low = !isUp ? rates.Min(_priceAvg) : double.NaN;
+                    _buyLevel.RateEx = high.IfNaN(low + stDev);
+                    _sellLevel.RateEx = low.IfNaN(high - stDev);
+                  }
                   #region Old
-                  if (false){
-                    var isUp = wavelette2First > wavelette2Last;
+                  if (false) {
                     var sorted = wavelette2.OrderBy(_priceAvg);
                     var dateSecond = (isUp ? sorted.Last() : sorted.First()).StartDate;
                     var pricesSecond = WaveShort.Rates.TakeWhile(r => r.StartDate >= dateSecond);
@@ -1664,20 +1674,60 @@ namespace HedgeHog.Alice.Store {
                     var low = (isUp ? priceFirst : priceSecond) - PointSize;
                     _buyLevel.RateEx = high;
                     _sellLevel.RateEx = low;
-                    _buySellLevelsForEach(sr => {
-                      sr.CanTradeEx = IsAutoStrategy;
-                      sr.TradesCount = CorridorCrossesMaximum;
-                    });
+                    var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
+                    if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
+                      var median = (_buyLevel.Rate + _sellLevel.Rate) / 2;
+                      _buyLevel.RateEx = median + heightMin / 2;
+                      _sellLevel.RateEx = median - heightMin / 2;
+                    }
                   }
                   #endregion
                 }
-                var heightMin = Math.Sqrt(StDevByPriceAvg * StDevByHeight);
-                if (_buyLevel.Rate - _sellLevel.Rate < heightMin) {
-                  var median = (_buyLevel.Rate + _sellLevel.Rate) / 2;
-                  _buyLevel.RateEx = median + heightMin / 2;
-                  _sellLevel.RateEx = median - heightMin / 2;
-                }
+                _buySellLevelsForEach(sr => {
+                  sr.CanTradeEx = IsAutoStrategy;
+                  sr.TradesCount = CorridorCrossesMaximum;
+                });
                 _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && _buyLevel.Rate > _sellLevel.Rate);
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
+            #region Wavelette1
+            case TrailingWaveMethod.Wavelette1:
+              #region firstTime
+              if (firstTime) {
+                watcherCanTrade.SetValue(false);
+                if (VarianceFunction == VarainceFunctions.Zero)
+                  throw new InvalidEnumArgumentException("VarianceFunction", (int)VarianceFunction, typeof(VarainceFunctions));
+              }
+              #endregion
+              {
+                var waveletteOk = false;
+                double wavelette2First = double.NaN, wavelette2Last = double.NaN;
+                var ratesReversed = _rateArray.ReverseIfNot();
+                var wavelette1 = ratesReversed.Wavelette(cp);
+                var wavelette2 = ratesReversed.Skip(wavelette1.Count).ToArray().Wavelette(cp);
+                if (wavelette2.Any()) {
+                  wavelette2First = cp(wavelette2[0]);
+                  wavelette2Last = cp(wavelette2.LastBC());
+                  var wavelette2Height = wavelette2First.Abs(wavelette2Last);
+                  waveletteOk = wavelette1.Count < 5 && wavelette2Height >= varianceFunc()();
+                }
+                if (watcherCanTrade.SetValue(waveletteOk).ChangedTo(true)) {
+                  if (!Trades.Any()) _buySellLevelsForEach(sr => sr.ResetPricePosition());
+                  var isUp = wavelette2First > wavelette2Last;
+                  var rates = WaveShort.Rates.Take(wavelette1.Count + wavelette2.Count);
+                  var stDev = wavelette2.StDev(_priceAvg);
+                  var high = isUp ? rates.Max(_priceAvg) - stDev : double.NaN;
+                  var low = !isUp ? rates.Min(_priceAvg) + stDev : double.NaN;
+                  _buyLevel.RateEx = high.IfNaN(low + stDev);
+                  _sellLevel.RateEx = low.IfNaN(high - stDev);
+                  _buySellLevelsForEach(sr => {
+                    sr.CanTradeEx = IsAutoStrategy;
+                    sr.TradesCount = CorridorCrossesMaximum;
+                  });
+                }
+                //_buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && _buyLevel.Rate > _sellLevel.Rate);
                 adjustExitLevels0();
               }
               break;
