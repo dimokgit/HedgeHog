@@ -37,7 +37,9 @@ namespace HedgeHog.Alice.Store {
     CountWithAngle = 92,
     Count0 = 91,
     Wavelette = 93,
-    Wavelette1 = 94
+    Wavelette1 = 94,
+    Borderer = 100,
+    Manual = 110
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -55,6 +57,9 @@ namespace HedgeHog.Alice.Store {
     PriceSpread = 26,
     WaveShortStDev = 27,
     WaveTradeStartStDev = 28,
+    RatesHeight_3 = 103,
+    RatesHeight_4 = 104,
+    RatesHeight_5 = 105
 
   }
   public enum CorridorHeightMethods {
@@ -69,7 +74,11 @@ namespace HedgeHog.Alice.Store {
     Correlation = 30,
     Variance = 31,
     BuySellHeight = 40,
-    InMiddle = 50
+    InMiddle_4 = 50,
+    InMiddle_5 = 51,
+    InMiddle_6 = 52,
+    InMiddle_7 = 53,
+    CrossCount = 60
   }
   public enum ExitFunctions {
     Void = -1,
@@ -78,7 +87,8 @@ namespace HedgeHog.Alice.Store {
     Exit1 = 2,
     Exit2 = 3,
     GrossTP = 4,
-    Wavelette = 5
+    Wavelette = 5,
+    GrossTP1 = 6,
   }
   public enum MedianFunctions {
     Void = -1,

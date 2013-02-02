@@ -480,7 +480,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryTest)]
     public bool UseTestFile { get; set; }
     [Category(categoryTest)]
-    [Description("Use Super Session")]
+    [DisplayName("Use Super Session")]
     public bool TestUseSuperSession { get; set; }
 
     string _TestPriceCmaLevels = "";
@@ -751,8 +751,8 @@ namespace HedgeHog.Alice.Store {
       var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0], hours[1]);
     }
-    [DisplayName("Trading Hours Range")]
-    [Category(categoryTrading)]
+    [DisplayName("Trading Hours")]
+    [Category(categoryActive)]
     public string TradingHoursRange {
       get { return CorridorIterations; }
       set {
@@ -1022,14 +1022,14 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Price CMA Period")]
-    [Category(categoryActive)]
-    public int PriceCmaPeriod {
+    [DisplayName("LongMAPeriod")]
+    [Category(categoryXXX_NU)]
+    public int LongMAPeriod_ {
       get { return LongMAPeriod; }
       set {
         if (LongMAPeriod == value) return;
         LongMAPeriod = value;
-        OnPropertyChanged(TradingMacroMetadata.PriceCmaPeriod);
+        OnPropertyChanged(() => LongMAPeriod_);
       }
     }
 
