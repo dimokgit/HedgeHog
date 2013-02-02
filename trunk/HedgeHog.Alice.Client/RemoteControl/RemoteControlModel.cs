@@ -499,10 +499,12 @@ namespace HedgeHog.Alice.Client {
     private IEnumerable<DB.v_TradeSession> GetBestSessions(Guid superSessionUid) {
       return GlobalStorage.UseForexContext(c => {
         var sessions = c.v_TradeSession.Where(s => s.SuperSessionUid == superSessionUid).OrderBy(s => s.TimeStamp).ToArray();
+        //if (sessions.Length == 1) return sessions;
         var sessionTuples = sessions.Select(s => new { p = s, n = s }).Take(0).ToList();
         sessions.Aggregate((p, n) => { sessionTuples.Add(new { p, n }); return n; });
         return sessionTuples.OrderByDescending(st => _bestSessionCriteria(st.p) + _bestSessionCriteria(st.n)).Take(1)
-          .Select(st => new[] { st.p, st.n }).First().OrderByDescending(_bestSessionCriteria);
+          .Select(st => new[] { st.p, st.n }).DefaultIfEmpty(sessions)
+          .First().OrderByDescending(_bestSessionCriteria);
       });
     }
     #endregion
@@ -512,7 +514,7 @@ namespace HedgeHog.Alice.Client {
       var testParam = sessions[0].CorridorDistanceRatio.Value;
       var a = sessions.OrderBy(s => s.TimeStamp).ToArray();
       var testParamStep = (a[1].CorridorDistanceRatio - a[0].CorridorDistanceRatio).Value.ToInt();
-      var testParamCount = 9;
+      var testParamCount = 5;
       var testParamStepMin = -testParamCount / 2;
       var startMin = (-(testParam.ToInt() / testParamStep) + 1).Max(testParamStepMin);
       TestParameters.CorridorDistanceRatio = Enumerable.Range(startMin, testParamCount).Select(r => testParam + r * testParamStep).ToArray();
@@ -537,7 +539,7 @@ namespace HedgeHog.Alice.Client {
           tradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if (testParameter != null) {
-            tm.PriceCmaLevels_ = tm.PriceCmaPeriod = testParameter.PriceCmaLevel;
+            tm.PriceCmaLevels_ = testParameter.PriceCmaLevel;
             tm.CorrelationMinimum = testParameter.CorrelationMinimum;
             tm.ProfitToLossExitRatio = testParameter.ProfitToLossExitRatio;
             tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
@@ -1138,8 +1140,12 @@ namespace HedgeHog.Alice.Client {
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          charter.AddTicks(price, rates, false ? new PriceBar[0][] { /*stDevBars/*, voltage1 */} : new PriceBar[0][], info, null,
-            0, 0, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+          var distance = rates.ReverseIfNot()[tm.CorridorDistanceRatio.ToInt()].Distance;
+          //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
+          var distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.DistanceHistory.IfNaN(distance) }).ToArray();
+          var distancesAverage = distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
+          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, voltage1 */} : new PriceBar[0][], info, null,
+            0, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;

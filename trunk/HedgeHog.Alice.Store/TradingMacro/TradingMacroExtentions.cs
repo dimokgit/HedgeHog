@@ -293,7 +293,7 @@ namespace HedgeHog.Alice.Store {
         if (suppRes == null) return false;
       } else
         if (HasTradesByDistance(isBuy)) return false;
-      return PriceCmaPeriod > 10
+      return PriceCmaLevels > 10
         ? (isBuy ? rate.PriceAvg > GetPriceMA(rate) : rate.PriceAvg < GetPriceMA(rate))
         : (isBuy ? CorridorCrossLowPrice(rate) > LoadPriceLow(rate) : CorridorCrossHighPrice(rate) < LoadPriceHigh(rate));
     }
@@ -2863,25 +2863,25 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
-          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
+          RatesArraySafe.SetRegressionPrice(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
           break;
         case Store.MovingAverageType.Regression:
           Action<Rate,double> a = (r,d)=>r.PriceCMALast = d;
-          RatesArraySafe.SetRegressionPrice(PriceCmaPeriod, _priceAvg, a);
+          RatesArraySafe.SetRegressionPrice(PriceCmaLevels, _priceAvg, a);
           break;
         case Store.MovingAverageType.Cma:
           if (period.HasValue)
             RatesArray.SetCma(period.Value, period.Value);
-          else if (PriceCmaPeriod > 0) {
+          else if (PriceCmaLevels > 0) {
             //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
             //}, PriceCmaPeriod + CmaOffset, PriceCmaLevels + CmaOffset.ToInt());
-            RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaPeriod, PriceCmaLevels);
+            RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
           }
           break;
         case Store.MovingAverageType.Trima:
-          RatesArray.SetTrima(PriceCmaPeriod); break;
+          RatesArray.SetTrima(PriceCmaLevels); break;
       }
     }
 
@@ -3016,6 +3016,9 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
         case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_3: tp = RatesHeight / 3; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_4: tp = RatesHeight / 4; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_5: tp = RatesHeight / 5; break;
         case TradingMacroTakeProfitFunction.RatesStDevMax: tp = StDevByHeight.Max(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
@@ -3136,7 +3139,7 @@ namespace HedgeHog.Alice.Store {
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
       var currentGross = this.TradingStatistics.CurrentGross;
       var lotSize = LotSizeByLoss(TradesManager,currentGross , LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
-      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize || !CorridorFollowsPrice? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips/_ratesHeightAdjustmentForAls).Max(MaxLotSize);
+      return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize ? lotSize : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips / _ratesHeightAdjustmentForAls).Max(MaxLotSize);
     }
 
     int StrategyLotSizeByLossAndDistance(ICollection<Trade> trades) {

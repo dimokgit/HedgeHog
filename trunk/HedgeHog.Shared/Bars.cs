@@ -541,7 +541,12 @@ namespace HedgeHog.Bars {
       this.StartDate = StartDate;
     }
 
-    public double SpreadMADiff { get; set; }
+    double _distanceHistory = double.NaN;
+
+    public double DistanceHistory {
+      get { return _distanceHistory; }
+      set { _distanceHistory = value; }
+    }
 
     public double Distance1 { get; set; }
   }

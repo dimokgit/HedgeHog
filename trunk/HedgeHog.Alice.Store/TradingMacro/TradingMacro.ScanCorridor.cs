@@ -605,8 +605,15 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorSimple(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = CorridorPrice();
       var ratesReversed = ratesForCorridor.ReverseIfNot();
+      DayWaveByDistance(ratesReversed, CorridorDistanceRatio);
       WaveShortLeft.Rates = null;
-      WaveShortLeft.Rates = ratesReversed.Take(DayWaveByDistance(ratesReversed, CorridorDistanceRatio).Count).ToArray();
+      var w = CorridorDistanceRatio.ToInt();
+      var rates1 = ratesReversed.Skip(1440 - w / 2).Take(w * 2).ToArray();
+      var distance = ratesReversed[CorridorDistanceRatio.ToInt()].Distance;
+      ratesReversed[CorridorDistanceRatio.ToInt()].DistanceHistory = distance;
+      var distance1 = (rates1.LastBC().Distance - rates1[0].Distance) / 2;
+      var ratio =  distance / distance1;
+      WaveShortLeft.Rates = ratesReversed.Take((CorridorDistanceRatio * ratio).ToInt()).ToArray();
       ratesReversed[0].RunningLow = ratesReversed[0].RunningHigh = cp(ratesReversed[0]);
       ratesReversed.Aggregate((p, n) => {
         var v = cp(n);
@@ -614,8 +621,9 @@ namespace HedgeHog.Alice.Store {
         n.RunningHigh = p.RunningHigh.Max(v);
         return n;
       });
-      var heightMin = StDevByPriceAvg.Min(StDevByHeight);
-      var rates = ratesReversed.TakeWhile(r => r.RunningHeight < heightMin);
+      var countMin = 2;
+      var heightMin = StDevByPriceAvg.Min(StDevByHeight) / PolyOrder;
+      var rates = ratesReversed.TakeWhile(r => countMin-- > 0 || r.RunningHeight < heightMin);
       WaveShort.Rates = null;
       WaveShort.Rates = rates.ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
@@ -916,7 +924,23 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    private IList<Rate> DayWaveByDistance(IList<Rate> ratesForCorridor,double periods) {
+    private IList<Rate> DayWaveByDistanceByPriceHeight(IList<Rate> ratesForCorridor, double periods) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      ratesReversed[0].Distance1 = 0;
+      ratesReversed[0].RunningHigh = double.MinValue;
+      ratesReversed[0].RunningLow = double.MaxValue;
+      ratesReversed.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
+        var height = (n.PriceHigh - n.PriceLow) / PointSize;
+        height = Math.Pow(height, DistanceIterations);
+        n.Distance1 = p.Distance1 + (IsCorridorForwardOnly ? 1 / height : height);
+        return /*1 /*/ height;
+      }, ratesReversed[0].PriceHigh - ratesReversed[0].PriceLow);
+      var ratesDistance = ratesForCorridor.Distance();
+      var dayRatio = ratesDistance * periods / periods.Max(ratesForCorridor.Count);
+      Func<Rate, bool> distComp = r => r.Distance <= dayRatio;
+      return ratesReversed.TakeWhile(distComp).ToArray();
+    }
+    private IList<Rate> DayWaveByDistance(IList<Rate> ratesForCorridor, double periods) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       ratesReversed[0].Distance1 = 0;
       ratesReversed[0].RunningHigh = double.MinValue;

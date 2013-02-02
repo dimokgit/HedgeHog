@@ -810,8 +810,8 @@ namespace HedgeHog.Alice.Store {
               //var phH = WaveTradeStart.Rates.Take(5).ToArray().PriceHikes().DefaultIfEmpty(SpreadForCorridor).Max();
               var tpRatioBySpread = 1;// +Math.Log(phH.Ratio(SpreadForCorridor), 1.5);
               var tpColse = InPoints((CloseAtZero || _trimAtZero || _trimToLotSize || isProfitOk() ? 0 : (TakeProfitPips / tpRatioBySpread) + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0)));
-              var priceAvgMax = WaveShort.Rates.Take(PriceCmaPeriod.Max(5)).Max(r => CorridorPrice(r)) - PointSize / 100;
-              var priceAvgMin = WaveShort.Rates.Take(PriceCmaPeriod.Max(5)).Min(r => CorridorPrice(r)) + PointSize / 100;
+              var priceAvgMax = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Max(r => CorridorPrice(r)) - PointSize / 100;
+              var priceAvgMin = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Min(r => CorridorPrice(r)) + PointSize / 100;
               if (buyCloseLevel.InManual) {
                 if (buyCloseLevel.Rate <= priceAvgMax)
                   buyCloseLevel.Rate = priceAvgMax;
@@ -1018,7 +1018,7 @@ namespace HedgeHog.Alice.Store {
         #region exitOnFriday
         Func<bool> exitOnFriday = () => {
           if (!SuppRes.Any(sr => sr.InManual)) {
-            bool isEOW = IsAutoStrategy && (IsEndOfWeek() || !IsTradingHour());
+            bool isEOW = IsAutoStrategy && IsEndOfWeek();
             if (isEOW) {
               if (Trades.Any())
                 CloseTrades(Trades.Lots());
@@ -1029,10 +1029,16 @@ namespace HedgeHog.Alice.Store {
           return false;
         };
         #endregion
+        #region exitByGrossTakeProfit
         Func<bool> exitByGrossTakeProfit = () => 
           Trades.Lots() >= LotSize * ProfitToLossExitRatio && TradesManager.MoneyAndLotToPips(-currentGross(), LotSize, Pair) <= TakeProfitPips;
+        #endregion
+
+        //TradesManager.MoneyAndLotToPips(-currentGross(), LotSizeByLossBuy, Pair)
+        #region exitByLossGross
         Func<bool> exitByLossGross = () => 
           Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < currentGross() * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
+        #endregion
         #region exitVoid
         Action exitVoid = () => {
           if (exitOnFriday()) return;
@@ -1058,6 +1064,19 @@ namespace HedgeHog.Alice.Store {
           if (exitByGrossTakeProfit())
             CloseTrades(Trades.Lots() - LotSize);
           else if (Trades.Lots() > LotSize && currentGross() > 0)
+            _trimAtZero = true;
+        };
+        #endregion
+        #region exitByTakeProfit_1
+        Action exitByTakeProfit_1 = () => {
+          double als = LotSizeByLossBuy;
+          var lots = Trades.Lots();
+          if (exitOnFriday()) return;
+          if (exitByGrossTakeProfit())
+            _trimAtZero = true;
+          else if (lots >= LotSize * ProfitToLossExitRatio && -currentLoss() / currentGross() > 10)
+            _trimAtZero = true;
+          else if (lots > LotSize && currentGross() > 0)
             _trimAtZero = true;
         };
         #endregion
@@ -1139,6 +1158,7 @@ namespace HedgeHog.Alice.Store {
             case Store.ExitFunctions.Void: return exitVoid;
             case Store.ExitFunctions.Exit0: return exitWave0;
             case Store.ExitFunctions.GrossTP: return exitByTakeProfit;
+            case Store.ExitFunctions.GrossTP1: return exitByTakeProfit_1;
             case Store.ExitFunctions.Wavelette: return exitByWavelette;
             case Store.ExitFunctions.Exit: return exitWave;
             case Store.ExitFunctions.Exit1: return exitWave1;
@@ -1149,20 +1169,21 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #endregion
         #region TurnOff Funcs
+        Action<double, Action> turnOffIfCorridorInMiddle_ = (sections,a) => {
+          var segment = RatesHeight / sections;
+          var rest = (RatesHeight - segment) / 2;
+          var bottom = _RatesMin + rest;
+          var top = _RatesMax - rest;
+          var tradeLevel = (_buyLevel.Rate + _sellLevel.Rate) / 2;
+          if ((_buyLevel.CanTrade || _sellLevel.CanTrade) && IsAutoStrategy && tradeLevel.Between(bottom, top)) a();
+        };
+        Action<Action> turnOffByCrossCount = a => { if (_buyLevel.TradesCount.Min(_sellLevel.TradesCount) < CorridorCrossesMaximum)a(); };
         Action<Action> turnOffByCorrelation1 = a => { if (CorridorCorrelation > CorrelationMinimum)a(); };
         Action<Action> turnOffByCorrelation = a => { if (CorridorCorrelation < CorrelationMinimum)a(); };
         Action<Action> turnOffByWaveHeight = a => { if (WaveShort.RatesHeight < RatesHeight * .75)a(); };
         Action<Action> turnOffByWaveShortLeft = a => { if (WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByWaveShortAndLeft = a => { if (WaveShortLeft.Rates.Count < CorridorDistanceRatio && WaveShort.Rates.Count < WaveShortLeft.Rates.Count)a(); };
         Action<Action> turnOffByBuySellHeight = a => { if (_CenterOfMassBuy - _CenterOfMassSell < StDevByHeight.Max(StDevByPriceAvg))a(); };
-        Action<Action> turnOffIfCorridorInMiddle = a => {
-          var sections = 7;
-          var segment = RatesHeight / sections;
-          var bottom = _RatesMin + segment * (sections / 2.0).Floor();
-          var top = bottom + segment;
-          var tradeLevel = (_buyLevel.Rate + _sellLevel.Rate) / 2;
-          if ((_buyLevel.CanTrade || _sellLevel.CanTrade) && IsAutoStrategy && tradeLevel.Between(bottom, top)) a();
-        };
         Action<Action> turnOff = a => {
           switch (TurnOffFunction) {
             case Store.TurnOffFunctions.Void: return;
@@ -1172,7 +1193,11 @@ namespace HedgeHog.Alice.Store {
             case Store.TurnOffFunctions.WaveShortLeft: turnOffByWaveShortLeft(a); return;
             case Store.TurnOffFunctions.WaveShortAndLeft: turnOffByWaveShortAndLeft(a); return;
             case Store.TurnOffFunctions.BuySellHeight: turnOffByBuySellHeight(a); return;
-            case Store.TurnOffFunctions.InMiddle: turnOffIfCorridorInMiddle(a); return;
+            case Store.TurnOffFunctions.InMiddle_4: turnOffIfCorridorInMiddle_(4, a); return;
+            case Store.TurnOffFunctions.InMiddle_5: turnOffIfCorridorInMiddle_(5, a); return;
+            case Store.TurnOffFunctions.InMiddle_6: turnOffIfCorridorInMiddle_(6, a); return;
+            case Store.TurnOffFunctions.InMiddle_7: turnOffIfCorridorInMiddle_(7, a); return;
+            case Store.TurnOffFunctions.CrossCount: turnOffByCrossCount(a); return;
           }
           throw new NotSupportedException(TurnOffFunction + " Turnoff function is not supported.");
         };
@@ -1213,7 +1238,8 @@ namespace HedgeHog.Alice.Store {
           return other;
         };
         #endregion
-        Func<SuppRes, bool> suppResCanTrade = (sr) => sr.CanTrade && sr.TradesCount <= 0 && !HasTradesByDistance(sr.IsBuy);
+        Func<SuppRes, bool> canTradeLocal = sr => true;
+        Func<SuppRes, bool> suppResCanTrade = (sr) => IsTradingHour() && canTradeLocal(sr) && sr.CanTrade && sr.TradesCount <= 0 && !HasTradesByDistance(sr.IsBuy);
         #endregion
 
         #region SuppRes Event Handlers
@@ -1223,7 +1249,7 @@ namespace HedgeHog.Alice.Store {
           var isBuy = suppRes.IsBuy;
           var lot = Trades.IsBuy(!isBuy).Lots();
           var canTrade = suppResCanTrade(suppRes);
-          if (suppResCanTrade(suppRes)) {
+          if (canTrade) {
             lot += AllowedLotSizeCore();
             suppRes.TradeDate = TradesManager.ServerTime;
           }
@@ -1318,8 +1344,8 @@ namespace HedgeHog.Alice.Store {
                 //var phH = WaveTradeStart.Rates.Take(5).ToArray().PriceHikes().DefaultIfEmpty(SpreadForCorridor).Max();
                 var tpRatioBySpread = 1;// +Math.Log(phH.Ratio(SpreadForCorridor), 1.5);
                 var tpColse = InPoints((CloseAtZero || _trimAtZero || _trimToLotSize || isProfitOk() ? 0 : (TakeProfitPips / tpRatioBySpread) + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0)));
-                var priceAvgMax = WaveShort.Rates.Take(PriceCmaPeriod.Max(5)).Max(r => CorridorPrice(r)) - PointSize / 100;
-                var priceAvgMin = WaveShort.Rates.Take(PriceCmaPeriod.Max(5)).Min(r => CorridorPrice(r)) + PointSize / 100;
+                var priceAvgMax = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Max(r => CorridorPrice(r)) - PointSize / 100;
+                var priceAvgMin = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Min(r => CorridorPrice(r)) + PointSize / 100;
                 if (buyCloseLevel.InManual) {
                   if (buyCloseLevel.Rate <= priceAvgMax)
                     buyCloseLevel.Rate = priceAvgMax;
@@ -1400,10 +1426,10 @@ namespace HedgeHog.Alice.Store {
             case Store.VarainceFunctions.Rates4: return () => RatesHeight / 4;
             case Store.VarainceFunctions.Wave: return () => WaveShort.RatesHeight * .45;
             case Store.VarainceFunctions.StDevSqrt: return () => Math.Sqrt(CorridorStats.StDevByPriceAvg * CorridorStats.StDevByHeight);
-            case Store.VarainceFunctions.Price: return () => CorridorStats.StDevByPriceAvg * _waveStDevRatioSqrt / 2;
-            case Store.VarainceFunctions.Hight: return () => CorridorStats.StDevByHeight * _waveStDevRatioSqrt / 2;
-            case VarainceFunctions.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
-            case VarainceFunctions.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight) * _waveStDevRatioSqrt / 2;
+            case Store.VarainceFunctions.Price: return () => CorridorStats.StDevByPriceAvg;
+            case Store.VarainceFunctions.Hight: return () => CorridorStats.StDevByHeight;
+            case VarainceFunctions.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight);
+            case VarainceFunctions.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight);
             case VarainceFunctions.Sum: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
           }
           throw new NotSupportedException(VarianceFunction + " Variance function is not supported.");
@@ -1425,6 +1451,7 @@ namespace HedgeHog.Alice.Store {
         Action adjustEnterLevels = () => {
           if (!WaveShort.HasRates) return;
           switch (TrailingDistanceFunction) {
+            #region Old
             #region WaveTrade
             case TrailingWaveMethod.WaveTrade: {
                 if (firstTime) { }
@@ -1605,6 +1632,7 @@ namespace HedgeHog.Alice.Store {
               }
               break;
             #endregion
+            #endregion
             #region Count0
             case TrailingWaveMethod.Count0:
               #region firstTime
@@ -1615,6 +1643,9 @@ namespace HedgeHog.Alice.Store {
               }
               #endregion
               {
+                var sector = RatesHeight / WaveStDevRatio;
+                _CenterOfMassBuy = _RatesMax - sector;
+                _CenterOfMassSell = _RatesMin + sector;
                 if (SuppRes.Any(sr => sr.InManual)) break;
                 var coeffs = CorridorStats.Coeffs;
                 var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= this.TradingAngleRange;
@@ -1624,12 +1655,17 @@ namespace HedgeHog.Alice.Store {
                 var low = WaveShort.RatesMin;
                 var level = (high + low) / 2;
                 var levelOk = corridorLevel.Abs(level) > varianceFunc()();
-                if (watcherCanTrade.SetValue(angleOk && crossesOk && levelOk).ChangedTo(true)) {
+                var sectorOk = !level.Between(_CenterOfMassSell, _CenterOfMassBuy);
+                if (watcherCanTrade.SetValue(angleOk && crossesOk && levelOk && sectorOk).ChangedTo(true)) {
                   corridorLevel = level;
                   _buyLevel.RateEx = high;
                   _sellLevel.RateEx = low;
                 }
-                _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && WaveShort.HasRates && WaveShort.Rates.Count < CorridorDistanceRatio);
+                _buySellLevelsForEach(sr => 
+                  sr.CanTradeEx = IsAutoStrategy 
+                  && WaveShort.HasRates 
+                  && WaveShort.Rates.Count < CorridorDistanceRatio 
+                  && _buyLevel.Rate > _sellLevel.Rate);
                 adjustExitLevels0();
               }
               break;
@@ -1685,7 +1721,7 @@ namespace HedgeHog.Alice.Store {
                 }
                 _buySellLevelsForEach(sr => {
                   sr.CanTradeEx = IsAutoStrategy;
-                  sr.TradesCount = CorridorCrossesMaximum;
+                  sr.TradesCount = CorridorCrossesMaximum.Max(0);
                 });
                 _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && _buyLevel.Rate > _sellLevel.Rate);
                 adjustExitLevels0();
@@ -1696,9 +1732,16 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.Wavelette1:
               #region firstTime
               if (firstTime) {
+                canTradeLocal = sr => {
+                  return true;
+                  var bs = _buyLevel.Rate.Abs(_sellLevel.Rate);
+                  return (sr.IsBuy ? this.CurrentPrice.Ask - sr.Rate : sr.Rate - CurrentPrice.Bid) < bs;
+                };
                 watcherCanTrade.SetValue(false);
                 if (VarianceFunction == VarainceFunctions.Zero)
                   throw new InvalidEnumArgumentException("VarianceFunction", (int)VarianceFunction, typeof(VarainceFunctions));
+                if (WaveStDevRatio <= 0)
+                  throw new Exception("WaveStDevRatio <= 0!");
               }
               #endregion
               {
@@ -1713,21 +1756,100 @@ namespace HedgeHog.Alice.Store {
                   var wavelette2Height = wavelette2First.Abs(wavelette2Last);
                   waveletteOk = wavelette1.Count < 5 && wavelette2Height >= varianceFunc()();
                 }
-                if (watcherCanTrade.SetValue(waveletteOk).ChangedTo(true)) {
+                var sector = RatesHeight / WaveStDevRatio;
+                _CenterOfMassBuy = _RatesMax - sector;
+                _CenterOfMassSell = _RatesMin + sector;
+                var canTrade = !_priceAvg(RateLast).Between(_CenterOfMassSell, _CenterOfMassBuy);
+                var isUp = wavelette2First > wavelette2Last;
+                var rates = WaveShort.Rates.Take(wavelette1.Count + wavelette2.Count);
+                var stDev = wavelette2.StDev(_priceAvg);
+                var high = isUp ? rates.Max(_priceAvg) + stDev : double.NaN;
+                var low = !isUp ? rates.Min(_priceAvg) - stDev : double.NaN;
+                high = high.IfNaN(low + stDev * 2);
+                low = low.IfNaN(high - stDev * 2);
+                var level = (high + low) / 2;
+                var corridorOk = corridorLevel.Abs(level) > RatesHeight / 3; 
+                if (watcherCanTrade.SetValue(waveletteOk && canTrade && corridorOk).ChangedTo(true)) {
+                  corridorLevel = level;
                   if (!Trades.Any()) _buySellLevelsForEach(sr => sr.ResetPricePosition());
-                  var isUp = wavelette2First > wavelette2Last;
-                  var rates = WaveShort.Rates.Take(wavelette1.Count + wavelette2.Count);
-                  var stDev = wavelette2.StDev(_priceAvg);
-                  var high = isUp ? rates.Max(_priceAvg) - stDev : double.NaN;
-                  var low = !isUp ? rates.Min(_priceAvg) + stDev : double.NaN;
-                  _buyLevel.RateEx = high.IfNaN(low + stDev);
-                  _sellLevel.RateEx = low.IfNaN(high - stDev);
+                  _buyLevel.RateEx = high.IfNaN(low + stDev*2);
+                  _sellLevel.RateEx = low.IfNaN(high - stDev*2);
+                  _buySellLevelsForEach(sr =>
+                    sr.TradesCount = CorridorCrossesMaximum.Max(0)
+                  );
+                }
+                _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && _buyLevel.Rate > _sellLevel.Rate);
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
+            #region Borderer
+            case TrailingWaveMethod.Borderer:
+              #region firstTime
+              if (firstTime) {
+                watcherCanTrade.SetValue(false);
+                //if (VarianceFunction == VarainceFunctions.Zero) throw new InvalidEnumArgumentException("VarianceFunction", (int)VarianceFunction, typeof(VarainceFunctions));
+                if (WaveStDevRatio <= 0)
+                  throw new Exception("WaveStDevRatio <= 0!");
+              }
+              #endregion
+              {
+                var angleOk = CorridorStats.Slope.Angle(PointSize).Abs().ToInt() <= 1 && WaveShort.Rates.Count > WaveShortLeft.Rates.Count;
+                var sector = RatesHeight / WaveStDevRatio;
+                _CenterOfMassBuy = _RatesMax - sector;
+                _CenterOfMassSell = _RatesMin + sector;
+                var canTrade = !_priceAvg(RateLast).Between(_CenterOfMassSell, _CenterOfMassBuy);
+                var isInManual = _buySellLevels.Any(sr => sr.InManual);
+                if (watcherCanTrade.SetValue(!isInManual && angleOk && canTrade).ChangedTo(true)) {
+                  if (!Trades.Any()) _buySellLevelsForEach(sr => sr.ResetPricePosition());
+                  var isUp = _priceAvg(RateLast) > _CenterOfMassBuy;
+                  _buyLevel.RateEx = isUp ? _RatesMax : _CenterOfMassSell;
+                  _sellLevel.RateEx = !isUp ? _RatesMin : _CenterOfMassBuy;
                   _buySellLevelsForEach(sr => {
-                    sr.CanTradeEx = IsAutoStrategy;
-                    sr.TradesCount = CorridorCrossesMaximum;
-                  });
+                    _buySellLevelsForEach(s => s.CanTradeEx = IsAutoStrategy);
+                    sr.TradesCount = CorridorCrossesMaximum.Max(0);
+                  }
+                  );
                 }
                 //_buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy && _buyLevel.Rate > _sellLevel.Rate);
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
+            #region Count0
+            case TrailingWaveMethod.Manual:
+              #region firstTime
+              if (firstTime) {
+                watcherCanTrade.SetValue(false);
+                VarianceFunction = VarainceFunctions.Zero;
+                MedianFunction = MedianFunctions.Void;
+                canTradeLocal = sr => {
+                  var bs = _buyLevel.Rate.Abs(_sellLevel.Rate);
+                  return (sr.IsBuy ? this.CurrentPrice.Ask - sr.Rate : sr.Rate - CurrentPrice.Bid) < bs;
+                };
+              }
+              #endregion
+              {
+                if (WaveShort.HasRates && SuppRes.All(sr => !sr.InManual)) {
+                  var coeffs = CorridorStats.Coeffs;
+                  var angleOk = coeffs[1].Angle(PointSize).Abs().ToInt() <= this.TradingAngleRange;
+                  var high = WaveShort.RatesMax;
+                  var low = WaveShort.RatesMin;
+                  var level = (high + low) / 2;
+                  var levelOk = corridorLevel.Abs(level) > varianceFunc()();
+                  if (watcherCanTrade.SetValue(angleOk && levelOk).ChangedTo(true)) {
+                    corridorLevel = level;
+                    _buyLevel.RateEx = high;
+                    _sellLevel.RateEx = low;
+                  }
+                }
+                var canTrade = WaveShort.HasRates
+                    && WaveShortLeft.Rates.Count > CorridorDistanceRatio * WaveStDevRatio
+                    && _buyLevel.Rate > _sellLevel.Rate;
+                if (IsAutoStrategy)
+                  _buySellLevelsForEach(sr => sr.CanTrade = canTrade);
+                else
+                  _buySellLevelsForEach(sr => { if (canTrade) sr.CanTradeEx = canTrade; });
                 adjustExitLevels0();
               }
               break;
@@ -1780,7 +1902,7 @@ namespace HedgeHog.Alice.Store {
         #region _adjustEnterLevels
         _adjustEnterLevels += () => adjustEnterLevels();
         _adjustEnterLevels += () => { if (runOnce != null) { runOnce(); runOnce = null; } };
-        _adjustEnterLevels += () => turnOff(() => _buySellLevelsForEach(sr => sr.CanTrade = false));
+        _adjustEnterLevels += () => turnOff(() => _buySellLevelsForEach(sr => { if (IsAutoStrategy) sr.CanTradeEx = false; }));
         _adjustEnterLevels += () => exitFunc()();
         _adjustEnterLevels += () => {
           try {

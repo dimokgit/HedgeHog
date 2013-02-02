@@ -330,7 +330,7 @@ namespace HedgeHog {
     HorizontalLine centerOfMassHLineHigh {
       get {
         if (_centerOfMassHLineHigh == null) {
-          _centerOfMassHLineHigh = new HorizontalLine() { StrokeThickness = 2, Stroke = centerOfMassBrush };
+          _centerOfMassHLineHigh = new HorizontalLine() { StrokeThickness = 1, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = centerOfMassBrush };
           _centerOfMassHLineHigh.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
         }
         return _centerOfMassHLineHigh;
@@ -346,7 +346,7 @@ namespace HedgeHog {
     HorizontalLine centerOfMassHLineLow {
       get {
         if (_centerOfMassHLineLow == null) {
-          _centerOfMassHLineLow = new HorizontalLine() { StrokeThickness = 2, Stroke = centerOfMassBrush };
+          _centerOfMassHLineLow = new HorizontalLine() { StrokeThickness = 1, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = centerOfMassBrush };
           _centerOfMassHLineLow.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
         }
         return _centerOfMassHLineLow;

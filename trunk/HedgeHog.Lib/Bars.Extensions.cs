@@ -560,8 +560,8 @@ namespace HedgeHog.Bars {
       return tochDowns.ToArray();
     }
 
-    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue) where TBar : BarBase {
-      setRunningValue(bars.First(), 0);
+    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue,double initialValue = 0) where TBar : BarBase {
+      setRunningValue(bars.First(), initialValue);
       bars.Aggregate((p, n) => {
         setRunningValue(n, getRunningValue(p) + getValue(p, n));
         return n;
