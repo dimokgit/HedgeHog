@@ -544,9 +544,9 @@ namespace HedgeHog.Bars {
         }
       }
     }
-    public static IList<Rate> TouchDowns(this IList<Rate> rates, double high, double low) {
+    public static IList<TBar> TouchDowns<TBar>(this IList<TBar> rates, double high, double low) where TBar : BarBase {
       int tochType = 0;//1-high,-1 low
-      var tochDowns = new List<Rate>();
+      var tochDowns = new List<TBar>();
       foreach (var rate in rates) {
         if (tochType != 1 && high.Between(rate.PriceLow, rate.PriceHigh)) {
           tochDowns.Add(rate);
@@ -558,6 +558,15 @@ namespace HedgeHog.Bars {
         }
       }
       return tochDowns.ToArray();
+    }
+
+    public static double[] TouchDownsHighLow<TBar>(this IList<TBar> rates, Func<TBar, double> price, double[] regressionCoeffs, double skpiRatio) where TBar : BarBase {
+      var line = new double[rates.Count];
+      regressionCoeffs.SetRegressionPrice(0, line.Length, (i, d) => line[i] = d);
+      var hl = rates.Select((r, i) => price(r) - line[i]).Skip((rates.Count * skpiRatio).ToInt()).ToArray();
+      var h = hl.Max() / 2;
+      var l = hl.Min().Abs() / 2;
+      return new[] { h, l };
     }
 
     public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue,double initialValue = 0) where TBar : BarBase {

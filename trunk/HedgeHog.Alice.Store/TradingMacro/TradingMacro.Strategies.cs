@@ -118,6 +118,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
     partial void OnCorridorStartDateChanged() {
+      if (!CorridorStartDate.HasValue)
+        CorridorStopDate = DateTime.MinValue;
+      return;
       if (CorridorStartDate.HasValue && RatesArray.Count > 0) {
         var rateStart = RatesArray.SkipWhile(r => r.StartDate <= CorridorStartDate.Value);
         if (StartStopDistance > 0) {
@@ -158,6 +161,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (value == DateTime.MinValue) {
           _CorridorStopDate = value;
+          CorridorStats.StopRate = null;
         } else {
           value = value.Min(RateLast.StartDate).Max(CorridorStats.StartDate.Add((BarPeriodInt * 2).FromMinutes()));
           if (_CorridorStopDate == value) return;
@@ -976,6 +980,7 @@ namespace HedgeHog.Alice.Store {
       #region ============ Init =================
 
       if (_strategyExecuteOnTradeClose == null) {
+        if (Trades.Any()) throw new Exception("StrategyEnterUniversal: All trades must be closed befor strategy init.");
         #region SetTrendLines
         Func<Func<Rate, double>, double, double[]> getStDevByPrice = (price, skpiRatio) => {
           var line = new double[CorridorStats.Rates.Count];
@@ -987,10 +992,16 @@ namespace HedgeHog.Alice.Store {
         };
         Func<double[]> getStDev = () => {
           switch (CorridorHeightMethod) {
-            case CorridorHeightMethods.ByMA: return getStDevByPrice(CorridorPrice,.9);
-            case CorridorHeightMethods.ByPriceAvg: return getStDevByPrice(_priceAvg, 0);
+            case CorridorHeightMethods.ByMA: return getStDevByPrice(CorridorPrice,.1);
+            case CorridorHeightMethods.ByPriceAvg: return getStDevByPrice(_priceAvg, 0.1);
           }
           throw new NotSupportedException("CorridorHeightMethods." + CorridorHeightMethod + " is not supported.");
+        };
+        Func<double[]> getRegressionLeftRightRates = () => {
+          var rateLeft = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
+          var rightIndex = RatesArray.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC());
+          var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
+          return new[] { rateLeft, rateRight };
         };
         SetTrendLines = () => {
           double h, l;
@@ -1002,12 +1013,13 @@ namespace HedgeHog.Alice.Store {
             l = hl[1];
           }
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-          var rates = new[] { CorridorStats.Rates[0], CorridorStats.Rates.LastBC() };
-          var coeffs = CorridorStats.Coeffs;
-          rates[0].PriceAvg1 = coeffs.RegressionValue(0);
+          var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
+          var regRates = getRegressionLeftRightRates();
+
+          rates[0].PriceAvg1 = regRates[1];
           rates[0].PriceAvg2 = rates[0].PriceAvg1 + h * 2;
           rates[0].PriceAvg3 = rates[0].PriceAvg1 - l * 2;
-          rates[1].PriceAvg1 = coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
+          rates[1].PriceAvg1 = regRates[0];
           rates[1].PriceAvg2 = rates[1].PriceAvg1 + h * 2;
           rates[1].PriceAvg3 = rates[1].PriceAvg1 - l * 2;
           return rates;
@@ -1852,6 +1864,17 @@ namespace HedgeHog.Alice.Store {
                   _buySellLevelsForEach(sr => { if (canTrade) sr.CanTradeEx = canTrade; });
                 adjustExitLevels0();
               }
+              break;
+            #endregion
+            #region Corridor
+            case TrailingWaveMethod.Corridor: {
+                if (firstTime) { }
+                var rates = SetTrendLines();
+                _buyLevel.RateEx = rates[0].PriceAvg2;
+                _sellLevel.RateEx = rates[0].PriceAvg3;
+                _buySellLevelsForEach(sr => sr.CanTradeEx = CorridorStats.Slope.Angle(PointSize).Abs().ToInt() >= TradingAngleRange);
+              }
+              adjustExitLevels0();
               break;
             #endregion
 

@@ -1664,16 +1664,14 @@ namespace HedgeHog.Alice.Client {
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
           ct.SessionInfo = tradeStats.SessionInfo;
-          using (var context = new ForexEntities()) {
-            context.t_Trade.AddObject(ct);
-            try {
-              context.SaveChanges();
-            } catch {
-              context.DeleteObject(ct);
-              Log = new Exception(ct.ToXml());
-              throw;
-            }
-          }
+          GlobalStorage.UseForexContext(c => {
+            c.t_Trade.AddObject(ct);
+            c.SaveChanges();
+          }, (c, e) => {
+            c.DeleteObject(ct);
+            Log = new Exception(ct.ToXml());
+            MessageBox.Show(ct.ToXml(), "AddCosedTrade");
+          });
         }
       } catch (Exception exc) { Log = exc; }
     }

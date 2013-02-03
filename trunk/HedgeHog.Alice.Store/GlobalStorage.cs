@@ -37,14 +37,17 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public static void UseForexContext(Action<ForexEntities> action) {
-      try {
-        using (var context = new ForexEntities())
+    public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null) {
+      using (var context = new ForexEntities())
+        try {
           action(context);
-      } catch (Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
-        throw;
-      }
+        } catch (Exception exc) {
+          if (error != null) error(context, exc);
+          else {
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+            throw;
+          }
+        }
     }
     public static T UseForexContext<T>(Func<ForexEntities,T> action) {
       try {
