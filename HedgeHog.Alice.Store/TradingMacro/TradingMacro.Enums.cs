@@ -39,7 +39,8 @@ namespace HedgeHog.Alice.Store {
     Wavelette = 93,
     Wavelette1 = 94,
     Borderer = 100,
-    Manual = 110
+    Manual = 110,
+    Corridor = 120
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,

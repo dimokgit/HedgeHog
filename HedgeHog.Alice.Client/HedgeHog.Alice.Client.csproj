@@ -213,6 +213,7 @@
       <DependentUpon>OrderTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="RemoteControl\OrderTemplatesModel.cs" />
+    <Compile Include="RemoteControl\RemoteControl.Replay.cs" />
     <Compile Include="RemoteControl\RemoteControl.xaml.cs">
       <DependentUpon>RemoteControl.xaml</DependentUpon>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

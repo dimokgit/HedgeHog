@@ -1572,6 +1572,8 @@ namespace HedgeHog.Alice.Store {
           }
         } catch (Exception exc) {
           Log = exc;
+          MessageBox.Show(exc.ToString(), "Replay");
+          throw;
         }
       }
     }

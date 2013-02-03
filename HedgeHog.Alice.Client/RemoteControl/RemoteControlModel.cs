@@ -30,7 +30,7 @@ using System.Reactive.Concurrency;
 using System.Threading;
 namespace HedgeHog.Alice.Client {
   [Export]
-  public class RemoteControlModel : RemoteControlModelBase {
+  public partial class RemoteControlModel : RemoteControlModelBase {
     //Dimok:Show Closed trades
 
     #region Settings
@@ -144,9 +144,11 @@ namespace HedgeHog.Alice.Client {
     void charterNew_LineTimeShortChanged(object sender, PositionChangedBaseEventArgs<DateTime> e) {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.IsTradingActive = false;
-      tm.WaveShort.Distance = tm.RatesArray.FindBar(e.NewPosition).Distance;
-      tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
-      tm.ScanCorridor(tm.RatesArray);
+      var bar = tm.RatesArray.ReverseIfNot().TakeWhile(r=>r.StartDateContinuous>= e.NewPosition).Last();
+      //tm.WaveShort.Distance = bar.Distance;
+      //tm.CorridorStartDate = bar.StartDate;
+      /////tm.OnPropertyChangedCore(TradingMacroMetadata.CorridorStartDate);
+      //tm.ScanCorridor(tm.RatesArray);
     }
 
     void charterNew_ClearStartTime(object sender, EventArgs e) {
@@ -374,188 +376,6 @@ namespace HedgeHog.Alice.Client {
       TradingMacrosCopy_Delete(tm);
 
     }
-
-    #region StartReplayCommand
-    ICommand _StartReplayCommand;
-    public ICommand StartReplayCommand {
-      get {
-        if (_StartReplayCommand == null) {
-          _StartReplayCommand = new Gala.RelayCommand<TradingMacro>(StartReplay, tm => !_replayTasks.Any(t => t.Status == TaskStatus.Running));
-        }
-        return _StartReplayCommand;
-      }
-    }
-    ReplayArguments _replayArguments = new ReplayArguments();
-    public ReplayArguments ReplayArguments {
-      get { return _replayArguments; }
-    }
-
-    class TestParameter {
-      public int PriceCmaLevel { get; set; }
-      public double ProfitToLossExitRatio { get; set; }
-      public double CorridorDistanceRatio { get; set; }
-      public double WaveStDevRatio { get; set; }
-      public int BarsCount { get; set; }
-      public double DistanceIterations { get; set; }
-      public Guid SuperessionId { get; set; }
-      public double CorrelationMinimum { get; set; }
-    }
-
-    static class TestParameters {
-      public static int[] PriceCmaLevels = new int[0];
-      public static double[] ProfitToLossExitRatio = new double[0];
-      public static double[] CorridorDistanceRatio = new double[0];
-      public static double[] WaveStDevRatio = new double[0];
-      public static int[] BarsCount = new int[0];
-      public static double[] DistanceIterations = new double[0];
-      public static double[] CorrelationMinimum = new double[0];
-
-      public static Queue<TestParameter> GenerateTestParameters() { return GenerateTestParameters(Guid.Empty); }
-      public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
-        var ret = from p in PriceCmaLevels
-                  from cm in CorrelationMinimum
-                  from rhm in DistanceIterations
-                  from wr in WaveStDevRatio
-                  from pl in ProfitToLossExitRatio
-                  from cd in CorridorDistanceRatio
-                  from pler in BarsCount
-                  select new TestParameter() { PriceCmaLevel = p,CorrelationMinimum = cm, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler,SuperessionId = superSessionId,DistanceIterations = rhm,WaveStDevRatio = wr  };
-        return new Queue<TestParameter>(ret);
-      }
-    }
-    List<Task> _replayTasks = new List<Task>();
-    void StartReplay(TradingMacro tmOriginal) {
-      if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
-        MessageBox.Show("Replay is running.");
-        return;
-      }
-
-      ReplayArguments.SuperSessionId = tmOriginal.TestUseSuperSession ? Guid.NewGuid() : Guid.Empty;
-      var c = new[] { ',', ' ', '\t' };
-
-      if (tmOriginal.UseTestFile) {
-        var paramsDict = Lib.ReadTestParameters();
-        foreach (var p in paramsDict) {
-          tmOriginal.SetProperty(p.Key, p.Value);
-        }
-      }
-
-      TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-        .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
-      TestParameters.ProfitToLossExitRatio = tmOriginal.TestProfitToLossExitRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
-      TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
-      TestParameters.WaveStDevRatio = tmOriginal.TestWaveStDevRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
-      TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-        .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
-      TestParameters.CorrelationMinimum = tmOriginal.TestCorrelationMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.CorrelationMinimum).ToArray();
-      TestParameters.DistanceIterations = tmOriginal.TestDistanceIterations.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.DistanceIterations).ToArray();
-
-      if (ReplayArguments.SuperSessionId.HasValue() && tmOriginal.TestSuperSessionUid.HasValue()) {
-        var sessions = GetBestSessions(tmOriginal.TestSuperSessionUid).ToArray();
-        ReplayArguments.DateStart = ReplayArguments.DateStart.GetValueOrDefault(sessions.Min(s => s.DateStart.Value).AddDays(5));
-        SetTestCorridorDistanceRatio(sessions);
-      }
-      var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
-      StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
-    }
-    void ContinueReplayWith (TradingMacro tm, Queue<TestParameter> testParams)  {
-      if (tm.Strategy == Strategies.None) return;
-      Func<bool> shouldContinue = () => {
-        try {
-          if (ReplayArguments.SuperSessionId.HasValue()) {
-            var bestSessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-            if (bestSessions.Count() < 2) return true;
-            var currentSession = GlobalStorage.UseForexContext(c => c.v_TradeSession.Where(s => s.SessionId == TradingMacro.SessionId).Single());
-            return currentSession.MinimumGross > bestSessions[0].MinimumGross + bestSessions[1].MinimumGross;
-          }
-          return false;
-        } catch (Exception exc) {
-          LogMessage.Send(exc);
-          return true;
-        }
-      };
-      if (testParams.Any() /*&& (testParams.Count() > 1 || shouldContinue())*/) {
-        StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
-      } else if (ReplayArguments.HasSuperSession) {
-        var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-        SetTestCorridorDistanceRatio(super);
-        ReplayArguments.SuperSessionId = Guid.NewGuid();
-        ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
-        var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
-        StartReplayInternal(tm, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tm, testQueue); });
-      }
-    }
-
-    #region GetBestSession
-    Func<DB.v_TradeSession, double> _bestSessionCriteria = s => s.DollarPerLot.Value;
-    private DB.v_TradeSession GetBestSession(Guid superSessionUid) {
-      return GetBestSessions(superSessionUid).First();
-    }
-    private IEnumerable<DB.v_TradeSession> GetBestSessions(Guid superSessionUid) {
-      return GlobalStorage.UseForexContext(c => {
-        var sessions = c.v_TradeSession.Where(s => s.SuperSessionUid == superSessionUid).OrderBy(s => s.TimeStamp).ToArray();
-        //if (sessions.Length == 1) return sessions;
-        var sessionTuples = sessions.Select(s => new { p = s, n = s }).Take(0).ToList();
-        sessions.Aggregate((p, n) => { sessionTuples.Add(new { p, n }); return n; });
-        return sessionTuples.OrderByDescending(st => _bestSessionCriteria(st.p) + _bestSessionCriteria(st.n)).Take(1)
-          .Select(st => new[] { st.p, st.n }).DefaultIfEmpty(sessions)
-          .First().OrderByDescending(_bestSessionCriteria);
-      });
-    }
-    #endregion
-
-    #region Test params setters
-    private void SetTestCorridorDistanceRatio(DB.v_TradeSession[] sessions) {
-      var testParam = sessions[0].CorridorDistanceRatio.Value;
-      var a = sessions.OrderBy(s => s.TimeStamp).ToArray();
-      var testParamStep = (a[1].CorridorDistanceRatio - a[0].CorridorDistanceRatio).Value.ToInt();
-      var testParamCount = 5;
-      var testParamStepMin = -testParamCount / 2;
-      var startMin = (-(testParam.ToInt() / testParamStep) + 1).Max(testParamStepMin);
-      TestParameters.CorridorDistanceRatio = Enumerable.Range(startMin, testParamCount).Select(r => testParam + r * testParamStep).ToArray();
-    }
-    #endregion
-
-    CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();
-    void StartReplayInternal(TradingMacro tmOriginal,TestParameter testParameter, Action<Task> continueWith) {
-      if (IsInVirtualTrading) {
-        if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
-          MessageBox.Show("Replay is running.");
-          return;
-        }
-        _replayTasks.Clear();
-        MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
-        tradesManager.GetAccount().Balance = tradesManager.GetAccount().Equity = 50000;
-      }
-      var tms = GetTradingMacros().Where(t => t.Strategy != Strategies.None).ToList();
-      ReplayArguments.SetTradingMacros(tms);
-      foreach (var tm in tms) {
-        if (IsInVirtualTrading) {
-          tradesManager.ClosePair(tm.Pair);
-          tm.ResetSessionId(ReplayArguments.SuperSessionId);
-          if (testParameter != null) {
-            tm.PriceCmaLevels_ = testParameter.PriceCmaLevel;
-            tm.CorrelationMinimum = testParameter.CorrelationMinimum;
-            tm.ProfitToLossExitRatio = testParameter.ProfitToLossExitRatio;
-            tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
-            tm.WaveStDevRatio = testParameter.WaveStDevRatio;
-            tm.BarsCount = testParameter.BarsCount;
-            tm.DistanceIterations = testParameter.DistanceIterations;
-          }
-        }
-        var tmToRun = tm;
-        tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
-        var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments),tmToRun.ReplayCancelationToken , TaskCreationOptions.LongRunning,TaskScheduler.Default);
-        task.ContinueWith(continueWith);
-        _replayTasks.Add(task);
-      }
-    }
-    #endregion
 
     Task loadHistoryTast;
     bool isLoadHistoryTaskRunning { get { return loadHistoryTast != null && loadHistoryTast.Status == TaskStatus.Running; } }
@@ -1149,8 +969,12 @@ namespace HedgeHog.Alice.Client {
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
-          else if (tm.WaveShortLeft.HasRates)
-            charter.LineTimeMiddle = tm.WaveShortLeft.Rates.LastBC();
+          else if (tm.CorridorStartDate.HasValue)
+            charter.LineTimeMiddle = tm.CorridorStats.Rates[0];
+          else
+            charter.LineTimeMiddle = null;
+          if (tm.WaveShortLeft.HasRates)
+            charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
           charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistanceRatio.ToInt()).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
