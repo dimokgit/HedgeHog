@@ -40,11 +40,12 @@ namespace HedgeHog.Alice.Store {
     Wavelette1 = 94,
     Borderer = 100,
     Manual = 110,
-    Corridor = 120
+    Corridor = 120,
+    Corridor1 = 121
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
-    Corridor_RH_2 = 4,
+    CorridorStDevMax = 4,
     CorridorHeight = 5,
     BuySellLevels = 6,
     RatesHeight = 10,
@@ -65,7 +66,11 @@ namespace HedgeHog.Alice.Store {
   }
   public enum CorridorHeightMethods {
     ByMA = 0,
-    ByPriceAvg = 1
+    ByPriceAvg = 1,
+    ByStDev = 2,
+    ByStDevMin = 30,
+    ByStDevMin2 = 31,
+    ByStDevMax = 40
   }
   public enum TurnOffFunctions {
     Void = -1,

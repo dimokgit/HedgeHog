@@ -1161,6 +1161,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region DensityOk
+    private bool _DensityOk;
+    [Category(categoryCorridor)]
+    public bool DensityOk {
+      get { return _DensityOk; }
+      set {
+        if (_DensityOk != value) {
+          _DensityOk = value;
+          OnPropertyChanged("DensityOk");
+        }
+      }
+    }
+    
+    #endregion
+
     #region MaximumPositions
     [DisplayName("Maximum Positions")]
     [Category(categoryTrading)]

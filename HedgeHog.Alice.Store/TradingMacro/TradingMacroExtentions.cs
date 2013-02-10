@@ -3011,6 +3011,7 @@ namespace HedgeHog.Alice.Store {
       var tp = double.NaN;
       switch (function) {
         case TradingMacroTakeProfitFunction.CorridorStDev: tp = CorridorStats.StDevByHeight + CorridorStats.StDevByPriceAvg; break;
+        case TradingMacroTakeProfitFunction.CorridorStDevMax: tp = CorridorStats.StDevByHeight.Max(CorridorStats.StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.RatesHeight; break;
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShort: tp = WaveShort.RatesHeight; break;

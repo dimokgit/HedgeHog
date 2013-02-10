@@ -119,10 +119,11 @@ namespace HedgeHog.Alice.Client {
           break;
         case Key.C:
           tm.IsTradingActive = false;
-          tm.CloseTrades();
+          //tm.CloseTrades();
           tm.SetCanTrade(false);
           tm.SetTradeCount(0);
           charter.FitToView();
+          tm.CorridorStartDate = null;
           break;
         case Key.M:
           tm.ResetSuppResesInManual();
@@ -156,11 +157,9 @@ namespace HedgeHog.Alice.Client {
       tm.IsTradingActive = false;
       tm.CloseTrades();
       ((CharterControl)sender).FitToView();
-      if (false) {
-        tm.CorridorStartDate = null;
-        tm.CorridorStopDate = DateTime.MinValue;
-        tm.WaveShort.ClearDistance();
-      }
+      tm.CorridorStartDate = null;
+      tm.CorridorStopDate = DateTime.MinValue;
+      tm.WaveShort.ClearDistance();
     }
 
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
@@ -943,7 +942,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}<{10:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]|{9:n4}"
+            string.Format(":{0}×{1}:{2:n0}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n2}↨/{10:n2}↔"
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -953,19 +952,19 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.CorridorCorrelation
-            /*10*/, tm.CorridorStDevSqrtInPips * 4
+            /*9*/, tm.DistancePerPip
+            /*10*/, tm.DistancePerBar
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
-          var distance = rates.ReverseIfNot()[tm.CorridorDistanceRatio.ToInt()].Distance;
+          var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.DistanceHistory.IfNaN(distance) }).ToArray();
-          var distancesAverage = distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, voltage1 */} : new PriceBar[0][], info, null,
-            0, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+          PriceBar[] distances = null;// rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.DistanceHistory.IfNaN(distance) }).ToArray();
+          var distancesAverage = 0;// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
+          charter.AddTicks(price, rates, false ? new PriceBar[1][] { distances/*, voltage1 */} : new PriceBar[0][], info, null,
+            tm.WaveStDevRatio, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;

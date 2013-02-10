@@ -603,21 +603,24 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorByCrosses(rates, priceHigh, priceLow);
     }
     private CorridorStatistics ScanCorridorSimple(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var cp = CorridorPrice();
       var startMax = CorridorStopDate == DateTime.MinValue ? DateTime.MaxValue : CorridorStopDate;
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      DayWaveByDistance(ratesReversed, CorridorDistanceRatio);
+      var ratesDistance = ratesReversed.LastBC().Distance;
+      DistancePerBar = ratesDistance / ratesReversed.Count;
+      DistancePerPip = ratesDistance / InPips(ratesReversed.Height());
+      ratesReversed[0].DistanceHistory = DistancePerPip;
       if (CorridorStartDate.HasValue) {
         WaveShort.Rates = null;
         WaveShort.Rates = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= CorridorStartDate.Value).ToArray();
       } else {
-        var cp = CorridorPrice();
-        var ratesReversed = ratesForCorridor.ReverseIfNot();
-        DayWaveByDistance(ratesReversed, CorridorDistanceRatio);
-        WaveShortLeft.Rates = null;
         var w = CorridorDistanceRatio.ToInt();
         var rates1 = ratesReversed.Skip(1440 - w / 2).Take(w * 2).ToArray();
         var distance = ratesReversed[CorridorDistanceRatio.ToInt()].Distance;
-        ratesReversed[CorridorDistanceRatio.ToInt()].DistanceHistory = distance;
         var distance1 = (rates1.LastBC().Distance - rates1[0].Distance) / 2;
         var ratio = distance / distance1;
+        WaveShortLeft.Rates = null;
         WaveShortLeft.Rates = ratesReversed.Take((CorridorDistanceRatio * ratio).ToInt()).ToArray();
         ratesReversed[0].RunningLow = ratesReversed[0].RunningHigh = cp(ratesReversed[0]);
         ratesReversed.Aggregate((p, n) => {
@@ -627,10 +630,22 @@ namespace HedgeHog.Alice.Store {
           return n;
         });
         var countMin = 2;
-        var heightMin = GetValueByTakeProfitFunction(TradingDistanceFunction);
-        var rates = ratesReversed.TakeWhile(r => countMin-- > 0 || r.RunningHeight < heightMin);
+        var heightMin = GetValueByTakeProfitFunction(TradingDistanceFunction).Min(RatesHeight * .9);
+        var ratesCount = ratesReversed.Count(r => countMin-- > 0 || r.RunningHeight < heightMin);
+        var rates = ratesReversed.Select(cp).ToArray();
+        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(PointSize);
+        for (;ratesCount <rates.Length ; ratesCount += (ratesCount / 100) + 1) {
+          var rates0 = new double[ratesCount + 1];
+          Array.Copy(rates, rates0, rates0.Length);
+          var height = rates0.Height();
+          var stDev = rates0.StDev();
+          if (WaveStDevRatio > 0 && Fibonacci.FibRatio(height, stDev) < WaveStDevRatio) break;
+          var angle = rates0.Regress(1).LineSlope().Abs().Angle(PointSize);
+          if (angle < ratesAngle) break;
+          ratesAngle = angle;
+        }
         WaveShort.Rates = null;
-        WaveShort.Rates = rates.ToArray();
+        WaveShort.Rates = ratesReversed.Take(ratesCount).ToArray();
       }
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
         .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
@@ -971,6 +986,32 @@ namespace HedgeHog.Alice.Store {
     void DistanceIterationsRealClear() { _DistanceIterationsReal = 0; }
     private double _DistanceIterationsReal;
     private bool _crossesOk;
+
+    #region DistancePerBar
+    private double _DistancePerBar;
+    public double DistancePerBar {
+      get { return _DistancePerBar; }
+      set {
+        if (_DistancePerBar != value) {
+          _DistancePerBar = value;
+          OnPropertyChanged("DistancePerBar");
+        }
+      }
+    }
+    #endregion
+    #region DistancePerPip
+    private double _DistancePerPip;
+    public double DistancePerPip {
+      get { return _DistancePerPip; }
+      set {
+        if (_DistancePerPip != value) {
+          _DistancePerPip = value;
+          OnPropertyChanged("DistancePerPip");
+        }
+      }
+    }
+    #endregion
+    
     [DisplayName("Distance Iterations")]
     [Description("DistanceIterationsReal=F(DistanceIterations,X)")]
     [Category(categoryCorridor)]
