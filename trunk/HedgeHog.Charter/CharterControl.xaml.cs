@@ -94,8 +94,6 @@ namespace HedgeHog {
           ((CharterControl)d).IsParentHidden = (bool)p.NewValue;
         }));
 
-    
-
     private int _barsPeriod;
     public int BarsPeriod {
       get { return _barsPeriod; }
@@ -574,6 +572,8 @@ namespace HedgeHog {
           trendLine.Visibility = System.Windows.Visibility.Visible;
           trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg1);
           trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg1);
+          TradeLineStartPosition = trendLine.StartPoint;
+          TradeLineStopPosition = trendLine.EndPoint;
         }
       }
     }
@@ -960,10 +960,37 @@ namespace HedgeHog {
     }
 
     private Point CreatePointY(double y) { return new Point(dateAxis.ConvertToDouble(animatedTimeX[0]), y); }
-
+    double slope(Point p1, Point p2) { return (p2.Y - p1.Y) / (p2.X - p1.X); }
+    double y2(double slope, Point p1, double x2) { return slope * (x2 - p1.X) + p1.Y; }
     List<HorizontalLine> FibLevels = new List<HorizontalLine>();
     List<ColoredSegment> GannAngles = new List<ColoredSegment>();
     Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
+    DraggablePoint _tradeLineStartDraggablePoint = new DraggablePoint();
+    DraggablePoint _tradeLineStopDraggablePoint = new DraggablePoint();
+    public double TradeLineSlope { get { return slope(_tradeLineStartDraggablePoint.Position, _tradeLineStopDraggablePoint.Position); } }
+    public Point TradeLineEndPoint {
+      get {
+        var x = trendLine.StartPoint.X;
+        var y = y2(TradeLineSlope, _tradeLineStartDraggablePoint.Position, x);
+        return new Point(x, y);
+      }
+    }
+    Point _tradeLineStartPosition;
+    public Point TradeLineStartPosition {
+      get { return _tradeLineStartPosition; }
+      set {
+        _tradeLineStartPosition = value;
+        OnPropertyChanged("TradeLineStartPosition");
+      }
+    }
+    Point _tradeLineStopPosition;
+    public Point TradeLineStopPosition {
+      get { return _tradeLineStopPosition; }
+      set {
+        _tradeLineStopPosition = value;
+        OnPropertyChanged("TradeLineStopPosition");
+      }
+    }    
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
       dateAxis.MayorLabelProvider = null;
@@ -1049,8 +1076,6 @@ namespace HedgeHog {
       }
       #endregion
 
-
-
       #region Add Lines
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
@@ -1093,6 +1118,29 @@ namespace HedgeHog {
       plotter.MouseDoubleClick += (s, e) => RaisePlotterKeyDown(Key.A);
 
       #endregion
+
+      EventHandler<PositionChangedEventArgs> eh = (s, e) => {
+        var me = s == _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
+        var other = s != _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
+        if (!me.IsMouseCaptured) return;
+        if (_isShiftDown)
+          other.Position = new Point(other.Position.X + e.Position.X - e.PreviousPosition.X, other.Position.Y + e.Position.Y - e.PreviousPosition.Y);
+        OnPropertyChanged("TradeLineSlope");
+        OnPropertyChanged("TradeLineEndPoint");
+      };
+      plotter.Children.Add(_tradeLineStartDraggablePoint);
+      _tradeLineStartDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStartPosition"));
+      _tradeLineStartDraggablePoint.PositionChanged += eh;
+
+      plotter.Children.Add(_tradeLineStopDraggablePoint);
+      _tradeLineStopDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStopPosition"));
+      _tradeLineStopDraggablePoint.PositionChanged += eh;
+
+      var tradeSegment = new Segment();
+      plotter.Children.Add(tradeSegment);
+      tradeSegment.SetBinding(Segment.StartPointProperty, new Binding("Position") { Source = _tradeLineStopDraggablePoint });
+      tradeSegment.SetBinding(Segment.EndPointProperty, new Binding("TradeLineEndPoint"));
+      tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding("TradeLineSlope"));
     }
 
 
