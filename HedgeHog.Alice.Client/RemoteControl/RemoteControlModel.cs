@@ -76,6 +76,8 @@ namespace HedgeHog.Alice.Client {
         charterNew.SetBinding(CharterControl.IsSelectedProperty, isSelectedBinding);
         var isActiveBinding = new Binding(Lib.GetLambda(() => tradingMacro.IsTradingActive)) { Source = tradingMacro };
         charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
+        charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
+        charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
         //charter.Show();
 
         /*
@@ -99,6 +101,15 @@ namespace HedgeHog.Alice.Client {
       if (charterOld.Parent == null)
         RequestAddCharterToUI(charterOld);
       return charterOld;
+    }
+
+    void charterNew_ShowChart(object sender, EventArgs e) {
+      AddShowChart(GetTradingMacro((CharterControl)sender));
+    }
+
+    void charterNew_TradeLineChanged(object sender, PositionChangedBaseEventArgs<double> e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<TradeLineChangedMessage>(new TradeLineChangedMessage(tm, e.NewPosition, e.OldPosition));
     }
 
     void charterNew_PlotterKeyDown(object sender, CharterControl.PlotterKeyDownEventArgs e) {

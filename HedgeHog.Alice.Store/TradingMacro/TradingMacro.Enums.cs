@@ -41,7 +41,8 @@ namespace HedgeHog.Alice.Store {
     Borderer = 100,
     Manual = 110,
     Corridor = 120,
-    Corridor1 = 121
+    Corridor1 = 121,
+    TradeLine = 130
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
@@ -111,6 +112,7 @@ namespace HedgeHog.Alice.Store {
     Hight = 10,
     Max = 20,
     Min = 30,
+    Min2 = 31,
     Sum = 40,
     Wave = 50,
     Rates3 = 60,

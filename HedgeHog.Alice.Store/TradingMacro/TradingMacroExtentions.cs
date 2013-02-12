@@ -426,6 +426,10 @@ namespace HedgeHog.Alice.Store {
         if (IsActive && TradesManager != null && Trades.Any())
           CloseAtZero = true;
       });
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<TradeLineChangedMessage>(this, a => {
+        if (a.Target == this && _strategyOnTradeLineChanged != null)
+          _strategyOnTradeLineChanged(a);
+      });
     }
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
@@ -1420,13 +1424,14 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17*60+24*60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0) ;
+        var internalRateCount = 1440 * 8;
         var rates = args.DateStart.HasValue
-          ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-BarsCount * BarPeriodInt - 2880 * 1.5), int.MaxValue, BarPeriodInt)
+          ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt)
           : GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
-        var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
-        var rateStartIndex = rates.IndexOf(rateStart);
-        var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
-        rates.RemoveRange(0, rateIndexStart);
+        //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
+        //var rateStartIndex = rates.IndexOf(rateStart);
+        //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
+        //rates.RemoveRange(0, rateIndexStart);
         var dateStop = args.MonthsToTest > 0 ? args.DateStart.Value.AddDays(args.MonthsToTest * 30.5) : DateTime.MaxValue;
         if (args.MonthsToTest > 0) {
           //rates = rates.Where(r => r.StartDate <= args.DateStart.Value.AddDays(args.MonthsToTest*30.5)).ToList();
@@ -1460,6 +1465,7 @@ namespace HedgeHog.Alice.Store {
         DisposeOpenTradeByMASubject();
         _waveRates.Clear();
         _strategyExecuteOnTradeClose = null;
+        _strategyOnTradeLineChanged = null;
         var currentPosition = -1;
         var indexCurrent = 0;
         #endregion
@@ -1508,7 +1514,7 @@ namespace HedgeHog.Alice.Store {
                 else {
                   Debugger.Break();
                 }
-              while (RatesInternal.Count > BarsCount 
+              while (RatesInternal.Count > internalRateCount 
                   && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || RatesInternal[0] < CorridorStats.Rates.LastBC())))
                 RatesInternal.RemoveAt(0);
             }
@@ -1518,7 +1524,7 @@ namespace HedgeHog.Alice.Store {
                 break;
               }
             }
-            if (RatesArraySafe.Count < BarsCount)
+            if (RatesInternal.LastBC().StartDate < args.DateStart.Value || RatesArraySafe.LastBC().StartDate < args.DateStart.Value)
               TurnOffSuppRes(RatesInternal.Select(r => r.PriceAvg).DefaultIfEmpty().Average());
             else {
               LastRatePullTime = RateLast.StartDate;
@@ -2021,7 +2027,7 @@ namespace HedgeHog.Alice.Store {
 
     public bool HasRates { get { return _rateArray.Any(); } }
     private List<Rate> GetRatesSafe() {
-      return _limitBarToRateProvider == (int)BarPeriod ? RatesInternal : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false).ToList();
+      return _limitBarToRateProvider == (int)BarPeriod ? RatesInternal.Skip(RatesInternal.Count-BarsCount).ToList() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false).ToList();
     }
     IEnumerable<Rate> GetRatesForStDev(IEnumerable<Rate> rates) {
       return rates.Reverse().Take(BarsCount).Reverse();
@@ -2701,6 +2707,7 @@ namespace HedgeHog.Alice.Store {
     bool _useTakeProfitMin = false;
     Action<Trade> _strategyExecuteOnTradeClose;
     Action<Trade> _strategyExecuteOnTradeOpen;
+    Action<TradeLineChangedMessage> _strategyOnTradeLineChanged;
     double _tradingDistanceMax = 0;
 
     #region New

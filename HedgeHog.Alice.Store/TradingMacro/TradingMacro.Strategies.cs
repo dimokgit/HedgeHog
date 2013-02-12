@@ -1010,9 +1010,9 @@ namespace HedgeHog.Alice.Store {
         Func<Func<Rate, double>, double, double[]> getStDevByPrice = (price, skpiRatio) => {
           var line = new double[CorridorStats.Rates.Count];
           CorridorStats.Coeffs.SetRegressionPrice(0, line.Length, (i, d) => line[i] = d);
-          var hl = CorridorStats.Rates.Select((r, i) => price(r) - line[i]).Skip((CorridorStats.Rates.Count * skpiRatio).ToInt()).ToArray();
-          var h = hl.Max() / 2;
-          var l = hl.Min().Abs() / 2;
+          var hl = CorridorStats.Rates.Select((r, i) => price(r) - line[i]).ToArray();
+          var h = hl.Where(d => d > 0).Average();
+          var l = hl.Where(d => d < 0).Average().Abs();
           return new[] { h, l };
         };
         Func<double[]> getStDev = () => {
@@ -1034,7 +1034,7 @@ namespace HedgeHog.Alice.Store {
           var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
           return new[] { rateLeft, rateRight };
         };
-        SetTrendLines = () => {
+        Func<int, Rate[]> setTrendLines = (levels) => {
           double h, l, h1, l1;
           double[] hl = getStDev == null ? new[] { CorridorStats.StDevByHeight, CorridorStats.StDevByHeight } : getStDev();
           h = hl[0] * 2;
@@ -1051,17 +1051,23 @@ namespace HedgeHog.Alice.Store {
           var regRates = getRegressionLeftRightRates();
 
           rates[0].PriceAvg1 = regRates[1];
-          rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
-          rates[0].PriceAvg21 = rates[0].PriceAvg1 + h1;
-          rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
-          rates[0].PriceAvg31 = rates[0].PriceAvg1 - l1;
           rates[1].PriceAvg1 = regRates[0];
-          rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
-          rates[1].PriceAvg21 = rates[1].PriceAvg1 + h1;
-          rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
-          rates[1].PriceAvg31 = rates[1].PriceAvg1 - l1;
+
+          if (levels > 1) {
+            rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
+            rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
+            rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
+            rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
+          }
+          if (levels > 2) {
+            rates[0].PriceAvg21 = rates[0].PriceAvg1 + h1;
+            rates[0].PriceAvg31 = rates[0].PriceAvg1 - l1;
+            rates[1].PriceAvg21 = rates[1].PriceAvg1 + h1;
+            rates[1].PriceAvg31 = rates[1].PriceAvg1 - l1;
+          }
           return rates;
         };
+        SetTrendLines = () => setTrendLines(3);
         #endregion
         Action onEOW = () => { };
         #region Exit Funcs
@@ -1484,6 +1490,7 @@ namespace HedgeHog.Alice.Store {
             case Store.VarainceFunctions.Hight: return () => CorridorStats.StDevByHeight;
             case VarainceFunctions.Max: return () => CorridorStats.StDevByPriceAvg.Max(CorridorStats.StDevByHeight);
             case VarainceFunctions.Min: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight);
+            case VarainceFunctions.Min2: return () => CorridorStats.StDevByPriceAvg.Min(CorridorStats.StDevByHeight)*1.8;
             case VarainceFunctions.Sum: return () => CorridorStats.StDevByPriceAvg + CorridorStats.StDevByHeight;
           }
           throw new NotSupportedException(VarianceFunction + " Variance function is not supported.");
@@ -1975,7 +1982,32 @@ namespace HedgeHog.Alice.Store {
               }
               break;
             #endregion
-
+            #region TradeLine
+            case TrailingWaveMethod.TradeLine:
+              if (firstTime) {
+                SetTrendLines = () => setTrendLines(2);
+                _strategyOnTradeLineChanged = tlm => {
+                  if (VarianceFunction == VarainceFunctions.Zero) {
+                    var shift = tlm.NewValue - tlm.OldValue;
+                    _buyLevel.RateEx += shift;
+                    _sellLevel.RateEx += shift;
+                  } else {
+                    var rates = SetTrendLines();
+                    var h = rates[0].PriceAvg2;
+                    var l = rates[0].PriceAvg3;
+                    var isReverse = _buyLevel.Rate < _sellLevel.Rate ;
+                    _buyLevel.RateEx = isReverse ? l : h;
+                    _sellLevel.RateEx = isReverse ? h : l;
+                  }
+                  if (IsAutoStrategy && (RateLast.PriceAvg).Sign(tlm.NewValue) != corridorLevel) {
+                    corridorLevel = (RateLast.PriceAvg).Sign(tlm.NewValue);
+                    _buySellLevelsForEach(sr => sr.CanTrade = true);
+                  }
+                };
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }
           if (!CloseOnProfitOnly && Trades.GrossInPips() > TakeProfitPips
