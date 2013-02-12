@@ -639,7 +639,7 @@ namespace HedgeHog.Alice.Store {
           Array.Copy(rates, rates0, rates0.Length);
           var height = rates0.Height();
           var stDev = rates0.StDev();
-          if (WaveStDevRatio > 0 && Fibonacci.FibRatio(height, stDev) < WaveStDevRatio) break;
+          if (WaveStDevRatio > 0 && Fibonacci.FibRatio(height, stDev) < WaveStDevRatio) continue;
           var angle = rates0.Regress(1).LineSlope().Abs().Angle(PointSize);
           if (angle < ratesAngle) break;
           ratesAngle = angle;

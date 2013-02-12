@@ -967,6 +967,10 @@ namespace HedgeHog {
     Dictionary<SimpleLine, DraggablePoint> LineToPoint = new Dictionary<SimpleLine, DraggablePoint>();
     DraggablePoint _tradeLineStartDraggablePoint = new DraggablePoint();
     DraggablePoint _tradeLineStopDraggablePoint = new DraggablePoint();
+    private void ResetTradeLinePosition() {
+      _tradeLineStartDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStartPosition"));
+      _tradeLineStopDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStopPosition"));
+    }
     public double TradeLineSlope { get { return slope(_tradeLineStartDraggablePoint.Position, _tradeLineStopDraggablePoint.Position); } }
     public Point TradeLineEndPoint {
       get {
@@ -1120,29 +1124,66 @@ namespace HedgeHog {
       #endregion
 
       EventHandler<PositionChangedEventArgs> eh = (s, e) => {
-        var me = s == _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
-        var other = s != _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
-        if (!me.IsMouseCaptured) return;
-        if (_isShiftDown)
-          other.Position = new Point(other.Position.X + e.Position.X - e.PreviousPosition.X, other.Position.Y + e.Position.Y - e.PreviousPosition.Y);
-        OnPropertyChanged("TradeLineSlope");
-        OnPropertyChanged("TradeLineEndPoint");
+        try {
+          RaiseTrendLineDraw();
+          var me = s == _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
+          var other = s != _tradeLineStopDraggablePoint ? _tradeLineStopDraggablePoint : _tradeLineStartDraggablePoint;
+          if (!me.IsMouseCaptured) return;
+          if (_isShiftDown)
+            other.Position = new Point(other.Position.X + e.Position.X - e.PreviousPosition.X, other.Position.Y + e.Position.Y - e.PreviousPosition.Y);
+          RaiseShowChart();
+        } catch (Exception exc) {
+          Debugger.Break();
+        }
       };
       plotter.Children.Add(_tradeLineStartDraggablePoint);
-      _tradeLineStartDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStartPosition"));
       _tradeLineStartDraggablePoint.PositionChanged += eh;
 
       plotter.Children.Add(_tradeLineStopDraggablePoint);
-      _tradeLineStopDraggablePoint.SetBinding(DraggablePoint.PositionProperty, new Binding("TradeLineStopPosition"));
       _tradeLineStopDraggablePoint.PositionChanged += eh;
 
-      var tradeSegment = new Segment();
+      ResetTradeLinePosition();
+
+      var tradeSegment = new SegmentEx() { StrokeThickness = 1 };
       plotter.Children.Add(tradeSegment);
       tradeSegment.SetBinding(Segment.StartPointProperty, new Binding("Position") { Source = _tradeLineStopDraggablePoint });
-      tradeSegment.SetBinding(Segment.EndPointProperty, new Binding("TradeLineEndPoint"));
-      tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding("TradeLineSlope"));
+      tradeSegment.SetBinding(Segment.EndPointProperty, new Binding(Lib.GetLambda(() => TradeLineEndPoint)));
+      tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding(Lib.GetLambda(() => TradeLineSlope)));
+      tradeSegment.EndPositionChanged += (s, e) => { RaiseTradeLineChanged(e.NewPosition, e.OldPosition); };
     }
 
+    class SegmentEx : Segment {
+      protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e) {
+        base.OnPropertyChanged(e);
+        if (e.Property == Segment.EndPointProperty) {
+          RaiseEndPositionChanged(((Point)e.NewValue).Y, ((Point)e.OldValue).Y);
+        }
+      }
+      public event EventHandler<PositionChangedBaseEventArgs<double>> EndPositionChanged;
+      void RaiseEndPositionChanged(double xNow, double xPrevious) {
+        if (EndPositionChanged != null) EndPositionChanged(this, new PositionChangedBaseEventArgs<double>(xNow, xPrevious));
+      }
+    }
+    private void RaiseTrendLineDraw() {
+      OnPropertyChanged("TradeLineSlope");
+      OnPropertyChanged("TradeLineEndPoint");
+    }
+
+    #region TradeLineChanged Event
+    event EventHandler<PositionChangedBaseEventArgs<double>> TradeLineChangedEvent;
+    public event EventHandler<PositionChangedBaseEventArgs<double>> TradeLineChanged {
+      add {
+        if (TradeLineChangedEvent == null || !TradeLineChangedEvent.GetInvocationList().Contains(value))
+          TradeLineChangedEvent += value;
+      }
+      remove {
+        TradeLineChangedEvent -= value;
+      }
+    }
+    protected void RaiseTradeLineChanged(double xNow,double xPrevious) {
+      if (TradeLineChangedEvent != null) TradeLineChangedEvent(this, new PositionChangedBaseEventArgs<double>(xNow,xPrevious));
+    }
+    #endregion
 
     private int _gannAnglesCount;
 
@@ -1249,6 +1290,8 @@ namespace HedgeHog {
             try { FitToView(); } catch { }
             break; 
           default:
+            if(e.Key == Key.C)
+              ResetTradeLinePosition();
             RaisePlotterKeyDown(e.Key); break;
         }
       } catch (Exception exc) {
@@ -1300,6 +1343,10 @@ namespace HedgeHog {
     #endregion
 
     #region Events
+    public event EventHandler ShowChart;
+    void RaiseShowChart() {
+      if (ShowChart != null) ShowChart(this, EventArgs.Empty);
+    }
     public event EventHandler<BuySellRateRemovedEventArgs> BuySellRemoved;
     protected void OnBuySellRemoved(Guid uid) {
       if (BuySellRemoved != null)
@@ -1532,6 +1579,7 @@ namespace HedgeHog {
 
           LineNetSell = netSell;
           LineNetBuy = netBuy;
+          RaiseTrendLineDraw();
           #endregion
         }
       };
