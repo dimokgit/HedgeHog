@@ -1983,29 +1983,48 @@ namespace HedgeHog.Alice.Store {
               break;
             #endregion
             #region TradeLine
-            case TrailingWaveMethod.TradeLine:
-              if (firstTime) {
-                SetTrendLines = () => setTrendLines(2);
-                _strategyOnTradeLineChanged = tlm => {
-                  if (VarianceFunction == VarainceFunctions.Zero) {
-                    var shift = tlm.NewValue - tlm.OldValue;
-                    _buyLevel.RateEx += shift;
-                    _sellLevel.RateEx += shift;
-                  } else {
-                    var rates = SetTrendLines();
-                    var h = rates[0].PriceAvg2;
-                    var l = rates[0].PriceAvg3;
-                    var isReverse = _buyLevel.Rate < _sellLevel.Rate ;
-                    _buyLevel.RateEx = isReverse ? l : h;
-                    _sellLevel.RateEx = isReverse ? h : l;
-                  }
-                  if (IsAutoStrategy && (RateLast.PriceAvg).Sign(tlm.NewValue) != corridorLevel) {
-                    corridorLevel = (RateLast.PriceAvg).Sign(tlm.NewValue);
-                    _buySellLevelsForEach(sr => sr.CanTrade = true);
-                  }
-                };
+            case TrailingWaveMethod.TradeLine: {
+              Action a = () => {
+                var rates = SetTrendLines();
+                var h = rates[0].PriceAvg2;
+                var l = rates[0].PriceAvg3;
+                var isReverse = _buyLevel.Rate < _sellLevel.Rate;
+                _buyLevel.RateEx = isReverse ? l : h;
+                _sellLevel.RateEx = isReverse ? h : l;
+              };
+                if (firstTime) {
+                  SetTrendLines = () => setTrendLines(2);
+                  _strategyOnTradeLineChanged = tlm => {
+                    if (VarianceFunction == VarainceFunctions.Zero) {
+                      var shift = tlm.NewValue - tlm.OldValue;
+                      _buyLevel.RateEx += shift;
+                      _sellLevel.RateEx += shift;
+                    } else a();
+                    if (IsAutoStrategy && (RateLast.PriceAvg).Sign(tlm.NewValue) != corridorLevel) {
+                      corridorLevel = (RateLast.PriceAvg).Sign(tlm.NewValue);
+                      _buySellLevelsForEach(sr => sr.CanTrade = true);
+                    }
+                    adjustExitLevels0();
+                  };
+                }
               }
-              adjustExitLevels0();
+              break;
+            #endregion
+            #region TradeLineA
+            case TrailingWaveMethod.TradeLineA: {
+                if (firstTime) {}
+                var rates = SetTrendLines();
+                var h = rates[0].PriceAvg2;
+                var l = rates[0].PriceAvg3;
+                var isReverse = _buyLevel.Rate < _sellLevel.Rate;
+                _buyLevel.RateEx = isReverse ? l : h;
+                _sellLevel.RateEx = isReverse ? h : l;
+                if (IsAutoStrategy && (RateLast.PriceAvg).Sign(rates[0].PriceAvg1) != corridorLevel) {
+                  corridorLevel = (RateLast.PriceAvg).Sign(rates[0].PriceAvg1);
+                  _buySellLevelsForEach(sr => sr.CanTrade = true);
+                }
+                adjustExitLevels0();
+              }
               break;
             #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
