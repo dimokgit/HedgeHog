@@ -309,21 +309,21 @@ namespace HedgeHog {
       var range = values.Max() - values.Min();
       return stDev / range;
     }
-    public static double StDev<T>(this ICollection<T> values, Func<T, int, double> value) {
+    public static double StDev<T>(this IList<T> values, Func<T, int, double> value) {
       return values.Select((v, i) => value(v, i)).ToArray().StDev();
     }
-    public static double StDev<T>(this ICollection<T> values, Func<T, double> value) {
+    public static double StDev<T>(this IList<T> values, Func<T, double> value) {
       return values.Select(v => value(v)).ToArray().StDev();
     }
     public static double StDev<T>(this ICollection<T> values, Func<T, double?> value) {
       return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
     }
-    public static double StDev(this ICollection<double> values) {
+    public static double StDev(this IList<double> values) {
       double ret = 0;
       if (values.Count() > 0) {
         double avg = values.Average();
         double sum = values.Sum(d => (d - avg) * (d - avg));
-        ret = Math.Sqrt(sum / (values.Count() - 1));
+        ret = Math.Sqrt(sum / (values.Count - 1));
       }
       return ret;
     }

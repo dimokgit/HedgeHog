@@ -25,9 +25,6 @@ namespace HedgeHog.Alice.Store {
     WaveShort = 1,
     WaveTrade = 2,
     WaveMax = 3,
-    WaveMax1 = 31,
-    WaveMax2 = 32,
-    WaveMax3 = 33,
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
@@ -43,7 +40,8 @@ namespace HedgeHog.Alice.Store {
     Corridor = 120,
     Corridor1 = 121,
     TradeLine = 130,
-    TradeLineA = 131
+    TradeLineA = 131,
+    TradeLineA1 = 132
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDev = 3,
