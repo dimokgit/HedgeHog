@@ -436,17 +436,20 @@ namespace HedgeHog {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeMiddle == null) {
             _lineTimeMiddle = new VerticalLine() { StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy) };
-            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint());
+            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint() { Visibility = Visibility.Collapsed });
+            _lineTimeMiddle.SetBinding(VerticalLine.StrokeThicknessProperty, new Binding("IsMouseOver") { Source = _lineTimeMiddle, Converter = BoolToSrtingConverter.Default, ConverterParameter = "1|1|3" });
+            _lineTimeMiddle.MouseLeftButtonDown += (s, e) => {
+              _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddleDraggablePoint.Visibility == Visibility.Visible 
+                ? Visibility.Collapsed : Visibility.Visible;
+            };
+            _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
             plotter.Children.Add(_lineTimeMiddle);
             plotter.Children.Add(_lineTimeMiddleDraggablePoint);
-            _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
-            //_lineTimeMiddleDraggablePoint.SetBinding(DraggablePoint.VisibilityProperty, ShowDragBindingFactory());
-            _lineTimeMiddleDraggablePoint.Visibility = System.Windows.Visibility.Visible;
           }
           if (value == null)
-            _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddle.Visibility = System.Windows.Visibility.Collapsed;
+            _lineTimeMiddle.Visibility = System.Windows.Visibility.Collapsed;
           else {
-            _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddle.Visibility = System.Windows.Visibility.Visible;
+            _lineTimeMiddle.Visibility = System.Windows.Visibility.Visible;
             _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
             _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
           }
@@ -1136,11 +1139,16 @@ namespace HedgeHog {
           Debugger.Break();
         }
       };
+
+      #region Trade Line
+      var showTradeStuffBinding = new Binding("DoShowTradingLine") { Converter = new BooleanToVisibilityConverter() };
       plotter.Children.Add(_tradeLineStartDraggablePoint);
       _tradeLineStartDraggablePoint.PositionChanged += eh;
+      _tradeLineStartDraggablePoint.SetBinding(DraggablePoint.VisibilityProperty, showTradeStuffBinding);
 
       plotter.Children.Add(_tradeLineStopDraggablePoint);
       _tradeLineStopDraggablePoint.PositionChanged += eh;
+      _tradeLineStopDraggablePoint.SetBinding(DraggablePoint.VisibilityProperty, showTradeStuffBinding);
 
       ResetTradeLinePosition();
 
@@ -1150,8 +1158,23 @@ namespace HedgeHog {
       tradeSegment.SetBinding(Segment.EndPointProperty, new Binding(Lib.GetLambda(() => TradeLineEndPoint)));
       tradeSegment.SetBinding(Segment.ToolTipProperty, new Binding(Lib.GetLambda(() => TradeLineSlope)));
       tradeSegment.EndPositionChanged += (s, e) => { RaiseTradeLineChanged(e.NewPosition, e.OldPosition); };
+      tradeSegment.SetBinding(Segment.VisibilityProperty, showTradeStuffBinding);
+      #endregion
     }
 
+    #region DoShowTradingLine
+    private bool _DoShowTradingLine;
+    public bool DoShowTradingLine {
+      get { return _DoShowTradingLine; }
+      set {
+        if (_DoShowTradingLine != value) {
+          _DoShowTradingLine = value;
+          OnPropertyChanged("DoShowTradingLine");
+        }
+      }
+    }
+    
+    #endregion
     class SegmentEx : Segment {
       protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e) {
         base.OnPropertyChanged(e);
@@ -1403,6 +1426,7 @@ namespace HedgeHog {
       plotter.Dispatcher.BeginInvoke(new Action(() => {
         try {
           plotter.FitToView();
+        } catch (InvalidOperationException) {
         } catch (Exception exc) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
         }
@@ -1452,44 +1476,46 @@ namespace HedgeHog {
       #region Update Main Chart
       {
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
-        if (correlation < 1.99) {
-          ReAdjustXY(animatedTimeX, animatedPriceY, ticks.Count());
-          ReAdjustXY(animatedTime0X, ticks.Count());
-          ReAdjustXY(animatedPriceBidY, ticks.Count());
-          ReAdjustXY(animatedPrice1Y, ticks.Count());
-          var min = animatedPriceY.Min();
-          var max = animatedPriceY.Max();
-          _trendLinesH = max - min;
-          _trendLinesY = min + (_trendLinesH) / 2;
-          {
-            var i = 0;
-            var lastRate = ticks.Aggregate((rp, rn) => {
-              SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
-              return rn;
-            });
-            SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
-          }
-          for (var i = 100000; i < ticks.Count(); i++) {
-            animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
-            animatedTimeX[i] = ticks[i].StartDateContinuous;
-            animatedTime0X[i] = ticks[i].StartDate;
-          }
-          if (voltsByTick != null) {
-            ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
-            for (var i = 0; i < voltsByTick.Count(); i++) {
-              animatedVoltValueY[i] = PriceBarValue(voltsByTick[i]);
-              animatedVoltTimeX[i] = voltsByTick[i].StartDateContinuous;
+        if (correlation < 1.99) try {
+            ReAdjustXY(animatedTimeX, animatedPriceY, ticks.Count());
+            ReAdjustXY(animatedTime0X, ticks.Count());
+            ReAdjustXY(animatedPriceBidY, ticks.Count());
+            ReAdjustXY(animatedPrice1Y, ticks.Count());
+            var min = animatedPriceY.Min();
+            var max = animatedPriceY.Max();
+            _trendLinesH = max - min;
+            _trendLinesY = min + (_trendLinesH) / 2;
+            {
+              var i = 0;
+              var lastRate = ticks.Aggregate((rp, rn) => {
+                SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
+                return rn;
+              });
+              SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
             }
-          }
-          if (voltsByTicks != null && voltsByTicks.Length > 1) {
-            ReAdjustXY(animatedVolt1TimeX, animatedVolt1ValueY, voltsByTicks[1].Length);
-            for (var i = 0; i < voltsByTicks[1].Count(); i++) {
-              animatedVolt1ValueY[i] = PriceBarValue(voltsByTicks[1][i]);
-              animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDateContinuous;
+            for (var i = 100000; i < ticks.Count(); i++) {
+              animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
+              animatedTimeX[i] = ticks[i].StartDateContinuous;
+              animatedTime0X[i] = ticks[i].StartDate;
             }
-          }
+            if (voltsByTick != null) {
+              ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
+              for (var i = 0; i < voltsByTick.Count(); i++) {
+                animatedVoltValueY[i] = PriceBarValue(voltsByTick[i]);
+                animatedVoltTimeX[i] = voltsByTick[i].StartDateContinuous;
+              }
+            }
+            if (voltsByTicks != null && voltsByTicks.Length > 1) {
+              ReAdjustXY(animatedVolt1TimeX, animatedVolt1ValueY, voltsByTicks[1].Length);
+              for (var i = 0; i < voltsByTicks[1].Count(); i++) {
+                animatedVolt1ValueY[i] = PriceBarValue(voltsByTicks[1][i]);
+                animatedVolt1TimeX[i] = voltsByTicks[1][i].StartDateContinuous;
+              }
+            }
 
-        } else {
+          } catch (InvalidOperationException) {
+            return;
+          } else {
           var dateFirst = ticks.Min(r => r.StartDateContinuous);
           var remove = animatedTimeX.TakeWhile(t => t < dateFirst).ToArray();
           animatedTimeX.RemoveRange(0, remove.Length);
