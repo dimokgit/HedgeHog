@@ -17,7 +17,9 @@ namespace HedgeHog.Alice.Store {
     CrossesStarter = 31,
     CrossesWithAngle = 32,
     StDev = 40,
-    StDevSimple = 41
+    StDevSimple = 41,
+    StDevSimple1Cross = 42,
+    StDevUDCross = 43
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -67,7 +69,9 @@ namespace HedgeHog.Alice.Store {
   public enum CorridorHeightMethods {
     ByMA = 0,
     ByPriceAvg = 1,
-    ByStDev = 2,
+    ByStDevH = 20,
+    ByStDevP = 21,
+    ByStDevPUD = 22,
     ByStDevMin = 30,
     ByStDevMin2 = 31,
     ByStDevMax = 40
