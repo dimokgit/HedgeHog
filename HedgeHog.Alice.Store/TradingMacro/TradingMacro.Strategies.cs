@@ -623,11 +623,25 @@ namespace HedgeHog.Alice.Store {
           var l = hl.Where(d => d < 0).Average().Abs();
           return new[] { h, l };
         };
+        Func<Func<Rate, double>, double[]> getStDevUpDownByPriceAverage = null;
+        getStDevUpDownByPriceAverage = (price) => {
+          var line = new double[CorridorStats.Rates.Count];
+          try {
+            CorridorStats.Coeffs.SetRegressionPrice(0, line.Length, (i, d) => line[i] = d);
+          } catch (IndexOutOfRangeException) {
+            return getStDevUpDownByPriceAverage(price);
+          }
+          double stDevUp, stDevDown;
+          GetStDevUpDown(CorridorStats.Rates.Select(price).ToArray(), line, out stDevUp, out stDevDown);
+          return new[] { stDevUp, stDevDown };
+        };
         Func<double[]> getStDev = () => {
           switch (CorridorHeightMethod) {
             case CorridorHeightMethods.ByMA: return getStDevByAverage(CorridorPrice,.1);
             case CorridorHeightMethods.ByPriceAvg: return getStDevByAverage1(_priceAvg, 0.1);
-            case CorridorHeightMethods.ByStDev: return new[] { CorridorStats.StDevByHeight, CorridorStats.StDevByHeight };
+            case CorridorHeightMethods.ByStDevH: return new[] { CorridorStats.StDevByHeight, CorridorStats.StDevByHeight };
+            case CorridorHeightMethods.ByStDevP: return new[] { CorridorStats.StDevByPriceAvg, CorridorStats.StDevByPriceAvg };
+            case CorridorHeightMethods.ByStDevPUD: return getStDevUpDownByPriceAverage(CorridorPrice);
             case CorridorHeightMethods.ByStDevMin: return new[] { CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg), CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg) };
             case CorridorHeightMethods.ByStDevMin2:
               var stDev = CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg);
@@ -1050,6 +1064,7 @@ namespace HedgeHog.Alice.Store {
         double corridorAngle = 0;
         DateTime tradeCloseDate = DateTime.MaxValue;
         DateTime corridorDate = TradesManager.ServerTime;
+        bool? corridorUpDown = null;
         #endregion
 
         #region Funcs
@@ -1595,6 +1610,38 @@ namespace HedgeHog.Alice.Store {
               }
               break;
             #endregion
+            #region TradeLineA1
+            case TrailingWaveMethod.TradeLineA1: {
+                if (firstTime) {
+                  onCloseTradeLocal = trade => corridorUpDown = null;
+                }
+                var rates = SetTrendLines();
+                var h2 = rates[0].PriceAvg2;
+                var h21 = rates[0].PriceAvg21;
+                var l3 = rates[0].PriceAvg3;
+                var l31 = rates[0].PriceAvg31;
+                var price = CalculateLastPrice(RateLast, CorridorPrice);
+                if (price.Between(h2, h21)) {
+                  if (!corridorUpDown.HasValue || !corridorUpDown.Value) {
+                    corridorUpDown = true;
+                    _buyLevel.RateEx = h21;
+                    _sellLevel.RateEx = h2;
+                    _buySellLevels.ForEach(sr => sr.ResetPricePosition());
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                  }
+                } else if (price.Between(l3, l31)) {
+                  if (!corridorUpDown.HasValue || corridorUpDown.Value) {
+                    corridorUpDown = false;
+                    _buyLevel.RateEx = l3;
+                    _sellLevel.RateEx = l31;
+                    _buySellLevels.ForEach(sr => sr.ResetPricePosition());
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                  }
+                } 
+              adjustExitLevels0();
+              }
+              break;
+            #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }
           if (!CloseOnProfitOnly && Trades.GrossInPips() > TakeProfitPips
@@ -1646,12 +1693,14 @@ namespace HedgeHog.Alice.Store {
         _adjustEnterLevels += () => exitFunc()();
         _adjustEnterLevels += () => {
           try {
-            var r = GetTradeEnterBy()(RateLast);
-            if (!double.IsNaN(r)) {
-              _buyLevel.SetPrice(r);
-              _sellLevel.SetPrice(r);
-            }
-              //SuppRes.ForEach(sr => sr.SetPrice(r));
+            if (IsTradingActive) {
+              var r = CalculateLastPrice(RateLast, GetTradeEnterBy());
+              if (!double.IsNaN(r)) {
+                _buyLevel.SetPrice(r);
+                _sellLevel.SetPrice(r);
+              }
+            } else
+              SuppRes.ForEach(sr => sr.ResetPricePosition());
           } catch (Exception exc) { Log = exc; }
         };
         #endregion

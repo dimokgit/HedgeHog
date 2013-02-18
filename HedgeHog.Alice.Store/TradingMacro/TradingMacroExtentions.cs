@@ -1424,7 +1424,7 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17*60+24*60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0) ;
-        var internalRateCount = 1440 * 8;
+        var internalRateCount = 1440 * 8 * 4;
         var rates = args.DateStart.HasValue
           ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt)
           : GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
@@ -2727,14 +2727,6 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-
-
-    #region 08s
-    DateTime _corridorStartDateLast;
-    bool _isCorridorHot = false;
-    double _tradeLifespan = double.NaN;
-    #endregion
-
     #endregion
 
     private void TurnOffSuppRes(double level = double.NaN) {
@@ -3062,6 +3054,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.CrossesStarter: return ScanCorridorByCrossesStarter;
         case ScanCorridorFunction.StDev: return ScanCorridorByStDev;
         case ScanCorridorFunction.StDevSimple: return ScanCorridorSimple;
+        case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
+        case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
       }
       throw new NotSupportedException(function + "");
     }
