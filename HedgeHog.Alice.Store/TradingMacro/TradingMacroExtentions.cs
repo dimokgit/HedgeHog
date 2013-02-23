@@ -1424,7 +1424,7 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17*60+24*60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0) ;
-        var internalRateCount = 1440 * 8 * 4;
+        var internalRateCount = 1440 * 8;
         var rates = args.DateStart.HasValue
           ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt)
           : GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
@@ -1514,7 +1514,7 @@ namespace HedgeHog.Alice.Store {
                 else {
                   Debugger.Break();
                 }
-              while (RatesInternal.Count > internalRateCount 
+              while (RatesInternal.Count > BarsCount*10 
                   && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || RatesInternal[0] < CorridorStats.Rates.LastBC())))
                 RatesInternal.RemoveAt(0);
             }
@@ -2026,8 +2026,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     public bool HasRates { get { return _rateArray.Any(); } }
-    private List<Rate> GetRatesSafe() {
-      return _limitBarToRateProvider == (int)BarPeriod ? RatesInternal.Skip(RatesInternal.Count-BarsCount).ToList() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false).ToList();
+    private IEnumerable<Rate> GetRatesSafe() {
+      Func<IEnumerable<Rate>> a = () => {
+        var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
+        var countByDate = startDate.HasValue ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
+        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCount).ToInt()).Max(0));
+      };
+      return _limitBarToRateProvider == (int)BarPeriod ? a() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false);
     }
     IEnumerable<Rate> GetRatesForStDev(IEnumerable<Rate> rates) {
       return rates.Reverse().Take(BarsCount).Reverse();
@@ -2864,11 +2869,11 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
-          RatesArraySafe.SetRegressionPrice(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
+          RatesArraySafe.SetRegressionPrice1(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
           break;
         case Store.MovingAverageType.Regression:
           Action<Rate,double> a = (r,d)=>r.PriceCMALast = d;
-          RatesArraySafe.SetRegressionPrice(PriceCmaLevels, _priceAvg, a);
+          RatesArraySafe.SetRegressionPrice1(PriceCmaLevels, _priceAvg, a);
           break;
         case Store.MovingAverageType.Cma:
           if (period.HasValue)
@@ -3009,7 +3014,7 @@ namespace HedgeHog.Alice.Store {
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
       var tp = double.NaN;
       switch (function) {
-        case TradingMacroTakeProfitFunction.CorridorStDev: tp = CorridorStats.StDevByHeight + CorridorStats.StDevByPriceAvg; break;
+        case TradingMacroTakeProfitFunction.CorridorStDevMin: tp = CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.CorridorStDevMax: tp = CorridorStats.StDevByHeight.Max(CorridorStats.StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.RatesHeight; break;
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
@@ -3056,6 +3061,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevSimple: return ScanCorridorSimple;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
+        case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
       }
       throw new NotSupportedException(function + "");
     }

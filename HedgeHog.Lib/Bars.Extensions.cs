@@ -197,7 +197,7 @@ namespace HedgeHog.Bars {
       coeffs.SetRegressionPrice(0, ticks.Count(), writeTo);
       return coeffs;
     }
-    public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
+    public static double[] SetRegressionPrice1<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
       var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
@@ -230,7 +230,7 @@ namespace HedgeHog.Bars {
       , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
       , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
       ) {
-      var coeffs = rates.SetRegressionPrice(1, getPriceForLine, setPriceLine);
+        var coeffs = rates.SetRegressionPrice1(1, getPriceForLine, setPriceLine);
       rates.AsParallel().ForAll(r => {
         var pl = getPriceLine(r);
         setPriceHigh0(r, pl + heightUp0);
@@ -247,7 +247,7 @@ namespace HedgeHog.Bars {
         .ForAll(i => list[i-1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
       return list;
     }
-    class ValueHolder<T> {
+    public class ValueHolder<T> {
       public T Value { get; set; }
       public ValueHolder(T v) {
         Value = v;

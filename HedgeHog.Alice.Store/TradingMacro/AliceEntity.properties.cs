@@ -850,8 +850,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Streatch TakeProfit")]
-    [Category(categoryXXX_NU)]
-    [Description("Ex: TakeProfitCurr = TakeProfit + CurrentLoss")]
+    [Category(categoryTrading)]
+    [Description("Ex: ExitLevel = tradeLevel + TakeProfit")]
     public bool StreatchTakeProfit {
       get { return StreachTradingDistance; }
       set { 
