@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace HedgeHog {
   public static class MathExtensions {
-    class Box<T> {
+    public class Box<T> {
       public T Value { get; set; }
       public Box(T v) {
         Value = v;

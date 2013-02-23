@@ -19,7 +19,8 @@ namespace HedgeHog.Alice.Store {
     StDev = 40,
     StDevSimple = 41,
     StDevSimple1Cross = 42,
-    StDevUDCross = 43
+    StDevUDCross = 43,
+    Balance
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -46,7 +47,7 @@ namespace HedgeHog.Alice.Store {
     TradeLineA1 = 132
   }
   public enum TradingMacroTakeProfitFunction {
-    CorridorStDev = 3,
+    CorridorStDevMin = 3,
     CorridorStDevMax = 4,
     CorridorHeight = 5,
     BuySellLevels = 6,
@@ -72,6 +73,7 @@ namespace HedgeHog.Alice.Store {
     ByStDevH = 20,
     ByStDevP = 21,
     ByStDevPUD = 22,
+    ByStDevHP = 23,
     ByStDevMin = 30,
     ByStDevMin2 = 31,
     ByStDevMax = 40
