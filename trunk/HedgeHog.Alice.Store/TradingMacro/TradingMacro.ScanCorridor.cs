@@ -786,10 +786,11 @@ namespace HedgeHog.Alice.Store {
       Func<int, int> ratesStep = (rc) => (rc / 100) + 1;
       var upDownRatios = "".Select(s => new { ud = 0.0, angle = 0.0,vb = new MathExtensions.Box<double>(0) }).Take(0).ToDictionary(a => 0, a => a);
       object upDownRatiosLocker = new object();
+      double upDownRatioCma = double.NaN;
       var rateCounts = new List<int>();
-      for (; ratesCount >= CorridorDistanceRatio; ratesCount -= ratesStep(ratesCount))
+      for (; ratesCount >= 10; ratesCount -= ratesStep(ratesCount*0))
         rateCounts.Add(ratesCount);
-      rateCounts.AsParallel().ForAll(rateCount => {
+      rateCounts.AsParallel().ForEach(rateCount => {
         double[] coeffs;
         var line = rates.Regression(rateCount, 1, out coeffs);
         double upCount = line.Select((l, i) => rates[i] > l).Count(d => d);
@@ -797,7 +798,7 @@ namespace HedgeHog.Alice.Store {
         var upDownRatio = Fibonacci.FibRatioSign(upCount, downCount);
         lock (upDownRatiosLocker)
           upDownRatios.Add(rateCount, new { ud = upDownRatio, angle = coeffs.LineSlope().Angle(PointSize), vb = new MathExtensions.Box<double>(0) });
-        ratesReversed[rateCount].DistanceHistory = upDownRatio;
+        ratesReversed[rateCount].DistanceHistory = upDownRatioCma = upDownRatioCma.Cma(ratesStep(rates.Length - rateCount), upDownRatio);
         /*
         continue;
         if (upDownRatio.Sign() != sign.IfNaN(upDownRatio.Sign())) {
@@ -808,7 +809,7 @@ namespace HedgeHog.Alice.Store {
         sign = upDownRatio.Sign();
          */
       });
-      upDownRatios.OrderByDescending(kv=>kv.Key).ToArray().SetRegressionPrice1(1, kv => kv.Value.ud
+      upDownRatios.OrderByDescending(kv=>kv.Key).ToArray().SetRegressionPrice1(PolyOrder, kv => kv.Value.ud
         , (kv, d) => { ratesReversed[kv.Key].Distance1 = d; kv.Value.vb.Value = d; });
       ratesReversed.Aggregate((p, n) => {
         p.DistanceHistory = p.DistanceHistory.IfNaN(n.DistanceHistory.IfNaN(0));
@@ -817,7 +818,7 @@ namespace HedgeHog.Alice.Store {
         n.Distance1 = n.Distance1.IfNaN(p.Distance1.IfNaN(0));
         return n;
       });
-      var udSorted = upDownRatios.OrderByDescending(ud => ud.Value.ud.Abs()).ToArray();
+      var udSorted = upDownRatios.Where(kv=>kv.Key>CorridorDistanceRatio).OrderByDescending(ud => ud.Value.ud.Abs()).ToArray();
       ratesCount = udSorted[0].Key;
       //var firstTen = upDownRatios.OrderBy(kv => kv.Value.ud.Abs()).Take(10).OrderByDescending(kv => kv.Value.angle.Abs()).ToArray();
       //if (!WaveShort.HasRates || !firstTen.Any(kv => WaveShort.Rates.Count.Between(kv.Key - ratesStep(kv.Key), kv.Key + ratesStep(kv.Key))))
