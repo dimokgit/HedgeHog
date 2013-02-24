@@ -971,6 +971,11 @@ namespace HedgeHog.Alice.Client {
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
+          Task.WaitAll(
+            Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.DistanceHistory)).ToArray().FillGaps(r => double.IsNaN(r.DistanceHistory), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
+            Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
+          );
+
           PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.DistanceHistory.IfNaN(0) }).ToArray();
           PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Distance1.IfNaN(0) }).ToArray();
           var distancesAverage = 0;// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
