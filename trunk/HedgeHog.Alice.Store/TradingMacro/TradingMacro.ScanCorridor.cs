@@ -7,6 +7,7 @@ using HedgeHog.Bars;
 using System.ComponentModel;
 using C = System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -777,28 +778,35 @@ namespace HedgeHog.Alice.Store {
       stDevDown = ratesDown.StDev() * 2;
     }
 
+    T Cast<T>(object obj, Func<T> type) {
+      return (T)obj;
+    }
     private CorridorStatistics ScanCorridorByBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       var rates = ratesForCorridor.ReverseIfNot().Select(_priceAvg).ToArray();
       var ratesCount = rates.Length - 1;
       var sign = double.NaN;
-      double upDownRatioPrev = 0;
-      Func<int, int> ratesStep = (rc) => (rc / 100) + 1;
-      var upDownRatios = "".Select(s => new { ud = 0.0, angle = 0.0,vb = new MathExtensions.Box<double>(0) }).Take(0).ToDictionary(a => 0, a => a);
+      Func<int, Lib.Box<int>> newBoxInt = (i) => new Lib.Box<int>(i);
+      Func<double, Lib.Box<double>> newBox0 = (d) => new Lib.Box<double>(d);
+      Func<Lib.Box<double>> newBox = () => newBox0(double.NaN);
+      Func<int, int> ratesStep = (rc) => (rc / 100.0).ToInt() + 1;
+      var udAnon = new { ud = 0.0, angle = 0.0, vb = newBox(), udCma = newBox() };
+      //var setUD = new Func<double,double,
+      var upDownRatios = udAnon.IEnumerable().ToDictionary(a => 0, a => a);
       object upDownRatiosLocker = new object();
       double upDownRatioCma = double.NaN;
       var rateCounts = new List<int>();
-      for (; ratesCount >= 10; ratesCount -= ratesStep(ratesCount*0))
+      for (; ratesCount >= 10; ratesCount -= ratesStep(ratesCount))
         rateCounts.Add(ratesCount);
-      rateCounts.AsParallel().ForEach(rateCount => {
+      ratesReversed.ForEach(r => r.DistanceHistory = r.Distance1 = double.NaN);
+      rateCounts.AsParallel().ForAll(rateCount => {
         double[] coeffs;
         var line = rates.Regression(rateCount, 1, out coeffs);
         double upCount = line.Select((l, i) => rates[i] > l).Count(d => d);
         double downCount = rateCount - upCount;
         var upDownRatio = Fibonacci.FibRatioSign(upCount, downCount);
         lock (upDownRatiosLocker)
-          upDownRatios.Add(rateCount, new { ud = upDownRatio, angle = coeffs.LineSlope().Angle(PointSize), vb = new MathExtensions.Box<double>(0) });
-        ratesReversed[rateCount].DistanceHistory = upDownRatioCma = upDownRatioCma.Cma(ratesStep(rates.Length - rateCount), upDownRatio);
+          upDownRatios.Add(rateCount, new { ud = upDownRatio, angle = coeffs.LineSlope().Angle(PointSize), vb = newBox(), udCma = newBox() });
         /*
         continue;
         if (upDownRatio.Sign() != sign.IfNaN(upDownRatio.Sign())) {
@@ -809,17 +817,39 @@ namespace HedgeHog.Alice.Store {
         sign = upDownRatio.Sign();
          */
       });
-      upDownRatios.OrderByDescending(kv=>kv.Key).ToArray().SetRegressionPrice1(PolyOrder, kv => kv.Value.ud
-        , (kv, d) => { ratesReversed[kv.Key].Distance1 = d; kv.Value.vb.Value = d; });
-      ratesReversed.Aggregate((p, n) => {
-        p.DistanceHistory = p.DistanceHistory.IfNaN(n.DistanceHistory.IfNaN(0));
-        n.DistanceHistory = n.DistanceHistory.IfNaN(p.DistanceHistory.IfNaN(0));
-        p.Distance1 = p.Distance1.IfNaN(n.Distance1.IfNaN(0));
-        n.Distance1 = n.Distance1.IfNaN(p.Distance1.IfNaN(0));
+
+      var upDownRatiosKV = upDownRatios.OrderByDescending(kv => kv.Key).ToArray();
+      upDownRatiosKV[0].Value.udCma.Value = upDownRatiosKV[0].Value.ud;
+      upDownRatiosKV.Aggregate((p, n) => {
+        n.Value.udCma.Value = p.Value.udCma.Value.Cma(ratesStep(rates.Length - p.Key),n.Value.ud);
         return n;
       });
-      var udSorted = upDownRatios.Where(kv=>kv.Key>CorridorDistanceRatio).OrderByDescending(ud => ud.Value.ud.Abs()).ToArray();
-      ratesCount = udSorted[0].Key;
+
+      var upDownRatiosForAreas = Enumerable.Range(upDownRatios.Keys.Min(), upDownRatios.Keys.Max() - upDownRatios.Keys.Min() + 1)
+        .Select(i => new { i, v = new { value = newBox0(upDownRatios.Keys.Contains(i) ? upDownRatios[i].udCma : double.NaN),line=newBox0(double.NaN) } }).ToDictionary(a => a.i, a => a.v).ToArray();
+        //upDownRatios.OrderBy(kv => kv.Key).SkipWhile(kv => kv.Key < CorridorDistanceRatio).ToArray();
+      upDownRatiosForAreas.FillGaps(kv => double.IsNaN(kv.Value.value), kv => kv.Value.value, (kv, d) => kv.Value.value.Value = d);
+      Task.Factory.StartNew(() => upDownRatiosForAreas.SkipWhile(kv => kv.Key < CorridorDistanceRatio)
+        .ForEach(kv => ratesReversed[kv.Key].DistanceHistory = kv.Value.value));
+      upDownRatiosForAreas.SetRegressionPrice1(PolyOrder, kv => kv.Value.value
+        , (kv, d) => { if(kv.Key > CorridorDistanceRatio) ratesReversed[kv.Key].Distance1 = d; kv.Value.line.Value = d; });
+
+      var areaInfos = upDownRatiosForAreas.Areas(kv => kv.Key, kv => kv.Value.value - kv.Value.line);
+      areaInfos.Remove(areaInfos.Last());
+      if (areaInfos.Any()) {
+        ratesCount = areaInfos.OrderByDescending(ai => ai.Area.Abs()).First().Stop;
+      } else {
+        var udSorted = upDownRatios.Where(kv => kv.Key > CorridorDistanceRatio)
+          .OrderByDescending(ud => ud.Value.udCma.Value.Abs() + ud.Value.udCma.Value.Abs(ud.Value.vb)).ToArray();
+        if (DistanceIterations >= 0 ? udSorted[0].Value.udCma.Value.Abs() > DistanceIterations : udSorted[0].Value.udCma.Value.Abs() < DistanceIterations.Abs())
+          ratesCount = udSorted[0].Key;
+        else if (WaveShort.HasRates) {
+
+          var startDate = WaveShort.Rates.LastBC().StartDate;
+          ratesCount = ratesReversed.TakeWhile(r => r.StartDate >= startDate).Count();
+        } else
+          ratesCount = ratesReversed.Count;
+      }
       //var firstTen = upDownRatios.OrderBy(kv => kv.Value.ud.Abs()).Take(10).OrderByDescending(kv => kv.Value.angle.Abs()).ToArray();
       //if (!WaveShort.HasRates || !firstTen.Any(kv => WaveShort.Rates.Count.Between(kv.Key - ratesStep(kv.Key), kv.Key + ratesStep(kv.Key))))
       //  ratesCount = firstTen.First().Key;
@@ -828,12 +858,14 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = null;
       if (CorridorStartDate.HasValue)
         WaveShort.Rates = ratesReversed.TakeWhile(r => r.StartDate >= CorridorStartDate.Value).ToArray();
-      else
+      else {
         WaveShort.Rates = RatesArray.ReverseIfNot().Take(ratesCount).ToArray();
+      }
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
         .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
+
     public double CorridorBalance() {
       var rates = CorridorStats.Rates;
       Action<Rate,double> a = (r,d)=>r.PriceAvg1 = d;
@@ -841,6 +873,9 @@ namespace HedgeHog.Alice.Store {
       var upCount = rates.Count(r => r.PriceAvg > r.PriceAvg1);
       var downCount = rates.Count(r => r.PriceAvg < r.PriceAvg1);
       return Fibonacci.FibRatioSign(upCount , downCount);
+    }
+    public static void Streatch(IList<double> small, IList<double> big) {
+
     }
     private CorridorStatistics ScanCorridorByCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg;// CorridorPrice();

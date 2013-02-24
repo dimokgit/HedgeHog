@@ -28,6 +28,64 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static class Lib {
+    #region Box
+    public class Box<T> {
+      public T Value { get; set; }
+      public Box(T v) {
+        Value = v;
+      }
+      public override string ToString() {
+        return Value.ToString();
+      }
+      public static implicit operator T(Box<T> m) {
+        return m.Value;
+      }
+    }
+    #endregion
+    #region AreaInfo
+    public class AreaInfo {
+      public int Start { get; set; }
+      public int Stop { get; set; }
+      public double Area { get; set; }
+      public AreaInfo() { }
+      public AreaInfo(int start,int stop, double area) {
+        this.Start = start;
+        this.Stop = stop;
+        this.Area = area;
+      }
+      public override string ToString() { return new { Start, Stop, Area }.ToString(); }
+    }
+    #endregion
+    public static List<AreaInfo> Areas<T>(this IList<T> list, Func<T, int> getPosition, Func<T, double> getValue) {
+      var anonArea = new AreaInfo { Start = getPosition(list[0]), Stop = getPosition(list[0]), Area = 0 };
+      var areas = new List<AreaInfo>() { anonArea };
+      list.Aggregate((p, n) => {
+        var nValue = getValue(n);
+        var nPosition = getPosition(n);
+        if (nValue.Sign() == getValue(p).Sign()) {
+          var area = areas.LastBC();
+          area.Area += nValue;
+          area.Stop = nPosition;
+        } else {
+          areas.Add(new AreaInfo(nPosition, nPosition, nValue));
+        }
+        return n;
+      });
+      return areas;
+    }
+    public static void FillGaps<T>(this IList<T> rates, Func<T, bool> isEmpty, Func<T, double> getValue, Action<T, double> setValue) {
+      if (!rates.Any()) return;
+      var rates1 = rates.Select((r, i) => new { r, i }).ToArray();
+      rates1.Where(r => !isEmpty(r.r))
+      .Aggregate((p, n) => {
+        var diffDist = getValue(n.r) - getValue(p.r);
+        var diffIndex = (n.i - p.i - 1).Max(1);
+        var step = diffDist / (diffIndex + 1).Max(1);
+        for (var i = p.i + 1; i < n.i; i++)
+          setValue(rates1[i].r, getValue(rates1[i - 1].r) + step);
+        return n;
+      });
+    }
 
     public static IEnumerable<T> IEnumerable<T>(this T v) where T : class {
       return new[] { v }.Take(0);
@@ -137,6 +195,8 @@ namespace HedgeHog {
     /// <param name="list"></param>
     /// <returns></returns>
     public static T LastBC<T>(this IList<T> list, int positionFromEnd = 1) {
+      if (list.Count == 0)
+        Debugger.Break();
       return list[list.Count - positionFromEnd];
     }
     public static IEnumerable<T> LastBCs<T>(this IEnumerable<T> list, int positionFromEnd = 1) {

@@ -11,6 +11,12 @@ namespace HedgeHog {
       public Box(T v) {
         Value = v;
       }
+      public override string ToString() {
+        return Value.ToString();
+      }
+      public static implicit operator T(Box<T> m) {
+        return m.Value;
+      }
     }
     public static readonly double StDevRatioMax = 0.288675135;
 

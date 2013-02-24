@@ -734,7 +734,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
-    [Category(categoryXXX_NU)]
+    [Category(categoryActive)]
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }

@@ -61,6 +61,9 @@ namespace HedgeHog.Bars {
     public static IList<TBar> ReverseIfNot<TBar>(this IList<TBar> bars) where TBar : BarBaseDate {
       return bars[bars.Count()-1].StartDate > bars[0].StartDate? bars.Reverse().ToArray():bars;
     }
+    public static IList<TBar> UnReverseIfIs<TBar>(this IList<TBar> bars) where TBar : BarBaseDate {
+      return bars[bars.Count() - 1].StartDate < bars[0].StartDate ? bars.Reverse().ToArray() : bars;
+    }
     public static TBar[] LineCrosses<TBar>(this ICollection<TBar> bars) where TBar : BarBase {
       var crosses = bars.Where(b => b.PriceAvg1.Between(b.AskHigh, b.BidLow)).ToArray();
       var distances = new List<double>();

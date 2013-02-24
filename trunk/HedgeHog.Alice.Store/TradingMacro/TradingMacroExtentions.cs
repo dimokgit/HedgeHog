@@ -2029,7 +2029,7 @@ namespace HedgeHog.Alice.Store {
     private IEnumerable<Rate> GetRatesSafe() {
       Func<IEnumerable<Rate>> a = () => {
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
-        var countByDate = startDate.HasValue ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
+        var countByDate = startDate.HasValue && DoStreatchRates ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
         return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCount).ToInt()).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false);
