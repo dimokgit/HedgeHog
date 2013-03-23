@@ -19,48 +19,7 @@ namespace HedgeHog.Alice.Store {
     }
   }
   public static class CorridorStaticBaseExtentions {
-    private static IEnumerable<CorridorStatistics.LegInfo> GetLegInfo(this Rate[] rates
-      ,Func<Rate, double> linePrice, Func<Rate, double> highPrice, Func<Rate, double> lowPrice
-      , TimeSpan interval, double pointSize, out Rate[] ratesHigh, out Rate[] ratesLow) {
-      var highs = rates.Select((r, i) => new { rate = r, height = r.RegressionHeight(linePrice,highPrice,lowPrice, true) }).ToArray();
-      var lows = rates.Select((r, i) => new { rate = r, height = r.RegressionHeight(linePrice, highPrice, lowPrice, false) }).ToArray();
-      ratesHigh = highs.AverageByIterations(a => a.height, (a, v) => a.height >= v, 4)
-        .Select(a => a.rate).OrderByDescending(r => r.StartDate).ToArray();
-      ratesLow = lows.AverageByIterations(a => a.height, (a, v) => a.height >= v, 4)
-        .Select(a => a.rate).OrderByDescending(r => r.StartDate).ToArray();
-      var rateHigh = ratesHigh.FirstOrDefault();
-      var rateLow = ratesLow.FirstOrDefault();
-      var legInfos = new List<CorridorStatistics.LegInfo>();
-      while (rateHigh != null && rateLow != null) {
-        legInfos.Add(new CorridorStatistics.LegInfo(rateHigh, rateLow, interval, pointSize));
-        var startdate = rateHigh.StartDate.Min(rateLow.StartDate);
-        rateHigh = ratesHigh.FirstOrDefault(r => r.StartDate <= startdate);
-        rateLow = ratesLow.FirstOrDefault(r => r.StartDate <= startdate);
-      }
-      return legInfos;
-    }
-    private static double RegressionHeight(this Rate rate,Func<Rate, double> linePrice, Func<Rate, double> highPrice, Func<Rate, double> lowPrice, bool isUp) {
-      return isUp ? highPrice(rate) - linePrice(rate): linePrice(rate) - lowPrice(rate);
-    }
 
-    private static IEnumerable<CorridorStatistics.LegInfo> GetLegInfo(IList<Rate> rates, double[] coeffs, TimeSpan interval, double pointSize, out Rate[] ratesHigh, out Rate[] ratesLow) {
-      var highs = rates.Select((r, i) => new { rate = r, height = GetRateRegressionHeight(coeffs, true, r, i) }).ToArray();
-      var lows = rates.Select((r, i) => new { rate = r, height = GetRateRegressionHeight(coeffs, false, r, i) }).ToArray();
-      ratesHigh = highs.AverageByIterations(a => a.height, (a, v) => a.height >= v, 4)
-        .Select(a => a.rate).OrderByDescending(r => r.StartDate).ToArray();
-      ratesLow = lows.AverageByIterations(a => a.height, (a, v) => a.height >= v, 4)
-        .Select(a => a.rate).OrderByDescending(r => r.StartDate).ToArray();
-      var rateHigh = ratesHigh.FirstOrDefault();
-      var rateLow = ratesLow.FirstOrDefault();
-      var legInfos = new List<CorridorStatistics.LegInfo>();
-      while (rateHigh != null && rateLow != null) {
-        var startdate = rateHigh.StartDate.Min(rateLow.StartDate);
-        legInfos.Add(new CorridorStatistics.LegInfo(rateHigh, rateLow, interval, pointSize));
-        rateHigh = ratesHigh.FirstOrDefault(r => r.StartDate <= startdate);
-        rateLow = ratesLow.FirstOrDefault(r => r.StartDate <= startdate);
-      }
-      return legInfos;
-    }
 
     private static double GetRateRegressionHeight(double[] coeffs, bool isUp, Rate rate, int index) {
       return isUp ? rate.AskHigh - coeffs.RegressionValue(index) : coeffs.RegressionValue(index) - rate.BidLow;

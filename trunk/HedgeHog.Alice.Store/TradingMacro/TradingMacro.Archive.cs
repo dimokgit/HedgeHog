@@ -11,6 +11,7 @@ namespace HedgeHog.Alice.Store {
     }
     private Func<Rate, double> CorridorPrice() {
       switch (CorridorHighLowMethod) {
+        case CorridorHighLowMethod.AskHighBidLow:
         case CorridorHighLowMethod.Average: return r => r.PriceAvg;
         case CorridorHighLowMethod.PriceByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.PriceHigh : r.PriceLow;
         case CorridorHighLowMethod.PriceMA: return GetPriceMA();
@@ -24,9 +25,9 @@ namespace HedgeHog.Alice.Store {
       try {
         if (TradesManager.IsInTest || IsInPlayback) return price(rate);
         var secondsPerBar = BarPeriodInt * 60;
-        var secondsCurrent = (TradesManager.ServerTime - rate.StartDate).TotalSeconds;
+        var secondsCurrent = (ServerTime - rate.StartDate).TotalSeconds;
         var ratio = secondsCurrent / secondsPerBar;
-        var ratePrev = RatesArray.Previous(rate);
+        var ratePrev = RatesArray.Reverse<Rate>().SkipWhile(r => r >= rate).First();
         var priceCurrent = price(rate);
         var pricePrev = price(ratePrev);
         return pricePrev * (1 - ratio).Max(0) + priceCurrent * ratio.Min(1);

@@ -984,24 +984,7 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region BackTestCommand
-    public override event EventHandler<BackTestEventArgs> StartBackTesting;
-
-    ICommand _BackTestCommand;
-    public ICommand BackTestCommand {
-      get {
-        if (_BackTestCommand == null) {
-          _BackTestCommand = new Gala.RelayCommand(BackTest, () => true);
-        }
-
-        return _BackTestCommand;
-      }
-    }
     BackTestEventArgs BackTestEventArgs = new BackTestEventArgs();
-    void BackTest() {
-      if (StartBackTesting != null)
-        StartBackTesting(this, BackTestEventArgs = new BackTestEventArgs(VirtualDateStart, VirtualMonthsToTest, VirtualDelay, VirtualPause, VirtualClearTest));
-    }
-
     #endregion
 
     #region BackTestStepBackCommand
@@ -1417,7 +1400,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void fwMaster_PriceChanged(string pair) {
-      fwMaster_PriceChanged(TradesManager, new PriceChangedEventArgs(pair,new Price() { Pair = pair },TradesManager.GetAccount(), TradesManager.GetTrades()));
+      fwMaster_PriceChanged(TradesManager,new PriceChangedEventArgs(pair,new Price() { Pair = pair },TradesManager.GetAccount(), TradesManager.GetTrades()));
     }
     void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
       try {

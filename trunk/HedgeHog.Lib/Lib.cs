@@ -97,6 +97,9 @@ namespace HedgeHog {
       foreach(T e in es)
         a(e);
     }
+    public static string Formater(this string format, params object[] args) {
+      return string.Format(format, args);
+    }
     public static string ParseParamRange(this string param) {
       var range = new System.Text.RegularExpressions.Regex(@"(?<from>[\d.]+)-(?<to>[\d.]+),(?<step>[-\d.]+)");
       var m = range.Match(param);
@@ -196,7 +199,7 @@ namespace HedgeHog {
     /// <returns></returns>
     public static T LastBC<T>(this IList<T> list, int positionFromEnd = 1) {
       if (list.Count == 0)
-        Debugger.Break();
+        return default(T);
       return list[list.Count - positionFromEnd];
     }
     public static IEnumerable<T> LastBCs<T>(this IEnumerable<T> list, int positionFromEnd = 1) {

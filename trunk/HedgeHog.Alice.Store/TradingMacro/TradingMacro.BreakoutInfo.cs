@@ -21,14 +21,14 @@ namespace HedgeHog.Alice.Store {
         this.direction = direction;
         if (crossed) {
           if (direction)
-            dateCrossedUp = tm.TradesManager.ServerTime;
+            dateCrossedUp = tm.ServerTime;
           if (!direction)
-            dateCrossedDown = tm.TradesManager.ServerTime;
+            dateCrossedDown = tm.ServerTime;
         }
         if (leveledUp)
-          dateLeveledUp = tm.TradesManager.ServerTime;
+          dateLeveledUp = tm.ServerTime;
         if (leveledDown)
-          dateLeveledDown = tm.TradesManager.ServerTime;
+          dateLeveledDown = tm.ServerTime;
       }
       public static bool DoExitByAngle(double angle) { return angle.Abs() < 2; }
     }

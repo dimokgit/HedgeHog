@@ -165,34 +165,6 @@ namespace Order2GoAddIn {
     public Func<Trade, double> CommissionByTrade { get; set; }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(CommissionByTrade); }
 
-    #region Replay
-    KeyValuePair<string, bool> _replayPair;
-    bool IsInReplay() { return _replayPair.Value; }
-    bool IsInReplay(string pair) { return _replayPair.Key == pair && _replayPair.Value; }
-
-    public void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
-      if (IsInReplay())
-        RaiseError(new Exception("Is a;ready in Replay."));
-      else {
-        _replayPair = new KeyValuePair<string, bool>(pair, true);
-        try {
-          var rates = GetBarsFromHistory(pair, period, dateStart.DateTime);
-          while (rates.Any() && rates[0].StartDate <= dateEnd) {
-            var rate = rates[0];
-            RaisePriceChanged(pair, new Price(pair, rate, ServerTime, GetPipSize(pair), GetDigits(pair), true), GetAccount(), GetTrades(pair));
-            rates.Remove(rate);
-            if (!rates.Any())
-              rates = GetBarsFromHistory(pair, period, dateStart.DateTime);
-          }
-        } catch (Exception exc) {
-          RaiseError(exc);
-        } finally {
-          _replayPair = new KeyValuePair<string, bool>(); ;
-        }
-      }
-    }
-    #endregion
-
     #region Constants
     public const string TABLE_ACCOUNTS = "accounts";
     public const string TABLE_OFFERS = "offers";
@@ -334,12 +306,14 @@ namespace Order2GoAddIn {
         PriceChangedEvent -= value;
       }
     }
-    public void RaisePriceChanged(string pair, Price price) {
-      RaisePriceChanged(pair, price, GetAccount(), GetTrades());
+    public void RaisePriceChanged(string pair,  Price price) {
+      RaisePriceChanged(pair, -1, price);
     }
-    void RaisePriceChanged(string pair, Price price, Account account, Trade[] trades) {
-      if (IsInReplay(pair) != price.IsPlayback) return;
-      var e = new PriceChangedEventArgs(pair, price, account, trades);
+    public void RaisePriceChanged(string pair, int barPeriod, Price price) {
+      RaisePriceChanged(pair, barPeriod, price, GetAccount(), GetTrades());
+    }
+    void RaisePriceChanged(string pair,int barPeriod, Price price, Account account, Trade[] trades) {
+      var e = new PriceChangedEventArgs(pair, barPeriod, price, account, trades);
       if (_PriceChangedBroadcast != null)
         PriceChangedBroadcast.SendAsync(e);
       if (PriceChangedEvent != null) PriceChangedEvent(this, e);

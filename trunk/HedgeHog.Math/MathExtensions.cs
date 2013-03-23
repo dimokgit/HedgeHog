@@ -286,7 +286,9 @@ namespace HedgeHog {
       }
     }
 
-    public static double Angle(this double tangent, double divideBy = 1) { return Math.Atan(tangent / divideBy) * (180 / Math.PI); }
+    public static double Angle(this double tangent, int barMinutes, double divideBy = 1) {
+      return Math.Atan(tangent / divideBy) * (180 / Math.PI) / barMinutes;
+    }
     public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
 
     public static double LineSlope(this double[] coeffs) {

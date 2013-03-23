@@ -349,13 +349,16 @@ namespace HedgeHog.Alice.Store {
 
     double _pricePrev = double.NaN;
     public void SetPrice(double price) {
-      if (Rate.Between(price, _pricePrev)) {
-        _pricePosition = _pricePrev - Rate;
+      if (double.IsNaN(price))
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("price is NaN."));
+      else {
+        if (Rate.Between(price, _pricePrev)) {
+          _pricePosition = _pricePrev - Rate;
+        }
+        _pricePrev = price;
+        PricePosition = (price - Rate).IfNaN(0).Sign();
       }
-      _pricePrev = price;
-      PricePosition = (price - Rate).IfNaN(0).Sign();
     }
-
 
     public DateTime? TradeDate { get; set; }
   }
@@ -1070,22 +1073,18 @@ namespace HedgeHog.Alice.Store {
       set { CloseByMomentum = value; }
     }
 
-    [DisplayName("Corr Height/Spread - Low")]
-    [Category(categoryXXX)]
-    [Description("Lock buy/sell when H/S < X/10")]
-    public double CorridorHeightToSpreadRatioLow {
-      get { return BarPeriodsLow / 10.0; }
-      set { BarPeriodsLow = (int)value; }
-
-    }
-
-    Func<Rate, double> GetTradeEnterBy() {
-      switch (TradeEnterBy) {
+    Func<Rate, double> GetTradeEnterBy(bool? isBuy = null) { return _getTradeBy(TradeEnterBy, isBuy); }
+    Func<Rate, double> GetTradeExitBy(bool? isBuy = null) { return _getTradeBy(TradeExitBy, isBuy); }
+    Func<Rate, double> _getTradeBy(TradeCrossMethod method, bool? isBuy = null) {
+      switch (method) {
         case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
         case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
+        case TradeCrossMethod.ChartAskBid:
+          if (isBuy.Value) return r => r.PriceChartAsk; else return r => r.PriceChartBid;
       }
-      throw new NotSupportedException(TradeEnterBy + " is not supported");
+      throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");
     }
+
     [DisplayName("Trade Enter By")]
     [Category(categoryActiveFuncs)]
     public TradeCrossMethod TradeEnterBy {
@@ -1094,6 +1093,17 @@ namespace HedgeHog.Alice.Store {
         if (BarPeriodsHigh != (int)value) {
           BarPeriodsHigh = (int)value;
           OnPropertyChanged(() => TradeEnterBy);
+        }
+      }
+    }
+    [DisplayName("Trade Exit By")]
+    [Category(categoryActiveFuncs)]
+    public TradeCrossMethod TradeExitBy {
+      get { return (TradeCrossMethod)BarPeriodsLow; }
+      set {
+        if (BarPeriodsLow != (int)value) {
+          BarPeriodsLow = (int)value;
+          OnPropertyChanged(() => TradeExitBy);
         }
       }
     }
@@ -1380,6 +1390,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region ClosePriceMode
+    [Category(categoryTrading)]
+    public ClosePriceMode ClosePriceMode {
+      get { return Price.ClosePriceMode; }
+      set {
+        if (Price.ClosePriceMode != value) {
+          Price.ClosePriceMode = value;
+          OnPropertyChanged("ClosePriceMode");
+        }
+      }
+    }
+
+    #endregion
+
     public Freezing FreezeStopType {
       get { return (Freezing)this.FreezeStop; }
       set {
@@ -1532,11 +1556,15 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(TradingMacroMetadata.IsSelectedInUI);
       }
     }
-
+    public DateTime ServerTime {
+      get {
+        return IsInVitualTrading ? RatesArray.LastBC().StartDate.AddMinutes(BarPeriodInt) : TradesManager.ServerTime;
+      }
+    }
     Price GetVirtualCurrentPrice() {
       try {
         var rate = RatesArray.LastOrDefault();
-        return new Price(Pair, rate, TradesManager.ServerTime, PointSize, TradesManager.GetDigits(Pair), true);
+        return new Price(Pair, rate, ServerTime, PointSize, TradesManager.GetDigits(Pair), true);
       } catch {
         throw;
       }

@@ -15,18 +15,6 @@ namespace HedgeHog.Alice.Store {
     public class LegInfo {
       public double Slope { get; set; }
       public double _pointSize = double.NaN;
-      private double _angle = double.NaN;
-      public double Angle {
-        get { return _angle; }
-        set { _angle = value; }
-      }
-      public double CalcAngle(double pointSize) {
-        if (double.IsNaN(pointSize)) throw new ArgumentException("Must be positive number.", "pointSize");
-        if (pointSize == _pointSize) return _angle;
-        _pointSize = pointSize;
-        Angle = Slope.Angle(pointSize);
-        return Angle;
-      }
       public Rate Rate1 { get; set; }
       public Rate Rate2 { get; set; }
       public LegInfo(Rate rateBase, Rate rateOther, TimeSpan interval, double pointSize = double.NaN)
@@ -43,8 +31,6 @@ namespace HedgeHog.Alice.Store {
           var x = (rates[1].StartDate - rates[0].StartDate).TotalMinutes / interval.TotalMinutes;
           this.Slope = y / x;
         }
-        if (!double.IsNaN(pointSize))
-          CalcAngle(pointSize);
       }
       static double CalculateSlope(Rate rate1, ICollection<Rate> rates2, TimeSpan interval, out Rate rate) {
         var slopes = new List<Tuple<Rate, double>>();
@@ -66,19 +52,10 @@ namespace HedgeHog.Alice.Store {
     NotifyCollectionChangedWrapper<LegInfo> _LegInfos;
     public NotifyCollectionChangedWrapper<LegInfo> LegInfos {
       get {
-        if (_LegInfos == null) {
-          _LegInfos = new NotifyCollectionChangedWrapper<LegInfo>(new ObservableCollection<LegInfo>());
-          _LegInfos.CollectionChanged += LegInfos_CollectionChanged;
-        }
         return _LegInfos;
       }
     }
     ~CorridorStatistics() {
-      if (_LegInfos != null)
-        _LegInfos.CollectionChanged -= LegInfos_CollectionChanged;
-    }
-    void LegInfos_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
-      RaisePropertyChanged(() => LegsAngleAverage);
     }
     public void LegInfosClear() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => LegInfos.Clear());
@@ -89,12 +66,6 @@ namespace HedgeHog.Alice.Store {
       return li;
     }
 
-    public double LegsAngleAverage {
-      get {
-        if (LegInfos.Count == 0) return double.NaN;
-        return LegInfos.Average(li => li.Angle.Abs());
-      }
-    }
 
     public double[] priceLine { get; set; }
     public Func<Rate, double> priceHigh { get; set; }
@@ -144,7 +115,6 @@ namespace HedgeHog.Alice.Store {
       }
       set { _Slope = value; }
     }
-    public double Angle { get { return Slope.Angle(_pipSize); } }
 
     double _HeightUp0 = double.NaN;
     public double HeightUp0 {
