@@ -722,6 +722,7 @@ namespace HedgeHog.Alice.Client {
                 charter.LineAvgAsk = tm.CurrentPrice.Ask;
                 charter.LineAvgBid = tm.CurrentPrice.Bid;
                 charter.LineTakeProfitLimit = tm.LimitRate;
+                charter.SetLastPoint(tm.RateLast);
               });
             }
           } catch (Exception exc) {
@@ -750,14 +751,8 @@ namespace HedgeHog.Alice.Client {
           RaisePropertyChanged(() => TradingMacrosCopy);
 
         if (e.PropertyName == TradingMacroMetadata.CurrentLoss) {
-          new Action(() => {
-            try {
-              MasterModel.CurrentLoss = CurrentLoss;
-              GlobalStorage.UseAliceContext(c => { }, true);
-            } catch (Exception exc) {
-              Log = exc;
-            }
-          }).ScheduleOnUI();
+          MasterModel.CurrentLoss = CurrentLoss;
+          GlobalStorage.UseAliceContext(c => { }, true);
         }
         if (e.PropertyName == TradingMacroMetadata.SyncAll) {
           if (tm.SyncAll) {
@@ -801,7 +796,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMacrosCopy.Length > 0) {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)tradesManager;
-            vt.RatesByPair = () => GetTradingMacros().ToDictionary(tm => tm.Pair, tm => tm.RatesInternal);
+            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm=>tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().RatesInternal);
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           PriceChangeSubscriptionDispose();
@@ -841,7 +836,7 @@ namespace HedgeHog.Alice.Client {
             Task.Factory.StartNew(() => currTM.LastTrade = tradesManager.GetLastTrade(currTM.Pair));
             tm.OnLoadRates();
             runPriceQueue.Add(() => {
-              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair, tradesManager.GetPrice(currTM.Pair), tradesManager.GetAccount(), tradesManager.GetTradesInternal(currTM.Pair)), null);
+              currTM.RunPriceChanged(new PriceChangedEventArgs(currTM.Pair,currTM.BarPeriodInt, tradesManager.GetPrice(currTM.Pair), tradesManager.GetAccount(), tradesManager.GetTradesInternal(currTM.Pair)), null);
             });
           }
           tm.SetLotSize(tradesManager.GetAccount());
@@ -878,7 +873,7 @@ namespace HedgeHog.Alice.Client {
         var sw = Stopwatch.StartNew();
         if (price != null) SetCurrentPrice(price);
         var pair = price.Pair;
-        foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading /*&& t.IsInPlayback*/)) {
+        foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading && t.BarPeriodInt == e.BarPeriod /*&& t.IsInPlayback*/)) {
           tm.RunPriceChanged(e, null/*OpenTradeByStop*/);
         }
         UpdateTradingStatistics();
@@ -911,7 +906,7 @@ namespace HedgeHog.Alice.Client {
       try {
         var charter = GetCharter(tm);
         if (_isMinimized || charter.IsParentHidden) return;
-        Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
+        Rate[] rates = tm.RatesArraySafe.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
         if (tm.IsCharterMinimized) return;

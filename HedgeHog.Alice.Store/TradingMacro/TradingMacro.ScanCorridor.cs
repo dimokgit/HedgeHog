@@ -106,7 +106,7 @@ namespace HedgeHog.Alice.Store {
       var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate);
       var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
       if (corridorRates.Length > 1) {
-        return WaveShort.Rates.ScanCorridorWithAngle(cp, cp, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       }
       return null;
     }
@@ -225,7 +225,7 @@ namespace HedgeHog.Alice.Store {
       var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate);
       var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
       if (corridorRates.Length > 1) {
-        return WaveShort.Rates.ScanCorridorWithAngle(cp, cp, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       }
       return null;
     }
@@ -261,7 +261,7 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = null;
       WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray();
       CorridorCorrelation = ratesReversedOriginal.Volatility(_priceAvg, GetPriceMA);
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByParabola_4(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -308,7 +308,7 @@ namespace HedgeHog.Alice.Store {
           ? ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).ToList()
           : rates;
       }
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByParabola(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -339,7 +339,7 @@ namespace HedgeHog.Alice.Store {
         var parabolaHeight = (rates1[0].Abs() + rates1.LastBC()) / 2;// 
         //line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Max();
         if (parabolaHeight > StDevByHeight) {
-          var vol = 1 / coeffs[1].Abs().Angle(PointSize);// ratesReversed.Take(rates).ToArray().Volatility(_priceAvg, GetPriceMA);// / coeffs[1].Abs();
+          var vol = 1 / coeffs[1].Abs().Angle(BarPeriodInt, PointSize);// ratesReversed.Take(rates).ToArray().Volatility(_priceAvg, GetPriceMA);// / coeffs[1].Abs();
           corr = corr.Cma(15, alglib.correlation.pearsoncorrelation(ref source, ref parabola, rates));
           //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
           //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
@@ -363,7 +363,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = rates;
       }
       CorridorCorrelation = ratesForCorridor.ReverseIfNot().Take((WaveShort.Rates.Count * 1.5).ToInt()).ToArray().Volatility(_priceAvg,GetPriceMA);
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByParabola_5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -412,7 +412,7 @@ namespace HedgeHog.Alice.Store {
           : rates;
       }
       CorridorCorrelation = ratesForCorridor.ReverseIfNot().Take((WaveShort.Rates.Count * 1.5).ToInt()).ToArray().Volatility(_priceAvg, GetPriceMA);
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByParabola_2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate : DateTime.MinValue;
@@ -448,7 +448,7 @@ namespace HedgeHog.Alice.Store {
       }
       WaveShort.Rates = null;
       WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(lengthByCorr * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray();
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByParabola_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       int groupLength = 5;
@@ -481,7 +481,7 @@ namespace HedgeHog.Alice.Store {
       correlations.Sort((a, b) => -a.corr.CompareTo(b.corr));
       WaveShort.Rates = null;
       WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).ToArray();
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorBySinus(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       int groupLength = 5;
@@ -506,7 +506,7 @@ namespace HedgeHog.Alice.Store {
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = coeffs[1].Angle(PointSize) / groupLength;
+        var angle = coeffs[1].Angle(BarPeriodInt, PointSize) / groupLength;
         var sineOffset = Math.Cos(-angle * Math.PI / 180);
         var heights = new List<double>(new double[rates]);
         Enumerable.Range(0, rates).ForEach(i => heights[i] = (line[i] - ratesShrunken[i]) * sineOffset);
@@ -537,7 +537,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = null;
         WaveShort.Rates = ratesReversed.TakeWhile(r => r.StartDate >= dm).ToArray();
       }
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorBySinus_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       int groupLength = 5;
@@ -562,7 +562,7 @@ namespace HedgeHog.Alice.Store {
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = coeffs[1].Angle(PointSize) / groupLength;
+        var angle = coeffs[1].Angle(BarPeriodInt, PointSize) / groupLength;
         var sineOffset = Math.Cos(-angle * Math.PI / 180);
         var heights = new List<double>(new double[rates]);
         Enumerable.Range(0, rates).ForEach(i => heights[i] = (line[i] - ratesShrunken[i]) * sineOffset);
@@ -594,7 +594,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = null;
         WaveShort.Rates = ratesReversed.TakeWhile(r => r.StartDate >= dm).ToArray();
       }
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByCrossesStarter(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -633,14 +633,14 @@ namespace HedgeHog.Alice.Store {
         var heightMin = GetValueByTakeProfitFunction(TradingDistanceFunction).Min(RatesHeight * .9);
         var ratesCount = ratesReversed.Count(r => countMin-- > 0 || r.RunningHeight < heightMin);
         var rates = ratesReversed.Select(cp).ToArray();
-        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(PointSize);
+        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(BarPeriodInt, PointSize);
         for (;ratesCount <rates.Length ; ratesCount += (ratesCount / 100) + 1) {
           var rates0 = new double[ratesCount + 1];
           Array.Copy(rates, rates0, rates0.Length);
           var height = rates0.Height();
           var stDev = rates0.StDev();
           if (WaveStDevRatio > 0 && Fibonacci.FibRatio(height, stDev) < WaveStDevRatio) continue;
-          var angle = rates0.Regress(1).LineSlope().Abs().Angle(PointSize);
+          var angle = rates0.Regress(1).LineSlope().Abs().Angle(BarPeriodInt, PointSize);
           if (angle < ratesAngle) break;
           ratesAngle = angle;
         }
@@ -648,7 +648,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = ratesReversed.Take(ratesCount).ToArray();
       }
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
-        .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorSimpleWithOneCross(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = CorridorPrice();
@@ -680,7 +680,7 @@ namespace HedgeHog.Alice.Store {
         var heightMin = GetValueByTakeProfitFunction(TradingDistanceFunction).Min(RatesHeight * .9);
         var ratesCount = ratesReversed.Count(r => countMin-- > 0 || r.RunningHeight < heightMin);
         var rates = ratesReversed.Select(cp).ToArray();
-        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(PointSize);
+        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(BarPeriodInt, PointSize);
         var hasCrossStart = false;
         var hasCrossStop = false;
         var ratesCrossHeight = new Dictionary<int, double>();
@@ -704,7 +704,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = ratesReversed.Take(ratesCount).ToArray();
       }
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
-        .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorStDevUpDown(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = CorridorPrice();
@@ -736,7 +736,7 @@ namespace HedgeHog.Alice.Store {
         var heightMin = GetValueByTakeProfitFunction(TradingDistanceFunction).Min(RatesHeight * .9);
         var ratesCount = ratesReversed.Count(r => countMin-- > 0 || r.RunningHeight < heightMin);
         var rates = ratesReversed.Select(cp).ToArray();
-        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(PointSize);
+        var ratesAngle = rates.Take(ratesCount).ToArray().Regress(1).LineSlope().Abs().Angle(BarPeriodInt, PointSize);
         var hasCrossStart = false;
         var hasCrossStop = false;
         var ratesCrossHeight = new Dictionary<int, double>();
@@ -764,7 +764,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = ratesReversed.Take(ratesCount).ToArray();
       }
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
-        .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private static void GetStDevUpDown(double[] rates, double[] line, out double stDevUp, out double stDevDown) {
@@ -782,23 +782,23 @@ namespace HedgeHog.Alice.Store {
       return (T)obj;
     }
     private CorridorStatistics ScanCorridorByBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      if (ChartPriceHigh == null) ChartPriceHigh = r => r.PriceChartAsk;
+      if (ChartPriceLow == null) ChartPriceLow = r => r.PriceChartBid;
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       var rates = ratesForCorridor.ReverseIfNot().Select(_priceAvg).ToArray();
-      var ratesCount = rates.Length - 1;
       var sign = double.NaN;
       Func<int, Lib.Box<int>> newBoxInt = (i) => new Lib.Box<int>(i);
       Func<double, Lib.Box<double>> newBox0 = (d) => new Lib.Box<double>(d);
       Func<Lib.Box<double>> newBox = () => newBox0(double.NaN);
       Func<int, int> ratesStep = (rc) => (rc / 100.0).ToInt() + 1;
       var udAnon = new { ud = 0.0, angle = 0.0, vb = newBox(), udCma = newBox() };
-      //var setUD = new Func<double,double,
       var upDownRatios = udAnon.IEnumerable().ToDictionary(a => 0, a => a);
       object upDownRatiosLocker = new object();
-      double upDownRatioCma = double.NaN;
+      var ratesCount = rates.Length;
+      var ratesCountMin = (rates.Length / 100.0).ToInt().Max(10);
       var rateCounts = new List<int>();
-      for (; ratesCount >= 10; ratesCount -= ratesStep(ratesCount))
+      for (; ratesCount >= ratesCountMin; ratesCount -= ratesStep(ratesCount))
         rateCounts.Add(ratesCount);
-      ratesReversed.ForEach(r => r.DistanceHistory = r.Distance1 = double.NaN);
       rateCounts.AsParallel().ForAll(rateCount => {
         double[] coeffs;
         var line = rates.Regression(rateCount, 1, out coeffs);
@@ -806,7 +806,7 @@ namespace HedgeHog.Alice.Store {
         double downCount = rateCount - upCount;
         var upDownRatio = Fibonacci.FibRatioSign(upCount, downCount);
         lock (upDownRatiosLocker)
-          upDownRatios.Add(rateCount, new { ud = upDownRatio, angle = coeffs.LineSlope().Angle(PointSize), vb = newBox(), udCma = newBox() });
+          upDownRatios.Add(rateCount-1, new { ud = upDownRatio, angle = coeffs.LineSlope().Angle(BarPeriodInt, PointSize), vb = newBox(), udCma = newBox() });
         /*
         continue;
         if (upDownRatio.Sign() != sign.IfNaN(upDownRatio.Sign())) {
@@ -829,15 +829,23 @@ namespace HedgeHog.Alice.Store {
         .Select(i => new { i, v = new { value = newBox0(upDownRatios.Keys.Contains(i) ? upDownRatios[i].udCma : double.NaN),line=newBox0(double.NaN) } }).ToDictionary(a => a.i, a => a.v).ToArray();
         //upDownRatios.OrderBy(kv => kv.Key).SkipWhile(kv => kv.Key < CorridorDistanceRatio).ToArray();
       upDownRatiosForAreas.FillGaps(kv => double.IsNaN(kv.Value.value), kv => kv.Value.value, (kv, d) => kv.Value.value.Value = d);
-      Task.Factory.StartNew(() => upDownRatiosForAreas.SkipWhile(kv => kv.Key < CorridorDistanceRatio)
-        .ForEach(kv => ratesReversed[kv.Key].DistanceHistory = kv.Value.value));
+      Task.Factory.StartNew(() => upDownRatiosForAreas.ForEach(
+        kv => ratesReversed[kv.Key].DistanceHistory = kv.Key < CorridorDistanceRatio ? double.NaN : kv.Value.value));
       upDownRatiosForAreas.SetRegressionPrice1(PolyOrder, kv => kv.Value.value
         , (kv, d) => { if(kv.Key > CorridorDistanceRatio) ratesReversed[kv.Key].Distance1 = d; kv.Value.line.Value = d; });
 
-      var areaInfos = upDownRatiosForAreas.Areas(kv => kv.Key, kv => kv.Value.value - kv.Value.line);
+      var areaInfos = upDownRatiosForAreas.OrderBy(kv=>kv.Key).SkipWhile(kv=>kv.Key <CorridorDistanceRatio).ToArray()
+        .Areas(kv => kv.Key, kv => kv.Value.value - kv.Value.line);
       areaInfos.Remove(areaInfos.Last());
       if (areaInfos.Any()) {
         ratesCount = areaInfos.OrderByDescending(ai => ai.Area.Abs()).First().Stop;
+        var angle = 0.0;
+        foreach (var udr in upDownRatios.OrderBy(ud => ud.Key).SkipWhile(ud => ud.Key < ratesCount)) {
+          if (udr.Value.angle.Abs() >= angle) {
+            angle = udr.Value.angle.Abs();
+            ratesCount = udr.Key;
+          } else break;
+        }
       } else {
         var udSorted = upDownRatios.Where(kv => kv.Key > CorridorDistanceRatio)
           .OrderByDescending(ud => ud.Value.udCma.Value.Abs() + ud.Value.udCma.Value.Abs(ud.Value.vb)).ToArray();
@@ -863,7 +871,7 @@ namespace HedgeHog.Alice.Store {
       }
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
-        .ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     public double CorridorBalance() {
@@ -949,7 +957,7 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = ratesReversed.Take(waveLength).ToArray();
       setCOM(variance);
 
-      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       corridor.CorridorCrossesCount = tests.Select(t => t.count).FirstOrDefault();
       return corridor;
     }
@@ -1041,7 +1049,7 @@ namespace HedgeHog.Alice.Store {
           bottom += PointSize;
         });
         corridor.CorridorCrossesCount = crossesMax;
-        if (crossesMax >= WaveStDevRatio && coeffs[1].Angle(PointSize) <= 0) {
+        if (crossesMax >= WaveStDevRatio && coeffs[1].Angle(BarPeriodInt, PointSize) <= 0) {
           _crossesOk = true;
           MagnetPrice = coeffs[0];
           var offset = corridor.StDevByHeight.Min(corridor.StDevByPriceAvg) * 2;
@@ -1106,7 +1114,7 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = ratesReversed.Take(waveLength).ToArray();
       setCOM(variance);
 
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByCrosses_1(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       int groupLength = 5;
@@ -1130,7 +1138,7 @@ namespace HedgeHog.Alice.Store {
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = coeffs[1].Angle(PointSize) / groupLength;
+        var angle = coeffs[1].Angle(BarPeriodInt, PointSize) / groupLength;
         var sineOffset = Math.Cos(angle * Math.PI / 180).Abs();
         var crosses = line.CrossesInMiddle(prices);
         var crossesCount = crosses.Count;
@@ -1154,7 +1162,7 @@ namespace HedgeHog.Alice.Store {
         WaveShort.Rates = null;
         WaveShort.Rates = ratesReversed.TakeWhile(r => r.StartDate >= dm).ToArray();
       }
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByStDev(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1164,12 +1172,12 @@ namespace HedgeHog.Alice.Store {
       ratesReversed.TakeWhile(r => ratesReversed.Take(++rateLastIndex).ToArray().Height() < StDevByPriceAvg+StDevByHeight).Count();
       for (; rateLastIndex < ratesReversed.Length - 1; rateLastIndex += (rateLastIndex / 100) + 1) {
         var coeffs = ratesReversed.Take(rateLastIndex).ToArray().Regress(1);
-        if (coeffs[1].Angle(PointSize).Abs() < 1)
+        if (coeffs[1].Angle(BarPeriodInt, PointSize).Abs() < 1)
           break;
       }
         WaveShort.Rates = null;
         WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(rateLastIndex).ToArray();
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorPrice, CorridorPrice, TimeSpan.Zero, PointSize, CorridorCalcMethod);
+        return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     #endregion

@@ -146,8 +146,44 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region PriceAvgs
+    #region PriceChartHigh
+    double _PriceChartAsk = double.NaN;
+    public double PriceChartAsk {
+      get { return _PriceChartAsk; }
+      set { _PriceChartAsk = value; }
+    }
+    #endregion
+    #region PriceChartBid
+    private double _PriceChartBid = double.NaN;
+    public double PriceChartBid {
+      get { return _PriceChartBid; }
+      set {
+        if (_PriceChartBid != value) {
+          _PriceChartBid = value;
+        }
+      }
+    }
+    #endregion
+    double _PriceAvg1;
     [DataMember]
-    public double PriceAvg1 { get; set; }
+    public double PriceAvg1 {
+      get { return _PriceAvg1; }
+      set {
+        _PriceAvg1 = value;
+        if (double.IsNaN(_PriceAvg1)) {
+          PriceChartAsk = PriceChartBid = double.NaN;
+        } else if (double.IsNaN(PriceChartAsk)) {
+          if (PriceAvg > PriceAvg1) {
+            PriceChartAsk = AskHigh;
+            PriceChartBid = BidHigh;
+
+          } else {
+            PriceChartAsk = AskLow;
+            PriceChartBid = BidLow;
+          }
+        }
+      }
+    }
     [DataMember]
     public double PriceAvg21 { get; set; }
     [DataMember]

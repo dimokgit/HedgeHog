@@ -42,9 +42,12 @@ namespace HedgeHog.Alice.Store {
     Manual = 110,
     Corridor = 120,
     Corridor1 = 121,
+    CorridorBB = 122,
     TradeLine = 130,
     TradeLineA = 131,
-    TradeLineA1 = 132
+    TradeLineA1 = 132,
+    TradeLineA2,
+    Void
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -141,6 +144,7 @@ namespace HedgeHog.Alice.Store {
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public enum TradeCrossMethod {
     PriceAvg = 0,
-    PriceCMA = 1
+    PriceCMA = 1,
+    ChartAskBid = 2
   }
 }

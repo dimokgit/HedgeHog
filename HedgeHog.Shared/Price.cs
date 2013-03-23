@@ -7,18 +7,21 @@ using HedgeHog.Bars;
 namespace HedgeHog.Shared {
   public class PriceChangedEventArgs : EventArgs {
     public string Pair { get; set; }
+    public int BarPeriod { get; set; }
     public Price Price { get; set; }
     public Account Account { get; set; }
     public Trade[] Trades { get; set; }
-    public PriceChangedEventArgs(string pair, Price price,Account account,Trade[] trades) {
+    public PriceChangedEventArgs(string pair, Price price, Account account, Trade[] trades) : this(pair, int.MinValue, price, account, trades) { }
+    public PriceChangedEventArgs(string pair,int barPeriod, Price price,Account account,Trade[] trades) {
       this.Pair = pair;
+      this.BarPeriod = barPeriod;
       this.Price = price;
       this.Account = account;
       this.Trades = trades;
     }
   }
   public delegate void PriceChangedEventHandler(Price Price);
-  public enum ClosePriceMode { Average, HighLow }
+  public enum ClosePriceMode { Average, ChartAskBid }
   [Serializable]
   public class Price {
     public static ClosePriceMode ClosePriceMode = ClosePriceMode.Average;
@@ -41,8 +44,21 @@ namespace HedgeHog.Shared {
       } else {
         Ask = rate.AskClose;
         Bid = rate.BidClose;
-        BuyClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.BidHigh + rate.BidClose) / 2 : rate.BidHigh;
-        SellClose = ClosePriceMode == Shared.ClosePriceMode.Average ? (rate.AskLow + rate.AskClose) / 2 : rate.AskLow;
+        switch (ClosePriceMode) {
+          case Shared.ClosePriceMode.ChartAskBid:
+            if (double.IsNaN(rate.PriceChartAsk)) goto case Shared.ClosePriceMode.Average;
+            BuyClose = rate.PriceChartAsk;
+            SellClose = rate.PriceChartBid;
+            break;
+          case Shared.ClosePriceMode.Average:
+            BuyClose = (rate.BidHigh + rate.BidClose) / 2;
+            SellClose = (rate.AskLow + rate.AskClose) / 2;
+            break;
+          default:
+            BuyClose = rate.BidHigh;
+            SellClose = rate.AskLow;
+            throw new NotSupportedException(ClosePriceMode.GetType().Name + "." + ClosePriceMode + " is not supported");
+        }
       }
       Digits = digits;
       Time = serverTime;

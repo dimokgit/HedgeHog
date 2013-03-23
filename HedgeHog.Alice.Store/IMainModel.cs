@@ -12,7 +12,6 @@ namespace HedgeHog.Alice.Store {
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeAdded;
     public abstract event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
     public abstract event EventHandler<OrderEventArgs> OrderToNoLoss;
-    public abstract event EventHandler<BackTestEventArgs> StartBackTesting;
     public abstract event EventHandler<EventArgs> StepBack;
     public abstract event EventHandler<EventArgs> StepForward;
     public abstract event EventHandler<EventArgs> TradingMacroNameChanged;

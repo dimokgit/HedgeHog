@@ -197,7 +197,7 @@ namespace HedgeHog.Shared {
         var newTrade = trade.Clone();
         newTrade.Lots = trade.Lots - lot;
         newTrade.Id = NewTradeId() + "";
-        var e = new PriceChangedEventArgs(trade.Pair, price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
+        var e = new PriceChangedEventArgs(trade.Pair,price ?? GetPrice(trade.Pair),GetAccount(),GetTrades());
         newTrade.UpdateByPrice(this,e);
         trade.Lots = lot;
         trade.UpdateByPrice(this, e);
@@ -304,8 +304,11 @@ namespace HedgeHog.Shared {
     public event EventHandler<PriceChangedEventArgs> PriceChanged;
 
     public void RaisePriceChanged(string pair, Price price) {
+      RaisePriceChanged(pair, -1, price);
+    }
+    public void RaisePriceChanged(string pair,int barPeriod, Price price) {
       if (PriceChanged != null)
-        PriceChanged(this, new PriceChangedEventArgs(pair,price,GetAccount(), GetTrades()));
+        PriceChanged(this, new PriceChangedEventArgs(pair,barPeriod,price,GetAccount(), GetTrades()));
     }
 
     public event EventHandler<TradeEventArgs> TradeAdded;
@@ -443,11 +446,6 @@ namespace HedgeHog.Shared {
     #endregion
 
     #region ITradesManager Members
-
-
-    public void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
-      throw new NotImplementedException();
-    }
 
     #endregion
   }

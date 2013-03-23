@@ -38,7 +38,6 @@ namespace HedgeHog.Alice.Store {
         if (_MasterModel != value) {
           _MasterModel = value;
           value.OrderToNoLoss += OrderToNoLossHandler;
-          value.StartBackTesting += MasterModel_StartBackTesting;
           RaisePropertyChangedCore();
         }
       }
@@ -49,116 +48,6 @@ namespace HedgeHog.Alice.Store {
     public DateTime VirtualStartDate { get; set; }
     Task backTestThread;
     CancellationTokenSource cancellationForBackTesting;
-
-    void MasterModel_StartBackTesting(object sender, BackTestEventArgs e) {
-      if (backTestThread != null && backTestThread.Status == TaskStatus.Running) {
-        cancellationForBackTesting.Cancel();
-        return;
-      }
-      cancellationForBackTesting = new CancellationTokenSource();
-      var ct = cancellationForBackTesting.Token;
-
-      var tm = GetTradingMacros("").First();
-      VirtualPair = tm.Pair;
-      if (tm.Strategy == Strategies.None) { MessageBox.Show("No strategy, dude!"); return; }
-      //if (!tm.IsInPlayback) { MessageBox.Show("Set Chart to Playback, dude!"); return; }
-      tm.ResetSessionId();
-      tm.SuppResResetAllTradeCounts();
-      var minutesPerPeriod = (int)tm.BarPeriod;
-      VirtualStartDate = e.StartDate.AddMinutes(-tm.BarsCount * (int)tm.BarPeriod);
-      var firstDate = GlobalStorage.UseForexContext(context => context.t_Bar.Where(b => b.Pair == VirtualPair && b.Period == minutesPerPeriod).Select(b => b.StartDate).DefaultIfEmpty(DateTime.MaxValue).Min());
-      VirtualStartDate = new[] { VirtualStartDate, firstDate }.Max().DateTime;
-      var ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod).ToList();
-      if (ratesBuffer.Count < tm.BarsCount)
-        ratesBuffer = GlobalStorage.GetRateFromDB(VirtualPair, VirtualStartDate, tm.BarsCount, minutesPerPeriod);
-      Func<Rate, DateTime, bool> dateFilter = (r, d) => r.StartDate >= d && r.StartDate < VirtualStartDate.AddMonths(e.MonthToTest);
-      Func<DateTime, Rate> getRateBuffer = d => {
-        if (ratesBuffer.Count == 0) {
-          ratesBuffer = GlobalStorage.GetRateFromDB(VirtualPair, d, tm.BarsCount, minutesPerPeriod);
-          if (ratesBuffer.Count() == 0) return null;
-        }
-        try {
-          return ratesBuffer[0];
-        } finally {
-          ratesBuffer.RemoveAt(0);
-        }
-      };
-      var hourlyDate = DateTime.MinValue;
-      var hourlyAverage = 0.0;
-      Func<Rate, double> getHourlyAverage = r => {
-        if (r.StartDate - hourlyDate < TimeSpan.FromMinutes(15)) return hourlyAverage;
-        var bars = GlobalStorage.GetRateFromDBBackward(VirtualPair, r.StartDate.AddDays(-1), 24 * 4, 15);
-        hourlyDate = r.StartDate;
-        return hourlyAverage = bars.GetMinuteTicks(60).Select(b => b.Spread).ToArray().AverageByIterations((v, a) => v >= a, 4).Average();
-      };
-      backTestThread = Task.Factory.StartNew(() => {
-        try {
-          tradesManager.IsInTest = true;
-          var rates = tm.RatesInternal;
-          rates.Clear();
-          rates.AddRange(ratesBuffer.Take(tm.BarsCount));
-          ratesBuffer.RemoveRange(0, tm.BarsCount);
-          tradesManager.ClosePair(VirtualPair);
-          if (e.ClearTest) {
-            tm.CurrentLoss = 0;
-            if (tm.CorridorStartDate != DateTime.Parse("1/1/2001"))
-              tm.CorridorStartDate = null;
-            tm.CorridorStats = null;
-            tm.MinimumGross = 0;
-            tm.HistoryMaximumLot = 0;
-            tm.RunningBalance = 0;
-            tm.RateGannCurrentLast = null;
-          }
-          ManualResetEvent suspendEvent = new ManualResetEvent(false);
-          while (rates.Count() > 0) {
-            ct.ThrowIfCancellationRequested();
-            if (Application.Current == null) break;
-            Thread.Yield();
-            if (e.StepBack) {
-              var dateStart = rates.Min(r => r.StartDate).AddHours(-1);
-              rates.Clear();
-              ratesBuffer = GlobalStorage.GetRateFromDBBackward(VirtualPair, dateStart, tm.BarsCount, (int)tm.BarPeriod);
-              rates.AddRange(ratesBuffer.Take(tm.BarsCount));
-              ratesBuffer.RemoveRange(0, tm.BarsCount);
-              e.StepBack = false;
-            }
-            if (e.Delay != 0)
-              Thread.Sleep((e.Delay * 1000).ToInt());
-            Thread.Yield();
-            if (e.Pause) {
-              Thread.Sleep(100);
-              continue;
-            }
-            (tradesManager as VirtualTradesManager).RaisePriceChanged(tm.Pair, rates.Last());
-            tm.Profitability = tm.RunningBalance / (rates.Last().StartDate - VirtualStartDate).TotalDays * 30;
-            Thread.Yield();
-            var startDate = rates.Last().StartDate;
-            var rate = getRateBuffer(startDate.AddMinutes(1));
-            if (rate == null) break;
-            lock (rates) {
-              rates.Add(rate);
-              tm.RatesArraySafe.Count();
-              if(!tm.DoStreatchRates || (tm.CorridorStats.StartDate - rates[0].StartDate) > TimeSpan.FromMinutes(minutesPerPeriod) )
-                rates.RemoveRange(0, Math.Max(0, rates.Count - tm.BarsCount));
-              RaisePropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
-            }
-          }
-          if (fwMaster.IsLoggedIn) {
-            var ratesFx = new List<Rate>();
-            fwMaster.GetBars(VirtualPair, 1,tm.BarsCount, rates.First().StartDate, rates.Last().StartDate, ratesFx);
-            var pipSize = tradesManager.GetPipSize(VirtualPair) / 10;
-            for (var i = 0; i < rates.Count; i++)
-              if ((rates[i].PriceAvg - ratesFx[i].PriceAvg).Abs() > pipSize)
-                Debugger.Break();
-          }
-          return;
-        } catch (Exception exc) {
-          Log = exc;
-        } finally {
-          tradesManager.IsInTest = false;
-        }
-      }, ct);
-    }
 
     void OrderToNoLossHandler(object sender, OrderEventArgs e) {
       tradesManager.DeleteEntryOrderLimit(e.Order.OrderID);

@@ -433,7 +433,6 @@
 								<u:CheckBox2 IsChecked2="{Binding VirtualPause,Mode=TwoWay}" IsChecked="{state:UserSettings Default=true}" Name="chkVP" Content="_Pause"/>
 								<Button Command="{Binding StepForwardCommand}" Content=">_>"></Button>
 								<CheckBox IsChecked="{Binding VirtualClearTest,Mode=TwoWay}" Name="chkClearTest" ToolTip="Clear Previouse Test Results"/>
-								<Button Command="{Binding BackTestCommand}">Test</Button>
 								<Button Command="{Binding ReportCommand}">Report</Button>
 								<Button Command="{Binding LoadHistoryCommand}">History</Button>
 								<TextBlock>Status:</TextBlock>

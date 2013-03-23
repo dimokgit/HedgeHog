@@ -62,6 +62,7 @@ namespace HedgeHog.Shared {
     event EventHandler<TradeEventArgs> TradeClosed;
     event EventHandler<PriceChangedEventArgs> PriceChanged;
     void RaisePriceChanged(string pair, Price price);
+    void RaisePriceChanged(string pair, int barPeriod, Price price);
 
     event EventHandler<TradeEventArgs> TradeAdded;
     event TradeRemovedEventHandler TradeRemoved;
@@ -91,9 +92,6 @@ namespace HedgeHog.Shared {
     Tick[] GetTicks(string pair, int periodsBack);
 
     void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool doTrim);
-
-    //void GetBars(string pair, int periodMinutes, int periodsBack, DateTime endDate, List<Rate> ratesList);
-    void Replay(string pair, int period, DateTimeOffset dateStart, DateTimeOffset dateEnd);
 
     PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
   }
@@ -135,10 +133,6 @@ namespace HedgeHog.Shared {
       if (rates == null || !rates.Any()) return DateTime.MinValue;
       var rateLast = rates[rates.Count - 1];
       return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
-    }
-
-    public static void RaisePriceChanged(this ITradesManager me, string pair, Rate rate) {
-      me.RaisePriceChanged(pair, new Price(pair, rate, me.ServerTime, me.GetPipSize(pair), me.GetDigits(pair), true));
     }
 
     public static double RelativeDollar(int baseLotSize,int baseUnitSize,double pipCost) {

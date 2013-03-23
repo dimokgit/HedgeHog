@@ -239,7 +239,7 @@ namespace HedgeHog {
     #region Lines
     public LineGraph PriceLineGraph { get; set; }
     public LineGraph PriceLineGraphBid { get; set; }
-    static Color priceLineGraphColorAsk = Colors.Black;
+    static Color priceLineGraphColorAsk = Colors.Maroon;
     static Color priceLineGraphColorBid = Colors.Navy;
     static Color priceLineGraphColorBuy = Colors.DarkGreen;
     static Color priceLineGraphColorSell = Colors.DarkRed;
@@ -928,6 +928,9 @@ namespace HedgeHog {
               case Key.T:
                 dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
                 break;
+              case Key.M:
+                dragPoint.DataContext.SetProperty("InManual", !dragPoint.DataContext.GetProperty<bool>("InManual"));
+                break;
               case Key.Subtract:
                 dragPoint.DataContext.SetProperty("TradesCount", -dragPoint.DataContext.GetProperty<double>("TradesCount"));
                 break;
@@ -1030,7 +1033,7 @@ namespace HedgeHog {
         this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColorAsk, 1, "");
         this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
         
-        if (false) {
+        if (true) {
           animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
           animatedDataSourceBid.SetYMapping(y => y);
           this.PriceLineGraphBid = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSourceBid), priceLineGraphColorBid, 1, "");
@@ -1622,9 +1625,13 @@ namespace HedgeHog {
       }
     }
 
+    public void SetLastPoint(Rate rateLast) {
+      SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
+      animatedDataSource.RaiseDataChanged();
+    }
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
-      animatedPriceY[i] = high;
-      animatedPriceBidY[i] = low;
+      animatedPriceY[i] = high.IfNaN(ma);
+      animatedPriceBidY[i] = low.IfNaN(ma);
       animatedPrice1Y[i] = double.IsNaN(ma) ? (high + low) / 2 : ma;
       animatedTimeX[i] = rateLast.StartDateContinuous;
       animatedTime0X[i] = rateLast.StartDate;
