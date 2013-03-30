@@ -690,6 +690,7 @@ namespace Order2GoAddIn {
       while (doContinue()) {
         try {
           var t = GetBarsBase_<TBar>(pair, period, startDate, endDate);
+          t.RemoveAll(b => b.StartDate < startDate);
           if (t.Count() == 0) break;
           var ticksNew = t.Except(ticks).ToList();
           ticks.AddRange(ticksNew);

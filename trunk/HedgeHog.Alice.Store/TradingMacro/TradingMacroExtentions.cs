@@ -35,53 +35,11 @@ namespace HedgeHog.Alice.Store {
     #region Subjects
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
-    #region LoadRates Broadcast
-    BroadcastBlock<TradingMacro> _LoadRatesBroadcast;
-    public BroadcastBlock<TradingMacro> LoadRatesBroadcast {
-      [MethodImpl(MethodImplOptions.Synchronized)]
-      get {
-        if (_LoadRatesBroadcast == null) {
-          _LoadRatesBroadcast = new BroadcastBlock<TradingMacro>(tm => tm);
-          _LoadRatesBroadcast.AsObservable()
-            .Subscribe(tm => tm.LoadRates());
-        }
-        return _LoadRatesBroadcast;
-      }
-    }
-    public void OnLoadRates_() {
-      LoadRatesBroadcast.SendAsync(this);
-    }
-
-    //          var bb = new BroadcastBlock<string>(s => { /*Debug.WriteLine("b:" + s);*/ return s; });
-    //      bb.AsObservable().Buffer(1.FromSeconds()).Where(s=>s.Any()).Subscribe(s => {
-    ////        Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + string.Join("\t" + Environment.NewLine, s));
-    //        Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + "\t" + s.Count);
-    //      });
-
-    #endregion
-
-    #region LoadRates Subject
-    static object _LoadRatesSubjectLocker = new object();
-    static ISubject<TradingMacro> _LoadRatesSubject;
-    static ISubject<TradingMacro> LoadRatesSubject {
-      get {
-        lock (_LoadRatesSubjectLocker)
-          if (_LoadRatesSubject == null) {
-            _LoadRatesSubject = new Subject<TradingMacro>();
-            _LoadRatesSubject
-              .ObserveOn(NewThreadScheduler.Default)
-              .Subscribe(tm => tm.LoadRates());
-          }
-        return _LoadRatesSubject;
-      }
-    }
-
     static ActionBlock<TradingMacro> _loadRatesAction = new ActionBlock<TradingMacro>(tm => tm.LoadRates());
     public void OnLoadRates() {
-      _loadRatesAction.SendAsync(this);
-      //LoadRatesSubject.OnNext(this);
+      broadcastLoadRates.Post(u => LoadRates());
+      //_loadRatesAction.SendAsync(this);
     }
-    #endregion
 
     #region DeleteOrder Subject
     static object _DeleteOrderSubjectLocker = new object();
@@ -1494,7 +1452,7 @@ namespace HedgeHog.Alice.Store {
             }
             if (rate.StartDate > dateStop) {
               if (CurrentGross > 0) {
-                CloseTrades();
+                CloseTrades("Replay break");
                 break;
               }
             }
@@ -2542,9 +2500,7 @@ namespace HedgeHog.Alice.Store {
       get {
         switch ((Strategy & ~Strategies.Auto)) {
           case Strategies.Hot:
-            return StrategyEnterDistancerManual;
-          case Strategies.Ender:
-            return StrategyEnterEnder;
+            return StrategyEnterUniversal;
           case Strategies.Universal:
             return StrategyEnterUniversal;
           case Strategies.None:
@@ -2556,66 +2512,6 @@ namespace HedgeHog.Alice.Store {
     bool _isSelfStrategy = false;
     void RunStrategy() {
       StrategyAction();
-      if (!IsTradingActive || _isSelfStrategy) {
-        return;
-      }
-      #region Trade Action
-      Action<bool, Func<double, bool>, Func<double, bool>> openTrade = (isBuy, mastClose, canOpen) => {
-        var suppReses = EnsureActiveSuppReses().OrderBy(sr => sr.TradesCount).ToList();
-        var minTradeCount = suppReses.Min(sr => sr.TradesCount);
-        Func<SuppRes, bool> isEnterSuppRes = sr => sr == _buyLevel || sr == _sellLevel;
-        foreach (var suppRes in EnsureActiveSuppReses(isBuy)) {
-          var level = suppRes.Rate;
-          if (mastClose(level)) {
-            if (isEnterSuppRes(suppRes)) {
-              var srGroup = suppReses.Where(a => !a.IsGroupIdEmpty && a.GroupId == suppRes.GroupId).OrderBy(sr => sr.TradesCount).ToList();
-              if (srGroup.Any()) {
-                if (srGroup[0] == suppRes)
-                  srGroup[1].TradesCount = suppRes.TradesCount - 1;
-              } else if (suppRes.TradesCount == minTradeCount) {
-                suppReses.IsBuy(!isBuy).Where(sr => sr.TradesCount < 9 && sr.CanTrade)
-                  .OrderBy(sr => (sr.Rate - suppRes.Rate).Abs()).Take(1).ToList()
-                  .ForEach(sr => sr.TradesCount = suppRes.TradesCount - 1);
-              }
-            }
-
-            var canTrade = suppRes.CanTrade && suppRes.TradesCount <= 0 && !HasTradesByDistance(isBuy);
-            CheckPendingAction("OT", (pa) => {
-              var als = AllowedLotSizeCore();
-              if (_trimAtZero) {
-                var lot = Trades.Lots() - als;
-                if (lot > 0)
-                  CloseTrades(lot);
-                 _trimAtZero = false;
-              } else {
-                var lotOpen = canTrade && canOpen(level) ? als : 0;
-                var lotClose = Trades.IsBuy(!isBuy).Lots();
-                var lot = lotClose + lotOpen;
-                if (lot > 0) {
-                  pa();
-                  TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
-                }
-              }
-            });
-          }
-        }
-      };
-      #endregion
-      #region Call Trade Action
-      if (RatesArray.Any() && SuppRes.Any() && Strategy != Strategies.None && (RateLast.StartDate - RatePrev1.StartDate).TotalMinutes / BarPeriodInt <= 3) {
-        double priceLast;
-        double pricePrev;
-        CalculatePriceLastAndPrev(out priceLast, out pricePrev);
-
-        Func<double, bool> canBuy = level => true;// (CurrentPrice.Ask - level).Abs() < SpreadForCorridor * 2;
-        Func<double, bool> mustCloseSell = level => priceLast >= level && pricePrev.Min(RatePrev1.PriceAvg) <= level;
-        openTrade(true, mustCloseSell, canBuy);
-
-        Func<double, bool> canSell = level => true;// (CurrentPrice.Bid - level).Abs() < SpreadForCorridor * 2;
-        Func<double, bool> mustCloseBuy = level => priceLast <= level && pricePrev.Max(RatePrev1.PriceAvg) >= level;
-        openTrade(false, mustCloseBuy, canSell);
-      }
-      #endregion
     }
     double? _buyPriceToLevelSign;
     double? _sellPriceToLevelSign;
@@ -2670,17 +2566,27 @@ namespace HedgeHog.Alice.Store {
       foreach (var sr in SuppRes)
         sr.RateEx = rate;
     }
+    public void OpenTrade(bool isBuy, int lot, string reason) {
+      CheckPendingAction("OT", (pa) => {
+        if (lot > 0) {
+          pa();
+          if (LogTrades)
+            Log = new Exception(string.Format("{0}[{1}]: {2} {3} from {4} by [{5}]", Pair,BarPeriod,isBuy?"Buying":"Selling", lot, new StackFrame(3).GetMethod().Name, reason));
+          TradesManager.OpenTrade(Pair, isBuy, lot, 0, 0, "", null);
+        }
+      });
+    }
 
-    public void TrimTrades() { CloseTrades(Trades.Lots() - LotSize); }
-    public void CloseTrades() { CloseTrades(Trades.Lots()); }
-    private void CloseTrades(int lot) {
+    public void TrimTrades(string reason) { CloseTrades(Trades.Lots() - LotSize,reason); }
+    public void CloseTrades(string reason) { CloseTrades(Trades.Lots(),reason); }
+    private void CloseTrades(int lot,string reason) {
       if (!Trades.Any()) return;
       if (HasPendingKey("CT")) return;
       if (lot > 0)
         CheckPendingAction("CT", pa => {
           pa();
-          if(LogTRades)
-            Log = new Exception(string.Format("{0}:Closing {1} from {2} in {3}", Pair, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name));
+          if (LogTrades)
+            Log = new Exception(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5} by [{6}]", Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
           if (!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
             ReleasePendingAction("CT");
         });
@@ -3307,6 +3213,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    BroadcastBlock<Action<Unit>> _broadcastLoadRates;
+    BroadcastBlock<Action<Unit>> broadcastLoadRates {
+      get {
+        if (_broadcastLoadRates == null) {
+          _broadcastLoadRates = DataFlowProcessors.SubscribeToBroadcastBlock();
+        }
+        return _broadcastLoadRates;
+      }
+    }
 
     public void OnPropertyChangedCore(string property) {
       if (EntityState == System.Data.EntityState.Detached) return;

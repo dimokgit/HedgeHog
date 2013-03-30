@@ -163,16 +163,6 @@ namespace HedgeHog.Alice.Client {
       //tm.ScanCorridor(tm.RatesArray);
     }
 
-    void charterNew_ClearStartTime(object sender, EventArgs e) {
-      var tm = GetTradingMacro((CharterControl)sender);
-      tm.IsTradingActive = false;
-      tm.CloseTrades();
-      ((CharterControl)sender).FitToView();
-      tm.CorridorStartDate = null;
-      tm.CorridorStopDate = DateTime.MinValue;
-      tm.WaveShort.ClearDistance();
-    }
-
     void charter_BuySellRemoved(object sender, BuySellRateRemovedEventArgs e) {
       var tm = GetTradingMacro((CharterControl)sender);
       try {
@@ -430,7 +420,7 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void TrimPair(TradingMacro tradingMacro) {
-      tradingMacro.TrimTrades();
+      tradingMacro.TrimTrades("TrimTrades Command");
     }
     #endregion
 

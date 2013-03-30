@@ -818,7 +818,7 @@ namespace HedgeHog {
                         join trade in trades on value equals trade.Id
                         select trade;
         foreach (var t in tradesAdd) {
-          var y = t.Open + (t.Buy ? +1 : -1) * spread;
+          var y = t.Open;// +(t.Buy ? +1 : -1) * spread;
           var toolTip = t.Open + " @ " + t.Time;
           var stroke = new SolidColorBrush(t.Buy ? priceLineGraphColorBuy : priceLineGraphColorSell);
           HorizontalLine hl = null;
@@ -1628,6 +1628,7 @@ namespace HedgeHog {
     public void SetLastPoint(Rate rateLast) {
       SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
       animatedDataSource.RaiseDataChanged();
+      animatedDataSourceBid.RaiseDataChanged();
     }
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
       animatedPriceY[i] = high.IfNaN(ma);

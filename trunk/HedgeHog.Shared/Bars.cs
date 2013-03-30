@@ -164,6 +164,17 @@ namespace HedgeHog.Bars {
       }
     }
     #endregion
+    public void SetPriceChart() {
+      if (PriceAvg > PriceAvg1) {
+        PriceChartAsk = AskHigh;
+        PriceChartBid = BidHigh;
+
+      } else {
+        PriceChartAsk = AskLow;
+        PriceChartBid = BidLow;
+      }
+
+    }
     double _PriceAvg1;
     [DataMember]
     public double PriceAvg1 {
@@ -173,14 +184,7 @@ namespace HedgeHog.Bars {
         if (double.IsNaN(_PriceAvg1)) {
           PriceChartAsk = PriceChartBid = double.NaN;
         } else if (double.IsNaN(PriceChartAsk)) {
-          if (PriceAvg > PriceAvg1) {
-            PriceChartAsk = AskHigh;
-            PriceChartBid = BidHigh;
-
-          } else {
-            PriceChartAsk = AskLow;
-            PriceChartBid = BidLow;
-          }
+          SetPriceChart();
         }
       }
     }
