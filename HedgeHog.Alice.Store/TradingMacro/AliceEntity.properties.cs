@@ -579,14 +579,14 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region LogTrades
-    bool _logTrades;
+    bool _logTrades = true;
     [DisplayName("Log Trades")]
-    [Category(categoryXXX)]
-    public bool LogTRades{
+    [Category(categoryTrading)]
+    public bool LogTrades{
       get { return _logTrades; }
       set {
           _logTrades = value;
-          OnPropertyChanged("LohTrades");
+          OnPropertyChanged(()=>LogTrades);
       }
     }
 
@@ -1577,6 +1577,10 @@ namespace HedgeHog.Alice.Store {
       }
       set {
         _currentPrice = value;
+        if (RateLast != null && !double.IsNaN(RateLast.PriceAvg1)) {
+          RateLast.AddTick(_currentPrice);
+          RateLast.SetPriceChart();
+        }
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
         var currentSpread = RoundPrice(Lib.Cma(this._currentSpread, 10, this._currentPrice.Spread));
         if (currentSpread == this._currentSpread) return;

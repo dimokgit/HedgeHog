@@ -36,7 +36,8 @@ namespace HedgeHog.Alice.Store {
             var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset).DateTime;
             fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
           }
-          dateStart = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(dateStart).Max().Add(offset).DateTime;
+          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(dateStart);
+          dateStart = q.Max().Add(offset).DateTime;
         }
         fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
       } catch (Exception exc) {
@@ -48,7 +49,7 @@ namespace HedgeHog.Alice.Store {
       if (progressCallback != null) progressCallback(args.Message);
       else Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
-      foreach (var t in args.NewRates) {
+      foreach (var t in args.NewRates.Distinct()) {
         var bar = context.CreateObject<t_Bar>();
         FillBar(period, pair, bar, t);
         context.t_Bar.AddObject(bar);

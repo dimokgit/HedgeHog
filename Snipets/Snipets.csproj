@@ -44,10 +44,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cmdrekay.snippet" />
+    <None Include="dimokYieldBroadcast.snippet" />
     <None Include="dimokevent.snippet" />
     <None Include="dimokSubject.snippet" />
     <None Include="dimoksw.snippet" />
     <None Include="dimoktrycatchlog.snippet" />
+    <None Include="dimokYieldingBroadcast.snippet" />
     <None Include="listcollview.snippet" />
     <None Include="mvvmInpcProperty.snippet" />
     <None Include="mvvmPropA.snippet" />

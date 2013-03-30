@@ -3188,7 +3188,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._logTrades"/></summary>
         public const string _logTrades = "_logTrades";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LogTRades"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LogTrades"/></summary>
         public const string LogTRades = "LogTRades";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ForceOpenTrade"/></summary>
@@ -6105,7 +6105,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.MovingAverageType"/></summary>
         public static PropertyPath MovingAverageTypePath { get { return new PropertyPath("MovingAverageType"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LogTRades"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LogTrades"/></summary>
         public static PropertyPath LogTRadesPath { get { return new PropertyPath("LogTRades"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ForceOpenTrade"/></summary>
