@@ -27,6 +27,23 @@ namespace ControlExtentions {
   }
 }
 namespace HedgeHog {
+  public class ClosenessComparer<T> : IEqualityComparer<T> {
+    private readonly double delta;
+    private readonly Func<T, T, double, bool> compare;
+
+    public ClosenessComparer(double delta,Func<T,T,double,bool> compare) {
+      this.delta = delta;
+      this.compare = compare;
+    }
+
+    public bool Equals(T x, T y) {
+      return compare(x, y, delta);
+    }
+
+    public int GetHashCode(T obj) {
+      return 0;
+    }
+  }
   public static class Lib {
     #region Box
     public class Box<T> {

@@ -450,6 +450,25 @@
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
         </DataGridTemplateColumn>
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Expander ExpandDirection="Right" Margin="0,-2,0,-7">
+                <Expander.Content>
+                  <StackPanel Orientation="Horizontal" DataContext="{Binding SnapshotArguments}">
+                  <TextBox MinWidth="10" Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                  <TextBox MinWidth="10" Text="{Binding DateEnd,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                  <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding ShowCommand}" />
+                  <Button Content="≤" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding DescendCommand}" />
+                  <Button Content="≥" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding AdvanceCommand}" />
+                  <Button Content="{Binding Label}" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding MatchCommand}" />
+                  <CheckBox Content="Target" IsChecked="{Binding IsTarget}" Margin="0,-4" />
+                  </StackPanel>
+                </Expander.Content>
+              </Expander>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
       </DataGrid.Columns>
     </DataGrid>
 
