@@ -330,6 +330,100 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region Snapshot control
+    SnapshotArguments _SnapshotArguments;
+
+    public SnapshotArguments SnapshotArguments {
+      get {
+        if (_SnapshotArguments == null) {
+          _SnapshotArguments = new SnapshotArguments();
+          _SnapshotArguments.ShowSnapshot += (s, e) => ShowSnaphot(SnapshotArguments.DateStart, SnapshotArguments.DateEnd);
+          _SnapshotArguments.AdvanceSnapshot += (s, e) => AdvanceSnapshot(SnapshotArguments.DateStart, SnapshotArguments.DateEnd, false);
+          _SnapshotArguments.DescendSnapshot += (s, e) => AdvanceSnapshot(SnapshotArguments.DateStart, SnapshotArguments.DateEnd, true);
+          _SnapshotArguments.MatchSnapshotRange += (s, e) => MatchSnapshotRange();
+        }
+        return _SnapshotArguments;
+      }
+    }
+    void MatchSnapshotRange() {
+      var dateStart = CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate);
+      var dateEnd = CorridorStopDate.IfMin(RatesArray.LastBC().StartDate);
+      var dateRangeStart = dateStart.AddDays(-1);
+      var dateRangeEnd = dateStart.AddDays(1);
+      Func<Rate, double> price = r => r.PriceCMALast;
+      var ratesSample = RatesArray.SkipWhile(r => r.StartDate < dateStart).TakeWhile(r => r.StartDate <= dateEnd).Select(price).ToArray();
+      var heightSample = ratesSample.Height();
+      var hourStart = dateStart.AddHours(-1).Hour;
+      var hourEnd = dateStart.AddHours(1).Hour;
+      Func<DateTime, bool> isHourOk = d => hourEnd > hourStart ? d.Hour.Between(hourStart, hourEnd) : !d.Hour.Between(hourStart, hourEnd);
+      var dateLoadStart = dateStart.AddYears(-1);
+      var ratesHistory = GlobalStorage.GetRateFromDB(Pair, dateLoadStart, int.MaxValue, BarPeriodInt);
+      var priceHistory = ratesHistory.Select(price).ToList();
+      var interval = ratesSample.Count();
+      var correlations = new ConcurrentDictionary<int,double>();
+      Enumerable.Range(0, ratesHistory.Count()-interval).AsParallel().ForAll(i => {
+        if (!ratesHistory[i].StartDate.Between(dateRangeStart,dateRangeEnd)) {
+          var range = new double[interval];
+          priceHistory.CopyTo(i, range, 0, interval);
+          if (isHourOk(ratesHistory[i].StartDate) && heightSample.Ratio(range.Height()) < 1.1)
+            correlations.TryAdd(i, alglib.correlation.pearsoncorrelation(ref range, ref ratesSample, range.Length));
+        }
+      });
+      var sorted = correlations.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
+      var maxCorr = sorted.ToList().AverageByPercentage(kv => kv.Value, (v, a) => v > a, .05);
+      Func<KeyValuePair<int, double>, KeyValuePair<int, double>, double, bool> compare = (d1, d2, d) => (d1.Key - d2.Key).Abs() <= d;
+      var maxCorr1 = maxCorr.GroupBy(c => c, new ClosenessComparer<KeyValuePair<int,double>>(60, compare)).ToArray();
+      var maxCorr2 = maxCorr1.Select(cg => cg.Key).ToArray();
+      var avgIterations = 5;
+      var maxCorr3 = maxCorr2.Take(avgIterations);
+      var startDates = maxCorr3.Select(kv => ratesHistory[kv.Key].StartDate).ToArray();
+      var dates = string.Join(",", startDates.Select(d => d.ToString("M/d/yy HH:mm")).ToArray());
+      Clipboard.SetText(dates);
+      //Log = new Exception("Matches:" + string.Join(Environment.NewLine, maxCorr3.Select(c => "Corr:" + c.Value.ToString("n2")).ToArray()));
+      maxCorr3.ForEach(kv => {
+        var startDate = ratesHistory[kv.Key].StartDate;
+        try {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(
+            new ShowSnapshotMatchMessage(startDate, interval, BarsCount, BarPeriodInt, kv.Value));
+        } catch (Exception exc) {
+          Log = new Exception(new { startDate } + "", exc);
+        }
+      });
+
+    }
+    void AdvanceSnapshot(DateTime? dateStart,DateTime? dateEnd,bool goBack = false) {
+      var minutes = ((goBack ? -1 : 1) * BarsCount * BarPeriodInt / 10).FromMinutes();
+      SnapshotArguments.DateStart += minutes;
+      if (SnapshotArguments.DateEnd != null)
+        SnapshotArguments.DateEnd += minutes;
+      ShowSnaphot(dateStart, dateEnd);
+    }
+    void ShowSnaphot(DateTime? dateStart,DateTime? dateEnd) {
+      var message = new List<string>();
+      if (TradesManager == null) message.Add("TradesManager is null");
+      if (dateStart == null) message.Add("SnapshotArguments.DateStart is null");
+      if (message.Any()) {
+        Log = new Exception(string.Join("\n", message));
+        return;
+      }
+      RatesArray.Clear();
+      RatesInternal.Clear();
+      CorridorStartDate = null;
+      var dateEndMin = dateStart.Value.AddMinutes(BarsCount * BarPeriodInt + 1);
+      dateEnd = dateEndMin.Max(dateEnd.GetValueOrDefault());
+      var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
+      try {
+        var rates = fw == null
+          ? GlobalStorage.GetRateFromDB(Pair, dateStart.Value, BarsCount, BarPeriodInt).ToArray()
+          : fw.GetBarsBase(Pair, BarPeriodInt, dateStart.Value, dateEnd.Value);
+        RatesInternal.AddRange(rates);
+        RaiseShowChart();
+      } catch (Exception exc) {
+        Log = exc;
+      }
+    }
+    #endregion
+
     #region ctor
     public TradingMacro() {
       _waveShort = new WaveInfo(this);
@@ -354,6 +448,29 @@ namespace HedgeHog.Alice.Store {
         if (a.Target == this && _strategyOnTradeLineChanged != null)
           _strategyOnTradeLineChanged(a);
       });
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<ShowSnapshotMatchMessage>(this, m => {
+        if (SnapshotArguments.IsTarget && !m.StopPropagation) {
+          m.StopPropagation = true;
+          SnapshotArguments.DateStart = m.DateStart;
+          SnapshotArguments.DateEnd = null;
+          SnapshotArguments.IsTarget = false;
+          SnapshotArguments.Label = m.Correlation.ToString("n2");
+          if (BarsCount != m.BarCount)
+            BarsCount = m.BarCount;
+          if (BarPeriodInt != m.BarPeriod)
+            BarPeriod = (BarsPeriodType)m.BarPeriod;
+          ShowSnaphot(m.DateStart, null);
+          Scheduler.Default.Schedule(1.FromSeconds(), () => {
+            try {
+              CorridorStartDate = m.DateStart;
+              CorridorStopDate = RatesArray.SkipWhile(r => r.StartDate < CorridorStartDate).Skip(m.Interval - 1).First().StartDate;
+            } catch (Exception exc) {
+              Log = exc;
+            }
+          });
+        }
+      });
+
     }
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
@@ -2203,7 +2320,15 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    public double TradingDistanceInPips { get { return InPips(_tradingDistance).Max(_tradingDistanceMax); } }
+    public double TradingDistanceInPips {
+      get {
+        try {
+          return InPips(_tradingDistance).Max(_tradingDistanceMax);
+        } catch {
+          return double.NaN;
+        }
+      }
+    }
     double _tradingDistance = double.NaN;
     public double TradingDistance {
       get {
@@ -2242,7 +2367,7 @@ namespace HedgeHog.Alice.Store {
       _Playback.StartDate = startDate;
       _Playback.Delay = delay;
     }
-    public bool IsInPlayback { get { return _Playback.Play; } }
+    public bool IsInPlayback { get { return _Playback.Play || SnapshotArguments.DateStart != null || SnapshotArguments.IsTarget; } }
 
     enum workers { LoadRates, ScanCorridor, RunPrice };
     Schedulers.BackgroundWorkerDispenser<workers> bgWorkers = new Schedulers.BackgroundWorkerDispenser<workers>();

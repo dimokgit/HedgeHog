@@ -263,6 +263,7 @@ namespace HedgeHog.Alice.Store {
       this.RatesHeight = this.Rates.Height(out _RatesMin, out _RatesMax);
       // Must the last one
       this.StartDate = rates.LastBC().StartDate;
+      this.EndDate = rates[0].StartDate;
       RaisePropertyChanged("Height");
       RaisePropertyChanged("HeightInPips");
     }

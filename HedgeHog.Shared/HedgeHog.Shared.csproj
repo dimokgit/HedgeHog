@@ -71,6 +71,7 @@
     <Compile Include="PendingOrderInfo.cs" />
     <Compile Include="Price.cs" />
     <Compile Include="ReplayArguments.cs" />
+    <Compile Include="ShowSnapshotMatchMessage.cs" />
     <Compile Include="SummaryRow.cs" />
     <Compile Include="Trade.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

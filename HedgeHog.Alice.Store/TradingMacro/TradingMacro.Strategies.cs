@@ -146,7 +146,7 @@ namespace HedgeHog.Alice.Store {
           Log = exc;
         }
       };
-      if (IsInVitualTrading) Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => a(0));
+      if (false && IsInVitualTrading) Scheduler.CurrentThread.Schedule(TimeSpan.FromMilliseconds(1), () => a(0));
       else broadcastCorridorDatesChange.SendAsync(a);
     }
     partial void OnCorridorStartDateChanging(DateTime? value) {
@@ -159,11 +159,11 @@ namespace HedgeHog.Alice.Store {
     public DateTime CorridorStopDate {
       get { return _CorridorStopDate; }
       set {
-        if (value == DateTime.MinValue || value > RateLast.StartDate) {
+        if (value == DateTime.MinValue || RateLast == null || value > RateLast.StartDate) {
           _CorridorStopDate = value;
           CorridorStats.StopRate = null;
         } else {
-          value = value.Min(RateLast.StartDate).Max(CorridorStats.StartDate.Add((BarPeriodInt * 2).FromMinutes()));
+          value = value.Min(RateLast.StartDate).Max(CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate).Add((BarPeriodInt * 2).FromMinutes()));
           if (_CorridorStopDate == value) return;
           _CorridorStopDate = value;
           if (value == RateLast.StartDate)
@@ -171,7 +171,8 @@ namespace HedgeHog.Alice.Store {
           else {
             var index = RatesArray.IndexOf(new Rate() { StartDate = value });
             CorridorStats.StopRate = RatesArray.Reverse<Rate>().SkipWhile(r => r.StartDate > value).First();
-            _CorridorStopDate = CorridorStats.StopRate.StartDate;
+            if (CorridorStats.StopRate != null)
+              _CorridorStopDate = CorridorStats.StopRate.StartDate;
           }
           StartStopDistance = CorridorStats.Rates.LastBC().Distance - CorridorStats.StopRate.Distance;
         }
