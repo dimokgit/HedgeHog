@@ -37,6 +37,28 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region Chart Price
+    public Func<Rate, double> ChartHighPrice() { return ChartHighPrice(ChartHighMethod, MovingAverageType); }
+    public Func<Rate, double> ChartLowPrice() { return ChartLowPrice(ChartLowMethod, MovingAverageType); }
+    private static Func<Rate, double> ChartHighPrice(ChartHighLowMethod chartHighLowMethod, MovingAverageType movingAverageType) {
+      switch (chartHighLowMethod) {
+        case ChartHighLowMethod.AskBidByReg: return r => r.PriceChartAsk;
+        case ChartHighLowMethod.Average: return r => r.PriceAvg;
+        case ChartHighLowMethod.Trima: return r => r.PriceTrima;
+        case ChartHighLowMethod.AskBidByMA: return r => r.PriceAvg > GetPriceMA(movingAverageType)(r) ? r.AskHigh : r.AskLow;
+      }
+      throw new NotSupportedException(new { ChartHighPrice = chartHighLowMethod } + "");
+    }
+    private static Func<Rate, double> ChartLowPrice(ChartHighLowMethod chartHighLowMethod, MovingAverageType movingAverageType) {
+      switch (chartHighLowMethod) {
+        case ChartHighLowMethod.AskBidByReg: return r => r.PriceChartBid;
+        case ChartHighLowMethod.Average: return r => r.PriceAvg;
+        case ChartHighLowMethod.AskBidByMA: return r => r.PriceAvg > GetPriceMA(movingAverageType)(r) ? r.BidHigh : r.BidLow;
+      }
+      throw new NotSupportedException(new { ChartLowPrice = chartHighLowMethod } + "");
+    }
+    #endregion
+
     public double CorridorCrossHighPrice(Rate rate, Func<Rate, double> getPrice = null) {
       return CalculateLastPrice(rate, getPrice ?? CorridorCrossGetHighPrice());
     }

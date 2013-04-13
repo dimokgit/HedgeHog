@@ -456,8 +456,10 @@
               <Expander ExpandDirection="Right" Margin="0,-2,0,-7">
                 <Expander.Content>
                   <StackPanel Orientation="Horizontal" DataContext="{Binding SnapshotArguments}">
-                  <TextBox MinWidth="10" Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
-                  <TextBox MinWidth="10" Text="{Binding DateEnd,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                  <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                  <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateStart,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
+                  <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateEnd,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                  <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateEnd,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
                   <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding ShowCommand}" />
                   <Button Content="≤" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding DescendCommand}" />
                   <Button Content="≥" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding AdvanceCommand}" />

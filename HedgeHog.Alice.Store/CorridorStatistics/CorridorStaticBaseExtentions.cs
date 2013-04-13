@@ -96,7 +96,7 @@ namespace HedgeHog.Alice.Store {
         Func<int, double> priceLine = index => linePrices[index];
         Action<int, double> lineSet = (index, d) => linePrices[index] = d;
         var coeffs = rates.SetRegressionPrice(1, price, lineSet);
-        var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
+        var sineOffset = 1;// Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
         Func<T, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
         Func<T, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
         #endregion

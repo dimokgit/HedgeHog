@@ -5,6 +5,7 @@ using System.Text;
 
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
+    Void = 0,
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
@@ -16,11 +17,12 @@ namespace HedgeHog.Alice.Store {
     Crosses = 30,
     CrossesStarter = 31,
     CrossesWithAngle = 32,
-    StDev = 40,
-    StDevSimple = 41,
+    StDevAngle = 40,
+    Simple = 41,
     StDevSimple1Cross = 42,
     StDevUDCross = 43,
-    Balance
+    Balance = 50,
+    Height = 60
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -146,4 +148,8 @@ namespace HedgeHog.Alice.Store {
     PriceCMA = 1,
     ChartAskBid = 2
   }
+  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, AskBidByMA = 5, PriceByMA = 6, BidAskByMA = 7, PriceMA = 8 }
+  public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1,AskBidByMA = 2,Trima = 3 }
+  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3 }
+
 }

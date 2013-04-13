@@ -142,6 +142,14 @@ namespace HedgeHog.Alice.Store {
       if (GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic) return new TradingAccount[] { };
       return Context.TradingAccounts.ToArray();
     }
+    public static List<Rate> GetRateFromDBByDateRange(string pair, DateTime startDate, DateTime endDate, int minutesPerBar) {
+      return GlobalStorage.UseForexContext(c => {
+        var q = c.t_Bar
+          .Where(b => b.Pair == pair && b.Period == minutesPerBar && b.StartDate >= startDate && b.StartDate < endDate)
+        .OrderBy(b => b.StartDate);
+        return GetRatesFromDBBars(q);
+      });
+    }
     public static List<Rate> GetRateFromDB(string pair, DateTime startDate, int barsCount, int minutesPerBar) {
       return GlobalStorage.UseForexContext(c => {
         var q = c.t_Bar
@@ -151,26 +159,18 @@ namespace HedgeHog.Alice.Store {
       });
     }
 
-    public static List<Rate> GetRateFromDBBackward(string pair, DateTime startDate, int barsCount, int minutesPerPriod) {
+    public static List<Rate> GetRateFromDBBackward(string pair, DateTime endDate, int barsCount, int minutesPerPriod) {
       return GlobalStorage.UseForexContext(context => {
-        IQueryable<t_Bar> bars;
-        if (minutesPerPriod == 0) {
-          bars = context.t_Bar
-            .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate >= startDate)
-            .OrderBy(b => b.StartDate).Take(barsCount * 2);
-        } else {
-          var endDate = startDate.AddMinutes(barsCount * minutesPerPriod);
-          bars = context.t_Bar
+        IQueryable<t_Bar> bars = context.t_Bar
             .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate <= endDate)
             .OrderByDescending(b => b.StartDate).Take(barsCount);
-        }
         return GetRatesFromDBBars(bars);
       });
     }
 
     static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {
       var ratesList = new List<Rate>();
-      bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDate.DateTime) { Volume = b.Volume }));
+      bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDateLocal.Value) { Volume = b.Volume,StartDate2 = b.StartDate }));
       return ratesList.OrderBars().ToList();
     }
 

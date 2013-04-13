@@ -346,45 +346,55 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void MatchSnapshotRange() {
-      var dateStart = CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate);
-      var dateEnd = CorridorStopDate.IfMin(RatesArray.LastBC().StartDate);
-      var dateRangeStart = dateStart.AddDays(-1);
+      var dateStart = new DateTimeOffset(CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate));
+      var dateEnd = new DateTimeOffset(CorridorStopDate.IfMin(RatesArraySafe.LastBC().StartDate));
+      var dateRangeStart =  dateStart.AddDays(-1);
       var dateRangeEnd = dateStart.AddDays(1);
-      Func<Rate, double> price = r => r.PriceCMALast;
-      var ratesSample = RatesArray.SkipWhile(r => r.StartDate < dateStart).TakeWhile(r => r.StartDate <= dateEnd).Select(price).ToArray();
-      var heightSample = ratesSample.Height();
-      var hourStart = dateStart.AddHours(-1).Hour;
-      var hourEnd = dateStart.AddHours(1).Hour;
-      Func<DateTime, bool> isHourOk = d => hourEnd > hourStart ? d.Hour.Between(hourStart, hourEnd) : !d.Hour.Between(hourStart, hourEnd);
-      var dateLoadStart = dateStart.AddYears(-1);
-      var ratesHistory = GlobalStorage.GetRateFromDB(Pair, dateLoadStart, int.MaxValue, BarPeriodInt);
-      var priceHistory = ratesHistory.Select(price).ToList();
+      Func<Rate, double> price = r => r.CrossesDensity;// r.PriceCMALast;
+      var ratesSample = RatesArray.SkipWhile(r => r.StartDate2 < dateStart).TakeWhile(r => r.StartDate2 <= dateEnd).Select(price).ToArray();
       var interval = ratesSample.Count();
+      var heightSample = ratesSample.Height();
+      var hourStart = dateStart.AddHours(-1).UtcDateTime.Hour;
+      var hourEnd = dateStart.AddHours(1).UtcDateTime.Hour;
+      Func<DateTimeOffset, bool> isHourOk = d => hourEnd > hourStart ? d.UtcDateTime.Hour.Between(hourStart, hourEnd) : !d.UtcDateTime.Hour.Between(hourStart, hourEnd);
+      Func<DateTimeOffset, bool> isDateOk = d => d.DayOfWeek == dateStart.DayOfWeek && isHourOk(d);
+      var dateLoadStart = dateStart.AddYears(-1);
+      var ratesHistory = GlobalStorage.GetRateFromDB(Pair, dateLoadStart.DateTime, int.MaxValue, BarPeriodInt);
+      ratesHistory.Take(interval).ForEach(r => r.CrossesDensity = 0);
+      ratesHistory.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
+      Enumerable.Range(0, ratesHistory.Count() - interval).AsParallel().ForAll(i => {
+        try {
+          var range = new Rate[interval];
+          ratesHistory.CopyTo(i, range, 0, interval);
+          var cd = range.Select(_priceAvg).CrossesInMiddle(range.Select(GetPriceMA())).Count / (double)interval;
+          range.LastBC().CrossesDensity = cd;
+        } catch (Exception exc) {
+          Debugger.Break();
+        }
+      });
+      var priceHistory = ratesHistory.Select(price).ToList();
       var correlations = new ConcurrentDictionary<int,double>();
       Enumerable.Range(0, ratesHistory.Count()-interval).AsParallel().ForAll(i => {
-        if (!ratesHistory[i].StartDate.Between(dateRangeStart,dateRangeEnd)) {
+        if (!ratesHistory[i].StartDate2.Between(dateRangeStart,dateRangeEnd)) {
           var range = new double[interval];
           priceHistory.CopyTo(i, range, 0, interval);
-          if (isHourOk(ratesHistory[i].StartDate) && heightSample.Ratio(range.Height()) < 1.1)
-            correlations.TryAdd(i, alglib.correlation.pearsoncorrelation(ref range, ref ratesSample, range.Length));
+          if (isDateOk(ratesHistory[i].StartDate2) /*&& heightSample.Ratio(range.Height()) < 1.1*/)
+            correlations.TryAdd(i, alglib.correlation.spearmanrankcorrelation( range,  ratesSample, range.Length));
         }
       });
       var sorted = correlations.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
-      var maxCorr = sorted.ToList().AverageByPercentage(kv => kv.Value, (v, a) => v > a, .05);
       Func<KeyValuePair<int, double>, KeyValuePair<int, double>, double, bool> compare = (d1, d2, d) => (d1.Key - d2.Key).Abs() <= d;
-      var maxCorr1 = maxCorr.GroupBy(c => c, new ClosenessComparer<KeyValuePair<int,double>>(60, compare)).ToArray();
+      var maxCorr1 = sorted.GroupBy(c => c, new ClosenessComparer<KeyValuePair<int,double>>(60, compare)).ToArray();
       var maxCorr2 = maxCorr1.Select(cg => cg.Key).ToArray();
       var avgIterations = 5;
       var maxCorr3 = maxCorr2.Take(avgIterations);
-      var startDates = maxCorr3.Select(kv => ratesHistory[kv.Key].StartDate).ToArray();
-      var dates = string.Join(",", startDates.Select(d => d.ToString("M/d/yy HH:mm")).ToArray());
-      Clipboard.SetText(dates);
-      //Log = new Exception("Matches:" + string.Join(Environment.NewLine, maxCorr3.Select(c => "Corr:" + c.Value.ToString("n2")).ToArray()));
       maxCorr3.ForEach(kv => {
-        var startDate = ratesHistory[kv.Key].StartDate;
+        var startDate = ratesHistory[kv.Key].StartDate2;
         try {
+          var ds = startDate.Date + dateStart.TimeOfDay;
+          var de = ds + (dateEnd - dateStart);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(
-            new ShowSnapshotMatchMessage(startDate, interval, BarsCount, BarPeriodInt, kv.Value));
+            new ShowSnapshotMatchMessage(ds, de/*, BarsCount*/, BarPeriodInt, kv.Value));
         } catch (Exception exc) {
           Log = new Exception(new { startDate } + "", exc);
         }
@@ -393,31 +403,58 @@ namespace HedgeHog.Alice.Store {
     }
     void AdvanceSnapshot(DateTime? dateStart,DateTime? dateEnd,bool goBack = false) {
       var minutes = ((goBack ? -1 : 1) * BarsCount * BarPeriodInt / 10).FromMinutes();
-      SnapshotArguments.DateStart += minutes;
       if (SnapshotArguments.DateEnd != null)
         SnapshotArguments.DateEnd += minutes;
-      ShowSnaphot(dateStart, dateEnd);
+      else SnapshotArguments.DateStart += minutes;
+      ShowSnaphot(SnapshotArguments.DateStart, SnapshotArguments.DateEnd);
     }
+    IDisposable _scheduledSnapshot;
     void ShowSnaphot(DateTime? dateStart,DateTime? dateEnd) {
       var message = new List<string>();
       if (TradesManager == null) message.Add("TradesManager is null");
-      if (dateStart == null) message.Add("SnapshotArguments.DateStart is null");
+      if (dateStart == null && dateEnd == null) message.Add("SnapshotArguments.Date(Start and End) are null.");
+      //if (dateStart != null && dateEnd != null) message.Add("SnapshotArguments.Date(Start or End) must be null.");
       if (message.Any()) {
         Log = new Exception(string.Join("\n", message));
         return;
       }
       RatesArray.Clear();
       RatesInternal.Clear();
-      CorridorStartDate = null;
-      var dateEndMin = dateStart.Value.AddMinutes(BarsCount * BarPeriodInt + 1);
-      dateEnd = dateEndMin.Max(dateEnd.GetValueOrDefault());
-      var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
       try {
-        var rates = fw == null
+        var rates = dateStart.HasValue && dateEnd.HasValue
+          ? GlobalStorage.GetRateFromDBByDateRange(Pair, dateStart.Value, dateEnd.Value, BarPeriodInt).ToArray()
+          : dateStart.HasValue
           ? GlobalStorage.GetRateFromDB(Pair, dateStart.Value, BarsCount, BarPeriodInt).ToArray()
-          : fw.GetBarsBase(Pair, BarPeriodInt, dateStart.Value, dateEnd.Value);
+          : GlobalStorage.GetRateFromDBBackward(Pair, dateEnd.Value, BarsCount, BarPeriodInt).ToArray();
+        if (dateStart.HasValue && dateEnd.HasValue)
+          _CorridorBarMinutes = rates.Count();
         RatesInternal.AddRange(rates);
-        RaiseShowChart();
+        while (RatesInternal.Count < BarsCount)
+          RatesInternal.Add(RatesInternal.LastBC());
+        if (CorridorStartDate.HasValue && !CorridorStartDate.Value.Between(RatesInternal[0].StartDate, RatesInternal.LastBC().StartDate))
+          CorridorStartDate = null;
+        Action doMatch = () => { };
+        var doRunMatch = dateEnd.HasValue && !dateStart.HasValue && RatesInternal.LastBC().StartDate < dateEnd;
+        if (doRunMatch) {
+          Enumerable.Range(0, CorridorDistanceRatio.ToInt()).ForEach(i => {
+            RatesInternal.RemoveAt(0);
+            var rate = RatesInternal.LastBC().Clone() as Rate;
+            rate.StartDate = rate.StartDate.AddMinutes(BarPeriodInt);
+            rate.StartDate2 = rate.StartDate2.AddMinutes(BarPeriodInt);
+            RatesInternal.Add(rate);
+          });
+          doMatch = MatchSnapshotRange;
+          try {
+            if (_scheduledSnapshot != null) _scheduledSnapshot.Dispose();
+          } catch (Exception exc) { Log = exc; }
+          _scheduledSnapshot = Scheduler.Default.Schedule(BarPeriodInt.FromMinutes(), () => {
+            SnapshotArguments.RaiseShowSnapshot();
+          });
+        }
+        Scheduler.Default.Schedule(() => {
+          RaiseShowChart();
+          doMatch();
+        });
       } catch (Exception exc) {
         Log = exc;
       }
@@ -455,19 +492,22 @@ namespace HedgeHog.Alice.Store {
           SnapshotArguments.DateEnd = null;
           SnapshotArguments.IsTarget = false;
           SnapshotArguments.Label = m.Correlation.ToString("n2");
-          if (BarsCount != m.BarCount)
-            BarsCount = m.BarCount;
+          //if (BarsCount != m.BarCount) BarsCount = m.BarCount;
           if (BarPeriodInt != m.BarPeriod)
             BarPeriod = (BarsPeriodType)m.BarPeriod;
-          ShowSnaphot(m.DateStart, null);
+          RatesInternal.Clear();
+          RatesArray.Clear();
+          CorridorStartDate = null;
+          ShowSnaphot(m.DateStart, m.DateEnd);
           Scheduler.Default.Schedule(1.FromSeconds(), () => {
             try {
               CorridorStartDate = m.DateStart;
-              CorridorStopDate = RatesArray.SkipWhile(r => r.StartDate < CorridorStartDate).Skip(m.Interval - 1).First().StartDate;
+              CorridorStopDate = DateTime.MinValue;// RatesArray.SkipWhile(r => r.StartDate < CorridorStartDate).Skip(m.DateEnd - 1).First().StartDate;
             } catch (Exception exc) {
               Log = exc;
             }
           });
+          Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
 
@@ -1475,9 +1515,7 @@ namespace HedgeHog.Alice.Store {
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17*60+24*60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0) ;
         var internalRateCount = 1440 * 8;
-        var rates = args.DateStart.HasValue
-          ? GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt)
-          : GlobalStorage.GetRateFromDBBackward(Pair, RatesArraySafe.Last().StartDate, barsCountTotal, BarPeriodInt);
+        var rates = GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt);
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
@@ -1550,7 +1588,7 @@ namespace HedgeHog.Alice.Store {
               if (RateLast != null && tms().Length > 1) {
                 var a = tms().Select(tm => tm.RatesInternal.LastByCountOrDefault(new Rate()).StartDate).ToArray();
                 var dateMin = a.Min();
-                if ((dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt * 30) {
+                if ((dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt * 60) {
                   Log = new Exception("MaxTime-MinTime>30mins");
                 }
                 if (RateLast.StartDate > dateMin)
@@ -2045,7 +2083,7 @@ namespace HedgeHog.Alice.Store {
           throw new TimeoutException();
         }
         try {
-          if (RatesInternal.Count < Math.Max(1, BarsCount)) {
+          if (!SnapshotArguments.IsTarget && RatesInternal.Count < Math.Max(1, BarsCount)) {
             //Log = new RatesAreNotReadyException();
             return new List<Rate>();
           }
@@ -2367,7 +2405,7 @@ namespace HedgeHog.Alice.Store {
       _Playback.StartDate = startDate;
       _Playback.Delay = delay;
     }
-    public bool IsInPlayback { get { return _Playback.Play || SnapshotArguments.DateStart != null || SnapshotArguments.IsTarget; } }
+    public bool IsInPlayback { get { return _Playback.Play || (SnapshotArguments.DateStart ?? SnapshotArguments.DateEnd) != null || SnapshotArguments.IsTarget; } }
 
     enum workers { LoadRates, ScanCorridor, RunPrice };
     Schedulers.BackgroundWorkerDispenser<workers> bgWorkers = new Schedulers.BackgroundWorkerDispenser<workers>();
@@ -2711,7 +2749,8 @@ namespace HedgeHog.Alice.Store {
         CheckPendingAction("CT", pa => {
           pa();
           if (LogTrades)
-            Log = new Exception(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5} by [{6}]", Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
+            Log = new Exception(string.Format("{0}[{1}]: Closing {2} from {3} in {4} from {5}]"
+              , Pair, BarPeriod, lot, Trades.Lots(), new StackFrame(3).GetMethod().Name, reason));
           if (!TradesManager.ClosePair(Pair, Trades[0].IsBuy, lot))
             ReleasePendingAction("CT");
         });
@@ -2814,7 +2853,10 @@ namespace HedgeHog.Alice.Store {
       return ma;
     }
     public Func<Rate, double> GetPriceMA() {
-      switch (MovingAverageType) {
+      return GetPriceMA(MovingAverageType);
+    }
+    private static Func<Rate, double> GetPriceMA(MovingAverageType movingAverageType) {
+      switch (movingAverageType) {
         case Store.MovingAverageType.RegressByMA:
         case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
@@ -2822,7 +2864,7 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.Trima:
           return r => r.PriceTrima;
         default:
-          throw new NotSupportedException(new { MovingAverageType }.ToString());
+          throw new NotSupportedException(new { movingAverageType }.ToString());
       }
     }
     double _sqrt2 = 1.5;// Math.Sqrt(1.5);
@@ -2863,11 +2905,6 @@ namespace HedgeHog.Alice.Store {
         var periodsStart = CorridorStartDate == null
           ? (BarsCount * CorridorLengthMinimum).Max(5).ToInt() : ratesForCorridor.Count(r => r.StartDate >= CorridorStartDate.Value);
         if (periodsStart == 1) return;
-        var periodsLength = CorridorStartDate.HasValue ? 1 : CorridorStats.Rates.Any() ? ratesForCorridor.Count(r => r.StartDate >= CorridorStats.StartDate) - periodsStart + 1 : int.MaxValue;// periodsStart;
-        Action<DateTime> setPeriods = startDate => {
-          periodsStart = ratesForCorridor.Count(r => r.StartDate >= (startDate).Max(CorridorStats.StartDate));
-          periodsLength = 1;
-        };
         CorridorStatistics crossedCorridor = null;
         Func<Rate, double> priceHigh = CorridorGetHighPrice();
         Func<Rate, double> priceLow = CorridorGetLowPrice();
@@ -2914,20 +2951,7 @@ namespace HedgeHog.Alice.Store {
         #region Corridorness
         #endregion
 
-        var corridornesses = crossedCorridor != null
-          ? new[] { crossedCorridor }.ToList()
-          : ratesForCorridor.GetCorridornesses(priceHigh, priceLow, periodsStart, periodsLength, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod, cs => {
-            return false;
-          }).Select(c => c.Value).ToList();
-        if (false) {
-          if (true) {
-            var coeffs = Regression.Regress(ratesForCorridor.ReverseIfNot().Select(r => r.PriceAvg).ToArray(), 1);
-            var median = ratesForCorridor.Average(r => r.PriceAvg);
-            var stDev = ratesForCorridor.Select(r => (CorridorGetHighPrice()(r) - median).Abs()).ToList().StDev();
-            CorridorBig = new CorridorStatistics(this, ratesForCorridor, stDev, coeffs);
-          } else
-            CorridorBig = ratesForCorridor.ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod);// corridornesses.LastOrDefault() ?? CorridorBig;
-        }
+        var corridornesses = new[] { crossedCorridor }.ToList();
         #endregion
         #region Update Corridor
         if (corridornesses.Any()) {
@@ -3019,11 +3043,13 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Crosses: return ScanCorridorByCrosses;
         case ScanCorridorFunction.CrossesWithAngle: return ScanCorridorByCrossesWithAngle;
         case ScanCorridorFunction.CrossesStarter: return ScanCorridorByCrossesStarter;
-        case ScanCorridorFunction.StDev: return ScanCorridorByStDev;
-        case ScanCorridorFunction.StDevSimple: return ScanCorridorSimple;
+        case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
+        case ScanCorridorFunction.Simple: return ScanCorridorSimple;
+        case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
+        case ScanCorridorFunction.Void: return ScanCorridorVoid;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3283,6 +3309,12 @@ namespace HedgeHog.Alice.Store {
             if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
               Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
             LastRatePullTime = ServerTime;
+            Action a = () => {
+              try {
+                Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if (DoLogSaveRates) Log = new Exception(obj + ""); });
+              } catch (Exception exc) { Log = exc; }
+            };
+            Scheduler.Default.Schedule(a);
           }
           {
             RatesArraySafe.SavePairCsv(Pair);
