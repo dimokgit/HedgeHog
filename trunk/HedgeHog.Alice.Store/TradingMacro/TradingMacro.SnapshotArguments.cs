@@ -75,7 +75,7 @@ namespace HedgeHog.Alice.Store {
         ShowSnapshotEvent -= value;
       }
     }
-    protected void RaiseShowSnapshot() {
+    public void RaiseShowSnapshot() {
       if (ShowSnapshotEvent != null) ShowSnapshotEvent(this, new EventArgs());
     }
     #endregion

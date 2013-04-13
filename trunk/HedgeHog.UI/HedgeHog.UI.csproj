@@ -52,6 +52,8 @@
     </Compile>
     <Compile Include="AccountLoginModel.cs" />
     <Compile Include="CheckBox2.cs" />
+    <Compile Include="SelectAllTextBehavior.cs" />
+    <Compile Include="SelectAllTextProperty.cs" />
     <Compile Include="TextBox.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TextBox2.cs" />

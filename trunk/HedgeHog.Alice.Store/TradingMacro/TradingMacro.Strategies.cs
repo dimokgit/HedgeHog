@@ -384,9 +384,7 @@ namespace HedgeHog.Alice.Store {
           Trades.Lots() >= LotSize * ProfitToLossExitRatio && currentLoss() < currentGross() * ProfitToLossExitRatio;// && LotSizeByLossBuy <= LotSize;
         #endregion
         #region exitVoid
-        Action exitVoid = () => {
-          if (exitOnFriday()) return;
-        };
+        Action exitVoid = () => { };
         #endregion
         #region exitByWavelette
         Action exitByWavelette = () => {
@@ -691,8 +689,8 @@ namespace HedgeHog.Alice.Store {
                 var tpRatioBySpread = 1;// +Math.Log(phH.Ratio(SpreadForCorridor), 1.5);
                 var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || isProfitOk() || (Trades.HaveBuy() && CurrentPrice.Bid >= buyCloseLevel.Rate) || (Trades.HaveSell() && CurrentPrice.Ask <= sellCloseLevel.Rate);
                 var tpColse = InPoints((close0 ? 0 : (TakeProfitPips / tpRatioBySpread) + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0)));
-                var priceAvgMax = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Max(rate => CorridorPrice(rate)) - PointSize / 100;
-                var priceAvgMin = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Min(rate => CorridorPrice(rate)) + PointSize / 100;
+                var priceAvgMax = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Max(rate => GetTradeExitBy(true)(rate)) - PointSize / 100;
+                var priceAvgMin = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Min(rate => GetTradeExitBy(false)(rate)) + PointSize / 100;
                 if (buyCloseLevel.InManual) {
                   if (buyCloseLevel.Rate <= priceAvgMax)
                     buyCloseLevel.Rate = priceAvgMax;
@@ -1408,12 +1406,20 @@ namespace HedgeHog.Alice.Store {
                 };
               }{
                 var rates = setTrendLines(2);
-                _buyLevel.RateEx = rates[0].PriceAvg2;
-                _sellLevel.RateEx = rates[0].PriceAvg3;
-                var canTrade = IsAutoStrategy && !_buySellLevels.Any(sr=>sr.InManual);
+                var isBreakOut = _buyLevel.Rate >= _sellLevel.Rate;
+                var canTrade = IsAutoStrategy && !_buySellLevels.Any(sr => sr.InManual);
                 if (canTrade) {
                   var angle = CorridorStats.Slope.Angle(BarPeriodInt, PointSize).Abs();
-                  triggerAngle.Set(angle <= TradingAngleRange, () => _buySellLevelsForEach(sr => sr.CanTrade = true));
+                  var isAngleOk = angle <= TradingAngleRange;
+                  //triggerAngle.Set(angle <= TradingAngleRange, () => _buySellLevelsForEach(sr => sr.CanTrade = true));
+                  _buySellLevelsForEach(sr => sr.CanTrade = isAngleOk);
+                  if (isAngleOk) {
+                    _buyLevel.RateEx = isBreakOut ? rates[0].PriceAvg2 : rates[0].PriceAvg3;
+                    _sellLevel.RateEx = isBreakOut ? rates[0].PriceAvg3 : rates[0].PriceAvg2;
+                  } else {
+                    _buyLevel.RateEx = _RatesMax + RatesHeight;
+                    _sellLevel.RateEx = _RatesMin - RatesHeight;
+                  }
                 }
               }
               if (StreatchTakeProfit) adjustExitLevels0(); else adjustExitLevels1();

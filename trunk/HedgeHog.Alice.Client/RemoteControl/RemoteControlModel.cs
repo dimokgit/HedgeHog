@@ -902,7 +902,8 @@ namespace HedgeHog.Alice.Client {
         if (tm.IsCharterMinimized) return;
         if (tm == null) return;
         if (rates.Count() == 0) return;
-        rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
+        if(!tm.IsInPlayback)
+          rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
         Enumerable.Range(0, charter.LineTimeTakeProfits.Length.Min(tm.WaveRates.Count())).ToList()
           .ForEach(i => charter.LineTimeTakeProfits[i](tm.WaveRates[i].Rate.StartDateContinuous));
         var price = tm.CurrentPrice;
@@ -924,9 +925,8 @@ namespace HedgeHog.Alice.Client {
           charter.CorridorHeightMultiplier = csFirst.HeightUpDown0 / csFirst.HeightUpDown;// tm.CorridorHeightMultiplier;
           charter.SetPriceLineColor(tm.Trades.HaveBuy() ? true : tm.Trades.HaveSell() ? false : (bool?)null);
 
-          charter.GetPriceFunc = r => r.PriceAvg;// > r.PriceAvg1 ? tm.CorridorStats.priceHigh(r) : tm.CorridorStats.priceLow(r);
-          charter.GetPriceHigh = tm.ChartPriceHigh ?? (r => r.PriceAvg);// tm.CorridorGetHighPrice();// tm.CorridorStats.priceHigh;
-          charter.GetPriceLow = tm.ChartPriceLow ?? (r => r.PriceAvg);// tm.CorridorGetLowPrice();// tm.CorridorStats.priceLow;
+          charter.GetPriceHigh = tm.ChartHighPrice();
+          charter.GetPriceLow = tm.ChartLowPrice();
           charter.GetPriceMA = tm.GetPriceMA();
           
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
@@ -948,7 +948,7 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.CorridorBalance()
+            /*9*/, tm.CrossesDensity
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
@@ -956,14 +956,15 @@ namespace HedgeHog.Alice.Client {
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          Task.WaitAll(
-            Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.DistanceHistory)).ToArray().FillGaps(r => double.IsNaN(r.DistanceHistory), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
-            Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
-          );
-
-          PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.DistanceHistory.IfNaN(0) }).ToArray();
-          PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = r.Distance1.IfNaN(0) }).ToArray();
-          var distancesAverage = 0;// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
+          var volts = tm.GetVoltage;
+          var volts2 = tm.GetVoltage2;
+          //Task.WaitAll(
+          //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
+          //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
+          //);
+          PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts(r).IfNaN(0) }).ToArray();
+          PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts2(r).IfNaN(0) }).ToArray();
+          var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
           charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,
             tm.WaveStDevRatio, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);

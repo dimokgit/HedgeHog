@@ -471,6 +471,13 @@ namespace HedgeHog {
       }
       return dtRounded;
     }
+    public static DateTimeOffset Round(this DateTimeOffset dt) { return new DateTimeOffset(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute,0, dt.Offset); }
+    public static DateTimeOffset Round_(this DateTimeOffset dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
+    public static DateTimeOffset Round(this DateTimeOffset dt, int period) {
+      dt = dt.Round();
+      return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
+    }
+
     public static DateTime Round(this DateTime dt) { return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0); }
     public static DateTime Round_(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
     public static DateTime Round(this DateTime dt, int period) {
@@ -489,6 +496,9 @@ namespace HedgeHog {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this DateTime value, DateTimeOffset d1, DateTimeOffset d2) {
+      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
+    }
+    public static bool Between(this DateTimeOffset value, DateTimeOffset d1, DateTimeOffset d2) {
       return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
     }
     public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {

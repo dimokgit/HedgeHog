@@ -587,6 +587,13 @@ namespace HedgeHog.Bars {
       });
     }
 
+    public static void FillRunningHeight(this IList<Rate> rates) {
+      rates.FillRunningValue((r, d) => r.Distance = d, r => r.Distance, (p, n) => {
+        n.RunningLow = p.RunningLow.Min(n.PriceAvg);
+        n.RunningHigh = p.RunningHigh.Max(n.PriceAvg);
+        return 0;// (p.PriceHigh - p.PriceLow) * (p.PriceCMALast - n.PriceCMALast).Abs() * pipSize;
+      });
+    }
     public static void FillDistanceByHeight<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       bars.First().Distance = 0;
       bars.Aggregate((p, n) => {
@@ -1139,6 +1146,9 @@ namespace HedgeHog.Bars {
       return bars.TradesPerMinute(barTo.StartDate - intervalFrom, barTo.StartDate);
     }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, DateTime DaterFrom, DateTime DateTo) where TBar : BarBase {
+      return bars.Where(b => b.StartDate.Between(DaterFrom, DateTo)).TradesPerMinute();
+    }
+    public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars, DateTimeOffset DaterFrom, DateTimeOffset DateTo) where TBar : BarBase {
       return bars.Where(b => b.StartDate.Between(DaterFrom, DateTo)).TradesPerMinute();
     }
     public static double TradesPerMinute<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {

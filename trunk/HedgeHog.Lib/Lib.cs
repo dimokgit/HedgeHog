@@ -18,6 +18,7 @@ using System.ComponentModel;
 using System.Reactive.Linq;
 using System.Xml.Linq;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -45,6 +46,19 @@ namespace HedgeHog {
     }
   }
   public static class Lib {
+    /// <summary>
+    /// Used to get a 'typed' reference to anonymous class
+    /// </summary>
+    /// <typeparam name="T">Will be inferred by compiler</typeparam>
+    /// <param name="obj">Anonymous object</param>
+    /// <param name="type">Dummy lambda returning object of T type</param>
+    /// <returns></returns>
+    public static T Cast<T>(object obj, Func<T> type) {
+      return (T)obj;
+    }
+    public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T,K, V>(this IEnumerable<T> list, Func<T,K> keyFactory,Func<T,V>valueFactory) {
+      return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
+    }
     #region Box
     public class Box<T> {
       public T Value { get; set; }

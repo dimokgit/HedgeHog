@@ -228,7 +228,6 @@ namespace HedgeHog {
     public double CorridorHeightMultiplier { get; set; }
     public Func<PriceBar, double> PriceBarValue;
 
-    public Func<Rate, double> GetPriceFunc { get; set; }
     public Func<Rate, double> GetPriceHigh { get; set; }
     public Func<Rate, double> GetPriceLow { get; set; }
 
@@ -1496,11 +1495,6 @@ namespace HedgeHog {
               });
               SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
             }
-            for (var i = 100000; i < ticks.Count(); i++) {
-              animatedPriceY[i] = i < ticks.Count() - 1 ? GetPriceFunc(ticks[i]) : ticks[i].PriceClose;
-              animatedTimeX[i] = ticks[i].StartDateContinuous;
-              animatedTime0X[i] = ticks[i].StartDate;
-            }
             if (voltsByTick != null) {
               ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);
               for (var i = 0; i < voltsByTick.Count(); i++) {
@@ -1626,9 +1620,13 @@ namespace HedgeHog {
     }
 
     public void SetLastPoint(Rate rateLast) {
-      SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
-      animatedDataSource.RaiseDataChanged();
-      animatedDataSourceBid.RaiseDataChanged();
+      try {
+        SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
+        animatedDataSource.RaiseDataChanged();
+        animatedDataSourceBid.RaiseDataChanged();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
+      }
     }
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
       animatedPriceY[i] = high.IfNaN(ma);

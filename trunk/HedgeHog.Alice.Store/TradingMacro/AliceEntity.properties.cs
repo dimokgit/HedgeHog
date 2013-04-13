@@ -372,8 +372,6 @@ namespace HedgeHog.Alice.Store {
 
     #region MonthsOfHistory
     private int _MonthsOfHistory;
-    [DisplayName("MonthsOfHistory")]
-    [Category(categoryXXX)]
     public int MonthsOfHistory {
       get { return _MonthsOfHistory; }
       set {
@@ -399,7 +397,20 @@ namespace HedgeHog.Alice.Store {
     }
 
 
+    #region DoLogSaveRates
+    private bool _DoLogSaveRates;
+    [Category(categoryXXX)]
+    public bool DoLogSaveRates {
+      get { return _DoLogSaveRates; }
+      set {
+        if (_DoLogSaveRates != value) {
+          _DoLogSaveRates = value;
+          OnPropertyChanged("DoLogSaveRates");
+        }
+      }
+    }
 
+    #endregion
     //RatesHeightMinimum
     public string _TestRatesHeightMinimum = "";
     [DisplayName("RatesHeightMinimum")]
@@ -639,6 +650,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
     [DisplayName("High/Low Method")]
     [Category(categoryActiveFuncs)]
     public CorridorHighLowMethod CorridorHighLowMethod {
@@ -966,17 +978,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     [Category(categoryXXX)]
-    [DisplayName("Range Ratio For TradeLimit")]
-    [Description("Not in use.")]
-    public double RangeRatioForTradeLimit_ {
-      get { return RangeRatioForTradeLimit; }
-      set { 
-        RangeRatioForTradeLimit = value;
-        OnPropertyChanged(TradingMacroMetadata.RangeRatioForTradeLimit_);
-      }
-    }
-
-    [Category(categoryXXX)]
     [DisplayName("Range Ratio For TradeStop")]
     [Description("Ex:Exit when PL < -Range * X")]
     public double RangeRatioForTradeStop_ {
@@ -1025,16 +1026,27 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("LongMAPeriod")]
-    [Category(categoryXXX_NU)]
-    public int LongMAPeriod_ {
-      get { return LongMAPeriod; }
+    [DisplayName("Chart High Method")]
+    [Category(categoryCorridor)]
+    public ChartHighLowMethod ChartHighMethod {
+      get { return (ChartHighLowMethod)LongMAPeriod; }
       set {
-        if (LongMAPeriod == value) return;
-        LongMAPeriod = value;
-        OnPropertyChanged(() => LongMAPeriod_);
+        if (LongMAPeriod == (int)value) return;
+        LongMAPeriod = (int)value;
+        OnPropertyChanged(() => ChartHighMethod);
       }
     }
+
+    [Category(categoryCorridor)]
+    [DisplayName("Chart Low Method")]
+    public ChartHighLowMethod ChartLowMethod {
+      get { return (ChartHighLowMethod)RangeRatioForTradeLimit; }
+      set {
+        RangeRatioForTradeLimit = (double)value;
+        OnPropertyChanged(() => ChartLowMethod);
+      }
+    }
+
 
     [DisplayName("Trading Angle Range")]
     [Category(categoryActive)]
@@ -1578,7 +1590,8 @@ namespace HedgeHog.Alice.Store {
       set {
         _currentPrice = value;
         if (RateLast != null && !double.IsNaN(RateLast.PriceAvg1)) {
-          RateLast.AddTick(_currentPrice);
+          if(!IsInVitualTrading)
+            RateLast.AddTick(_currentPrice);
           RateLast.SetPriceChart();
         }
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);

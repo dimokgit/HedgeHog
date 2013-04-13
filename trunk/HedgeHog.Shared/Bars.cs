@@ -12,6 +12,18 @@ namespace HedgeHog.Bars {
   public enum OverlapType { None = 0, Up = 1, Down = -1 };
   [DataContract]
   public abstract class BarBaseDate{
+    #region StartDate2
+    private DateTimeOffset _StartDate2;
+    public DateTimeOffset StartDate2 {
+      get { return _StartDate2; }
+      set {
+        if (_StartDate2 != value) {
+          _StartDate2 = value;
+        }
+      }
+    }
+
+    #endregion
     DateTime _StartDate;
     [DataMember]
     public DateTime StartDate {
@@ -589,6 +601,18 @@ namespace HedgeHog.Bars {
     }
 
     public double Distance1 { get; set; }
+
+    double _CrossesDensity = double.NaN;
+    public double CrossesDensity {
+      get { return _CrossesDensity; }
+      set { _CrossesDensity = value; }
+    }
+    double _CrossesDensityAverage = double.NaN;
+
+    public double CrossesDensityAverage {
+      get { return _CrossesDensityAverage; }
+      set { _CrossesDensityAverage = value; }
+    }
   }
   public class Tick : Rate {
     public int Row { get; set; }
