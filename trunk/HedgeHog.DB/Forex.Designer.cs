@@ -224,6 +224,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<v_TradeSession> _v_TradeSession;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<MonthlyStat__Stats> MonthlyStat__Stats
+        {
+            get
+            {
+                if ((_MonthlyStat__Stats == null))
+                {
+                    _MonthlyStat__Stats = base.CreateObjectSet<MonthlyStat__Stats>("MonthlyStat__Stats");
+                }
+                return _MonthlyStat__Stats;
+            }
+        }
+        private ObjectSet<MonthlyStat__Stats> _MonthlyStat__Stats;
 
         #endregion
         #region AddTo Methods
@@ -306,6 +322,14 @@ namespace HedgeHog.DB
         public void AddTov_TradeSession(v_TradeSession v_TradeSession)
         {
             base.AddObject("v_TradeSession", v_TradeSession);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the MonthlyStat__Stats EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToMonthlyStat__Stats(MonthlyStat__Stats monthlyStat__Stats)
+        {
+            base.AddObject("MonthlyStat__Stats", monthlyStat__Stats);
         }
 
         #endregion
@@ -548,6 +572,223 @@ namespace HedgeHog.DB
     #endregion
     
     #region Entities
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="MonthlyStat__Stats")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class MonthlyStat__Stats : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new MonthlyStat__Stats object.
+        /// </summary>
+        /// <param name="month">Initial value of the Month property.</param>
+        /// <param name="pair">Initial value of the Pair property.</param>
+        /// <param name="period">Initial value of the Period property.</param>
+        /// <param name="stDevAvg">Initial value of the StDevAvg property.</param>
+        /// <param name="stDevStDev">Initial value of the StDevStDev property.</param>
+        /// <param name="count">Initial value of the Count property.</param>
+        /// <param name="date">Initial value of the Date property.</param>
+        public static MonthlyStat__Stats CreateMonthlyStat__Stats(global::System.Int32 month, global::System.String pair, global::System.Int32 period, global::System.Double stDevAvg, global::System.Double stDevStDev, global::System.Int32 count, global::System.DateTime date)
+        {
+            MonthlyStat__Stats monthlyStat__Stats = new MonthlyStat__Stats();
+            monthlyStat__Stats.Month = month;
+            monthlyStat__Stats.Pair = pair;
+            monthlyStat__Stats.Period = period;
+            monthlyStat__Stats.StDevAvg = stDevAvg;
+            monthlyStat__Stats.StDevStDev = stDevStDev;
+            monthlyStat__Stats.Count = count;
+            monthlyStat__Stats.Date = date;
+            return monthlyStat__Stats;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Month
+        {
+            get
+            {
+                return _Month;
+            }
+            set
+            {
+                OnMonthChanging(value);
+                ReportPropertyChanging("Month");
+                _Month = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Month");
+                OnMonthChanged();
+            }
+        }
+        private global::System.Int32 _Month;
+        partial void OnMonthChanging(global::System.Int32 value);
+        partial void OnMonthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Pair
+        {
+            get
+            {
+                return _Pair;
+            }
+            set
+            {
+                if (_Pair != value)
+                {
+                    OnPairChanging(value);
+                    ReportPropertyChanging("Pair");
+                    _Pair = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Pair");
+                    OnPairChanged();
+                }
+            }
+        }
+        private global::System.String _Pair;
+        partial void OnPairChanging(global::System.String value);
+        partial void OnPairChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Period
+        {
+            get
+            {
+                return _Period;
+            }
+            set
+            {
+                if (_Period != value)
+                {
+                    OnPeriodChanging(value);
+                    ReportPropertyChanging("Period");
+                    _Period = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Period");
+                    OnPeriodChanged();
+                }
+            }
+        }
+        private global::System.Int32 _Period;
+        partial void OnPeriodChanging(global::System.Int32 value);
+        partial void OnPeriodChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double StDevAvg
+        {
+            get
+            {
+                return _StDevAvg;
+            }
+            set
+            {
+                OnStDevAvgChanging(value);
+                ReportPropertyChanging("StDevAvg");
+                _StDevAvg = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StDevAvg");
+                OnStDevAvgChanged();
+            }
+        }
+        private global::System.Double _StDevAvg;
+        partial void OnStDevAvgChanging(global::System.Double value);
+        partial void OnStDevAvgChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double StDevStDev
+        {
+            get
+            {
+                return _StDevStDev;
+            }
+            set
+            {
+                OnStDevStDevChanging(value);
+                ReportPropertyChanging("StDevStDev");
+                _StDevStDev = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("StDevStDev");
+                OnStDevStDevChanged();
+            }
+        }
+        private global::System.Double _StDevStDev;
+        partial void OnStDevStDevChanging(global::System.Double value);
+        partial void OnStDevStDevChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Count
+        {
+            get
+            {
+                return _Count;
+            }
+            set
+            {
+                OnCountChanging(value);
+                ReportPropertyChanging("Count");
+                _Count = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Count");
+                OnCountChanged();
+            }
+        }
+        private global::System.Int32 _Count;
+        partial void OnCountChanging(global::System.Int32 value);
+        partial void OnCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime Date
+        {
+            get
+            {
+                return _Date;
+            }
+            set
+            {
+                if (_Date != value)
+                {
+                    OnDateChanging(value);
+                    ReportPropertyChanging("Date");
+                    _Date = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Date");
+                    OnDateChanged();
+                }
+            }
+        }
+        private global::System.DateTime _Date;
+        partial void OnDateChanging(global::System.DateTime value);
+        partial void OnDateChanged();
+
+        #endregion
+    
+    }
     
     /// <summary>
     /// No Metadata Documentation available.
@@ -3334,6 +3575,102 @@ namespace HedgeHog.DB
         private Nullable<global::System.DateTime> _DateStop;
         partial void OnDateStopChanging(Nullable<global::System.DateTime> value);
         partial void OnDateStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String WaveStDevRatio
+        {
+            get
+            {
+                return _WaveStDevRatio;
+            }
+            set
+            {
+                OnWaveStDevRatioChanging(value);
+                ReportPropertyChanging("WaveStDevRatio");
+                _WaveStDevRatio = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("WaveStDevRatio");
+                OnWaveStDevRatioChanged();
+            }
+        }
+        private global::System.String _WaveStDevRatio;
+        partial void OnWaveStDevRatioChanging(global::System.String value);
+        partial void OnWaveStDevRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String DistanceIterations
+        {
+            get
+            {
+                return _DistanceIterations;
+            }
+            set
+            {
+                OnDistanceIterationsChanging(value);
+                ReportPropertyChanging("DistanceIterations");
+                _DistanceIterations = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("DistanceIterations");
+                OnDistanceIterationsChanged();
+            }
+        }
+        private global::System.String _DistanceIterations;
+        partial void OnDistanceIterationsChanging(global::System.String value);
+        partial void OnDistanceIterationsChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String CorrelationMinimum
+        {
+            get
+            {
+                return _CorrelationMinimum;
+            }
+            set
+            {
+                OnCorrelationMinimumChanging(value);
+                ReportPropertyChanging("CorrelationMinimum");
+                _CorrelationMinimum = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("CorrelationMinimum");
+                OnCorrelationMinimumChanged();
+            }
+        }
+        private global::System.String _CorrelationMinimum;
+        partial void OnCorrelationMinimumChanging(global::System.String value);
+        partial void OnCorrelationMinimumChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String ScanCorridorBy
+        {
+            get
+            {
+                return _ScanCorridorBy;
+            }
+            set
+            {
+                OnScanCorridorByChanging(value);
+                ReportPropertyChanging("ScanCorridorBy");
+                _ScanCorridorBy = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("ScanCorridorBy");
+                OnScanCorridorByChanged();
+            }
+        }
+        private global::System.String _ScanCorridorBy;
+        partial void OnScanCorridorByChanging(global::System.String value);
+        partial void OnScanCorridorByChanged();
 
         #endregion
     
