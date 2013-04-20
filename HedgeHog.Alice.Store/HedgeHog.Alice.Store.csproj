@@ -169,6 +169,7 @@
     </None>
     <Compile Include="TradingMacro\TradingMacro.BreakoutInfo.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.cs" />
+    <None Include="TradingMacro\TradingMacro.AdjustLevelsByHour.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">

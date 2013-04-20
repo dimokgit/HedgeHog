@@ -129,7 +129,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     #region GetBestSession
-    Func<DB.v_TradeSession, double> _bestSessionCriteria = s => s.LotSD.Value;
+    Func<DB.v_TradeSession, decimal> _bestSessionCriteria = s => -s.PL.Value;
     private DB.v_TradeSession GetBestSession(Guid superSessionUid) {
       return GetBestSessions(superSessionUid).First();
     }

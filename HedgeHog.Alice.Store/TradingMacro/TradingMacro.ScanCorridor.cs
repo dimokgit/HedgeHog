@@ -24,12 +24,19 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorByTime(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      WaveShort.Rates = null;
+      WaveShort.Rates = ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray();
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
     private CorridorStatistics ScanCorridorByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var CorridorHeightMax = InPoints(50);
+      var corridorHeightMax = InPoints(CorridorHeightMax.Abs());
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       ratesReversed.FillRunningHeight();
       WaveShort.Rates = null;
-      WaveShort.Rates = ratesReversed.TakeWhile(r => r.RunningHeight < CorridorHeightMax).ToArray();
+      WaveShort.Rates = ratesReversed.TakeWhile(r => r.RunningHeight < corridorHeightMax).ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 

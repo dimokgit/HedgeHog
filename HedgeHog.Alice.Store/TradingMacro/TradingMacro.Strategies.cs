@@ -359,6 +359,12 @@ namespace HedgeHog.Alice.Store {
         #endregion
         Action onEOW = () => { };
         #region Exit Funcs
+        #region exitByLimit
+        Action exitByLimit = () => {
+          if (TradesManager.MoneyAndLotToPips(OpenTradesGross, Trades.Lots(), Pair) >= TakeProfitPips * ProfitToLossExitRatio)
+            CloseAtZero = true;
+        };
+        #endregion
         #region exitOnFriday
         Func<bool> exitOnFriday = () => {
           if (!SuppRes.Any(sr => sr.InManual)) {
@@ -505,6 +511,7 @@ namespace HedgeHog.Alice.Store {
             case Store.ExitFunctions.Exit: return exitWave;
             case Store.ExitFunctions.Exit1: return exitWave1;
             case Store.ExitFunctions.Exit2: return exitWave2;
+            case Store.ExitFunctions.Limit: return exitByLimit;
           }
           throw new NotSupportedException(ExitFunction + " exit function is not supported.");
         };
@@ -582,7 +589,8 @@ namespace HedgeHog.Alice.Store {
         };
         #endregion
         Func<SuppRes, bool> canTradeLocal = sr => true;
-        Func<SuppRes, bool> suppResCanTrade = (sr) => IsTradingHour() && canTradeLocal(sr) && sr.CanTrade && sr.TradesCount <= 0 && !HasTradesByDistance(sr.IsBuy);
+        Func<bool> isTradingHourLocal = IsTradingHour;
+        Func<SuppRes, bool> suppResCanTrade = (sr) => isTradingHourLocal() && canTradeLocal(sr) && sr.CanTrade && sr.TradesCount <= 0 && !HasTradesByDistance(sr.IsBuy);
         #endregion
 
         #region SuppRes Event Handlers
@@ -1420,6 +1428,31 @@ namespace HedgeHog.Alice.Store {
                     _buyLevel.RateEx = _RatesMax + RatesHeight;
                     _sellLevel.RateEx = _RatesMin - RatesHeight;
                   }
+                }
+              }
+              if (StreatchTakeProfit) adjustExitLevels0(); else adjustExitLevels1();
+              break;
+            #endregion
+            #region TradeHour
+            case TrailingWaveMethod.TradeHour:
+              if (firstTime) {
+                isTradingHourLocal = () => true;
+                onCloseTradeLocal = trade => {
+                    triggerAngle.Off();
+                };
+              }{
+                var rates = setTrendLines(2);
+                var isBreakOut = _buyLevel.Rate >= _sellLevel.Rate;
+                var canTrade = IsAutoStrategy && !_buySellLevels.Any(sr => sr.InManual);
+                if (canTrade) {
+                  var angle = CorridorStats.Slope.Angle(BarPeriodInt, PointSize).Abs();
+                  var isAngleOk = angle <= TradingAngleRange;
+                  triggerAngle.Set(isAngleOk && IsTradingHour(), () => {
+                    _buySellLevelsForEach(sr => sr.CanTrade = true);
+                    _buyLevel.RateEx = isBreakOut ? rates[0].PriceAvg2 : rates[0].PriceAvg3;
+                    _sellLevel.RateEx = isBreakOut ? rates[0].PriceAvg3 : rates[0].PriceAvg2;
+                  });
+                  if (!isAngleOk) triggerAngle.Off();
                 }
               }
               if (StreatchTakeProfit) adjustExitLevels0(); else adjustExitLevels1();

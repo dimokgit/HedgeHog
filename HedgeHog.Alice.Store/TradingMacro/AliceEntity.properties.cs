@@ -764,7 +764,7 @@ namespace HedgeHog.Alice.Store {
 
     private bool IsTradingHour(DateTime time) {
       var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
-      return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0], hours[1]);
+      return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
     }
     [DisplayName("Trading Hours")]
     [Category(categoryActive)]
@@ -955,13 +955,13 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("RatesToStDev Max")]
-    [Category(categoryXXX_NU)]
-    public double RatesToStDevRatioMaximum {
+    [DisplayName("CorridorHeight Max")]
+    [Category(categoryActive)]
+    public double CorridorHeightMax {
       get { return FibMin; }
       set {
         FibMin = value;
-        OnPropertyChanged("RatesToStDevRatioMaximum");
+        OnPropertyChanged("CorridorHeightMax");
       }
     }
 

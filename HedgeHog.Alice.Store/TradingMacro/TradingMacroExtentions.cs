@@ -1444,7 +1444,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void TradesManager_TradeClosed(object sender, TradeEventArgs e) {
-      if (!IsMyTrade(e.Trade)) return;
+      if (!IsMyTrade(e.Trade) || HistoryMaximumLot == 0) return;
       DisposeOpenTradeByMASubject();
       CurrentLot = Trades.Sum(t => t.Lots);
       EnsureActiveSuppReses();
@@ -3046,6 +3046,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
+        case ScanCorridorFunction.Time: return ScanCorridorByTime;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;

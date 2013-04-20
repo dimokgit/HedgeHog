@@ -22,7 +22,8 @@ namespace HedgeHog.Alice.Store {
     StDevSimple1Cross = 42,
     StDevUDCross = 43,
     Balance = 50,
-    Height = 60
+    Height = 60,
+    Time = 61
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,
@@ -45,6 +46,7 @@ namespace HedgeHog.Alice.Store {
     Corridor = 120,
     Corridor1 = 121,
     CorridorBB = 122,
+    TradeHour = 123,
     TradeLine = 130,
     TradeLineA = 131,
     TradeLineA1 = 132,
@@ -106,6 +108,7 @@ namespace HedgeHog.Alice.Store {
     GrossTP = 4,
     Wavelette = 5,
     GrossTP1 = 6,
+    Limit = 7
   }
   public enum MedianFunctions {
     Void = -1,

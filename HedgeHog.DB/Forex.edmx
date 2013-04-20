@@ -13,6 +13,7 @@
           <EntitySet Name="t_Session" EntityType="ForexModel.Store.t_Session" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.Store.t_Stat" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.Store.t_Trade" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="MonthlyStats" EntityType="ForexModel.Store.MonthlyStats" store:Type="Tables" Schema="stats" />
           <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.Store.v_BlackoutTime" store:Type="Views" store:Schema="dbo" store:Name="v_BlackoutTime">
             <DefiningQuery>SELECT 
       [v_BlackoutTime].[Time] AS [Time], 
@@ -57,7 +58,11 @@
       [v_TradeSession].[MinimumGross] AS [MinimumGross], 
       [v_TradeSession].[DateStart] AS [DateStart], 
       [v_TradeSession].[DateStop] AS [DateStop], 
-      [v_TradeSession].[LossToProfit] AS [LossToProfit]
+      [v_TradeSession].[LossToProfit] AS [LossToProfit], 
+      [v_TradeSession].[WaveStDevRatio] AS [WaveStDevRatio], 
+      [v_TradeSession].[DistanceIterations] AS [DistanceIterations], 
+      [v_TradeSession].[CorrelationMinimum] AS [CorrelationMinimum], 
+      [v_TradeSession].[ScanCorridorBy] AS [ScanCorridorBy]
       FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           </EntitySet>
         </EntityContainer>
@@ -162,6 +167,20 @@
           <Property Name="RunningBalance" Type="float" />
           <Property Name="RunningBalanceTotal" Type="float" />
         </EntityType>
+        <EntityType Name="MonthlyStats">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="Date" />
+          </Key>
+          <Property Name="Month" Type="int" Nullable="false" />
+          <Property Name="Pair" Type="varchar" Nullable="false" MaxLength="10" />
+          <Property Name="Period" Type="int" Nullable="false" />
+          <Property Name="StDevAvg" Type="float" Nullable="false" />
+          <Property Name="StDevStDev" Type="float" Nullable="false" />
+          <Property Name="Count" Type="int" Nullable="false" />
+          <Property Name="Date" Type="date" Nullable="false" />
+        </EntityType>
         <!--Errors Found During Generation:
       warning 6002: The table/view 'FOREX.dbo.v_BlackoutTime' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.
       -->
@@ -225,6 +244,10 @@
           <Property Name="DateStart" Type="date" />
           <Property Name="DateStop" Type="date" />
           <Property Name="LossToProfit" Type="float" />
+          <Property Name="WaveStDevRatio" Type="varchar" MaxLength="128" />
+          <Property Name="DistanceIterations" Type="varchar" MaxLength="128" />
+          <Property Name="CorrelationMinimum" Type="varchar" MaxLength="128" />
+          <Property Name="ScanCorridorBy" Type="varchar" MaxLength="128" />
         </EntityType>
         <Function Name="BarsByMinutes" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
           <Parameter Name="Pair" Type="varchar" Mode="In" />
@@ -299,6 +322,7 @@
           </FunctionImport>
           <EntitySet Name="t_Session" EntityType="ForexModel.t_Session" />
           <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
+          <EntitySet Name="MonthlyStat__Stats" EntityType="ForexModel.MonthlyStat__Stats" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -489,6 +513,24 @@
           <Property Type="Double" Name="LossToProfit" />
           <Property Type="Guid" Name="SuperSessionUid" />
           <Property Type="DateTime" Name="DateStop" />
+          <Property Type="String" Name="WaveStDevRatio" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="DistanceIterations" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="CorrelationMinimum" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="ScanCorridorBy" MaxLength="128" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="MonthlyStat__Stats">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="Period" />
+            <PropertyRef Name="Date" />
+          </Key>
+          <Property Type="Int32" Name="Month" Nullable="false" />
+          <Property Type="String" Name="Pair" Nullable="false" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Period" Nullable="false" />
+          <Property Type="Double" Name="StDevAvg" Nullable="false" />
+          <Property Type="Double" Name="StDevStDev" Nullable="false" />
+          <Property Type="Int32" Name="Count" Nullable="false" />
+          <Property Type="DateTime" Name="Date" Nullable="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -673,6 +715,10 @@
           <EntitySetMapping Name="v_TradeSession">
             <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
               <MappingFragment StoreEntitySet="v_TradeSession">
+                <ScalarProperty Name="ScanCorridorBy" ColumnName="ScanCorridorBy" />
+                <ScalarProperty Name="CorrelationMinimum" ColumnName="CorrelationMinimum" />
+                <ScalarProperty Name="DistanceIterations" ColumnName="DistanceIterations" />
+                <ScalarProperty Name="WaveStDevRatio" ColumnName="WaveStDevRatio" />
                 <ScalarProperty Name="DateStop" ColumnName="DateStop" />
                 <ScalarProperty Name="SuperSessionUid" ColumnName="SuperSessionUid" />
                 <ScalarProperty Name="LossToProfit" ColumnName="LossToProfit" />
@@ -698,6 +744,19 @@
                 <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
                 <ScalarProperty Name="SessionId" ColumnName="SessionId" />
                 <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="MonthlyStat__Stats">
+            <EntityTypeMapping TypeName="ForexModel.MonthlyStat__Stats">
+              <MappingFragment StoreEntitySet="MonthlyStats">
+                <ScalarProperty Name="Date" ColumnName="Date" />
+                <ScalarProperty Name="Count" ColumnName="Count" />
+                <ScalarProperty Name="StDevStDev" ColumnName="StDevStDev" />
+                <ScalarProperty Name="StDevAvg" ColumnName="StDevAvg" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="Month" ColumnName="Month" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -732,6 +791,7 @@
         <EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="7.375" PointY="0.75" Height="2.3648893229166674" />
         <EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="2.1725878906249996" />
         <EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="7.375" PointY="7.75" Height="5.4417122395833317" />
+        <EntityTypeShape EntityType="ForexModel.MonthlyStat__Stats" Width="1.5" PointX="0.75" PointY="8.75" Height="2.3648893229166674" />
       </Diagram>
     </Diagrams>
   </Designer>
