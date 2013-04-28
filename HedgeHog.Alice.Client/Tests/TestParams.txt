@@ -1,0 +1,2 @@
+BarsCount:1000	1780	1790	1800	1810
+CorridorDistanceRatio:480-1020,60
