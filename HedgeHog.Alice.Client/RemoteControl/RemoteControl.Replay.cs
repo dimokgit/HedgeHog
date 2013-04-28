@@ -47,7 +47,6 @@ namespace HedgeHog.Alice.Client {
       public static double[] DistanceIterations = new double[0];
       public static double[] CorrelationMinimum = new double[0];
 
-      public static Queue<TestParameter> GenerateTestParameters() { return GenerateTestParameters(Guid.Empty); }
       public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
         var ret = from p in PriceCmaLevels
                   from cm in CorrelationMinimum
@@ -56,7 +55,14 @@ namespace HedgeHog.Alice.Client {
                   from pl in ProfitToLossExitRatio
                   from cd in CorridorDistanceRatio
                   from pler in BarsCount
-                  select new TestParameter() { PriceCmaLevel = p, CorrelationMinimum = cm, ProfitToLossExitRatio = pl, CorridorDistanceRatio = cd, BarsCount = pler, SuperessionId = superSessionId, DistanceIterations = rhm, WaveStDevRatio = wr };
+                  select new TestParameter() { PriceCmaLevel = p
+                    , CorrelationMinimum = cm
+                    , ProfitToLossExitRatio = pl
+                    , CorridorDistanceRatio = cd
+                    , BarsCount = pler
+                    , SuperessionId = superSessionId
+                    , DistanceIterations = rhm
+                    , WaveStDevRatio = wr };
         return new Queue<TestParameter>(ret);
       }
     }
@@ -67,8 +73,8 @@ namespace HedgeHog.Alice.Client {
         return;
       }
 
-      ReplayArguments.SuperSessionId = tmOriginal.TestUseSuperSession ? Guid.NewGuid() : Guid.Empty;
-      var c = new[] { ',', ' ', '\t' };
+      ReplayArguments.UseSuperSession = tmOriginal.TestUseSuperSession;
+      ReplayArguments.SuperSessionId = tmOriginal.TestSuperSessionUid.ValueOrDefault(Guid.NewGuid());
 
       if (tmOriginal.UseTestFile) {
         var paramsDict = Lib.ReadTestParameters();
@@ -76,49 +82,44 @@ namespace HedgeHog.Alice.Client {
           tmOriginal.SetProperty(p.Key, p.Value);
         }
       }
-
-      TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-        .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
-      TestParameters.ProfitToLossExitRatio = tmOriginal.TestProfitToLossExitRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
-      TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
-      TestParameters.WaveStDevRatio = tmOriginal.TestWaveStDevRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
-      TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-        .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
-      TestParameters.CorrelationMinimum = tmOriginal.TestCorrelationMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.CorrelationMinimum).ToArray();
-      TestParameters.DistanceIterations = tmOriginal.TestDistanceIterations.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-        .DefaultIfEmpty(tmOriginal.DistanceIterations).ToArray();
-
-      if (ReplayArguments.SuperSessionId.HasValue() && tmOriginal.TestSuperSessionUid.HasValue()) {
-        var sessions = GetBestSessions(tmOriginal.TestSuperSessionUid).ToArray();
-        ReplayArguments.DateStart = ReplayArguments.DateStart.GetValueOrDefault(sessions.Min(s => s.DateStart.Value).AddDays(5));
-        SetTestCorridorDistanceRatio(sessions);
+      {
+        var c = new[] { ',', ' ', '\t' };
+        TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
+          .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
+        TestParameters.ProfitToLossExitRatio = tmOriginal.TestProfitToLossExitRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+          .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
+        TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+          .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
+        TestParameters.WaveStDevRatio = tmOriginal.TestWaveStDevRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+          .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
+        TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
+          .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
+        TestParameters.CorrelationMinimum = tmOriginal.TestCorrelationMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+          .DefaultIfEmpty(tmOriginal.CorrelationMinimum).ToArray();
+        TestParameters.DistanceIterations = tmOriginal.TestDistanceIterations.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
+          .DefaultIfEmpty(tmOriginal.DistanceIterations).ToArray();
+      }
+      if (ReplayArguments.UseSuperSession) {
+        ReplayArguments.DateStart = ReplayArguments.DateStart ?? new Lazy<DateTime>(() => {
+          try {
+            var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
+            if (sessions.Any()) SetTestCorridorDistanceRatio(sessions);
+            else throw new Exception("Either ReplayArguments.DateStart or valid Supersession Uid must be provided.");
+            return sessions.Min(s => s.DateStart.Value).AddDays(5);
+          } catch (Exception exc) {
+            Log = exc;
+            throw;
+          }
+        }).Value;
       }
       var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
       StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
     }
     void ContinueReplayWith(TradingMacro tm, Queue<TestParameter> testParams) {
       if (tm.Strategy == Strategies.None) return;
-      Func<bool> shouldContinue = () => {
-        try {
-          if (ReplayArguments.SuperSessionId.HasValue()) {
-            var bestSessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-            if (bestSessions.Count() < 2) return true;
-            var currentSession = GlobalStorage.UseForexContext(c => c.v_TradeSession.Where(s => s.SessionId == TradingMacro.SessionId).Single());
-            return currentSession.MinimumGross > bestSessions[0].MinimumGross + bestSessions[1].MinimumGross;
-          }
-          return false;
-        } catch (Exception exc) {
-          LogMessage.Send(exc);
-          return true;
-        }
-      };
-      if (testParams.Any() /*&& (testParams.Count() > 1 || shouldContinue())*/) {
+      if (testParams.Any()) {
         StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
-      } else if (ReplayArguments.HasSuperSession) {
+      } else if (ReplayArguments.UseSuperSession) {
         var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
         SetTestCorridorDistanceRatio(super);
         ReplayArguments.SuperSessionId = Guid.NewGuid();
@@ -130,12 +131,10 @@ namespace HedgeHog.Alice.Client {
 
     #region GetBestSession
     Func<DB.v_TradeSession, decimal> _bestSessionCriteria = s => -s.PL.Value;
-    private DB.v_TradeSession GetBestSession(Guid superSessionUid) {
-      return GetBestSessions(superSessionUid).First();
-    }
     private IEnumerable<DB.v_TradeSession> GetBestSessions(Guid superSessionUid) {
       return GlobalStorage.UseForexContext(c => {
         var sessions = c.v_TradeSession.Where(s => s.SuperSessionUid == superSessionUid).OrderBy(s => s.TimeStamp).ToArray();
+        if (!sessions.Any()) return sessions.AsEnumerable();
         var sessionTuples = sessions.Select(s => new { p = s, n = s }).Take(0).ToList();
         sessions.Aggregate((p, n) => { sessionTuples.Add(new { p, n }); return n; });
         return sessionTuples.OrderBy(st => _bestSessionCriteria(st.p) + _bestSessionCriteria(st.n)).Take(1)
