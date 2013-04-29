@@ -273,7 +273,7 @@ namespace HedgeHog {
         if (valie != null) {
           Type tThis = Nullable.GetUnderlyingType(type);
           if (tThis == null) tThis = type;
-          valie = Convert.ChangeType(v, tThis, null);
+          valie = tThis.IsEnum ? Enum.Parse(tThis, v + "") : Convert.ChangeType(v, tThis, null);
         }
         return valie;
       });

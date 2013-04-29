@@ -104,7 +104,7 @@ namespace HedgeHog.Alice.Store {
         var lineLow = new LineInfo(new Rate[0], 0, 0);
         var lineHigh = new LineInfo(new Rate[0], 0, 0);
         double stDev = double.NaN;
-        double height;
+        double height = double.NaN;
         #endregion
 
         var stDevDict = new Dictionary<CorridorCalculationMethod, double>();
@@ -122,7 +122,16 @@ namespace HedgeHog.Alice.Store {
             case CorridorCalculationMethod.Maximum:
               stDevDict.Add(CorridorCalculationMethod.Maximum, stDev = stDevDict.Values.Max()); break;
             case CorridorCalculationMethod.Height:
-              stDevDict.Add(CorridorCalculationMethod.Height, stDev = rates.Select((r, i) => heightHigh(r, i).Abs() + heightLow(r, i).Abs()).ToList().StDevP()); break;
+              double max = double.MinValue, min = double.MaxValue;
+              var heights = rates.Select((r, i) => {
+                var hh = heightHigh(r, i);
+                var hl = heightLow(r, i);
+                max = max.Max(hh);
+                min = min.Min(hl);
+                return  hh.Abs() + hl.Abs();
+              }).ToList();
+              height = max + min.Abs();
+              stDevDict.Add(CorridorCalculationMethod.Height, stDev = heights.StDevP()); break;
             case CorridorCalculationMethod.HeightUD:
               stDevDict.Add(CorridorCalculationMethod.HeightUD, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
               break;
@@ -132,9 +141,10 @@ namespace HedgeHog.Alice.Store {
               throw new NotSupportedException(new { corridorMethod } + "");
           }
         stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
-        height = stDev * 2;
-        return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, height, height) {
-          priceLine = linePrices, priceHigh = (Func<Rate, double>)priceHigh, priceLow = (Func<Rate, double>)priceLow, StDevs = stDevDict
+
+        return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2) {
+          priceLine = linePrices, priceHigh = (Func<Rate, double>)priceHigh, priceLow = (Func<Rate, double>)priceLow,
+          StDevs = stDevDict, HeightByRegression = height.IfNaN(stDev * 4)
         };
       } catch (Exception exc) {
         Debug.WriteLine(exc);

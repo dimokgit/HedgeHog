@@ -306,7 +306,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public void ResetPricePosition() { PricePosition = double.NaN; }
+    public void ResetPricePosition() { _pricePrev = PricePosition = double.NaN; }
     double _pricePosition = double.NaN;
     public double PricePosition {
       get { return _pricePosition; }
@@ -425,6 +425,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public string _TestFileName = "";
+    [DisplayName("Test File Name")]
+    [Category(categoryTestControl)]
+    public string TestFileName {
+      get { return _TestFileName; }
+      set {
+        if (_TestFileName != value) {
+          _TestFileName = value;
+          OnPropertyChanged("TestFileName");
+        }
+      }
+    }
+
     public string _TestBarsCount = "";
     [DisplayName("BarsCount")]
     [Category(categoryTest)]
@@ -491,9 +504,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryTest)]
+    [Category(categoryTestControl)]
     public bool UseTestFile { get; set; }
-    [Category(categoryTest)]
+    [Category(categoryTestControl)]
     [DisplayName("Use Super Session")]
     public bool TestUseSuperSession { get; set; }
 
@@ -511,30 +524,19 @@ namespace HedgeHog.Alice.Store {
     }
     #region TestSuperSessionUid
 
-    public bool TestSuperSessionUidIsEmpty { get { return TestSuperSessionUid == Guid.Empty || TestSuperSessionUid == 1.Guid(); } }
-    private bool _TestSuperSessionUidError = false;
-    private Guid _testSuperSessionUidDefault = 1.Guid();
     private Guid _TestSuperSessionUid;
     public Guid TestSuperSessionUid { get { return _TestSuperSessionUid; } }
     [DisplayName("SuperSession Uid")]
-    [Category(categoryTest)]
+    [Category(categoryTestControl)]
     public string TestSuperSessionUid_ {
       get {
-        return _TestSuperSessionUid.ToString();
-        if (_TestSuperSessionUid == Guid.Empty && !_TestSuperSessionUidError)
-          try {
-            _TestSuperSessionUid = GlobalStorage.UseForexContext(c =>
-              c.t_Session.ToArray().Where(s => s.SuperUid.GetValueOrDefault(Guid.Empty) != Guid.Empty)
-              .OrderByDescending(s => s.Timestamp).Select(s => s.SuperUid.Value)
-              .DefaultIfEmpty(_testSuperSessionUidDefault).First());
-          } catch (Exception exc) {
-            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
-            _TestSuperSessionUidError = true;
-          }
+        return _TestSuperSessionUid.ToString().ToUpper();
       }
       set {
         Guid v = Guid.Empty;
-        Guid.TryParse(value, out v);
+        if (string.IsNullOrWhiteSpace(value)) v = Guid.NewGuid();
+        else if (value == "0") v = 0.Guid();
+        else Guid.TryParse(value, out v);
         if (_TestSuperSessionUid != v) {
           _TestSuperSessionUid = v;
           OnPropertyChanged("TestSuperSessionUid_");
@@ -762,22 +764,51 @@ namespace HedgeHog.Alice.Store {
       set { StrictTradeClose = value; }
     }
 
+    private bool IsTradingDay(DateTime time) {
+      return TradingDays().Contains(time.DayOfWeek);
+    }
     private bool IsTradingHour(DateTime time) {
       var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
     }
+    public enum WeekDays {
+      Full = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
+      MoTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday,
+      TuFr = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
+      TuTh = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday
+    }
     [DisplayName("Trading Hours")]
+    [Description("21:00-5:00")]
     [Category(categoryActive)]
     public string TradingHoursRange {
       get { return CorridorIterations; }
       set {
         if (CorridorIterations == value) return;
         CorridorIterations = value;
-        OnPropertyChanged(TradingMacroMetadata.TradingHoursRange);
+        OnPropertyChanged(() => TradingHoursRange);
+      }
+    }
+    WeekDays _TradingDaysRange = WeekDays.Full;
+
+    [DisplayName("Trading Days")]
+    [Category(categoryActive)]
+    public WeekDays TradingDaysRange {
+      get { return (WeekDays)CorridorRatioForRange; }
+      set {
+        if (CorridorRatioForRange == (int)value) return;
+        CorridorRatioForRange = (int)value;
+        OnPropertyChanged(() => TradingDaysRange);
       }
     }
 
-
+    DayOfWeek[] TradingDays() {
+      switch (TradingDaysRange) {
+        case WeekDays.TuFr: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.MoTh: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.TuTh: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        default: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+      }
+    }
     [DisplayName("SuppRes Levels Count")]
     [Category(categoryCorridor)]
     public int SuppResLevelsCount_ {
@@ -933,6 +964,7 @@ namespace HedgeHog.Alice.Store {
     public const string categoryActive = "Active";
     public const string categoryActiveFuncs = "Active Funcs";
     public const string categoryTest = "Test";
+    public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
 
     [Category(categoryActive)]
@@ -943,15 +975,6 @@ namespace HedgeHog.Alice.Store {
       set { 
         CorridorRatioForBreakout = value;
         OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
-      }
-    }
-    [Category(categoryXXX_NU)]
-    [DisplayName("RatesToStDev Min")]
-    public double RatesToStDevRatioMinimum {
-      get { return CorridorRatioForRange; }
-      set { 
-        CorridorRatioForRange = value;
-        OnPropertyChanged("RatesToStDevRatioMinimum");
       }
     }
 
@@ -1002,14 +1025,17 @@ namespace HedgeHog.Alice.Store {
       set { TradeAndAngleSynced = value; }
     }
 
-    [Category(categoryXXX_NU)]
-    [DisplayName("Trade By First Wave")]
-    [Description("If not - will trade by last wave")]
-    public bool? TradeByFirstWave_ {
-      get { return TradeByFirstWave; }
-      set { TradeByFirstWave = value; }
+    [Category(categoryActive)]
+    [DisplayName("Trade On BOW")]
+    [Description("If ExitOnFriday, consider this as well")]
+    public bool TradeOnBOW {
+      get { return TradeByFirstWave.GetValueOrDefault(); }
+      set {
+        if (TradeByFirstWave == value) return;
+        TradeByFirstWave = value;
+        OnPropertyChanged(() => TradeOnBOW);
+      }
     }
-
 
     //[DisplayName("Gann Angles Offset in Rads")]
     //[Category(categoryCorridor)]

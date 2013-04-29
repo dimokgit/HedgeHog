@@ -1236,12 +1236,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public bool IsTradingHours {
-      get {
-        return true /*Trades.Length > 0 || RatesArraySafe.StartDate.TimeOfDay.Hours.Between(3, 10)*/;
-      }
-    }
-
     struct TradeSignal {
       public double OpenPrice { get; set; }
       public double ClosePrice { get; set; }
@@ -3002,7 +2996,7 @@ namespace HedgeHog.Alice.Store {
       switch (function) {
         case TradingMacroTakeProfitFunction.CorridorStDevMin: tp = CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.CorridorStDevMax: tp = CorridorStats.StDevByHeight.Max(CorridorStats.StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.RatesHeight; break;
+        case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.HeightByRegression; break;
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShort: tp = WaveShort.RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;

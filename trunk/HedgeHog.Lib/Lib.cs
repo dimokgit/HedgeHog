@@ -46,6 +46,26 @@ namespace HedgeHog {
     }
   }
   public static class Lib {
+    private static IEnumerable<T> EnumerableFrom<T>(this T item) {
+      return new T[] { item };
+    }
+    public static IEnumerable<T> Append<T>(this IEnumerable<T> that, T item) {
+      IEnumerable<T> itemAsSequence = new T[] { item };
+      return that.Concat(itemAsSequence);
+    }
+
+    public static IEnumerable<IEnumerable<T>> CartesianProduct<T>( this
+    IEnumerable<IEnumerable<T>> inputs) {
+      return inputs.Aggregate(
+          EnumerableFrom(Enumerable.Empty<T>()),
+          (soFar, input) =>
+              from prevProductItem in soFar
+              from item in input
+              select prevProductItem.Append(item));
+    }
+
+    //public static void GetProperties(this )
+
     /// <summary>
     /// Used to get a 'typed' reference to anonymous class
     /// </summary>
@@ -143,13 +163,16 @@ namespace HedgeHog {
         l.Add(d);
       return string.Join(" ", l);
     }
-    public static Dictionary<string, string> ReadTestParameters(string testFileName = "TestParams.txt") {
+    public static Dictionary<string, string> ReadTestParameters(string testFileName) {
       var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-      var paramsText = File.ReadAllText(Path.Combine(path, testFileName));
-      var paramLines = paramsText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-      var paramsArray = paramLines.Select(pl => pl.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
-      var paramDict = paramsArray.Where(a => a.Length > 1).ToDictionary(pa => pa[0], pa => ParseParamRange(pa[1].Trim()));
-      return paramDict;
+      var separator = ":";
+      return File.ReadAllLines(Path.Combine(path, testFileName))
+        .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))
+        .Select(pl => pl.Trim().Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
+        .Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))
+        .Select(a => new { name = a[0], value = string.Join(separator, a.Skip(1)).Trim() })
+        .OrderBy(p => p.name)
+        .ToDictionary(p => p.name, p => ParseParamRange(p.value));
     }
 
     public static string CallingMethod(int skipFrames=1) {
@@ -341,15 +364,6 @@ namespace HedgeHog {
       return ret;
     }
 
-    public static T GetProperty<T>(this object o, string p) {
-      var t = o.GetType();
-      System.Reflection.PropertyInfo pi = t.GetProperty(p);
-      if (pi != null) return (T)pi.GetValue(o, null);
-      System.Reflection.FieldInfo fi = t.GetField(p);
-      if (fi != null) return (T)fi.GetValue(o);
-      throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
-    }
-
     public static TReturn Invoke<TReturn>(this object o, string methodName, object[] parameters) {
       var t = o.GetType();
       var mi = t.GetMethod(methodName);
@@ -364,6 +378,22 @@ namespace HedgeHog {
         return;
       }
       throw new NotImplementedException("Property/Field " + methodName + " is not implemented in " + o.GetType().Name + ".");
+    }
+
+    public static IEnumerable<PropertyInfo> GetPropertiesByAttibute<A>(this object that, Func<A, bool> predicate) where A : Attribute {
+      foreach (var p in that.GetType().GetProperties()) {
+        if (p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
+          yield return p;
+      }
+    }
+
+    public static T GetProperty<T>(this object o, string p) {
+      var t = o.GetType();
+      System.Reflection.PropertyInfo pi = t.GetProperty(p);
+      if (pi != null) return (T)pi.GetValue(o, null);
+      System.Reflection.FieldInfo fi = t.GetField(p);
+      if (fi != null) return (T)fi.GetValue(o);
+      throw new NotImplementedException("Property/Field " + p + " is not implemented in " + o.GetType().Name + ".");
     }
 
     public static object GetProperty(this object o, string p) {
@@ -573,6 +603,9 @@ namespace HedgeHog {
     static readonly Guid GuidEmpty1 = 1.Guid();
     public static bool HasValue(this Guid g) {
       return g != System.Guid.Empty || g == GuidEmpty1;
+    }
+    public static Guid ValueOrDefault(this Guid g,Guid defaultValue) {
+      return g != System.Guid.Empty ? g : defaultValue;
     }
     public static Guid Guid(this int i) {
       if (!i.Between(0, 255)) throw new ArgumentException("Value must be between 0 and 255.");

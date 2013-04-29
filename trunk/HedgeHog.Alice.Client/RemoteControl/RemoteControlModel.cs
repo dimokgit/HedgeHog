@@ -238,6 +238,61 @@ namespace HedgeHog.Alice.Client {
 
     #region Commands
 
+
+    #region LoadTradingSettings
+    ICommand _LoadTradingSettingsCommand;
+    public ICommand LoadTradingSettingsCommand {
+      get {
+        if (_LoadTradingSettingsCommand == null) {
+          _LoadTradingSettingsCommand = new Gala.RelayCommand<TradingMacro>(LoadTradingSettings, (tm) => true);
+        }
+
+        return _LoadTradingSettingsCommand;
+      }
+    }
+    void LoadTradingSettings(TradingMacro tm) {
+      try {
+        var od = new Microsoft.Win32.OpenFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
+        var odRes = od.ShowDialog();
+        if (!odRes.GetValueOrDefault()) return;
+        var settings = Lib.ReadTestParameters(od.FileName);
+        settings.ForEach(tp => tm.SetProperty(tp.Key, (object)tp.Value));
+      } catch (Exception exc) {
+        Log = exc;
+        return;
+      }
+      Log = new Exception("Settings loaded.");
+    }
+    #endregion
+
+    #region SaveTradingSettings
+    ICommand _SaveTradingSettingsCommand;
+    public ICommand SaveTradingSettingsCommand {
+      get {
+        if (_SaveTradingSettingsCommand == null) {
+          _SaveTradingSettingsCommand = new Gala.RelayCommand<TradingMacro>(OnSaveTradingSettings, (tm) => true);
+        }
+
+        return _SaveTradingSettingsCommand;
+      }
+    }
+    void OnSaveTradingSettings(TradingMacro tm) {
+      try {
+        var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
+          .Select(p => "{0}:{1}".Formater(p.Name, p.GetValue(tm, null))).ToArray();
+        var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
+        var odRes = od.ShowDialog();
+        if (!odRes.GetValueOrDefault()) return;
+        File.WriteAllLines(od.FileName, settings);
+      } catch (Exception exc) {
+        Log = exc;
+        return;
+      }
+      Log = new Exception("Settings saved.");
+    }
+    #endregion
+
+
     #region [Sell|Buy]OrderCommand
     void SellOrderCommand(Store.OrderTemplate ot) { OpenEntryOrderByTemplate(ot, false); }
     void BuyOrderCommand(Store.OrderTemplate ot) { OpenEntryOrderByTemplate(ot, true); }
@@ -965,7 +1020,7 @@ namespace HedgeHog.Alice.Client {
           PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts(r).IfNaN(0) }).ToArray();
           PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts2(r).IfNaN(0) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,
+          charter.AddTicks(price, rates, true ? new PriceBar[0][] { /*distances, distances1*/} : new PriceBar[0][], info, null,
             tm.WaveStDevRatio, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)

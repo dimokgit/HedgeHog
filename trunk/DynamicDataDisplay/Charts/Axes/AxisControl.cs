@@ -1045,7 +1045,7 @@ namespace Microsoft.Research.DynamicDataDisplay.Charts
 		private T[] ticks;
 		private UIElement[] labels;
 		private const double increaseRatio = 3.0;
-		private const double decreaseRatio = 1.6;
+		private const double decreaseRatio = 0.5;//1.6;
 
 		private Func<Size, double> getSize = size => size.Width;
 		private Func<Point, double> getCoordinate = p => p.X;
