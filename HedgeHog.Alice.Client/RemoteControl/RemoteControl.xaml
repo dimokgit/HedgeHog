@@ -79,6 +79,10 @@
         <TextBox Text="{Binding MonthsOfHistory}" ToolTip="Months Of History"/>
         <Button Content="PH"  CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Price History"
                 Command="{Binding DataContext.PriceHistoryCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+        <Button Content="SS"  CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Save Trading Settings"
+                Command="{Binding DataContext.SaveTradingSettingsCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+        <Button Content="LS"  CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Load Trading Settings"
+                Command="{Binding DataContext.LoadTradingSettingsCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="BuyCellTemplate">

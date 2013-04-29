@@ -999,10 +999,84 @@ namespace HedgeHog {
         _tradeLineStopPosition = value;
         OnPropertyChanged("TradeLineStopPosition");
       }
-    }    
+    }
+    DifferenceIn? GetDifference(TimeSpan span) {
+      span = span.Duration();
+
+      DifferenceIn? diff;
+      if (span.Days > 365)
+        diff = DifferenceIn.Year;
+      else if (span.Days > 30)
+        diff = DifferenceIn.Month;
+      else if (span.Days > 3)
+        diff = DifferenceIn.Day;
+      else if (span.Hours > 0)
+        diff = DifferenceIn.Hour;
+      else if (span.Minutes > 0)
+        diff = DifferenceIn.Minute;
+      else if (span.Seconds > 0)
+        diff = DifferenceIn.Second;
+      else
+        diff = DifferenceIn.Millisecond;
+
+      return diff;
+    }
+
+    /*
+Never mind i created CustomGenericLocationalTicksProvider and it worked like a charm... Thanks though.
+
+ 
+
+   public ITicksInfo<TAxis> GetTicks(Range<TAxis> range, int ticksCount)
+        {
+            EnsureSearcher();
+
+            //minResult = searcher.SearchBetween(range.Min, minResult);
+            //maxResult = searcher.SearchBetween(range.Max, maxResult);
+
+            minResult = searcher.SearchFirstLess(range.Min);
+            maxResult = searcher.SearchGreater(range.Max);
+
+            Double minRange = range.Min.ToDouble();
+            Double maxRange = range.Max.ToDouble();
+            Double minStep = (maxRange - minRange)*.10;
+
+            if (!(minResult.IsEmpty && maxResult.IsEmpty))
+            {
+                int startIndex = !minResult.IsEmpty ? minResult.Index : 0;
+                int endIndex = !maxResult.IsEmpty ? maxResult.Index : collection.Count - 1;
+
+                int count = endIndex - startIndex + 1;
+
+                TAxis[] ticks = new TAxis[count];
+                double lastVal = 0;
+                for (int i = startIndex; i <= endIndex; i++)
+                {
+                    var val = axisMapping(collection[i]);
+                    if(val.ToDouble() - lastVal > minStep)
+                   {
+                        ticks[i - startIndex] = val;
+                       lastVal = val.ToDouble();
+
+                    }
+                }
+     */
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
       dateAxis.MayorLabelProvider = null;
+      var ticksProvider = ((Microsoft.Research.DynamicDataDisplay.Charts.TimeTicksProviderBase<System.DateTime>)(dateAxis.TicksProvider));
+      ticksProvider.Strategy = new Microsoft.Research.DynamicDataDisplay.Charts.Axes.DateTime.Strategies.DelegateDateTimeStrategy(GetDifference);
+      dateAxis.LabelProvider.SetCustomFormatter(info => {
+        DifferenceIn differenceIn = (DifferenceIn)info.Info;
+        if (differenceIn == DifferenceIn.Hour) {
+            return info.Tick.ToString("H:");
+        }
+        return null;
+      });
+      dateAxis.LabelProvider.SetCustomView((li, uiElement) => {
+        FrameworkElement element = (FrameworkElement)uiElement;
+        element.LayoutTransform = new RotateTransform(-90, 0, 0);
+      });
       var a = FindName("PART_AdditionalLabelsCanvas");
 
       plotter.KeyUp += (s, e) => {

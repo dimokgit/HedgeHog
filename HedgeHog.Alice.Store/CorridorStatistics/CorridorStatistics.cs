@@ -239,6 +239,7 @@ namespace HedgeHog.Alice.Store {
       Init(cs.Rates, cs.StDev, cs.Coeffs, cs.HeightUp0, cs.HeightDown0, cs.HeightUp, cs.HeightDown, cs.Iterations, cs.CorridorCrossesCount);
       this.Spread = cs.Spread;
       this.StDevs = cs.StDevs;
+      this.HeightByRegression = cs.HeightByRegression;
       //GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
       //  LegInfos.Clear();
       //  LegInfos.AddRange(cs.LegInfos);
@@ -461,6 +462,8 @@ namespace HedgeHog.Alice.Store {
     public double StDevByHeightInPips { get { return TradesManagerStatic.InPips(StDevByHeight, _pipSize); } }
     public double StDevByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
     public double StDevByPriceAvgInPips { get { return TradesManagerStatic.InPips(StDevByPriceAvg, _pipSize); } }
+
+    public double HeightByRegression { get; set; }
   }
 
   public enum TrendLevel { None, Resistance, Support }

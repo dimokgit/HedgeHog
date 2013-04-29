@@ -34,8 +34,6 @@ namespace HedgeHog.Alice.Store {
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
-    HorseShoe = 70,
-    Sinus = 80,
     Count = 90,
     CountWithAngle = 92,
     Count0 = 91,
@@ -47,6 +45,7 @@ namespace HedgeHog.Alice.Store {
     Corridor1 = 121,
     CorridorBB = 122,
     TradeHour = 123,
+    TradeHour1 = 124,
     TradeLine = 130,
     TradeLineA = 131,
     TradeLineA1 = 132,
@@ -108,7 +107,8 @@ namespace HedgeHog.Alice.Store {
     GrossTP = 4,
     Wavelette = 5,
     GrossTP1 = 6,
-    Limit = 7
+    Limit = 7,
+    Friday = 8
   }
   public enum MedianFunctions {
     Void = -1,

@@ -9,6 +9,8 @@ using HedgeHog.Alice.Store;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Threading;
+using System.Diagnostics;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {
@@ -27,106 +29,81 @@ namespace HedgeHog.Alice.Client {
       get { return _replayArguments; }
     }
 
-    class TestParameter {
-      public int PriceCmaLevel { get; set; }
-      public double ProfitToLossExitRatio { get; set; }
-      public double CorridorDistanceRatio { get; set; }
-      public double WaveStDevRatio { get; set; }
-      public int BarsCount { get; set; }
-      public double DistanceIterations { get; set; }
-      public Guid SuperessionId { get; set; }
-      public double CorrelationMinimum { get; set; }
-    }
-
-    static class TestParameters {
-      public static int[] PriceCmaLevels = new int[0];
-      public static double[] ProfitToLossExitRatio = new double[0];
-      public static double[] CorridorDistanceRatio = new double[0];
-      public static double[] WaveStDevRatio = new double[0];
-      public static int[] BarsCount = new int[0];
-      public static double[] DistanceIterations = new double[0];
-      public static double[] CorrelationMinimum = new double[0];
-
-      public static Queue<TestParameter> GenerateTestParameters(Guid superSessionId) {
-        var ret = from p in PriceCmaLevels
-                  from cm in CorrelationMinimum
-                  from rhm in DistanceIterations
-                  from wr in WaveStDevRatio
-                  from pl in ProfitToLossExitRatio
-                  from cd in CorridorDistanceRatio
-                  from pler in BarsCount
-                  select new TestParameter() { PriceCmaLevel = p
-                    , CorrelationMinimum = cm
-                    , ProfitToLossExitRatio = pl
-                    , CorridorDistanceRatio = cd
-                    , BarsCount = pler
-                    , SuperessionId = superSessionId
-                    , DistanceIterations = rhm
-                    , WaveStDevRatio = wr };
-        return new Queue<TestParameter>(ret);
-      }
-    }
     List<Task> _replayTasks = new List<Task>();
     void StartReplay(TradingMacro tmOriginal) {
-      if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
-        MessageBox.Show("Replay is running.");
-        return;
-      }
+      try {
+        if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
+          MessageBox.Show("Replay is running.");
+          return;
+        }
 
-      ReplayArguments.UseSuperSession = tmOriginal.TestUseSuperSession;
-      ReplayArguments.SuperSessionId = tmOriginal.TestSuperSessionUid.ValueOrDefault(Guid.NewGuid());
+        ReplayArguments.UseSuperSession = tmOriginal.TestUseSuperSession;
+        ReplayArguments.SuperSessionId = tmOriginal.TestSuperSessionUid.ValueOrDefault(Guid.NewGuid());
+        _testParamsRaw.Clear();
+        tmOriginal.TestFileName = "";
 
-      if (tmOriginal.UseTestFile) {
-        var paramsDict = Lib.ReadTestParameters();
-        foreach (var p in paramsDict) {
-          tmOriginal.SetProperty(p.Key, p.Value);
+        if (ReplayArguments.UseSuperSession) {
+          #region getDateFromSuperSession
+          Func<DateTime> getDateFromSuperSession = () => {
+            try {
+              var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
+              if (sessions.Any()) FillTestParams(tmOriginal, tpr => SetTestCorridorDistanceRatio(tpr, sessions));
+              else throw new Exception("Either ReplayArguments.DateStart or valid Supersession Uid must be provided.");
+              return sessions.Min(s => s.DateStart.Value).AddDays(5);
+            } catch (Exception exc) {
+              Log = exc;
+              throw;
+            }
+          };
+          #endregion
+          ReplayArguments.DateStart = ReplayArguments.DateStart ?? getDateFromSuperSession();
+        }
+        FillTestParams(tmOriginal, pt => { });
+        Log = new Exception("Starting testing with {0} sets.".Formater(TestParams.Count));
+        StartReplayInternal(tmOriginal, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, TestParams); });
+      } catch (Exception exc) { Log = exc; }
+    }
+    void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
+      var c = new[] { ',', ' ', '\t' };
+      if (!_testParamsRaw.Any()) {
+        if (tmOriginal.UseTestFile) {
+          var od = new Microsoft.Win32.OpenFileDialog() { FileName = "TestParams", DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
+          var odRes = od.ShowDialog();
+          if (!odRes.GetValueOrDefault()) throw new ArgumentException("Must provide test params file name.");
+          tmOriginal.TestFileName = System.IO.Path.GetFileName(od.FileName);
+          var paramsDict = Lib.ReadTestParameters(od.FileName);
+          _testParamsRaw.AddRange(paramsDict.Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
+        } else {
+          var testParams = tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => a.Category == TradingMacro.categoryTest);
+          var paramsDict = testParams.ToDictionary(p => p.Name.Substring(4), p => p.GetValue(tmOriginal, null).ToString().ParseParamRange());
+          _testParamsRaw.AddRange(paramsDict.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+            .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
         }
       }
-      {
-        var c = new[] { ',', ' ', '\t' };
-        TestParameters.PriceCmaLevels = tmOriginal.TestPriceCmaLevels.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-          .DefaultIfEmpty(tmOriginal.PriceCmaLevels).ToArray();
-        TestParameters.ProfitToLossExitRatio = tmOriginal.TestProfitToLossExitRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-          .DefaultIfEmpty(tmOriginal.ProfitToLossExitRatio).ToArray();
-        TestParameters.CorridorDistanceRatio = tmOriginal.TestCorridorDistanceRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-          .DefaultIfEmpty(tmOriginal.CorridorDistanceRatio).ToArray();
-        TestParameters.WaveStDevRatio = tmOriginal.TestWaveStDevRatio.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-          .DefaultIfEmpty(tmOriginal.WaveStDevRatio).ToArray();
-        TestParameters.BarsCount = tmOriginal.TestBarsCount.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s))
-          .DefaultIfEmpty(tmOriginal.BarsCount).ToArray();
-        TestParameters.CorrelationMinimum = tmOriginal.TestCorrelationMinimum.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-          .DefaultIfEmpty(tmOriginal.CorrelationMinimum).ToArray();
-        TestParameters.DistanceIterations = tmOriginal.TestDistanceIterations.ParseParamRange().Split(c, StringSplitOptions.RemoveEmptyEntries).Select(s => double.Parse(s))
-          .DefaultIfEmpty(tmOriginal.DistanceIterations).ToArray();
-      }
-      if (ReplayArguments.UseSuperSession) {
-        ReplayArguments.DateStart = ReplayArguments.DateStart ?? new Lazy<DateTime>(() => {
-          try {
-            var sessions = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-            if (sessions.Any()) SetTestCorridorDistanceRatio(sessions);
-            else throw new Exception("Either ReplayArguments.DateStart or valid Supersession Uid must be provided.");
-            return sessions.Min(s => s.DateStart.Value).AddDays(5);
-          } catch (Exception exc) {
-            Log = exc;
-            throw;
-          }
-        }).Value;
-      }
-      var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
-      StartReplayInternal(tmOriginal, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tmOriginal, testQueue); });
+      TestParams.Clear();
+      paramsTransformation(_testParamsRaw);
+      _testParamsRaw.CartesianProduct().ForEach(tp => TestParams.Enqueue(tp.ToArray()));
     }
-    void ContinueReplayWith(TradingMacro tm, Queue<TestParameter> testParams) {
-      if (tm.Strategy == Strategies.None) return;
-      if (testParams.Any()) {
-        StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
-      } else if (ReplayArguments.UseSuperSession) {
-        var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
-        SetTestCorridorDistanceRatio(super);
-        ReplayArguments.SuperSessionId = Guid.NewGuid();
-        ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
-        var testQueue = TestParameters.GenerateTestParameters(ReplayArguments.SuperSessionId);
-        StartReplayInternal(tm, testQueue.Any() ? testQueue.Dequeue() : null, task => { ContinueReplayWith(tm, testQueue); });
-      }
+
+    private void ReplaceTestParamRaw(string name,IList<KeyValuePair<string,object>> testParamsKeyValues) {
+      var cdr = _testParamsRaw.First(tpr => tpr.Any(kv => kv.Key == name));
+      var index = _testParamsRaw.IndexOf(cdr);
+      _testParamsRaw[index] = testParamsKeyValues.ToArray();
+    }
+
+    void ContinueReplayWith(TradingMacro tm, Queue<TestParam> testParams) {
+      try {
+        if (tm.Strategy == Strategies.None) return;
+        if (testParams.Any()) {
+          StartReplayInternal(tm, testParams.Dequeue(), t => { ContinueReplayWith(tm, testParams); });
+        } else if (ReplayArguments.UseSuperSession) {
+          var super = GetBestSessions(ReplayArguments.SuperSessionId).ToArray();
+          FillTestParams(tm, tpr => SetTestCorridorDistanceRatio(tpr, super));
+          ReplayArguments.SuperSessionId = Guid.NewGuid();
+          ReplayArguments.DateStart = ReplayArguments.DateStart.Value.AddDays(6);
+          StartReplayInternal(tm, TestParams.Any() ? TestParams.Dequeue() : null, task => { ContinueReplayWith(tm, TestParams); });
+        }
+      } catch (Exception exc) { Log = exc; }
     }
 
     #region GetBestSession
@@ -145,19 +122,21 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region Test params setters
-    private void SetTestCorridorDistanceRatio(DB.v_TradeSession[] sessions) {
+    private void SetTestCorridorDistanceRatio(IList<KeyValuePair<string,object>[]> testParamsRaw, DB.v_TradeSession[] sessions) {
       var testParam = sessions[0].CorridorDistanceRatio.Value;
       var a = sessions.OrderBy(s => s.TimeStamp).ToArray();
       var testParamStep = (a[1].CorridorDistanceRatio - a[0].CorridorDistanceRatio).Value.ToInt();
       var testParamCount = 5;
       var testParamStepMin = -testParamCount / 2;
       var startMin = (-(testParam.ToInt() / testParamStep) + 1).Max(testParamStepMin);
-      TestParameters.CorridorDistanceRatio = Enumerable.Range(startMin, testParamCount).Select(r => testParam + r * testParamStep).ToArray();
+      var testParamName = "CorridorDistanceRatio";
+      ReplaceTestParamRaw(testParamName, Enumerable.Range(startMin, testParamCount)
+        .Select(r => new KeyValuePair<string, object>(testParamName, testParam + r * testParamStep)).ToArray());
     }
     #endregion
 
     CancellationTokenSource _replayTaskCancellationToken = new CancellationTokenSource();
-    void StartReplayInternal(TradingMacro tmOriginal, TestParameter testParameter, Action<Task> continueWith) {
+    void StartReplayInternal(TradingMacro tmOriginal, TestParam testParameter, Action<Task> continueWith) {
       if (IsInVirtualTrading) {
         if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
           MessageBox.Show("Replay is running.");
@@ -167,21 +146,21 @@ namespace HedgeHog.Alice.Client {
         MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
         tradesManager.GetAccount().Balance = tradesManager.GetAccount().Equity = 50000;
       }
+        SaveTradingSettings(tmOriginal);
       var tms = GetTradingMacros().Where(t => t.Strategy != Strategies.None).ToList();
       ReplayArguments.SetTradingMacros(tms);
       foreach (var tm in tms) {
         if (IsInVirtualTrading) {
           tradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
-          if (testParameter != null) {
-            tm.PriceCmaLevels_ = testParameter.PriceCmaLevel;
-            tm.CorrelationMinimum = testParameter.CorrelationMinimum;
-            tm.ProfitToLossExitRatio = testParameter.ProfitToLossExitRatio;
-            tm.CorridorDistanceRatio = testParameter.CorridorDistanceRatio;
-            tm.WaveStDevRatio = testParameter.WaveStDevRatio;
-            tm.BarsCount = testParameter.BarsCount;
-            tm.DistanceIterations = testParameter.DistanceIterations;
-          }
+          if (testParameter != null)
+            testParameter.ForEach(tp => {
+              try {
+                tm.SetProperty(tp.Key, tp.Value);
+              } catch (Exception exc) {
+                throw new Exception("Property:" + new { tp.Key, tp.Value }, exc);
+              }
+            });
         }
         var tmToRun = tm;
         tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
@@ -190,6 +169,43 @@ namespace HedgeHog.Alice.Client {
         _replayTasks.Add(task);
       }
     }
+
+    void SaveTradingSettings(TradingMacro tmOriginal) {
+      try {
+      tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
+        .ForEach(p => Debug.WriteLine("{0}:{1}", p.Name, p.GetValue(tmOriginal, null)));
+      } catch { }
+    }
     #endregion
+
+    class TestParam : IEnumerable<KeyValuePair<string, object>> {
+      private IEnumerable<KeyValuePair<string, object>> _pairs;
+      public TestParam(IEnumerable<KeyValuePair<string, object>> pairs) {
+        _pairs = pairs;
+      }
+
+      public static implicit operator TestParam(KeyValuePair<string, object>[] rhs) {
+        TestParam c = new TestParam( rhs); //Internally call Currency constructor
+        return c;
+
+      }
+      #region IEnumerable<KeyValuePair<string,object>> Members
+
+      public IEnumerator<KeyValuePair<string, object>> GetEnumerator() {
+        return _pairs.GetEnumerator();
+      }
+
+      #endregion
+
+      #region IEnumerable Members
+
+      System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+        return _pairs.GetEnumerator();
+      }
+
+      #endregion
+    }
+    Queue<TestParam> TestParams = new Queue<TestParam>();
+    private List<KeyValuePair<string, object>[]> _testParamsRaw = new List<KeyValuePair<string,object>[]>();
   }
 }

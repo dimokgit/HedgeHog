@@ -20,7 +20,7 @@ namespace HedgeHog.Shared {
 
     #region SuperSession
     public Guid SuperSessionId { get; set; }
-    public bool HasSuperSession { get { return SuperSessionId != Guid.Empty; } }
+    public bool UseSuperSession { get; set; }
     public void ResetSuperSession() { SuperSessionId = Guid.Empty; }
     #endregion
 

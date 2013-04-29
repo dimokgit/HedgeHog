@@ -49,7 +49,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Debug_RealMicro\</OutputPath>
+    <OutputPath>bin\Debug_RealMicro 2\</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -541,7 +541,10 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TestParams.txt">
+    <Resource Include="Tests\EURJPY.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <None Include="Tests\TestParams.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Resource Include="Images\down-arrow-3675-16.png" />
