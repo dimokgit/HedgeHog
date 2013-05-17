@@ -983,6 +983,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorHeightMax {
       get { return FibMin; }
       set {
+        if (FibMin == value) return;
         FibMin = value;
         OnPropertyChanged("CorridorHeightMax");
       }
@@ -1000,20 +1001,32 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryXXX)]
-    [DisplayName("Range Ratio For TradeStop")]
-    [Description("Ex:Exit when PL < -Range * X")]
-    public double RangeRatioForTradeStop_ {
+    [Category(categoryActive)]
+    [DisplayName("TakeProfit Limit Ratio")]
+    [Description("Ex:Exit <= TakeProfit * X")]
+    public double TakeProfitLimitRatio {
       get { return RangeRatioForTradeStop; }
-      set { 
+      set {
+        if (RangeRatioForTradeStop == value) return;
         RangeRatioForTradeStop = value;
-        OnPropertyChanged(TradingMacroMetadata.RangeRatioForTradeStop_);
+        OnPropertyChanged(() => TakeProfitLimitRatio);
+      }
+    }
+    [Category(categoryActive)]
+    [DisplayName("CanTrade Eval")]
+    [Description("Ex:a.upPeak+a.downValley>0")]
+    public string CanTradeEval {
+      get { return FibMax; }
+      set {
+        if (FibMax == value) return;
+        FibMax = value;
+        OnPropertyChanged(() => CanTradeEval);
       }
     }
 
-    [Category(categoryXXX_NU)]
-    [DisplayName("Trade By Angle")]
-    public bool TradeByAngle_ {
+    [Category(categoryActive)]
+    [DisplayName("Trading Ratio By PMC")]
+    public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
     }

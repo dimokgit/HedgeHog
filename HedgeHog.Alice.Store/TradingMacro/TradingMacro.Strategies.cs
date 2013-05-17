@@ -28,6 +28,8 @@ using System.Reactive;
 using System.Threading.Tasks.Dataflow;
 using System.Collections.Concurrent;
 using HedgeHog.Models;
+using System.Web.UI;
+using DynamicExpresso;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -709,9 +711,10 @@ namespace HedgeHog.Alice.Store {
                 var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || isProfitOk()
                   || (isBreakout() && ((Trades.HaveBuy() && CurrentPrice.Bid >= buyCloseLevel.Rate) || (Trades.HaveSell() && CurrentPrice.Ask <= sellCloseLevel.Rate)));
                 var tpCloseInPips = (close0 ? 0 : TakeProfitPips + (CloseOnProfitOnly ? CurrentLossInPips.Min(0).Abs() : 0));
-                var tpColse = getCloseLevel(InPoints(tpCloseInPips.Min(TakeProfitPips * CorridorHeightMax)));
-                var priceAvgMax = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Max(rate => GetTradeExitBy(true)(rate)) - PointSize / 100;
-                var priceAvgMin = WaveShort.Rates.Take(PriceCmaLevels.Max(5)).Min(rate => GetTradeExitBy(false)(rate)) + PointSize / 100;
+                var tpColse = getCloseLevel(InPoints(tpCloseInPips.Min(TakeProfitPips * TakeProfitLimitRatio)));
+                var ratesShort = RatesArray.Skip(RatesArray.Count - PriceCmaLevels.Max(5)+1).ToArray();
+                var priceAvgMax = ratesShort.Max(rate => GetTradeExitBy(true)(rate)) - PointSize / 100;
+                var priceAvgMin = ratesShort.Min(rate => GetTradeExitBy(false)(rate)) + PointSize / 100;
                 if (buyCloseLevel.InManual) {
                   if (buyCloseLevel.Rate <= priceAvgMax)
                     buyCloseLevel.Rate = priceAvgMax;
@@ -764,7 +767,11 @@ namespace HedgeHog.Alice.Store {
         double corridorAngle = 0;
         DateTime tradeCloseDate = DateTime.MaxValue;
         DateTime corridorDate = ServerTime;
-        bool? corridorUpDown = null;
+        var corridorHeightPrev = DateTime.MinValue;
+        DB.sGetStats_Result[] stats = null;
+        Func<string, double> getCorridorMax = weekDay => stats.Single(s => s.DayName == weekDay + "").Range.Value;
+        var interpreter = new Interpreter();
+
         #endregion
 
         #region Funcs
@@ -908,14 +915,49 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.Count:
               #region firstTime
               if (firstTime) {
-                watcherCanTrade.SetValue(false);
-                _CenterOfMassBuy = _CenterOfMassSell = _RatesMin + RatesHeight / 2;
+                LogTrades = false;
+                Log = new Exception(new {
+                  CorrelationMinimum,
+                  TradingAngleRange,
+                  WaveStDevRatio
+                } + "");
               }
               #endregion
               {
-                _buyLevel.RateEx = _CenterOfMassBuy;
-                _sellLevel.RateEx = _CenterOfMassSell;
-                _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
+                //if (false) {
+                //  var weeks = 3;
+                //  if (stats == null || stats[0].StartDateMin < ServerTime.Date.AddDays(-7 * (weeks + 1)))
+                //    stats = GlobalStorage.UseForexContext(c => {
+                //      return c.sGetStats(ServerTime.Date.AddDays(-7 * weeks), CorridorDistanceRatio.ToInt(), weeks).ToArray();
+                //    });
+                //}
+                var hasCorridorChanged = _CorridorStartDateByScan > corridorHeightPrev.AddMinutes(BarPeriodInt * CorridorDistanceRatio/5);
+                corridorHeightPrev = _CorridorStartDateByScan;
+                var isInside = false;
+                if ( CorridorAngleFromTangent() <= TradingAngleRange && CorridorStats.StartDate > RatesArray[0].StartDate) {
+                  //var startDatePast = RateLast.StartDate.AddHours(-CorridorDistanceRatio);
+                  var levelPrev = RatesInternal.ReverseIfNot().Skip(CorridorDistanceRatio.ToInt()).SkipWhile(r => r.StartDate.Hour!=23).First().PriceAvg;
+                  var rates = setTrendLines(2);
+                  var up = rates[0].PriceAvg2;
+                  var down = rates[0].PriceAvg3;
+                  var corridorRates = CorridorStats.Rates;
+                  var upPeak = up - CorridorStats.RatesMax;
+                  var downValley = CorridorStats.RatesMin - down;
+                  var ud2 = (up - down) / 4;
+                  var isBetween = levelPrev.Between(down, up) &&
+                    (   new[] { up, down }.Any(ud => ud.Between(_sellLevel.Rate, _buyLevel.Rate)) 
+                    || _buySellLevels.Any(sr => sr.Rate.Between(down, up))
+                    );
+                  var height = (up - down);
+                  var param = new { up, down, upPeak, downValley };
+                  var heightOk = (bool)interpreter.Eval(CanTradeEval, new Parameter("a", param)); //height > (CorridorHeightMax = getCorridorMax(ServerTime.DayOfWeek + ""));
+                  var sizeOk = /*(up - down) > height ||*/ heightOk;
+                  isInside = hasCorridorChanged && isBetween && sizeOk;
+                  _buyLevel.RateEx = up;
+                  _sellLevel.RateEx  = down;
+                  if (hasCorridorChanged)
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = isInside);
+                }
                 adjustExitLevels0();
               }
               break;
@@ -1459,10 +1501,13 @@ namespace HedgeHog.Alice.Store {
                   var angle = CorridorStats.Slope.Angle(BarPeriodInt, PointSize).Abs();
                   var isAngleOk = angle <= TradingAngleRange;
                   triggerAngle.Set(isAngleOk && IsTradingTime(), () => {
-                    _buySellLevelsForEach(sr => sr.CanTrade = true);
                       _buyLevel.RateEx = isBO ? gl.levelUp : gl.levelDown;
                       _sellLevel.RateEx = isBO ? gl.levelDown : gl.levelUp;
-                      _buySellLevelsForEach(sr => sr.ResetPricePosition());
+                      _buySellLevelsForEach(sr => {
+                        sr.ResetPricePosition();
+                        sr.CanTrade = true;
+                        sr.TradesCount = CorridorCrossesMaximum.Abs();
+                      });
                   });
                   if (!isAngleOk) triggerAngle.Off();
                 }

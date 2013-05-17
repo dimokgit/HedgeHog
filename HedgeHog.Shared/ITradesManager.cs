@@ -13,6 +13,7 @@ namespace HedgeHog.Shared {
     #region Common Info
     DateTime ServerTime { get; }
     double Leverage(string pair);
+    double PipsToMarginCall { get; }
 
     double Round(string pair, double value,int digitOffset = 0);
     double InPips(string pair, double? price);
@@ -25,6 +26,7 @@ namespace HedgeHog.Shared {
 
     #region Offers
     Offer[] GetOffers();
+    Offer GetOffer(string pair);
     Price GetPrice(string pair);
     #endregion
 
@@ -158,8 +160,24 @@ namespace HedgeHog.Shared {
     public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
       return money / lots / pipCost * baseUnitSize;
     }
+    public static double MarginRequired(int lot, double baseUnitSize, double mmr) {
+      return lot / baseUnitSize * mmr;
+    }
+    public static double PipAmount(int lot, double baseUnitSize, double pipCost) {
+      return lot/(baseUnitSize/pipCost);
+    }
     public static double InPoins(ITradesManager tm, string pair, double? price) {
       return (price * tm.GetPipSize(pair)).GetValueOrDefault();
+    }
+    public static double MarginLeft(int lot,double pl,double balance,double mmr, double baseUnitSize, double pipCost) {
+      return balance - MarginRequired(lot, baseUnitSize, mmr) + pl * PipAmount(lot, baseUnitSize, pipCost);
+    }
+    public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
+      return MarginLeft(lot, pl, balance, mmr, baseUnitSize, pipCost) / PipAmount(lot, baseUnitSize, pipCost);
+    }
+    public static double LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost,double MMR) {
+      var lot = balance / (pipsToMC * pipCost / baseUnitSize + 1.0 / baseUnitSize * MMR);
+      return pipsToMC < 1 ? 0 : GetLotSize(lot, baseUnitSize);
     }
     public static double InPips(double? price, double pipSize) { return price.GetValueOrDefault() / pipSize; }
     public static bool IsInPips(this double value, double curentPrice) { return value / curentPrice < .5; }

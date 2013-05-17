@@ -24,11 +24,61 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorByTimeFrameAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
+      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
+      WaveShort.Rates = null;
+      var isAutoCorridor = startMax.IsMax() && !CorridorStartDate.HasValue;
+      var length = CorridorDistanceRatio.ToInt();
+      var doubles = Enumerable.Range(0, ratesForCorridor.Count).Select(i => (double)i).ToArray();
+      var hasCorridor = false;
+      if (isAutoCorridor) {
+        var pricesAll = ratesReversed.Select(_priceAvg).ToArray();
+        var stop = ratesReversed.Count - length;
+        Func<int,int, int[]> iterate = (start,step) => {
+          var anglePrev = double.NaN;
+          var startPrev = 0;
+          for (; start < stop; start += step) {
+            var prices = new double[length];
+            Array.Copy(pricesAll, start, prices, 0, length);
+            var dX = new double[length];
+            Array.Copy(doubles, 0, dX, 0, length);
+            var slope = dX.Regress(prices,1).LineSlope();
+            var angle = AngleFromTangent(slope).Abs();
+            if (slope.Sign() != anglePrev.IfNaN(slope).Sign() || angle <= TradingAngleRange) {
+              hasCorridor = true;
+              return new int[] { startPrev, start };
+            }
+            anglePrev = slope;
+            startPrev = start;
+          }
+          return new int[] { stop, stop };
+        };
+        var step1 = length/10;
+        var steps = iterate(0,step1);
+        steps = iterate((steps[0] - step1).Max(0), 1);
+        WaveShort.Rates = ratesReversed.Skip(steps[0]).Take(length).ToArray();
+      } else
+        WaveShort.Rates = ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      if (hasCorridor) _CorridorStartDateByScan = WaveShort.Rates.LastBC().StartDate;
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
     private CorridorStatistics ScanCorridorByTime(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
+      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
+      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt()-1].StartDate);
       WaveShort.Rates = null;
-      WaveShort.Rates = ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray();
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
+        ? ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray()
+        : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      var ma = WaveShort.Rates.Select(GetPriceMA()).ToArray();
+      var rates = WaveShort.Rates.Select(_priceAvg).ToArray();
+      Correlation_R = global::alglib.spearmancorr2(ma, rates, ma.Length.Min(WaveShort.Rates.Count));
+      Correlation_P = global::alglib.pearsoncorr2(ma, rates, ma.Length.Min(WaveShort.Rates.Count));
+      return corridor;
     }
 
     private CorridorStatistics ScanCorridorByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -831,7 +881,7 @@ namespace HedgeHog.Alice.Store {
       Func<int, Lib.Box<int>> newBoxInt = (i) => new Lib.Box<int>(i);
       Func<double, Lib.Box<double>> newBox0 = (d) => new Lib.Box<double>(d);
       Func<Lib.Box<double>> newBox = () => newBox0(double.NaN);
-      Func<int, int> ratesStep = (rc) => (rc / 100.0).ToInt() + 1;
+      Func<int, int> ratesStep = NestStep;
       var udAnon = new { ud = 0.0, angle = 0.0, vb = newBox(), udCma = newBox() };
       var upDownRatios1 = udAnon.IEnumerable().ToDictionary(a => 0, a => a);
       var upDownRatios = new[] { udAnon }.Take(0).ToConcurrentDictionary(a => 0, a => a);
@@ -904,6 +954,10 @@ namespace HedgeHog.Alice.Store {
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       return WaveShort.Rates.SkipWhile(r => r.StartDate > startMax).ToArray()
         .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
+    private static int NestStep(int rc) {
+      return (rc / 100.0).ToInt() + 1;
     }
 
     public double CorridorBalance() {
@@ -1297,6 +1351,7 @@ namespace HedgeHog.Alice.Store {
     public double CorridorCorrelation { get; set; }
     #region CrossesCount
     private double _CrossesDensity;
+    private DateTime _CorridorStartDateByScan;
     public double CrossesDensity {
       get { return _CrossesDensity; }
       set {

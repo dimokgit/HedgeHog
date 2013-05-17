@@ -26,6 +26,18 @@ namespace HedgeHog.Shared {
         return _offersCollection;
       }
     }
+    public double PipsToMarginCallCore(Account account) {
+      var trades = GetTrades();
+      if (!trades.Any()) return int.MaxValue;
+      var pair = trades[0].Pair;
+      var offer = GetOffer(pair);
+      return TradesManagerStatic.PipToMarginCall(trades.Lots(), trades.GrossInPips(), account.Balance, offer.MMR, GetBaseUnitSize(pair), GetPipCost(pair));
+    }
+    public double PipsToMarginCall {
+      get {
+        return PipsToMarginCallCore(GetAccount(true));
+      }
+    }
     IDictionary<string, int> baseUnits {
       get {
         if (_baseUnits == null) {
@@ -117,8 +129,11 @@ namespace HedgeHog.Shared {
       if (includeOtherInfo) {
         var trades = GetTrades();
         Account.Trades = trades;
+        if (trades.Any())
+          Account.UsableMargin = Account.Equity - TradesManagerStatic.MarginRequired(trades.Lots(), GetBaseUnitSize(trades[0].Pair), GetOffer(trades[0].Pair).MMR);
         Account.StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0;
         Account.LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0;
+        Account.PipsToMC = PipsToMarginCallCore(Account).ToInt();
       }
       return Account;
     }

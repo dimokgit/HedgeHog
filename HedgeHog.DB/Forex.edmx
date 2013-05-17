@@ -41,6 +41,7 @@
       [v_TradeSession].[Count] AS [Count], 
       [v_TradeSession].[GrossPL] AS [GrossPL], 
       [v_TradeSession].[Days] AS [Days], 
+      [v_TradeSession].[Profitability] AS [Profitability], 
       [v_TradeSession].[Lot] AS [Lot], 
       [v_TradeSession].[LotA] AS [LotA], 
       [v_TradeSession].[LotSD] AS [LotSD], 
@@ -129,6 +130,9 @@
           <Property Name="Profitability" Type="float" />
           <Property Name="Timestamp" Type="datetime" Nullable="false" />
           <Property Name="SuperUid" Type="uniqueidentifier" />
+          <Property Name="DateMin" Type="datetime" />
+          <Property Name="DateMax" Type="datetime" />
+          <Property Name="BallanceMax" Type="float" />
         </EntityType>
         <EntityType Name="t_Stat">
           <Key>
@@ -226,6 +230,7 @@
           <Property Name="Count" Type="int" />
           <Property Name="GrossPL" Type="float" />
           <Property Name="Days" Type="int" />
+          <Property Name="Profitability" Type="float" />
           <Property Name="Lot" Type="int" />
           <Property Name="LotA" Type="float" />
           <Property Name="LotSD" Type="float" />
@@ -281,6 +286,11 @@
           <Parameter Name="Length" Type="int" Mode="In" />
           <Parameter Name="StartDate" Type="datetime" Mode="In" />
         </Function>
+        <Function Name="sGetStats" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="DateStart" Type="datetime" Mode="In" />
+          <Parameter Name="FrameInPeriods" Type="int" Mode="In" />
+          <Parameter Name="Weeks" Type="int" Mode="In" />
+        </Function>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -323,6 +333,11 @@
           <EntitySet Name="t_Session" EntityType="ForexModel.t_Session" />
           <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
           <EntitySet Name="MonthlyStat__Stats" EntityType="ForexModel.MonthlyStat__Stats" />
+          <FunctionImport Name="sGetStats" ReturnType="Collection(ForexModel.sGetStats_Result)">
+            <Parameter Name="DateStart" Mode="In" Type="DateTime" />
+            <Parameter Name="FrameInPeriods" Mode="In" Type="Int32" />
+            <Parameter Name="Weeks" Mode="In" Type="Int32" />
+          </FunctionImport>
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -482,6 +497,9 @@
           <Property Type="Double" Name="Profitability" />
           <Property Type="DateTime" Name="Timestamp" Nullable="false" />
           <Property Type="Guid" Name="SuperUid" />
+          <Property Type="DateTime" Name="DateMin" />
+          <Property Type="DateTime" Name="DateMax" />
+          <Property Type="Double" Name="BallanceMax" />
         </EntityType>
         <EntityType Name="v_TradeSession">
           <Key>
@@ -517,6 +535,7 @@
           <Property Type="String" Name="DistanceIterations" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Type="String" Name="CorrelationMinimum" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Type="String" Name="ScanCorridorBy" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="Double" Name="Profitability" />
         </EntityType>
         <EntityType Name="MonthlyStat__Stats">
           <Key>
@@ -532,6 +551,20 @@
           <Property Type="Int32" Name="Count" Nullable="false" />
           <Property Type="DateTime" Name="Date" Nullable="false" />
         </EntityType>
+        <ComplexType Name="sGetStats_Result">
+          <Property Type="Int32" Name="WeekDay" Nullable="true" />
+          <Property Type="String" Name="DayName" Nullable="true" MaxLength="30" />
+          <Property Type="Int32" Name="Month" Nullable="true" />
+          <Property Type="Double" Name="Range" Nullable="true" />
+          <Property Type="Single" Name="RangeMin" Nullable="true" />
+          <Property Type="Double" Name="RangeSD" Nullable="true" />
+          <Property Type="Int32" Name="Count" Nullable="true" />
+          <Property Type="DateTime" Name="StartDate" Nullable="true" Precision="23" />
+          <Property Type="Double" Name="RangeMinSD" Nullable="true" />
+          <Property Type="Double" Name="Max" Nullable="true" />
+          <Property Type="Double" Name="RangeForTrade" Nullable="true" />
+          <Property Type="DateTime" Name="StartDateMin" Nullable="true" Precision="23" />
+        </ComplexType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -703,6 +736,9 @@
           <EntitySetMapping Name="t_Session">
             <EntityTypeMapping TypeName="ForexModel.t_Session">
               <MappingFragment StoreEntitySet="t_Session">
+                <ScalarProperty Name="BallanceMax" ColumnName="BallanceMax" />
+                <ScalarProperty Name="DateMax" ColumnName="DateMax" />
+                <ScalarProperty Name="DateMin" ColumnName="DateMin" />
                 <ScalarProperty Name="SuperUid" ColumnName="SuperUid" />
                 <ScalarProperty Name="Timestamp" ColumnName="Timestamp" />
                 <ScalarProperty Name="Profitability" ColumnName="Profitability" />
@@ -715,6 +751,7 @@
           <EntitySetMapping Name="v_TradeSession">
             <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
               <MappingFragment StoreEntitySet="v_TradeSession">
+                <ScalarProperty Name="Profitability" ColumnName="Profitability" />
                 <ScalarProperty Name="ScanCorridorBy" ColumnName="ScanCorridorBy" />
                 <ScalarProperty Name="CorrelationMinimum" ColumnName="CorrelationMinimum" />
                 <ScalarProperty Name="DistanceIterations" ColumnName="DistanceIterations" />
@@ -760,6 +797,24 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <FunctionImportMapping FunctionImportName="sGetStats" FunctionName="ForexModel.Store.sGetStats">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="ForexModel.sGetStats_Result">
+                <ScalarProperty Name="WeekDay" ColumnName="WeekDay" />
+                <ScalarProperty Name="DayName" ColumnName="DayName" />
+                <ScalarProperty Name="Month" ColumnName="Month" />
+                <ScalarProperty Name="Range" ColumnName="Range" />
+                <ScalarProperty Name="RangeMin" ColumnName="RangeMin" />
+                <ScalarProperty Name="RangeSD" ColumnName="RangeSD" />
+                <ScalarProperty Name="Count" ColumnName="Count" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="RangeMinSD" ColumnName="RangeMinSD" />
+                <ScalarProperty Name="Max" ColumnName="Max" />
+                <ScalarProperty Name="RangeForTrade" ColumnName="RangeForTrade" />
+                <ScalarProperty Name="StartDateMin" ColumnName="StartDateMin" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>

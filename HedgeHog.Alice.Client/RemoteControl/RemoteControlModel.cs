@@ -279,7 +279,7 @@ namespace HedgeHog.Alice.Client {
     void OnSaveTradingSettings(TradingMacro tm) {
       try {
         var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
-          .Select(p => "{0}:{1}".Formater(p.Name, p.GetValue(tm, null))).ToArray();
+          .Select(p => "{0}:{1}".Formater(p.Name, p.GetValue(tm, null))).OrderBy(s => s);
         var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
         if (!odRes.GetValueOrDefault()) return;
@@ -993,7 +993,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n2}↨"///{10:n2}↔"
+            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n0}r{10:n0}p"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -1003,7 +1003,8 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.CrossesDensity
+            /*9*/, tm.Correlation_R*100
+            /*10*/, tm.Correlation_P*100
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;

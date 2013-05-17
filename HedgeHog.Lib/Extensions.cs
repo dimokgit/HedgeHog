@@ -17,7 +17,8 @@ namespace HedgeHog {
         if (query == null) throw new ArgumentException("query");
         var properties = new List<string>();
         Action<string> add = (str) => properties.Insert(0, str); 
-        var expression = path.Body; do {
+        var expression = path.Body; 
+        do {
           switch (expression.NodeType) {
             case ExpressionType.MemberAccess: 
               var member = (MemberExpression)expression; 
@@ -27,9 +28,12 @@ namespace HedgeHog {
                 expression = member.Expression; 
                 break;
             case ExpressionType.Call: 
-              var method = (MethodCallExpression)expression; 
-              if (method.Method.Name != SingleMethodName || method.Method.DeclaringType != EnumerableType) 
-                throw new ArgumentException(string.Format("Method '{0}' is not supported, only method '{1}' is supported to singularize navigation properties.", string.Join(Type.Delimiter.ToString(), method.Method.DeclaringType.FullName, method.Method.Name), string.Join(Type.Delimiter.ToString(), EnumerableType.FullName, SingleMethodName)), "selector"); expression = (MemberExpression)method.Arguments.Single(); break;
+              var method = (MethodCallExpression)expression;
+              if (method.Method.Name != SingleMethodName || method.Method.DeclaringType != EnumerableType)
+                throw new ArgumentException(string.Format("Method '{0}' is not supported, only method '{1}' is supported to singularize navigation properties."
+                  , string.Join(Type.Delimiter.ToString(), method.Method.DeclaringType.FullName, method.Method.Name)
+                  , string.Join(Type.Delimiter.ToString(), EnumerableType.FullName, SingleMethodName)), "selector");
+              expression = (MemberExpression)method.Arguments.Single(); break;
             default:
               throw new ArgumentException("The property selector expression has an incorrect format.", "selector", new FormatException());
           }

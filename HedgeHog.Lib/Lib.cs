@@ -138,15 +138,40 @@ namespace HedgeHog {
       });
     }
 
+    public static IEnumerable<int> IteratonSequence(int start, int end) {
+      return IteratonSequence(start,end, NestStep);
+    }
+    private static IEnumerable<int> IteratonSequence(int start,int end, Func<int, int> nextStep) {
+      for (var i = start; i < end; i += nextStep(i))
+        yield return i;
+    }
+
+    private static int NestStep(int rc) {
+      return (rc / 100.0).ToInt() + 1;
+    }
+
     public static IEnumerable<T> IEnumerable<T>(this T v) where T : class {
       return new[] { v }.Take(0);
     }
-    public static T Evaluate<T>(this string expression,params ParameterExpression[] parameters) {
+    public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {
+      return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile();
+    }
+    public static T Evaluate<T>(this string expression, params ParameterExpression[] parameters) {
       return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
     }
-    public static void ForEach<T>(this IEnumerable<T> es,Action<T> a) {
+    public static void ForEach<T>(this IEnumerable<T> es, Action<T> a) {
       foreach(T e in es)
         a(e);
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="es"></param>
+    /// <param name="a">Return true in order to stop iterations</param>
+    public static void ForEach<T>(this IEnumerable<T> es, Func<T,bool> a) {
+      foreach (T e in es)
+        if (a(e)) break;
     }
     public static string Formater(this string format, params object[] args) {
       return string.Format(format, args);
@@ -161,17 +186,16 @@ namespace HedgeHog {
       var step = double.Parse(m.Groups["step"].Value);
       for (var d = from; step > 0 && d <= to || step < 0 && d >= to; d += step)
         l.Add(d);
-      return string.Join(" ", l);
+      return string.Join("\t", l);
     }
     public static Dictionary<string, string> ReadTestParameters(string testFileName) {
       var path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-      var separator = ":";
+      var separator = "=";
       return File.ReadAllLines(Path.Combine(path, testFileName))
         .Where(s => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("//"))
         .Select(pl => pl.Trim().Split(new[] { separator }, StringSplitOptions.RemoveEmptyEntries))
         .Where(a => a.Length > 1 && !string.IsNullOrWhiteSpace(a[1]))
         .Select(a => new { name = a[0], value = string.Join(separator, a.Skip(1)).Trim() })
-        .OrderBy(p => p.name)
         .ToDictionary(p => p.name, p => ParseParamRange(p.value));
     }
 
@@ -629,6 +653,9 @@ namespace HedgeHog {
     static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
       if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return Cma(MA, Periods, NewValue);
+    }
+    public static bool IsNaN(this double d) {
+      return double.IsNaN(d);
     }
     public static double IfNaN(this double d, double defaultValue) {
       return double.IsNaN(d) ? defaultValue : d;

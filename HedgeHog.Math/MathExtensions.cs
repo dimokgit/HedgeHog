@@ -112,6 +112,17 @@ namespace HedgeHog {
       var neg = counts.Where(v => v.Value < 0).Select(b => b.Value).ToArray();
       return new[] { pos, neg };
     }
+    public static IEnumerable<Tuple<T, T>> Mash<T>(this IList<T> list) {
+      return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T>(f, s));
+    }
+    public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<T> signal,Func<T,double> getValue ) {
+      Func<T, T, double> sign = (v1, v2) => Math.Sign(getValue(v1) - getValue(v2));
+      return list.Mash()
+        .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
+        .Where(a => a.signFirst != a.signSecond)
+        .Select(a => a.first);
+    }
+
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;
@@ -437,8 +448,8 @@ namespace HedgeHog {
       return (int)(useCeiling ? Math.Ceiling(d) : Math.Floor(d));
     }
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
-    public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
-    public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
+    //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
+    //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
     public enum RoundTo { Second, Minute, Hour, Day, Month, MonthEnd, Week }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
