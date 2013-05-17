@@ -856,12 +856,12 @@ namespace Order2GoAddIn {
     #region FX Tables
     public Account GetAccount() {
       if (accountInternal == null) {
-        accountInternal = GetAccount_Slow(false);
+        accountInternal = GetAccount_Slow();
         TradesReset();
       }
       return accountInternal; 
     }
-    public Account GetAccount_Slow(bool includeOtherInfo) {
+    public Account GetAccount_Slow() {
       Stopwatch sw = Stopwatch.StartNew();
       try {
         var row = GetRows(TABLE_ACCOUNTS).First();
@@ -874,14 +874,12 @@ namespace Order2GoAddIn {
           IsMarginCall = row.CellValue(FIELD_MARGINCALL) + "" == "W",
           Equity = (double)row.CellValue(FIELD_EQUITY),
           Hedging = row.CellValue("Hedging").ToString() == "Y",
-          Trades = includeOtherInfo ? trades = GetTrades("") : null,
-          StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
-          LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
+          //Trades = includeOtherInfo ? trades = GetTrades("") : null,
+          //StopAmount = includeOtherInfo ? trades.Sum(t => t.StopAmount) : 0,
+          //LimitAmount = includeOtherInfo ? trades.Sum(t => t.LimitAmount) : 0,
           ServerTime = ServerTime
         };
         //Debug.WriteLine("GetAccount2:{0} ms", sw.Elapsed.TotalMilliseconds);
-        if (includeOtherInfo)
-          account.PipsToMC = (int)(account.UsableMargin * PipsToMarginCallPerUnitCurrency(trades));
         //account.PipsToMC = summary == null ? 0 :
         //  (int)(account.UsableMargin / Math.Max(.1, (Math.Abs(summary.BuyLots - summary.SellLots) / 10000)));
         //Debug.WriteLine("GetAccount3:{0} ms", sw.Elapsed.TotalMilliseconds);
@@ -892,20 +890,6 @@ namespace Order2GoAddIn {
       } finally {
         //Debug.WriteLine("{0}@{2:mm:ss} - {1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds,DateTime.Now);
       }
-    }
-    private Account GetAccount(FXCore.ParserAut row) {
-      accountInternal.ID = row.GetValue(FIELD_ACCOUNTID) + "";
-      accountInternal.Balance = (double)row.GetValue(FIELD_BALANCE);
-      accountInternal.UsableMargin = (double)row.GetValue(FIELD_USABLEMARGIN);
-      accountInternal.IsMarginCall = row.GetValue(FIELD_MARGINCALL) + "" == "W";
-      accountInternal.Equity = (double)row.GetValue(FIELD_EQUITY);
-      accountInternal.Hedging = row.GetValue("Hedging").ToString() == "Y";
-      accountInternal.Trades = GetTrades();
-      accountInternal.StopAmount = accountInternal.Trades.Sum(t => t.StopAmount);
-      accountInternal.LimitAmount = accountInternal.Trades.Sum(t => t.LimitAmount);
-      accountInternal.ServerTime = ServerTime;
-      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(accountInternal.Trades));
-      return accountInternal;
     }
 
     private Account GetAccount(NameValueParser row) {
@@ -920,7 +904,8 @@ namespace Order2GoAddIn {
       accountInternal.StopAmount = accountInternal.Trades.Sum(t => t.StopAmount);
       accountInternal.LimitAmount = accountInternal.Trades.Sum(t => t.LimitAmount);
       accountInternal.ServerTime = ServerTime;
-      accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(accountInternal.Trades));
+      //accountInternal.PipsToMC = (int)(accountInternal.UsableMargin * PipsToMarginCallPerUnitCurrency(accountInternal.Trades));
+      accountInternal.PipsToMC = PipsToMarginCallCore(accountInternal).ToInt();
       return accountInternal;
     }
 
@@ -2312,6 +2297,32 @@ namespace Order2GoAddIn {
       return digitDictionary[pair];
     }
     public int Digits() { return GetDigits(Pair); }
+
+    public double PipsToMarginCall { get { return PipsToMarginCallCore(accountInternal); } }
+    public double PipsToMarginCallCore(Account account) {
+      var trades = GetTrades();
+      if (!trades.Any()) return int.MaxValue;
+      var summaries = (from t in trades
+                       group t by t.Pair into sms
+                       select new { Pair = sms.Key, Amount = sms.Sum(t => t.Lots), Trades = sms.ToArray() }
+      ).ToArray();
+      var ptmcs = from t in summaries
+                  join pc in pipCostDictionary
+                  on t.Pair equals pc.Key
+                  select new {
+                    t.Pair,
+                    t.Amount,
+                    PipCost = pc.Value,
+                    PMC = TradesManagerStatic.PipToMarginCall(
+                      t.Trades.Lots(),
+                      t.Trades.GrossInPips(),
+                      account.Balance,
+                      GetOffer(t.Pair).MMR,
+                      GetBaseUnitSize(t.Pair),
+                      GetPipCost(t.Pair))
+                  };
+      return ptmcs.Average(p => p.PMC);
+    }
 
     private double PipsToMarginCallPerUnitCurrency(Trade[] trades) {
       var summaries = (from t in trades

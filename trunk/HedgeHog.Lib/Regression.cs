@@ -36,13 +36,25 @@ namespace HedgeHog {
 
     }
 
-    public static double[] Regress<T>(this IList<T> dY, int polyOrder,Func<T,double> value) {
+    /// <summary>
+    /// Returns regression coefficients
+    /// </summary>
+    /// <param name="dY"></param>
+    /// <param name="polyOrder"></param>
+    /// <returns>Coeffs</returns>
+    public static double[] Regress<T>(this IList<T> dY, int polyOrder, Func<T, double> value) {
       return Regress(dY.Select((y, i) => (double)i).ToArray(), dY.Select(value).ToArray(), polyOrder);
     }
+    /// <summary>
+    /// Returns regression coefficients
+    /// </summary>
+    /// <param name="dY"></param>
+    /// <param name="polyOrder"></param>
+    /// <returns>Coeffs</returns>
     public static double[] Regress(this double[] dY, int polyOrder) {
-      return Regress(dY.Select((y, i) => (double)i).ToArray(), dY, polyOrder);
+      return Regress(Enumerable.Range(0,dY.Length).Select(i=>(double)i).ToArray(), dY, polyOrder);
     }
-    public static double[] Regress(double[] dX, double[] dY, int polyOrder) {
+    public static double[] Regress(this double[] dX, double[] dY, int polyOrder) {
       int nPolyOrder = polyOrder;
       double[,] dZ = new double[dY.Length, nPolyOrder + 1];
 

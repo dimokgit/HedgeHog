@@ -23,7 +23,8 @@ namespace HedgeHog.Alice.Store {
     StDevUDCross = 43,
     Balance = 50,
     Height = 60,
-    Time = 61
+    Time = 61,
+    TimeFrame = 62
   }
   public enum TrailingWaveMethod {
     WaveCommon = -1,

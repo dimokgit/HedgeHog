@@ -129,5 +129,7 @@ namespace HedgeHog.Shared {
     public void NextTradingMacro() {
       _TradingMacrosIndex = (_TradingMacrosIndex + 1) % TradingMacros.Count;
     }
+
+    public Func<double> GetOriginalBalance { get; set; }
   }
 }

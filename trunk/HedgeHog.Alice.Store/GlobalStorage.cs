@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Objects;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -36,9 +37,9 @@ namespace HedgeHog.Alice.Store {
         return _Instruments;
       }
     }
-
+    static ForexEntities ForexEntitiesFactory() { return new ForexEntities() { CommandTimeout = 60 * 1 }; }
     public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null) {
-      using (var context = new ForexEntities())
+      using (var context = ForexEntitiesFactory())
         try {
           action(context);
         } catch (Exception exc) {
@@ -51,8 +52,10 @@ namespace HedgeHog.Alice.Store {
     }
     public static T UseForexContext<T>(Func<ForexEntities,T> action) {
       try {
-        using (var context = new ForexEntities())
+        using (var context = ForexEntitiesFactory()) {
+          context.CommandTimeout = 60 * 1;
           return action(context);
+        }
       } catch (Exception exc) {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         throw;

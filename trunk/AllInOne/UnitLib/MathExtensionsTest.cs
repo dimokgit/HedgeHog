@@ -141,6 +141,8 @@ namespace UnitLib
       int expected = 2;
       var crosses = MathExtensions.Crosses(values1, values2);
       Assert.AreEqual(expected, crosses.Count);
+      var crosses1 = values1.Crosses<double>(values2, d => d).ToArray();
+      Assert.AreEqual(2, crosses1.Length);
     }
 
     /// <summary>

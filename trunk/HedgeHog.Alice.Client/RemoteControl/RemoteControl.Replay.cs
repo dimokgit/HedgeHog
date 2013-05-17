@@ -64,7 +64,7 @@ namespace HedgeHog.Alice.Client {
       } catch (Exception exc) { Log = exc; }
     }
     void FillTestParams(TradingMacro tmOriginal, Action<IList<KeyValuePair<string, object>[]>> paramsTransformation) {
-      var c = new[] { ',', ' ', '\t' };
+      var c = new[] { ',', '\t' };
       if (!_testParamsRaw.Any()) {
         if (tmOriginal.UseTestFile) {
           var od = new Microsoft.Win32.OpenFileDialog() { FileName = "TestParams", DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
@@ -149,6 +149,7 @@ namespace HedgeHog.Alice.Client {
         SaveTradingSettings(tmOriginal);
       var tms = GetTradingMacros().Where(t => t.Strategy != Strategies.None).ToList();
       ReplayArguments.SetTradingMacros(tms);
+      ReplayArguments.GetOriginalBalance = new Func<double>(() => MasterModel.AccountModel.OriginalBalance);
       foreach (var tm in tms) {
         if (IsInVirtualTrading) {
           tradesManager.ClosePair(tm.Pair);
@@ -157,8 +158,12 @@ namespace HedgeHog.Alice.Client {
             testParameter.ForEach(tp => {
               try {
                 tm.SetProperty(tp.Key, tp.Value);
+                if (tp.Key == "CorridorDistanceRatio")
+                  tm.BarsCount = tm.CorridorDistanceRatio.ToInt() + 1;
+              }catch(SetLotSizeException){
               } catch (Exception exc) {
-                throw new Exception("Property:" + new { tp.Key, tp.Value }, exc);
+                if(!(exc.InnerException is SetLotSizeException))
+                  throw new Exception("Property:" + new { tp.Key, tp.Value }, exc);
               }
             });
         }

@@ -1257,7 +1257,7 @@ namespace HedgeHog.Alice.Store {
     public double CalculateCloseLoss() {
       switch (Strategy) {
         default:
-          return RangeRatioForTradeStop < 0 ? RangeRatioForTradeStop : -CalculateTakeProfit() * RangeRatioForTradeStop;
+          return -CalculateTakeProfit();
       }
     }
 
@@ -1448,14 +1448,6 @@ namespace HedgeHog.Alice.Store {
       ReleasePendingAction("OT");
       ReleasePendingAction("CT");
       if (_strategyExecuteOnTradeClose != null) _strategyExecuteOnTradeClose(e.Trade);
-      if (IsInVitualTrading)
-        GlobalStorage.UseForexContext(c => {
-          var session = c.t_Session.Single(s => s.Uid == SessionId);
-          session.MaximumLot = HistoryMaximumLot;
-          session.MinimumGross = this.MinimumGross;
-          session.Profitability = Profitability;
-          c.SaveChanges();
-        });
     }
 
     private void RaisePositionsChanged() {
@@ -1475,6 +1467,7 @@ namespace HedgeHog.Alice.Store {
               l.Add(p.Name + ":" + p.GetValue(this, null));
             }
           }
+          l.Add("TestFileName:" + TestFileName);
           _sessionInfo = string.Join(",", l);
         }
         return _sessionInfo;
@@ -1488,6 +1481,19 @@ namespace HedgeHog.Alice.Store {
       Action<RepayPauseMessage> pra = m => args.InPause = !args.InPause;
       Action<RepayBackMessage> sba = m => args.StepBack = true;
       Action<RepayForwardMessage> sfa = m => args.StepForward = true;
+      var tc = new EventHandler<TradeEventArgs>((sender, e) => {
+        GlobalStorage.UseForexContext(c => {
+          var session = c.t_Session.Single(s => s.Uid == SessionId);
+          session.MaximumLot = HistoryMaximumLot;
+          session.MinimumGross = this.MinimumGross;
+          session.Profitability = Profitability;
+          session.DateMin = e.Trade.TimeClose;
+          if (session.DateMin == null) session.DateMin = e.Trade.Time;
+          c.SaveChanges();
+        });
+      });
+
+      TradesManager.TradeClosed += tc;
       try {
         if(tms().Length == 1 || BarPeriod == tms().Min(tm=>tm.BarPeriod))
           lock (_replayLocker) {
@@ -1533,7 +1539,8 @@ namespace HedgeHog.Alice.Store {
         _isSelfStrategy = false;
         WaveShort.Reset();
         CloseAtZero = _trimAtZero = false;
-        CurrentLoss = MinimumGross = HistoryMaximumLot = 0;
+        CurrentLoss = HistoryMaximumLot = 0;
+        ResetMinimumGross(); 
         ForEachSuppRes(sr => {
           sr.CanTrade = false; 
           sr.TradesCount = 0;
@@ -1621,11 +1628,11 @@ namespace HedgeHog.Alice.Store {
 
                 //RunPriceChanged(new PriceChangedEventArgs(Pair, price, TradesManager.GetAccount(), new Trade[0]), null);
                 ReplayEvents();
-                if (TradesManager.GetAccount().Equity < 25000) {
+                if (TradesManager.GetAccount().PipsToMC < 0) {
                   Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
-                  args.MustStop = true;
+                  CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
                 }
-                Profitability = (TradesManager.GetAccount().Equity - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
+                Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
               } else
                 Log = new Exception("Replay:End");
               ReplayCancelationToken.ThrowIfCancellationRequested();
@@ -1652,6 +1659,7 @@ namespace HedgeHog.Alice.Store {
           args.MustStop = true;
           args.SessionStats.ProfitToLossRatio = ProfitabilityRatio;
           TradesManager.ClosePair(Pair);
+          TradesManager.TradeClosed -= tc;
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, pra);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, sba);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, sfa);
@@ -2228,12 +2236,13 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    private double _MinimumGross;
+    void ResetMinimumGross() { MinimumGross = double.NaN; }
+    private double _MinimumGross = double.NaN;
     [Category(categorySession)]
     public double MinimumGross {
       get { return _MinimumGross; }
       set {
-        if (_MinimumGross != value) {
+        if (_MinimumGross.IsNaN() || value.IsNaN() || _MinimumGross > value) {
           _MinimumGross = value;
           OnPropertyChanged("MinimumGross");
         }
@@ -3041,6 +3050,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Time: return ScanCorridorByTime;
+        case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
@@ -3051,7 +3061,7 @@ namespace HedgeHog.Alice.Store {
 
     public double CommissionByTrade(Trade trade) { return TradesManager.CommissionByTrade(trade); }
 
-    bool IsInVitualTrading { get { return TradesManager is VirtualTradesManager; } }
+    public bool IsInVitualTrading { get { return TradesManager is VirtualTradesManager; } }
     private bool CanTrade() {
       return IsInVitualTrading || !IsInPlayback;
     }
@@ -3080,8 +3090,7 @@ namespace HedgeHog.Alice.Store {
       try {
         CalcTakeProfitDistance();
         if (!price.IsReal) price = TradesManager.GetPrice(Pair);
-        var minGross = CurrentLoss + trades.Gross();// +tm.RunningBalance;
-        if (MinimumGross > minGross) MinimumGross = minGross;
+        MinimumGross = CurrentGross;
         CurrentLossPercent = CurrentGross / account.Balance;
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
@@ -3103,14 +3112,20 @@ namespace HedgeHog.Alice.Store {
 
     #region LotSize
     int _BaseUnitSize = 0;
+    double TradingCorridor() {
+      return _buyLevel == null ? 0 : _buyLevel.Rate - _sellLevel.Rate;
+    }
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
     public void SetLotSize(Account account = null) {
       if (TradesManager == null) return;
       if (account == null) account = TradesManager.GetAccount();
       if (account == null) return;
       Trade[] trades = Trades;
-      LotSize = TradingRatio <= 0 ? 0 : TradingRatio >= 1 ? (TradingRatio * BaseUnitSize).ToInt()
-        : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
+      try {
+        LotSize = TradingRatioByPMC? CalcLotSizeByPMC(account)
+          : TradingRatio <= 0 ? 0 : TradingRatio >= 1 ? (TradingRatio * BaseUnitSize).ToInt()
+          : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
+      } catch (Exception exc) { throw new SetLotSizeException("", exc); }
       LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
       var td = TradingDistance;
       LotSizeByLossBuy = AllowedLotSizeCore();
@@ -3124,6 +3139,11 @@ namespace HedgeHog.Alice.Store {
       }
       StopAmount = stopAmount;
       LimitAmount = limitAmount;
+    }
+
+    private int CalcLotSizeByPMC(Account account) {
+      return TradingStatistics.TradingMacros == null ? 0
+        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall((InPips(RatesHeight * 2)).ToInt(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -3578,6 +3598,14 @@ namespace HedgeHog.Alice.Store {
       get { return _waveRates; }
       set { _waveRates = value; }
     }
+    private double CorridorAngleFromTangent() {
+      return AngleFromTangent(CorridorStats.Coeffs.LineSlope());
+    }
+
+    private double AngleFromTangent(double tangent) {
+      return tangent.Angle(BarPeriodInt, PointSize);
+    }
+
 
     public double VolumeAverageLow { get; set; }
 
