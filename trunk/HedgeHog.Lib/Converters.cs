@@ -14,6 +14,39 @@ namespace HedgeHog {
     public static string True = "#3A98EF71";
   }
 
+  public enum TrafficLightStates {
+    GREEN,
+    YELLOW,
+    RED
+  }
+
+  [ValueConversion(typeof(TrafficLightStates), typeof(Brush))]
+  public class TrafficLightColorConverter : IValueConverter {
+    public enum Lights {
+      GREEN,
+      YELLOW,
+      RED
+    }
+
+    public object Convert(object value, Type targetType,
+       object parameter, CultureInfo culture) {
+      TrafficLightStates state = (TrafficLightStates)value;
+
+      switch (state) {
+        case TrafficLightStates.GREEN: return new SolidColorBrush(Colors.Green);
+        case TrafficLightStates.YELLOW: return new SolidColorBrush(Colors.Yellow);
+        case TrafficLightStates.RED: return new SolidColorBrush(Colors.Red);
+      }
+
+      return new SolidColorBrush(Colors.LightGray);
+    }
+
+    public object ConvertBack(object value, Type targetType,
+       object parameter, CultureInfo culture) {
+      return null;
+    }
+  }
+
   [ValueConversion(typeof(string), typeof(DateTime?))]
   public class DateTimeConverter : IValueConverter {
     #region IValueConverter Members

@@ -52,12 +52,12 @@ namespace HedgeHog.Alice.Store {
         if (_CanTrade != value) {
           _CanTrade = value;
           OnPropertyChanged("CanTrade");
+          OnPropertyChanged("CanTradeEx");
           RaiseCanTradeChanged();
         }
       }
     }
     #endregion
-
 
     public bool CanTradeEx {
       get { return CanTrade; }
@@ -1031,11 +1031,15 @@ namespace HedgeHog.Alice.Store {
       set { TradeByAngle = value; }
     }
 
-    [Category(categoryXXX_NU)]
-    [DisplayName("Trade And Angle Are Synced")]
-    public bool TradeAndAngleSynced_ {
+    [Category(categoryCorridor)]
+    [DisplayName("Show Inactive Corridor")]
+    public bool DoShowInactiveCorridor {
       get { return TradeAndAngleSynced; }
-      set { TradeAndAngleSynced = value; }
+      set {
+        if (TradeAndAngleSynced == value) return;
+        TradeAndAngleSynced = value;
+        OnPropertyChanged(() => DoShowInactiveCorridor);
+      }
     }
 
     [Category(categoryActive)]

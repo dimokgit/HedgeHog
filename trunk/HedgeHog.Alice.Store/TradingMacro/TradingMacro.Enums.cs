@@ -50,7 +50,8 @@ namespace HedgeHog.Alice.Store {
     TradeLine = 130,
     TradeLineA = 131,
     TradeLineA1 = 132,
-    TradeLineA2,
+    TradeLineA2 = 133,
+    ByHour = 140,
     Void
   }
   public enum TradingMacroTakeProfitFunction {
@@ -101,7 +102,7 @@ namespace HedgeHog.Alice.Store {
   }
   public enum ExitFunctions {
     Void = -1,
-    Exit0 = 0,
+    BuySell = 0,
     Exit = 1,
     Exit1 = 2,
     Exit2 = 3,
