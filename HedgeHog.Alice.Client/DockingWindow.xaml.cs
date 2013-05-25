@@ -190,8 +190,17 @@ namespace HedgeHog.Alice.Client {
 
     #region RootVisual Event Handlers
     void RootVisual_Loaded(object sender, RoutedEventArgs e) {
+      var panesOriginal = RootVisual.Panes.ToArray();
       SaveOriginalLayout();
       LoadLayoutFromFile(SettingsFileName);
+      var paneLast = RootVisual.Panes.Last();
+
+      var paneGroup = RootVisual.Panes.First().PaneGroup;
+      panesOriginal.Except(RootVisual.Panes).ForEach(pane => {
+        pane.RemoveFromParent();
+        paneGroup.AddItem(pane, Telerik.Windows.Controls.Docking.DockPosition.Right) ;
+        pane.IsHidden = false;
+      });
     }
 
     void RootVisual_ElementCleaning(object sender, LayoutSerializationEventArgs e) {

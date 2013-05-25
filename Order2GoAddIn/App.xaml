@@ -1,7 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Application xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Order2GoAddIn.App" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:vm="clr-namespace:Order2GoAddIn.ViewModel" mc:Ignorable="d">
-  <Application.Resources>
-    <!--Global View Model Locator-->
-    <vm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" />
-  </Application.Resources>
-</Application>
+  
+<Application.Resources><ResourceDictionary><vm:ViewModelLocator x:Key="Locator" d:IsDataSource="True" /><ResourceDictionary.MergedDictionaries></ResourceDictionary.MergedDictionaries></ResourceDictionary></Application.Resources></Application>

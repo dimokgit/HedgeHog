@@ -104,12 +104,12 @@ namespace HedgeHog.Alice.Client.UI.Controls {
   #region Command classes
   public class OpenNewAccountRelayCommand : GalaSoft.MvvmLight.Command.RelayCommand<LoginInfo> {
     public OpenNewAccountRelayCommand(Action<LoginInfo> a) : base(a) { }
-    public OpenNewAccountRelayCommand(Action<LoginInfo> a, Predicate<LoginInfo> p) : base(a, p) { }
+    public OpenNewAccountRelayCommand(Action<LoginInfo> a, Func<LoginInfo,bool> p) : base(a, p) { }
   }
 
   public class AccountLoginRelayCommand : GalaSoft.MvvmLight.Command.RelayCommand<LoginInfo> {
     public AccountLoginRelayCommand(Action<LoginInfo> a) : base(a) { }
-    public AccountLoginRelayCommand(Action<LoginInfo> a, Predicate<LoginInfo> p) : base(a, p) { }
+    public AccountLoginRelayCommand(Action<LoginInfo> a, Func<LoginInfo,bool> p) : base(a, p) { }
   }
   public class LoginInfo{
     public string Account { get; set; }

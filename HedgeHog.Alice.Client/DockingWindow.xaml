@@ -181,7 +181,25 @@
 				</Grid>
 			</DataTemplate>
 
-			<!--Open Trades Title Template-->
+      <!--Markets-->
+      <DataTemplate x:Key="MarketsTemplate">
+        <Grid Background="#FFF7F3F7">
+          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding MarketsList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <DataGrid.RowStyle>
+              <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                <Setter Property="Background" Value="{Binding Status,Converter={x:Static Member=hh:CompareValueConverter.Default},ConverterParameter=Open|LightGray|#CCFF99}"/>
+              </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Market" Binding="{Binding TimeZone}"/>
+              <DataGridTextColumn Header="Opens" Binding="{Binding Opens,StringFormat='dd HH:mm'}"/>
+              <DataGridTextColumn Header="Closes" Binding="{Binding Closes,StringFormat='dd HH:mm'}"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </Grid>
+      </DataTemplate>
+
+      <!--Open Trades Title Template-->
 			<DataTemplate x:Key="OpenTradesHeaderTemplate">
 				<Grid>
 					<Grid.ColumnDefinitions>
@@ -548,7 +566,8 @@
 			</telerik:RadDocking.DocumentHost>
 			<telerik:RadSplitContainer InitialPosition="DockedBottom" Orientation="Horizontal">
 				<telerik:RadPaneGroup>
-					<telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
+
+          <telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
 						<telerik:RadPane.ContentTemplate>
 							<DataTemplate>
 								<ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}" VerticalScrollBarVisibility="Auto">
@@ -557,7 +576,10 @@
 							</DataTemplate>
 						</telerik:RadPane.ContentTemplate>
 					</telerik:RadPane>
-				</telerik:RadPaneGroup>
+
+          <telerik:RadPane Header="Markets" ContentTemplate="{StaticResource MarketsTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="Markets" CanUserClose="False"/>
+
+        </telerik:RadPaneGroup>
 			</telerik:RadSplitContainer>
 		</telerik:RadDocking>
 	</Grid>

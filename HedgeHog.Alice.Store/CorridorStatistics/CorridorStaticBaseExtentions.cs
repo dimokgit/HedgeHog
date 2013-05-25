@@ -144,7 +144,7 @@ namespace HedgeHog.Alice.Store {
 
         return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2) {
           priceLine = linePrices, priceHigh = (Func<Rate, double>)priceHigh, priceLow = (Func<Rate, double>)priceLow,
-          StDevs = stDevDict, HeightByRegression = height.IfNaN(stDev * 4)
+          StDevs = stDevDict, HeightByRegression = height.IfNaN(stDevDict[CorridorCalculationMethod.Height] * 4)
         };
       } catch (Exception exc) {
         Debug.WriteLine(exc);

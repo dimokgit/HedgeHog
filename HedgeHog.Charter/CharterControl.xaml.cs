@@ -40,6 +40,44 @@ namespace HedgeHog {
     public enum MessageType { Add, Remove }
     public CharterControl():this("",null) {
     }
+    public class ColorPalette {
+      public string BackgroundDefault { get; set; }
+      public string BackgroundNotActive { get; set; }
+      public string GraphBuy { get; set; }
+      public string GraphSell { get; set; }
+      public string LevelBuy { get; set; }
+      public string LevelSell { get; set; }
+      public string BackgroundComposite { get { return BackgroundNotActive + "|" + BackgroundNotActive + "|" + BackgroundDefault; } }
+    }
+    static ColorPalette ColorPaletteDefault =       new ColorPalette(){
+        BackgroundDefault="#FFF7F3F7",
+        BackgroundNotActive = "#FFF4DD",
+        GraphBuy  = "DarkGreen",
+        GraphSell = "DarkRed",
+        LevelBuy = "DarkRed",
+        LevelSell = "Navy"
+      };
+
+    List<ColorPalette> ColorPaletteList = new List<ColorPalette>() { ColorPaletteDefault };
+
+    #region ColorPalette
+    private ColorPalette _ColorPaletteCurrent = ColorPaletteDefault;
+    public ColorPalette ColorPaletteCurrent {
+      get { return _ColorPaletteCurrent; }
+      set {
+        if (_ColorPaletteCurrent != value) {
+          _ColorPaletteCurrent = value;
+          OnPropertyChanged("ColorPalette");
+          OnPropertyChanged("BackgroundCurrent");
+        }
+      }
+    }
+    public string BackgroundCurrent {
+      get {
+        return IsActive ? ColorPaletteCurrent.BackgroundDefault : ColorPaletteCurrent.BackgroundNotActive;
+      }
+    }
+    #endregion
     public CharterControl(string name, CompositionContainer container = null) {
       if (container != null) container.SatisfyImportsOnce(this);
       this.Name = name.Replace("/", "");
@@ -134,12 +172,16 @@ namespace HedgeHog {
 
     public bool IsActive {
       get { return (bool)GetValue(IsActiveProperty); }
-      set { SetValue(IsActiveProperty, value); }
+      set { 
+        SetValue(IsActiveProperty, value);
+      }
     }
 
     // Using a DependencyProperty as the backing store for IsActive.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsActiveProperty =
-        DependencyProperty.Register("IsActive", typeof(bool), typeof(CharterControl), new UIPropertyMetadata(false));
+        DependencyProperty.Register("IsActive", typeof(bool), typeof(CharterControl), new UIPropertyMetadata(false, (d, p) => {
+          (d as CharterControl).OnPropertyChanged("BackgroundCurrent");
+        }));
 
 
 

@@ -332,6 +332,7 @@
           </DataGridTemplateColumn.HeaderTemplate>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
+              <StackPanel Orientation="Horizontal">
               <TextBlock Text="{Binding Strategy}" 
                          Background="{Binding Strategy,Converter={x:Static Member=lib:CompareValueConverter.Default},ConverterParameter=None}"
                           ToolTipService.ShowDuration="3000000">
@@ -380,6 +381,11 @@
                     </TextBlock.ToolTip>
                 
               </TextBlock>
+                <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
+                      Fill="{Binding TradingState,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
+                </Border>
+              </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
           <DataGridTemplateColumn.CellEditingTemplate>

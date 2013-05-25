@@ -420,6 +420,9 @@ namespace HedgeHog.Alice.Client {
     public NotifyCollectionChangedWrapper<Trade> ClosedTrades { get; set; }
     public ListCollectionView ClosedTradesList { get; set; }
 
+    public NotifyCollectionChangedWrapper<MarketHours> Markets { get; set; }
+    public ListCollectionView MarketsList { get; set; }
+
     public NotifyCollectionChangedWrapper<Trade> AbsentTrades { get; set; }
     public ListCollectionView AbsentTradesList { get; set; }
 
@@ -1262,6 +1265,24 @@ namespace HedgeHog.Alice.Client {
             fwMaster.GetClosedTrades("").ToList().ForEach(ct => ClosedTrades.Add(ct));
           });
 
+          if(!(TradesManager is VirtualTradesManager)) {
+            Action<IList<MarketHours>> a = mks => {
+              try {
+                Markets.Clear();
+                mks.ForEach(mh => Markets.Add(mh));
+                Log = new Exception("Markets Loaded.");
+              } catch (Exception exc) { Log = exc; }
+            };
+            var o = Observable.Interval(5.FromMinutes(), TaskPoolScheduler.Default).StartWith(TaskPoolScheduler.Default, 0)
+              .Do(l => Log = new Exception("Loading Markets"))
+              .Select(t => {
+                try {
+                  return MarketHoursHound.Fetch();
+                } catch (Exception exc) { Log = exc; }
+                return Markets;
+              }).ObserveOnDispatcher();
+            o.Subscribe(a, exc => Log = new Exception("MarketHoursHound aborted", exc), () => Log = new Exception("MarketHoursHound aborted"));
+          }
           RaisePropertyChanged(() => IsLoggedIn);
           Log = new Exception("Account " + TradingAccount + " logged in.");
           try {
@@ -1350,6 +1371,7 @@ namespace HedgeHog.Alice.Client {
       ClosedTradesList = new ListCollectionView(ClosedTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
       AbsentTradesList = new ListCollectionView(AbsentTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
 
+      MarketsList = new ListCollectionView(Markets = new NotifyCollectionChangedWrapper<MarketHours>(new ObservableCollection<MarketHours>()));
     }
 
     public override event EventHandler<MasterTradeEventArgs> MasterTradeRemoved;
