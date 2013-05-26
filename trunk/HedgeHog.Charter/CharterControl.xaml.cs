@@ -30,6 +30,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Reactive.Concurrency;
 using HedgeHog.Shared.Messages;
+using System.Reactive.Linq;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -830,10 +831,14 @@ namespace HedgeHog {
     class DraggablePointInfo {
       public object DataContext { get; set; }
       public DraggablePoint DraggablePoint { get; set; }
+      public IDisposable MouseClickObserver { get; set; }
       //public ObservableValue<double> TradesCount { get; set; }
       public DraggablePointInfo(DraggablePoint dp,object dataContext) {
         this.DraggablePoint = dp;
         this.DataContext = dataContext;
+      }
+      ~DraggablePointInfo() {
+        if (MouseClickObserver != null) MouseClickObserver.Dispose();
       }
     }
 
@@ -930,7 +935,7 @@ namespace HedgeHog {
           //dragPoint.SetBinding(DraggablePoint.PositionProperty, new Binding("Value") { Source = ov });
           dragPoint.PositionChanged += (s, e) => {
             var position = e.Position;
-            if(double.IsNaN(e.Position.Y)){
+            if (double.IsNaN(e.Position.Y)) {
               var y = ((SimpleLine)GetFriend(s as DraggablePoint)).Value;
               position = new Point(e.Position.X, y);
             }
@@ -938,16 +943,16 @@ namespace HedgeHog {
             if (!dragPoint.IsMouseOver) return;
             _dragPointPositionChanged = true;
           };
-          //dragPoint.ToolTip = "UID:" + uid;
-          plotter.PreviewMouseLeftButtonDown += (s, e) => {
-            if (!dragPoint.IsMouseOver) return;
-            _dragPointPositionChanged = false;
-            Action a = () => {
-              if (!_dragPointPositionChanged)
-                dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
-            };
-            DispatcherScheduler.Current.Schedule(a);
-          };
+          ////dragPoint.ToolTip = "UID:" + uid;
+          //plotter.PreviewMouseLeftButtonDown += (s, e) => {
+          //  if (!dragPoint.IsMouseOver) return;
+          //  _dragPointPositionChanged = false;
+          //  Action a = () => {
+          //    if (!_dragPointPositionChanged)
+          //      TriggerCanTrade(dragPoint);
+          //  };
+          //  DispatcherScheduler.Current.Schedule(a);
+          //};
           plotter.PreviewKeyDown += (s, e) => {
             var numericKeys = new[] { Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9, Key.NumPad0, Key.NumPad1, Key.NumPad2, Key.NumPad3, Key.NumPad4, Key.NumPad5, Key.NumPad6, Key.NumPad7, Key.NumPad8, Key.NumPad9 };
             _isShiftDown = e.Key == Key.LeftShift || e.Key == Key.RightShift;
@@ -964,7 +969,7 @@ namespace HedgeHog {
                 rates.Remove(uid);
                 break;
               case Key.S:
-                dragPoint.DataContext.Invoke("OnScan",null);
+                dragPoint.DataContext.Invoke("OnScan", null);
                 break;
               case Key.T:
                 dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
@@ -984,7 +989,9 @@ namespace HedgeHog {
             }
           };
           line.SetAnchor(dragPoint);
-          var dpi = new DraggablePointInfo(dragPoint,suppRes.Value.DataContext);
+          var dpi = new DraggablePointInfo(dragPoint, suppRes.Value.DataContext) {
+            MouseClickObserver = plotter.SubscribeToPlotterPreviewMouseLeftClick(me => dragPoint.IsMouseOver, () => TriggerCanTrade(dragPoint))
+          };
           rates.Add(uid, dpi);
           dragPoint.DataContext = dpi.DataContext;
         }
@@ -1000,6 +1007,11 @@ namespace HedgeHog {
           dp.Position = CreatePointY(rate);
         }));
       }
+    }
+
+
+    private static void TriggerCanTrade(TemplateableDraggablePoint dragPoint) {
+      dragPoint.DataContext.SetProperty("CanTrade", !dragPoint.DataContext.GetProperty<bool>("CanTrade"));
     }
 
     void plotter_MouseDown(object sender, MouseButtonEventArgs e) {
