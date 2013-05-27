@@ -21,7 +21,6 @@ namespace HedgeHog.Alice.Client.UI.Controls {
   public class SlaveAccountModel : HedgeHog.Models.ModelBase,IAccountHolder {
     #region Fields
     private double secondsToWaitForTrade = 30;
-    private string logFileName = "Log.txt";
     protected bool isInDesign { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
     public int TargetInPips { get; set; }
     Schedulers.ThreadScheduler syncronizeScheduler;

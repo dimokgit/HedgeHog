@@ -13,6 +13,8 @@
           <EntitySet Name="t_Session" EntityType="ForexModel.Store.t_Session" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.Store.t_Stat" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.Store.t_Trade" store:Type="Tables" Schema="dbo" />
+          <EntitySet Name="Event" EntityType="ForexModel.Store.Event" store:Type="Tables" Schema="news" />
+          <EntitySet Name="EventLevel" EntityType="ForexModel.Store.EventLevel" store:Type="Tables" Schema="news" />
           <EntitySet Name="MonthlyStats" EntityType="ForexModel.Store.MonthlyStats" store:Type="Tables" Schema="stats" />
           <EntitySet Name="v_BlackoutTime" EntityType="ForexModel.Store.v_BlackoutTime" store:Type="Views" store:Schema="dbo" store:Name="v_BlackoutTime">
             <DefiningQuery>SELECT 
@@ -63,9 +65,14 @@
       [v_TradeSession].[WaveStDevRatio] AS [WaveStDevRatio], 
       [v_TradeSession].[DistanceIterations] AS [DistanceIterations], 
       [v_TradeSession].[CorrelationMinimum] AS [CorrelationMinimum], 
-      [v_TradeSession].[ScanCorridorBy] AS [ScanCorridorBy]
+      [v_TradeSession].[ScanCorridorBy] AS [ScanCorridorBy], 
+      [v_TradeSession].[TakeProfitLimitRatio] AS [TakeProfitLimitRatio]
       FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           </EntitySet>
+          <AssociationSet Name="FK_Event_EventLevel" Association="ForexModel.Store.FK_Event_EventLevel">
+            <End Role="EventLevel" EntitySet="EventLevel" />
+            <End Role="Event" EntitySet="Event" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="t_Bar">
           <Key>
@@ -171,6 +178,25 @@
           <Property Name="RunningBalance" Type="float" />
           <Property Name="RunningBalanceTotal" Type="float" />
         </EntityType>
+        <EntityType Name="Event">
+          <Key>
+            <PropertyRef Name="Country" />
+            <PropertyRef Name="Name" />
+            <PropertyRef Name="Time" />
+          </Key>
+          <Property Name="Level" Type="varchar" Nullable="false" MaxLength="1" />
+          <Property Name="Country" Type="varchar" Nullable="false" MaxLength="3" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="128" />
+          <Property Name="Time" Type="datetimeoffset" Nullable="false" />
+        </EntityType>
+        <EntityType Name="EventLevel">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="varchar" Nullable="false" MaxLength="1" />
+          <Property Name="Name" Type="varchar" Nullable="false" MaxLength="10" />
+          <Property Name="Level" Type="int" Nullable="false" />
+        </EntityType>
         <EntityType Name="MonthlyStats">
           <Key>
             <PropertyRef Name="Pair" />
@@ -240,20 +266,33 @@
           <Property Name="DaysPerMinute" Type="float" />
           <Property Name="DollarPerLot" Type="float" />
           <Property Name="SessionInfo" Type="nvarchar" />
-          <Property Name="PriceCmaLevels" Type="varchar" MaxLength="128" />
+          <Property Name="PriceCmaLevels" Type="nvarchar" />
           <Property Name="CorridorDistanceRatio" Type="float" />
-          <Property Name="PLToCorridorExitRatio" Type="varchar" MaxLength="128" />
-          <Property Name="ProfitToLossExitRatio" Type="varchar" MaxLength="128" />
-          <Property Name="BarsCount" Type="varchar" MaxLength="128" />
+          <Property Name="PLToCorridorExitRatio" Type="nvarchar" />
+          <Property Name="ProfitToLossExitRatio" Type="nvarchar" />
+          <Property Name="BarsCount" Type="nvarchar" />
           <Property Name="MinimumGross" Type="float" />
           <Property Name="DateStart" Type="date" />
           <Property Name="DateStop" Type="date" />
           <Property Name="LossToProfit" Type="float" />
-          <Property Name="WaveStDevRatio" Type="varchar" MaxLength="128" />
-          <Property Name="DistanceIterations" Type="varchar" MaxLength="128" />
-          <Property Name="CorrelationMinimum" Type="varchar" MaxLength="128" />
-          <Property Name="ScanCorridorBy" Type="varchar" MaxLength="128" />
+          <Property Name="WaveStDevRatio" Type="nvarchar" />
+          <Property Name="DistanceIterations" Type="nvarchar" />
+          <Property Name="CorrelationMinimum" Type="nvarchar" />
+          <Property Name="ScanCorridorBy" Type="nvarchar" />
+          <Property Name="TakeProfitLimitRatio" Type="nvarchar" />
         </EntityType>
+        <Association Name="FK_Event_EventLevel">
+          <End Role="EventLevel" Type="ForexModel.Store.EventLevel" Multiplicity="1" />
+          <End Role="Event" Type="ForexModel.Store.Event" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="EventLevel">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Event">
+              <PropertyRef Name="Level" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Function Name="BarsByMinutes" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
           <Parameter Name="Pair" Type="varchar" Mode="In" />
           <Parameter Name="Period" Type="tinyint" Mode="In" />
@@ -338,6 +377,12 @@
             <Parameter Name="FrameInPeriods" Mode="In" Type="Int32" />
             <Parameter Name="Weeks" Mode="In" Type="Int32" />
           </FunctionImport>
+          <EntitySet Name="Event__News" EntityType="ForexModel.Event__News" />
+          <EntitySet Name="EventLevel__News" EntityType="ForexModel.EventLevel__News" />
+          <AssociationSet Name="FK_Event_EventLevel" Association="ForexModel.FK_Event_EventLevel">
+            <End Role="EventLevel" EntitySet="EventLevel__News" />
+            <End Role="Event" EntitySet="Event__News" />
+          </AssociationSet>
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -536,6 +581,7 @@
           <Property Type="String" Name="CorrelationMinimum" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Type="String" Name="ScanCorridorBy" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Type="Double" Name="Profitability" />
+          <Property Type="String" Name="TakeProfitLimitRatio" MaxLength="4000" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="MonthlyStat__Stats">
           <Key>
@@ -565,6 +611,39 @@
           <Property Type="Double" Name="RangeForTrade" Nullable="true" />
           <Property Type="DateTime" Name="StartDateMin" Nullable="true" Precision="23" />
         </ComplexType>
+        <EntityType Name="Event__News">
+          <Key>
+            <PropertyRef Name="Name" />
+            <PropertyRef Name="Time" />
+            <PropertyRef Name="Country" />
+          </Key>
+          <Property Type="String" Name="Level" Nullable="false" MaxLength="1" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Type="DateTimeOffset" Name="Time" Nullable="false" />
+          <NavigationProperty Name="EventLevel" Relationship="ForexModel.FK_Event_EventLevel" FromRole="Event" ToRole="EventLevel" />
+          <Property Type="String" Name="Country" Nullable="false" MaxLength="3" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="EventLevel__News">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Type="String" Name="Id" Nullable="false" MaxLength="1" FixedLength="false" Unicode="false" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Type="Int32" Name="Level" Nullable="false" />
+          <NavigationProperty Name="Events" Relationship="ForexModel.FK_Event_EventLevel" FromRole="EventLevel" ToRole="Event" />
+        </EntityType>
+        <Association Name="FK_Event_EventLevel">
+          <End Type="ForexModel.EventLevel__News" Role="EventLevel" Multiplicity="1" />
+          <End Type="ForexModel.Event__News" Role="Event" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="EventLevel">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Event">
+              <PropertyRef Name="Level" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -751,6 +830,7 @@
           <EntitySetMapping Name="v_TradeSession">
             <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
               <MappingFragment StoreEntitySet="v_TradeSession">
+                <ScalarProperty Name="TakeProfitLimitRatio" ColumnName="TakeProfitLimitRatio" />
                 <ScalarProperty Name="Profitability" ColumnName="Profitability" />
                 <ScalarProperty Name="ScanCorridorBy" ColumnName="ScanCorridorBy" />
                 <ScalarProperty Name="CorrelationMinimum" ColumnName="CorrelationMinimum" />
@@ -815,6 +895,25 @@
               </ComplexTypeMapping>
             </ResultMapping>
           </FunctionImportMapping>
+          <EntitySetMapping Name="Event__News">
+            <EntityTypeMapping TypeName="ForexModel.Event__News">
+              <MappingFragment StoreEntitySet="Event">
+                <ScalarProperty Name="Country" ColumnName="Country" />
+                <ScalarProperty Name="Time" ColumnName="Time" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Level" ColumnName="Level" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="EventLevel__News">
+            <EntityTypeMapping TypeName="ForexModel.EventLevel__News">
+              <MappingFragment StoreEntitySet="EventLevel">
+                <ScalarProperty Name="Level" ColumnName="Level" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -847,6 +946,12 @@
         <EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="2.1725878906249996" />
         <EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="7.375" PointY="7.75" Height="5.4417122395833317" />
         <EntityTypeShape EntityType="ForexModel.MonthlyStat__Stats" Width="1.5" PointX="0.75" PointY="8.75" Height="2.3648893229166674" />
+        <EntityTypeShape EntityType="ForexModel.Event__News" Width="1.5" PointX="11.625" PointY="0.875" Height="1.7879850260416745" />
+        <EntityTypeShape EntityType="ForexModel.EventLevel__News" Width="1.5" PointX="9.375" PointY="0.875" Height="1.7879850260416674" />
+        <AssociationConnector Association="ForexModel.FK_Event_EventLevel" >
+          <ConnectorPoint PointX="10.875" PointY="1.7689925130208337" />
+          <ConnectorPoint PointX="11.625" PointY="1.7689925130208337" />
+        </AssociationConnector>
       </Diagram>
     </Diagrams>
   </Designer>

@@ -16,6 +16,11 @@ using System.Xml.Serialization;
 using System.Runtime.Serialization;
 
 [assembly: EdmSchemaAttribute()]
+#region EDM Relationship Metadata
+
+[assembly: EdmRelationshipAttribute("ForexModel", "FK_Event_EventLevel", "EventLevel", System.Data.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.DB.EventLevel__News), "Event", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.DB.Event__News), true)]
+
+#endregion
 
 namespace HedgeHog.DB
 {
@@ -240,6 +245,38 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<MonthlyStat__Stats> _MonthlyStat__Stats;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<Event__News> Event__News
+        {
+            get
+            {
+                if ((_Event__News == null))
+                {
+                    _Event__News = base.CreateObjectSet<Event__News>("Event__News");
+                }
+                return _Event__News;
+            }
+        }
+        private ObjectSet<Event__News> _Event__News;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<EventLevel__News> EventLevel__News
+        {
+            get
+            {
+                if ((_EventLevel__News == null))
+                {
+                    _EventLevel__News = base.CreateObjectSet<EventLevel__News>("EventLevel__News");
+                }
+                return _EventLevel__News;
+            }
+        }
+        private ObjectSet<EventLevel__News> _EventLevel__News;
 
         #endregion
         #region AddTo Methods
@@ -330,6 +367,22 @@ namespace HedgeHog.DB
         public void AddToMonthlyStat__Stats(MonthlyStat__Stats monthlyStat__Stats)
         {
             base.AddObject("MonthlyStat__Stats", monthlyStat__Stats);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the Event__News EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToEvent__News(Event__News event__News)
+        {
+            base.AddObject("Event__News", event__News);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the EventLevel__News EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToEventLevel__News(EventLevel__News eventLevel__News)
+        {
+            base.AddObject("EventLevel__News", eventLevel__News);
         }
 
         #endregion
@@ -613,6 +666,318 @@ namespace HedgeHog.DB
     #endregion
     
     #region Entities
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="Event__News")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class Event__News : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new Event__News object.
+        /// </summary>
+        /// <param name="level">Initial value of the Level property.</param>
+        /// <param name="name">Initial value of the Name property.</param>
+        /// <param name="time">Initial value of the Time property.</param>
+        /// <param name="country">Initial value of the Country property.</param>
+        public static Event__News CreateEvent__News(global::System.String level, global::System.String name, global::System.DateTimeOffset time, global::System.String country)
+        {
+            Event__News event__News = new Event__News();
+            event__News.Level = level;
+            event__News.Name = name;
+            event__News.Time = time;
+            event__News.Country = country;
+            return event__News;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Level
+        {
+            get
+            {
+                return _Level;
+            }
+            set
+            {
+                OnLevelChanging(value);
+                ReportPropertyChanging("Level");
+                _Level = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Level");
+                OnLevelChanged();
+            }
+        }
+        private global::System.String _Level;
+        partial void OnLevelChanging(global::System.String value);
+        partial void OnLevelChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Name
+        {
+            get
+            {
+                return _Name;
+            }
+            set
+            {
+                if (_Name != value)
+                {
+                    OnNameChanging(value);
+                    ReportPropertyChanging("Name");
+                    _Name = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Name");
+                    OnNameChanged();
+                }
+            }
+        }
+        private global::System.String _Name;
+        partial void OnNameChanging(global::System.String value);
+        partial void OnNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTimeOffset Time
+        {
+            get
+            {
+                return _Time;
+            }
+            set
+            {
+                if (_Time != value)
+                {
+                    OnTimeChanging(value);
+                    ReportPropertyChanging("Time");
+                    _Time = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("Time");
+                    OnTimeChanged();
+                }
+            }
+        }
+        private global::System.DateTimeOffset _Time;
+        partial void OnTimeChanging(global::System.DateTimeOffset value);
+        partial void OnTimeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Country
+        {
+            get
+            {
+                return _Country;
+            }
+            set
+            {
+                if (_Country != value)
+                {
+                    OnCountryChanging(value);
+                    ReportPropertyChanging("Country");
+                    _Country = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Country");
+                    OnCountryChanged();
+                }
+            }
+        }
+        private global::System.String _Country;
+        partial void OnCountryChanging(global::System.String value);
+        partial void OnCountryChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("ForexModel", "FK_Event_EventLevel", "EventLevel")]
+        public EventLevel__News EventLevel
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<EventLevel__News>("ForexModel.FK_Event_EventLevel", "EventLevel").Value;
+            }
+            set
+            {
+                ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<EventLevel__News>("ForexModel.FK_Event_EventLevel", "EventLevel").Value = value;
+            }
+        }
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [BrowsableAttribute(false)]
+        [DataMemberAttribute()]
+        public EntityReference<EventLevel__News> EventLevelReference
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<EventLevel__News>("ForexModel.FK_Event_EventLevel", "EventLevel");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedReference<EventLevel__News>("ForexModel.FK_Event_EventLevel", "EventLevel", value);
+                }
+            }
+        }
+
+        #endregion
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="EventLevel__News")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class EventLevel__News : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new EventLevel__News object.
+        /// </summary>
+        /// <param name="id">Initial value of the Id property.</param>
+        /// <param name="name">Initial value of the Name property.</param>
+        /// <param name="level">Initial value of the Level property.</param>
+        public static EventLevel__News CreateEventLevel__News(global::System.String id, global::System.String name, global::System.Int32 level)
+        {
+            EventLevel__News eventLevel__News = new EventLevel__News();
+            eventLevel__News.Id = id;
+            eventLevel__News.Name = name;
+            eventLevel__News.Level = level;
+            return eventLevel__News;
+        }
+
+        #endregion
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Id
+        {
+            get
+            {
+                return _Id;
+            }
+            set
+            {
+                if (_Id != value)
+                {
+                    OnIdChanging(value);
+                    ReportPropertyChanging("Id");
+                    _Id = StructuralObject.SetValidValue(value, false);
+                    ReportPropertyChanged("Id");
+                    OnIdChanged();
+                }
+            }
+        }
+        private global::System.String _Id;
+        partial void OnIdChanging(global::System.String value);
+        partial void OnIdChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Name
+        {
+            get
+            {
+                return _Name;
+            }
+            set
+            {
+                OnNameChanging(value);
+                ReportPropertyChanging("Name");
+                _Name = StructuralObject.SetValidValue(value, false);
+                ReportPropertyChanged("Name");
+                OnNameChanged();
+            }
+        }
+        private global::System.String _Name;
+        partial void OnNameChanging(global::System.String value);
+        partial void OnNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 Level
+        {
+            get
+            {
+                return _Level;
+            }
+            set
+            {
+                OnLevelChanging(value);
+                ReportPropertyChanging("Level");
+                _Level = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("Level");
+                OnLevelChanged();
+            }
+        }
+        private global::System.Int32 _Level;
+        partial void OnLevelChanging(global::System.Int32 value);
+        partial void OnLevelChanged();
+
+        #endregion
+    
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("ForexModel", "FK_Event_EventLevel", "Event")]
+        public EntityCollection<Event__News> Events
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<Event__News>("ForexModel.FK_Event_EventLevel", "Event");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<Event__News>("ForexModel.FK_Event_EventLevel", "Event", value);
+                }
+            }
+        }
+
+        #endregion
+    }
     
     /// <summary>
     /// No Metadata Documentation available.
@@ -3808,6 +4173,30 @@ namespace HedgeHog.DB
         private Nullable<global::System.Double> _Profitability;
         partial void OnProfitabilityChanging(Nullable<global::System.Double> value);
         partial void OnProfitabilityChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String TakeProfitLimitRatio
+        {
+            get
+            {
+                return _TakeProfitLimitRatio;
+            }
+            set
+            {
+                OnTakeProfitLimitRatioChanging(value);
+                ReportPropertyChanging("TakeProfitLimitRatio");
+                _TakeProfitLimitRatio = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("TakeProfitLimitRatio");
+                OnTakeProfitLimitRatioChanged();
+            }
+        }
+        private global::System.String _TakeProfitLimitRatio;
+        partial void OnTakeProfitLimitRatioChanging(global::System.String value);
+        partial void OnTakeProfitLimitRatioChanged();
 
         #endregion
     

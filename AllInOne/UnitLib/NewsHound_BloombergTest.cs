@@ -1,6 +1,7 @@
 ﻿using HedgeHog.NewsCaster;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using HtmlAgilityPack;
 using System.Collections.Generic;
 
@@ -67,7 +68,7 @@ namespace UnitLib
     ///</summary>
     [TestMethod()]
     public void FetchTest() {
-      var actual = NewsHound.Bloomberg.Fetch();
+      var actual = NewsHound.EconoDay.Fetch();
       Assert.AreEqual(null, actual);
       Assert.Inconclusive("Verify the correctness of this test method.");
     }

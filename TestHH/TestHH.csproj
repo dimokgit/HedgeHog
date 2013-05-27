@@ -72,9 +72,6 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.ComponentModel.Composition.Initialization">
-      <HintPath>..\..\..\..\..\..\Program Files\Microsoft SDKs\Silverlight\v4.0\Libraries\Client\System.ComponentModel.Composition.Initialization.dll</HintPath>
-    </Reference>
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -114,9 +111,6 @@
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="TA-Lib-Core">
-      <HintPath>..\..\..\..\..\Install\ta-lib-0.4.0-msvc\ta-lib\dotnet\src\Debug\TA-Lib-Core.dll</HintPath>
-    </Reference>
     <Reference Include="WatiN.Core.UnitTests">
       <HintPath>E:\Data\Install\Tools\WatiN-2.0.20.1089-net-2.0\Bin\WatiN.Core.UnitTests.dll</HintPath>
     </Reference>
@@ -171,14 +165,6 @@
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>
     </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Remoter\HedgeHog.Remoter.csproj">
-      <Project>{873AF969-F8CF-4740-BAC0-57AD7B7B3AE5}</Project>
-      <Name>HedgeHog.Remoter</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog.Server\HedgeHog.Server.csproj">
-      <Project>{1DDBD2BB-7A7C-4B13-99E7-58282CCCFACE}</Project>
-      <Name>HedgeHog.Server</Name>
-    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>
@@ -186,10 +172,6 @@
     <ProjectReference Include="..\HedgeHog.Signaler\HedgeHog.Signaler.csproj">
       <Project>{6015B5BA-AC84-4F51-82EE-D6C90BDF1D43}</Project>
       <Name>HedgeHog.Signaler</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HedgeHog\HedgeHog.csproj">
-      <Project>{847035FC-6C11-4AD2-A86B-09DA12961288}</Project>
-      <Name>HedgeHog</Name>
     </ProjectReference>
     <ProjectReference Include="..\Order2GoAddIn\Order2GoAddIn.csproj">
       <Project>{4A4FDF3C-8827-4E71-A705-7AD964408BB2}</Project>
