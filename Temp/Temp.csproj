@@ -54,13 +54,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GalaSoft.MvvmLight.Extras.WPF4">
+    <Reference Include="GalaSoft.MvvmLight.Extras.WPF4, Version=4.1.27.22692, Culture=neutral, PublicKeyToken=1673db7d5906b0ad, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.1.27.0\lib\net40\GalaSoft.MvvmLight.Extras.WPF4.dll</HintPath>
     </Reference>
-    <Reference Include="GalaSoft.MvvmLight.WPF4">
+    <Reference Include="GalaSoft.MvvmLight.WPF4, Version=4.1.27.22692, Culture=neutral, PublicKeyToken=63eb5c012e0b3c1c, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.1.27.0\lib\net40\GalaSoft.MvvmLight.WPF4.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Practices.ServiceLocation">
+    <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -87,7 +87,7 @@
     </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
-    <Reference Include="System.Windows.Interactivity">
+    <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.1.27.0\lib\net40\System.Windows.Interactivity.dll</HintPath>
     </Reference>
     <Reference Include="System.Xaml" />
@@ -169,6 +169,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Test.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Waver.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -190,6 +194,9 @@
       <DependentUpon>StatisticsWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="StatisticsModel.cs" />
+    <Compile Include="Test.xaml.cs">
+      <DependentUpon>Test.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Waver.xaml.cs">
       <DependentUpon>Waver.xaml</DependentUpon>
     </Compile>
@@ -258,6 +265,14 @@
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster.UI\HedgeHog.NewsCaster.UI.csproj">
+      <Project>{3271AED3-1A77-452E-A66F-27DE487E59BD}</Project>
+      <Name>HedgeHog.NewsCaster.UI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
+      <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
+      <Name>HedgeHog.NewsCaster</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Reports\HedgeHog.Reports.csproj">
       <Project>{2CE09483-D616-4AF8-8581-998A368F39B4}</Project>
       <Name>HedgeHog.Reports</Name>
@@ -283,7 +298,6 @@
     <Content Include="Alice.sdf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Resource Include="MVVMLight.Nuget.Readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
