@@ -26,26 +26,19 @@ namespace Temp {
     }
     protected override void OnStartup(StartupEventArgs e) {
       base.OnStartup(e);
-
-
+      return;
       AggregateCatalog catalog = new AggregateCatalog();
-      // Add the EmailClient.Presentation assembly into the catalog
       catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetExecutingAssembly()));
-      // Add the EmailClient.Applications assembly into the catalog
-      //catalog.Catalogs.Add(new AssemblyCatalog(typeof(IMainModel).Assembly));
 
       container = new CompositionContainer(catalog);
       CompositionBatch batch = new CompositionBatch();
       batch.AddExportedValue(container);
       container.Compose(batch);
 
-      //ApplicationController controller = container.GetExportedValue<ApplicationController>();
-      //controller.Initialize();
-      //controller.Run();
     }
 
     protected override void OnExit(ExitEventArgs e) {
-      container.Dispose();
+      //container.Dispose();
 
       base.OnExit(e);
     }

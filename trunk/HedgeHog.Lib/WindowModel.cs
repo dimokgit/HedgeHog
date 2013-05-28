@@ -44,6 +44,9 @@ namespace HedgeHog.Models {
         RaisePropertyChangedCore(member.Name);
       }
     }
+    protected void OnPropertyChanged(string propertyName) {
+      RaisePropertyChanged(propertyName);
+    }
     protected void RaisePropertyChanged(string propertyName) {
       RaisePropertyChangedCore(propertyName);
     }
