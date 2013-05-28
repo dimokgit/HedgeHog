@@ -83,46 +83,10 @@
           <Label>Show Log:</Label>
         </StackPanel>
       </Expander.Header>
-      <ScrollViewer MaxHeight="50">
+      <ScrollViewer MaxHeight="75">
         <TextBox Text="{Binding Log}" Style="{StaticResource SelectableTextBlockLikeStyle}" IsReadOnly="True" Background="Transparent" TextWrapping="Wrap"></TextBox>
       </ScrollViewer>
     </Expander>
     <nc:NewsCasterControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="1" />
-    <!--<DataGrid ItemsSource="{Binding NewsView}" AutoGenerateColumns="False" HeadersVisibility="None" Grid.Row="1" EnableRowVirtualization="True">
-      <DataGrid.GroupStyle>
-        <GroupStyle ContainerStyle="{StaticResource GroupHeaderStyle}">
-          <GroupStyle.Panel>
-            <ItemsPanelTemplate>
-              <DataGridRowsPresenter/>
-            </ItemsPanelTemplate>
-          </GroupStyle.Panel>
-        </GroupStyle>
-      </DataGrid.GroupStyle>
-      <DataGrid.RowStyle>
-        <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
-          <Setter Property="Background" Value="{Binding DidHappen,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Wheat|Wheat|Gray}"/>
-          <Setter Property="FontWeight" Value="{Binding IsToday,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Normal|Normal|Bold}" />
-        </Style>
-      </DataGrid.RowStyle>
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="" Binding="{Binding Event.Country}">
-          <DataGridTextColumn.CellStyle>
-            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
-              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=High|#FFD700|#FF4040}"/>
-              <Setter Property="VerticalAlignment" Value="Center"/>
-              <Setter Property="FontWeight" Value="Bold" />
-            </Style>
-          </DataGridTextColumn.CellStyle>
-        </DataGridTextColumn>
-        <DataGridTextColumn Header="Name" Binding="{Binding Event.Name}" />
-        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:h:mm t\}}">
-          <DataGridTextColumn.CellStyle>
-            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
-              <Setter Property="Background" Value="{Binding Color}"/>
-            </Style>
-          </DataGridTextColumn.CellStyle>
-        </DataGridTextColumn>
-      </DataGrid.Columns>
-    </DataGrid>-->
   </Grid>
 </hhm:WindowModel>

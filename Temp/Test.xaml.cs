@@ -21,6 +21,9 @@ using HedgeHog;
 using HedgeHog.DB;
 using HedgeHog.Models;
 using HedgeHog.NewsCaster;
+using System.ComponentModel.Composition;
+using HedgeHog.UI;
+using System.ComponentModel.Composition.Hosting;
 
 namespace Temp {
   /// <summary>
@@ -39,6 +42,7 @@ namespace Temp {
     }
     #region IsLogExpanded
     private bool _IsLogExpanded;
+    private IDisposable newHappened;
     public bool IsLogExpanded {
       get { return _IsLogExpanded; }
       set {
@@ -51,173 +55,38 @@ namespace Temp {
 
     #endregion
     #endregion
-    
-    Predicate<object> _hideNews = evt => ((NewsContainer)evt).Event.Time.Between(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1));
-    
-    #region DoShowAll
-    private bool _DoShowAll = true;
-    public bool DoShowAll {
-      get { return _DoShowAll; }
-      set {
-        if (_DoShowAll != value) {
-          _DoShowAll = value;
-          OnPropertyChanged("DoShowAll");
-          NewsView.Filter = DoShowAll ? null : _hideNews;
-        }
-      }
+
+    NewsCasterModel _NewsControl;
+
+    [Import(typeof(NewsCasterModel))]
+    public NewsCasterModel NewsControl {
+      get { return _NewsControl; }
+      set { _NewsControl = value; }
     }
-
-    #endregion
-
-    public class NewsContainer : ModelBase {
-      public NewsEvent Event { get; set; }
-      #region DidHappen
-      private bool _DidHappen;
-      public bool DidHappen {
-        get { return _DidHappen; }
-        set {
-          if (_DidHappen != value) {
-            _DidHappen = value;
-            RaisePropertyChanged("DidHappen");
-          }
-        }
-      }
-
-      #endregion
-      #region IsToday
-      private bool _IsToday;
-      public bool IsToday {
-        get { return _IsToday; }
-        set {
-          if (_IsToday != value) {
-            _IsToday = value;
-            RaisePropertyChanged("IsToday");
-          }
-        }
-      }
-
-      #endregion
-      #region Color
-      private string _Color = "White";
-      public string Color {
-        get { return _Color; }
-        set {
-          if (_Color == value) return;
-          var oldValue = _Color;
-          _Color = value;
-          RaisePropertyChanged(() => Color);
-        }
-      }
-      #endregion
-      #region Date
-      private DateTime _Date;
-      public DateTime Date {
-        get { return _Date; }
-        set {
-          if (_Date != value) {
-            _Date = value;
-            RaisePropertyChanged("Date");
-          }
-        }
-      }
-
-      #endregion
-      public NewsContainer(NewsEvent newsEvent) {
-        this.Event = newsEvent;
-        this.Date = newsEvent.Time.Date;
-      }
-    }
-    
-    ObservableCollection<NewsContainer> _news = new ObservableCollection<NewsContainer>();
-    public ObservableCollection<NewsContainer> News {
-      get { return _news; }
-      private set { _news = value; }
-    }
-    ListCollectionView _newsView;
-    public ICollectionView NewsView { get { return CollectionViewSource.GetDefaultView(_news); } }
+   
     public Test() {
       InitializeComponent();
-      _newsView = new ListCollectionView(_news);
+      Loaded += new RoutedEventHandler(Test_Loaded);
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc + "");
     }
 
+    void Test_Loaded(object sender, RoutedEventArgs e) {
+      try {
+        this.Compose();
+        newHappened = NewsControl.NewsHapenedSubject.Subscribe(nc => MessageBox.Show(nc + ""));
+      } catch (Exception exc) {
+        Log = exc+"";
+      }
+    }
+
+
     private void Window_Unloaded(object sender, RoutedEventArgs e) {
       if (App.Current.ShutdownMode == ShutdownMode.OnExplicitShutdown) {
-        if (newsObserver != null) newsObserver.Dispose();
         App.Current.Shutdown();
       }
     }
-    Color GetEventColor(DateTimeOffset time) {
-      if (time.Between(DateTimeOffset.Now.AddHours(3), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
-      if (time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15))) return Colors.LimeGreen;
-      if (time.Between(DateTimeOffset.Now.AddMinutes(-15), DateTimeOffset.Now.AddMinutes(-2))) return Colors.GreenYellow;
-      return Colors.Wheat;
-    }
-    IDisposable newsObserver;
     private void Window_Loaded(object sender, RoutedEventArgs e) {
-      //DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
-      //  UpdateNewsColor();
-      //  a(1.FromMinutes());
-      //});
     }
 
-    private void UpdateNewsColor() {
-      News.ForEach(evt => {
-        evt.Color = GetEventColor(evt.Event.Time) + "";
-        evt.IsToday = evt.Event.Time.Date == DateTimeOffset.Now.Date;
-        evt.DidHappen = evt.Event.Time < DateTimeOffset.Now.AddMinutes(-30);
-      });
-      if (News.Count == 0) 
-        FetchNews();
-      else if (News.Max(evt => evt.Event.Time).Date == DateTime.Now.Date)
-        FetchNews(DateTime.Now.Date.AddDays(1));
-    }
-
-    private void FetchNews(DateTime? date = null) {
-      if (newsObserver != null) return;
-      try {
-        var dateStart = DateTime.Parse("1/2/2012");// DateTime.Now.AddDays(-7);// ;
-        var dates = (from d in
-                       (from i in Enumerable.Range(0, 10000)
-                        select dateStart.AddDays(i * 7)
-                         )
-                     where d < DateTime.Now
-                     select d).ToArray();
-
-        newsObserver = HedgeHog.NewsCaster.NewsHound.EconoDay.Fetch(dates)
-        .ObserveOnDispatcher()
-        .Subscribe(ProcessNews,
-        exc => {
-          newsObserver = null;
-          Log = "FetchNews: " + exc;
-        }, () => {
-          newsObserver = null;
-          Log = "FetchNews: Done.";
-        });
-      } catch (Exception exc) {
-        newsObserver = null;
-        Log = "FetchNews: " + exc;
-      }
-    }
-
-    private void ProcessNews(IEnumerable<NewsEvent> events) {
-      newsObserver = null;
-      var newNews = events.Select(evt => new NewsContainer(evt))
-        .Except(News, new LambdaComparer<NewsContainer>((l, r) => l.Event.Name == r.Event.Name && l.Event.Time == r.Event.Time));
-      ForexStorage.UseForexContext(c =>
-        newNews.Select(evt => evt.Event).ForEach(evt => c.Event__News.AddObject(new Event__News() {
-          Level = (evt.Level + "").Substring(0, 1),
-          Country = evt.Country,
-          Name = evt.Name,
-          Time = evt.Time
-        })), c => c.SaveChanges()
-      );
-      newNews.ForEach(evt => News.Add(evt));
-      //News.Where(evt => !evt.Time.Between(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1)))
-      //  .ToList().ForEach(evt => News.Remove(evt));
-      NewsView.GroupDescriptions.Clear();
-      NewsView.GroupDescriptions.Add(new PropertyGroupDescription("Date"));
-      UpdateNewsColor();
-    }
   }
 }

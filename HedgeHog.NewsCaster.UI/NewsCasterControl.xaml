@@ -1,15 +1,16 @@
-﻿<models:UserControlModel x:Class="HedgeHog.UI.NewsCasterControl"
+﻿<UserControl x:Class="HedgeHog.UI.NewsCasterControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:models="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
              xmlns:my="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+             xmlns:local="clr-namespace:HedgeHog.UI"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
-             DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             DataContext="{x:Static Member=local:NewsCasterModel.Default}"
 >
-  <models:UserControlModel.Resources>
+  <UserControl.Resources>
     <my:PassThroughConverter x:Key="PassThroughConverter" />
     <my:CompareValueConverter x:Key="CompareValueConverter" />
     <sys:String x:Key="Level">√</sys:String>
@@ -67,7 +68,7 @@
 
     </Style>
 
-  </models:UserControlModel.Resources>
+  </UserControl.Resources>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
@@ -89,7 +90,7 @@
       </DataGrid.GroupStyle>
       <DataGrid.RowStyle>
         <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
-          <Setter Property="Background" Value="{Binding DidHappen,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Wheat|Wheat|Gray}"/>
+          <Setter Property="Background" Value="{Binding DidHappen,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Wheat|Wheat|#BEBEBC}"/>
           <Setter Property="FontWeight" Value="{Binding IsToday,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Normal|Normal|Bold}" />
         </Style>
       </DataGrid.RowStyle>
@@ -97,22 +98,34 @@
         <DataGridTextColumn Header="" Binding="{Binding Event.Country}">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
-              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=High|#FFD700|#FF4040}"/>
-              <!--<Setter Property="Width" Value="15"/>-->
+              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=High|#FFD700|#F6A39C}"/>
               <Setter Property="VerticalAlignment" Value="Center"/>
               <Setter Property="FontWeight" Value="Bold" />
             </Style>
           </DataGridTextColumn.CellStyle>
+          <DataGridTextColumn.ElementStyle>
+            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+              <Setter Property="HorizontalAlignment" Value="Center"/>
+            </Style>
+          </DataGridTextColumn.ElementStyle>
         </DataGridTextColumn>
         <DataGridTextColumn Header="Name" Binding="{Binding Event.Name}" />
         <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:h:mm t\}}">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
               <Setter Property="Background" Value="{Binding Color}"/>
+              <Setter Property="HorizontalAlignment" Value="Right"/>
             </Style>
           </DataGridTextColumn.CellStyle>
+        </DataGridTextColumn>
+        <DataGridTextColumn Binding="{Binding Countdown}">
+          <DataGridTextColumn.ElementStyle>
+            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+              <Setter Property="Visibility" Value="{Binding Countdown,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=0|Visible|Hidden}"/>
+            </Style>
+          </DataGridTextColumn.ElementStyle>
         </DataGridTextColumn>
       </DataGrid.Columns>
     </DataGrid>
   </Grid>
-</models:UserControlModel>
+</UserControl>

@@ -7,7 +7,8 @@ using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
 
 namespace HedgeHog {
-  public class MEF {
+  public static class MEF {
+    public static void Compose(this object subject) { new CompositionContainer(new DirectoryCatalog(@".\")).ComposeParts(subject); }
     #region Container
 
     public static CompositionContainer Container {

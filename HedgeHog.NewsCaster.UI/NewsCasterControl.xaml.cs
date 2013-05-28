@@ -21,12 +21,22 @@ using HedgeHog;
 using HedgeHog.DB;
 using HedgeHog.Models;
 using HedgeHog.NewsCaster;
+using System.ComponentModel.Composition;
+using System.Collections.Specialized;
+using System.Reactive.Subjects;
 
 namespace HedgeHog.UI {
-  /// <summary>
-  /// Interaction logic for UserControl1.xaml
-  /// </summary>
-  public partial class NewsCasterControl : Models.UserControlModel {
+  public partial class NewsCasterControl : UserControl {
+    [Export]
+    public NewsCasterModel NewsCasterModel { get { return NewsCasterModel.Default; } } 
+    public NewsCasterControl() {
+      InitializeComponent();
+    }
+  }
+  public class NewsCasterModel : Models.ModelBase {
+    private static readonly NewsCasterModel defaultInstance = new NewsCasterModel();
+    public static NewsCasterModel Default { get { return defaultInstance; } }
+
     public class FetchNewsException : Exception {
       public FetchNewsException(object message, Exception inner = null) : base(message + "", inner) { }
     }
@@ -35,13 +45,14 @@ namespace HedgeHog.UI {
       if (time.Between(DateTimeOffset.Now.AddHours(3), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
       if (time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15))) return Colors.LimeGreen;
       if (time.Between(DateTimeOffset.Now.AddMinutes(-15), DateTimeOffset.Now.AddMinutes(-2))) return Colors.GreenYellow;
-      return Colors.Wheat;
+      return Colors.Transparent;
     }
     private void UpdateNewsColor() {
-      News.ForEach(evt => {
+      News.ToArray().ForEach(evt => {
         evt.Color = GetEventColor(evt.Event.Time) + "";
         evt.IsToday = evt.Event.Time.Date == DateTimeOffset.Now.Date;
         evt.DidHappen = evt.Event.Time < DateTimeOffset.Now.AddMinutes(-30);
+        evt.Countdown = (evt.Event.Time - DateTimeOffset.Now).TotalMinutes.ToInt();
       });
       if (News.Count == 0)
         FetchNews();
@@ -124,6 +135,7 @@ namespace HedgeHog.UI {
 
     public class NewsContainer : ModelBase {
       public NewsEvent Event { get; set; }
+      #region Properties
       #region DidHappen
       private bool _DidHappen;
       public bool DidHappen {
@@ -136,6 +148,19 @@ namespace HedgeHog.UI {
         }
       }
 
+      #endregion
+      #region Countdown
+      private int _Countdown;
+      public int Countdown {
+        get { return _Countdown; }
+        set {
+          if (_Countdown != value && value >= 0) {
+            _Countdown = value;
+            RaisePropertyChanged("Countdown");
+            OnCountdown(this);
+          }
+        }
+      }
       #endregion
       #region IsToday
       private bool _IsToday;
@@ -175,9 +200,33 @@ namespace HedgeHog.UI {
       }
 
       #endregion
+      #endregion
+
+      #region Countdown Subject
+      object _CountdownSubjectLocker = new object();
+      ISubject<NewsContainer> _CountdownSubject;
+      ISubject<NewsContainer> CountdownSubject {
+        get {
+          lock (_CountdownSubjectLocker)
+            if (_CountdownSubject == null) {
+              _CountdownSubject = new Subject<NewsContainer>();
+            }
+          return _CountdownSubject;
+        }
+      }
+      void OnCountdown(NewsContainer p) {
+        CountdownSubject.OnNext(p);
+      }
+      #endregion
+
+
       public NewsContainer(NewsEvent newsEvent) {
         this.Event = newsEvent;
         this.Date = newsEvent.Time.Date;
+      }
+
+      public override string ToString() {
+        return new { Event, Countdown } + "";
       }
     }
 
@@ -189,18 +238,47 @@ namespace HedgeHog.UI {
     ListCollectionView _newsView;
     public ICollectionView NewsView { get { return CollectionViewSource.GetDefaultView(_news); } }
     #endregion
+    #region
 
-    public NewsCasterControl() {
-      InitializeComponent();
+    #endregion
+    public NewsCasterModel() {
       _newsView = new ListCollectionView(_news);
-      Loaded += new RoutedEventHandler(NewsCasterControl_Loaded);
-    }
-
-    void NewsCasterControl_Loaded(object sender, RoutedEventArgs e) {
+      _news.CollectionChanged += _news_CollectionChanged;
       DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
         UpdateNewsColor();
         a(1.FromMinutes());
       });
     }
+
+    #region NewsHapened Subject
+    object _NewsHapenedSubjectLocker = new object();
+    ISubject<NewsContainer> _NewsHapenedSubject;
+    public ISubject<NewsContainer> NewsHapenedSubject {
+      get {
+        lock (_NewsHapenedSubjectLocker)
+          if (_NewsHapenedSubject == null) {
+            _NewsHapenedSubject = new Subject<NewsContainer>();
+          }
+        return _NewsHapenedSubject;
+      }
+    }
+    void OnNewsHapenedSubject(NewsContainer p) {
+      NewsHapenedSubject.OnNext(p);
+    }
+    #endregion
+
+    void _news_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+      switch (e.Action) {
+        case NotifyCollectionChangedAction.Add:
+          e.NewItems.Cast<NewsContainer>().ForEach(nc => {
+            nc.ObservePropertyChanged(c => c.Countdown)
+              .Where(c => c.Countdown < 500)
+              .Subscribe(c => OnNewsHapenedSubject(c));
+          });
+          break;
+      }
+    }
+
+
   }
 }
