@@ -28,6 +28,7 @@ using System.Reflection;
 using HedgeHog.Charter;
 using System.Reactive.Concurrency;
 using System.Threading;
+using HedgeHog.UI;
 namespace HedgeHog.Alice.Client {
   [Export]
   public partial class RemoteControlModel : RemoteControlModelBase {
@@ -642,6 +643,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void MasterModel_TradingMacroNameChanged(object sender, EventArgs e) {
+      _TradingMacros = null;
       RaisePropertyChanged(() => TradingMacrosCopy);
     }
 

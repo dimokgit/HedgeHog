@@ -158,6 +158,31 @@ namespace HedgeHog {
     }
   }
 
+  public class CompareConverter : IValueConverter {
+    static string[] trueFalseDefaultColors = new[] { TrueFalseColors.True, TrueFalseColors.False };
+    private static readonly CompareConverter defaultInstance = new CompareConverter();
+    public static CompareConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      var parameters = (parameter + "").Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+      if (parameters.Count < 1) return null;
+      if (parameters.Count == 1) parameters.AddRange(trueFalseDefaultColors);
+      var ret = false;
+      if (!value.GetType().IsValueType)
+        ret = (value + "") == parameters[0];
+      else {
+        var tc = TypeDescriptor.GetConverter(value.GetType());
+        if (tc.IsValid(parameters[0])) {
+          var compareTo = tc.ConvertFromString(parameters[0]);
+          ret = value.Equals(compareTo);
+        }
+      }
+      return ret ? parameters[2] : parameters[1];
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotImplementedException();
+    }
+  }
 
   public class CompareValueConverter : IValueConverter {
     static string[] trueFalseDefaultColors = new[] { TrueFalseColors.True, TrueFalseColors.False };

@@ -23,7 +23,8 @@ using HedgeHog.Models;
 using HedgeHog.NewsCaster;
 using System.ComponentModel.Composition;
 using System.Collections.Specialized;
-using System.Reactive.Subjects;
+using ReactiveUI;
+using ReactiveUI.Xaml;
 
 namespace HedgeHog.UI {
   public partial class NewsCasterControl : UserControl {
@@ -42,9 +43,9 @@ namespace HedgeHog.UI {
     }
     #region Methods
     Color GetEventColor(DateTimeOffset time) {
-      if (time.Between(DateTimeOffset.Now.AddHours(3), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
+      if (time.Between(DateTimeOffset.Now.AddHours(2), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
       if (time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15))) return Colors.LimeGreen;
-      if (time.Between(DateTimeOffset.Now.AddMinutes(-15), DateTimeOffset.Now.AddMinutes(-2))) return Colors.GreenYellow;
+      if (DateTimeOffset.Now.Between(time.AddMinutes(15),time.AddMinutes(45))) return Colors.GreenYellow;
       return Colors.Transparent;
     }
     private void UpdateNewsColor() {
@@ -105,6 +106,7 @@ namespace HedgeHog.UI {
       newNews.ForEach(evt => News.Add(evt));
       NewsView.GroupDescriptions.Clear();
       NewsView.GroupDescriptions.Add(new PropertyGroupDescription("Date"));
+      NewsView.Refresh();
       UpdateNewsColor();
     }
     #endregion
@@ -116,62 +118,67 @@ namespace HedgeHog.UI {
       }
     }
     IDisposable newsObserver;
-    Predicate<object> _hideNews = evt => ((NewsContainer)evt).Event.Time.Between(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1));
+    Predicate<object> _hideNewsFilter = evt => ((NewsContainer)evt).Event.Time.Between(DateTimeOffset.Now.AddHours(-8), DateTimeOffset.Now.Date.AddDays(2));
 
+    #region AutoTradeOffset
+    private int _AutoTradeOffset = -30;
+    public int AutoTradeOffset {
+      get { return _AutoTradeOffset; }
+      set {
+        if (_AutoTradeOffset != value) {
+          _AutoTradeOffset = value;
+          RaisePropertyChanged("AutoTradeOffset");
+        }
+      }
+    }
+
+    #endregion
     #region DoShowAll
-    private bool _DoShowAll = true;
+    private bool _DoShowAll;
     public bool DoShowAll {
       get { return _DoShowAll; }
       set {
         if (_DoShowAll != value) {
           _DoShowAll = value;
           OnPropertyChanged("DoShowAll");
-          NewsView.Filter = DoShowAll ? null : _hideNews;
+          NewsView.Filter = DoShowAll ? null : _hideNewsFilter;
         }
       }
     }
 
     #endregion
 
-    public class NewsContainer : ModelBase {
+    public class NewsContainer : ReactiveObject {
       public NewsEvent Event { get; set; }
       #region Properties
+      #region AutoTrade
+      private bool _AutoTrade;
+      public bool AutoTrade {
+        get { return _AutoTrade; }
+        set { this.RaiseAndSetIfChanged(a => a.AutoTrade, value); }
+      }
+
+      #endregion
       #region DidHappen
-      private bool _DidHappen;
+      private bool _DidHappen = false;
       public bool DidHappen {
         get { return _DidHappen; }
-        set {
-          if (_DidHappen != value) {
-            _DidHappen = value;
-            RaisePropertyChanged("DidHappen");
-          }
-        }
+        set { this.RaiseAndSetIfChanged(a => a.DidHappen, value); }
       }
 
       #endregion
       #region Countdown
-      private int _Countdown;
-      public int Countdown {
+      private int? _Countdown = null;
+      public int? Countdown {
         get { return _Countdown; }
-        set {
-          if (_Countdown != value && value >= 0) {
-            _Countdown = value;
-            RaisePropertyChanged("Countdown");
-            OnCountdown(this);
-          }
-        }
+        set { this.RaiseAndSetIfChanged(a => a.Countdown, value < -30 ? null : value); }
       }
       #endregion
       #region IsToday
-      private bool _IsToday;
+      private bool _IsToday = false;
       public bool IsToday {
         get { return _IsToday; }
-        set {
-          if (_IsToday != value) {
-            _IsToday = value;
-            RaisePropertyChanged("IsToday");
-          }
-        }
+        set { this.RaiseAndSetIfChanged(a => a.IsToday, value); }
       }
 
       #endregion
@@ -179,44 +186,17 @@ namespace HedgeHog.UI {
       private string _Color = "White";
       public string Color {
         get { return _Color; }
-        set {
-          if (_Color == value) return;
-          var oldValue = _Color;
-          _Color = value;
-          RaisePropertyChanged(() => Color);
-        }
+        set { this.RaiseAndSetIfChanged(a => a.Color, value); }
       }
       #endregion
       #region Date
-      private DateTime _Date;
+      private DateTime _Date = DateTime.MinValue;
       public DateTime Date {
         get { return _Date; }
-        set {
-          if (_Date != value) {
-            _Date = value;
-            RaisePropertyChanged("Date");
-          }
-        }
+        set { this.RaiseAndSetIfChanged(a => a.Date, value); }
       }
 
       #endregion
-      #endregion
-
-      #region Countdown Subject
-      object _CountdownSubjectLocker = new object();
-      ISubject<NewsContainer> _CountdownSubject;
-      ISubject<NewsContainer> CountdownSubject {
-        get {
-          lock (_CountdownSubjectLocker)
-            if (_CountdownSubject == null) {
-              _CountdownSubject = new Subject<NewsContainer>();
-            }
-          return _CountdownSubject;
-        }
-      }
-      void OnCountdown(NewsContainer p) {
-        CountdownSubject.OnNext(p);
-      }
       #endregion
 
 
@@ -244,26 +224,24 @@ namespace HedgeHog.UI {
     public NewsCasterModel() {
       _newsView = new ListCollectionView(_news);
       _news.CollectionChanged += _news_CollectionChanged;
-      DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
+      NewsView.Filter = _hideNewsFilter;
+      System.Reactive.Concurrency.DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
         UpdateNewsColor();
         a(1.FromMinutes());
       });
     }
 
-    #region NewsHapened Subject
-    object _NewsHapenedSubjectLocker = new object();
-    ISubject<NewsContainer> _NewsHapenedSubject;
-    public ISubject<NewsContainer> NewsHapenedSubject {
+    #region Countdown Subject
+    object _CountdownSubjectLocker = new object();
+    System.Reactive.Subjects.ISubject<NewsContainer> _CountdownSubject;
+    public System.Reactive.Subjects.ISubject<NewsContainer> CountdownSubject {
       get {
-        lock (_NewsHapenedSubjectLocker)
-          if (_NewsHapenedSubject == null) {
-            _NewsHapenedSubject = new Subject<NewsContainer>();
+        lock (_CountdownSubjectLocker)
+          if (_CountdownSubject == null) {
+            _CountdownSubject = new System.Reactive.Subjects.Subject<NewsContainer>();
           }
-        return _NewsHapenedSubject;
+        return _CountdownSubject;
       }
-    }
-    void OnNewsHapenedSubject(NewsContainer p) {
-      NewsHapenedSubject.OnNext(p);
     }
     #endregion
 
@@ -271,9 +249,9 @@ namespace HedgeHog.UI {
       switch (e.Action) {
         case NotifyCollectionChangedAction.Add:
           e.NewItems.Cast<NewsContainer>().ForEach(nc => {
-            nc.ObservePropertyChanged(c => c.Countdown)
-              .Where(c => c.Countdown < 500)
-              .Subscribe(c => OnNewsHapenedSubject(c));
+            nc.ObservableForProperty(c => c.Countdown)
+              .Where(c => c.Value.HasValue && c.Value.Value.Between(-60, 180))
+              .Subscribe(c => CountdownSubject.OnNext(c.Sender), exc => GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc));
           });
           break;
       }

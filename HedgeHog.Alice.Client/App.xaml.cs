@@ -55,16 +55,21 @@ namespace HedgeHog.Alice.Client {
       }
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send("Shutdown");
     }
+
+    //public static void Compose(this object subject) { new CompositionContainer(new DirectoryCatalog(@".\")).ComposeParts(subject); }
     protected override void OnStartup(StartupEventArgs e) {
       base.OnStartup(e);
 
 
       AggregateCatalog catalog = new AggregateCatalog();
+      var dirCatalog = new DirectoryCatalog(@".\");
       // Add the EmailClient.Presentation assembly into the catalog
       catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetExecutingAssembly()));
+      catalog.Catalogs.Add(dirCatalog);
       // Add the EmailClient.Applications assembly into the catalog
       //catalog.Catalogs.Add(new AssemblyCatalog(typeof(IMainModel).Assembly));
 
+      
       container = new CompositionContainer(catalog);
       CompositionBatch batch = new CompositionBatch();
       batch.AddExportedValue(container);

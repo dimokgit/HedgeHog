@@ -30,6 +30,9 @@ using System.Collections.Concurrent;
 using HedgeHog.Shared.Messages;
 using Hardcodet.Util.Dependencies;
 using ChainedObserver;
+using HedgeHog.UI;
+using System.ComponentModel.Composition;
+using ReactiveUI;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -462,9 +465,26 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-
     #region ctor
+    [Import]
+    static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
     public TradingMacro() {
+      _newsCaster.CountdownSubject
+        .Where(nc => IsActive && Strategy!= Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
+        .Subscribe(nc => {
+          try {
+            if (!RatesArray.Any()) return;
+            var rates = RatesArray.ReverseIfNot().Take(BarPeriodInt * 120).Select(r => CorridorPrice(r)).OrderBy(d => d).ToArray();
+            _buyLevel.RateEx = rates.LastBC();
+            _sellLevel.RateEx = rates[0];
+            new[] { _buyLevel, _sellLevel }.ForEach(sr => {
+              sr.ResetPricePosition();
+              sr.CanTradeEx = true;
+              //sr.InManual = true;
+            });
+            DispatcherScheduler.Current.Schedule(5.FromSeconds(), () => nc.AutoTrade = false);
+          } catch (Exception exc) { Log = exc; }
+        });
       _waveShort = new WaveInfo(this);
       WaveShort.DistanceChanged += (s, e) => {
         OnPropertyChanged(() => WaveShortDistance);
