@@ -1270,11 +1270,11 @@ namespace HedgeHog.Alice.Client {
               try {
                 Markets.Clear();
                 mks.ForEach(mh => Markets.Add(mh));
-                Log = new Exception("Markets Loaded.");
+                //Log = new Exception("Markets Loaded.");
               } catch (Exception exc) { Log = exc; }
             };
             var o = Observable.Interval(5.FromMinutes(), TaskPoolScheduler.Default).StartWith(TaskPoolScheduler.Default, 0)
-              .Do(l => Log = new Exception("Loading Markets"))
+              //.Do(l => Log = new Exception("Loading Markets"))
               .Select(t => {
                 try {
                   return MarketHoursHound.Fetch();

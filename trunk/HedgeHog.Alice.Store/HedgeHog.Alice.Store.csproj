@@ -60,6 +60,7 @@
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="ReactiveUI, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.Composition.Initialization">
@@ -206,6 +207,10 @@
     <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster.UI\HedgeHog.NewsCaster.UI.csproj">
+      <Project>{3271AED3-1A77-452E-A66F-27DE487E59BD}</Project>
+      <Name>HedgeHog.NewsCaster.UI</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>

@@ -70,12 +70,15 @@ namespace HedgeHog.Alice.Store {
       RaisePropertyChanged(() => TradingMacrosCopy);
     }
 
-    IQueryable<TradingMacro> _TradingMacros;
+    protected IQueryable<TradingMacro> _TradingMacros;
     public IQueryable<TradingMacro> TradingMacros {
       get {
         try {
           if (_TradingMacros == null)
-            _TradingMacros = !IsInDesigh ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes.OrderBy(tm => tm.TradingGroup).ThenBy(tm => tm.PairIndex)) : new[] { new TradingMacro() }.AsQueryable();
+            _TradingMacros = !IsInDesigh ? GlobalStorage.UseAliceContext(Context => Context.TradingMacroes
+              .Where(tm=>tm.TradingMacroName == MasterModel.TradingMacroName)
+              .OrderBy(tm => tm.TradingGroup)
+              .ThenBy(tm => tm.PairIndex)) : new[] { new TradingMacro() }.AsQueryable();
           return _TradingMacros;
         } catch (Exception exc) {
           Debug.Fail(exc.ToString());

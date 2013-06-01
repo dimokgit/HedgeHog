@@ -11,6 +11,7 @@
 				xmlns:charter="clr-namespace:HedgeHog;assembly=HedgeHog.Charter"
 				xmlns:l="clr-namespace:HedgeHog.Alice.Client"
 				xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+        xmlns:newsCaster="clr-namespace:HedgeHog.UI;assembly=HedgeHog.NewsCaster.UI"
 				DataContext="{Binding RelativeSource={RelativeSource Self}}"
 				Left="{state:UserSettings Default=100}" Top="{state:UserSettings Default=100}"
 				Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
@@ -578,6 +579,14 @@
 					</telerik:RadPane>
 
           <telerik:RadPane Header="Markets" ContentTemplate="{StaticResource MarketsTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="Markets" CanUserClose="False"/>
+
+          <telerik:RadPane Header="News" Title="News" CanUserClose="False" telerik:RadDocking.SerializationTag="News" Name="News">
+            <telerik:RadPane.ContentTemplate>
+              <DataTemplate>
+                <newsCaster:NewsCasterControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+              </DataTemplate>
+            </telerik:RadPane.ContentTemplate>
+          </telerik:RadPane>
 
         </telerik:RadPaneGroup>
 			</telerik:RadSplitContainer>

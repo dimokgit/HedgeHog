@@ -73,7 +73,7 @@ namespace Temp {
     void Test_Loaded(object sender, RoutedEventArgs e) {
       try {
         this.Compose();
-        newHappened = NewsControl.NewsHapenedSubject.Subscribe(nc => MessageBox.Show(nc + ""));
+        newHappened = NewsControl.CountdownSubject.Subscribe(nc => MessageBox.Show(nc + ""));
       } catch (Exception exc) {
         Log = exc+"";
       }

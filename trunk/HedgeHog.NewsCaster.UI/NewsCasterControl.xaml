@@ -74,11 +74,11 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
-          <Label>Show All:</Label>
-          <CheckBox IsChecked="{Binding DoShowAll}" VerticalAlignment="Center" />
-        </StackPanel>
-    <DataGrid ItemsSource="{Binding NewsView}" AutoGenerateColumns="False" HeadersVisibility="None" Grid.Row="1" EnableRowVirtualization="True">
+    <StackPanel Orientation="Horizontal">
+      <CheckBox IsChecked="{Binding DoShowAll}" Content="Show All" VerticalAlignment="Center" />
+      <TextBox Text="{Binding AutoTradeOffset}" ToolTip="Auto Trade Offset In Munutes"/>
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding NewsView}" AutoGenerateColumns="False" HeadersVisibility="None" Grid.Row="1" EnableRowVirtualization="True" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden">
       <DataGrid.GroupStyle>
         <GroupStyle ContainerStyle="{StaticResource GroupHeaderStyle}">
           <GroupStyle.Panel>
@@ -95,7 +95,7 @@
         </Style>
       </DataGrid.RowStyle>
       <DataGrid.Columns>
-        <DataGridTextColumn Header="" Binding="{Binding Event.Country}">
+        <DataGridTextColumn Header="" Binding="{Binding Event.Country}" IsReadOnly="True">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
               <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=High|#FFD700|#F6A39C}"/>
@@ -109,8 +109,7 @@
             </Style>
           </DataGridTextColumn.ElementStyle>
         </DataGridTextColumn>
-        <DataGridTextColumn Header="Name" Binding="{Binding Event.Name}" />
-        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:h:mm t\}}">
+        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:H:mm\}}" IsReadOnly="True">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
               <Setter Property="Background" Value="{Binding Color}"/>
@@ -118,12 +117,14 @@
             </Style>
           </DataGridTextColumn.CellStyle>
         </DataGridTextColumn>
-        <DataGridTextColumn Binding="{Binding Countdown}">
-          <DataGridTextColumn.ElementStyle>
-            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
-              <Setter Property="Visibility" Value="{Binding Countdown,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=0|Visible|Hidden}"/>
+        <DataGridCheckBoxColumn Binding="{Binding AutoTrade}"/>
+        <DataGridTextColumn Binding="{Binding Countdown}"  IsReadOnly="True"/>
+        <DataGridTextColumn Header="Name" Binding="{Binding Event.Name}" IsReadOnly="True">
+          <DataGridTextColumn.CellStyle>
+            <Style TargetType="DataGridCell">
+              <Setter Property="ToolTip" Value="{Binding Event.Name}" />
             </Style>
-          </DataGridTextColumn.ElementStyle>
+          </DataGridTextColumn.CellStyle>
         </DataGridTextColumn>
       </DataGrid.Columns>
     </DataGrid>
