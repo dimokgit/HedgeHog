@@ -1,9 +1,33 @@
-﻿
-CREATE VIEW [dbo].[v_TradeSession]
-AS
-SELECT     Pair, SessionId, TimeStamp, Count, GrossPL, Days, Lot / 1000 AS Lot, LotA / 1000 AS LotA, LotSD / 1000 AS LotSD, DollarsPerMonth, PL, MinutesInTest, 
-                      DaysPerMinute, DollarsPerMonth / Lot * 1000 AS DollarPerLot,SessionInfo
-FROM         dbo.v_TradeSession_10
+﻿CREATE VIEW [dbo].[v_TradeSession] AS
+SELECT        TS.Pair, TS.SessionId, S.SuperUid AS SuperSessionUid, TS.TimeStamp, TS.Count, TS.GrossPL, TS.Days,S.Profitability, ISNULL(S.MaximumLot, TS.Lot * 1.4) AS Lot, 
+                         TS.LotA / O.BaseUnitSize AS LotA, TS.LotSD / O.BaseUnitSize AS LotSD, TS.DollarsPerMonth, TS.PL, TS.MinutesInTest, TS.DaysPerMinute, ISNULL(S.Profitability, 
+                         TS.DollarsPerMonth) / TS.Lot * O.BaseUnitSize AS DollarPerLot, TS.SessionInfo,
+                         PriceCmaLevels.Value AS PriceCmaLevels, 
+                         CAST(CorridorDistanceRatio.Value AS float) AS CorridorDistanceRatio,
+                         PLToCorridorExitRatio.Value AS PLToCorridorExitRatio,
+                         ProfitToLossExitRatio.Value AS ProfitToLossExitRatio, 
+                         BarsCount.Value AS BarsCount,
+                         ISNULL(S.MinimumGross, TS.MinimumGross * 1.4) AS MinimumGross,
+                         TS.DateStart, TS.DateStop, 
+                         ISNULL(S.Profitability, TS.DollarsPerMonth) / NULLIF (- S.MinimumGross, 0) AS LossToProfit,
+                         WaveStDevRatio.Value  AS WaveStDevRatio, 
+                         DistanceIterations.Value AS DistanceIterations, 
+                         CorrelationMinimum.Value AS CorrelationMinimum, 
+                         ScanCorridorBy.Value AS ScanCorridorBy,
+                         TPLR.Value AS TakeProfitLimitRatio              
+FROM            dbo.v_TradeSession_10 AS TS 
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TakeProfitLimitRatio')TPLR
+INNER JOIN dbo.t_Offer AS O ON TS.Pair = O.Pair
+LEFT OUTER JOIN dbo.t_Session AS S WITH (nolock) ON TS.SessionId = S.Uid
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'WaveStDevRatio')  AS WaveStDevRatio
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'DistanceIterations') AS DistanceIterations
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'CorrelationMinimum') AS CorrelationMinimum 
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'ScanCorridorBy') AS ScanCorridorBy
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PriceCmaLevels_') AS PriceCmaLevels
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'CorridorDistanceRatio')CorridorDistanceRatio
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PLToCorridorExitRatio') AS PLToCorridorExitRatio
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'ProfitToLossExitRatio_') AS ProfitToLossExitRatio
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'BarsCount') AS BarsCount
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane1', @value = N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
