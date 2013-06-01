@@ -4,7 +4,7 @@
     [PL]                   FLOAT (53)       NOT NULL,
     [GrossPL]              FLOAT (53)       NOT NULL,
     [Lot]                  FLOAT (53)       NOT NULL,
-    [Pair]                 NVARCHAR (7)     NOT NULL,
+    [Pair]                 NVARCHAR (8)     NOT NULL,
     [TimeOpen]             DATETIME         NOT NULL,
     [TimeClose]            DATETIME         NOT NULL,
     [AccountId]            NVARCHAR (16)    NOT NULL,
@@ -21,6 +21,8 @@
     [RunningBalanceTotal]  FLOAT (53)       NULL,
     CONSTRAINT [PK_t_Trade] PRIMARY KEY CLUSTERED ([Id] ASC)
 );
+
+
 
 
 

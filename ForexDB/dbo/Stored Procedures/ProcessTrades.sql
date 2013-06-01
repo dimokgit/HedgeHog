@@ -1,7 +1,7 @@
-﻿CREATE PROCEDURE ProcessTrades--  @SessionId- = 'E98D7FC3-A8A5-4B51-85CF-366362C57F50'
+﻿CREATE PROCEDURE [dbo].[ProcessTrades]--  @SessionId- = 'E98D7FC3-A8A5-4B51-85CF-366362C57F50'
 	@SessionId uniqueidentifier
 AS 
-DECLARE @SessionInfo nvarchar(4000)
+DECLARE @SessionInfo nvarchar(max)
 SELECT TOP 1 @SessionInfo = SessionInfo FROM t_Trade WHERE SessionId = @SessionId AND SessionInfo>''
 
 DECLARE @RunningBalance float SET @RunningBalance = 0.00
