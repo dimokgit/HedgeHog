@@ -49,6 +49,8 @@ namespace HedgeHog {
 
   [ValueConversion(typeof(string), typeof(DateTime?))]
   public class DateTimeConverter : IValueConverter {
+    private static readonly DateTimeConverter defaultInstance = new DateTimeConverter();
+    public static DateTimeConverter Default { get { return defaultInstance; } }
     #region IValueConverter Members
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
       return value;

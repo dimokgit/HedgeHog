@@ -29,7 +29,7 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURUSD_1.10]IsChecked" value="True" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="3" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="4" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="744" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="852" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1212" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.MasterPanel]IsSelected" value="False" />
@@ -56,4 +56,15 @@
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Left" value="160" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Height" value="1033" />
   <item key="/HedgeHog.Reports;component/report.xaml.Report[.1]Width" value="900" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox2[.PlayStartDateBox]Text" value="1/1" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox2[.DelayInSecondsBox]Text" value="" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.PlayStartDateBox]Text2" value="01-01-13 00:00" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.5]Text2" value="05-26-13 20:00" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.7]Text2" value="05-28-13 00:00" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.8]Text2" value="05-14-13 02:00" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.9]Text2" value="1440" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.11]Text2" value="1440" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.6]Text2" value="EUR/JPY" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.12]Text2" value="1440" />
+  <item key="/HedgeHog.Charter;component/chartersnapshotcontrol.xaml.TextBox[.16]Text2" value="" />
 </dictionary>

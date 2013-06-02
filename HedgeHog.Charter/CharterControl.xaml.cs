@@ -804,8 +804,25 @@ namespace HedgeHog {
       set { _ActiveDraggablePoint = value; }
     }
 
+    
     List<HorizontalLine> otherHLines = new List<HorizontalLine>();
     List<VerticalLine> otherVLines = new List<VerticalLine>();
+    public void DrawVertivalLines(IList<DateTime> times) {
+      plotter.Dispatcher.BeginInvoke(new Action(() => {
+        var times0 = times.Select(t => GetPriceStartDateContinuous(t)).ToArray();
+        var newLines = times0.Select(t => dateAxis.ConvertToDouble(t)).Except(otherVLines.Select(vl => vl.Value)).ToArray();
+        var startDateDouble = dateAxis.ConvertToDouble(animatedTimeX[0]);
+        newLines.Where(nl => nl >= startDateDouble).ForEach(nl => {
+          var newLine = new VerticalLine() { Value = nl, StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.HotPink) };
+          plotter.Children.Add(newLine);
+          otherVLines.Add(newLine);
+        });
+        otherVLines.Where(vl => vl.Value < startDateDouble).ToList().ForEach(vl => {
+          plotter.Children.Remove(vl);
+          otherVLines.Remove(vl);
+        });
+      }));
+    }
     #endregion
 
     #region Window Events
@@ -1458,6 +1475,10 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     DateTime GetPriceStartDate(DateTime startDateContinuous) {
       var x = animatedTimeX.OrderBy(d => (d - startDateContinuous).Duration()).First();
       return animatedTime0X[animatedTimeX.IndexOf(x)];
+    }
+    DateTime GetPriceStartDateContinuous(DateTime startDate) {
+      var x = animatedTime0X.OrderBy(d => (d - startDate).Duration()).First();
+      return animatedTimeX[animatedTime0X.IndexOf(x)];
     }
     Schedulers.ThreadScheduler corridorStartDateScheduler;
     void CorridorStopPointX_IsMouseCapturedChanged(object sender, DependencyPropertyChangedEventArgs e) {

@@ -212,6 +212,10 @@
       <Project>{3271AED3-1A77-452E-A66F-27DE487E59BD}</Project>
       <Name>HedgeHog.NewsCaster.UI</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
+      <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
+      <Name>HedgeHog.NewsCaster</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>

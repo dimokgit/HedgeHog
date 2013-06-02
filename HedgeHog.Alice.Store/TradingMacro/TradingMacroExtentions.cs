@@ -33,6 +33,7 @@ using ChainedObserver;
 using HedgeHog.UI;
 using System.ComponentModel.Composition;
 using ReactiveUI;
+using HedgeHog.NewsCaster;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -3111,6 +3112,8 @@ namespace HedgeHog.Alice.Store {
       } else RunPriceBroadcast.SendAsync(pce);
     }
 
+    ReactiveUI.ReactiveCollection<NewsEvent> _newEventsCurrent = new ReactiveCollection<NewsEvent>();
+    public ReactiveUI.ReactiveCollection<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
     private void RunPrice(PriceChangedEventArgs e, Trade[] trades) {
       Price price = e.Price;
       Account account = e.Account;
@@ -3123,6 +3126,13 @@ namespace HedgeHog.Alice.Store {
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
         SetTradesStatistics(price, trades);
+        {
+          var dateStart = RatesArray[0].StartDate2;
+          var dateEnd = RatesArray.LastBC().StartDate2;
+          var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.Between(dateStart, dateEnd)).ToArray();
+          _newEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => _newEventsCurrent.Remove(ne));
+          _newEventsCurrent.AddRange(newsEventsCurrent.Except(_newEventsCurrent).ToArray());
+        }
         SetLotSize();
         try {
           RunStrategy();

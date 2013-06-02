@@ -98,7 +98,7 @@
         <DataGridTextColumn Header="" Binding="{Binding Event.Country}" IsReadOnly="True">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
-              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=High|#FFD700|#F6A39C}"/>
+              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=H|#FFD700|#F6A39C}"/>
               <Setter Property="VerticalAlignment" Value="Center"/>
               <Setter Property="FontWeight" Value="Bold" />
             </Style>
