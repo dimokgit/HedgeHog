@@ -588,6 +588,14 @@
             </telerik:RadPane.ContentTemplate>
           </telerik:RadPane>
 
+          <telerik:RadPane Header="Sbapshot" Title="Sbapshot" CanUserClose="False" telerik:RadDocking.SerializationTag="Sbapshot" Name="Sbapshot">
+            <telerik:RadPane.ContentTemplate>
+              <DataTemplate>
+                <charter:CharterSnapshotControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+              </DataTemplate>
+            </telerik:RadPane.ContentTemplate>
+          </telerik:RadPane>
+
         </telerik:RadPaneGroup>
 			</telerik:RadSplitContainer>
 		</telerik:RadDocking>

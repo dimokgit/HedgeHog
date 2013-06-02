@@ -28,6 +28,7 @@ using System.Reflection;
 using HedgeHog.Charter;
 using System.Reactive.Concurrency;
 using System.Threading;
+using ReactiveUI;
 using HedgeHog.UI;
 namespace HedgeHog.Alice.Client {
   [Export]
@@ -1042,6 +1043,7 @@ namespace HedgeHog.Alice.Client {
           charter.SetSellRates(dic);
           charter.SetTradeLines(tm.Trades, tm.CurrentPrice.Spread / 2);
           charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
+          charter.DrawVertivalLines(tm.NewEventsCurrent.Select(ne => ne.Time.DateTime).ToArray());
         } catch (Exception exc) {
           Log = exc;
         }

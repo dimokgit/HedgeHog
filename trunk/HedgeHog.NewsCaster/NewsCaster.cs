@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Reactive.Concurrency;
 namespace HedgeHog.NewsCaster {
   public enum NewsEventType { Report, Speech };
-  public enum NewsEventLevel { Low, Medium, High } ;
+  public enum NewsEventLevel { L, M, H } ;
   public class NewsEvent : Models.ModelBase {
     public string Country { get; set; }
     public string Name { get; set; }
@@ -82,7 +82,7 @@ namespace HedgeHog.NewsCaster {
         news.Add(ParseEventTD(weekDays, news.Count, tdEventsFri));
         return news.Aggregate(new List<IEnumerable<NewsEvent>>(),
           (list, events) => {
-            list.Add(events.Where(evt => evt.Level != NewsEventLevel.Low));
+            list.Add(events.Where(evt => evt.Level != NewsEventLevel.L));
             return list;
           });
       }
@@ -156,9 +156,9 @@ namespace HedgeHog.NewsCaster {
           //throw new NewsParserException("No dates found in column " + (columnIndex + 1) + " for " + name);
 
         var level = div.SelectSingleNode(starXPath("Star")) != null
-          ? NewsEventLevel.High
-          : div.SelectSingleNode(starXPath("djStar")) != null ? NewsEventLevel.Medium
-          : NewsEventLevel.Low;
+          ? NewsEventLevel.H
+          : div.SelectSingleNode(starXPath("djStar")) != null ? NewsEventLevel.M
+          : NewsEventLevel.L;
         var n = new NewsEvent() {
           Country = country,
           Name = name,

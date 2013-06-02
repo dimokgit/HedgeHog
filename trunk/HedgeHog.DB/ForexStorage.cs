@@ -22,11 +22,18 @@ namespace HedgeHog.DB {
           }
         }
     }
-    public static T UseForexContext<T>(Func<ForexEntities, T> action) {
+    public static T UseForexContext<T>(Func<ForexEntities, T> action, Action<ForexEntities, Exception> error = null, Action<ForexEntities> exit = null) {
       try {
         using (var context = ForexEntitiesFactory()) {
-          context.CommandTimeout = 60 * 1;
-          return action(context);
+          try {
+            context.CommandTimeout = 60 * 1;
+            return action(context);
+          } catch (Exception exc) {
+            if (error != null) {
+              error(context, exc);
+              return default(T);
+            } else throw;
+          }
         }
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);

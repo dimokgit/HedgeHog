@@ -55,22 +55,13 @@ namespace HedgeHog.UI {
         evt.DidHappen = evt.Event.Time < DateTimeOffset.Now.AddMinutes(-30);
         evt.Countdown = (evt.Event.Time - DateTimeOffset.Now).TotalMinutes.ToInt();
       });
-      if (News.Count == 0)
-        FetchNews();
-      else if (News.Max(evt => evt.Event.Time).Date == DateTime.Now.Date)
-        FetchNews(DateTime.Now.Date.AddDays(1));
     }
     private void FetchNews(DateTime? date = null) {
       if (newsObserver != null) return;
       try {
         var dateStart = DateTime.Now.AddDays(-7).Round(MathExtensions.RoundTo.Week).AddDays(1);// DateTime.Parse("1/2/2012");
-        var dates = (from d in
-                       (from i in Enumerable.Range(0, 10000)
-                        select dateStart.AddDays(i * 7)
-                         )
-                     where d <= DateTime.Now.Date
-                     select d).ToArray();
-
+        var dates = Enumerable.Range(0, 10000).Select(i => dateStart.AddDays(i * 7))
+          .TakeWhile(d => d <= DateTime.Now.Date.AddDays(1)).ToArray();
         newsObserver = HedgeHog.NewsCaster.NewsHound.EconoDay.Fetch(dates)
         .ObserveOnDispatcher()
         .Subscribe(ProcessNews,
@@ -79,7 +70,7 @@ namespace HedgeHog.UI {
           Log = new FetchNewsException("", exc);
         }, () => {
           newsObserver = null;
-          Log = new FetchNewsException("Done.");
+          Log = new FetchNewsException("News Done.");
         });
       } catch (Exception exc) {
         newsObserver = null;
@@ -225,15 +216,33 @@ namespace HedgeHog.UI {
       _newsView = new ListCollectionView(_news);
       _news.CollectionChanged += _news_CollectionChanged;
       NewsView.Filter = _hideNewsFilter;
+      //Observable.Interval(1.FromMinutes(), DispatcherScheduler.Current).StartWith(0).Subscribe(l => UpdateNewsColor());
       System.Reactive.Concurrency.DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
-        UpdateNewsColor();
+        if (News.Count == 0)
+          FetchNews();
+        else if (News.Max(evt => evt.Event.Time).Date == DateTime.Now.Date)
+          FetchNews(DateTime.Now.Date.AddDays(1));
+        else UpdateNewsColor();
+
         a(1.FromMinutes());
       });
     }
-
+    static NewsCasterModel() {
+      SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()
+        .Select(ne=>new NewsEvent(){
+          Country = ne.Country,
+          Level = (NewsEventLevel)Enum.Parse(typeof(NewsEventLevel), ne.Level),
+          Name = ne.Name,
+          Time = ne.Time}).ToArray(),
+          (c, e) => {
+        Default.Log = e;
+        SavedNews = new NewsEvent[0];
+      });
+    }
     #region Countdown Subject
     object _CountdownSubjectLocker = new object();
     System.Reactive.Subjects.ISubject<NewsContainer> _CountdownSubject;
+    public static IList<NewsEvent> SavedNews { get; private set; }
     public System.Reactive.Subjects.ISubject<NewsContainer> CountdownSubject {
       get {
         lock (_CountdownSubjectLocker)
@@ -251,12 +260,10 @@ namespace HedgeHog.UI {
           e.NewItems.Cast<NewsContainer>().ForEach(nc => {
             nc.ObservableForProperty(c => c.Countdown)
               .Where(c => c.Value.HasValue && c.Value.Value.Between(-60, 180))
-              .Subscribe(c => CountdownSubject.OnNext(c.Sender), exc => GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc));
+              .Subscribe(c => CountdownSubject.OnNext(c.Sender), exc => Log = exc);
           });
           break;
       }
     }
-
-
   }
 }

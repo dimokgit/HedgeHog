@@ -39,6 +39,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EntityFramework, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\EntityFramework.5.0.0\lib\net40\EntityFramework.dll</HintPath>
+    </Reference>
     <Reference Include="GalaSoft.MvvmLight.Extras.WPF4">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.1.27.0\lib\net40\GalaSoft.MvvmLight.Extras.WPF4.dll</HintPath>
     </Reference>
@@ -48,11 +52,19 @@
     <Reference Include="Microsoft.Practices.ServiceLocation">
       <HintPath>..\AllInOne\packages\CommonServiceLocator.1.0\lib\NET35\Microsoft.Practices.ServiceLocation.dll</HintPath>
     </Reference>
+    <Reference Include="ReactiveUI">
+      <HintPath>..\AllInOne\packages\NuGet.ReactiveUI.1.0.0\lib\ReactiveUI.dll</HintPath>
+    </Reference>
+    <Reference Include="ReactiveUI.Xaml">
+      <HintPath>..\AllInOne\packages\NuGet.ReactiveUI.1.0.0\lib\ReactiveUI.Xaml.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Data.Entity" />
     <Reference Include="System.Reactive.Core">
       <HintPath>..\AllInOne\packages\Rx-Core.2.1.30214.0\lib\Net40\System.Reactive.Core.dll</HintPath>
     </Reference>
@@ -81,6 +93,12 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="Telerik.Windows.Controls">
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.dll</HintPath>
+    </Reference>
+    <Reference Include="Telerik.Windows.Controls.Input">
+      <HintPath>..\..\..\..\..\AppData\Roaming\Telerik\Updates\RadControls_for_WPF40_2011_2_0712_Trial_hotfix\Binaries\WPF\Telerik.Windows.Controls.Input.dll</HintPath>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -89,6 +107,9 @@
     <Compile Include="AttachedProperties.cs" />
     <Compile Include="CharterControl.xaml.cs">
       <DependentUpon>CharterControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CharterSnapshotControl.xaml.cs">
+      <DependentUpon>CharterSnapshotControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="Classes.cs" />
     <Compile Include="ColoredSegment.cs" />
@@ -140,6 +161,10 @@
       <Project>{ECD37682-DF7E-409F-912D-0965634556B5}</Project>
       <Name>DynamicDataDisplay</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
+      <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
+      <Name>HedgeHog.DB</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Lib\HedgeHog.Lib.csproj">
       <Project>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</Project>
       <Name>HedgeHog.Lib</Name>
@@ -175,6 +200,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CharterControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CharterSnapshotControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
