@@ -22,12 +22,9 @@
       <TextBlock Text="Pair:"/>
       <ComboBox ItemsSource="{Binding Pairs}" DisplayMemberPath="Pair" SelectedValue="{Binding PairCurrent,Mode=TwoWay}" SelectedValuePath="Pair" />
       <u:TextBox Text="{Binding PairCurrent}" Text2="{state:UserSettings}" Visibility="Collapsed" />
-      <TextBlock Text="Start:"/>
-      <u:TextBox Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM-dd-yy HH:mm},Converter={x:Static hh:DateTimeConverter.Default},UpdateSourceTrigger=LostFocus,FallbackValue={x:Null}}" Text2="{state:UserSettings}" MinWidth="50" u:UseEnterKey.EnterKeyDirection="Right" />
-      <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateStart,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
-      <TextBlock Text="{Binding DateStart,StringFormat=:{0:ddd}}"/>
-      <TextBlock Text="Legnth"/>
-      <u:TextBox Text="{Binding DateLength,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text2="{state:UserSettings}" MinWidth="30" u:UseEnterKey.EnterKeyDirection="Right"/>
+      <u:TextBox Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MMM dd dddd yyyy HH:mm},Converter={x:Static hh:DateTimeConverter.Default},UpdateSourceTrigger=LostFocus,FallbackValue={x:Null}}" Text2="{state:UserSettings}" MinWidth="50" u:UseEnterKey.EnterKeyDirection="Right" ToolTip="Date" />
+      <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateStart,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" Focusable="False" />
+      <u:TextBox Text="{Binding DateLengthText,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Text2="{state:UserSettings}" MinWidth="30" u:UseEnterKey.EnterKeyDirection="Right" ToolTip="Length"/>
       <Button Content="Go" Command="{Binding ShowCommand}"/>
       <tlrkInput:RadComboBox ItemsSource="{Binding NewsEvents}"  SelectedValue="{Binding NewsEventCurrent,Mode=TwoWay}">
         <tlrkInput:RadComboBox.EmptySelectionBoxTemplate>
@@ -37,13 +34,14 @@
         </tlrkInput:RadComboBox.EmptySelectionBoxTemplate>
         <tlrkInput:RadComboBox.ItemTemplate>
           <DataTemplate>
-            <TextBlock>
-              <TextBlock Text="{Binding Name}"/>: <TextBlock Text="{Binding Time,StringFormat='dd HH:mm'}"/>
+            <TextBlock Background="{Binding Level,Converter={x:Static hh:CompareConverter.Default},ConverterParameter=H|Transparent|PeachPuff}">
+              <TextBlock Text="{Binding Time,StringFormat={}{0:HH:mm}}"/> <TextBlock Text="{Binding Name}"/>: 
+              <TextBlock Text="{Binding Time,StringFormat='ddd dd MMM'}"/>
             </TextBlock>
           </DataTemplate>
         </tlrkInput:RadComboBox.ItemTemplate>
       </tlrkInput:RadComboBox>
-      <tlrkInput:RadComboBox ItemsSource="{Binding NewsEventHistory}"  SelectedValue="{Binding NewsHistoryCurrent,Mode=TwoWay}">
+      <tlrkInput:RadComboBox ItemsSource="{Binding NewsEventHistory}" SelectedValue="{Binding NewsHistoryCurrent,Mode=TwoWay}">
         <tlrkInput:RadComboBox.EmptySelectionBoxTemplate>
           <DataTemplate>
             <TextBlock Text="News History"/>
@@ -52,7 +50,7 @@
         <tlrkInput:RadComboBox.ItemTemplate>
           <DataTemplate>
             <TextBlock>
-              <TextBlock Text="{Binding Name}"/>: <TextBlock Text="{Binding Time,StringFormat='dd MMM HH:mm'}"/>
+              <TextBlock Text="{Binding Name}"/>: <TextBlock Text="{Binding Time,StringFormat='dd MMM HH:mm ddd yyyy'}"/>
             </TextBlock>
           </DataTemplate>
         </tlrkInput:RadComboBox.ItemTemplate>

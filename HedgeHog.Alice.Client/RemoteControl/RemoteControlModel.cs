@@ -766,12 +766,15 @@ namespace HedgeHog.Alice.Client {
           try {
             if (tm.IsActive && tm.HasRates && !IsInVirtualTrading) {
               var charter = GetCharter(tm);
-              charter.Dispatcher.Invoke(() => {
+              charter.Dispatcher.Invoke(new Action(() => {
                 charter.LineAvgAsk = tm.CurrentPrice.Ask;
                 charter.LineAvgBid = tm.CurrentPrice.Bid;
+                //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
+              }), DispatcherPriority.Send);
+              Observable.Start(() => {
                 charter.LineTakeProfitLimit = tm.LimitRate;
                 charter.SetLastPoint(tm.RateLast);
-              });
+              }, new System.Reactive.Concurrency.DispatcherScheduler(charter.Dispatcher));
             }
           } catch (Exception exc) {
             Log = exc;

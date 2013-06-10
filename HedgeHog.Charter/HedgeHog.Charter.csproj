@@ -173,6 +173,10 @@
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
+      <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
+      <Name>HedgeHog.NewsCaster</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>

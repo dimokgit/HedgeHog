@@ -35,6 +35,25 @@ namespace HedgeHog {
     #region Ctor
     public CharterSnapshotControl() {
       InitializeComponent();
+
+      this.SizeChanged += (s, e) => FitToView();
+
+      MessageBus.Current.Listen<HedgeHog.NewsCaster.NewsEvent>("Snapshot")
+        .Throttle(1.FromSeconds(),DispatcherScheduler.Current)
+        .Where(ne => VisualParent != null)
+        .Subscribe(ne => {
+          try {
+            var monthOffset = 3;
+            var dateStart = ne.Time.AddMonths(-monthOffset*2);
+            var dateEnd = ne.Time.AddDays(-1);
+            ReadNewsEventsHistoryFromDB(ne.Country, ne.Name, dateStart, dateEnd);
+            NewsHistoryCurrent = NewsEventHistory.First();
+            NewsEventCurrent = NewsEvents.FirstOrDefault(n => n.Country == ne.Country && n.Name == ne.Name);
+            DateStart = NewsEventHistory.First().Time.DateTime;
+            Show();
+          } catch (Exception exc) { LogMessage.Send(exc); }
+        });
+
       Pairs.AddRange(ForexStorage.UseForexContext(c => c.v_Pair.ToArray(), (c, ex) => LogMessage.Send(ex)));
       otherVLines.Changing.SubscribeOnDispatcher()
         .Subscribe(ev => {
@@ -59,13 +78,9 @@ namespace HedgeHog {
             var monthOffset = 3;
             var dateStart = ne.Time.AddMonths(-monthOffset);
             var dateEnd = ne.Time.AddMonths(monthOffset);
-            var newsHistory = ForexStorage.UseForexContext(c =>
-              c.Event__News.Where(dbEv => dbEv.Name == ne.Name && dbEv.Country == ne.Country &&
-                dbEv.Time >= dateStart && dbEv.Time <= dateEnd)
-              .OrderByDescending(db => db.Time).ToArray()
-            );
-            NewsEventHistory.Clear();
-            NewsEventHistory.AddRange(newsHistory);
+            ReadNewsEventsHistoryFromDB(ne.Country, ne.Name, dateStart, dateEnd);
+            NewsHistoryCurrent = NewsEventHistory.FirstOrDefault(n =>
+              n.Country == NewsEventCurrent.Country && n.Name == NewsHistoryCurrent.Name && n.Time == NewsEventCurrent.Time);
           } catch (Exception ex) { LogMessage.Send(ex); }
         }, ex => LogMessage.Send(ex), () => LogMessage.Send("Done with NewsEventCurrent."));
 
@@ -82,6 +97,20 @@ namespace HedgeHog {
 
         this.ObservableForProperty(me => me.PairCurrent).Subscribe(oc => Show());
       });
+    }
+    delegate int NewsEventComparisonDelegate(Event__News left,Event__News right);
+    NewsEventComparisonDelegate _newsEventComparicon = delegate(Event__News left, Event__News rigt) {
+      return left.Time.CompareTo(rigt.Time);
+    };
+    private void ReadNewsEventsHistoryFromDB(string country,string name, DateTimeOffset dateStart, DateTimeOffset dateEnd) {
+      var newsHistory = ForexStorage.UseForexContext(c =>
+        c.Event__News.Where(dbEv => dbEv.Name == name && dbEv.Country == country &&
+          dbEv.Time >= dateStart && dbEv.Time <= dateEnd)
+        .OrderByDescending(db => db.Time).ToArray()
+      );
+      NewsEventHistory.Clear();
+      NewsEventHistory.AddRange(newsHistory);
+      NewsEventHistory.Sort(new Comparison<Event__News>(_newsEventComparicon));
     }
     #endregion
 
@@ -130,6 +159,21 @@ namespace HedgeHog {
         }
       }
     }
+    #endregion
+
+    #region DateLengthText
+    private string _DateLengthText;
+    public string DateLengthText {
+      get { return _DateLengthText; }
+      set {
+        if (_DateLengthText != value) {
+          _DateLengthText = value;
+          DateLength = DateLengthText.Evaluate<int>();
+          OnPropertyChanged("DateLengthText");
+        }
+      }
+    }
+
     #endregion
 
     #region DateLength
@@ -235,6 +279,7 @@ namespace HedgeHog {
         (c, exc) => LogMessage.Send(exc));
       NewsEvents.Except(news, _newsEventComparer).ToList().ForEach(ne => NewsEvents.Remove(ne));
       NewsEvents.AddRange(news.Except(NewsEvents, _newsEventComparer));
+      NewsEvents.Sort(new Comparison<Event__News>(_newsEventComparicon));
       //NewsEventCurrent = NewsEvents.FirstOrDefault(CompareNewsEvents);
       DrawVertivalLines(new DateTime[0]);
       DrawVertivalLines(news.Select(ne => ne.Time.DateTime).ToArray());
@@ -267,13 +312,20 @@ namespace HedgeHog {
     #region Draw 
     ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
     public void DrawVertivalLines(IList<DateTime> times) {
-      var times0 = times.Select(t => GetPriceStartDateContinuous(t)).ToArray();
-      var newLines = times0.Select(t => dateAxis.ConvertToDouble(t)).Except(otherVLines.Select(vl => vl.Value)).ToArray();
+      var times0 = times.Select(t => dateAxis.ConvertToDouble(GetPriceStartDateContinuous(t))).ToArray();
+      var timeSelectedDouble = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(DateStart.GetValueOrDefault()));
+      var newLines = times0.Except(otherVLines.Select(vl => vl.Value)).ToArray();
       var startDateDouble = dateAxis.ConvertToDouble(animatedTimeX[0]);
-      newLines.Where(nl => nl >= startDateDouble).ForEach(nl =>
-        otherVLines.Add(new VerticalLine() { Value = nl, StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.MediumVioletRed) })
+      var endDateDouble = dateAxis.ConvertToDouble(animatedTimeX.Last());
+      newLines.Where(nl => nl.Between(startDateDouble,endDateDouble)).ForEach(nl =>
+        otherVLines.Add(new VerticalLine() { Value = nl, StrokeDashArray = { 2 }, Stroke = new SolidColorBrush(Colors.MediumVioletRed), StrokeThickness = 1 })
       );
-      otherVLines.Where(vl => vl.Value < startDateDouble).ToList().ForEach(vl => otherVLines.Remove(vl));
+
+      otherVLines.Where(vl => !vl.Value.Between(startDateDouble,endDateDouble)).ToList().ForEach(vl => otherVLines.Remove(vl));
+
+      var lines = otherVLines.Select(t => new { l = t, d = t.Value.Abs(timeSelectedDouble) }).OrderBy(t => t.d).ToArray();
+      lines.Where(l => l.d == 0).Take(1).ForEach(l => l.l.StrokeThickness = 2);
+      lines.Where(l => l.d != 0).ForEach(l => l.l.StrokeThickness = 1);
     }
 
     public void AddTicks(IList<DatePoint> ticks) {
@@ -303,6 +355,7 @@ namespace HedgeHog {
 
       };
 
+      DispatcherScheduler.Current.Schedule(0.5.FromSeconds(), () => FitToView());
       if (Dispatcher.CheckAccess())
         a();
       else {
@@ -311,7 +364,6 @@ namespace HedgeHog {
           Dispatcher.Invoke(a);
         } finally {
           inRendering = false;
-          FitToView();
         }
       }
     }
@@ -452,6 +504,9 @@ namespace HedgeHog {
     public void FitToView() {
       plotter.Dispatcher.BeginInvoke(new Action(() => {
         try {
+          plotter.Viewport.ClearValue(Viewport2D.VisibleProperty);
+          plotter.Viewport.CoerceValue(Viewport2D.VisibleProperty);
+
           plotter.FitToView();
         } catch (InvalidOperationException) {
         } catch (Exception exc) {

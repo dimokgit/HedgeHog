@@ -247,6 +247,25 @@ namespace HedgeHog {
       return parabola;
     }
 
+    public static double Height<T>(this IEnumerable<T> rates, Func<T, double> getValue) {
+      double min, max;
+      return rates.Height(getValue, out min, out max);
+    }
+    public static double Height<T>(this IEnumerable<T> rates, Func<T, double> getValue, out double min, out double max) {
+      return rates.Height(getValue, getValue, out min, out max);
+    }
+    public static double Height<T>(this IList<T> rates, Func<T, double> valueHigh, Func<T, double> valueLow) {
+      double min, max;
+      return rates.Height(valueHigh, valueLow, out min, out max);
+    }
+    public static double Height<T>(this IEnumerable<T> rates, Func<T, double> valueMax, Func<T, double> valueMin, out double min, out double max) {
+      if (!rates.Any())
+        return min = max = double.NaN;
+      min = rates.Min(valueMin);
+      max = rates.Max(valueMax);
+      return max - min;
+    }
+
     public static IEnumerable<double> Shrink(this IList<double> values, int groupLength) {
       return from r in values.Select((r, i) => new { r, i = i / groupLength })
              group r by r.i into g
@@ -820,8 +839,11 @@ namespace HedgeHog {
 
 
     #region TimeSpan
-    public static TimeSpan Max(this IEnumerable<TimeSpan> span) {
-      return TimeSpan.FromMilliseconds(span.Max(s => s.TotalMilliseconds));
+    public static TimeSpan Max(this IEnumerable<TimeSpan> spans) {
+      var spanMin = TimeSpan.MinValue;
+      foreach (var span in spans)
+        if (spanMin < span) spanMin = span;
+      return spanMin;
     }
     public static TimeSpan Average(this IEnumerable<TimeSpan> span) {
       return TimeSpan.FromMilliseconds(span.Average(s => s.TotalMilliseconds));
