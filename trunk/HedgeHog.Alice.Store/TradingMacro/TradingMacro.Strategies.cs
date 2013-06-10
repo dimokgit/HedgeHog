@@ -757,7 +757,7 @@ namespace HedgeHog.Alice.Store {
         var triggerAngle = new ValueTrigger(false);
         var corridorMoved = new ValueTrigger(false);
         var densityTrigger = new ValueTrigger(false);
-        double corridorLevel = 0;
+        double corridorLevel = double.NaN;
         double corridorAngle = 0;
         DateTime tradeCloseDate = DateTime.MaxValue;
         DateTime corridorDate = ServerTime;
@@ -964,15 +964,16 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.CountWithAngle:
               #region firstTime
               if (firstTime) {
-                watcherCanTrade.SetValue(false);
+                LogTrades = false;
               }
               #endregion
               {
-                if (watcherCanTrade.SetValue(_crossesOk && corridorLevel.Abs(MagnetPrice) > varianceFunc()()).ChangedTo(true)) {
-                  corridorLevel = MagnetPrice;
-                  _buyLevel.RateEx = _CenterOfMassBuy;
-                  _sellLevel.RateEx = _CenterOfMassSell;
+                if (CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange) {
+                  var ratesCorridor = WaveShort.Rates.Skip(this.PriceCmaLevels * 2);
+                  _buyLevel.RateEx = ratesCorridor.Max(GetTradeEnterBy(true));
+                  _sellLevel.RateEx = ratesCorridor.Min(GetTradeEnterBy(false)); ;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
+                  var buySellHeight = _sellLevel.Rate - _buyLevel.Rate;
                 }
                 adjustExitLevels0();
               }
@@ -1590,6 +1591,51 @@ namespace HedgeHog.Alice.Store {
       if (IsTradingActive)
         _adjustEnterLevels();
       #endregion
+    }
+
+    IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin,out double levelOut) {
+      Func<double, Tuple<Rate, Rate>, bool> isOk = (l, t) => l.Between(t.Item1.PriceAvg, t.Item2.PriceAvg);
+      IList<Tuple<Rate, Rate>> ratesFused = rates.Zip(rates.Skip(1), (f, s) => new Tuple<Rate, Rate>(f, s)).ToArray();
+      var maxIntervals = new { span = TimeSpan.Zero, level = double.NaN}.IEnumerable().ToList();
+      var height = rates.Take(lengthMin).Height();
+      var levelMIn = rates.Take(lengthMin).Min(t => t.PriceAvg);
+      var levels = Enumerable.Range(1, InPips(height).ToInt() - 1).Select(i => levelMIn + InPoints(i)).ToArray();
+      levels.ForEach(level => {
+        var ratesCrossed = ratesFused.Where(t => isOk(level, t)).Select(t => t.Item2).ToArray();
+        if (ratesCrossed.Length > 3) {
+          var ratesCrossesLinked = ratesCrossed.ToLinkedList();
+          var span = TimeSpan.MaxValue;
+          var corridorOk = false;
+          //ratesCrossesLinked.ForEach(fs => 
+          for(var node = ratesCrossesLinked.First.Next; node != null; node = node.Next) {
+            var interval = node.Previous.Value.StartDate - node.Value.StartDate;
+            if (interval > span) {
+              while (!maxIntervals.Any() && node!=null && (rates[0].StartDate - node.Value.StartDate).Duration().TotalMinutes < lengthMin) {
+                node = node.Next;
+              }
+              corridorOk = node != null;
+            }
+            if (node != null)
+              span = rates[0].StartDate - node.Value.StartDate;
+            if (corridorOk || node == null) break;
+          };
+          if (corridorOk)
+            maxIntervals.Add(new { span = span, level });
+        }
+      });
+      var maxInterval = maxIntervals.Where(mi => mi.span.Duration().TotalMinutes >= lengthMin)
+        .OrderByDescending(a => a.span).FirstOrDefault();
+      if (maxInterval == null) {
+        levelOut = double.NaN;
+        return null;
+      } else
+        try {
+          levelOut = maxInterval.level;
+          var dateStop = rates[0].StartDate.Subtract(maxInterval.span);
+          return rates.TakeWhile(r => r.StartDate >= dateStop).ToArray();
+        } catch (Exception exc) {
+          throw;
+        }
     }
 
     private void SetCentersOfMassByHour(int hour,int timeFrame) {

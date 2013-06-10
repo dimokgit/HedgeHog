@@ -30,7 +30,11 @@
 			<Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}">
 				<Setter Property="FontWeight" Value="Black"/>
 			</Style>
-			<DataTemplate x:Key="CharterHeaderTemplate">
+      <DataTemplate x:Key="SnapshotTemplate">
+        <charter:CharterSnapshotControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+      </DataTemplate>
+
+      <DataTemplate x:Key="CharterHeaderTemplate">
 				<TextBlock DataContext="{Binding Content,RelativeSource={RelativeSource AncestorType=telerik:RadPane}}">
 					<TextBlock Text="{Binding Header}"
 										 Foreground="{Binding IsActive,ConverterParameter=Black|DarkRed|DarkGreen,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
@@ -588,12 +592,7 @@
             </telerik:RadPane.ContentTemplate>
           </telerik:RadPane>
 
-          <telerik:RadPane Header="Sbapshot" Title="Sbapshot" CanUserClose="False" telerik:RadDocking.SerializationTag="Sbapshot" Name="Sbapshot">
-            <telerik:RadPane.ContentTemplate>
-              <DataTemplate>
-                <charter:CharterSnapshotControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
-              </DataTemplate>
-            </telerik:RadPane.ContentTemplate>
+          <telerik:RadPane Header="Sbapshot" Title="Sbapshot" ContentTemplate="{StaticResource SnapshotTemplate}" CanUserClose="False" telerik:RadDocking.SerializationTag="Sbapshot" Name="Sbapshot">
           </telerik:RadPane>
 
         </telerik:RadPaneGroup>

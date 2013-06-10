@@ -6,6 +6,7 @@ using System.Text;
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Void = 0,
+    HorizontalProbe = 10,
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,

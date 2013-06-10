@@ -475,9 +475,9 @@ namespace HedgeHog.Alice.Store {
         .Subscribe(nc => {
           try {
             if (!RatesArray.Any()) return;
-            var rates = RatesArray.ReverseIfNot().Take(BarPeriodInt * 120).Select(r => CorridorPrice(r)).OrderBy(d => d).ToArray();
-            _buyLevel.RateEx = rates.LastBC();
-            _sellLevel.RateEx = rates[0];
+            var rates = CorridorStats.Rates;
+            _buyLevel.RateEx = rates.Max(GetTradeEnterBy(true));
+            _sellLevel.RateEx = rates.Max(GetTradeEnterBy(false));
             new[] { _buyLevel, _sellLevel }.ForEach(sr => {
               sr.ResetPricePosition();
               sr.CanTradeEx = true;
@@ -1362,22 +1362,36 @@ namespace HedgeHog.Alice.Store {
       this.TradesManager.TradeClosed += TradeCloseHandler;
       this.TradesManager.TradeAdded += TradeAddedHandler;
       var fw = GetFXWraper();
+      var digits = TradesManager.GetDigits(Pair);
       if (fw != null && !IsInPlayback) {
-        //_priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
-        //  , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
-        //  .Where(pce=>pce.EventArgs.Pair == Pair)
-        //  .Sample((0.1).FromSeconds())
-        //  .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => Log = exc);
-        fw.PriceChangedBroadcast.AsObservable()
-          .Where(pce => pce.Pair == Pair)
+        _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
+          , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
+          .Where(pce => pce.EventArgs.Pair == Pair)
+          //.Sample((0.1).FromSeconds())
+          .DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
           .Do(pce => {
-            CurrentPrice = pce.Price;
-            if (!TradesManager.IsInTest && !IsInPlayback)
-              AddCurrentTick(pce.Price);
-            TicksPerMinuteSet(pce.Price, ServerTime);
-            OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
+            try {
+              CurrentPrice = pce.EventArgs.Price;
+              if (!TradesManager.IsInTest && !IsInPlayback)
+                AddCurrentTick(pce.EventArgs.Price);
+              TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
+              OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
+            } catch (Exception exc) { Log = exc; }
           })
-          .Subscribe(pce => RunPriceChanged(pce, null), exc => Log = exc, () => Log = new Exception(Pair + " got terminated."));
+          .Latest().ToObservable(ThreadPoolScheduler.Instance)
+          .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+        if (false)
+          fw.PriceChangedBroadcast.AsObservable()
+            .Where(pce => pce.Pair == Pair)
+            .Do(pce => {
+              CurrentPrice = pce.Price;
+              if (!TradesManager.IsInTest && !IsInPlayback)
+                AddCurrentTick(pce.Price);
+              TicksPerMinuteSet(pce.Price, ServerTime);
+              OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
+            })
+            .Latest().ToObservable(ThreadPoolScheduler.Instance)
+            .Subscribe(pce => RunPriceChanged(pce, null), exc => Log = exc, () => Log = new Exception(Pair + " got terminated."));
 
         fw.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
         fw.OrderAdded += TradesManager_OrderAdded;
@@ -3083,6 +3097,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
+        case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
         case ScanCorridorFunction.Void: return ScanCorridorVoid;
       }
       throw new NotSupportedException(function + "");
@@ -3106,10 +3121,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void OnRunPriceBroadcast(PriceChangedEventArgs pce) {
-      if (TradesManager.IsInTest || IsInPlayback) {
-        CurrentPrice = pce.Price;
-        RunPrice(pce, Trades);
-      } else RunPriceBroadcast.SendAsync(pce);
+      RunPrice(pce, Trades);
+      //if (TradesManager.IsInTest || IsInPlayback) {
+      //  CurrentPrice = pce.Price;
+      //  RunPrice(pce, Trades);
+      //} else RunPriceBroadcast.SendAsync(pce);
     }
 
     ReactiveUI.ReactiveCollection<NewsEvent> _newEventsCurrent = new ReactiveCollection<NewsEvent>();
@@ -3126,12 +3142,12 @@ namespace HedgeHog.Alice.Store {
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
         SetTradesStatistics(price, trades);
-        {
-          var dateStart = RatesArray[0].StartDate2;
-          var dateEnd = RatesArray.LastBC().StartDate2;
-          var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.Between(dateStart, dateEnd)).ToArray();
-          _newEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => _newEventsCurrent.Remove(ne));
-          _newEventsCurrent.AddRange(newsEventsCurrent.Except(_newEventsCurrent).ToArray());
+        if (RatesArray.Any()) {
+          var dateStart = RatesArray[0].StartDate;
+          var dateEnd = RatesArray.LastBC().StartDate;
+          var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
+          NewEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => NewEventsCurrent.Remove(ne));
+          NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());
         }
         SetLotSize();
         try {

@@ -25,6 +25,7 @@ using System.ComponentModel.Composition;
 using System.Collections.Specialized;
 using ReactiveUI;
 using ReactiveUI.Xaml;
+using System.Diagnostics;
 
 namespace HedgeHog.UI {
   public partial class NewsCasterControl : UserControl {
@@ -103,6 +104,23 @@ namespace HedgeHog.UI {
     #endregion
 
     #region Properties
+
+    #region ShowNewsEventSnapshot
+    ICommand _ShowNewsEventSnapshotCommand;
+    public ICommand ShowNewsEventSnapshotCommand {
+      get {
+        if (_ShowNewsEventSnapshotCommand == null) {
+          _ShowNewsEventSnapshotCommand = new GalaSoft.MvvmLight.Command.RelayCommand<NewsContainer>(ShowNewsEventSnapshot, (nc) => true);
+        }
+
+        return _ShowNewsEventSnapshotCommand;
+      }
+    }
+    void ShowNewsEventSnapshot(NewsContainer nc) {
+      MessageBus.Current.SendMessage(nc.Event, "Snapshot");
+    }
+    #endregion
+
     Exception Log {
       set {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(value);

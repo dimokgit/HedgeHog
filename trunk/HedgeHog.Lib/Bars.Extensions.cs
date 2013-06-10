@@ -836,27 +836,11 @@ namespace HedgeHog.Bars {
       var height = bars.Height(out min, out max);
       return min + height / 2;
     }
-    public static double Height<TBar>(this IList<TBar> rates, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
-      return rates.Max(priceHigh) - rates.Min(priceLow);
-    }
     public static double Height<TBar>(this IEnumerable<TBar> rates,out double min,out double max) where TBar : BarBase {
       return rates.Height(r => r.PriceAvg, out min, out max);
     }
     public static double Height<TBar>(this IEnumerable<TBar> rates) where TBar : BarBase {
       return rates.Height(r => r.PriceAvg);
-    }
-    public static double Height<TBar>(this IEnumerable<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
-      double min, max;
-      return rates.Height(getPrice, out min, out max);
-    }
-    public static double Height<TBar>(this IEnumerable<TBar> rates, Func<TBar, double> getPrice, out double min, out double max) where TBar : BarBase {
-      if (!rates.Any())
-        return min = max = double.NaN;
-      var rs = rates.Select(getPrice).ToList();
-      rs.Sort();
-      min = rs[0];
-      max = rs.LastBC();
-      return max - min;
     }
     public static double Density(this ICollection<Rate> rates) {
       return rates.Average(r => r.BidHigh- r.AskLow);

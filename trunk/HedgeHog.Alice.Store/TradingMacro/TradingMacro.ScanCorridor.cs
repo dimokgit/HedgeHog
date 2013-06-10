@@ -433,52 +433,21 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
-    private CorridorStatistics ScanCorridorByParabola_5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var groupLength = 5;
-      var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(this.IsCorridorForwardOnly ? 0 : -BarPeriodInt * groupLength * 2) : DateTime.MinValue;
-      var polyOrder = PolyOrder;
-      var ratesReversed = ratesForCorridor.ReverseIfNot();
-      var ratesShrunken = ratesReversed.TakeWhile(r => r.StartDate >= dateMin).Shrink(CorridorPrice, groupLength).ToArray();
-      var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      var ratesToRegress = ratesShrunken.Take((CorridorDistanceRatio / groupLength).ToInt().Max(PolyOrder)).ToList();
-      foreach (var rate in ratesShrunken.Skip(1)) {
-        ratesToRegress.Add(rate);
-        if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
+    private CorridorStatistics ScanCorridorByHorizontalLineCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      WaveShort.Rates = null;
+      double level;
+      var rates = CorridorByVerticalLineCrosses(ratesForCorridor.ReverseIfNot(), CorridorDistanceRatio.ToInt(), out level);
+      if (rates!= null && rates.Any() && rates.LastBC().StartDate > CorridorStats.StartDate) {
+        MagnetPrice = level;
+        WaveShort.Rates = rates;
       }
-      var correlations = new { corr = 0.0, length = 0, vol = 0.0 }.IEnumerable().ToList();
-      var corr = double.NaN;
-      var locker = new object();
-      Enumerable.Range(ratesToRegress.Count, (ratesShrunken.Length - ratesToRegress.Count).Max(0)).AsParallel().ForAll(rates => {
-        double[] coeffs, source;
-        double[] parabola = ratesShrunken.Regression(rates, polyOrder, out coeffs, out source);
-        double[] parabola1 = ratesShrunken.Regression(rates, polyOrder - 1);
-        coeffs = source.Regress(1);
-        var vol = ratesReversed.Take(rates).ToArray().Volatility(_priceAvg, GetPriceMA) / coeffs[1].Abs();
-        var c = alglib.correlation.pearsoncorrelation(ref parabola1, ref parabola, rates);
-        corr = corr.Cma(15, c * vol);
-        //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
-        //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
-        lock (locker) {
-          correlations.Add(new { corr, length = rates, vol });
-        }
-      });
-      correlations.Sort((a, b) => -a.corr.CompareTo(b.corr));
-      if (!correlations.Any()) correlations.Add(new { corr, length = ratesShrunken.Length, vol = 0.0 });
-      var lengthByCorr = correlations[0].length;
-      if (ShowParabola) {
-        var parabola = ratesShrunken.Regression(lengthByCorr, polyOrder).UnShrink(groupLength).Take(ratesForCorridor.Count).ToArray();
-        var i = 1;
-        foreach (var rfc in ratesForCorridor.ReverseIfNot().Skip(1).Take(parabola.Length - 1))
-          rfc.PriceCMALast = parabola[i++];
+      if (!WaveShort.HasRates) {
+        if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
+          var dateStop = CorridorStats.Rates.LastBC().StartDate;
+          WaveShort.Rates = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray();
+        } else
+          WaveShort.Rates = ratesForCorridor.ReverseIfNot();
       }
-      {
-        WaveShort.Rates = null;
-        var rates = ratesForCorridor.ReverseIfNot().Take(lengthByCorr * groupLength).ToList();
-        WaveShort.Rates = (rates.LastBC().StartDate - dateMin).TotalMinutes * BarPeriodInt < groupLength
-          ? ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateMin).ToList()
-          : rates;
-      }
-      CorridorCorrelation = ratesForCorridor.ReverseIfNot().Take((WaveShort.Rates.Count * 1.5).ToInt()).ToArray().Volatility(_priceAvg, GetPriceMA);
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
     private CorridorStatistics ScanCorridorByParabola_2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {

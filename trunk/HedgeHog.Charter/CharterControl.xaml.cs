@@ -31,6 +31,10 @@ using System.Threading.Tasks;
 using System.Reactive.Concurrency;
 using HedgeHog.Shared.Messages;
 using System.Reactive.Linq;
+using System.Reactive;
+using System.Reactive.Subjects;
+using ReactiveUI;
+using System.Collections.Specialized;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -52,7 +56,7 @@ namespace HedgeHog {
     }
     static ColorPalette ColorPaletteDefault =       new ColorPalette(){
         BackgroundDefault="#FFF7F3F7",
-        BackgroundNotActive = "#FFF4DD",
+        BackgroundNotActive = "#44F75D59",
         GraphBuy  = "DarkGreen",
         GraphSell = "DarkRed",
         LevelBuy = "DarkRed",
@@ -84,8 +88,28 @@ namespace HedgeHog {
       this.Name = name.Replace("/", "");
       InitializeComponent();
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
+      otherTimes.ItemsAdded.ObserveOnDispatcher().Subscribe(OnOtherTimeAdded);
+      otherTimes.ItemsRemoved.ObserveOnDispatcher().Subscribe(OnOtherTimeRemoved);
+      otherVLines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
+      otherVLines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
+
     #region Attached Properties
+
+
+    public static DateTime GetTime(DependencyObject obj) {
+      return (DateTime)obj.GetValue(TimeProperty);
+    }
+
+    public static void SetTime(DependencyObject obj, DateTime value) {
+      obj.SetValue(TimeProperty, value);
+    }
+
+    // Using a DependencyProperty as the backing store for Time.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty TimeProperty =
+        DependencyProperty.RegisterAttached("Time", typeof(DateTime), typeof(CharterControl));
+
+
     #region IsInteractive
     public static bool GetIsInteractive(DependencyObject obj) {
       return (bool)obj.GetValue(IsInteractiveProperty);
@@ -804,24 +828,63 @@ namespace HedgeHog {
       set { _ActiveDraggablePoint = value; }
     }
 
-    
+    #region OtherVerticalLines Subject
+    object _OtherVerticalLinesSubjectLocker = new object();
+    ISubject<IEnumerable<DateTime>> _OtherVerticalLinesSubject;
+    ISubject<IEnumerable<DateTime>> OtherVerticalLinesSubject {
+      get {
+        lock (_OtherVerticalLinesSubjectLocker)
+          if (_OtherVerticalLinesSubject == null) {
+            _OtherVerticalLinesSubject = new Subject<IEnumerable<DateTime>>();
+            _OtherVerticalLinesSubject
+              .Latest()
+              .ToObservable( ThreadPoolScheduler.Instance)
+              .Subscribe(s => {
+                Observable.Start(() => {
+                }, new System.Reactive.Concurrency.DispatcherScheduler(plotter.Dispatcher));
+              }, exc => { });
+          }
+        return _OtherVerticalLinesSubject;
+      }
+    }
+    void OnOtherVerticalLines(IEnumerable<DateTime> p) {
+      OtherVerticalLinesSubject.OnNext(p);
+    }
+    #endregion
+
+
     List<HorizontalLine> otherHLines = new List<HorizontalLine>();
-    List<VerticalLine> otherVLines = new List<VerticalLine>();
+    ReactiveCollection<DateTime> otherTimes = new ReactiveCollection<DateTime>();
+    ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
+
+    void OnOtherTimeAdded(DateTime date) {
+      try {
+        var vl = new VerticalLine() {
+          Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = { 2 },
+          Stroke = new SolidColorBrush(Colors.MediumVioletRed),
+          StrokeThickness = 1
+        };
+        SetTime(vl, date);
+        otherVLines.Add(vl);
+      } catch (Exception exc) {
+        LogMessage.Send(exc);
+      }
+    }
+    void OnOtherTimeRemoved(DateTime date) {
+      try {
+        var vl = otherVLines.SingleOrDefault(l => GetTime(l) == date);
+        if (vl != null) otherVLines.Remove(vl);
+      } catch (Exception exc) {
+        LogMessage.Send(exc);
+      }
+    }
+
     public void DrawVertivalLines(IList<DateTime> times) {
-      plotter.Dispatcher.BeginInvoke(new Action(() => {
-        var times0 = times.Select(t => GetPriceStartDateContinuous(t)).ToArray();
-        var newLines = times0.Select(t => dateAxis.ConvertToDouble(t)).Except(otherVLines.Select(vl => vl.Value)).ToArray();
-        var startDateDouble = dateAxis.ConvertToDouble(animatedTimeX[0]);
-        newLines.Where(nl => nl >= startDateDouble).ForEach(nl => {
-          var newLine = new VerticalLine() { Value = nl, StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.HotPink) };
-          plotter.Children.Add(newLine);
-          otherVLines.Add(newLine);
-        });
-        otherVLines.Where(vl => vl.Value < startDateDouble).ToList().ForEach(vl => {
-          plotter.Children.Remove(vl);
-          otherVLines.Remove(vl);
-        });
-      }));
+      times = times.Distinct().ToArray();
+      Observable.Start(() => {
+        otherTimes.RemoveAll(ot => !times.Contains(ot));
+        otherTimes.AddRange(times.Except(otherTimes));
+      }, new System.Reactive.Concurrency.DispatcherScheduler(plotter.Dispatcher));
     }
     #endregion
 
@@ -1767,12 +1830,34 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         }
       }
     }
+    #region SetLastPoint Subject
+    object _SetLastPointSubjectLocker = new object();
+    ISubject<Rate> _SetLastPointSubject;
+    ISubject<Rate> SetLastPointSubject {
+      get {
+        lock (_SetLastPointSubjectLocker)
+          if (_SetLastPointSubject == null) {
+            _SetLastPointSubject = new Subject<Rate>();
+            _SetLastPointSubject
+              //.Throttle(THROTTLE_INTERVAL)
+              .ObserveLatestOn(DispatcherScheduler.Current)
+              .Subscribe(_SetLastPoint, exc => LogMessage.Send(exc));
+          }
+        return _SetLastPointSubject;
+      }
+    }
+    public void SetLastPoint(Rate p) {
+      SetLastPointSubject.OnNext(p);
+    }
+    #endregion
 
-    public void SetLastPoint(Rate rateLast) {
+
+    private void _SetLastPoint(Rate rateLast) {
       try {
+        return;
         SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
+        //animatedDataSourceBid.RaiseDataChanged();
         animatedDataSource.RaiseDataChanged();
-        animatedDataSourceBid.RaiseDataChanged();
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
       }
