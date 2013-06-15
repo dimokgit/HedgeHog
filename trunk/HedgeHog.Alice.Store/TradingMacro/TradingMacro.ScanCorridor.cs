@@ -437,7 +437,7 @@ namespace HedgeHog.Alice.Store {
       WaveShort.Rates = null;
       double level;
       var rates = CorridorByVerticalLineCrosses(ratesForCorridor.ReverseIfNot(), CorridorDistanceRatio.ToInt(), out level);
-      if (rates!= null && rates.Any() && rates.LastBC().StartDate > CorridorStats.StartDate) {
+      if (rates!= null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate > CorridorStats.StartDate)) {
         MagnetPrice = level;
         WaveShort.Rates = rates;
       }

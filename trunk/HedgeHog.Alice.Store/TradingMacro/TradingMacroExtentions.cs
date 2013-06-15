@@ -475,12 +475,17 @@ namespace HedgeHog.Alice.Store {
         .Subscribe(nc => {
           try {
             if (!RatesArray.Any()) return;
-            var rates = CorridorStats.Rates;
-            _buyLevel.RateEx = rates.Max(GetTradeEnterBy(true));
-            _sellLevel.RateEx = rates.Max(GetTradeEnterBy(false));
+            var height = CorridorStats.StDevByHeight;
+            if (CurrentPrice.Average > MagnetPrice) {
+              _buyLevel.Rate = MagnetPrice + height;
+              _sellLevel.Rate = MagnetPrice;
+            } else {
+              _buyLevel.Rate = MagnetPrice;
+              _sellLevel.Rate = MagnetPrice - height;
+            }
             new[] { _buyLevel, _sellLevel }.ForEach(sr => {
               sr.ResetPricePosition();
-              sr.CanTradeEx = true;
+              sr.CanTrade = true;
               //sr.InManual = true;
             });
             DispatcherScheduler.Current.Schedule(5.FromSeconds(), () => nc.AutoTrade = false);
@@ -1364,7 +1369,7 @@ namespace HedgeHog.Alice.Store {
       var fw = GetFXWraper();
       var digits = TradesManager.GetDigits(Pair);
       if (fw != null && !IsInPlayback) {
-        _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
+        PriceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
           , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
           .Where(pce => pce.EventArgs.Pair == Pair)
           //.Sample((0.1).FromSeconds())
@@ -1464,6 +1469,7 @@ namespace HedgeHog.Alice.Store {
     bool IsMyTrade(Trade trade) { return trade.Pair == Pair; }
     bool IsMyOrder(Order order) { return order.Pair == Pair; }
     public void UnSubscribeToTradeClosedEVent(ITradesManager tradesManager) {
+      if (PriceChangedSubscribsion != null) PriceChangedSubscribsion.Dispose();
       PriceChangedSubscribsion = null;
       if (this.TradesManager != null) {
         this.TradesManager.TradeClosed -= TradeCloseHandler;
@@ -2432,19 +2438,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    IWave<Rate> TrailingWave {
-      get {
-        if (!HasRates) return null;
-        switch (TrailingDistanceFunction) {
-          case TrailingWaveMethod.WaveShort: return WaveShort;
-          case TrailingWaveMethod.WaveTrade: return WaveTradeStart;
-          case TrailingWaveMethod.WaveMax: return WaveTradeStart.Rates.Count > WaveShort.Rates.Count ? (IWave<Rate>)WaveTradeStart : (IWave<Rate>)WaveShort;
-          case TrailingWaveMethod.WaveMin: return WaveTradeStart.Rates.Count < WaveShort.Rates.Count ? (IWave<Rate>)WaveTradeStart : (IWave<Rate>)WaveShort;
-        }
-        throw new NotSupportedException("TrailingRates of type " + TrailingDistanceFunction + " is not supported.");
-      }
-    }
-
     Playback _Playback = new Playback();
     public void SetPlayBackInfo(bool play, DateTime startDate, TimeSpan delay) {
       _Playback.Play = play;
@@ -3166,9 +3159,6 @@ namespace HedgeHog.Alice.Store {
 
     #region LotSize
     int _BaseUnitSize = 0;
-    double TradingCorridor() {
-      return _buyLevel == null ? 0 : _buyLevel.Rate - _sellLevel.Rate;
-    }
     public int BaseUnitSize { get { return _BaseUnitSize > 0 ? _BaseUnitSize : _BaseUnitSize = TradesManager.GetBaseUnitSize(Pair); } }
     public void SetLotSize(Account account = null) {
       if (TradesManager == null) return;
