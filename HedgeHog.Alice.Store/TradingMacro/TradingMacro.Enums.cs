@@ -28,32 +28,18 @@ namespace HedgeHog.Alice.Store {
     TimeFrame = 62
   }
   public enum TrailingWaveMethod {
-    WaveCommon = -1,
     WaveAuto = 0,
     WaveShort = 1,
-    WaveTrade = 2,
-    WaveMax = 3,
     WaveMin = 4,
     WaveLeft = 5,
     WaveRight = 6,
-    Count = 90,
     CountWithAngle = 92,
     Count0 = 91,
     Wavelette = 93,
-    Wavelette1 = 94,
-    Borderer = 100,
     Manual = 110,
-    Corridor = 120,
-    Corridor1 = 121,
-    CorridorBB = 122,
     TradeHour = 123,
     TradeHour1 = 124,
-    TradeLine = 130,
-    TradeLineA = 131,
-    TradeLineA1 = 132,
-    TradeLineA2 = 133,
-    ByHour = 140,
-    Void
+    ByHour = 140
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -103,10 +89,6 @@ namespace HedgeHog.Alice.Store {
   }
   public enum ExitFunctions {
     Void = -1,
-    BuySell = 0,
-    Exit = 1,
-    Exit1 = 2,
-    Exit2 = 3,
     GrossTP = 4,
     Wavelette = 5,
     GrossTP1 = 6,

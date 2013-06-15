@@ -709,6 +709,7 @@ namespace HedgeHog.Alice.Client {
       if (MasterModel != null) {
         MasterModel.CoreFX.LoggedIn -= CoreFX_LoggedInEvent;
         MasterModel.CoreFX.LoggedOff -= CoreFX_LoggedOffEvent;
+        TradingMacrosCopy.ForEach(tm => InitTradingMacro(tm, true));
       }
     }
     #endregion
