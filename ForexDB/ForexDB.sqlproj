@@ -162,6 +162,7 @@
     <Folder Include="news\Tables\" />
     <Folder Include="dbo\Views\" />
     <Folder Include="stats\Functions\" />
+    <Folder Include="news\Views\" />
   </ItemGroup>
   <ItemGroup>
     <BuildContributorArgument Include="OutDir=$(OutDir)" />
@@ -178,9 +179,6 @@
       <SubType>Code</SubType>
     </Build>
     <Build Include="Schema Objects\Tables\Constraints\dbo.t_Currency.DF_t_Currency_IsPrime.defconst.sql">
-      <SubType>Code</SubType>
-    </Build>
-    <Build Include="Schema Objects\Tables\Constraints\dbo.t_Bar.DF_t_Bar_Volume.defconst.sql">
       <SubType>Code</SubType>
     </Build>
     <Build Include="Schema Objects\Tables\Indexes\dbo.t_Tick.IX_t_Tick_StartDate.index.sql">
@@ -244,9 +242,6 @@
       <SubType>Code</SubType>
     </Build>
     <Build Include="Schema Objects\Tables\Keys\dbo.t_Currency.PK_t_Currency.pkey.sql">
-      <SubType>Code</SubType>
-    </Build>
-    <Build Include="Schema Objects\Tables\Keys\dbo.t_Bar.PK_t_Bar.pkey.sql">
       <SubType>Code</SubType>
     </Build>
     <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_PrepTicks.proc.sql">
@@ -492,6 +487,8 @@
     <Build Include="dbo\Stored Procedures\s_GetBarStats.sql" />
     <Build Include="Security\stats.sql" />
     <Build Include="Security\news.sql" />
+    <Build Include="news\Views\vEvent.sql" />
+    <Build Include="dbo\Functions\clrSplit.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
@@ -519,6 +516,10 @@
     <None Include="Assemblies\SQLCLR_3.dll" />
     <None Include="Assemblies\SQL_DateFuncs.dll" />
     <None Include="Assemblies\LightLib_3.dll" />
+    <None Include="Assemblies\SQL_DateFuncs_1.dll" />
+    <None Include="Assemblies\TA-Lib-Core_4.dll" />
+    <None Include="Assemblies\SQLCLR_4.dll" />
+    <None Include="Assemblies\LightLib_4.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
@@ -552,7 +553,7 @@
       <SqlPermissionSet>UNSAFE</SqlPermissionSet>
     </Reference>
     <Reference Include="SQL_DateFuncs">
-      <HintPath>Assemblies\SQL_DateFuncs.dll</HintPath>
+      <HintPath>Assemblies\SQL_DateFuncs_1.dll</HintPath>
       <SqlAssemblyName>SQL_DateFuncs</SqlAssemblyName>
       <IsModelAware>True</IsModelAware>
       <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
