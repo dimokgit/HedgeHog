@@ -64,7 +64,7 @@ namespace HedgeHog.UI {
         var dates = Enumerable.Range(0, 10000).Select(i => dateStart.AddDays(i * 7))
           .TakeWhile(d => d <= DateTime.Now.Date.AddDays(1)).ToArray();
         newsObserver = HedgeHog.NewsCaster.NewsHound.EconoDay.Fetch(dates)
-        .ObserveOnDispatcher()
+        .ObserveOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
         .Subscribe(ProcessNews,
         exc => {
           newsObserver = null;

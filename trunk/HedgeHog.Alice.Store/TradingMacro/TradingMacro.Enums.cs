@@ -28,11 +28,7 @@ namespace HedgeHog.Alice.Store {
     TimeFrame = 62
   }
   public enum TrailingWaveMethod {
-    WaveAuto = 0,
-    WaveShort = 1,
-    WaveMin = 4,
-    WaveLeft = 5,
-    WaveRight = 6,
+    Magnet = 1,
     CountWithAngle = 92,
     Count0 = 91,
     Wavelette = 93,

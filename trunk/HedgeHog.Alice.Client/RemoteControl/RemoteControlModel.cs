@@ -770,12 +770,9 @@ namespace HedgeHog.Alice.Client {
               charter.Dispatcher.Invoke(new Action(() => {
                 charter.LineAvgAsk = tm.CurrentPrice.Ask;
                 charter.LineAvgBid = tm.CurrentPrice.Bid;
+                charter.SetLastPoint(tm.RateLast);
                 //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
               }), DispatcherPriority.Send);
-              Observable.Start(() => {
-                charter.LineTakeProfitLimit = tm.LimitRate;
-                charter.SetLastPoint(tm.RateLast);
-              }, new System.Reactive.Concurrency.DispatcherScheduler(charter.Dispatcher));
             }
           } catch (Exception exc) {
             Log = exc;
@@ -964,7 +961,6 @@ namespace HedgeHog.Alice.Client {
         if (tm.IsCharterMinimized) return;
         if (tm == null) return;
         if (rates.Count() == 0) return;
-        if(!tm.IsInPlayback)
           rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
         Enumerable.Range(0, charter.LineTimeTakeProfits.Length.Min(tm.WaveRates.Count())).ToList()
           .ForEach(i => charter.LineTimeTakeProfits[i](tm.WaveRates[i].Rate.StartDateContinuous));
@@ -1000,7 +996,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n0}r{10:n0}p"///↨↔
+            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n0}r"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -1010,12 +1006,10 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.Correlation_R*100
-            /*10*/, tm.Correlation_P*100
+            /*9*/, tm.MagnetPriceRatio
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
-          charter.PlotterColor = tm.IsOpenTradeByMASubjectNull ? null : System.Windows.Media.Colors.SeaShell + "";
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
@@ -1039,7 +1033,8 @@ namespace HedgeHog.Alice.Client {
             charter.LineTimeMiddle = null;
           if (tm.WaveShortLeft.HasRates)
             charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
-          charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
+          if (tm.WaveShort.HasRates)
+            charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistanceRatio.ToInt()).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);

@@ -55,7 +55,7 @@ namespace HedgeHog {
         });
 
       Pairs.AddRange(ForexStorage.UseForexContext(c => c.v_Pair.ToArray(), (c, ex) => LogMessage.Send(ex)));
-      otherVLines.Changing.SubscribeOnDispatcher()
+      otherVLines.Changing.ObserveOnDispatcher()
         .Subscribe(ev => {
           switch (ev.Action) {
             case NotifyCollectionChangedAction.Reset:
