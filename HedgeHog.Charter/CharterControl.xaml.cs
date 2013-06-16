@@ -253,19 +253,6 @@ namespace HedgeHog {
       }
     }
 
-    #region PlotterColor
-    private string _PlotterColor;
-    public string PlotterColor {
-      get { return _PlotterColor ?? "#FFF7F3F7"; }
-      set {
-        if (_PlotterColor != value) {
-          _PlotterColor = value;
-          RaisePropertyChangedCore();
-        }
-      }
-    }
-
-    #endregion
     public double SuppResMinimumDistance { get; set; }
 
     List<DateTime> animatedTimeX = new List<DateTime>();
@@ -442,9 +429,6 @@ namespace HedgeHog {
 
     HorizontalLine lineAvgAsk = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     public double LineAvgAsk { set { lineAvgAsk.Value = value; } }
-
-    HorizontalLine lineTakeProfitLimit = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
-    public double LineTakeProfitLimit { set { lineTakeProfitLimit.Value = value; } }
 
     HorizontalLine lineAvgBid = new HorizontalLine() { StrokeDashArray = { 2 }, StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DodgerBlue) };
     public double LineAvgBid { set { lineAvgBid.Value = value; } }
@@ -1299,7 +1283,6 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
-      plotter.Children.Add(lineTakeProfitLimit);
       plotter.Children.Add(lineTimeTakeProfit);
       plotter.Children.Add(lineTimeTakeProfit1);
       plotter.Children.Add(lineTimeTakeProfit2);
@@ -1839,8 +1822,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           if (_SetLastPointSubject == null) {
             _SetLastPointSubject = new Subject<Rate>();
             _SetLastPointSubject
-              //.Throttle(THROTTLE_INTERVAL)
-              .ObserveLatestOn(DispatcherScheduler.Current)
+              .Throttle(1.FromSeconds())
+              .ObserveOn(Dispatcher)
               .Subscribe(_SetLastPoint, exc => LogMessage.Send(exc));
           }
         return _SetLastPointSubject;
@@ -1854,13 +1837,10 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     private void _SetLastPoint(Rate rateLast) {
       try {
-        return;
         SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
         //animatedDataSourceBid.RaiseDataChanged();
         animatedDataSource.RaiseDataChanged();
-      } catch (Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(exc);
-      }
+      } catch (Exception exc) { LogMessage.Send(exc); }
     }
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
       animatedPriceY[i] = high.IfNaN(ma);

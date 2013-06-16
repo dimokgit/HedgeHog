@@ -1280,7 +1280,7 @@ namespace HedgeHog.Alice.Client {
                   return MarketHoursHound.Fetch();
                 } catch (Exception exc) { Log = exc; }
                 return Markets;
-              }).ObserveOnDispatcher();
+              }).ObserveOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher);
             o.Subscribe(a, exc => Log = new Exception("MarketHoursHound aborted", exc), () => Log = new Exception("MarketHoursHound aborted"));
           }
           RaisePropertyChanged(() => IsLoggedIn);

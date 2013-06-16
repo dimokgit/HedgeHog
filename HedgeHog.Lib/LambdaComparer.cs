@@ -5,6 +5,23 @@ using System.Text;
 
 namespace HedgeHog {
 
+  public class ClosenessComparer<T> : IEqualityComparer<T> {
+    private readonly double delta;
+    private readonly Func<T, T, double, bool> compare;
+
+    public ClosenessComparer(double delta, Func<T, T, double, bool> compare) {
+      this.delta = delta;
+      this.compare = compare;
+    }
+
+    public bool Equals(T x, T y) {
+      return compare(x, y, delta);
+    }
+
+    public int GetHashCode(T obj) {
+      return 0;
+    }
+  }
   public class LambdaComparer<T> : IEqualityComparer<T> {
     private readonly Func<T, T, bool> _lambdaComparer;
     private readonly Func<T, int> _lambdaHash;
