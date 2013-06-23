@@ -202,6 +202,7 @@ namespace HedgeHog.Alice.Store {
       Func<bool> isCorridorFrozen = () => LotSizeByLossBuy >= MaxLotSize;
       #endregion
       _isSelfStrategy = true;
+      var reverseStrategy = new ObservableValue<bool>(false);
       Func<bool, double> crossLevelDefault = isBuy => isBuy ? _RatesMax + RatesHeight  : _RatesMin - RatesHeight;
       Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
 
@@ -528,7 +529,7 @@ namespace HedgeHog.Alice.Store {
         };
         EventHandler<SuppRes.CrossedEvetArgs> crossedExit = (s, e) => {
           var sr = (SuppRes)s;
-          if (ReverseStrategy && Trades.Any(t => t.IsBuy != sr.IsSell)) {
+          if (reverseStrategy.Value && Trades.Any(t => t.IsBuy != sr.IsSell)) {
             exitCrossHandler(sr);
             return;
           }
@@ -628,7 +629,7 @@ namespace HedgeHog.Alice.Store {
         DB.sGetStats_Result[] stats = null;
         Func<string, double> getCorridorMax = weekDay => stats.Single(s => s.DayName == weekDay + "").Range.Value;
         var interpreter = new Interpreter();
-
+        Func<bool> isReverseStrategy = ()=>_buyLevel.Rate < _sellLevel.Rate  ;
         #endregion
 
         #region Funcs
@@ -782,6 +783,10 @@ namespace HedgeHog.Alice.Store {
                     buyCloseLevel.InManual = sellCloseLevel.InManual = false;
                 };
                 onOpenTradeLocal = t => { };
+                reverseStrategy = new ObservableValue<bool>(isReverseStrategy());
+                reverseStrategy.ValueChanged += (s, e) => {
+                  buyCloseLevel.InManual = sellCloseLevel.InManual = false;
+                };
               }
               {
                 var getPrice = GetTradeEnterBy();
@@ -797,7 +802,8 @@ namespace HedgeHog.Alice.Store {
                   var corridorOk = CorridorStats.Rates.Count >= CorridorDistanceRatio * WaveStDevRatio;
                   if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = corridorOk);
                 }
-                if (ReverseStrategy) {
+                reverseStrategy.Value = isReverseStrategy();
+                if (reverseStrategy.Value) {
                   _buyLevel.RateEx = CenterOfMassSell;
                   _sellLevel.RateEx = CenterOfMassBuy;
                   var stopLoss = _buyLevel.Rate.Abs(_sellLevel.Rate);
@@ -1065,6 +1071,38 @@ namespace HedgeHog.Alice.Store {
         return ratesCrossed.Zip(ratesCrossed.Skip(1)
           , (prev, next) => new { prev, next, distance = d0 = next.index - prev.index, height = h0 = getHeight(prev.index, next.index), dToH = (d0 / h0).Round(1) });
       }).SelectMany(a => a.Where(b => b.height > 0))
+      .Distinct((a, b) => a.prev.index == b.prev.index && a.distance == b.distance)
+      .ToList();
+      var distanceMin = ratesByLevels.AverageByIterations(a => a.distance, (a, d) => a > d, 2).Average(a => a.distance);
+      Func<double, double, bool> comp = (a, b) => a <= b;
+      //ratesByLevels = ratesByLevels.Where(a => a.distance >= distanceMin).ToList().SortByLambda((a, b) => comp(a.dToH, b.dToH));
+      //var dToHMin = ratesByLevels.AverageByIterations(a => a.dToH, comp, 2).Average(a => a.dToH);
+      var winner = ratesByLevels/*.TakeWhile(a => comp(a.dToH, dToHMin))*/.OrderByDescending(a => a.distance).FirstOrDefault();
+      if (winner == null) return null;
+      var ratesOut = new Rate[winner.next.index - winner.prev.index + 1];
+      Array.Copy(ratesOriginal, winner.prev.index, ratesOut, 0, ratesOut.Length);
+      return ratesOut;
+    }
+
+    IList<Rate> CorridorByVerticalLineLongestCross2(Rate[] ratesOriginal,int indexMax, Func<Rate, double> price) {
+      var point = InPoints(1);
+      var rountTo = TradesManager.GetDigits(Pair) - 1;
+      Func<long, long, double> getHeight = (index1, index2) => {
+        var rates1 = new Rate[index2 - index1 + 1];
+        Array.Copy(ratesOriginal, index1, rates1, 0, rates1.Length);
+        var price0 = price(rates1[0]);
+        return rates1.Average(r => price0.Abs(price(r)) / point).Round(0);
+      };
+      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
+      Func<double, Rate, Rate, bool> isOk = (l, Item1, Item2) => l.Between(price(Item1), price(Item2));
+      var ratesFused = rates.Zip(rates.Skip(1), (f, s) => new { f.index, Item1 = f.rate, Item2 = s.rate }).ToArray();
+      var levelMin = (ratesOriginal.Min(price) * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
+      var levels = Enumerable.Range(0, InPips(ratesOriginal.Height(price)).ToInt())
+        .Select(level => levelMin + level * point).ToArray();
+      var ratesByLevels = levels.AsParallel().Select(level => {
+        var ratesCrossed = ratesFused.Where(t => isOk(level, t.Item1, t.Item2)).Select(a => new { a.index, rate = a.Item2 }).ToArray();
+        return ratesCrossed.Zip(ratesCrossed.Skip(1), (prev, next) => new { prev, next, distance = next.index - prev.index });
+      }).SelectMany(a => a.Where(b => b.prev.index <= indexMax))
       .Distinct((a, b) => a.prev.index == b.prev.index && a.distance == b.distance)
       .ToList();
       var distanceMin = ratesByLevels.AverageByIterations(a => a.distance, (a, d) => a > d, 2).Average(a => a.distance);
