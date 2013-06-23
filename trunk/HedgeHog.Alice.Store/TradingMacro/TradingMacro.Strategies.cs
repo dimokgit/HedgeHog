@@ -203,7 +203,7 @@ namespace HedgeHog.Alice.Store {
       #endregion
       _isSelfStrategy = true;
       var reverseStrategy = new ObservableValue<bool>(false);
-      Func<bool, double> crossLevelDefault = isBuy => isBuy ? _RatesMax + RatesHeight  : _RatesMin - RatesHeight;
+      Func<bool, double> crossLevelDefault = isBuy => isBuy ? _RatesMax + RatesHeight : _RatesMin - RatesHeight;
       Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
 
       #endregion
@@ -629,7 +629,8 @@ namespace HedgeHog.Alice.Store {
         DB.sGetStats_Result[] stats = null;
         Func<string, double> getCorridorMax = weekDay => stats.Single(s => s.DayName == weekDay + "").Range.Value;
         var interpreter = new Interpreter();
-        Func<bool> isReverseStrategy = ()=>_buyLevel.Rate < _sellLevel.Rate  ;
+        Func<bool> isReverseStrategy = () => _buyLevel.Rate < _sellLevel.Rate;
+
         #endregion
 
         #region Funcs
@@ -783,6 +784,11 @@ namespace HedgeHog.Alice.Store {
                     buyCloseLevel.InManual = sellCloseLevel.InManual = false;
                 };
                 onOpenTradeLocal = t => { };
+                if (ReverseStrategy) {
+                  _buyLevel.Rate = _RatesMin;
+                  _sellLevel.Rate = _RatesMax;
+                }
+
                 reverseStrategy = new ObservableValue<bool>(isReverseStrategy());
                 reverseStrategy.ValueChanged += (s, e) => {
                   buyCloseLevel.InManual = sellCloseLevel.InManual = false;
@@ -1084,7 +1090,7 @@ namespace HedgeHog.Alice.Store {
       return ratesOut;
     }
 
-    IList<Rate> CorridorByVerticalLineLongestCross2(Rate[] ratesOriginal,int indexMax, Func<Rate, double> price) {
+    IList<Rate> CorridorByVerticalLineLongestCross2(Rate[] ratesOriginal, int indexMax, Func<Rate, double> price) {
       var point = InPoints(1);
       var rountTo = TradesManager.GetDigits(Pair) - 1;
       Func<long, long, double> getHeight = (index1, index2) => {
