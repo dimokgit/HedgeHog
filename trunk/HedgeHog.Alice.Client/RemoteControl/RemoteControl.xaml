@@ -350,15 +350,12 @@
                           <TextBlock Text="{Binding StDevByHeightInPips,StringFormat=n0}"/>/
                           <TextBlock Text="{Binding StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>Corridor Crosses. :
-                          <TextBlock Text="{Binding CorridorStats.CorridorCrossesCount}"/>
+                        <TextBlock>Corridor Height.. :
+                          <TextBlock Text="{Binding CorridorStats.HeightByRegressionInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock >Wave.StDevBy(H/P) :
-                          <TextBlock Text="{Binding CorridorStats.StDevByHeightInPips,StringFormat=n0}"/>/
-                          <TextBlock Text="{Binding CorridorStats.StDevByPriceAvgInPips,StringFormat=n0}"/>
-                        </TextBlock>
-                        <TextBlock>WaveShort.Height. :
-                          <TextBlock Text="{Binding WaveShort.RatesHeightInPips,StringFormat=n0}"/>
+                        <TextBlock >Wave.StDevBy(H/P):
+                          <TextBlock Text="{Binding CorridorStats.StDevByHeightInPips,StringFormat=n0}"/>/<TextBlock
+                            Text="{Binding CorridorStats.StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
                         <TextBlock>Bars Spread...... :
                           <TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/>

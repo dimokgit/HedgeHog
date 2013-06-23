@@ -539,7 +539,7 @@ namespace HedgeHog.Bars {
 
     #region Overrides
     public override string ToString() {
-      return string.Format("{0:dd HH:mm:ss.fff}-{1}/{2}", StartDate, PriceHigh, PriceLow);
+      return string.Format("{0:dd HH:mm:ss}-{1:n5}/{2:n5}", StartDate, PriceHigh, PriceLow);
     }
     public override bool Equals(object obj) {
       return obj is BarBase ? Equals(obj as BarBase) : false;

@@ -15,9 +15,6 @@ namespace HedgeHog.Alice.Store {
     Parabola = 110,
     Sinus = 20,
     Sinus1 = 21,
-    Crosses = 30,
-    CrossesStarter = 31,
-    CrossesWithAngle = 32,
     StDevAngle = 40,
     Simple = 41,
     StDevSimple1Cross = 42,
@@ -29,13 +26,11 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TrailingWaveMethod {
     Magnet = 1,
+    Magnet2 = 2,
     CountWithAngle = 92,
     Count0 = 91,
     Wavelette = 93,
-    Manual = 110,
-    TradeHour = 123,
-    TradeHour1 = 124,
-    ByHour = 140
+    Manual = 110
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -76,7 +71,6 @@ namespace HedgeHog.Alice.Store {
     WaveHeight = 20,
     Correlation = 30,
     Variance = 31,
-    BuySellHeight = 40,
     InMiddle_4 = 50,
     InMiddle_5 = 51,
     InMiddle_6 = 52,

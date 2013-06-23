@@ -1399,6 +1399,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         #region Init stuff
+        CorridorStats.Rates = null;
         RatesInternal.Clear();
         RateLast = null;
         WaveDistanceForTrade = double.NaN;
@@ -1821,35 +1822,15 @@ namespace HedgeHog.Alice.Store {
     public double[] ResistancePrices { get { return Resistances.Select(sr => sr.Rate).ToArray(); } }
     #endregion
 
-    static Func<Rate, double> centerOfMassBuy = r => r.PriceHigh;
-    static Func<Rate, double> centerOfMassSell = r => r.PriceLow;
-
-    public Rate[][] CentersOfMass { get; set; }
     double _CenterOfMassSell = double.NaN;
     public double CenterOfMassSell {
-      get {
-        return !double.IsNaN(_CenterOfMassSell) ? _CenterOfMassSell : centerOfMassSell(CenterOfMass);
-      }
+      get { return _CenterOfMassSell; }
+      private set { _CenterOfMassSell = value; }
     }
-    double __CenterOfMassBuy = double.NaN;
-
-    public double _CenterOfMassBuy {
-      get { return __CenterOfMassBuy; }
-      set { __CenterOfMassBuy = value; }
-    }
-    //double _CenterOfMassBuy = double.NaN;
+    double _CenterOfMassBuy = double.NaN;
     public double CenterOfMassBuy {
-      get { return !double.IsNaN(_CenterOfMassBuy) ? _CenterOfMassBuy : centerOfMassBuy(CenterOfMass); }
-    }
-    private Rate _CenterOfMass = new Rate();
-    public Rate CenterOfMass {
-      get { return _CenterOfMass; }
-      set {
-        if (_CenterOfMass != value) {
-          _CenterOfMass = value;
-          OnPropertyChanged(TradingMacroMetadata.CenterOfMass);
-        }
-      }
+      get { return _CenterOfMassBuy; }
+      private set { _CenterOfMassBuy = value; }
     }
 
     public double SuppResMinimumDistance { get { return CurrentPrice.Spread * 2; } }
@@ -2741,9 +2722,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Parabola: return ScanCorridorByParabola;
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
-        case ScanCorridorFunction.Crosses: return ScanCorridorByCrosses;
-        case ScanCorridorFunction.CrossesWithAngle: return ScanCorridorByCrossesWithAngle;
-        case ScanCorridorFunction.CrossesStarter: return ScanCorridorByCrossesStarter;
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
@@ -2783,6 +2761,27 @@ namespace HedgeHog.Alice.Store {
       //} else RunPriceBroadcast.SendAsync(pce);
     }
 
+    #region GeneralPurpose Subject
+    object _GeneralPurposeSubjectLocker = new object();
+    ISubject<Action> _GeneralPurposeSubject;
+    ISubject<Action> GeneralPurposeSubject {
+      get {
+        lock (_GeneralPurposeSubjectLocker)
+          if (_GeneralPurposeSubject == null) {
+            _GeneralPurposeSubject = new Subject<Action>();
+            _GeneralPurposeSubject
+              .Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
+              .Subscribe(s => s(), exc => Log = exc);
+          }
+        return _GeneralPurposeSubject;
+      }
+    }
+    void OnGeneralPurpose(Action p) {
+      GeneralPurposeSubject.OnNext(p);
+    }
+    #endregion
+
+
     ReactiveUI.ReactiveCollection<NewsEvent> _newEventsCurrent = new ReactiveCollection<NewsEvent>();
     public ReactiveUI.ReactiveCollection<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
     private void RunPrice(PriceChangedEventArgs e, Trade[] trades) {
@@ -2797,13 +2796,14 @@ namespace HedgeHog.Alice.Store {
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
         SetTradesStatistics(price, trades);
-        if (RatesArray.Any()) {
-          var dateStart = RatesArray[0].StartDate;
-          var dateEnd = RatesArray.LastBC().StartDate;
-          var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
-          NewEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => NewEventsCurrent.Remove(ne));
-          NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());
-        }
+        if (DoNews && RatesArray.Any())
+          OnGeneralPurpose(() => {
+            var dateStart = RatesArray[0].StartDate;
+            var dateEnd = RatesArray.LastBC().StartDate;
+            var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
+            NewEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => NewEventsCurrent.Remove(ne));
+            NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());
+          });
         SetLotSize();
         try {
           RunStrategy();
@@ -2849,7 +2849,7 @@ namespace HedgeHog.Alice.Store {
 
     private int CalcLotSizeByPMC(Account account) {
       return TradingStatistics.TradingMacros == null ? 0
-        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall((InPips(RatesHeight*1.3)).ToInt(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
+        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall((InPips(TradingDistance)).ToInt(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -3451,6 +3451,10 @@ namespace HedgeHog.Alice.Store {
       public bool HasRates { get { return _Rates != null && _Rates.Any(); } }
       IList<Rate> _Rates;
       private TradingMacro _tradingMacro;
+      public IList<Rate> ResetRates(IList<Rate> rates) {
+        Rates = null;
+        return Rates = rates;
+      }
       public IList<Rate> Rates {
         get {
           if (_Rates == null || !_Rates.Any())

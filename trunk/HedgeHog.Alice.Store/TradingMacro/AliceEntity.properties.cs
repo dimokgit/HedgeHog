@@ -339,7 +339,11 @@ namespace HedgeHog.Alice.Store {
           CrossedEvent += value;
       }
       remove {
-        CrossedEvent -= value;
+        if (value == null) {
+          if (CrossedEvent != null)
+            CrossedEvent.GetInvocationList().Cast<EventHandler<CrossedEvetArgs>>().ForEach(d => CrossedEvent -= d);
+        } else
+          CrossedEvent -= value;
       }
     }
     protected void RaiseCrossed(double pricePosition) {
@@ -560,6 +564,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region DoNews
+    private bool _DoNews;
+    [Category(categoryTrading)]
+    public bool DoNews {
+      get { return _DoNews; }
+      set {
+        if (_DoNews != value) {
+          _DoNews = value;
+          OnPropertyChanged("DoNews");
+        }
+      }
+    }
+
+    #endregion
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
@@ -1013,14 +1031,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
     [Category(categoryActive)]
-    [DisplayName("CanTrade Eval")]
+    [DisplayName("Eval")]
     [Description("Ex:a.upPeak+a.downValley>0")]
-    public string CanTradeEval {
+    public string Eval {
       get { return FibMax; }
       set {
         if (FibMax == value) return;
         FibMax = value;
-        OnPropertyChanged(() => CanTradeEval);
+        OnPropertyChanged(() => Eval);
       }
     }
 
@@ -1029,17 +1047,6 @@ namespace HedgeHog.Alice.Store {
     public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
-    }
-
-    [Category(categoryCorridor)]
-    [DisplayName("Show Inactive Corridor")]
-    public bool DoShowInactiveCorridor {
-      get { return TradeAndAngleSynced; }
-      set {
-        if (TradeAndAngleSynced == value) return;
-        TradeAndAngleSynced = value;
-        OnPropertyChanged(() => DoShowInactiveCorridor);
-      }
     }
 
     [Category(categoryActive)]
@@ -1135,6 +1142,7 @@ namespace HedgeHog.Alice.Store {
         case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
         case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
         case TradeCrossMethod.ChartAskBid:
+          if (!isBuy.HasValue) throw new NotSupportedException(new { method, isBuy } + " is not supported.");
           if (isBuy.Value) return r => r.PriceChartAsk; else return r => r.PriceChartBid;
       }
       throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");

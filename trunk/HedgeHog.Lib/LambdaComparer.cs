@@ -4,7 +4,28 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog {
-
+  public static class GroupMixin {
+    public static Comparison<T> AsComparison<T>(this Func<T, T, int> lambda) {
+      return new Comparison<T>(lambda);
+    }
+    public static List<T> SortByLambda<T>(this List<T> list, Func<T, T, bool> lambda) {
+      list.SortByLambda((a, b) => a.Equals(b) ? 0 : lambda(a, b) ? -1 : 1);
+      return list;
+    }
+    public static List<T> SortByLambda<T>(this List<T> list, Func<T, T, int> lambda) {
+      list.Sort(lambda.AsComparison());
+      return list;
+    }
+    public static IEnumerable<IGrouping<T, T>> GroupByCloseness<T>(this IList<T> list, double delta, Func<T, T, double, bool> groupBy) {
+      return list.GroupBy(t => t, new ClosenessComparer<T>(delta, groupBy));
+    }
+    public static IEnumerable<T> Distinct<T>(this ParallelQuery<T> list, Func<T, T, bool> distinctBy) {
+      return list.Distinct(new LambdaComparer<T>(distinctBy));
+    }
+    public static IEnumerable<IGrouping<T, T>> GroupByLambda<T>(this IList<T> list, Func<T, T, bool> groupBy) {
+      return list.GroupBy(t => t, new LambdaComparer<T>(groupBy));
+    }
+  }
   public class ClosenessComparer<T> : IEqualityComparer<T> {
     private readonly double delta;
     private readonly Func<T, T, double, bool> compare;
@@ -21,6 +42,12 @@ namespace HedgeHog {
     public int GetHashCode(T obj) {
       return 0;
     }
+  }
+  public static class LambdaComparer {
+    public static LambdaComparer<T> Factory<T>(Func<T, T, bool> lambda) {
+      return new LambdaComparer<T>(lambda);
+    }
+
   }
   public class LambdaComparer<T> : IEqualityComparer<T> {
     private readonly Func<T, T, bool> _lambdaComparer;

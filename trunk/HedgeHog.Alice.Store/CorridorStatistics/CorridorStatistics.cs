@@ -263,7 +263,6 @@ namespace HedgeHog.Alice.Store {
       this.CorridorCrossesCount = corridorCrossesCount;
       this.RatesHeight = this.Rates.Height(out _RatesMin, out _RatesMax);
       // Must the last one
-      this.StartDate = rates.LastBC().StartDate;
       this.EndDate = rates[0].StartDate;
       RaisePropertyChanged("Height");
       RaisePropertyChanged("HeightInPips");
@@ -431,6 +430,11 @@ namespace HedgeHog.Alice.Store {
       get { return _Rates; }
       set {
         _Rates = value;
+        if (value == null) {
+          _Rates = new List<Rate>();
+          StartDate = DateTime.MinValue;
+        } else
+          StartDate = value.LastBC().StartDate;
       }
     }
 
@@ -463,7 +467,20 @@ namespace HedgeHog.Alice.Store {
     public double StDevByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
     public double StDevByPriceAvgInPips { get { return TradesManagerStatic.InPips(StDevByPriceAvg, _pipSize); } }
 
-    public double HeightByRegression { get; set; }
+    #region HeightByRegression
+    private double _HeightByRegression;
+    public double HeightByRegression {
+      get { return _HeightByRegression; }
+      set {
+        if (_HeightByRegression != value) {
+          _HeightByRegression = value;
+          RaisePropertyChanged("HeightByRegression");
+          RaisePropertyChanged("HeightByRegressionInPips");
+        }
+      }
+    }
+    public double HeightByRegressionInPips { get { return TradesManagerStatic.InPips(HeightByRegression, _pipSize); } }
+    #endregion
   }
 
   public enum TrendLevel { None, Resistance, Support }

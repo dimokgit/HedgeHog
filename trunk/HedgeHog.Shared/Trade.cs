@@ -25,7 +25,7 @@ namespace HedgeHog.Shared {
     }
 
     public static int Positions(this IEnumerable<Trade> trades,int lotBase) {
-      return trades.Sum(t => t.Lots) / lotBase;
+      return ((double)trades.Sum(t => t.Lots) / lotBase).Ceiling();
     }
     public static int Lots(this IEnumerable<Trade> trades) {
       return trades.Sum(t => t.Lots);
