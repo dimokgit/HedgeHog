@@ -2891,7 +2891,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitLimitRatio"/></summary>
         public const string TakeProfitLimitRatio = "TakeProfitLimitRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CanTradeEval"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.Eval"/></summary>
         public const string CanTradeEval = "CanTradeEval";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingRatioByPMC"/></summary>
@@ -5826,7 +5826,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitLimitRatio"/></summary>
         public static PropertyPath TakeProfitLimitRatioPath { get { return new PropertyPath("TakeProfitLimitRatio"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CanTradeEval"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.Eval"/></summary>
         public static PropertyPath CanTradeEvalPath { get { return new PropertyPath("CanTradeEval"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingRatioByPMC"/></summary>

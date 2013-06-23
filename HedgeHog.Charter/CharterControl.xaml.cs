@@ -1649,7 +1649,6 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         new Point(dateAxis.ConvertToDouble(t.StartDateContinuous), t.PriceAvg.Round(roundTo)));
       //(t.PriceAvg > t.PriceAvg1 ? t.PriceHigh : t.PriceAvg < t.PriceAvg1 ? t.PriceLow : t.PriceAvg).Round(roundTo)));  
       #endregion
-      List<Point> minuteTicks = null;
       ticks = new List<Rate>(ticks).ToArray();
       #region Set DataSources
       if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {

@@ -59,8 +59,11 @@ namespace HedgeHog {
     public static T Cast<T>(object obj, Func<T> type) {
       return (T)obj;
     }
-    public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T,K, V>(this IEnumerable<T> list, Func<T,K> keyFactory,Func<T,V>valueFactory) {
+    public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
       return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
+    }
+    public static ConcurrentQueue<T> ToConcurrentQueue<T>(this IEnumerable<T> list) {
+      return new ConcurrentQueue<T>(list);
     }
     #region Box
     public class Box<T> {
