@@ -1478,10 +1478,10 @@ namespace HedgeHog.Alice.Store {
                 RatesInternal.RemoveAt(0);
             }
             if (rate.StartDate > dateStop) {
-              if (CurrentGross > 0) {
-                CloseTrades("Replay break");
+              //if (CurrentGross > 0) {
+                CloseTrades("Replay break due dateStop.");
                 break;
-              }
+              //}
             }
             if (RatesInternal.LastBC().StartDate < args.DateStart.Value) {
               continue;
