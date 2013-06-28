@@ -89,6 +89,7 @@ namespace HedgeHog.Alice.Store {
     Void = -1,
     WaveShort = 0,
     WaveTrade = 1,
+    Density = 2,
     WaveStart = 20,
     WaveStart1 = 21,
     Regression = 30,
