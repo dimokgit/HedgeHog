@@ -26,7 +26,10 @@ namespace HedgeHog.Models {
     }
     #endregion
 
-
+    ~ModelBase() {
+      if (PropertyChangedEvent != null)
+        PropertyChangedEvent.GetInvocationList().Cast<PropertyChangedEventHandler>().ToList().ForEach(d => PropertyChangedEvent -= d);
+    }
     protected void RaisePropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       if (propertyLamdas == null || propertyLamdas.Length == 0) RaisePropertyChangedCore();
       else
@@ -223,6 +226,11 @@ namespace HedgeHog.Models {
     }
     public ObservableValue<TValue> SetValue(TValue value) {
       this.Value = value;
+      return this;
+    }
+    public ObservableValue<TValue> SetValue(TValue value,Action<TValue> onChanged) {
+      this.Value = value;
+      if (HasChanged) onChanged(this.Value);
       return this;
     }
     public bool ChangedTo(TValue value) {
