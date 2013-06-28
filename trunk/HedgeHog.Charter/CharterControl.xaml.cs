@@ -35,6 +35,8 @@ using System.Reactive;
 using System.Reactive.Subjects;
 using ReactiveUI;
 using System.Collections.Specialized;
+using Microsoft.Research.DynamicDataDisplay.Charts.Navigation;
+using System.Globalization;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -985,9 +987,11 @@ namespace HedgeHog {
     void SetBuySellRates(Dictionary<Guid, BuySellLevel> suppReses) {
       foreach (var suppRes in suppReses) {
         var isBuy = suppRes.Value.IsBuy;
-        Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
         var uid = suppRes.Key;
         var rate = suppRes.Value.Rate;
+        SetTradingRange(suppRes.Value.DataContext, rate);
+        
+        Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
         if (!rates.ContainsKey(uid)) {
           string anchorTemplateName = "DraggArrow" + (isBuy ? "Up" : "Down");
           Brush brush = new SolidColorBrush(isBuy ? Colors.DarkRed : Colors.Navy);
@@ -1118,6 +1122,9 @@ namespace HedgeHog {
         OnPropertyChanged("TradeLineStopPosition");
       }
     }
+    RectangleHighlight _shortWaveVerticalRange = null;
+    HorizontalRange _tradingHorisontalRange = null;
+    // Minor ticks
     DifferenceIn? GetDifference(TimeSpan span) {
       span = span.Duration();
 
@@ -1126,7 +1133,7 @@ namespace HedgeHog {
         diff = DifferenceIn.Year;
       else if (span.Days > 30)
         diff = DifferenceIn.Month;
-      else if (span.Days > 3)
+      else if (span.Days > 4)
         diff = DifferenceIn.Day;
       else if (span.Hours > 0)
         diff = DifferenceIn.Hour;
@@ -1181,6 +1188,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
      */
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
+
+      CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = false };
+      ccg.XTextMapping = x => dateAxis.ConvertFromDouble(x).ToString(CultureInfo.CurrentCulture);
+      plotter.Children.Add(ccg);
+
       dateAxis.MayorLabelProvider = null;
       var ticksProvider = ((Microsoft.Research.DynamicDataDisplay.Charts.TimeTicksProviderBase<System.DateTime>)(dateAxis.TicksProvider));
       ticksProvider.Strategy = new Microsoft.Research.DynamicDataDisplay.Charts.Axes.DateTime.Strategies.DelegateDateTimeStrategy(GetDifference);
@@ -1278,6 +1290,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #endregion
 
       #region Add Lines
+      _tradingHorisontalRange = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightBlue) };
+      plotter.Children.Add(_tradingHorisontalRange);
+      _shortWaveVerticalRange = new RectangleHighlight() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 1, Opacity = _tradingHorisontalRange.Opacity };
+      plotter.Children.Add(_shortWaveVerticalRange);
+
       plotter.Children.Add(lineNetSell);
       plotter.Children.Add(lineNetBuy);
 
@@ -1603,6 +1620,10 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         DispatcherScheduler.Current.Schedule(
          () => {
            SupportResistanceChanged(this, new SupportResistanceChangedEventArgs(uid, positionNew.Y, positionOld.Y));
+           var suppRes = BuyRates.Concat(SellRates).Single(sr => sr.Key == uid).Value.DataContext;//._IsExitOnly	true	bool
+           SetTradingRange(suppRes, positionNew.Y);
+
+
            if (_isShiftDown) {
              var isBuy = BuyRates.Any(br => br.Key == uid);
              var next = (isBuy ? SellRates : BuyRates).OrderBy(bs => (bs.Value.DraggablePoint.Position.Y - dp.Position.Y).Abs()).First();
@@ -1613,6 +1634,12 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
            }
          });
       }
+    }
+
+    private void SetTradingRange(object suppRes, double position) {
+      if (!suppRes.GetProperty<bool>("IsExitOnly"))
+        if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
+        else _tradingHorisontalRange.Value2 = position;
     }
     #endregion
 
@@ -1793,6 +1820,18 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           LineTimeMin = timeCurr;
           if (timeLow > DateTime.MinValue)
             LineTimeAvg = timeLow;
+          if (!timeHigh.IsMin() && !timeCurr.IsMin()) {
+            var dateStart = timeHigh.Min(timeCurr);
+            var dateEnd = timeHigh.Max(timeCurr);
+            var indexStart = animatedTimeX.TakeWhile(t => t < dateStart).Count();
+            var indexEnd = animatedTimeX.Skip(indexStart).TakeWhile(t => t <= dateEnd).Count();
+            var yValues = animatedPriceY.GetRange(indexStart, indexEnd);
+            double yMax = yValues.Max(), yMin = yValues.Min();
+            var pointStart = new Point(lineTimeMin.Value.Min(lineTimeMax.Value), yMax);
+            var pointEnd = new Point(lineTimeMin.Value.Max(lineTimeMax.Value), yMin);
+            var rect = new Rect(pointStart, pointEnd);
+            _shortWaveVerticalRange.Bounds = new DataRect(rect);
+          }
 
           LineNetSell = netSell;
           LineNetBuy = netBuy;

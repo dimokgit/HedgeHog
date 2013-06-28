@@ -545,7 +545,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #endregion
 
-        #region _adjustExitLevels
+        #region adjustExitLevels
         Action<double, double> adjustExitLevels = null;
         adjustExitLevels = (buyLevel, sellLevel) => {
           var tradesCount = Trades.Length;
@@ -559,8 +559,8 @@ namespace HedgeHog.Alice.Store {
               sellCloseLevel.RateEx = crossLevelDefault(false);
               sellCloseLevel.ResetPricePosition();
             } else {
-              buyCloseLevel.SetPrice(r(false));
-              sellCloseLevel.SetPrice(r(true));
+              //buyCloseLevel.SetPrice(r(false));
+              //sellCloseLevel.SetPrice(r(true));
               if (!Trades.Any()) {
                 adjustExitLevels(buyLevel, sellLevel);
                 buyCloseLevel.ResetPricePosition();
@@ -597,10 +597,6 @@ namespace HedgeHog.Alice.Store {
                 }
               }
             }
-          } else {
-            buyCloseLevel.SetPrice(r(false));
-            sellCloseLevel.SetPrice(r(true));
-
           }
         };
         Action adjustExitLevels0 = () => adjustExitLevels(double.NaN, double.NaN);
@@ -660,6 +656,7 @@ namespace HedgeHog.Alice.Store {
               }
               return ret;
             };
+            case MedianFunctions.Density: return () => CorridorByDensity(RatesArray, StDevByHeight);
           }
           throw new NotSupportedException(MedianFunction + " Median function is not supported.");
         };
@@ -775,10 +772,11 @@ namespace HedgeHog.Alice.Store {
             #endregion
             #region Manual
             case TrailingWaveMethod.Manual:
+              #region FirstTime
               if (firstTime) {
                 LogTrades = false;
                 DoNews = false;
-                Log = new Exception(new { WaveStDevRatio, DoNews } + "");
+                Log = new Exception(new { WaveStDevRatio, MedianFunction, DoNews } + "");
                 onCloseTradeLocal = t => {
                   if (IsAutoStrategy)
                     buyCloseLevel.InManual = sellCloseLevel.InManual = false;
@@ -793,16 +791,31 @@ namespace HedgeHog.Alice.Store {
                 reverseStrategy.ValueChanged += (s, e) => {
                   buyCloseLevel.InManual = sellCloseLevel.InManual = false;
                 };
+                if (ReverseStrategy && !reverseStrategy.Value) {
+                  _buyLevel.Rate = _RatesMin;
+                  _sellLevel.Rate = _RatesMax;
+                }
+                if (!ReverseStrategy && reverseStrategy.Value) {
+                  _buyLevel.Rate = _RatesMax;
+                  _sellLevel.Rate = _RatesMin;
+                }
               }
+              #endregion
               {
                 var getPrice = GetTradeEnterBy();
                 var ratesByGap = WaveTradeStart.ResetRates(CorridorByVerticalLineLongestCross(CorridorStats.Rates.ToArray(), getPrice));
-                if (ratesByGap != null) {
-                  var level = getPrice(ratesByGap[0]);
-                  var offset = ratesByGap.Average(r => level - getPrice(r));
-                  var level1 = level + offset;
-                  CenterOfMassBuy = level.Max(level1);
-                  CenterOfMassSell = level.Min(level1);
+                if (MedianFunction == MedianFunctions.Void) {
+                  if (ratesByGap != null) {
+                    var level = getPrice(ratesByGap[0]);
+                    var offset = ratesByGap.Average(r => level - getPrice(r));
+                    var level1 = level + offset;
+                    CenterOfMassBuy = level.Max(level1);
+                    CenterOfMassSell = level.Min(level1);
+                  }
+                } else {
+                  var level = CorridorByDensity(RatesArray, StDevByHeight);
+                  CenterOfMassBuy = level + StDevByHeight;
+                  CenterOfMassSell = level - StDevByHeight;
                 }
                 {
                   var corridorOk = CorridorStats.Rates.Count >= CorridorDistanceRatio * WaveStDevRatio;
@@ -945,6 +958,8 @@ namespace HedgeHog.Alice.Store {
               Func<bool, double> r = isBuy => CalculateLastPrice(RateLast, GetTradeEnterBy(isBuy));
               _buyLevel.SetPrice(r(true));
               _sellLevel.SetPrice(r(false));
+              buyCloseLevel.SetPrice(r(false));
+              sellCloseLevel.SetPrice(r(true));
             } else
               SuppRes.ForEach(sr => sr.ResetPricePosition());
           } catch (Exception exc) { Log = exc; }
@@ -1122,6 +1137,24 @@ namespace HedgeHog.Alice.Store {
       return ratesOut;
     }
 
+    double CorridorByDensity(IList<Rate> ratesOriginal,double height) {
+      var price = _priceAvg;
+      var point = InPoints(1);
+      var rountTo = TradesManager.GetDigits(Pair) - 1;
+      var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
+      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
+      var levelMin = (ratesOriginal.Min(price) * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
+      var ratesHeightInPips = InPips(ratesOriginal.Height(price)).ToInt();
+      var corridorHeightInPips = InPips(height);
+      var half = height / 2;
+      var halfInPips = InPips(half).ToInt();
+      var levels = Enumerable.Range(halfInPips, ratesHeightInPips - halfInPips)
+        .Select(level => levelMin + level * point).ToArray();
+      var levelsByCount = levels.AsParallel().Select(level =>
+        new { level, count = ratesOriginal.Count(r => isOk(level - half, level + half, r)) }
+      ).ToList();
+      return levelsByCount.Aggregate((p, n) => p.count > n.count ? p : n).level;
+    }
     private double _buyLevelRate = double.NaN;
     private double _sellLevelRate = double.NaN;
 
