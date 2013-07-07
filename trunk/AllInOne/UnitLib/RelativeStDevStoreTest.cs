@@ -1,21 +1,20 @@
-﻿using HedgeHog.Alice.Store;
+﻿using HedgeHog;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
-using HedgeHog.Shared;
-using HedgeHog.Bars;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace UnitLib
 {
     
     
     /// <summary>
-    ///This is a test class for TradingMacroTest and is intended
-    ///to contain all TradingMacroTest Unit Tests
+    ///This is a test class for RelativeStDevStoreTest and is intended
+    ///to contain all RelativeStDevStoreTest Unit Tests
     ///</summary>
   [TestClass()]
-  public class TradingMacroTest {
+  public class RelativeStDevStoreTest {
 
 
     private TestContext testContextInstance;
@@ -65,31 +64,30 @@ namespace UnitLib
 
 
     /// <summary>
-    ///A test for SubscribeToTradeClosedEVent
+    ///A test for Get
     ///</summary>
     [TestMethod()]
-    public void SubscribeToTradeClosedEVentTest() {
-      TradingMacro tm = new TradingMacro() { Pair = "EUR/USD" }; // TODO: Initialize to an appropriate value
-      var m = new VirtualTradesManager("AAAAAA", t => 0);
-      Func<ITradesManager> getTradesManager = () => m; // TODO: Initialize to an appropriate value
-      tm.SubscribeToTradeClosedEVent(getTradesManager);
-      tm.RatesInternal.AddRange(new[] { new Rate(), new Rate(), new Rate() });
-      var rates = tm.RatesArraySafe;
-      var td = tm.TradingDistance;
-      Assert.Inconclusive("A method that does not return a value cannot be verified.");
+    public void GetThem() {
+      var a = new[] { 
+        new { height = 100, count = 16, expected = .6348 } ,
+        new { height = 100, count = 20, expected = .6227 } ,
+        new { height = 200, count = 25, expected = .6133 } ,
+        new { height = 150, count = 20, expected = .6227 } 
+      };
+      Parallel.ForEach(a, b => RelativeStDevStore.Get(b.height, b.count));
+      a.ForEach(b => Assert.AreEqual(b.expected, RelativeStDevStore.Get(b.height, b.count)));
     }
-
-    /// <summary>
-    ///A test for Fractals
-    ///</summary>
     [TestMethod()]
-    public void FractalsTest() {
-      IList<double> prices = new double[] { 1, 2, 3, 2, 1, 13, 12, 11, 12, 13 };
-      int fractalLength = 5;
-      IDictionary<bool, double> expected = new Dictionary<bool, double>() { { true, 8 }, { false, 6 } };
-      var actual = TradingMacro.Fractals(prices, fractalLength);
-      Assert.AreEqual(expected[true], actual[true].Average());
-      Assert.AreEqual(expected[false], actual[false].Average());
+    public void GetThemRand() {
+      var rand = new Random();
+      var heights = Enumerable.Range(0,100).Select(_=>rand.Next(100,110));
+      var counts = Enumerable.Range(0, 100).Select(_ => rand.Next(10, 20));
+      var tests = (from height in heights
+                   from count in counts
+                   select new { height, count, expected = RelativeStDevStore.Get(height, count) }).ToArray();
+      RelativeStDevStore.RSDs.Clear();
+      tests.AsParallel().ForAll(a => RelativeStDevStore.Get(a.height, a.count));
+      tests.ForEach(b => Assert.AreEqual(b.expected, RelativeStDevStore.Get(b.height, b.count)));
     }
   }
 }

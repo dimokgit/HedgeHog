@@ -3,8 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace HedgeHog {
+  public static class RelativeStDevStore {
+    public class Rsd {
+      public double RSD { get; set; }
+      public int Height { get; set; }
+      public int Count { get; set; }
+      public override string ToString() {
+        return new { Height, Count, RSD }.ToString();
+      }
+      public override bool Equals(object obj) {
+        var o = (Rsd)obj;
+        return obj == null || this == null ? false : o.Height == Height && o.Count == Count && o.RSD == RSD;
+      }
+    }
+    public static readonly ConcurrentDictionary<int, ConcurrentDictionary<int, double>> RSDs = new ConcurrentDictionary<int, ConcurrentDictionary<int, double>>();
+    public static double Get(int height, int count) {
+      return RSDs.GetOrAdd(height, (h) => {
+        var dic = new ConcurrentDictionary<int, double>();
+        dic.TryAdd(count, Calc(h, count));
+        return dic;
+      }).GetOrAdd(count, c => Calc(height, c));
+    }
+    public static double Calc(int height, int count) {
+      var step = height / (count - 1.0);
+      var range = Enumerable.Range(0, count).Select(i => i * step).ToArray();
+      return Math.Round(range.StDev() / height, 4);
+    }
+
+  }
   public static class MathExtensions {
     public class Box<T> {
       public T Value { get; set; }
@@ -338,12 +367,17 @@ namespace HedgeHog {
       return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
     }
     public static double StDev(this IList<double> values) {
-      double ret = 0;
+      double avg;
+      return values.StDev(out avg);
+    }
+    public static double StDev(this IList<double> values, out double avgOut) {
+      double ret = 0, avg = 0;
       if (values.Count() > 0) {
-        double avg = values.Average();
+        avg = values.Average();
         double sum = values.Sum(d => (d - avg) * (d - avg));
         ret = Math.Sqrt(sum / (values.Count - 1));
       }
+      avgOut = avg;
       return ret;
     }
 

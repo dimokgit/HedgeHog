@@ -25,6 +25,16 @@ namespace HedgeHog {
     public static IEnumerable<IGrouping<T, T>> GroupByLambda<T>(this IList<T> list, Func<T, T, bool> groupBy) {
       return list.GroupBy(t => t, new LambdaComparer<T>(groupBy));
     }
+    public static IDictionary<T,IList<T>> RunningGroup<T>(this IEnumerable<T> values, Func<T, T, bool> same) {
+      return values.Aggregate(new { key = default(T), values = new List<T>() }.IEnumerable().ToList(),
+        (g, v) => {
+          if (g.Count == 0 || !same(v, g.Last().values.Last()))
+            g.Add(new { key = v, values = new List<T>() { v } });
+          else
+            g.Last().values.Add(v);
+          return g;
+        }).ToDictionary(a => a.key, a => (IList<T>)a.values);
+    }
   }
   public class ClosenessComparer<T> : IEqualityComparer<T> {
     private readonly double delta;
@@ -48,6 +58,14 @@ namespace HedgeHog {
       return new LambdaComparer<T>(lambda);
     }
 
+  }
+  public static class LambdaComparisson {
+    public static Comparison<T> Factory<T>(Func<T, T, int> lambda) {
+      return new Comparison<T>(lambda);
+    }
+    public static Comparison<T> Factory<T>(Func<T, T, bool> lambda) {
+      return new Comparison<T>(new Func<T, T, int>((a, b) => a.Equals(b) ? 0 : lambda(a, b) ? 1 : -1));
+    }
   }
   public class LambdaComparer<T> : IEqualityComparer<T> {
     private readonly Func<T, T, bool> _lambdaComparer;

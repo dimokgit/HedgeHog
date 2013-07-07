@@ -285,5 +285,21 @@ Privet:2.3 3.4
       actual = Lib.Evaluate<double>(expression);
       Assert.AreEqual(expected, actual);
     }
+
+    [TestMethod()]
+    public void WeightedAverageTestHelper() {
+      var values = new List<Tuple<double, double>>() { 
+        new Tuple<double,double>(1,2),
+        new Tuple<double,double>(2,3),
+        new Tuple<double,double>(3,4),
+        new Tuple<double,double>(4,5)
+      };
+      Func<Tuple<double, double>, double> value = t => t.Item1;
+      Func<Tuple<double, double>, double> weight = t => t.Item2;
+      double expected = 2.857142857;
+      double actual = Lib.WeightedAverage(values, value, weight).Round(9);
+      Assert.AreEqual(expected, actual);
+    }
+
   }
 }

@@ -178,7 +178,7 @@ namespace HedgeHog.Alice.Client {
     void SaveTradingSettings(TradingMacro tmOriginal) {
       try {
       tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
-        .ForEach(p => Debug.WriteLine("{0}:{1}", p.Name, p.GetValue(tmOriginal, null)));
+        .ForEach(p => Debug.WriteLine("{0}={1}", p.Name, p.GetValue(tmOriginal, null)));
       } catch { }
     }
     #endregion

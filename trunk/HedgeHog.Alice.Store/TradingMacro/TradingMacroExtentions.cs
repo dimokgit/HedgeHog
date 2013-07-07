@@ -1969,6 +1969,7 @@ namespace HedgeHog.Alice.Store {
             StDevByPriceAvg = corridor.StDevs[CorridorCalculationMethod.PriceAverage];
             StDevByHeight = corridor.StDevs.ContainsKey(CorridorCalculationMethod.Height) ? corridor.StDevs[CorridorCalculationMethod.Height] : double.NaN;
             Angle = corridor.Slope.Angle(BarPeriodInt, PointSize);
+            OnPropertyChanged(() => RatesRsd);
             OnScanCorridor(_rateArray);
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
@@ -2704,7 +2705,7 @@ namespace HedgeHog.Alice.Store {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
-          tp -= PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2;
+          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN);
           break;
         default:
           throw new NotImplementedException(new { function } + "");
@@ -2725,7 +2726,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
-        case ScanCorridorFunction.Time: return ScanCorridorByTime;
+        case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
+        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
@@ -3240,18 +3242,6 @@ namespace HedgeHog.Alice.Store {
 
     public double RatesStDevToRatesHeightRatio { get { return RatesHeight / RatesStDev; } }
 
-    public double TrendNessRatio {
-      get {
-        if (!RatesArraySafe.Any()) return double.NaN;
-        var pipSize = TradesManager.GetPipSize(Pair);
-        var count = 0.0;
-        for (var d = -CorridorStats.HeightDown0; d <= CorridorStats.HeightUp0; d += pipSize) {
-          count = count.Max(RatesArraySafe.Count(r => (r.PriceAvg1 + d).Between(r.PriceLow, r.PriceHigh)));
-        }
-        return count / RatesArraySafe.Count();
-      }
-    }
-
     double _RatesHeight;
     public double RatesHeight {
       get { return _RatesHeight; }
@@ -3705,7 +3695,7 @@ namespace HedgeHog.Alice.Store {
       ResetSuppResesInManual(!_suppResesForBulk().Any(sr => sr.InManual));
     }
     public void ResetSuppResesInManual(bool isManual) {
-      _suppResesForBulk().ForEach(sr => sr.InManual = isManual);
+      _suppResesForBulk().ToList().ForEach(sr => sr.InManual = isManual);
     }
     public void SetCanTrade(bool canTrade) {
       _suppResesForBulk().ToList().ForEach(sr => sr.CanTrade = canTrade);
@@ -3718,6 +3708,10 @@ namespace HedgeHog.Alice.Store {
     public void SetTradeCount(int tradeCount) {
       _suppResesForBulk().ForEach(sr => sr.TradesCount = tradeCount);
     }
+
+    #region RatesRsd
+    public double RatesRsd { get { return StDevByPriceAvg / RatesHeight; } }
+    #endregion
 
     #region StDevByPriceAvg
     private double _StDevByPriceAvg;
