@@ -176,15 +176,13 @@ namespace HedgeHog.Models {
     bool _on = false;
     public bool HasChangedToOn;
     private Action _actionOn;
-    private Action _actionOff;
     public bool On { get { return _on; } }
-    public ValueTrigger(bool initialValue) : this(initialValue, null, null) { }
-    public ValueTrigger(bool initialValue,Action on,Action off) {
+    public ValueTrigger(bool initialValue) : this(initialValue, null) { }
+    public ValueTrigger(bool initialValue, Action on) {
       this._on = initialValue;
       this._actionOn = on;
-      this._actionOff = off;
     }
-    public ValueTrigger Set(bool on,Action onAction = null) {
+    public ValueTrigger Set(bool on, Action onAction = null) {
       if (!_on) {
         _on = on;
         this.HasChangedToOn = on;
@@ -194,9 +192,12 @@ namespace HedgeHog.Models {
       this.HasChangedToOn = false;
       return this;
     }
-    public void Off() {
+    public void Off(bool on, Action onOff = null) {
+      if (!on) Off(onOff);
+    }
+    public void Off(Action onOff = null) {
+      if (_on && onOff != null) onOff();
       _on = false;
-      if (_actionOff != null) _actionOff();
     }
   }
   public class ObservableValue<TValue>:ModelBase{

@@ -29,6 +29,26 @@ namespace ControlExtentions {
 }
 namespace HedgeHog {
   public static class Lib {
+    public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
+      return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));
+    }
+    public static void Sort<T>(this List<T> list, Func<T, T, bool> comparrison) {
+      list.Sort(LambdaComparisson.Factory(comparrison));
+    }
+    public static void Sort<T>(this List<T> list, Func<T,double> accessor) {
+      list.Sort((a, b) => Math.Sign(accessor(a) - accessor(b)));
+    }
+
+    public static void Sort<T>(this List<T> list, Func<T, T, int> comparrison) {
+      list.Sort(LambdaComparisson.Factory(comparrison));
+    }
+
+    public static T Maximum<T, V>(this IEnumerable<T> values, Func<T, V> value)where V:IComparable {
+      return values.Aggregate((p, n) => value(p).CompareTo(value(n)) > 0 ? p : n);
+    }
+    public static T Minimum<T, V>(this IEnumerable<T> values, Func<T, V> value) where V : IComparable {
+      return values.Aggregate((p, n) => value(p).CompareTo(value(n)) > 0 ? n : p);
+    }
     private static IEnumerable<T> EnumerableFrom<T>(this T item) {
       return new T[] { item };
     }
@@ -136,6 +156,9 @@ namespace HedgeHog {
       return (rc / 100.0).ToInt() + 1;
     }
 
+    public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
+      return new Queue<T>(t);
+    }
     public static IEnumerable<T> IEnumerable<T>(this T v) where T : class {
       return new[] { v }.Take(0);
     }

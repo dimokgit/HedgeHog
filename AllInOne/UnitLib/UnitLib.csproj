@@ -37,10 +37,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DynamicExpresso.Core, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="EntityFramework, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\EntityFramework.4.2.0.0\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
+    <Reference Include="GalaSoft.MvvmLight.Extras.WPF4, Version=4.1.27.22692, Culture=neutral, PublicKeyToken=1673db7d5906b0ad, processorArchitecture=MSIL" />
     <Reference Include="GalaSoft.MvvmLight.WPF4, Version=3.0.0.32852, Culture=neutral, PublicKeyToken=63eb5c012e0b3c1c, processorArchitecture=MSIL" />
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\packages\HtmlAgilityPack.1.4.6\lib\Net40\HtmlAgilityPack.dll</HintPath>
@@ -58,8 +60,10 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="NLog, Version=2.0.1.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="ReactiveUI, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.Composition.Initialization">
@@ -96,6 +100,7 @@
     </Reference>
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Interactivity, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -114,6 +119,7 @@
     <Compile Include="MathExtensionsTest.cs" />
     <Compile Include="NewsHound_BloombergTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RelativeStDevStoreTest.cs" />
     <Compile Include="RxDataFlow.cs" />
     <Compile Include="TradeExtensionsTest.cs" />
     <Compile Include="TradingMacroTest.cs" />
@@ -121,6 +127,14 @@
     <Compile Include="UnitTest1.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\ChainedObserver\ChainedObserver\ChainedObserver.csproj">
+      <Project>{4C4043A9-F08D-40FD-9114-AE6133263DB3}</Project>
+      <Name>ChainedObserver</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Lambda Dependencies\Dependency Monitor\Lambda Dependencies.csproj">
+      <Project>{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}</Project>
+      <Name>Lambda Dependencies</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
       <Project>{8883734D-B6B0-4210-9746-108A126EB84A}</Project>
       <Name>NotifyCollectionChangedWrapper</Name>
@@ -145,6 +159,10 @@
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.NewsCaster.UI\HedgeHog.NewsCaster.UI.csproj">
+      <Project>{3271AED3-1A77-452E-A66F-27DE487E59BD}</Project>
+      <Name>HedgeHog.NewsCaster.UI</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.NewsCaster\HedgeHog.NewsCaster.csproj">
       <Project>{9F58E055-714C-46DC-A8D3-17C531452152}</Project>
       <Name>HedgeHog.NewsCaster</Name>
@@ -166,6 +184,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <Shadow Include="Test References\HedgeHog.Alice.Store.accessor" />
     <Shadow Include="Test References\HedgeHog.NewsCaster.accessor" />
   </ItemGroup>
   <ItemGroup>

@@ -27,10 +27,10 @@
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.PlayStartDateBox]Text" value="1/1/0001 12:00:00 AM" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.TextBox2[EURUSD_1.DelayInSecondsBox]Text" value="0" />
   <item key="/HedgeHog.Charter;component/corridors.xaml.CheckBox2[EURUSD_1.10]IsChecked" value="True" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="-4" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="0" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="809" />
-  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1212" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Left" value="-7" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Top" value="4" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Height" value="753" />
+  <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.DockingWindow[.1]Width" value="1213" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPaneGroup[.16]SelectedIndex" value="-1" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.RadPane[.MasterPanel]IsSelected" value="False" />
   <item key="/HedgeHog.Alice.Client;component/dockingwindow.xaml.TextBox2[.DatabasePath]Text" value="C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\HedgeHog.Alice.Client\bin\Debug_02\Store\Alice.sdf" />

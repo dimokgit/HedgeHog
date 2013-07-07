@@ -281,7 +281,7 @@ namespace HedgeHog.Alice.Client {
     void OnSaveTradingSettings(TradingMacro tm) {
       try {
         var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
-          .Select(p => "{0}:{1}".Formater(p.Name, p.GetValue(tm, null))).OrderBy(s => s);
+          .Select(p => "{0}={1}".Formater(p.Name, p.GetValue(tm, null))).OrderBy(s => s);
         var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
         if (!odRes.GetValueOrDefault()) return;
@@ -995,17 +995,17 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n0}r"///↨↔
+            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n1}cdr"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
             /*3*/, tm.RatesHeightInPips
-            /*4*/, tm.CorridorStats.RatesHeightInPips
+            /*4*/, tm.CorridorStats.HeightByRegressionInPips
             /*5*/, tm.StDevByHeightInPips
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.MagnetPriceRatio
+            /*9*/, tm.CorridorStats.Rates.Count / tm.CorridorDistanceRatio
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
@@ -1021,8 +1021,8 @@ namespace HedgeHog.Alice.Client {
           PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts(r).IfNaN(0) }).ToArray();
           PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts2(r).IfNaN(0) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[0][] { /*distances, distances1*/} : new PriceBar[0][], info, null,
-            tm.WaveStDevRatio, distancesAverage, 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+          charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,
+            tm.GetVoltageHigh(), tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
@@ -1042,6 +1042,7 @@ namespace HedgeHog.Alice.Client {
           charter.SetTradeLines(tm.Trades, tm.CurrentPrice.Spread / 2);
           charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
           charter.DrawVertivalLines(tm.NewEventsCurrent.Select(ne => ne.Time.DateTime).ToArray());
+          charter.DrawLevels(tm.CenterOfMassLevels);
         } catch (Exception exc) {
           Log = exc;
         }

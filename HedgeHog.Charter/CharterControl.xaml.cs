@@ -90,6 +90,7 @@ namespace HedgeHog {
       this.Name = name.Replace("/", "");
       InitializeComponent();
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
+
       otherTimes.ItemsAdded.ObserveOnDispatcher().Subscribe(OnOtherTimeAdded);
       otherTimes.ItemsRemoved.ObserveOnDispatcher().Subscribe(OnOtherTimeRemoved);
       otherVLines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
@@ -379,11 +380,19 @@ namespace HedgeHog {
     }
 
     static Brush centerOfMassBrush = new SolidColorBrush(Colors.SteelBlue);
+    static int centerOfMassStrokeThickness = 1;
+    static DoubleCollection centerOfMassStrokeDashArray = new DoubleCollection(new double[] { 5, 2, 2, 2 });
+    HorizontalLine CenterOfMassFactory(double value = 0.0) {
+      return new HorizontalLine() {
+        StrokeThickness = centerOfMassStrokeThickness, StrokeDashArray = centerOfMassStrokeDashArray, Stroke = centerOfMassBrush
+      };
+
+    }
     HorizontalLine _centerOfMassHLineHigh;
     HorizontalLine centerOfMassHLineHigh {
       get {
         if (_centerOfMassHLineHigh == null) {
-          _centerOfMassHLineHigh = new HorizontalLine() { StrokeThickness = 1, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = centerOfMassBrush };
+          _centerOfMassHLineHigh = CenterOfMassFactory();
           _centerOfMassHLineHigh.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
         }
         return _centerOfMassHLineHigh;
@@ -399,7 +408,7 @@ namespace HedgeHog {
     HorizontalLine centerOfMassHLineLow {
       get {
         if (_centerOfMassHLineLow == null) {
-          _centerOfMassHLineLow = new HorizontalLine() { StrokeThickness = 1, StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), Stroke = centerOfMassBrush };
+          _centerOfMassHLineLow = CenterOfMassFactory();
           _centerOfMassHLineLow.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
         }
         return _centerOfMassHLineLow;
@@ -839,7 +848,26 @@ namespace HedgeHog {
     #endregion
 
 
-    List<HorizontalLine> otherHLines = new List<HorizontalLine>();
+    ReactiveCollection<HorizontalLine> levelLines = new ReactiveCollection<HorizontalLine>();
+    DispatcherScheduler _plotterScheduler = null;
+    public DispatcherScheduler PlotterScheduler { get { return _plotterScheduler ?? (_plotterScheduler = new DispatcherScheduler(plotter.Dispatcher)); } }
+
+    public void DrawLevels(IList<double> levelsToAdd) {
+      PlotterScheduler.Schedule(() => {
+        levelLines.Skip(levelsToAdd.Count).ToList().ForEach(line => {
+          levelLines.Remove(line);
+          plotter.Children.Remove(line);
+        });
+        levelLines.Zip(levelsToAdd, (line, level) => new { line, level })
+          .ToList().ForEach(a => a.line.Value = a.level);
+        levelsToAdd.Skip(levelLines.Count).ToList().ForEach(level => {
+          var line = CenterOfMassFactory(level);
+          levelLines.Add(line);
+          plotter.Children.Add(line);
+        });
+      });
+    }
+
     ReactiveCollection<DateTime> otherTimes = new ReactiveCollection<DateTime>();
     ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
 
@@ -1189,7 +1217,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
 
-      CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = false };
+      CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = true };
       ccg.XTextMapping = x => dateAxis.ConvertFromDouble(x).ToString(CultureInfo.CurrentCulture);
       plotter.Children.Add(ccg);
 
@@ -1637,9 +1665,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     }
 
     private void SetTradingRange(object suppRes, double position) {
-      if (!suppRes.GetProperty<bool>("IsExitOnly"))
-        if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
-        else _tradingHorisontalRange.Value2 = position;
+      _tradingHorisontalRange.Value1 = centerOfMassHLineHigh.Value;
+      _tradingHorisontalRange.Value2 = centerOfMassHLineLow.Value;
+      //if (!suppRes.GetProperty<bool>("IsExitOnly"))
+      //  if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
+      //  else _tradingHorisontalRange.Value2 = position;
     }
     #endregion
 
