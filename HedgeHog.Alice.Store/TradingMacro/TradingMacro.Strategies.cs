@@ -956,12 +956,21 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                Log = new Exception(new { CorridorDistanceRatio, WaveStDevRatio, DistanceIterations } + "");
+                Log = new Exception(new {
+                  CorridorDistanceRatio,
+                  WaveStDevRatio_LenthRatio = WaveStDevRatio,
+                  DistanceIterations_RsdRatio = DistanceIterations,
+                  PolyOrder_FractalRatio = PolyOrder
+                } + "");
                 MagnetPrice = double.NaN;
-                onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
+                onCloseTradeLocal = t => {
+                  if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  triggerRsd.Off();
+                };
               }
               #endregion
-              var fractals = Fractals(CorridorStats.Rates.Select(_priceAvg).ToArray(), PolyOrder);
+              var corridorRates = CorridorStats.Rates;
+              var fractals = Fractals(corridorRates, PolyOrder, _priceAvg, _priceAvg);
               if (fractals.Count == 2) {
                 CenterOfMassBuy = fractals[true].Average();
                 CenterOfMassSell = fractals[false].Average();
@@ -981,7 +990,7 @@ namespace HedgeHog.Alice.Store {
               triggerRsd.Off(lengthOk, () => {
                 //_buySellLevelsForEach(sr => sr.CanTradeEx = false);
               });
-              if ((CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) {
+              if (IsAutoStrategy && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) {
                 _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                 CloseTrades("Trades start date");
               }
@@ -1082,18 +1091,19 @@ namespace HedgeHog.Alice.Store {
       #endregion
     }
 
-    public static IDictionary<bool,double[]> Fractals(IList<double> prices,int fractalLength) {
+    public static IDictionary<bool, double[]> Fractals(IList<Rate> rates, int fractalLength, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var prices = rates.Select(r => new { PriceHigh = priceHigh(r), PriceLow = priceLow(r) }).ToArray();
       var indexMiddle = fractalLength / 2;
-      var zipped = prices.Zip(prices.Skip(1), (f, s) => new double[2] { f, s }.ToList());
+      var zipped = prices.Zip(prices.Skip(1), (f, s) => new[] { f, s }.ToList());
       for (var i = 2; i < fractalLength; i++)
         zipped = zipped.Zip(prices.Skip(i), (z, v) => { z.Add(v); return z; });
-      var zipped2 =  zipped.Where(z => z.Count == fractalLength)
-        .Select(z => new { max = z.Max(), min = z.Min(), middle = z[indexMiddle] })
-        .Select(a => new { price = a.middle, isUp = a.max == a.middle, IsDpwm = a.middle == a.min })
+      var zipped2 = zipped.Where(z => z.Count == fractalLength)
+        .Select(z => new { max = z.Max(a => a.PriceHigh), min = z.Min(a => a.PriceLow), middle = z[indexMiddle] })
+        .Select(a => new { price = a.middle, isUp = a.max == a.middle.PriceHigh, IsDpwm = a.middle.PriceLow == a.min })
         .ToArray();
       return zipped2
         .Where(a => a.isUp || a.IsDpwm)
-        .GroupBy(a => a.isUp, a => a.price)
+        .GroupBy(a => a.isUp, a => a.isUp ? a.price.PriceHigh : a.price.PriceLow)
         .ToDictionary(g => g.Key, g => g.ToArray());
     }
     IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin,out double levelOut) {

@@ -82,14 +82,14 @@ namespace UnitLib
     /// <summary>
     ///A test for Fractals
     ///</summary>
-    [TestMethod()]
-    public void FractalsTest() {
-      IList<double> prices = new double[] { 1, 2, 3, 2, 1, 13, 12, 11, 12, 13 };
-      int fractalLength = 5;
-      IDictionary<bool, double> expected = new Dictionary<bool, double>() { { true, 8 }, { false, 6 } };
-      var actual = TradingMacro.Fractals(prices, fractalLength);
-      Assert.AreEqual(expected[true], actual[true].Average());
-      Assert.AreEqual(expected[false], actual[false].Average());
-    }
+    //[TestMethod()]
+    //public void FractalsTest() {
+    //  IList<double> prices = new double[] { 1, 2, 3, 2, 1, 13, 12, 11, 12, 13 };
+    //  int fractalLength = 5;
+    //  IDictionary<bool, double> expected = new Dictionary<bool, double>() { { true, 8 }, { false, 6 } };
+    //  var actual = TradingMacro.Fractals(prices, fractalLength);
+    //  Assert.AreEqual(expected[true], actual[true].Average());
+    //  Assert.AreEqual(expected[false], actual[false].Average());
+    //}
   }
 }

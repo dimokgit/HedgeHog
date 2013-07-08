@@ -165,6 +165,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     int CalcCorridorLengthByRsd(double[] ratesReversed, int countStart, double diffRatio) {
+      var rsdMax = double.NaN;
+      for (; countStart <= ratesReversed.Length; countStart++) {
+        var rates = new double[countStart];
+        Array.Copy(ratesReversed, rates, countStart);
+        var rsd = this.CalcRsd(rates);
+        if (rsdMax.Ratio(rsd) > diffRatio)
+          break;
+        else if (rsdMax.IsNaN())
+          rsdMax = rsd;
+      }
+      return countStart;
+    }
+    int CalcCorridorLengthByRsdMax(double[] ratesReversed, int countStart, double diffRatio) {
       var rsdMax = 0.0;
       for (; countStart <= ratesReversed.Length; countStart++) {
         var rates = new double[countStart];
