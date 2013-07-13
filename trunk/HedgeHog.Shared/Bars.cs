@@ -356,7 +356,11 @@ namespace HedgeHog.Bars {
     #endregion
 
     #region Phycics
-    public double Distance { get; set; }
+    double _Distance = double.NaN;
+    public double Distance {
+      get { return _Distance; }
+      set { _Distance = value; }
+    }
     [DataMember]
     public double? Mass { get; set; }
 

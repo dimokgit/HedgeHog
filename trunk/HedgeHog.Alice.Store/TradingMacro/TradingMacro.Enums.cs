@@ -34,6 +34,7 @@ namespace HedgeHog.Alice.Store {
     Manual = 110,
     StDev = 120,
     Rsd = 140,
+    Rsd2 = 141, 
     Backdoor = 150
   }
   public enum TradingMacroTakeProfitFunction {
@@ -41,6 +42,7 @@ namespace HedgeHog.Alice.Store {
     CorridorStDevMax = 4,
     CorridorHeight = 5,
     BuySellLevels = 6,
+    BuySellLevels2 = 7,
     RatesHeight = 10,
     RatesStDevMax = 11,
     RatesHeight_2 = 12,

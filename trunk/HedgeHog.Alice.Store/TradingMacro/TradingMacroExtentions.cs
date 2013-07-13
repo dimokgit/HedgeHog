@@ -1994,7 +1994,7 @@ namespace HedgeHog.Alice.Store {
       Func<IEnumerable<Rate>> a = () => {
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
         var countByDate = startDate.HasValue && DoStreatchRates ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
-        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCount).ToInt()).Max(0));
+        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false);
     }
@@ -2699,13 +2699,14 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
+        case TradingMacroTakeProfitFunction.BuySellLevels2:
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = _buyLevelRate - _sellLevelRate;
           if (double.IsNaN(tp)) {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
-          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN);
+          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * (function == TradingMacroTakeProfitFunction.BuySellLevels2 ? 2 : 1);
           break;
         default:
           throw new NotImplementedException(new { function } + "");
@@ -3153,7 +3154,6 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.CorridorCrossHighLowMethod:
         case TradingMacroMetadata.CorridorCrossesCountMinimum:
         case TradingMacroMetadata.CorridorHighLowMethod:
-        case TradingMacroMetadata.CorridorStDevRatioMax:
         case TradingMacroMetadata.TradingAngleRange:
         case TradingMacroMetadata.StDevAverageLeewayRatio:
         case TradingMacroMetadata.StDevTresholdIterations:

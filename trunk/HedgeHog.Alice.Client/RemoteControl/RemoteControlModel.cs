@@ -1018,10 +1018,10 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
-          PriceBar[] distances = rates.Take(0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts(r).IfNaN(0) }).ToArray();
+          PriceBar[] distances = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts(r).IfNaN(0) }).ToArray();
           PriceBar[] distances1 = rates.Take(0).Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = volts2(r).IfNaN(0) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[0][] { /*distances, distances1*/} : new PriceBar[0][], info, null,
+          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             tm.GetVoltageHigh(), tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
@@ -1041,7 +1041,11 @@ namespace HedgeHog.Alice.Client {
           charter.SetSellRates(dic);
           charter.SetTradeLines(tm.Trades, tm.CurrentPrice.Spread / 2);
           charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
-          charter.DrawVertivalLines(tm.NewEventsCurrent.Select(ne => ne.Time.DateTime).ToArray());
+
+          var times = tm.NewEventsCurrent.Select(ne => ne.Time.DateTime)
+          .Concat(tm.Fractals.SelectMany(r => r).Select(r => r.StartDate));
+          charter.DrawVertivalLines(times.ToArray());
+
           charter.DrawLevels(tm.CenterOfMassLevels);
         } catch (Exception exc) {
           Log = exc;
