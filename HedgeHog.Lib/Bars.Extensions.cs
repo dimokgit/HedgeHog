@@ -530,6 +530,15 @@ namespace HedgeHog.Bars {
       return distance;
     }
 
+    public static double Distance2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice,IList<double> distances = null) where TBar : BarBase {
+      var prices = rates.Select(getPrice).ToArray();
+      return rates.Zip(rates.Skip(1), (p, n) => {
+        var dist = getPrice(p).Abs(getPrice(n));
+        if (distances != null) distances.Add(distances.LastOrDefault() + dist);
+        return dist;
+      }).Sum();
+    }
+
     public static double WeightedAverage<TBar>(this IEnumerable<TBar> bars) where TBar : BarBase {
       double wa = 0, s = 0;
       bars.Aggregate((p, n) => {

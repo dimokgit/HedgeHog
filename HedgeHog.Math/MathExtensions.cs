@@ -53,6 +53,30 @@ namespace HedgeHog {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
 
+
+    public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
+      return rates.Fractals(fractalLength, d => d, d => d);
+    }
+    /// <summary>
+    /// Find fractals
+    /// </summary>
+    /// <param name="rates"></param>
+    /// <param name="fractalLength">Periods count</param>
+    /// <param name="priceHigh"></param>
+    /// <param name="priceLow"></param>
+    /// <returns>Fractal Bars by Ups and Downs</returns>
+    public static ILookup<bool, TBar> Fractals<TBar>(this IList<TBar> rates, int fractalLength, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) {
+      var indexMiddle = fractalLength / 2;
+      var zipped = rates.Zip(rates.Skip(1), (f, s) => new[] { f, s }.ToList());
+      for (var i = 2; i < fractalLength; i++)
+        zipped = zipped.Zip(rates.Skip(i), (z, v) => { z.Add(v); return z; });
+      return zipped.Where(z => z.Count == fractalLength)
+        .Select(z => new { max = z.Max(priceHigh), min = z.Min(priceLow), middle = z[indexMiddle] })
+        .Select(a => new { rate = a.middle, isUp = a.max == priceHigh(a.middle), IsDpwm = priceLow(a.middle) == a.min })
+        .Where(a => a.isUp || a.IsDpwm)
+        .ToLookup(a => a.isUp, a => a.rate);
+    }
+
     public static IList<T> Wavelette<T>(this IList<T> values, Func<T, double> value) {
       var wavelette = new List<T>(values.Take(2));
       if (values.Count > 1) {
@@ -367,17 +391,31 @@ namespace HedgeHog {
       return values.Where(v => value(v).HasValue).Select(v => value(v).Value).ToArray().StDev();
     }
     public static double StDev(this IList<double> values) {
-      double avg;
-      return values.StDev(out avg);
+      double avg, max, min;
+      return values.StDev(out avg, out max, out min);
     }
-    public static double StDev(this IList<double> values, out double avgOut) {
-      double ret = 0, avg = 0;
+    public static double StDev(this IList<double> values, out double avg) {
+      double max, min;
+      return values.StDev(out avg, out max, out min);
+    }
+    public static double StDev(this IList<double> values, out double max,out double min) {
+      double avg;
+      return values.StDev(out avg, out max, out min);
+    }
+    public static double StDev(this IList<double> values, out double avgOut, out double maxOut, out double minOut) {
+      double ret = 0, avg = 0, max = double.MinValue, min = double.MaxValue;
       if (values.Count() > 0) {
-        avg = values.Average();
+        avg = values.Average(v => {
+          if (max < v) max = v;
+          if (min > v) min = v;
+          return v;
+        });
         double sum = values.Sum(d => (d - avg) * (d - avg));
         ret = Math.Sqrt(sum / (values.Count - 1));
       }
       avgOut = avg;
+      maxOut = max;
+      minOut = min;
       return ret;
     }
 
