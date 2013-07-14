@@ -1010,7 +1010,6 @@ namespace HedgeHog.Alice.Store {
                 DoNews = !IsInVitualTrading;
                 Log = new Exception(new {
                   CorridorCrossesMaximum,
-                  WaveStDevRatio_LenthRatio = WaveStDevRatio,
                   DistanceIterations_RsdRatio = DistanceIterations,
                   PolyOrder_FractalRatio = PolyOrder,
                   CorrelationMinimum_HeightRatio = CorrelationMinimum
@@ -1026,9 +1025,12 @@ namespace HedgeHog.Alice.Store {
                 var corridorRates = CorridorStats.Rates;
                 var priceHigh = _priceAvg;
                 var priceLow = _priceAvg;
-                Fractals = corridorRates.Fractals(PolyOrder < 6 ? corridorRates.Count / PolyOrder : PolyOrder, priceHigh, priceLow);
+                Fractals = corridorRates.Fractals(PolyOrder > FttMax ? corridorRates.Count / PolyOrder : FttMax, priceHigh, priceLow);
                 var fractalsMinCount = Fractals[true].Count().Min(Fractals[false].Count());
-                if (fractalsMinCount >= PolyOrder - 1) {
+                var heightOk = (_buyLevel.Rate - _sellLevel.Rate) * CorrelationMinimum < RatesHeight;
+                var fractalOk = fractalsMinCount >= PolyOrder - 1;
+                var tradeOk = fractalOk && heightOk;
+                if (fractalsMinCount > 0) {
                   CenterOfMassBuy = Fractals[true].Select(r => r.PriceHigh).First();
                   CenterOfMassSell = Fractals[false].Select(r => r.PriceLow).First();
                   _buyLevel.RateEx = CenterOfMassBuy;
@@ -1038,12 +1040,6 @@ namespace HedgeHog.Alice.Store {
                     sr.TradesCount = 0;
                     CloseAtZero = false;
                   });
-                }
-                var heightOk = (_buyLevel.Rate - _sellLevel.Rate) * CorrelationMinimum < RatesHeight;
-                if (!heightOk) CloseAtZero = true;
-                if (Fractals.SelectMany(f => f).Count() < PolyOrder) {
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  CloseAtZero = true;
                 }
               }
               adjustExitLevels1();
@@ -1055,7 +1051,7 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                Log = new Exception(new { CorridorDistanceRatio } + "");
+                //Log = new Exception(new { CorridorDistanceRatio } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
               }
@@ -1065,6 +1061,39 @@ namespace HedgeHog.Alice.Store {
               _buyLevel.RateEx = CenterOfMassBuy;
               _sellLevel.RateEx = CenterOfMassSell;
               if (IsAutoStrategy && CorridorAngle.Abs() < 1) _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region FFT
+            case TrailingWaveMethod.Fft:
+              #region firstTime
+              if (firstTime) {
+                LogTrades = !IsInVitualTrading;
+                DoNews = !IsInVitualTrading;
+                //Log = new Exception(new { CorridorDistanceRatio } + "");
+                MagnetPrice = double.NaN;
+                onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
+              }
+              #endregion
+              {
+                var priceHigh = _priceAvg;
+                var priceLow = _priceAvg;
+                Fractals = RatesArray.Reverse<Rate>().ToArray().Fractals(FttMax * 2, priceHigh, priceLow, true);
+                var dateStart = CorridorStats.StartDate.AddMinutes(-10);
+                var fractal = Fractals.SelectMany(f => f).ToArray().FirstOrDefault();
+                if (fractal != null && fractal.StartDate >= dateStart) {
+                  CenterOfMassBuy = RateLast.PriceAvg1 + StDevByHeight / 2;
+                  CenterOfMassSell = RateLast.PriceAvg1 - StDevByHeight / 2;
+                  _buyLevel.RateEx = CenterOfMassBuy;
+                  _sellLevel.RateEx = CenterOfMassSell;
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr => {
+                    sr.ResetPricePosition();
+                    sr.CanTradeEx = true;
+                    sr.TradesCount = CorridorCrossesMaximum;
+                    CloseAtZero = false;
+                  });
+                }
+              }
               adjustExitLevels0();
               break;
             #endregion
@@ -1393,5 +1422,7 @@ namespace HedgeHog.Alice.Store {
       get { return _Fractals; }
       set { _Fractals = value; }
     }
+
+    public int FttMax { get; set; }
   }
 }

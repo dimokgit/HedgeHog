@@ -242,7 +242,11 @@ namespace HedgeHog {
       return string.Join(Environment.NewLine, values.Select(b => string.Format(format, parms(b))));
     }
 
-    /// <summary>
+    public static double[] Regression(this double[] values, int polyOrder) {
+      double[] coeffs;
+      return values.Regression(polyOrder, out coeffs);
+    }
+      /// <summary>
     /// Runs regression on values 
     /// </summary>
     /// <param name="values"></param>

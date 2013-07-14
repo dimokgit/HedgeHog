@@ -995,7 +995,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n1}cdr"///↨↔
+            string.Format(":{0}×{1}:{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}]{9:n1}ftt"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.BarsCount
             /*2*/, tm.CorridorAngle
@@ -1005,15 +1005,15 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.CorridorStats.Rates.Count / tm.CorridorDistanceRatio
+            /*9*/, tm.FttMax
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var volts = tm.GetVoltage;
-          var volts2 = tm.GetVoltage2;
+          var volts = tm.GetVoltage2;
+          var volts2 = tm.GetVoltage;
           //Task.WaitAll(
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
@@ -1261,7 +1261,7 @@ namespace HedgeHog.Alice.Client {
           var price1 = getRatesForCorrelation(pair);
           foreach (var pc in pairs.Where(p => p != pair)) {
             var price2 = getRatesForCorrelation(pc);
-            var correlation = alglib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs();
+            var correlation = AlgLib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs();
             correlations.Add(new PairCorrelation(pair, pc, correlation));
           }
         }
@@ -1280,7 +1280,7 @@ namespace HedgeHog.Alice.Client {
         var price1 = getRatesForCorrelation(pair);
         foreach (var pc in pairs.Where(p => p != pair)) {
           var price2 = getRatesForCorrelation(pc);
-          correlations.Add(alglib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs());
+          correlations.Add(AlgLib.correlation.pearsoncorrelation(ref price1, ref price2, Math.Min(price1.Length, price2.Length)).Abs());
         }
       }
       return correlations.Count > 0 ? correlations.Average() : 0;
