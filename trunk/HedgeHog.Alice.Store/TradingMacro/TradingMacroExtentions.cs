@@ -231,7 +231,7 @@ namespace HedgeHog.Alice.Store {
           var range = new double[interval];
           priceHistory.CopyTo(i, range, 0, interval);
           if (isDateOk(ratesHistory[i].StartDate2) /*&& heightSample.Ratio(range.Height()) < 1.1*/)
-            correlations.TryAdd(i, alglib.correlation.spearmanrankcorrelation(range, ratesSample, range.Length));
+            correlations.TryAdd(i, AlgLib.correlation.spearmanrankcorrelation(range, ratesSample, range.Length));
         }
       });
       var sorted = correlations.OrderByDescending(kv => kv.Value).ToDictionary(kv => kv.Key, kv => kv.Value);
@@ -2729,6 +2729,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
         case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
+        case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;

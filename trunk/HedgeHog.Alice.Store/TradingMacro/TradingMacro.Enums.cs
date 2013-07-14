@@ -23,7 +23,8 @@ namespace HedgeHog.Alice.Store {
     Height = 60,
     Time = 61,
     TimeFrame = 62,
-    Rsd = 63
+    Rsd = 63,
+    Ftt = 64
   }
   public enum TrailingWaveMethod {
     Magnet = 1,
@@ -34,7 +35,8 @@ namespace HedgeHog.Alice.Store {
     Manual = 110,
     StDev = 120,
     Rsd = 140,
-    Rsd2 = 141, 
+    Rsd2 = 141,
+    Fft = 142, 
     Backdoor = 150
   }
   public enum TradingMacroTakeProfitFunction {

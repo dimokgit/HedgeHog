@@ -20,7 +20,7 @@ http://www.fsf.org/licensing/licenses
 
 using System;
 
-namespace HedgeHog.alglib
+namespace HedgeHog.AlgLib
 {
     public static class correlation
     {

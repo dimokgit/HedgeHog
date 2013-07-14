@@ -128,6 +128,43 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
+    private CorridorStatistics ScanCorridorByFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
+
+      {
+        alglib.complex[] bins;
+        var line = ratesReversed.Select(_priceAvg).ToArray().Regression(1);
+        alglib.fftr1d(RatesArray.Zip(line, (r, l) => r.PriceAvg - l).ToArray(), out bins);
+        var magnitudes = bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).ToArray();
+        FttMax = magnitudes.Skip(1).Take(5).Max();
+      }
+
+      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
+      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
+      Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
+        var date = CorridorStats.Rates.Last().StartDate;
+        return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
+      });
+      var lengthMax = !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value;
+      WaveShort.Rates = null;
+      WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
+        ? ratesReversed.Take(FttMax.Min(lengthMax)).ToArray()
+        : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+
+
+      {
+        alglib.complex[] bins;
+        var line = WaveShort.Rates.Select(_priceAvg).ToArray().Regression(1);
+        alglib.fftr1d(WaveShort.Rates.Zip(line, (r, l) => r.PriceAvg - l).ToArray(), out bins);
+        var magnitudes = bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).ToArray();
+        FttMax = magnitudes.Skip(1).Take(5).Max();
+        SetVoltage2(ratesReversed[0], FttMax);
+      }
+
+      return corridor;
+    }
+
     private CorridorStatistics ScanCorridorByRsdMax(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
       var distances = new List<double>();
@@ -159,6 +196,12 @@ namespace HedgeHog.Alice.Store {
         Array.Copy(ratesInternalArray, i, rates1, 0, rates1.Length);
         SetVoltage(rates1[0], InPips(rates1.Distance2(_priceAvg)));
       }
+      alglib.complex[] bins;
+      var line = ratesReversed.Select(_priceAvg).ToArray().Regression(1);
+      alglib.fftr1d(RatesArray.Zip(line,(r,l)=> r.PriceAvg-l).ToArray(), out bins);
+      var magnitudes = bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).ToArray();
+      FttMax = magnitudes.Skip(1).Take(5).Max();
+      SetVoltage2(ratesReversed[0], FttMax);
       return corridor;
     }
 
@@ -504,7 +547,7 @@ namespace HedgeHog.Alice.Store {
         var parabola = new double[prices.Length];
         for (var i = 0; i < prices.Length; i++)
           parabola[i] = coeffs.RegressionValue(i);
-        corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length).Abs());
+        corr = corr.Cma(5, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length).Abs());
         lock (locker) {
           correlations.Add(new { corr, length = prices.Length });
         }
@@ -538,7 +581,7 @@ namespace HedgeHog.Alice.Store {
         double[] parabola = ratesReversed.Regression(rates, polyOrder);
         double[] coeffs;
         double[] line = ratesReversed.Regression(rates, polyOrder - 1, out coeffs);
-        corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref line, ref parabola, rates));
+        corr = corr.Cma(5, AlgLib.correlation.pearsoncorrelation(ref line, ref parabola, rates));
         //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
         //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
         lock (locker) {
@@ -593,7 +636,7 @@ namespace HedgeHog.Alice.Store {
         //line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Max();
         if (parabolaHeight > StDevByHeight) {
           var vol = 1 / coeffs[1].Abs().Angle(BarPeriodInt, PointSize);// ratesReversed.Take(rates).ToArray().Volatility(_priceAvg, GetPriceMA);// / coeffs[1].Abs();
-          corr = corr.Cma(15, alglib.correlation.pearsoncorrelation(ref source, ref parabola, rates));
+          corr = corr.Cma(15, AlgLib.correlation.pearsoncorrelation(ref source, ref parabola, rates));
           //var sineOffset = Math.Sin(Math.PI / 2 - coeffs[1] / PointSize);
           //corr = corr.Cma(5, line.Zip(parabola, (l, p) => ((l - p) * sineOffset).Abs()).Average());
           lock (locker) {
@@ -653,7 +696,7 @@ namespace HedgeHog.Alice.Store {
         double[] coeffs;
         double[] prices;
         double[] parabola = ratesReversed.Regression(rates, polyOrder,out coeffs, out prices);
-        corr = corr.Cma(5, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length));
+        corr = corr.Cma(5, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length));
         lock (locker) {
           correlations.Add(new { corr, length = prices.Length });
         }
@@ -696,7 +739,7 @@ namespace HedgeHog.Alice.Store {
         var parabola = new double[ratesToRegress.Count];
         var i = 0;
         px.ForEach(x => parabola[i++] = x * x * pr + pm);
-        corr = corr.Cma(3, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length.Min(parabola.Length)).Abs());
+        corr = corr.Cma(3, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length.Min(parabola.Length)).Abs());
         correlations.Add(new { corr, length = prices.Length });
       }
       correlations.Sort((a, b) => -a.corr.CompareTo(b.corr));
@@ -737,7 +780,7 @@ namespace HedgeHog.Alice.Store {
           //var parabola = MathExtensions.Sin(180, rates, height / 2, coeffs.RegressionValue(rates / 2), WaveStDevRatio.ToInt());
           var parabola = MathExtensions.Sin(180, rates, height / 2, prices.Average(), WaveStDevRatio.ToInt());
           lock (locker) {
-            corr = corr.Cma(25, alglib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs());
+            corr = corr.Cma(25, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs());
             correlations.Add(new { corr, length = prices.Length, parabola, angle });
           }
         }
@@ -793,8 +836,8 @@ namespace HedgeHog.Alice.Store {
           //var parabola = MathExtensions.Sin(180, rates, height / 2, coeffs.RegressionValue(rates / 2), WaveStDevRatio.ToInt());
           var parabola = MathExtensions.Sin(180, rates, height / 2, prices.Average(), WaveStDevRatio.ToInt());
           lock (locker) {
-            var pearson = alglib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs();
-            var spearman = alglib.correlation.spearmanrankcorrelation(prices, parabola, rates).Abs();
+            var pearson = AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, rates).Abs();
+            var spearman = AlgLib.correlation.spearmanrankcorrelation(prices, parabola, rates).Abs();
             corr = corr.Cma(13, corr);
             correlations.Add(new { corr, length = prices.Length, parabola });
           }

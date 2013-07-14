@@ -598,13 +598,16 @@ namespace HedgeHog.Bars {
     }
 
     double _distanceHistory = double.NaN;
-
     public double DistanceHistory {
       get { return _distanceHistory; }
       set { _distanceHistory = value; }
     }
 
-    public double Distance1 { get; set; }
+    double _Distance1 = double.NaN;
+    public double Distance1 {
+      get { return _Distance1; }
+      set { _Distance1 = value; }
+    }
 
     double _CrossesDensity = double.NaN;
     public double CrossesDensity {

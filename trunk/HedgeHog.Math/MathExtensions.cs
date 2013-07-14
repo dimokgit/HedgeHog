@@ -65,16 +65,18 @@ namespace HedgeHog {
     /// <param name="priceHigh"></param>
     /// <param name="priceLow"></param>
     /// <returns>Fractal Bars by Ups and Downs</returns>
-    public static ILookup<bool, TBar> Fractals<TBar>(this IList<TBar> rates, int fractalLength, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) {
+    public static ILookup<bool, TBar> Fractals<TBar>(this IList<TBar> rates1, int fractalLength, Func<TBar, double> priceHigh, Func<TBar, double> priceLow,bool includeTails = false) {
+      var rates = rates1.Select(r => new { r, h = priceHigh(r), l = priceLow(r) }).ToArray();
       var indexMiddle = fractalLength / 2;
       var zipped = rates.Zip(rates.Skip(1), (f, s) => new[] { f, s }.ToList());
       for (var i = 2; i < fractalLength; i++)
         zipped = zipped.Zip(rates.Skip(i), (z, v) => { z.Add(v); return z; });
-      return zipped.Where(z => z.Count == fractalLength)
-        .Select(z => new { max = z.Max(priceHigh), min = z.Min(priceLow), middle = z[indexMiddle] })
-        .Select(a => new { rate = a.middle, isUp = a.max == priceHigh(a.middle), IsDpwm = priceLow(a.middle) == a.min })
+      return zipped.AsParallel()
+        .Where(z => includeTails || z.Count == fractalLength)
+        .Select(z => new { max = z.Max(a => a.h), min = z.Min(a => a.l), middle = z[indexMiddle] })
+        .Select(a => new { rate = a.middle, isUp = a.max == a.middle.h, IsDpwm = a.middle.l == a.min })
         .Where(a => a.isUp || a.IsDpwm)
-        .ToLookup(a => a.isUp, a => a.rate);
+        .ToLookup(a => a.isUp, a => a.rate.r);
     }
 
     public static IList<T> Wavelette<T>(this IList<T> values, Func<T, double> value) {
