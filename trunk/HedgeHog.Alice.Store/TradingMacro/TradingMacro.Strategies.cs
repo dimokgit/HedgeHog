@@ -1039,6 +1039,8 @@ namespace HedgeHog.Alice.Store {
                     CloseAtZero = false;
                   });
                 }
+                var heightOk = (_buyLevel.Rate - _sellLevel.Rate) * CorrelationMinimum < RatesHeight;
+                if (!heightOk) CloseAtZero = true;
                 if (Fractals.SelectMany(f => f).Count() < PolyOrder) {
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   CloseAtZero = true;
