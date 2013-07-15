@@ -1012,8 +1012,8 @@ namespace HedgeHog.Alice.Client {
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
-          var volts = tm.GetVoltage2;
-          var volts2 = tm.GetVoltage;
+          var volts = tm.GetVoltage;
+          var volts2 = tm.GetVoltage2;
           //Task.WaitAll(
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))

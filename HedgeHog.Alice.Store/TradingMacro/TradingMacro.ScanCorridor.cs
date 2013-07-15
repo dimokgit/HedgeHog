@@ -131,13 +131,7 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
 
-      {
-        alglib.complex[] bins;
-        var line = ratesReversed.Select(_priceAvg).ToArray().Regression(1);
-        alglib.fftr1d(RatesArray.Zip(line, (r, l) => r.PriceAvg - l).ToArray(), out bins);
-        var magnitudes = bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).ToArray();
-        FttMax = magnitudes.Skip(1).Take(5).Max();
-      }
+      FttMax = FftFrequencyReversed(ratesReversed.Select(_priceAvg).ToArray(),true);
 
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
       var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
@@ -152,17 +146,17 @@ namespace HedgeHog.Alice.Store {
         : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
 
-
-      {
-        alglib.complex[] bins;
-        var line = WaveShort.Rates.Select(_priceAvg).ToArray().Regression(1);
-        alglib.fftr1d(WaveShort.Rates.Zip(line, (r, l) => r.PriceAvg - l).ToArray(), out bins);
-        var magnitudes = bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).ToArray();
-        FttMax = magnitudes.Skip(1).Take(5).Max();
-        SetVoltage2(ratesReversed[0], FttMax);
-      }
-
+      SetVoltage(ratesReversed[0], FftFrequencyReversed( WaveShort.Rates.Select(_priceAvg).ToArray(), true) / (double)WaveShort.Rates.Count);
       return corridor;
+    }
+
+    private int FftFrequencyReversed(double[] rates, bool reversed) {
+      alglib.complex[] bins;
+      var line = reversed ? rates.Regression(1) : new double[rates.Count()];
+      IEnumerable<double> ratesFft = rates;
+      if (reversed) ratesFft = ratesFft.Reverse();
+      alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
+      return bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).Skip(1).Take(5).Max();
     }
 
     private CorridorStatistics ScanCorridorByRsdMax(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
