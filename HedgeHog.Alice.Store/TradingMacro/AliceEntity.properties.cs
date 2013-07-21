@@ -1234,20 +1234,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #region DensityOk
-    private bool _DensityOk;
-    [Category(categoryCorridor)]
-    public bool DensityOk {
-      get { return _DensityOk; }
-      set {
-        if (_DensityOk != value) {
-          _DensityOk = value;
-          OnPropertyChanged("DensityOk");
-        }
-      }
-    }
-    
-    #endregion
 
     #region MaximumPositions
     [DisplayName("Maximum Positions")]
@@ -1288,15 +1274,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Adjust TimeframeBy Lot")]
-    [Description("Do Adjust Timeframe By Allowed Lot")]
-    [Category(categoryXXX)]
-    public bool DoAdjustTimeframeByAllowedLot_ {
+    [DisplayName("FFT Reversed")]
+    [Category(categoryActive)]
+    public bool FftReversed {
       get { return DoAdjustTimeframeByAllowedLot; }
       set {
         if (DoAdjustTimeframeByAllowedLot != value) {
           DoAdjustTimeframeByAllowedLot = value;
-          OnPropertyChanged(TradingMacroMetadata.DoAdjustTimeframeByAllowedLot_);
+          OnPropertyChanged("FttReversed");
         }
       }
     }
@@ -1428,7 +1413,9 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    partial void OnStDevTresholdIterationsChanged() {
+      OnPropertyChanged(() => PolyOrder);
+    }
     #endregion
 
     private double _TradeDistanceInPips;

@@ -612,12 +612,13 @@ namespace HedgeHog.Alice.Store {
         var watcherWaveStart = new ObservableValue<DateTime>(DateTime.MinValue);
         var watcherAngleSign = new ObservableValue<int>(0);
         var watcherTradeCounter = new ObservableValue<bool>(false, true);
-        var waveTradeOverTrigger = new ValueTrigger(false);
+        var waveTradeOverTrigger = new ValueTrigger<Unit>(false);
         var watcherReverseStrategy = new ObservableValue<bool>(false);
-        var triggerRsd = new ValueTrigger(false);
+        var triggerRsd = new ValueTrigger<Unit>(false);
+        var triggerFractal = new ValueTrigger<DateTime>(false);
         var rsdStartDate = DateTime.MinValue;
-        var corridorMoved = new ValueTrigger(false);
-        var positionTrigger = new ValueTrigger(false);
+        var corridorMoved = new ValueTrigger<Unit>(false);
+        var positionTrigger = new ValueTrigger<Unit>(false);
         double corridorLevel = double.NaN;
         double corridorAngle = 0;
         DateTime tradeCloseDate = DateTime.MaxValue;
@@ -965,8 +966,7 @@ namespace HedgeHog.Alice.Store {
                 } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
-                  if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  triggerRsd.Off();
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                 };
               }
               #endregion
@@ -974,18 +974,28 @@ namespace HedgeHog.Alice.Store {
                 var corridorRates = CorridorStats.Rates;
                 var priceHigh = _priceAvg;
                 var priceLow = _priceAvg;
-                Fractals = corridorRates.Fractals(PolyOrder < 6 ? corridorRates.Count / PolyOrder : PolyOrder, priceHigh, priceLow);
-                if (Fractals.Count == 2) {
-                  CenterOfMassBuy = Fractals[true].Average(priceHigh);
-                  CenterOfMassSell = Fractals[false].Average(priceLow);
-                  MagnetPrice = Fractals.SelectMany(f => f).Average(_priceAvg);
-                }
+                var polyOrder = (corridorRates.Select(_priceAvg).ToArray().FftFrequency(true) * 2).ToInt();
+                Fractals = corridorRates.Fractals(polyOrder < 6 ? corridorRates.Count / polyOrder : polyOrder, priceHigh, priceLow);
+                var voltage =  (10000.0 * Fractals.Count / corridorRates.Count).ToInt();
+                SetVoltage(RateLast, voltage);
+                var voltsAvg = 0.0;
+                var voltsStDev = RatesArray.ReverseIfNot().Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out voltsAvg);
+                GetVoltageAverage = () => voltsAvg;
+                GetVoltageHigh = () => voltsAvg + voltsStDev * 2;
+                var fractalsOk = Fractals.Select(f => f.Count()).Sum() == 0;
+                triggerFractal.Set(fractalsOk, CurrentPrice.Time);
                 var buySellHeight = CenterOfMassBuy - CenterOfMassSell;
                 {
                   var lengthOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
                   var angleOk = TradingAngleRange >= 0 ? CorridorAngle.Abs() > TradingAngleRange : CorridorAngle.Abs() < TradingAngleRange.Abs();
-                  var heightOk = buySellHeight < CorridorStats.HeightByRegression / CorrelationMinimum;
-                  triggerRsd.Set(lengthOk && angleOk && heightOk, () => {
+                  var heightOk = true;// buySellHeight < CorridorStats.HeightByRegression / CorrelationMinimum;
+                  var voltageOk = voltage >= GetVoltageHigh();
+                  triggerRsd.Set(lengthOk && angleOk && heightOk && voltageOk && triggerFractal.On, () => {
+                    triggerFractal.Off();
+                    var offset = CorridorStats.StDevByHeight;
+                    CenterOfMassBuy = RateLast.PriceAvg1 + offset;
+                    CenterOfMassSell = RateLast.PriceAvg1 - offset;
+                    MagnetPrice = Fractals.SelectMany(f => f).Average(_priceAvg);
                     _buyLevel.RateEx = CenterOfMassBuy;
                     _sellLevel.RateEx = CenterOfMassSell;
                     rsdStartDate = CurrentPrice.Time;
@@ -993,8 +1003,13 @@ namespace HedgeHog.Alice.Store {
                     if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = TradingAngleRange <= 0 || sr.IsBuy && CorridorAngle < 0 || sr.IsSell && CorridorAngle > 0);
                   });
                   triggerRsd.Off(lengthOk);
+                  if (!triggerFractal.Value.IsMin() && triggerFractal.Value.AddMinutes(BarsCount) < CurrentPrice.Time)
+                    triggerFractal.Off();
                 }
-                if (IsAutoStrategy && this.TakeProfitLimitRatio == 1 && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) {
+                if (IsAutoStrategy 
+                  && this.TakeProfitLimitRatio == 1 
+                  && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) 
+                {
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   CloseTrades("Trades start date");
                 }
@@ -1070,7 +1085,7 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                //Log = new Exception(new { CorridorDistanceRatio } + "");
+                Log = new Exception(new { DistanceIterations } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
               }
@@ -1082,12 +1097,7 @@ namespace HedgeHog.Alice.Store {
                 var fractal = Fractals.SelectMany(f => f).ToArray().FirstOrDefault();
                 var fractalOk = fractal != null && fractal.StartDate.Between(CorridorStats.StartDate.AddMinutes(-10), CorridorStats.StartDate.AddMinutes(10));
 
-                var volts = RatesArray.Select(r => GetVoltage(r)).SkipWhile(v => v.IsNaN()).ToArray();
-                double voltsAvg;
-                var voltsStdev = volts.StDev(out voltsAvg);
-                GetVoltageAverage = () => voltsAvg;
-                GetVoltageHigh = () => voltsAvg + voltsStdev;
-                var voltsOk = GetVoltage(RateLast) > GetVoltageAverage();
+                var voltsOk = GetVoltage(RateLast) > GetVoltageAverage() && GetVoltageAverage() > DistanceIterations;
                 var tradeOk = fractalOk && voltsOk;
                 triggerRsd.Set(tradeOk, () => {
                   CenterOfMassBuy = RateLast.PriceAvg2;
@@ -1102,6 +1112,8 @@ namespace HedgeHog.Alice.Store {
                   });
                 });
                 triggerRsd.Off(tradeOk);
+                if (GetVoltageAverage() < DistanceIterations)
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
               }
               adjustExitLevels0();
               break;

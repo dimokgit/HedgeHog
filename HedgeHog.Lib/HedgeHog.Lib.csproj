@@ -132,7 +132,6 @@
     <Compile Include="WindowModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyChangedExtenssion.cs" />
-    <Compile Include="Regression.cs" />
     <Compile Include="RSI.cs" />
     <Compile Include="Schedulers\Schedulers.cs" />
     <Compile Include="Volt.cs" />

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using HedgeHog;
+using System.Collections;
 
 namespace HedgeHog {
   public static class RelativeStDevStore {
@@ -53,6 +55,21 @@ namespace HedgeHog {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
 
+
+    public static double ComplexValue(this alglib.complex b) { return Math.Sqrt(b.x * b.x + b.y * b.y); }
+
+    public static double FftFrequency(this IEnumerable<double> signalIn, bool reversed) {
+      alglib.complex[] bins;
+      return signalIn.FftFrequency(reversed, out bins);
+    }
+    public static double FftFrequency(this IEnumerable<double> signalIn, bool reversed, out alglib.complex[] bins) {
+      double[] signal = signalIn as double[] ?? signalIn.ToArray();
+      var line = signal.ToArray().Regression(1);
+      IEnumerable<double> ratesFft = signal;
+      if (reversed) ratesFft = ratesFft.Reverse();
+      alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
+      return bins.Select(ComplexValue).Skip(1).Take(5).Max();
+    }
 
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);
@@ -356,27 +373,6 @@ namespace HedgeHog {
       return Math.Atan(tangent / divideBy) * (180 / Math.PI) / barMinutes;
     }
     public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
-
-    public static double LineSlope(this double[] coeffs) {
-      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
-      return coeffs[1];
-    }
-    public static double LineValue(this double[] coeffs) {
-      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
-      return coeffs[0];
-    }
-    public static double RegressionValue(this double[] coeffs, int i) {
-      double y = 0; int j = 0;
-      for (var ii = 0; ii < coeffs.Length; ii++)
-        y += coeffs[ii] * Math.Pow(i, ii);
-      //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
-      return y;
-    }
-    public static double[] RegressionValues(this double[] coeffs, int count) {
-      var values = new double[count];
-      Enumerable.Range(0, count).AsParallel().ForAll(i => values[i] = coeffs.RegressionValue(i));
-      return values;
-    }
 
     public static double StDevRatio(this IList<double> values) {
       var stDev = values.StDev();

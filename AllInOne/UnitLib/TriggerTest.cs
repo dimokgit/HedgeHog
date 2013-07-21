@@ -1,6 +1,7 @@
 ﻿using HedgeHog.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Reactive;
 
 namespace UnitLib
 {
@@ -65,7 +66,7 @@ namespace UnitLib
     ///</summary>
     [TestMethod()]
     public void TriggerConstructorTest() {
-      ValueTrigger target = new ValueTrigger(false);
+      var target = new ValueTrigger<Unit>(false);
       target.Set(false);
       Assert.IsFalse(target.On);
       target.Set(true);

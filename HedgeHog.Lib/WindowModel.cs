@@ -172,7 +172,7 @@ namespace HedgeHog.Models {
       set { this.SetAndNotify(ref this.name, value, () => this.Name); }
     }
   }
-  public class ValueTrigger {
+  public class ValueTrigger<T> {
     bool _on = false;
     public bool HasChangedToOn;
     private Action _actionOn;
@@ -182,10 +182,15 @@ namespace HedgeHog.Models {
       this._on = initialValue;
       this._actionOn = on;
     }
-    public ValueTrigger Set(bool on, Action onAction = null) {
+    public T Value;
+    public ValueTrigger<T> Set(bool on, T value) {
+      return Set(on,null,value);
+    }
+    public ValueTrigger<T> Set(bool on, Action onAction = null, T value = default(T)) {
       if (!_on) {
         _on = on;
         this.HasChangedToOn = on;
+        if (on) Value = value;
         if (on && onAction != null) onAction();
         if (on && _actionOn != null) _actionOn();
       }
@@ -196,7 +201,10 @@ namespace HedgeHog.Models {
       if (!on) Off(onOff);
     }
     public void Off(Action onOff = null) {
-      if (_on && onOff != null) onOff();
+      if (_on) {
+        Value = default(T);
+        if (onOff != null) onOff();
+      }
       _on = false;
     }
   }
