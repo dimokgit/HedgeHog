@@ -59,6 +59,7 @@
     <Compile Include="AlgLib\statistics.cs" />
     <Compile Include="MathExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Regression.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="EntityFramework.Preview.ReadMe.txt" />

@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace HedgeHog {
 
-  public static class Regression {
+  public static class RegressionExtenssions {
     static void LinearRegression(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
@@ -66,6 +66,91 @@ namespace HedgeHog {
       } 
       return MatrixNumeric.Regress(dZ, dY);
 
+    }
+
+    public static void SetRegressionPrice(this double[] coeffs, int start, int count, Action<int, double> a) {
+      Enumerable.Range(start, count).AsParallel().ForAll(i => a(i, coeffs.RegressionValue(i)));
+    }
+
+    /// <summary>
+    /// Get Line,Parabola etc.
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="polyOrder"></param>
+    /// <returns></returns>
+    public static double[] Regression(this double[] values, int polyOrder) {
+      double[] coeffs;
+      return values.Regression(polyOrder, out coeffs);
+    }
+    /// <summary>
+    /// Runs regression on values 
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="polyOrder"></param>
+    /// <param name="coeffs"></param>
+    /// <returns>Regression result values example:Line,Parabola</returns>
+    public static double[] Regression(this double[] values, int polyOrder, out double[] coeffs) {
+      coeffs = values.Regress(polyOrder);
+      var parabola = new double[values.Length];
+      coeffs.SetRegressionPrice(0, values.Length, (i, v) => parabola[i] = v);
+      return parabola;
+    }
+
+    /// <summary>
+    /// Get Line,Parabola etc.
+    /// </summary>
+    public static double[] Regression(this double[] values, int count, int polyOrder) {
+      double[] coeffs, prices;
+      return values.Regression(count, polyOrder, out coeffs, out prices);
+    }
+    /// <summary>
+    /// Get Line,Parabola etc.
+    /// </summary>
+    public static double[] Regression(this double[] values, int count, int polyOrder, out double[] coeffs) {
+      double[] prices;
+      return values.Regression(count, polyOrder, out coeffs, out prices);
+    }
+    /// <summary>
+    /// Get Line,Parabola etc.
+    /// </summary>
+    public static double[] Regression(this double[] values, int count, int polyOrder, out double[] coeffs, out double[] regressionSource) {
+      if (values.Length < count) throw new ArgumentException("[values] sise can not be less then [count]");
+      regressionSource = new double[count];
+      Array.Copy(values, regressionSource, count);
+      return regressionSource.Regression(polyOrder, out coeffs);
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="coeffs"></param>
+    /// <param name="i">Value position</param>
+    /// <returns>Regression value by position</returns>
+    public static double RegressionValue(this double[] coeffs, int i) {
+      double y = 0; int j = 0;
+      for (var ii = 0; ii < coeffs.Length; ii++)
+        y += coeffs[ii] * Math.Pow(i, ii);
+      //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
+      return y;
+    }
+    /// <summary>
+    /// Regression values from coeffs
+    /// </summary>
+    /// <param name="coeffs">Regression coeffs</param>
+    /// <param name="count">Zero-based number of values</param>
+    /// <returns></returns>
+    public static double[] RegressionValues(this double[] coeffs, int count) {
+      var values = new double[count];
+      ParallelEnumerable.Range(0, count).ForAll(i => values[i] = coeffs.RegressionValue(i));
+      return values;
+    }
+
+    public static double LineSlope(this double[] coeffs) {
+      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
+      return coeffs[1];
+    }
+    public static double LineValue(this double[] coeffs) {
+      if (coeffs.Length != 2) throw new IndexOutOfRangeException();
+      return coeffs[0];
     }
   }
   public class MatrixNumeric {

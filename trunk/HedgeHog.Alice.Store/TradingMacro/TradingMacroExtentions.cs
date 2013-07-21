@@ -2599,7 +2599,7 @@ namespace HedgeHog.Alice.Store {
               _levelCounts.Sort((t1, t2) => -t1.Item1.CompareTo(t2.Item1));
             },
             () => {
-              var coeffs = Regression.Regress(corridorRates.ReverseIfNot().Select(r => r.PriceAvg).ToArray(), 1);
+              var coeffs = corridorRates.ReverseIfNot().Select(r => r.PriceAvg).ToArray().Regress(1);
               var stDev = corridorRates.Select(r => (CorridorGetHighPrice()(r) - median).Abs()).ToList().StDev();
               crossedCorridor = new CorridorStatistics(this, corridorRates, stDev, coeffs);
             });
@@ -2624,7 +2624,7 @@ namespace HedgeHog.Alice.Store {
           var rateEnd = crossedRates[crossedRates.Count - 1];
           var corridorRates = reversed.Where(r => r.StartDate.Between(rateStart.StartDate, rateEnd.StartDate)).ToList();
           var stDev = corridorRates.Select(r => (CorridorGetHighPrice()(r) - levelMaxCross).Abs()).ToList().StDev();
-          var coeffs = Regression.Regress(corridorRates.ReverseIfNot().Select(r => r.PriceAvg).ToArray(), 1);
+          var coeffs = corridorRates.ReverseIfNot().Select(r => r.PriceAvg).ToArray().Regress(1);
           crossedCorridor = new CorridorStatistics(this, corridorRates, stDev, coeffs);
           //.ScanCorridorWithAngle(priceHigh, priceLow, ((int)BarPeriod).FromMinutes(), PointSize, CorridorCalcMethod); 
           #endregion
@@ -2728,7 +2728,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
-        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
+        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdFft;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
@@ -3160,7 +3160,6 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.StDevTresholdIterations:
         case TradingMacroMetadata.MovingAverageType:
         case TradingMacroMetadata.PriceCmaLevels:
-        case TradingMacroMetadata.PolyOrder:
           try {
             if (RatesArray.Any()) {
               RatesArray.Clear();

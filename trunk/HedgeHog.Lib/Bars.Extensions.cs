@@ -196,12 +196,12 @@ namespace HedgeHog.Bars {
       }
     }
     public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<int, double> writeTo) {
-      var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      var coeffs = ticks.Select(readFrom).ToArray().Regress( polyOrder);
       coeffs.SetRegressionPrice(0, ticks.Count(), writeTo);
       return coeffs;
     }
     public static double[] SetRegressionPrice1<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
-      var coeffs = Regression.Regress(ticks.Select(readFrom).ToArray(), polyOrder);
+      var coeffs = ticks.Select(readFrom).ToArray().Regress(polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
     }
@@ -992,7 +992,7 @@ namespace HedgeHog.Bars {
       foreach (var rate in ticks) {
         var period = TimeSpan.FromMinutes(5);
         var ticksToRegress = ticks.Where(period, rate).ToArray();
-        var coeffs = Regression.Regress(ticksToRegress.Select(t => t.PriceAvg).ToArray(), 1);
+        var coeffs = ticksToRegress.Select(t => t.PriceAvg).ToArray().Regress(1);
         if (!double.IsNaN(coeffs[1])) {
           var wd = (WaveDirection)Math.Sign(coeffs[1]);
           if (waveDirection != WaveDirection.None) {
@@ -1069,7 +1069,7 @@ namespace HedgeHog.Bars {
     /// <param name="bar">bar to fill with speed</param>
     /// <param name="pricer">lambda with price source</param>
     private static void FillSpeed<TBar>(this IEnumerable<TBar> bars, TBar bar, Func<TBar, double> price) where TBar : BarBase {
-      bar.PriceSpeed = HedgeHog.Regression.Regress(bars.Select(price).ToArray(),1)[1];
+      bar.PriceSpeed = bars.Select(price).ToArray().Regress(1)[1];
     }
 /// <summary>
 /// Max StDev for bars

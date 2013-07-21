@@ -113,6 +113,9 @@
     </Compile>
     <Compile Include="Classes.cs" />
     <Compile Include="ColoredSegment.cs" />
+    <Compile Include="CharterPlainControl.xaml.cs">
+      <DependentUpon>CharterPlainControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CS_4_0.cs">
       <DependentUpon>CS_4_0.tt</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -210,6 +213,10 @@
     <Page Include="CharterSnapshotControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CharterPlainControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="CursorH.xaml">
       <SubType>Designer</SubType>
