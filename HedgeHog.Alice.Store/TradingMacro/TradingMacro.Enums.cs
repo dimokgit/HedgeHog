@@ -7,6 +7,7 @@ namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Void = 0,
     HorizontalProbe = 10,
+    HorizontalProbe2 = 11,
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
@@ -58,7 +59,8 @@ namespace HedgeHog.Alice.Store {
     WaveTradeStartStDev = 28,
     RatesHeight_3 = 103,
     RatesHeight_4 = 104,
-    RatesHeight_5 = 105
+    RatesHeight_5 = 105,
+    Harmonic = 110
 
   }
   public enum CorridorHeightMethods {

@@ -8,6 +8,9 @@ namespace HedgeHog {
     public static Comparison<T> AsComparison<T>(this Func<T, T, int> lambda) {
       return new Comparison<T>(lambda);
     }
+    public static List<T> SortByLambda<T>(this List<T> list, Func<T, double> lambda) {
+      return list.SortByLambda((a, b) => (int)Math.Sign(lambda(a) - lambda(b)));
+    }
     public static List<T> SortByLambda<T>(this List<T> list, Func<T, T, bool> lambda) {
       list.SortByLambda((a, b) => a.Equals(b) ? 0 : lambda(a, b) ? -1 : 1);
       return list;

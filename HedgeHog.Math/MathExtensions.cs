@@ -63,12 +63,51 @@ namespace HedgeHog {
       return signalIn.FftFrequency(reversed, out bins);
     }
     public static double FftFrequency(this IEnumerable<double> signalIn, bool reversed, out alglib.complex[] bins) {
-      double[] signal = signalIn as double[] ?? signalIn.ToArray();
+      bins = (alglib.complex[])FftSignalBins(signalIn, reversed);
+      return bins.Select(ComplexValue).Skip(1).Take(5).Max();
+    }
+
+    public static IList<alglib.complex> FftSignalBins(this IEnumerable<double> signalIn, bool reversed = false) {
+      alglib.complex[] bins;
+      double[] signal = signalIn.SafeArray();
       var line = signal.ToArray().Regression(1);
       IEnumerable<double> ratesFft = signal;
       if (reversed) ratesFft = ratesFft.Reverse();
       alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
-      return bins.Select(ComplexValue).Skip(1).Take(5).Max();
+      return bins;
+    }
+    public static IList<alglib.complex> FftBins(this IEnumerable<double> values) {
+      alglib.complex[] bins;
+      alglib.fftr1d(values.SafeArray(), out bins);
+      return bins;
+    }
+    public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic) {
+      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      return bins.Take(1)
+        .Concat(repeat(harmonic - 1))
+        .Concat(new[] { bins[harmonic] })
+        .Concat(repeat(bins.Count - harmonic - 1))
+        .ToArray();
+    }
+
+    public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic, int range) {
+      var c = new alglib.complex(0);
+      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(c, count); };
+      return bins.Select((b, i) => {
+        if (i == 0) return b;
+        if (i < harmonic) return c;
+        if (i.Between(harmonic, harmonic + range - 1)) return b;
+        return c;
+      }).ToArray();
+    }
+
+    /// <summary>
+    /// If values is array returns values as T[], othervise values.ToArra()
+    /// </summary>
+    /// <param name="values"></param>
+    /// <returns></returns>
+    public static T[] SafeArray<T>(this IEnumerable<T> values) {
+      return values as T[] ?? values.ToArray();
     }
 
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
@@ -189,6 +228,13 @@ namespace HedgeHog {
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<T> signal,Func<T,double> getValue ) {
       Func<T, T, double> sign = (v1, v2) => Math.Sign(getValue(v1) - getValue(v2));
+      return list.Mash()
+        .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
+        .Where(a => a.signFirst != a.signSecond)
+        .Select(a => a.first);
+    }
+    public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
+      Func<T, double, double> sign = (v1, v2) => Math.Sign(getValue(v1) - v2);
       return list.Mash()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
         .Where(a => a.signFirst != a.signSecond)

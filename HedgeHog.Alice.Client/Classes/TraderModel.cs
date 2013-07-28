@@ -410,7 +410,6 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-
     public NotifyCollectionChangedWrapper<Order> orders { get; set; }
     public ListCollectionView OrdersList { get; set; }
 

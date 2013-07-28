@@ -2699,6 +2699,9 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
+        case TradingMacroTakeProfitFunction.Harmonic:
+          if (_harmonics == null || !_harmonics.Any()) throw new InvalidOperationException("Function " + function + " is using _harmonics that is empty.");
+          return InPoints(_harmonics.Select(h => h.Height).OrderByDescending(h => h).Take(2).Average());
         case TradingMacroTakeProfitFunction.BuySellLevels2:
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = _buyLevelRate - _sellLevelRate;
@@ -2735,6 +2738,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
+        case ScanCorridorFunction.HorizontalProbe2: return ScanCorridorByHorizontalLineCrosses2;
         case ScanCorridorFunction.Void: return ScanCorridorVoid;
       }
       throw new NotSupportedException(function + "");
@@ -2851,9 +2855,11 @@ namespace HedgeHog.Alice.Store {
       LimitAmount = limitAmount;
     }
 
+    private int MaxPipsToPMC() { return (TakeProfitPips * 2).ToInt(); }
+
     private int CalcLotSizeByPMC(Account account) {
       return TradingStatistics.TradingMacros == null ? 0
-        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall((InPips(TradingDistance)).ToInt(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
+        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall(MaxPipsToPMC(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -2862,7 +2868,8 @@ namespace HedgeHog.Alice.Store {
     }
     int LotSizeByLoss(double? lotMultiplierInPips = null) {
       var currentGross = this.TradingStatistics.CurrentGross;
-      var lotSize = LotSizeByLoss(TradesManager, currentGross, LotSize, lotMultiplierInPips ?? TradingDistanceInPips);
+      var lotSize = LotSizeByLoss(TradesManager, currentGross, LotSize,
+        lotMultiplierInPips ?? (TradingDistanceInPips * 2));
       return lotMultiplierInPips.HasValue || lotSize <= MaxLotSize || !CorridorFollowsPrice ? lotSize.Min(MaxLotSize) : LotSizeByLoss(TradesManager, currentGross, LotSize, RatesHeightInPips / _ratesHeightAdjustmentForAls).Max(MaxLotSize);
     }
 
