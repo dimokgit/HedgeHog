@@ -10,8 +10,9 @@
 				xmlns:hhmu="clr-namespace:HedgeHog.Markup;assembly=HedgeHog.Lib"
 				xmlns:charter="clr-namespace:HedgeHog;assembly=HedgeHog.Charter"
 				xmlns:l="clr-namespace:HedgeHog.Alice.Client"
+				xmlns:store="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
 				xmlns:hh="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
-        xmlns:newsCaster="clr-namespace:HedgeHog.UI;assembly=HedgeHog.NewsCaster.UI"
+				xmlns:newsCaster="clr-namespace:HedgeHog.UI;assembly=HedgeHog.NewsCaster.UI"
 				DataContext="{Binding RelativeSource={RelativeSource Self}}"
 				Left="{state:UserSettings Default=100}" Top="{state:UserSettings Default=100}"
 				Height="{state:UserSettings Default=200}" Width="{state:UserSettings Default=500}"
@@ -21,6 +22,7 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="UI/TradesOnServer.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
+			<store:GlobalStorage x:Key="GlobalStorage" />
 			<Style TargetType="{x:Type DataGridColumnHeader}" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
 				<Setter Property="FontWeight" Value="Black"/>
 			</Style>
@@ -30,11 +32,11 @@
 			<Style TargetType="{x:Type Label}" BasedOn="{StaticResource {x:Type Label}}">
 				<Setter Property="FontWeight" Value="Black"/>
 			</Style>
-      <DataTemplate x:Key="SnapshotTemplate">
-        <charter:CharterSnapshotControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
-      </DataTemplate>
+			<DataTemplate x:Key="SnapshotTemplate">
+				<charter:CharterSnapshotControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+			</DataTemplate>
 
-      <DataTemplate x:Key="CharterHeaderTemplate">
+			<DataTemplate x:Key="CharterHeaderTemplate">
 				<TextBlock DataContext="{Binding Content,RelativeSource={RelativeSource AncestorType=telerik:RadPane}}">
 					<TextBlock Text="{Binding Header}"
 										 Foreground="{Binding IsActive,ConverterParameter=Black|DarkRed|DarkGreen,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
@@ -186,25 +188,25 @@
 				</Grid>
 			</DataTemplate>
 
-      <!--Markets-->
-      <DataTemplate x:Key="MarketsTemplate">
-        <Grid Background="#FFF7F3F7">
-          <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding MarketsList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-            <DataGrid.RowStyle>
-              <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
-                <Setter Property="Background" Value="{Binding Status,Converter={x:Static Member=hh:CompareValueConverter.Default},ConverterParameter=Open|LightGray|#CCFF99}"/>
-              </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-              <DataGridTextColumn Header="Market" Binding="{Binding TimeZone}"/>
-              <DataGridTextColumn Header="Opens" Binding="{Binding Opens,StringFormat='dd HH:mm'}"/>
-              <DataGridTextColumn Header="Closes" Binding="{Binding Closes,StringFormat='dd HH:mm'}"/>
-            </DataGrid.Columns>
-          </DataGrid>
-        </Grid>
-      </DataTemplate>
+			<!--Markets-->
+			<DataTemplate x:Key="MarketsTemplate">
+				<Grid Background="#FFF7F3F7">
+					<DataGrid AutoGenerateColumns="False" ItemsSource="{Binding MarketsList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+						<DataGrid.RowStyle>
+							<Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+								<Setter Property="Background" Value="{Binding Status,Converter={x:Static Member=hh:CompareValueConverter.Default},ConverterParameter=Open|LightGray|#CCFF99}"/>
+							</Style>
+						</DataGrid.RowStyle>
+						<DataGrid.Columns>
+							<DataGridTextColumn Header="Market" Binding="{Binding TimeZone}"/>
+							<DataGridTextColumn Header="Opens" Binding="{Binding Opens,StringFormat='dd HH:mm'}"/>
+							<DataGridTextColumn Header="Closes" Binding="{Binding Closes,StringFormat='dd HH:mm'}"/>
+						</DataGrid.Columns>
+					</DataGrid>
+				</Grid>
+			</DataTemplate>
 
-      <!--Open Trades Title Template-->
+			<!--Open Trades Title Template-->
 			<DataTemplate x:Key="OpenTradesHeaderTemplate">
 				<Grid>
 					<Grid.ColumnDefinitions>
@@ -572,7 +574,7 @@
 			<telerik:RadSplitContainer InitialPosition="DockedBottom" Orientation="Horizontal">
 				<telerik:RadPaneGroup>
 
-          <telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
+					<telerik:RadPane Header="Log" Title="Log" CanUserClose="False" telerik:RadDocking.SerializationTag="Log" Name="Log">
 						<telerik:RadPane.ContentTemplate>
 							<DataTemplate>
 								<ScrollViewer Name="LogContainer" DataContext="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource TemplatedParentDataContextConverter}}" VerticalScrollBarVisibility="Auto">
@@ -582,20 +584,41 @@
 						</telerik:RadPane.ContentTemplate>
 					</telerik:RadPane>
 
-          <telerik:RadPane Header="Markets" ContentTemplate="{StaticResource MarketsTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="Markets" CanUserClose="False"/>
+					<telerik:RadPane Header="Table" Title="Table" CanUserClose="False" telerik:RadDocking.SerializationTag="Table" Name="Table">
+						<telerik:RadPane.ContentTemplate>
+						<DataTemplate>
+								<telerik:RadGridView CanUserSelect="False" IsSynchronizedWithCurrentItem="False" CanUserSortColumns="True" ShowGroupPanel="False" IsFilteringAllowed="False" RowIndicatorVisibility="Collapsed" RowHeight="16"
+										ItemsSource="{Binding GenericList,Source={StaticResource GlobalStorage}}" AutoGenerateColumns="True">
+                  <telerik:RadGridView.Resources>
+                    <Style TargetType="{x:Type telerik:GridViewCell}">
+                      <Setter Property="HorizontalAlignment" Value="Right"/>
+                    </Style>
+                  </telerik:RadGridView.Resources>
+                  <telerik:RadGridView.RowStyle>
+                    <Style TargetType="telerik:GridViewRow">
+                      <Setter Property="FontWeight" Value="{Binding FontWeight}" />
+                      <Setter Property="Background" Value="{Binding Color}" />
+                    </Style>
+                  </telerik:RadGridView.RowStyle>
+                </telerik:RadGridView>
+							</DataTemplate>
+						</telerik:RadPane.ContentTemplate>
+					</telerik:RadPane>
 
-          <telerik:RadPane Header="News" Title="News" CanUserClose="False" telerik:RadDocking.SerializationTag="News" Name="News">
-            <telerik:RadPane.ContentTemplate>
-              <DataTemplate>
-                <newsCaster:NewsCasterControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
-              </DataTemplate>
-            </telerik:RadPane.ContentTemplate>
-          </telerik:RadPane>
+					<telerik:RadPane Header="Markets" ContentTemplate="{StaticResource MarketsTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="Markets" CanUserClose="False"/>
 
-          <telerik:RadPane Header="Sbapshot" Title="Sbapshot" ContentTemplate="{StaticResource SnapshotTemplate}" CanUserClose="False" telerik:RadDocking.SerializationTag="Sbapshot" Name="Sbapshot">
-          </telerik:RadPane>
+					<telerik:RadPane Header="News" Title="News" CanUserClose="False" telerik:RadDocking.SerializationTag="News" Name="News">
+						<telerik:RadPane.ContentTemplate>
+							<DataTemplate>
+								<newsCaster:NewsCasterControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+							</DataTemplate>
+						</telerik:RadPane.ContentTemplate>
+					</telerik:RadPane>
 
-        </telerik:RadPaneGroup>
+					<telerik:RadPane Header="Sbapshot" Title="Sbapshot" ContentTemplate="{StaticResource SnapshotTemplate}" CanUserClose="False" telerik:RadDocking.SerializationTag="Sbapshot" Name="Sbapshot">
+					</telerik:RadPane>
+
+				</telerik:RadPaneGroup>
 			</telerik:RadSplitContainer>
 		</telerik:RadDocking>
 	</Grid>

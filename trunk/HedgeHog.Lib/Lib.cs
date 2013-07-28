@@ -82,6 +82,9 @@ namespace HedgeHog {
     public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
       return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
     }
+    public static T[] ToArray<T>(this IEnumerable<T> list,int dimention) {
+      return new T[dimention];
+    }
     public static ConcurrentQueue<T> ToConcurrentQueue<T>(this IEnumerable<T> list) {
       return new ConcurrentQueue<T>(list);
     }
@@ -172,6 +175,13 @@ namespace HedgeHog {
       foreach(T e in es)
         a(e);
     }
+    public static T FirstOrDefault<T>(this IEnumerable<T> v, T defaultValue) {
+      return v.Take(1).DefaultIfEmpty(defaultValue).Single();
+    }
+    public static TOut FirstOrDefault<TIn,TOut>(this IEnumerable<TIn> v, Func<TIn,TOut> projector,TOut defaultValue) {
+      return v.Take(1).Select(projector).DefaultIfEmpty(defaultValue).Single();
+    }
+
     /// <summary>
     /// 
     /// </summary>

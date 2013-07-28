@@ -174,7 +174,6 @@ namespace HedgeHog.Models {
   }
   public class ValueTrigger<T> {
     bool _on = false;
-    public bool HasChangedToOn;
     private Action _actionOn;
     public bool On { get { return _on; } }
     public ValueTrigger(bool initialValue) : this(initialValue, null) { }
@@ -184,17 +183,19 @@ namespace HedgeHog.Models {
     }
     public T Value;
     public ValueTrigger<T> Set(bool on, T value) {
-      return Set(on,null,value);
+      return Set(on, null, null, value);
     }
-    public ValueTrigger<T> Set(bool on, Action onAction = null, T value = default(T)) {
-      if (!_on) {
-        _on = on;
-        this.HasChangedToOn = on;
-        if (on) Value = value;
-        if (on && onAction != null) onAction();
-        if (on && _actionOn != null) _actionOn();
+    public ValueTrigger<T> Set(bool on, Action onAction = null, Action offAction = null, T value = default(T)) {
+      if (on && !_on) {
+        _on = true;
+        Value = value;
+        if (onAction != null) onAction();
+        if (_actionOn != null) _actionOn();
       }
-      this.HasChangedToOn = false;
+      if (!on && _on) {
+        _on = false;
+        if (offAction != null) offAction();
+      }
       return this;
     }
     public void Off(bool on, Action onOff = null) {

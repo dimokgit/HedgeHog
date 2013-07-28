@@ -14,6 +14,9 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
+using System.ComponentModel.DataAnnotations;
+using System.Windows.Media;
+using HedgeHog.Models;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -1082,10 +1085,217 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorVoid(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      WaveShort.Rates = null;
-      WaveShort.Rates = ratesForCorridor.ReverseIfNot();
+      alglib.complex[] bins = CalcFftStats(ratesForCorridor, PolyOrder);
+
+      var binAmps = bins.Skip(1).Take(bins.Length / 2).Select(b => Math.Log(b.ComplexValue())).ToArray();
+      var xs = Enumerable.Range(1, binAmps.Length).ToArray();
+      var binIndexes = xs.Select(i => Math.Log(i)).ToArray();
+      var binCoefs = binIndexes.Regress(binAmps, 1);
+      var slope = binCoefs.LineSlope();
+      var c = Math.Exp(binCoefs.LineValue());
+      Func<int, double> powerLine = x => c * Math.Pow(x, slope);
+      var powerBins = xs.Select(powerLine).ToArray();
+
+      var binAmplitudes = powerBins.Select((a, i) => new { a, i }).ToArray();
+      var binsLine = binAmplitudes.Select(a => a.a).ToArray().Regression(1);
+      var binCrosses = binAmplitudes.Crosses(binsLine, d => d.a).ToArray();
+
+      var binsTotal = bins.Skip(1).Take(1440).Select(MathExtensions.ComplexValue).ToArray().Sum();
+      var binHigh = powerBins.Take(binCrosses[0].i).Sum();
+      var binLow = powerBins.Skip(binCrosses[0].i).Sum();
+      var binRatio = binHigh / binLow;
+      SetVoltage(RateLast, binRatio);
+      var voltsAvg = 0.0;
+      var voltsStDev = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Where(v => !v.IsNaN()).ToArray().StDev(out voltsAvg);
+      GetVoltageAverage = () => voltsAvg;
+      GetVoltageHigh = () => voltsAvg - voltsStDev * 2;
+
+      
+      var corr = binCrosses[0].i;// binAmplitudes.TakeWhile(b => (binSum += b.a) < binsTotal).Count();
+
+      //Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      //var bins1 = bins.Take(corr).Concat(repeat(bins.Length - corr)).ToArray();
+      //double[] ifft;
+      //alglib.fftr1dinv(bins1, out ifft);
+      //Enumerable.Range(0, ifft.Length).ForEach(i => SetVoltage(ratesForCorridor[i], InPips(ifft[i])));
+
+      CorridorStDevRatioMax = powerBins.Take(binCrosses[0].i).Average();// binCrosses[0].i;
+      WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().Take(CorridorDistanceRatio.ToInt()).ToArray());
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
+
+    class Harmonic : Models.ModelBase {
+      #region Position
+      private double _Position;
+      [Display(Name = "Pos")]
+      public double Position {
+        get { return _Position; }
+        set {
+          if (_Position != value) {
+            _Position = value;
+            RaisePropertyChanged("Position");
+          }
+        }
+      }
+
+      #endregion
+      #region Minutes
+      private int _Minutes;
+      [Display(AutoGenerateField = false)]
+      public int Minutes {
+        get { return _Minutes; }
+        set {
+          if (_Minutes != value) {
+            _Minutes = value;
+            RaisePropertyChanged("Minutes");
+            RaisePropertyChanged("Hours");
+          }
+        }
+      }
+      #endregion
+      
+      [Display(Name = "Hrs")]
+      public double Hours { get { return (Minutes / 60.0).Round(1); } }
+      #region Height
+      private double _Height;
+      [Display(Name = "Hght")]
+      public double Height {
+        get { return _Height; }
+        set {
+          if (_Height != value) {
+            _Height = value;
+            RaisePropertyChanged("Height");
+          }
+        }
+      }
+
+      #endregion
+      #region InRange
+      private bool _InRange;
+      [Display(AutoGenerateField = false)]
+      public bool InRange {
+        get { return _InRange; }
+        set {
+          if (_InRange != value) {
+            _InRange = value;
+            RaisePropertyChanged("InRange");
+            RaisePropertyChanged("Color");
+          }
+        }
+      }
+      #endregion
+      #region IsAggregate
+      private bool _IsAggregate;
+      [Display(AutoGenerateField = false)]
+      public bool IsAggregate {
+        get { return _IsAggregate; }
+        set {
+          if (_IsAggregate != value) {
+            _IsAggregate = value;
+            RaisePropertyChanged("IsAggregate");
+            RaisePropertyChanged("FontWeight");
+          }
+        }
+      }
+      #endregion
+      string _Color = Colors.PowderBlue.ToString().Replace("#FF", "#52");
+      [Display(AutoGenerateField = false)]
+      public string Color {
+        get { return InRange ? _Color : ""; }
+      }
+      [Display(AutoGenerateField = false)]
+      public string FontWeight {
+        get { return IsAggregate ? "Bold" : "Normal"; }
+      }
+      public Harmonic() { }
+      public Harmonic(int position,int minutes,double height) {
+        this.Position = position;
+        this.Minutes = minutes;
+        this.Height = height;
+      }
+
+      public override string ToString() {
+        return new { Position, Hours, Height } + "";
+      }
+    }
+    
+    IList<Harmonic> _harmonics;
+    ValueTrigger<bool> _canTradeByHarmonicsTrigger = new ValueTrigger<bool>(false);
+    bool CanTradeByHarmonics() { return HarmonicsAverage < _harmonics.Count / 4.0; }
+
+    int _harmonicStartIndex = 0;
+    private CorridorStatistics ScanCorridorByHorizontalLineCrosses2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+
+      var binRates = ratesForCorridor;
+      var bins = binRates.Select(_priceAvg).FftSignalBins(false);
+      var frequencyRange = 20;
+      List<Harmonic> harmonics = new List<Harmonic>(new Harmonic[frequencyRange]);
+      double[][] iffts = new double[harmonics.Count][];
+      Func<double, double> calcMinutes = h => binRates.Count / h;
+      ParallelEnumerable.Range(0, harmonics.Count).ForAll(index => {
+        var harmonic = index + 1;
+        var minutes = calcMinutes(harmonic);
+        var rangeMin = minutes - 30;
+        var rangeMax = minutes + 30;
+        var range = Enumerable.Range(0, harmonics.Count).Where(i => calcMinutes(i).Between(rangeMin, rangeMax)).ToArray();
+        var bins1 = bins.FftHarmonic(range[0],range.Length);
+        double[] ifft;
+        alglib.fftr1dinv(bins1.SafeArray(), out ifft);
+        var height = ifft.Max();
+        harmonics[index] = new Harmonic(index, minutes.ToInt(), InPips(height).Round(1));
+        iffts[index] = ifft;
+      });
+      harmonics.SortByLambda(w => -w.Height);
+      var xxx1 = harmonics.AverageByIterations(w => w.Height, (w, v) => w >= v, PolyOrder).ToArray();
+      xxx1.ForEach(w => { w.InRange = true; });
+      var harmonicMain = harmonics.Where(w => w.Position > _harmonicStartIndex).ToArray()
+        .AverageByIterations(w => w.Height, (w, v) => w >= v, 2)
+        .OrderByDescending(w => w.Position).First();
+      harmonicMain.IsAggregate = true;
+      ParallelEnumerable.Range(0, binRates.Count).ForAll(i => SetVoltage(binRates[i], InPips(iffts[harmonicMain.Position.ToInt()][i])));
+      CorridorStDevRatioMax = harmonicMain.Hours * 60;
+      _harmonics = harmonics.ToArray();
+      HarmonicsAverage = harmonics.TakeWhile(w => w.InRange).Average(w => w.Position);
+      harmonics.Add(new Harmonic { Position = HarmonicsAverage.Round(1) });
+      GlobalStorage.Instance.ResetGenericList(harmonics);
+
+      double level = double.NaN;
+      var rates = !CanTradeByHarmonics() ? null
+        : CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), _priceAvg, CorridorDistanceRatio.ToInt(), out level);
+      var corridorOk = rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate >= CorridorStats.StartDate)
+        && (IsCorridorForwardOnly || MagnetPrice.IfNaN(0).Abs(level) > TradingDistance);
+      if (corridorOk) {
+        MagnetPrice = level;
+        WaveShort.ResetRates(rates);
+      } else if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
+        var dateStop = CorridorStats.Rates.LastBC().StartDate;
+        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray());
+      } else
+        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot());
+
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
+    private alglib.complex[] CalcFftStats(IList<Rate> corridorRates, int ifftSkpip) {
+      alglib.complex[] bins;
+      corridorRates.Select(_priceAvg).FftFrequency(false, out bins);
+      return bins;
+      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      //alglib.fftr1dinv(bins.Take(ifftSkpip).Concat(Enumerable.Repeat(new alglib.complex(0), bins.Length - ifftSkpip)).ToArray(), out ifft);
+      //var bins1 = new[] { bins.Take(1), NewMethod(ifftSkpip - 1), new[] { bins[ifftSkpip] }, NewMethod(bins.Length - ifftSkpip - 1) }
+      //  .SelectMany(b => b).ToArray();
+      var bins1 = new[] { bins.Take(1), repeat(ifftSkpip - 1), bins.Skip(ifftSkpip) }.SelectMany(b => b).ToArray();
+      double[] ifft;
+      alglib.fftr1dinv(bins1, out ifft);
+      //Enumerable.Range(0, corridorRates.Count).ForEach(i => SetVoltage(corridorRates[i], InPips(ifft[i])));
+      SetVoltage(RateLast, InPips(ifft.Select(v => v.Abs()).ToArray().AverageByIterations(-1).Average()));
+      var voltsAvg = 0.0;
+      var voltsStDev = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Where(v => !v.IsNaN()).ToArray().StDev(out voltsAvg);
+      GetVoltageAverage = () => voltsAvg;
+      GetVoltageHigh = () => voltsAvg - voltsStDev * 2;
+      return bins;
+    }
+
     public Func<double> GetVoltageHigh = () => 0;
     public Func<double> GetVoltageAverage = () => 0;
     public Func<Rate, double> GetVoltage = r => r.DistanceHistory;
@@ -1320,5 +1530,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    public double HarmonicsAverage { get; set; }
   }
 }

@@ -9,11 +9,25 @@ using System.Runtime.CompilerServices;
 using HedgeHog.Bars;
 using HedgeHog.DB;
 using System.Collections.ObjectModel;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Data.Objects;
+using System.Windows.Data;
+using NotifyCollectionChangedWrapper;
+using System.Reactive;
+using System.Reactive.Concurrency;
+using System.Threading;
 
 namespace HedgeHog.Alice.Store {
-  public class GlobalStorage {
+  public class GlobalStorage :Models.ModelBase{
+    static GlobalStorage _Instance;
+    public static GlobalStorage Instance {
+      get { return GlobalStorage._Instance; }
+      set {
+        if (GlobalStorage._Instance != null) throw new InvalidOperationException("GlobalStorage has already been instantiated.");
+        GlobalStorage._Instance = value; 
+      }
+    }
     static ForexEntities _forexContext;
     static AliceEntities _context;
     static object contextLocker = new object();
@@ -27,6 +41,73 @@ namespace HedgeHog.Alice.Store {
         return _databasePath; 
       }
       set { _databasePath = value; }
+    }
+
+    public class GenericRow<T> {
+      public int Index { get; set; }
+      public T Value { get; set; }
+      public GenericRow(int index, T value) {
+        this.Index = index;
+        this.Value = value;
+      }
+    }
+
+    public GlobalStorage() {
+      Instance = this;
+      //var list = new[] { new { Index = 1, Value = 48 } };
+      //SetGenericList(list);
+    }
+    private static ListCollectionView _GenericList { get; set; }
+
+    public ListCollectionView GenericList {
+      get { return GlobalStorage._GenericList; }
+      set {
+        GlobalStorage._GenericList = value;
+        RaisePropertyChangedCore();
+      }
+    }
+
+    public NotifyCollectionChangedWrapper<T> SetGenericList<T>(IEnumerable<T> list) {
+      var collectionWrapper = new NotifyCollectionChangedWrapper<T>(new ObservableCollection<T>(list));
+      GenericList = new ListCollectionView(collectionWrapper);
+      return collectionWrapper;
+    }
+    #region GenericList Subject
+    object _GenericListSubjectLocker = new object();
+    ISubject<Action> _GenericListSubject;
+    ISubject<Action> GenericListSubject {
+      get {
+        lock (_GenericListSubjectLocker)
+          if (_GenericListSubject == null) {
+            _GenericListSubject = new Subject<Action>();
+            _GenericListSubject
+              .Sample(0.5.FromSeconds())
+              //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
+              .Subscribe(s => s(), exc => { });
+          }
+        return _GenericListSubject;
+      }
+    }
+    void OnGenericList(Action p) {
+      GenericListSubject.OnNext(() => GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Action(p), System.Windows.Threading.DispatcherPriority.Background));
+    }
+    #endregion
+
+    object GenericListLocker = new object();
+    public void ResetGenericList<T>(IEnumerable<T> list) {
+      OnGenericList(() => {
+        lock (GenericListLocker) {
+          if (GenericList == null) SetGenericList(list);
+          else {
+            while (GenericList.Count > 0) GenericList.RemoveAt(0);
+            list.ForEach(l => {
+              GenericList.AddNewItem(l);
+              GenericList.CommitNew();
+            });
+            //GenericList.MoveCurrentToPosition(selectedIndex);
+          }
+        }
+      });
     }
 
     static ObservableCollection<string> _Instruments;// = new ObservableCollection<string>(defaultInstruments);

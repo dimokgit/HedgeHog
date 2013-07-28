@@ -238,10 +238,12 @@ namespace HedgeHog.UI {
       System.Reactive.Concurrency.DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
         if (News.Count == 0)
           FetchNews();
-        else if (News.Max(evt => evt.Event.Time).Date == DateTime.Now.Date)
-          FetchNews(DateTime.Now.Date.AddDays(1));
-        else UpdateNewsColor();
-
+        else {
+          var maxDate = News.Max(evt => evt.Event.Time).Date;
+          if (maxDate.DayOfWeek!= DayOfWeek.Friday && maxDate == DateTime.Now.Date)
+            FetchNews(DateTime.Now.Date.AddDays(1));
+          else UpdateNewsColor();
+        }
         a(1.FromMinutes());
       });
     }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using HedgeHog.Shared;
 using System.ComponentModel;
+using System.Windows.Data;
 
 namespace HedgeHog.Alice.Store {
   public abstract class TraderModelBase : HedgeHog.Models.ModelBase {
@@ -37,7 +38,24 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    ListCollectionView _RowsList;
 
+    public ListCollectionView RowsList {
+      get { return _RowsList; }
+      set { 
+        _RowsList = value;
+        RaisePropertyChanged("RowsList");
+      }
+    }
+
+  }
+  public class Row<T> {
+    public int Index { get; set; }
+    public T Value { get; set; }
+    public Row(int index, T value) {
+      Index = index;
+      Value = value;
+    }
   }
   public class TradingLogin {
     public string AccountId { get; set; }
