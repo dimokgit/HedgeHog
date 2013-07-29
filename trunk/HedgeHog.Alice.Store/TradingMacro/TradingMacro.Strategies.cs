@@ -336,6 +336,12 @@ namespace HedgeHog.Alice.Store {
               CloseAtZero = true;
         };
         #endregion
+        #region exitByHarmonic
+        Action exitByHarmonic = () => {
+          if ( CurrentGrossInPips >= _harmonics[0].Height )
+            CloseAtZero = true;
+        };
+        #endregion
         #region exitByGrossTakeProfit
         Func<bool> exitByGrossTakeProfit = () => 
           Trades.Lots() >= LotSize * ProfitToLossExitRatio && TradesManager.MoneyAndLotToPips(-currentGross(), LotSize, Pair) <= TakeProfitPips;
@@ -394,6 +400,7 @@ namespace HedgeHog.Alice.Store {
             case Store.ExitFunctions.GrossTP1: return exitByTakeProfit_1;
             case Store.ExitFunctions.Wavelette: return exitByWavelette;
             case Store.ExitFunctions.Limit: return exitByLimit;
+            case Store.ExitFunctions.Harmonic: return exitByHarmonic;
           }
           throw new NotSupportedException(ExitFunction + " exit function is not supported.");
         };
@@ -849,9 +856,10 @@ namespace HedgeHog.Alice.Store {
                   DoNews = false;
                   //Log = new Exception(new { } + "");
                   MagnetPrice = double.NaN;
+                  _canTradeByHarmonicsTrigger.Off();
                 }
                 #endregion
-                Func<Rate, double> price = r => r.PriceCMALast;
+                Func<Rate, double> price = _priceAvg;
                 if (CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange && !double.IsNaN(MagnetPrice)) {
                   double ratesAbove = double.NaN, ratesBellow = double.NaN;
                   var rates = CorridorStats.Rates.Select(price);
@@ -862,15 +870,26 @@ namespace HedgeHog.Alice.Store {
                     ).Wait();
                     MagnetPriceRatio = ratesAbove.Ratio(ratesBellow);
                     var offset = StDevByHeight.Max(StDevByPriceAvg);
-                    _buyLevel.RateEx = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
-                    _sellLevel.RateEx = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
+                    CenterOfMassBuy = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
+                    CenterOfMassSell = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                     Action<bool> setCatTrade = ct => { if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = ct); };
                     _canTradeByHarmonicsTrigger.Set(CanTradeByHarmonics(),
-                      () => SetCanTrade(true), 
-                      () => SetCanTrade(false));
-                    if (MagnetPriceRatio.ToInt() == 1) {
-                      if (Trades.Any()) CloseAtZero = true;
-                      if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                      () => {
+                        _buyLevel.RateEx = CenterOfMassBuy;
+                        _sellLevel.RateEx = CenterOfMassSell;
+                        SetCanTrade(true);
+                      });
+                    if (!_canTradeByHarmonicsTrigger.On) {
+                      SetCanTrade(false);
+                      if (Trades.GrossInPips() > _harmonics[1].Height)
+                        CloseAtZero = true;
+                    }
+                    if (false && MagnetPriceRatio.ToInt() == 1) {
+                      _canTradeByHarmonicsTrigger.Off();
+                      if (IsAutoStrategy) {
+                        if (Trades.Any()) CloseAtZero = true;
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                      }
                     }
                   }
                 }
