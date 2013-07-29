@@ -1221,7 +1221,7 @@ namespace HedgeHog.Alice.Store {
     
     IList<Harmonic> _harmonics;
     ValueTrigger<bool> _canTradeByHarmonicsTrigger = new ValueTrigger<bool>(false);
-    bool CanTradeByHarmonics() { return HarmonicsAverage < _harmonics.Count / 4.0; }
+    bool CanTradeByHarmonics() { return _harmonics.Count(h => h.InRange) > 2 && HarmonicsAverage <= 2; }
 
     int _harmonicStartIndex = 0;
     private CorridorStatistics ScanCorridorByHorizontalLineCrosses2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1235,8 +1235,8 @@ namespace HedgeHog.Alice.Store {
       ParallelEnumerable.Range(0, harmonics.Count).ForAll(index => {
         var harmonic = index + 1;
         var minutes = calcMinutes(harmonic);
-        var rangeMin = minutes - 30;
-        var rangeMax = minutes + 30;
+        var rangeMin = minutes - 15;
+        var rangeMax = minutes + 15;
         var range = Enumerable.Range(0, harmonics.Count).Where(i => calcMinutes(i).Between(rangeMin, rangeMax)).ToArray();
         var bins1 = bins.FftHarmonic(range[0],range.Length);
         double[] ifft;

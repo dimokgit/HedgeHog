@@ -93,7 +93,8 @@ namespace HedgeHog.Alice.Store {
     Wavelette = 5,
     GrossTP1 = 6,
     Limit = 7,
-    Friday = 8
+    Friday = 8,
+    Harmonic = 9
   }
   public enum MedianFunctions {
     Void = -1,
