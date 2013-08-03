@@ -29,7 +29,8 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TrailingWaveMethod {
     Magnet = 1,
-    Magnet2 = 2,
+    MagnetFft = 2,
+    Magnet2 = 3,
     CountWithAngle = 92,
     Count0 = 91,
     Wavelette = 93,
