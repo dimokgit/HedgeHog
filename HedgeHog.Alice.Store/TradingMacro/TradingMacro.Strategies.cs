@@ -849,7 +849,7 @@ namespace HedgeHog.Alice.Store {
               break;
             #endregion
             #region Magnet
-            case TrailingWaveMethod.Magnet: {
+            case TrailingWaveMethod.MagnetFft: {
                 #region firstTime
                 if (firstTime) {
                   LogTrades = false;
@@ -859,8 +859,8 @@ namespace HedgeHog.Alice.Store {
                   _canTradeByHarmonicsTrigger.Off();
                 }
                 #endregion
-                Func<Rate, double> price = _priceAvg;
                 if (CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange && !double.IsNaN(MagnetPrice)) {
+                  Func<Rate, double> price = _priceAvg;
                   double ratesAbove = double.NaN, ratesBellow = double.NaN;
                   var rates = CorridorStats.Rates.Select(price);
                   var ratesAboveBelow = rates.AsParallel().GroupBy(r => r.Sign(MagnetPrice) == 1 ? 1 : -1).ToArray();
@@ -869,7 +869,7 @@ namespace HedgeHog.Alice.Store {
                       Observable.Start(() => ratesBellow = ratesAboveBelow.SingleOrDefault(g => g.Key == -1).Average(r => -r + MagnetPrice))
                     ).Wait();
                     MagnetPriceRatio = ratesAbove.Ratio(ratesBellow);
-                    var offset = StDevByHeight.Max(StDevByPriceAvg);
+                    var offset = InPoints(_harmonics[0].Height);// StDevByHeight.Max(StDevByPriceAvg);
                     CenterOfMassBuy = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                     CenterOfMassSell = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                     Action<bool> setCatTrade = ct => { if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = ct); };
@@ -881,7 +881,7 @@ namespace HedgeHog.Alice.Store {
                       });
                     if (!_canTradeByHarmonicsTrigger.On) {
                       SetCanTrade(false);
-                      if (Trades.GrossInPips() > _harmonics[1].Height)
+                      if (Trades.GrossInPips() > _harmonics[0].Height)
                         CloseAtZero = true;
                     }
                     if (false && MagnetPriceRatio.ToInt() == 1) {
@@ -1136,6 +1136,30 @@ namespace HedgeHog.Alice.Store {
               break;
             #endregion
 
+            case TrailingWaveMethod.Magnet:
+              #region firstTime
+              if (firstTime) {
+                LogTrades = false;
+                Log = new Exception(new { CorrelationMinimum, WaveStDevRatio } + "");
+                MagnetPrice = double.NaN;
+              }
+              #endregion
+              if (CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange && !double.IsNaN(MagnetPrice)) {
+                Func<Rate, double> price = r => r.PriceCMALast;
+                var rates = CorridorStats.Rates.Select(price);
+                var ratesAboveBelow = rates.GroupBy(r => r.Sign(MagnetPrice)).ToArray();
+                var ratesAbove = ratesAboveBelow.Where(g => g.Key == 1).SingleOrDefault().Average(r => r - MagnetPrice);
+                var ratesBellow = ratesAboveBelow.Where(g => g.Key == -1).SingleOrDefault().Average(r => -r + MagnetPrice);
+                MagnetPriceRatio = ratesAbove.Ratio(ratesBellow);
+                if (ratesAbove.Min(ratesBellow) > 0 && MagnetPriceRatio > WaveStDevRatio) {
+                  var offset = CorridorStats.StDevByHeight * CorrelationMinimum;// rates.Average(r => r.Abs(MagnetPrice)) * 2;
+                  _buyLevel.RateEx = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
+                  _sellLevel.RateEx = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
+                }
+              }
+              adjustExitLevels0();
+              break;
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }
           if (firstTime) {
