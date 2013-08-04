@@ -588,7 +588,7 @@
 						<telerik:RadPane.ContentTemplate>
 						<DataTemplate>
 								<telerik:RadGridView CanUserSelect="False" IsSynchronizedWithCurrentItem="False" CanUserSortColumns="True" ShowGroupPanel="False" IsFilteringAllowed="False" RowIndicatorVisibility="Collapsed" RowHeight="16"
-										ItemsSource="{Binding GenericList,Source={StaticResource GlobalStorage}}" AutoGenerateColumns="True">
+										ItemsSource="{Binding GenericList,Source={x:Static store:GlobalStorage.Instance}}" AutoGenerateColumns="True">
                   <telerik:RadGridView.Resources>
                     <Style TargetType="{x:Type telerik:GridViewCell}">
                       <Setter Property="HorizontalAlignment" Value="Right"/>

@@ -2807,7 +2807,7 @@ namespace HedgeHog.Alice.Store {
         if (DoNews && RatesArray.Any())
           OnGeneralPurpose(() => {
             var dateStart = RatesArray[0].StartDate;
-            var dateEnd = RatesArray.LastBC().StartDate;
+            var dateEnd = RatesArray.LastBC().StartDate.AddHours(120);
             var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
             NewEventsCurrent.Except(newsEventsCurrent).ToList().ForEach(ne => NewEventsCurrent.Remove(ne));
             NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());

@@ -144,7 +144,7 @@ namespace HedgeHog.Alice.Store {
       var averageHour = avgHour;// harmonics.TakeWhile(w => w.InRange).Average(w => w.Hours);
       HarmonicsAverage = avgHeight;// harmonicAvg.Height;// harmonics.TakeWhile(w => w.InRange).Average(w => w.Height);
       harmonics.Add(new Harmonic(averageHour.Round(1), HarmonicsAverage.Round(1)));
-      GlobalStorage.Instance.ResetGenericList(harmonics);
+      GlobalStorage.Instance.ResetGenericList(_harmonics = harmonics);
 
       double level = double.NaN;
       var rates = !CanTradeByHarmonics() ? null
@@ -184,7 +184,7 @@ namespace HedgeHog.Alice.Store {
       return CalcHurmonicsAll(binRates, minutesMin, out invFfts);
     }
     private IList<Harmonic> CalcHurmonicsAll(IList<Rate> binRates, int minutesMin, out ConcurrentDictionary<int, double[]> invFfts) {
-      var bins = binRates.Select(_priceAvg).FftSignalBins(false);
+      var bins = binRates.Select(_priceAvg).FftSignalBins();
       var iffts = invFfts = "".ToConcurrentDictionary(a => 0, a => new double[0]);
       var harmonicHours = ParallelEnumerable.Range(1, binRates.Count).Where(i => binRates.Count / i >= minutesMin );
       var hq = new ConcurrentQueue<Harmonic>();
