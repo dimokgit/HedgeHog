@@ -556,8 +556,10 @@ namespace HedgeHog.Alice.Store {
         Action<double, double> adjustExitLevels = null;
         adjustExitLevels = (buyLevel, sellLevel) => {
           var tradesCount = Trades.Length;
-          if (buyLevel.Min(sellLevel) < .5)
-            Debugger.Break();
+          if (buyLevel.Min(sellLevel) < .5) {
+            Log = new Exception(new { buyLevel, sellLevel } + "");
+            return;
+          }
           Func<bool, double> r = isBuy => CalculateLastPrice(RateLast, GetTradeExitBy(isBuy));
           if (!sellCloseLevel.CanTrade && !buyCloseLevel.CanTrade) {
             if (tradesCount == 0) {
@@ -1023,10 +1025,9 @@ namespace HedgeHog.Alice.Store {
                   if (!triggerFractal.Value.IsMin() && triggerFractal.Value.AddMinutes(BarsCount) < CurrentPrice.Time)
                     triggerFractal.Off();
                 }
-                if (IsAutoStrategy 
-                  && this.TakeProfitLimitRatio == 1 
-                  && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) 
-                {
+                if (IsAutoStrategy
+                  && this.TakeProfitLimitRatio == 1
+                  && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) {
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   CloseTrades("Trades start date");
                 }
@@ -1083,17 +1084,20 @@ namespace HedgeHog.Alice.Store {
               if (firstTime) {
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                //Log = new Exception(new { CorridorDistanceRatio } + "");
+                Log = new Exception(new { WaveStDevRatio, TradingAngleRange } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
               }
               #endregion
-              CenterOfMassBuy = CorridorStats.Rates.Last().PriceAvg2;
-              CenterOfMassSell = CorridorStats.Rates.Last().PriceAvg3;
-              _buyLevel.RateEx = CenterOfMassBuy;
-              _sellLevel.RateEx = CenterOfMassSell;
-              if (IsAutoStrategy && CorridorAngle.Abs() < 1) _buySellLevelsForEach(sr => sr.CanTradeEx = true);
-              adjustExitLevels0();
+              {
+                _buyLevel.RateEx = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
+                _sellLevel.RateEx = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
+                var corridorLengthRatioOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
+                var angleOk = CorridorAngleFromTangent().Abs() > TradingAngleRange;
+                var canTrade = corridorLengthRatioOk && angleOk;
+                if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = canTrade);
+              }
+              adjustExitLevels1();
               break;
             #endregion
             #region FFT
@@ -1151,12 +1155,13 @@ namespace HedgeHog.Alice.Store {
                 var ratesAbove = ratesAboveBelow.Where(g => g.Key == 1).SingleOrDefault().Average(r => r - MagnetPrice);
                 var ratesBellow = ratesAboveBelow.Where(g => g.Key == -1).SingleOrDefault().Average(r => -r + MagnetPrice);
                 MagnetPriceRatio = ratesAbove.Ratio(ratesBellow);
-                if (ratesAbove.Min(ratesBellow) > 0 && MagnetPriceRatio > WaveStDevRatio) {
+                var maCrossesOk = GetVoltage(CorridorStats.Rates[0]) < GetVoltageHigh();
+                if (maCrossesOk) {
                   var offset = CorridorStats.StDevByHeight * CorrelationMinimum;// rates.Average(r => r.Abs(MagnetPrice)) * 2;
                   _buyLevel.RateEx = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                   _sellLevel.RateEx = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = IsAutoStrategy);
                 }
+                if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = maCrossesOk);
               }
               adjustExitLevels0();
               break;

@@ -158,42 +158,6 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
-    private CorridorStatistics ScanCorridorByFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
-
-      FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).ToInt();
-
-      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
-      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
-      Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
-        var date = CorridorStats.Rates.Last().StartDate;
-        return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
-      });
-      var lengthMax = !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value;
-      WaveShort.Rates = null;
-      WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
-        ? ratesReversed.Take(FttMax.Min(lengthMax)).ToArray()
-        : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
-      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-
-      SetVoltage(ratesReversed[0], WaveShort.Rates.Select(_priceAvg).FftFrequency(FftReversed) / (double)WaveShort.Rates.Count);
-      var volts = RatesArray.Select(r => GetVoltage(r)).SkipWhile(v => v.IsNaN()).ToArray();
-      double voltsAvg;
-      var voltsStdev = volts.StDev(out voltsAvg);
-      GetVoltageAverage = () => voltsAvg;
-      GetVoltageHigh = () => voltsAvg + voltsStdev;
-      return corridor;
-    }
-
-    private int FftFrequency_(double[] rates, bool reversed) {
-      alglib.complex[] bins;
-      var line = rates.Regression(1);
-      IEnumerable<double> ratesFft = rates;
-      if (reversed) ratesFft = ratesFft.Reverse();
-      alglib.fftr1d(ratesFft.Zip(line, (r, l) => r - l).ToArray(), out bins);
-      return bins.Select(b => Math.Sqrt(b.x * b.x + b.y * b.y).ToInt()).Skip(1).Take(5).Max();
-    }
-
     private CorridorStatistics ScanCorridorByRsdMax_New(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
       var distances = new List<double>();
@@ -693,9 +657,27 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorByHorizontalLineCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+
+      var minuteMin = 30;
+      var harmonics = CalcHurmonicsAll(ratesReversed,minuteMin ).ToList();
+      harmonics.SortByLambda(h => -h.Height);
+      CorridorStDevRatioMax = harmonics.Sum(h => h.Hours * h.Height) / harmonics.Sum(h => h.Height);
+      var heightAvg = harmonics.Average(h => h.Height);
+      var harmonic = harmonics.OrderBy(h => h.Height.Abs(heightAvg)).First();
+      harmonic.IsAggregate = true;
+      var harmonicPosition = (double)harmonics.IndexOf(harmonic);
+      var harmonicPositionRatio = harmonicPosition / harmonics.Count;
+      SetVoltage(ratesReversed[0], harmonicPositionRatio);
+      var maCrossesAvg = double.NaN;
+      var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
+      GetVoltageAverage = () => maCrossesAvg;
+      GetVoltageHigh = () => maCrossesAvg - maCrossesStDev;
+      //GlobalStorage.Instance.ResetGenericList(harmonics);
+
       WaveShort.Rates = null;
       double level;
-      var rates = CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), GetTradeEnterBy(), CorridorDistanceRatio.ToInt(), out level);
+      var rates = CorridorByVerticalLineCrosses2(ratesReversed, GetTradeEnterBy(), CorridorDistanceRatio.ToInt(), out level);
       if (rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate > CorridorStats.StartDate)) {
         MagnetPrice = level;
         WaveShort.Rates = rates;

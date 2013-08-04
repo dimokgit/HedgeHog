@@ -22,7 +22,7 @@ namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase{
     static GlobalStorage _Instance;
     public static GlobalStorage Instance {
-      get { return GlobalStorage._Instance; }
+      get { return GlobalStorage._Instance ?? (GlobalStorage._Instance = new GlobalStorage()); }
       set {
         if (GlobalStorage._Instance != null) throw new InvalidOperationException("GlobalStorage has already been instantiated.");
         GlobalStorage._Instance = value; 

@@ -87,6 +87,35 @@ namespace HedgeHog.Alice.Store {
   }
 
   public partial class TradingMacro {
+
+    private CorridorStatistics ScanCorridorByFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
+
+      FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).ToInt();
+
+      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
+      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
+      Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
+        var date = CorridorStats.Rates.Last().StartDate;
+        return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
+      });
+      var lengthMax = !IsCorridorForwardOnly || CorridorStats.StartDate.IsMin() ? int.MaxValue : lenghForwardOnly.Value;
+      WaveShort.Rates = null;
+      WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
+        ? ratesReversed.Take(FttMax.Min(lengthMax)).ToArray()
+        : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+
+      SetVoltage(ratesReversed[0], WaveShort.Rates.Select(_priceAvg).FftFrequency(FftReversed) / (double)WaveShort.Rates.Count);
+      var volts = RatesArray.Select(r => GetVoltage(r)).SkipWhile(v => v.IsNaN()).ToArray();
+      double voltsAvg;
+      var voltsStdev = volts.StDev(out voltsAvg);
+      GetVoltageAverage = () => voltsAvg;
+      GetVoltageHigh = () => voltsAvg + voltsStdev;
+      return corridor;
+    }
+
+
     IList<Harmonic> _harmonics;
     ValueTrigger<bool> _canTradeByHarmonicsTrigger = new ValueTrigger<bool>(false);
     bool CanTradeByHarmonics() {
@@ -149,6 +178,26 @@ namespace HedgeHog.Alice.Store {
         hq.Enqueue(new Harmonic(hour, InPips(height).Round(1)));
         iffts.TryAdd(hour, ifft);
       });
+    }
+    private IList<Harmonic> CalcHurmonicsAll(IList<Rate> binRates,int minutesMin) {
+      ConcurrentDictionary<int, double[]> invFfts;
+      return CalcHurmonicsAll(binRates, minutesMin, out invFfts);
+    }
+    private IList<Harmonic> CalcHurmonicsAll(IList<Rate> binRates, int minutesMin, out ConcurrentDictionary<int, double[]> invFfts) {
+      var bins = binRates.Select(_priceAvg).FftSignalBins(false);
+      var iffts = invFfts = "".ToConcurrentDictionary(a => 0, a => new double[0]);
+      var harmonicHours = ParallelEnumerable.Range(1, binRates.Count).Where(i => binRates.Count / i >= minutesMin );
+      var hq = new ConcurrentQueue<Harmonic>();
+      harmonicHours.ForAll(minute => {
+        var hour =((double)binRates.Count / minute).ToInt();
+        var bins1 = bins.FftHarmonic(minute);
+        double[] ifft;
+        alglib.fftr1dinv(bins1.SafeArray(), out ifft);
+        var height = ifft.Max();
+        hq.Enqueue(new Harmonic(hour, InPips(height).Round(1)));
+        iffts.TryAdd(hour, ifft);
+      });
+      return hq.ToArray();
     }
 
     private alglib.complex[] CalcFftStats(IList<Rate> corridorRates, int ifftSkpip) {
