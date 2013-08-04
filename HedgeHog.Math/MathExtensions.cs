@@ -78,7 +78,10 @@ namespace HedgeHog {
     }
     public static IList<alglib.complex> FftBins(this IEnumerable<double> values) {
       alglib.complex[] bins;
-      alglib.fftr1d(values.SafeArray(), out bins);
+      var signal = values.SafeArray();
+      var avg = signal.Average();
+      var line = Enumerable.Repeat(avg, signal.Length);
+      alglib.fftr1d(signal.Zip(line, (r, l) => r - l).ToArray(), out bins);
       return bins;
     }
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic) {

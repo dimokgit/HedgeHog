@@ -1082,20 +1082,33 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.Backdoor:
               #region firstTime
               if (firstTime) {
+                corridorMoved.Set(false);
+                corridorDate = DateTime.MinValue;
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
                 Log = new Exception(new { WaveStDevRatio, TradingAngleRange } + "");
                 MagnetPrice = double.NaN;
-                onCloseTradeLocal = t => { if (t.PL > 0)_buySellLevelsForEach(sr => sr.CanTradeEx = false); };
+                onCloseTradeLocal = t => {
+                  if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                };
               }
               #endregion
               {
-                _buyLevel.RateEx = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
-                _sellLevel.RateEx = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
-                var corridorLengthRatioOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
-                var angleOk = CorridorAngleFromTangent().Abs() > TradingAngleRange;
-                var canTrade = corridorLengthRatioOk && angleOk;
-                if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = canTrade);
+                var rates = RatesArray.SafeArray();
+                var voltMinIndex = rates.AsParallel().Select((r, i) => new { v = GetVoltage(r), i }).OrderBy(a => a.v).First().i;
+                var voltMinDate = rates[voltMinIndex].StartDate;
+                var voltageOk = GetVoltage(RateLast).IfNaN(GetVoltage(RatePrev)) < GetVoltageHigh();
+                corridorMoved.Set(_harmonics != null && voltageOk, () => {
+                  corridorDate = CurrentPrice.Time;
+                  var avg = CurrentPrice.Average;
+                  var stDev = InPoints(_harmonics[0].Height);
+                  var buy = avg + stDev;
+                  var sell = avg - stDev;
+                  _buyLevel.RateEx = buy;// RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
+                  _sellLevel.RateEx = sell;// RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
+                });
+                if (IsAutoStrategy) _buySellLevelsForEach(sr =>
+                  sr.CanTradeEx = corridorDate > CorridorStats.StartDate);
               }
               adjustExitLevels1();
               break;
@@ -1148,22 +1161,33 @@ namespace HedgeHog.Alice.Store {
                 MagnetPrice = double.NaN;
               }
               #endregion
-              if (CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange && !double.IsNaN(MagnetPrice)) {
+              var newsOk = !IsAutoStrategy || !NewEventsCurrent.ToArray().Any(n => n.Level == NewsCaster.NewsEventLevel.H && n.Time.Between(CurrentPrice.Time.AddMinutes(-90), CurrentPrice.Time.AddMinutes(90)));
+              if (newsOk && CorridorAngleFromTangent().Abs().ToInt() <= TradingAngleRange && !double.IsNaN(MagnetPrice)) {
                 Func<Rate, double> price = r => r.PriceCMALast;
                 var rates = CorridorStats.Rates.Select(price);
                 var ratesAboveBelow = rates.GroupBy(r => r.Sign(MagnetPrice)).ToArray();
                 var ratesAbove = ratesAboveBelow.Where(g => g.Key == 1).SingleOrDefault().Average(r => r - MagnetPrice);
                 var ratesBellow = ratesAboveBelow.Where(g => g.Key == -1).SingleOrDefault().Average(r => -r + MagnetPrice);
                 MagnetPriceRatio = ratesAbove.Ratio(ratesBellow);
-                var maCrossesOk = GetVoltage(CorridorStats.Rates[0]) < GetVoltageHigh();
+                var maCrossesOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
                 if (maCrossesOk) {
-                  var offset = CorridorStats.StDevByHeight * CorrelationMinimum;// rates.Average(r => r.Abs(MagnetPrice)) * 2;
+                  var offset = InPoints(_harmonics[0].Height);// CorridorStats.StDevByHeight* CorrelationMinimum;// rates.Average(r => r.Abs(MagnetPrice)) * 2;
                   _buyLevel.RateEx = MagnetPrice + ratesAbove.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                   _sellLevel.RateEx = MagnetPrice - ratesBellow.ValueByPosition(0, ratesAbove + ratesBellow, 0, offset);
                 }
-                if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = maCrossesOk);
+                if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = VoltageCurrent > GetVoltageAverage());
               }
-              adjustExitLevels0();
+              if (!newsOk && Trades.Any()) {
+                Log = new Exception("Exit trades on news");
+                CloseAtZero = true;
+              }
+              Func<IEnumerable<double>> rateSynceTrade = () => {
+                var d = Trades.Max(t => t.Time);
+                return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate > d).Select(_priceAvg).DefaultIfEmpty(double.NaN);
+              };
+              var buyLevel = Trades.HaveBuy() ? rateSynceTrade().Min() : double.NaN;
+              var sellLevel = Trades.HaveSell() ? rateSynceTrade().Max() : double.NaN;
+              adjustExitLevels(buyLevel, sellLevel);
               break;
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }

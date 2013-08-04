@@ -668,12 +668,12 @@ namespace HedgeHog.Alice.Store {
       harmonic.IsAggregate = true;
       var harmonicPosition = (double)harmonics.IndexOf(harmonic);
       var harmonicPositionRatio = harmonicPosition / harmonics.Count;
-      SetVoltage(ratesReversed[0], harmonicPositionRatio);
+      SetVoltage(ratesReversed[0], 2 * CorridorDistanceRatio / ratesForCorridor.Count);
       var maCrossesAvg = double.NaN;
       var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
       GetVoltageAverage = () => maCrossesAvg;
-      GetVoltageHigh = () => maCrossesAvg - maCrossesStDev;
-      //GlobalStorage.Instance.ResetGenericList(harmonics);
+      GetVoltageHigh = () => maCrossesAvg - maCrossesStDev * 2;
+      GlobalStorage.Instance.ResetGenericList(_harmonics = harmonics);
 
       WaveShort.Rates = null;
       double level;
@@ -1094,6 +1094,7 @@ namespace HedgeHog.Alice.Store {
     public Func<double> GetVoltageHigh = () => 0;
     public Func<double> GetVoltageAverage = () => 0;
     public Func<Rate, double> GetVoltage = r => r.DistanceHistory;
+    double VoltageCurrent { get { return  GetVoltage(RateLast); } }
     public Action<Rate, double> SetVoltage = (r, v) => r.DistanceHistory = v;
     public Func<Rate, double> GetVoltage2 = r => r.Distance1;
     public Action<Rate, double> SetVoltage2 = (r, v) => r.Distance1 = v;
