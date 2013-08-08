@@ -184,7 +184,7 @@ namespace HedgeHog.Alice.Store {
       return CalcHurmonicsAll(binRates, minutesMin, out invFfts);
     }
     private IList<Harmonic> CalcHurmonicsAll(IList<Rate> binRates, int minutesMin, out ConcurrentDictionary<int, double[]> invFfts) {
-      var bins = binRates.Select(_priceAvg).FftSignalBins();
+      var bins = binRates.Select(_priceAvg).FftBins();
       var iffts = invFfts = "".ToConcurrentDictionary(a => 0, a => new double[0]);
       var harmonicHours = ParallelEnumerable.Range(1, binRates.Count).Where(i => binRates.Count / i >= minutesMin );
       var hq = new ConcurrentQueue<Harmonic>();
