@@ -3717,7 +3717,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region RatesRsd
-    public double RatesRsd { get { return StDevByPriceAvg / RatesHeight; } }
+    public double RatesRsd { get { return RatesHeight / StDevByPriceAvg; } }
     #endregion
 
     #region StDevByPriceAvg

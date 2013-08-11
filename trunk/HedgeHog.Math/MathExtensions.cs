@@ -243,6 +243,51 @@ namespace HedgeHog {
         .Where(a => a.signFirst != a.signSecond)
         .Select(a => a.first);
     }
+    /// <summary>
+    /// Find crossed elements of array over <paramref name="signal"/>
+    /// </summary>
+    /// <param name="list"></param>
+    /// <param name="signal"></param>
+    /// <returns>Elements at cross point </returns>
+    public static IEnumerable<double> Crosses2(this IList<double> list, IList<double> signal) {
+      return list.Mash()
+        .Zip(signal, (m, s) => new { signFirst = Math.Sign(m.Item1 - s), signSecond = Math.Sign(m.Item2 - s), first = m.Item1 })
+        .Where(a => a.signFirst != a.signSecond)
+        .Select(a => a.first);
+    }
+
+    public static double CrossesAverageRatio(this IList<double> rates, double step,int averageIterations) {
+      return rates.CrossesAverage(step, averageIterations) / (double)rates.Count;
+    }
+    public static double CrossesAverage(this IList<double> rates, double step, int averageIterations) {
+      var min = rates.Min();
+      var max = rates.Max();
+      var height = max - min;
+      var linesCount = (height / step).ToInt();
+      var levels = ParallelEnumerable.Range(0, linesCount).Select(level => min + level * step);
+      return levels.Aggregate(new List<double>(), (list, level) => {
+        var line = Enumerable.Repeat(level, rates.Count).ToArray();
+        var crosses = rates.Crosses2(line).Count();
+        list.Add(crosses);
+        return list;
+      }, list => list.AverageByIterations(averageIterations).Average());
+    }
+
+    public static double CrossesAverageByRegression(this IList<double> rates,double step) {
+      var regressionLine = rates.Regression(1);
+      var zipped = regressionLine.Zip(rates, (l, r) => r - l).ToArray();
+      var min = zipped.Min();
+      var max = zipped.Max();
+      var height = max - min;
+      var point = step;
+      var offsets = ParallelEnumerable.Range(0, (height/step).ToInt()).Select(h => min + h * step);
+      return offsets.Aggregate(new List<double>(), (list, offset) => {
+        var line = regressionLine.Select(p => p + offset).ToArray();
+        var crosses = rates.Crosses2(line).Count();
+        list.Add(crosses);
+        return list;
+      }, list => list.AverageByIterations(1).Average());
+    }
 
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
       var sin = new double[waveLength];
@@ -621,6 +666,9 @@ namespace HedgeHog {
     #region Between
     public static bool Between(this int value, double d1, double d2) {
       return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
+    }
+    public static bool Between(this double value, double[] dd) {
+      return value.Between(dd[0], dd[1]);
     }
     public static bool Between(this double value, double d1, double d2) {
       return d1 < d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;

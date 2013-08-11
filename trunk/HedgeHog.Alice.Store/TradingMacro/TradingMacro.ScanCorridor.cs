@@ -660,7 +660,7 @@ namespace HedgeHog.Alice.Store {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
 
       var minuteMin = 30;
-      var harmonics = CalcHurmonicsAll(ratesReversed,minuteMin ).ToList();
+      var harmonics = CalcHurmonicsAll(ratesReversed, minuteMin).ToList();
       harmonics.SortByLambda(h => -h.Height);
       CorridorStDevRatioMax = harmonics.Sum(h => h.Hours * h.Height) / harmonics.Sum(h => h.Height);
       var heightAvg = harmonics.Average(h => h.Height);
@@ -668,28 +668,64 @@ namespace HedgeHog.Alice.Store {
       harmonic.IsAggregate = true;
       var harmonicPosition = (double)harmonics.IndexOf(harmonic);
       var harmonicPositionRatio = harmonicPosition / harmonics.Count;
-      SetVoltage(ratesReversed[0], 2 * CorridorDistanceRatio / ratesForCorridor.Count);
-      var maCrossesAvg = double.NaN;
-      var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
-      GetVoltageAverage = () => maCrossesAvg;
-      GetVoltageHigh = () => maCrossesAvg - maCrossesStDev * 2;
       GlobalStorage.Instance.ResetGenericList(_harmonics = harmonics);
 
-      WaveShort.Rates = null;
-      double level;
-      var rates = CorridorByVerticalLineCrosses2(ratesReversed, GetTradeEnterBy(), CorridorDistanceRatio.ToInt(), out level);
-      if (rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate > CorridorStats.StartDate)) {
-        MagnetPrice = level;
-        WaveShort.Rates = rates;
+      WaveShort.ResetRates(ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray());
+
+      var cmaPeriods = 10;
+      var crossAverageIterations = 1;
+      var wavePrices = WaveShort.Rates.Select(_priceAvg).ToArray();
+      var crosssesRatio = wavePrices.CrossesAverageRatio(InPoints(1), crossAverageIterations);
+      SetVoltage(ratesReversed[0], GetVoltage(ratesReversed[1]).Cma(cmaPeriods, crosssesRatio));
+      if (GetVoltage(ratesReversed[wavePrices.Count()]).IsNaN()) {
+        var pricesReversed = ratesReversed.Select(_priceAvg).ToArray();
+        ParallelEnumerable.Range(1, ratesForCorridor.Count - wavePrices.Count())
+          .ForAll(index => {
+            var prices = new double[wavePrices.Count()];
+            Array.Copy(pricesReversed, index, prices, 0, prices.Length);
+            var cr = prices.CrossesAverageRatio(InPoints(1), crossAverageIterations);
+            SetVoltage(ratesReversed[index], GetVoltage(ratesReversed[index - 1]).Cma(cmaPeriods, cr));
+          });
       }
-      if (!WaveShort.HasRates) {
-        if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
-          var dateStop = CorridorStats.Rates.LastBC().StartDate;
-          WaveShort.Rates = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray();
-        } else
-          WaveShort.Rates = ratesForCorridor.ReverseIfNot();
-      }
+      //SetVoltage(ratesReversed[0], 2 * CorridorDistanceRatio / ratesForCorridor.Count);
+
+      //var maCrossesAvg = double.NaN;
+      //var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
+      //var avg = (ratesForCorridor.Max(GetVoltage) + ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Min()) / 2;
+      var volts = ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
+      var avg = volts.Average();
+      Custom1 = avg * 1000;
+      GetVoltageAverage = () => avg;
+      GetVoltageHigh = () => volts.AverageByIterations(CorrelationMinimum).Average();
+      
+
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
+    private double CrossesAverage(IList<Rate> rates) {
+      var levels = ParallelEnumerable.Range(0, InPips(RatesHeight).ToInt()).Select(level => _RatesMin + InPoints(level));
+      return levels.Aggregate(new List<double>(), (list, level) => {
+        var line = Enumerable.Repeat(level, rates.Count).ToArray();
+        var crosses = rates.Crosses(line, _priceAvg).Count();
+        list.Add(crosses);
+        return list;
+      }, list => list.AverageByIterations(1).Average());
+    }
+
+    private double CrossesAverageByRegression(IList<Rate> rates) {
+      var regressionLine = rates.Select(_priceAvg).ToArray().Regression(1);
+      var zipped = regressionLine.Zip(rates, (l, r) => r.PriceAvg - l).ToArray();
+      var min = zipped.Min();
+      var max = zipped.Max();
+      var height = max - min;
+      var point = InPoints(1);
+      var offsets = ParallelEnumerable.Range(0, InPips(height).ToInt()).Select(h => min + h * point);
+      return offsets.Aggregate(new List<double>(), (list, offset) => {
+        var line = regressionLine.Select(p => p + offset).ToArray();
+        var crosses = rates.Crosses(line, _priceAvg).Count();
+        list.Add(crosses);
+        return list;
+      }, list => list.AverageByIterations(1).Average());
     }
 
     private CorridorStatistics ScanCorridorByParabola_2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1328,5 +1364,19 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     public double HarmonicsAverage { get; set; }
+
+    #region Custom1
+    private double _Custom1;
+    public double Custom1 {
+      get { return _Custom1; }
+      set {
+        if (_Custom1 != value) {
+          _Custom1 = value;
+          OnPropertyChanged("Custom1");
+        }
+      }
+    }
+
+    #endregion
   }
 }
