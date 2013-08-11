@@ -273,20 +273,23 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
-    public static double CrossesAverageByRegression(this IList<double> rates,double step) {
+    public static double CrossesAverageRatioByRegression(this IList<double> rates, double step, int averageIterations) {
+      return rates.CrossesAverageByRegression(step, averageIterations) / (double)rates.Count;
+    }
+    public static double CrossesAverageByRegression(this IList<double> rates, double step, int averageIterations) {
       var regressionLine = rates.Regression(1);
       var zipped = regressionLine.Zip(rates, (l, r) => r - l).ToArray();
       var min = zipped.Min();
       var max = zipped.Max();
       var height = max - min;
       var point = step;
-      var offsets = ParallelEnumerable.Range(0, (height/step).ToInt()).Select(h => min + h * step);
+      var offsets = ParallelEnumerable.Range(0, (height / step).ToInt()).Select(h => min + h * step);
       return offsets.Aggregate(new List<double>(), (list, offset) => {
         var line = regressionLine.Select(p => p + offset).ToArray();
         var crosses = rates.Crosses2(line).Count();
         list.Add(crosses);
         return list;
-      }, list => list.AverageByIterations(1).Average());
+      }, list => list.AverageByIterations(averageIterations).Average());
     }
 
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
