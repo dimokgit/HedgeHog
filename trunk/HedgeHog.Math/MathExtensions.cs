@@ -113,6 +113,15 @@ namespace HedgeHog {
       return values as T[] ?? values.ToArray();
     }
 
+    /// <summary>
+    /// Ratio between Max(a,b)/Min(a,b)
+    /// </summary>
+    /// <param name="v"></param>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public static double Ratio(this double v, double other) {
+      return v > other ? v / other : other / v;
+    }
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);
     }
@@ -229,7 +238,11 @@ namespace HedgeHog {
     public static IEnumerable<Tuple<T, T>> Mash<T>(this IList<T> list) {
       return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T>(f, s));
     }
-    public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<T> signal,Func<T,double> getValue ) {
+    public static IEnumerable<Tuple<T, T,int>> MashWithIndex<T>(this IList<T> list) {
+      var index = 0;
+      return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T, int>(f, s, index++));
+    }
+    public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<T> signal, Func<T, double> getValue) {
       Func<T, T, double> sign = (v1, v2) => Math.Sign(getValue(v1) - getValue(v2));
       return list.Mash()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1 })
@@ -254,6 +267,14 @@ namespace HedgeHog {
         .Zip(signal, (m, s) => new { signFirst = Math.Sign(m.Item1 - s), signSecond = Math.Sign(m.Item2 - s), first = m.Item1 })
         .Where(a => a.signFirst != a.signSecond)
         .Select(a => a.first);
+    }
+
+    public static IEnumerable<Tuple<double,int>> CrossesWithIndex(this IList<double> list, IList<double> signal) {
+      Func<double, double, int> sign = (d1, d2) => { var s = Math.Sign(d1 - d2); return s >= 0 ? 1 : -1; };
+      return list.MashWithIndex()
+        .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1, index = m.Item3 })
+        .Where(a => a.signFirst != a.signSecond)
+        .Select(a => new Tuple<double, int>(a.first, a.index));
     }
 
     public static double CrossesAverageRatio(this IList<double> rates, double step,int averageIterations) {
@@ -292,6 +313,38 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
+    public static double Edge(this double[] values,double step) {
+      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
+      var frame = 10;
+      var min = values.Min();
+      var max = values.Max();
+      var height = max - min;
+      var linesCount = (height / step).ToInt();
+      var levels = ParallelEnumerable.Range(0, linesCount).Select(level => min + level * step).ToArray();
+      return levels.Aggregate(new[] { new { level = 0.0, ratioAvg = 0.0 } }.Take(0).ToList(), (list, level) => {
+        var line = Enumerable.Repeat(level, values.Count()).ToArray();
+        var crosses = values.CrossesWithIndex(line).ToList();
+        if (crosses.Any()) {
+          var indexRatios = crosses.Aggregate(new[] { new { index = 0, ratio = 0.0 } }.Take(0).ToList(), (l, t) => {
+            var frameValues = new double[frame];
+            var index = t.Item2;
+            var indexStart = Math.Min(Math.Max(index - frame / 2, 0), values.Count() - frame - 1);
+            Array.Copy(values, indexStart, frameValues, 0, frame);
+            var upDowns = frameValues.Select(v => v - level).GroupBy(v => Math.Sign(v)).ToArray();
+            var a = upDowns.Select(g => new { key = g.Key, sum = Math.Abs(g.Sum()) }).ToArray();
+            var ups = a.FirstOrDefault(g => g.key == 1);
+            var downs = a.FirstOrDefault(g => g.key == -1);
+            var ratio = ups == null || downs == null ? 0 : calcRatio(ups.sum, downs.sum);
+            l.Add(new { index, ratio });
+            return l;
+          });
+          var ratioAvg = indexRatios.Average(a => a.ratio);
+          list.Add(new { level, ratioAvg });
+        }
+        return list;
+      }, list => list.OrderBy(l => l.ratioAvg).First().level);
+
+    }
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;

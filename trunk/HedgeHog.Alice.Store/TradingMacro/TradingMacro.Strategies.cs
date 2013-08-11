@@ -1172,8 +1172,10 @@ namespace HedgeHog.Alice.Store {
                 var avg = RatesArray.Average(_priceAvg);
                 var height = StDevByHeight;
                 var spread = PriceSpreadAverage.GetValueOrDefault(0);
-                var upper = new[] { _RatesMax + spread, _RatesMax - height };
-                var lower = new[] { _RatesMin - spread, _RatesMin + height };
+                var ratesMax = CorridorStats.RatesMax;
+                var ratesMin = CorridorStats.RatesMin;
+                var upper = new[] { ratesMax + spread, ratesMax - height };
+                var lower = new[] { ratesMin - spread, ratesMin + height };
                 var isUp = CurrentPrice.Average >= avg;
                 var lowper = isUp ? upper : lower;
                 CenterOfMassBuy = lowper.Max();

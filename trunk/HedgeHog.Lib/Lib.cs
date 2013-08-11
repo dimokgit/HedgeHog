@@ -729,15 +729,6 @@ namespace HedgeHog {
     public static int Sign(this double v, double other) {
       return Math.Sign(v - other);
     }
-    /// <summary>
-    /// Ratio between Max(a,b)/Min(a,b)
-    /// </summary>
-    /// <param name="v"></param>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public static double Ratio(this double v, double other) {
-      return v > other ? v / other : other / v;
-    }
     public static double Max(this double? v, double? other) {
       return !v.HasValue ? other.GetValueOrDefault(double.NaN) : !other.HasValue ? v.GetValueOrDefault(double.NaN) : Math.Max(v.Value, other.Value);
     }
