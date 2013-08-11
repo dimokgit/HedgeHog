@@ -673,9 +673,9 @@ namespace HedgeHog.Alice.Store {
       WaveShort.ResetRates(ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray());
 
       var cmaPeriods = 10;
-      var crossAverageIterations = 1;
+      var crossAverageIterations = PolyOrder;
       var wavePrices = WaveShort.Rates.Select(_priceAvg).ToArray();
-      var crosssesRatio = wavePrices.CrossesAverageRatio(InPoints(1), crossAverageIterations);
+      var crosssesRatio = wavePrices.CrossesAverageRatioByRegression(InPoints(1), crossAverageIterations);
       SetVoltage(ratesReversed[0], GetVoltage(ratesReversed[1]).Cma(cmaPeriods, crosssesRatio));
       if (GetVoltage(ratesReversed[wavePrices.Count()]).IsNaN()) {
         var pricesReversed = ratesReversed.Select(_priceAvg).ToArray();
@@ -683,7 +683,7 @@ namespace HedgeHog.Alice.Store {
           .ForAll(index => {
             var prices = new double[wavePrices.Count()];
             Array.Copy(pricesReversed, index, prices, 0, prices.Length);
-            var cr = prices.CrossesAverageRatio(InPoints(1), crossAverageIterations);
+            var cr = prices.CrossesAverageRatioByRegression(InPoints(1), crossAverageIterations);
             SetVoltage(ratesReversed[index], GetVoltage(ratesReversed[index - 1]).Cma(cmaPeriods, cr));
           });
       }
