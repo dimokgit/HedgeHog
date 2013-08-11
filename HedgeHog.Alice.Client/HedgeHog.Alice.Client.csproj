@@ -576,6 +576,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Tests\Params_EURJPY_RustyBottoms.txt" />
     <Resource Include="Tests\Test_Manual.txt" />
     <Resource Include="Tests\EURJPY.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

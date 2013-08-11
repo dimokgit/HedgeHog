@@ -157,5 +157,21 @@ namespace UnitLib
       actual = MathExtensions.Wavelette(values1);
       Assert.AreEqual(4,actual.Count);
     }
+
+    /// <summary>
+    ///A test for Edge
+    ///</summary>
+    [TestMethod()]
+    public void EdgeTest() {
+      double[] values = MathExtensions.Sin(100, 1000, 3, 0, 5);
+      var csv = values.Csv();
+      TestContext.WriteLine(csv);
+      double step = 0.01;
+      double expected = 0F; // TODO: Initialize to an appropriate value
+      double actual;
+      actual = MathExtensions.Edge(values, step);
+      Assert.AreEqual(expected, actual);
+      Assert.Inconclusive("Verify the correctness of this test method.");
+    }
   }
 }
