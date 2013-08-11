@@ -51,8 +51,8 @@ namespace HedgeHog {
     /// <param name="dY"></param>
     /// <param name="polyOrder"></param>
     /// <returns>Coeffs</returns>
-    public static double[] Regress(this double[] dY, int polyOrder) {
-      return Regress(Enumerable.Range(0,dY.Length).Select(i=>(double)i).ToArray(), dY, polyOrder);
+    public static double[] Regress(this IList<double> dY, int polyOrder) {
+      return Regress(Enumerable.Range(0,dY.Count).Select(i=>(double)i).ToArray(), dY.SafeArray(), polyOrder);
     }
     public static double[] Regress(this double[] dX, double[] dY, int polyOrder) {
       int nPolyOrder = polyOrder;
@@ -78,7 +78,7 @@ namespace HedgeHog {
     /// <param name="values"></param>
     /// <param name="polyOrder"></param>
     /// <returns></returns>
-    public static double[] Regression(this double[] values, int polyOrder) {
+    public static double[] Regression(this IList<double> values, int polyOrder) {
       double[] coeffs;
       return values.Regression(polyOrder, out coeffs);
     }
@@ -89,10 +89,10 @@ namespace HedgeHog {
     /// <param name="polyOrder"></param>
     /// <param name="coeffs"></param>
     /// <returns>Regression result values example:Line,Parabola</returns>
-    public static double[] Regression(this double[] values, int polyOrder, out double[] coeffs) {
+    public static double[] Regression(this IList<double> values, int polyOrder, out double[] coeffs) {
       coeffs = values.Regress(polyOrder);
-      var parabola = new double[values.Length];
-      coeffs.SetRegressionPrice(0, values.Length, (i, v) => parabola[i] = v);
+      var parabola = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => parabola[i] = v);
       return parabola;
     }
 

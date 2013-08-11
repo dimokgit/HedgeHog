@@ -198,15 +198,17 @@ namespace HedgeHog.Models {
       }
       return this;
     }
-    public void Off(bool on, Action onOff = null) {
+    public ValueTrigger<T> Off(bool on, Action onOff = null) {
       if (!on) Off(onOff);
+      return this;
     }
-    public void Off(Action onOff = null) {
+    public ValueTrigger<T> Off(Action onOff = null) {
       if (_on) {
         Value = default(T);
         if (onOff != null) onOff();
       }
       _on = false;
+      return this;
     }
   }
   public class ObservableValue<TValue>:ModelBase{

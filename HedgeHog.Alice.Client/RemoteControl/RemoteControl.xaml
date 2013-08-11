@@ -275,7 +275,7 @@
                 <WrapPanel Name="CorridorBlock" Background="PapayaWhip">
                   <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-1,0"/>
                   <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
-                  <TextBlock Text="{Binding CorridorStats.RatesStDevInPips,StringFormat=|{0:n0}]}" Margin="0,0">
+                  <TextBlock Text="{Binding Custom1,StringFormat=|{0:n0}]}" Margin="0,0">
                   </TextBlock>
                 <!--<LineBreak/>
                 <TextBlock Margin="-3">/</TextBlock>
@@ -353,7 +353,7 @@
                         <TextBlock>Corridor Height.. :
                           <TextBlock Text="{Binding CorridorStats.HeightByRegressionInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock >Wave.StDevBy(H/P):
+                        <TextBlock>Wave.StDevBy(H/P) :
                           <TextBlock Text="{Binding CorridorStats.StDevByHeightInPips,StringFormat=n0}"/>/<TextBlock
                             Text="{Binding CorridorStats.StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
@@ -364,7 +364,7 @@
                           <TextBlock Text="{Binding DistanceIterationsReal,StringFormat=n1}"/>
                         </TextBlock>
                         <TextBlock>RatesHeight/StDev :
-                          <TextBlock Text="{Binding RatesStDevToRatesHeightRatio,StringFormat=n1}"/>
+                          <TextBlock Text="{Binding RatesRsd,StringFormat=n1}"/>
                         </TextBlock>
                         
                         <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
