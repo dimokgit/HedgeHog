@@ -696,7 +696,7 @@ namespace HedgeHog.Alice.Store {
       var avg = volts.Average();
       Custom1 = avg * 1000;
       GetVoltageAverage = () => avg;
-      GetVoltageHigh = () => volts.AverageByIterations(CorrelationMinimum).Average();
+      GetVoltageHigh = () => volts.AverageByIterations(DistanceIterations).Average();
       
 
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
