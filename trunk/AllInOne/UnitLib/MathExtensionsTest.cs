@@ -163,15 +163,12 @@ namespace UnitLib
     ///</summary>
     [TestMethod()]
     public void EdgeTest() {
-      double[] values = MathExtensions.Sin(100, 1000, 3, 0, 5);
+      double[] values = MathExtensions.Sin(100, 10000, 3, 0, 10);
       var csv = values.Csv();
       TestContext.WriteLine(csv);
       double step = 0.01;
-      double expected = 0F; // TODO: Initialize to an appropriate value
-      double actual;
-      actual = MathExtensions.Edge(values, step);
-      Assert.AreEqual(expected, actual);
-      Assert.Inconclusive("Verify the correctness of this test method.");
+      var actual = MathExtensions.Edge(values, step,3);
+      Assert.AreEqual(0.62352314519258079, actual[0].SumAvg);
     }
   }
 }

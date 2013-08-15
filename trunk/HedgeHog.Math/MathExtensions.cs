@@ -313,36 +313,45 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
-    public static double Edge(this double[] values,double step) {
+    public class EdgeInfo {
+      public double Level { get; set; }
+      public double SumAvg { get; set; }
+      public EdgeInfo(double level,double sumAvg) {
+        this.Level = level;
+        this.SumAvg = sumAvg;
+      }
+      public override string ToString() {
+        return new { Level, SumAvg }.ToString();
+      }
+    }
+    public static IList<EdgeInfo> Edge(this double[] values,double step,int crossesCount) {
       Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
-      var frame = 10;
       var min = values.Min();
       var max = values.Max();
       var height = max - min;
       var linesCount = (height / step).ToInt();
       var levels = ParallelEnumerable.Range(0, linesCount).Select(level => min + level * step).ToArray();
-      return levels.Aggregate(new[] { new { level = 0.0, ratioAvg = 0.0 } }.Take(0).ToList(), (list, level) => {
+      return levels.Aggregate(new[] { new { level = 0.0, sumAvg = 0.0 } }.Take(0).ToList(), (list, level) => {
         var line = Enumerable.Repeat(level, values.Count()).ToArray();
-        var crosses = values.CrossesWithIndex(line).ToList();
-        if (crosses.Any()) {
-          var indexRatios = crosses.Aggregate(new[] { new { index = 0, ratio = 0.0 } }.Take(0).ToList(), (l, t) => {
-            var frameValues = new double[frame];
-            var index = t.Item2;
-            var indexStart = Math.Min(Math.Max(index - frame / 2, 0), values.Count() - frame - 1);
-            Array.Copy(values, indexStart, frameValues, 0, frame);
-            var upDowns = frameValues.Select(v => v - level).GroupBy(v => Math.Sign(v)).ToArray();
-            var a = upDowns.Select(g => new { key = g.Key, sum = Math.Abs(g.Sum()) }).ToArray();
-            var ups = a.FirstOrDefault(g => g.key == 1);
-            var downs = a.FirstOrDefault(g => g.key == -1);
-            var ratio = ups == null || downs == null ? 0 : calcRatio(ups.sum, downs.sum);
-            l.Add(new { index, ratio });
-            return l;
-          });
-          var ratioAvg = indexRatios.Average(a => a.ratio);
-          list.Add(new { level, ratioAvg });
+        var crosses = values.CrossesWithIndex(line).ToArray();
+        if (crosses.Count() >= crossesCount * 2 - 1) {
+          var crossesZipped = crosses.Zip(crosses.Skip(1), (t1, t2) => new { index1 = t1.Item2, index2 = t2.Item2 }).ToArray();
+          if (crossesZipped.Any()) {
+            var indexSums = crossesZipped.Aggregate(new List<double>(), (l, t) => {
+              var frame = t.index2 - t.index1;
+              var frameValues = new double[frame];
+              Array.Copy(values, t.index1, frameValues, 0, frameValues.Length);
+              var upDowns = frameValues.Select(v => v - level).GroupBy(v => Math.Sign(v)).ToArray();
+              var sum = upDowns.Select(g => new { key = g.Key, sum = Math.Abs(g.Sum()) }).OrderBy(g => g.sum).Last().sum;
+              l.Add(sum);
+              return l;
+            });
+            var sumAvg = indexSums.OrderBy(s => s).Take(crossesCount).Average();
+            list.Add(new { level, sumAvg });
+          }
         }
         return list;
-      }, list => list.OrderBy(l => l.ratioAvg).First().level);
+      }, list => list.OrderBy(l => l.sumAvg).Select(l => new EdgeInfo(l.level, l.sumAvg)).ToArray());
 
     }
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {

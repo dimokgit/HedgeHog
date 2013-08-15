@@ -1157,7 +1157,7 @@ namespace HedgeHog.Alice.Store {
               #region firstTime
               if (firstTime) {
                 LogTrades = false;
-                Log = new Exception(new { CorrelationMinimum, WaveStDevRatio } + "");
+                Log = new Exception(new {CorrelationMinimum, DistanceIterations,  WaveStDevRatio } + "");
                 MagnetPrice = double.NaN;
                 corridorMoved.Off();
                 onCloseTradeLocal = t => {
@@ -1172,8 +1172,8 @@ namespace HedgeHog.Alice.Store {
                 var avg = RatesArray.Average(_priceAvg);
                 var height = StDevByHeight;
                 var spread = PriceSpreadAverage.GetValueOrDefault(0);
-                var ratesMax = CorridorStats.RatesMax;
-                var ratesMin = CorridorStats.RatesMin;
+                var ratesMax = _RatesMax;
+                var ratesMin = _RatesMin;
                 var upper = new[] { ratesMax + spread, ratesMax - height };
                 var lower = new[] { ratesMin - spread, ratesMin + height };
                 var isUp = CurrentPrice.Average >= avg;
@@ -1184,8 +1184,9 @@ namespace HedgeHog.Alice.Store {
                 var centerAvgOk = centerAvg.Abs(corridorLevel.IfNaN(0)) > RatesHeight / 3;
                 var voltageCorridorMax = CorridorStats.Rates.Select(GetVoltage).Max();
                 var voltageMax = RatesArray.Take(RatesArray.Count - CorridorStats.Rates.Count).Select(GetVoltage).Max();
-                var voltageOk = voltageCorridorMax > GetVoltageHigh() && !GetVoltage(RatesArray[0]).IsNaN();
-                corridorMoved.Set(voltageOk && centerAvgOk && CurrentPrice.Average.Between(lowper),
+                var voltageOk = voltageCorridorMax >= GetVoltageHigh() && !GetVoltage(RatesArray[0]).IsNaN();
+                var voltageAvgOk = !GetVoltageAverage().Between(CorrelationMinimum, WaveStDevRatio);
+                corridorMoved.Set(voltageOk && voltageAvgOk && centerAvgOk && CurrentPrice.Average.Between(lowper),
                   () => {
                     corridorLevel = centerAvg;
                     _buyLevel.RateEx = lowper.Max();
@@ -1193,7 +1194,7 @@ namespace HedgeHog.Alice.Store {
                     Action<SuppRes, SuppRes> setRates = (f, s) => {
                       f.CanTradeEx = true;
                       s.CanTradeEx = false;
-                      f.TradesCountEx = 1;
+                      f.TradesCountEx = CorridorCrossesMaximum;
                       s.TradesCountEx = 0;
                     };
                     if (isUp) setRates(_buyLevel, _sellLevel);
@@ -1201,7 +1202,7 @@ namespace HedgeHog.Alice.Store {
                     if (VoltageCurrent > GetVoltageHigh())
                       corridorMoved.Off();
                   });
-                if (IsAutoStrategy && !voltageOk) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                if (IsAutoStrategy && !(voltageOk && voltageAvgOk)) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
               }
               {
                 Func<double, IEnumerable<double>> rateSynceTrade = def => {
