@@ -269,7 +269,16 @@ namespace HedgeHog {
         .Select(a => a.first);
     }
 
-    public static IEnumerable<Tuple<double,int>> CrossesWithIndex(this IList<double> list, IList<double> signal) {
+    public static IEnumerable<Tuple<double, int>> Crosses3(this IList<double> list, IList<double> signal) {
+      var zipped = list.Zip(signal, (l, s) => new { l, s, sign = Math.Sign(l - s) }).ToArray();
+      return zipped
+        .Zip(zipped.Skip(1), (z1, z2) => new { z1, z2 })
+        .Select((z, i) => new { z, i })
+        .Where(a => a.z.z1.sign != a.z.z2.sign)
+        .Select(a => new Tuple<double, int>(a.z.z1.s, a.i));
+    }
+
+    public static IEnumerable<Tuple<double, int>> CrossesWithIndex(this IList<double> list, IList<double> signal) {
       Func<double, double, int> sign = (d1, d2) => { var s = Math.Sign(d1 - d2); return s >= 0 ? 1 : -1; };
       return list.MashWithIndex()
         .Zip(signal, (m, s) => new { signFirst = sign(m.Item1, s), signSecond = sign(m.Item2, s), first = m.Item1, index = m.Item3 })
@@ -313,47 +322,6 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
-    public class EdgeInfo {
-      public double Level { get; set; }
-      public double SumAvg { get; set; }
-      public EdgeInfo(double level,double sumAvg) {
-        this.Level = level;
-        this.SumAvg = sumAvg;
-      }
-      public override string ToString() {
-        return new { Level, SumAvg }.ToString();
-      }
-    }
-    public static IList<EdgeInfo> Edge(this double[] values,double step,int crossesCount) {
-      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
-      var min = values.Min();
-      var max = values.Max();
-      var height = max - min;
-      var linesCount = (height / step).ToInt();
-      var levels = ParallelEnumerable.Range(0, linesCount).Select(level => min + level * step).ToArray();
-      return levels.Aggregate(new[] { new { level = 0.0, sumAvg = 0.0 } }.Take(0).ToList(), (list, level) => {
-        var line = Enumerable.Repeat(level, values.Count()).ToArray();
-        var crosses = values.CrossesWithIndex(line).ToArray();
-        if (crosses.Count() >= crossesCount * 2 - 1) {
-          var crossesZipped = crosses.Zip(crosses.Skip(1), (t1, t2) => new { index1 = t1.Item2, index2 = t2.Item2 }).ToArray();
-          if (crossesZipped.Any()) {
-            var indexSums = crossesZipped.Aggregate(new List<double>(), (l, t) => {
-              var frame = t.index2 - t.index1;
-              var frameValues = new double[frame];
-              Array.Copy(values, t.index1, frameValues, 0, frameValues.Length);
-              var upDowns = frameValues.Select(v => v - level).GroupBy(v => Math.Sign(v)).ToArray();
-              var sum = upDowns.Select(g => new { key = g.Key, sum = Math.Abs(g.Sum()) }).OrderBy(g => g.sum).Last().sum;
-              l.Add(sum);
-              return l;
-            });
-            var sumAvg = indexSums.OrderBy(s => s).Take(crossesCount).Average();
-            list.Add(new { level, sumAvg });
-          }
-        }
-        return list;
-      }, list => list.OrderBy(l => l.sumAvg).Select(l => new EdgeInfo(l.level, l.sumAvg)).ToArray());
-
-    }
     public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;
@@ -628,7 +596,7 @@ namespace HedgeHog {
       return values;
     }
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
-      var avg = values.DefaultIfEmpty().Average(getValue);
+      var avg = values.Select(getValue).DefaultIfEmpty(double.NaN).Average();
       if (averagesOut != null) averagesOut.Insert(0, avg);
       return values.Distinct().Count() < 2 || iterations == 0 ? values : values.Where(r => compare(getValue(r), avg)).ToArray().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }

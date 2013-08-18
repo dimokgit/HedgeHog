@@ -28,7 +28,7 @@ namespace ControlExtentions {
   }
 }
 namespace HedgeHog {
-  public static class Lib {
+  public static partial class Lib {
     public static double WeightedAverage<T>(this IList<T> values, Func<T, double> value, Func<T, double> weight) {
       return values.Sum(a => value(a) * weight(a)) / values.Sum(a => weight(a));
     }
@@ -162,7 +162,10 @@ namespace HedgeHog {
     public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
       return new Queue<T>(t);
     }
-    public static IEnumerable<T> IEnumerable<T>(this T v) where T : class {
+    private static List<T> AsList<T>(this T v) {
+      return v.IEnumerable().ToList();
+    }
+    public static IEnumerable<T> IEnumerable<T>(this T v)  {
       return new[] { v }.Take(0);
     }
     public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {

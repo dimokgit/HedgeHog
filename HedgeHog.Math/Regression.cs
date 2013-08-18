@@ -71,7 +71,14 @@ namespace HedgeHog {
     public static void SetRegressionPrice(this double[] coeffs, int start, int count, Action<int, double> a) {
       Enumerable.Range(start, count).AsParallel().ForAll(i => a(i, coeffs.RegressionValue(i)));
     }
-
+    /// <summary>
+    /// Regression line
+    /// </summary>
+    /// <param name="values"></param>
+    /// <returns>Regression Line</returns>
+    public static double[] Line(this IList<double> values) {
+      return values.Regression(1);
+    }
     /// <summary>
     /// Get Line,Parabola etc.
     /// </summary>
