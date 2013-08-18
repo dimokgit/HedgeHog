@@ -167,7 +167,7 @@ namespace UnitLib
       var csv = values.Csv();
       TestContext.WriteLine(csv);
       double step = 0.01;
-      var actual = MathExtensions.Edge(values, step,3);
+      var actual = Lib.Edge(values, step,3);
       Assert.AreEqual(0.62352314519258079, actual[0].SumAvg);
     }
   }

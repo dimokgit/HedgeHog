@@ -134,11 +134,16 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByRsdFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
       var dist = ratesReversed.Distance();
-      CorridorStDevRatioMax = FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).Min(ratesReversed.Length).ToInt();
+      //CorridorStDevRatioMax = FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).Min(ratesReversed.Length).ToInt();
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
         var date = (CorridorStats.Rates.LastOrDefault() ?? new Rate()).StartDate;
         return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
       });
+
+      var minuteMin = 30;
+      var harmonics = CalcHurmonicsAll(ratesReversed, minuteMin).ToList();
+      harmonics.SortByLambda(h => -h.Height);
+      CorridorStDevRatioMax = harmonics.Sum(h => h.Hours * h.Height) / harmonics.Sum(h => h.Height);
 
       Func<int> corridorLengthAction = () =>
         CalcCorridorLengthByRsdFast(
@@ -155,6 +160,9 @@ namespace HedgeHog.Alice.Store {
       var ma = WaveShort.Rates.Select(GetPriceMA()).ToArray();
       var rates = WaveShort.Rates.Select(_priceAvg).ToArray();
       var rsdReal = CalcRsd(WaveShort.Rates.Select(_priceAvg).ToArray());
+
+      //SetVoltages(ratesForCorridor, ratesReversed);
+
       return corridor;
     }
 
@@ -672,6 +680,23 @@ namespace HedgeHog.Alice.Store {
 
       WaveShort.ResetRates(ratesReversed.Take(CorridorDistanceRatio.ToInt()).ToArray());
 
+      //SetVoltages(ratesForCorridor, ratesReversed);
+      //SetVoltage(ratesReversed[0], 2 * CorridorDistanceRatio / ratesForCorridor.Count);
+
+      //var maCrossesAvg = double.NaN;
+      //var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
+      //var avg = (ratesForCorridor.Max(GetVoltage) + ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Min()) / 2;
+      var volts = ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
+      var avg = volts.Average();
+      Custom1 = avg * 1000;
+      GetVoltageAverage = () => avg;
+      GetVoltageHigh = () => volts.AverageByIterations(DistanceIterations).Average();
+      
+
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+
+    private void SetVoltages(IList<Rate> ratesForCorridor, IList<Rate> ratesReversed) {
       var cmaPeriods = 10;
       var crossAverageIterations = PolyOrder;
       var wavePrices = WaveShort.Rates.Select(_priceAvg).ToArray();
@@ -687,19 +712,6 @@ namespace HedgeHog.Alice.Store {
             SetVoltage(ratesReversed[index], GetVoltage(ratesReversed[index - 1]).Cma(cmaPeriods, cr));
           });
       }
-      //SetVoltage(ratesReversed[0], 2 * CorridorDistanceRatio / ratesForCorridor.Count);
-
-      //var maCrossesAvg = double.NaN;
-      //var maCrossesStDev = ratesReversed.Select(GetVoltage).TakeWhile(v => !v.IsNaN()).ToArray().StDev(out maCrossesAvg);
-      //var avg = (ratesForCorridor.Max(GetVoltage) + ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Min()) / 2;
-      var volts = ratesForCorridor.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
-      var avg = volts.Average();
-      Custom1 = avg * 1000;
-      GetVoltageAverage = () => avg;
-      GetVoltageHigh = () => volts.AverageByIterations(DistanceIterations).Average();
-      
-
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private double CrossesAverage(IList<Rate> rates) {
