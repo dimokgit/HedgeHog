@@ -725,6 +725,57 @@ namespace HedgeHog.Alice.Store {
         Action adjustEnterLevels = () => {
           if (!WaveShort.HasRates) return;
           switch (TrailingDistanceFunction) {
+            #region Count
+            case TrailingWaveMethod.Count:
+              #region firstTime
+              if (firstTime) {
+                LogTrades = false;
+                Log = new Exception(new {
+                  CorrelationMinimum,
+                  TradingAngleRange,
+                  WaveStDevRatio
+                } + "");
+              }
+              #endregion
+              {
+                //if (false) {
+                //  var weeks = 3;
+                //  if (stats == null || stats[0].StartDateMin < ServerTime.Date.AddDays(-7 * (weeks + 1)))
+                //    stats = GlobalStorage.UseForexContext(c => {
+                //      return c.sGetStats(ServerTime.Date.AddDays(-7 * weeks), CorridorDistanceRatio.ToInt(), weeks).ToArray();
+                //    });
+                //}
+                var hasCorridorChanged = _CorridorStartDateByScan > corridorHeightPrev.AddMinutes(BarPeriodInt * CorridorDistanceRatio / 5);
+                corridorHeightPrev = _CorridorStartDateByScan;
+                var isInside = false;
+                if (CorridorAngleFromTangent() <= TradingAngleRange && CorridorStats.StartDate > RatesArray[0].StartDate) {
+                  //var startDatePast = RateLast.StartDate.AddHours(-CorridorDistanceRatio);
+                  var levelPrev = RatesInternal.ReverseIfNot().Skip(CorridorDistanceRatio.ToInt()).SkipWhile(r => r.StartDate.Hour != 23).First().PriceAvg;
+                  var rates = setTrendLines(2);
+                  var up = rates[0].PriceAvg2;
+                  var down = rates[0].PriceAvg3;
+                  var corridorRates = CorridorStats.Rates;
+                  var upPeak = up - CorridorStats.RatesMax;
+                  var downValley = CorridorStats.RatesMin - down;
+                  var ud2 = (up - down) / 4;
+                  var isBetween = levelPrev.Between(down, up) &&
+                    (new[] { up, down }.Any(ud => ud.Between(_sellLevel.Rate, _buyLevel.Rate))
+                    || _buySellLevels.Any(sr => sr.Rate.Between(down, up))
+                    );
+                  var height = (up - down);
+                  var param = new { up, down, upPeak, downValley };
+                  var heightOk = (bool)interpreter.Eval(Eval, new Parameter("a", param)); //height > (CorridorHeightMax = getCorridorMax(ServerTime.DayOfWeek + ""));
+                  var sizeOk = /*(up - down) > height ||*/ heightOk;
+                  isInside = hasCorridorChanged && isBetween && sizeOk;
+                  _buyLevel.RateEx = up;
+                  _sellLevel.RateEx = down;
+                  if (hasCorridorChanged)
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = isInside);
+                }
+                adjustExitLevels0();
+              }
+              break;
+            #endregion
             #region CountWithAngle
             case TrailingWaveMethod.CountWithAngle:
               #region firstTime
