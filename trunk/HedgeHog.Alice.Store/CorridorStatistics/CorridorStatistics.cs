@@ -466,6 +466,7 @@ namespace HedgeHog.Alice.Store {
     public double StDevByHeightInPips { get { return TradesManagerStatic.InPips(StDevByHeight, _pipSize); } }
     public double StDevByPriceAvg { get { return StDevs != null && StDevs.ContainsKey(CorridorCalculationMethod.PriceAverage) ? StDevs[CorridorCalculationMethod.PriceAverage] : double.NaN; } }
     public double StDevByPriceAvgInPips { get { return TradesManagerStatic.InPips(StDevByPriceAvg, _pipSize); } }
+    public double StDevMin { get { return StDevByHeight.Min(StDevByPriceAvg); } }
 
     #region HeightByRegression
     private double _HeightByRegression;
