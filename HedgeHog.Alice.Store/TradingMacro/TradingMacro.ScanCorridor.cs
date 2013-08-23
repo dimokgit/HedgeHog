@@ -32,6 +32,36 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorByStDevBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.Reverse().ToArray();
+      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
+      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
+      WaveShort.Rates = null;
+      WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
+        ? ratesReversed.Take(CalcCorridorByStDevBalance(ratesReversed.Select(_priceAvg).ToArray(), CorridorDistanceRatio.ToInt())).ToArray()
+        : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      return corridor;
+    }
+
+    private int CalcCorridorByStDevBalance(double[] ratesReversed, int startIndex) {
+      var stDevRatio = 0.99;
+      Func<double, double, bool> isLess = (h, p) => h / p < stDevRatio;
+      Func<double, double, bool> isMore = (h, p) => h / p >= stDevRatio;
+      return Lib.IteratonSequence(startIndex, ratesReversed.Length)
+        .SkipWhile(length => CalcStDevBalance(ratesReversed, isLess, length))
+        .TakeWhile(length => CalcStDevBalance(ratesReversed, isMore, length))
+        .DefaultIfEmpty(startIndex).Last();
+    }
+
+    private static bool CalcStDevBalance(double[] ratesReversed, Func<double, double, bool> isLess, int length) {
+      var rates = new double[length];
+      Array.Copy(ratesReversed, 0, rates, 0, length);
+      var stDevH = rates.StDevByRegressoin();
+      var stDevP = rates.StDev();
+      return isLess(stDevH, stDevP);
+    }
+
     private CorridorStatistics ScanCorridorByTimeFrameAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);

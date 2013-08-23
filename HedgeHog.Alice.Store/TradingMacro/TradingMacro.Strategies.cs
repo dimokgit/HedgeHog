@@ -158,7 +158,7 @@ namespace HedgeHog.Alice.Store {
 
     Rate[] _setTrendLineDefault() {
       double h, l;
-      h = l = CorridorStats.StDevByHeight;
+      h = l = CorridorStats.StDevMin;
       if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
       var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
       var regRates = _getRegressionLeftRightRates();
@@ -280,7 +280,7 @@ namespace HedgeHog.Alice.Store {
         };
         Func<int, Rate[]> setTrendLines = (levels) => {
           double h, l, h1, l1;
-          double[] hl = getStDev == null ? new[] { CorridorStats.StDevByHeight, CorridorStats.StDevByHeight } : getStDev();
+          double[] hl = getStDev == null ? new[] { CorridorStats.StDevMin, CorridorStats.StDevMin } : getStDev();
           h = hl[0] * 2;
           l = hl[1] * 2;
           if (hl.Length >= 4) {
@@ -1150,7 +1150,7 @@ namespace HedgeHog.Alice.Store {
                 corridorDate = DateTime.MinValue;
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                Log = new Exception(new { WaveStDevRatio, TradingAngleRange } + "");
+                Log = new Exception(new { WaveStDevRatio, CorridorHeightMax } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
                   if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
@@ -1158,21 +1158,12 @@ namespace HedgeHog.Alice.Store {
               }
               #endregion
               {
-                var rates = RatesArray.SafeArray();
-                var voltMinIndex = rates.AsParallel().Select((r, i) => new { v = GetVoltage(r), i }).OrderBy(a => a.v).First().i;
-                var voltMinDate = rates[voltMinIndex].StartDate;
-                var voltageOk = GetVoltage(RateLast).IfNaN(GetVoltage(RatePrev)) < GetVoltageHigh();
-                corridorMoved.Set(_harmonics != null && voltageOk, () => {
-                  corridorDate = CurrentPrice.Time;
-                  var avg = CurrentPrice.Average;
-                  var stDev = InPoints(_harmonics[0].Height);
-                  var buy = avg + stDev;
-                  var sell = avg - stDev;
-                  _buyLevel.RateEx = buy;// RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
-                  _sellLevel.RateEx = sell;// RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
-                });
-                if (IsAutoStrategy) _buySellLevelsForEach(sr =>
-                  sr.CanTradeEx = corridorDate > CorridorStats.StartDate);
+                _buyLevel.RateEx = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
+                _sellLevel.RateEx = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
+                var corridorLengthOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
+                var corridorHeightOk = CorridorStats.RatesHeight * CorridorHeightMax < RatesHeight;
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr =>
+                    sr.CanTradeEx = corridorLengthOk && corridorHeightOk);
               }
               adjustExitLevels1();
               break;
@@ -1216,7 +1207,7 @@ namespace HedgeHog.Alice.Store {
               adjustExitLevels0();
               break;
             #endregion
-
+            #region Magnet
             case TrailingWaveMethod.Magnet:
               #region firstTime
               if (firstTime) {
@@ -1259,10 +1250,11 @@ namespace HedgeHog.Alice.Store {
                 CenterOfMassBuy = ratesMax.IfNaN(CenterOfMassBuy);// lowper.Max();
                 CenterOfMassSell = ratesMin.IfNaN(CenterOfMassSell);// lowper.Min();
                 MagnetPrice = corridorRatesAvg;
+                var corridorLengthOk = corridorRates.Length > CorridorDistanceRatio * WaveStDevRatio;
                 if ( !edgesLevels.Any(d => d.IsNaN())) {
                   _buyLevel.RateEx = CenterOfMassBuy;
                   _sellLevel.RateEx = CenterOfMassSell;
-                  if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = corridorLengthOk);
                 }
                 if (false && IsAutoStrategy && edgesLevels.All(e => e.IsNaN())) {
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
@@ -1279,6 +1271,7 @@ namespace HedgeHog.Alice.Store {
                 adjustExitLevels(buyLevel, sellLevel);
               }
               break;
+            #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
           }
           if (firstTime) {
