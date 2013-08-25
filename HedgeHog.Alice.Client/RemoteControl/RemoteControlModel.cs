@@ -1005,7 +1005,7 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.FttMax
+            /*9*/, tm.MagnetPriceRatio
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;

@@ -122,6 +122,12 @@ namespace HedgeHog {
     public static double Ratio(this double v, double other) {
       return v > other ? v / other : other / v;
     }
+    public static double Percentage<T>(this int v, double other) {
+      return other.Percentage(v);
+    }
+    public static double Percentage(this double v, double other) {
+      return (v - other) / Math.Max(v, other);
+    }
     public static ILookup<bool, double> Fractals(this IList<double> rates, int fractalLength) {
       return rates.Fractals(fractalLength, d => d, d => d);
     }

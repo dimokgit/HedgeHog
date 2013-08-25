@@ -17,6 +17,7 @@ using System.Reactive.Concurrency;
 using System.ComponentModel.DataAnnotations;
 using System.Windows.Media;
 using HedgeHog.Models;
+using System.Reflection;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -38,11 +39,39 @@ namespace HedgeHog.Alice.Store {
       var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
       WaveShort.Rates = null;
       WaveShort.Rates = startMax.IsMax() && !CorridorStartDate.HasValue
-        ? ratesReversed.Take(CalcCorridorByStDevBalance(ratesReversed.Select(_priceAvg).ToArray(), CorridorDistanceRatio.ToInt())).ToArray()
+        ? ratesReversed.Take(CalcCorridorByStDevBalanceAndMaxLength2(ratesReversed.Select(_priceAvg).ToArray(), CorridorDistanceRatio.ToInt())).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      var waveRates = WaveShort.Rates.Select(_priceAvg).ToArray();
+      var line = waveRates.Line();
+      var zipped = line.Zip(waveRates, (l, r) => r.Sign(l)).GroupBy(s => s).ToArray();
+      double upsCount = zipped.First(z => z.Key == 1).Count();
+      double downsCount = zipped.First(z => z.Key == -1).Count();
+      SetVoltage(RateLast, MagnetPriceRatio = GetVoltage(RatePrev).Cma(WaveShort.Rates.Count / 100.0, upsCount.Percentage(downsCount).Min(.5).Max(-.5)));
       return corridor;
     }
+
+    private int CalcCorridorByStDevBalanceAndMaxLength2(double[] ratesReversed, int startIndex) {
+      var stDevRatio = 0.99;
+      Func<double, double, bool> isMore = (h, p) => h / p >= stDevRatio;
+      var lenths = Lib.IteratonSequence(startIndex, ratesReversed.Length).ToArray();
+      return Partitioner.Create(lenths, true).AsParallel()
+        .Select(length => new { ratio = CalcStDevBalanceRatio(ratesReversed, length), length }).ToArray()
+        .OrderByDescending(r => r.length)
+        .SkipWhile(r => r.ratio < stDevRatio)
+        .TakeWhile(r => r.ratio > stDevRatio)
+        .OrderByDescending(r => r.ratio)
+        .Select(r => r.length).DefaultIfEmpty(startIndex).First();
+    }
+
+    private int CalcCorridorByStDevBalanceAndMaxLength(double[] ratesReversed, int startIndex) {
+      var stDevRatio = 0.99;
+      Func<double, double, bool> isMore = (h, p) => h / p >= stDevRatio;
+      return Lib.IteratonSequence(startIndex, ratesReversed.Length)
+        .Where(length => CalcStDevBalance(ratesReversed, isMore, length))
+        .DefaultIfEmpty(startIndex).Max();
+    }
+
 
     private int CalcCorridorByStDevBalance(double[] ratesReversed, int startIndex) {
       var stDevRatio = 0.99;
@@ -60,6 +89,13 @@ namespace HedgeHog.Alice.Store {
       var stDevH = rates.StDevByRegressoin();
       var stDevP = rates.StDev();
       return isLess(stDevH, stDevP);
+    }
+    private static double CalcStDevBalanceRatio(double[] ratesReversed, int length) {
+      var rates = new double[length];
+      Array.Copy(ratesReversed, 0, rates, 0, length);
+      var stDevH = rates.StDevByRegressoin();
+      var stDevP = rates.StDev();
+      return stDevH / stDevP;
     }
 
     private CorridorStatistics ScanCorridorByTimeFrameAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {

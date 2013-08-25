@@ -183,18 +183,14 @@ namespace HedgeHog.Models {
     }
     public T Value;
     public ValueTrigger<T> Set(bool on, T value) {
-      return Set(on, null, null, value);
+      return Set(on, null, value);
     }
-    public ValueTrigger<T> Set(bool on, Action onAction = null, Action offAction = null, T value = default(T)) {
+    public ValueTrigger<T> Set(bool on, Action onAction = null, T value = default(T)) {
       if (on && !_on) {
         _on = true;
-        Value = value;
         if (onAction != null) onAction();
         if (_actionOn != null) _actionOn();
-      }
-      if (!on && _on) {
-        _on = false;
-        if (offAction != null) offAction();
+        Value = value;
       }
       return this;
     }
@@ -204,7 +200,6 @@ namespace HedgeHog.Models {
     }
     public ValueTrigger<T> Off(Action onOff = null) {
       if (_on) {
-        Value = default(T);
         if (onOff != null) onOff();
       }
       _on = false;
