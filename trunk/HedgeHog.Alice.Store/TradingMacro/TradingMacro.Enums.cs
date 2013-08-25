@@ -60,6 +60,7 @@ namespace HedgeHog.Alice.Store {
     PriceSpread = 26,
     WaveShortStDev = 27,
     WaveTradeStartStDev = 28,
+    CorridorHeight_BS = 29, 
     RatesHeight_3 = 103,
     RatesHeight_4 = 104,
     RatesHeight_5 = 105,

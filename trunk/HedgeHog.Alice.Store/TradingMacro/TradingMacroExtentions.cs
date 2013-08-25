@@ -2683,9 +2683,11 @@ namespace HedgeHog.Alice.Store {
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
       var tp = double.NaN;
       switch (function) {
+        case TradingMacroTakeProfitFunction.CorridorHeight_BS: 
+          return GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.CorridorHeight).Min(GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.BuySellLevels));
         case TradingMacroTakeProfitFunction.CorridorStDevMin: tp = CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.CorridorStDevMax: tp = CorridorStats.StDevByHeight.Max(CorridorStats.StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.HeightByRegression; break;
+        case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.StDevByHeight * 4; break;
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShort: tp = WaveShort.RatesHeight; break;
         case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;

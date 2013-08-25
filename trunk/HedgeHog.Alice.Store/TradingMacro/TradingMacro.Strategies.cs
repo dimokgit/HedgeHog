@@ -626,7 +626,7 @@ namespace HedgeHog.Alice.Store {
         var triggerRsd = new ValueTrigger<Unit>(false);
         var triggerFractal = new ValueTrigger<DateTime>(false);
         var rsdStartDate = DateTime.MinValue;
-        var corridorMoved = new ValueTrigger<bool?>(false);
+        var corridorMoved = new ValueTrigger<double>(false);
         var positionTrigger = new ValueTrigger<Unit>(false);
         double corridorLevel = double.NaN;
         double corridorAngle = 0;
@@ -637,6 +637,9 @@ namespace HedgeHog.Alice.Store {
         Func<string, double> getCorridorMax = weekDay => stats.Single(s => s.DayName == weekDay + "").Range.Value;
         var interpreter = new Interpreter();
         Func<bool> isReverseStrategy = () => _buyLevel.Rate < _sellLevel.Rate;
+
+        var intTrigger = new ValueTrigger<int>(false);
+        var doubleTrigger = new ValueTrigger<double>(false);
 
         #endregion
 
@@ -1142,30 +1145,46 @@ namespace HedgeHog.Alice.Store {
               adjustExitLevels1();
               break;
             #endregion
-            #region Tunnel
+            #region Backdoor
             case TrailingWaveMethod.Backdoor:
               #region firstTime
               if (firstTime) {
-                corridorMoved.Set(false);
+                intTrigger.Set(false).Value = 0;
+                doubleTrigger.Set(false).Value = 0;
                 corridorDate = DateTime.MinValue;
                 LogTrades = !IsInVitualTrading;
                 DoNews = !IsInVitualTrading;
-                Log = new Exception(new { WaveStDevRatio, CorridorHeightMax } + "");
+                Log = new Exception(new { WaveStDevRatio, CorridorHeightMax, DistanceIterations } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
-                  if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  if (t.PL >= PriceSpreadAverageInPips) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                 };
               }
               #endregion
               {
-                _buyLevel.RateEx = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
-                _sellLevel.RateEx = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
-                var corridorLengthOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
-                var corridorHeightOk = CorridorStats.RatesHeight * CorridorHeightMax < RatesHeight;
-                  if (IsAutoStrategy) _buySellLevelsForEach(sr =>
-                    sr.CanTradeEx = corridorLengthOk && corridorHeightOk);
+                var tradeTrigger = doubleTrigger;
+                var buy = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg2 : RatePrev.PriceAvg2;
+                var sell = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
+                var rates = CorridorStats.Rates.Select(_priceAvg);
+                var avg = RateLast.PriceAvg1 > 0 ? RateLast.PriceAvg1 : RatePrev.PriceAvg1;
+                var corridorLengthOk = CorridorStats.Rates.Count.Between(CorridorDistanceRatio + 1, CorridorDistanceRatio * WaveStDevRatio);
+                var corridorHeightOk = CorridorStats.RatesHeight < RatesHeight * CorridorHeightMax;
+                var corridorOk = corridorLengthOk && corridorHeightOk;
+                if (corridorOk) {
+                  _buyLevel.RateEx = buy;
+                  _sellLevel.RateEx = sell;
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = CorridorCrossesMaximum; });
+                }
               }
-              adjustExitLevels1();
+              {
+                Func<double, IEnumerable<double>> rateSynceTrade = def => {
+                  var d = Trades.Max(t => t.Time);
+                  return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
+                };
+                var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min() : _buyLevel.Rate;
+                var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max() : _sellLevel.Rate;
+                adjustExitLevels(buyLevel, sellLevel);
+              }
               break;
             #endregion
             #region FFT
