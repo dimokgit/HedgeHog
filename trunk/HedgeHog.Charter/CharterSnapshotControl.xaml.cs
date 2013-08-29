@@ -60,7 +60,11 @@ namespace HedgeHog {
           switch (ev.Action) {
             case NotifyCollectionChangedAction.Reset:
             case NotifyCollectionChangedAction.Remove:
-              ev.OldItems.Cast<VerticalLine>().ToList().ForEach(vl => plotter.Children.Remove(vl));
+              try {
+                ev.OldItems.Cast<IPlotterElement>().ToList().ForEach(vl => plotter.Children.Remove(vl));
+              } catch (Exception exc) {
+                LogMessage.Send(exc);
+              }
               return;
             case NotifyCollectionChangedAction.Add:
               ev.NewItems.Cast<VerticalLine>().ForEach(vl => plotter.Children.Add(vl));

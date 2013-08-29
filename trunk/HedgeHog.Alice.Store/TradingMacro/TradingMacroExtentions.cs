@@ -1994,7 +1994,8 @@ namespace HedgeHog.Alice.Store {
       Func<IEnumerable<Rate>> a = () => {
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
         var countByDate = startDate.HasValue && DoStreatchRates ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
-        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
+        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCount).ToInt()).Max(0));
+        //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false);
     }
@@ -2733,11 +2734,12 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
-        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdFft;
+        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
+        case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;

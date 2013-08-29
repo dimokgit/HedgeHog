@@ -714,6 +714,13 @@ namespace HedgeHog {
       return d == DateTime.MaxValue ? d1 : d;
     }
 
+    public static double Sub(this double v, double other) {
+      return v - other;
+    }
+
+    public static double Avg(this double v, double other) {
+      return (v + other) / 2;
+    }
     public static double? Abs(this double? v) {
       return v.HasValue ? v.Value.Abs() : (double?)null;
     }
