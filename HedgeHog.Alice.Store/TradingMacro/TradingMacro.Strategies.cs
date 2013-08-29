@@ -923,14 +923,14 @@ namespace HedgeHog.Alice.Store {
               break;
             #endregion
             #region Magnet
-            case TrailingWaveMethod.MagnetFft: 
+            case TrailingWaveMethod.MagnetFft:
               #region firstTime
               if (firstTime) {
                 LogTrades = false;
                 Log = new Exception(new { CorridorHeightMax_crossesCount = CorridorHeightMax } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
-                  if (t.PL > -PriceSpreadAverage ) {
+                  if (t.PL > -PriceSpreadAverage) {
                     _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   }
                 };
@@ -940,7 +940,7 @@ namespace HedgeHog.Alice.Store {
                 var corridorRates = CorridorStats.Rates.Select(_priceAvg).ToArray();
                 var point = InPoints(1) / 2;
                 var crossesCount = CorridorHeightMax.ToInt();
-                var edgesLevels = corridorRates.EdgeByRegression(point,2, CorridorStats.StDevByHeight / 2);
+                var edgesLevels = corridorRates.EdgeByRegression(point, 2, CorridorStats.StDevByHeight / 2);
                 SetTrendLines = new SetTrendLinesDelegate(setTrendLinesByParams(edgesLevels.Max(), edgesLevels.Min().Abs()));
                 var priceAvg1 = RateLast.PriceAvg1;
                 var ratesMax = priceAvg1 + edgesLevels.Max();
@@ -1049,70 +1049,8 @@ namespace HedgeHog.Alice.Store {
                 Log = new Exception(new {
                   CorridorDistanceRatio,
                   WaveStDevRatio_LenthRatio = WaveStDevRatio,
-                  PolyOrder_FractalRatio = PolyOrder,
-                  CorrelationMinimum_HeightRatio = CorrelationMinimum
-                } + "");
-                MagnetPrice = double.NaN;
-                onCloseTradeLocal = t => {
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                };
-              }
-              #endregion
-              {
-                var corridorRates = CorridorStats.Rates;
-                var priceHigh = _priceAvg;
-                var priceLow = _priceAvg;
-                alglib.complex[] bins;
-                corridorRates.Select(_priceAvg).FftFrequency(true, out bins);
-                var polyOrder = bins.Skip(1).Select(MathExtensions.ComplexValue).OrderByDescending(v => v).Take(3).Sum().ToInt();
-                Fractals = corridorRates.Fractals(polyOrder < 6 ? corridorRates.Count / polyOrder : polyOrder, priceHigh, priceLow);
-                var voltage = GetVoltage(RateLast);
-                var fractalsOk = Fractals.Select(f => f.Count()).Sum() == 0;
-                triggerFractal.Set(fractalsOk, CurrentPrice.Time);
-                var buySellHeight = CenterOfMassBuy - CenterOfMassSell;
-                {
-                  var lengthOk = CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio;
-                  var angleOk = TradingAngleRange >= 0 ? CorridorAngle.Abs() > TradingAngleRange : CorridorAngle.Abs() < TradingAngleRange.Abs();
-                  var heightOk = true;// buySellHeight < CorridorStats.HeightByRegression / CorrelationMinimum;
-                  var voltageOk = voltage >= GetVoltageHigh();
-                  var canTrade = lengthOk && angleOk && heightOk && voltageOk && triggerFractal.On;
-                  triggerRsd.Set(canTrade, () => {
-                    triggerFractal.Off();
-                    var offset = CorridorStats.StDevByHeight;
-                    CenterOfMassBuy = RateLast.PriceAvg1 + offset;
-                    CenterOfMassSell = RateLast.PriceAvg1 - offset;
-                    MagnetPrice = Fractals.SelectMany(f => f).Select(_priceAvg).DefaultIfEmpty(MagnetPrice).Average();
-                    _buyLevel.RateEx = CenterOfMassBuy;
-                    _sellLevel.RateEx = CenterOfMassSell;
-                    rsdStartDate = CurrentPrice.Time;
-                    //_buySellLevelsForEach(sr => sr.ResetPricePosition());
-                    if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = TradingAngleRange <= 0 || sr.IsBuy && CorridorAngle < 0 || sr.IsSell && CorridorAngle > 0);
-                  });
-                  triggerRsd.Off(canTrade);
-                  if (!triggerFractal.Value.IsMin() && triggerFractal.Value.AddMinutes(BarsCount) < CurrentPrice.Time)
-                    triggerFractal.Off();
-                }
-                if (IsAutoStrategy
-                  && this.TakeProfitLimitRatio == 1
-                  && (CurrentPrice.Time - rsdStartDate).TotalMinutes * BarPeriodInt > CorridorStats.Rates.Count) {
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  CloseTrades("Trades start date");
-                }
-              }
-              adjustExitLevels1();
-              break;
-            #endregion
-            #region Rsd2
-            case TrailingWaveMethod.Rsd2:
-              #region firstTime
-              if (firstTime) {
-                LogTrades = !IsInVitualTrading;
-                DoNews = !IsInVitualTrading;
-                Log = new Exception(new {
-                  CorridorCrossesMaximum,
                   DistanceIterations_RsdRatio = DistanceIterations,
-                  PolyOrder_FractalRatio = PolyOrder,
-                  CorrelationMinimum_HeightRatio = CorrelationMinimum
+                  PolyOrder_FractalRatio = PolyOrder
                 } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
@@ -1123,23 +1061,31 @@ namespace HedgeHog.Alice.Store {
               #endregion
               {
                 var corridorRates = CorridorStats.Rates;
-                var priceHigh = _priceAvg;
-                var priceLow = _priceAvg;
-                Fractals = corridorRates.Fractals(PolyOrder > FttMax ? corridorRates.Count / PolyOrder : FttMax, priceHigh, priceLow);
-                var fractalsMinCount = Fractals[true].Count().Min(Fractals[false].Count());
-                var heightOk = (_buyLevel.Rate - _sellLevel.Rate) * CorrelationMinimum < RatesHeight;
-                var fractalOk = fractalsMinCount >= PolyOrder - 1;
-                var tradeOk = fractalOk && heightOk;
-                if (fractalsMinCount > 0) {
-                  CenterOfMassBuy = Fractals[true].Select(r => r.PriceHigh).First();
-                  CenterOfMassSell = Fractals[false].Select(r => r.PriceLow).First();
+                var fractals = FractalsRsd(corridorRates, PolyOrder, _priceAvg, _priceAvg);
+                if (fractals.Count == 2) {
+                  CenterOfMassBuy = fractals[true].Average();
+                  CenterOfMassSell = fractals[false].Average();
+                  MagnetPrice = fractals.SelectMany(f => f.Value).Average();
+                }
+                var buySellHeight = CenterOfMassBuy - CenterOfMassSell;
+                var lengthOk = WaveStDevRatio > 0 
+                  ? CorridorStats.Rates.Count > CorridorDistanceRatio * WaveStDevRatio 
+                  : CorridorStats.Rates.Count <= CorridorDistanceRatio;
+                var angleOk = TradingAngleRange >= 0 ? CorridorAngle.Abs() > TradingAngleRange : CorridorAngle.Abs() < TradingAngleRange.Abs();
+                var heightOk = buySellHeight < CorridorStats.HeightByRegression / 2;
+                triggerRsd.Set(lengthOk && angleOk && heightOk, () => {
                   _buyLevel.RateEx = CenterOfMassBuy;
                   _sellLevel.RateEx = CenterOfMassSell;
-                  if (IsAutoStrategy) _buySellLevelsForEach(sr => {
-                    sr.CanTradeEx = true;
-                    sr.TradesCount = 0;
-                    CloseAtZero = false;
-                  });
+                  rsdStartDate = CurrentPrice.Time;
+                  _buySellLevelsForEach(sr => sr.ResetPricePosition());
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = TradingAngleRange <= 0 || sr.IsBuy && CorridorAngle < 0 || sr.IsSell && CorridorAngle > 0);
+                });
+                triggerRsd.Off(lengthOk, () => {
+                  //_buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                });
+                if (IsAutoStrategy && (CurrentPrice.Time - rsdStartDate).TotalMinutes / BarPeriodInt > CorridorStats.Rates.Count) {
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  CloseTrades("Trades start date");
                 }
               }
               adjustExitLevels1();
@@ -1167,13 +1113,17 @@ namespace HedgeHog.Alice.Store {
                 var sell = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg3 : RatePrev.PriceAvg3;
                 var rates = CorridorStats.Rates.Select(_priceAvg);
                 var avg = RateLast.PriceAvg1 > 0 ? RateLast.PriceAvg1 : RatePrev.PriceAvg1;
-                var corridorLengthOk = CorridorStats.Rates.Count.Between(CorridorDistanceRatio + 1, CorridorDistanceRatio * WaveStDevRatio);
-                var corridorHeightOk = CorridorStats.RatesHeight < RatesHeight * CorridorHeightMax;
-                var corridorOk = corridorLengthOk && corridorHeightOk;
-                if (corridorOk) {
+                var corridorLengthOk = CorridorStats.Rates.Count > RatesArray.Count * WaveStDevRatio;
+                var stDevOk = RatesHeight / StDevByPriceAvg <= DistanceIterations;
+                if (!Trades.Any() && corridorLengthOk && stDevOk) {
                   _buyLevel.RateEx = buy;
                   _sellLevel.RateEx = sell;
                   if (IsAutoStrategy) _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = CorridorCrossesMaximum; });
+                }
+                var tradeHeight = StDevByPriceAvg;
+                if (Trades.Any() && _buyLevel.Rate.Abs(_sellLevel.Rate) > tradeHeight) {
+                  if (Trades.HaveBuy()) _sellLevel.RateEx = _buyLevel.Rate - tradeHeight;
+                  else _buyLevel.RateEx = _sellLevel.Rate + tradeHeight;
                 }
               }
               {
@@ -1234,7 +1184,7 @@ namespace HedgeHog.Alice.Store {
                 Log = new Exception(new { CorridorHeightMax_crossesCount = CorridorHeightMax } + "");
                 MagnetPrice = double.NaN;
                 onCloseTradeLocal = t => {
-                  if (t.PL > -PriceSpreadAverage ) {
+                  if (t.PL > -PriceSpreadAverage) {
                     //_buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   }
                 };
@@ -1256,7 +1206,7 @@ namespace HedgeHog.Alice.Store {
                 Func<IList<HedgeHog.Lib.EdgeInfo>, double> getLevel = edges => edges == null ? double.NaN
                   : edges.AverageByIterations(e => {
                     if (e == null) Debugger.Break();
-                    return e.SumAvg; 
+                    return e.SumAvg;
                   }, (v, a) => v <= a, 3).OrderByDescending(e => e.DistAvg)
                   .Select(e => e.Level).DefaultIfEmpty(double.NaN).First();
                 var edgesLevels = new[] { getLevel(edgeUp), getLevel(edgeDown) };
@@ -1270,7 +1220,7 @@ namespace HedgeHog.Alice.Store {
                 CenterOfMassSell = ratesMin.IfNaN(CenterOfMassSell);// lowper.Min();
                 MagnetPrice = corridorRatesAvg;
                 var corridorLengthOk = corridorRates.Length > CorridorDistanceRatio * WaveStDevRatio;
-                if ( !edgesLevels.Any(d => d.IsNaN())) {
+                if (!edgesLevels.Any(d => d.IsNaN())) {
                   _buyLevel.RateEx = CenterOfMassBuy;
                   _sellLevel.RateEx = CenterOfMassSell;
                   if (IsAutoStrategy) _buySellLevelsForEach(sr => sr.CanTradeEx = corridorLengthOk);
@@ -1278,6 +1228,53 @@ namespace HedgeHog.Alice.Store {
                 if (false && IsAutoStrategy && edgesLevels.All(e => e.IsNaN())) {
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                   CloseAtZero = true;
+                }
+              }
+              {
+                Func<double, IEnumerable<double>> rateSynceTrade = def => {
+                  var d = Trades.Max(t => t.Time);
+                  return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
+                };
+                var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min() : _buyLevel.Rate;
+                var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max() : _sellLevel.Rate;
+                adjustExitLevels(buyLevel, sellLevel);
+              }
+              break;
+            #endregion
+            #region Void
+            case TrailingWaveMethod.Void:
+              #region firstTime
+              if (firstTime) {
+                LogTrades = !IsInVitualTrading;
+                DoNews = !IsInVitualTrading;
+                Log = new Exception(new { CorridorCrossesMaximum } + "");
+                _buySellLevelsForEach(sr => { sr.TradesCountEx = CorridorCrossesMaximum; });
+                onCloseTradeLocal = t => {
+                  if (t.PL >= PriceSpreadAverageInPips) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+              }
+              #endregion
+              {
+                var buy = RateLast.PriceAvg2 > 0 ? RateLast.PriceAvg21 : RatePrev.PriceAvg21;
+                var sell = RateLast.PriceAvg3 > 0 ? RateLast.PriceAvg31 : RatePrev.PriceAvg31;
+                if (buy.Avg(sell).Sub(_buyLevel.RateEx.Avg(_sellLevel.Rate)).Abs() > RatesHeight / 3)
+                  _buySellLevelsForEach(sr => { sr.TradesCountEx = CorridorCrossesMaximum; });
+                var corridorLengthOk = CorridorStats.Rates.Count >= CorridorDistanceRatio * .9;
+                var angleOk = TradingAngleRange > 0 ? CorridorAngleFromTangent().Abs() <= TradingAngleRange : CorridorAngleFromTangent().Abs() >= TradingAngleRange.Abs();
+                var tradeCountOk = _buySellLevels.Min(sr => sr.TradesCount) >= CorridorCrossesMaximum;
+                //if (buy.Abs(sell) < StDevByHeight) { var avg = (buy + sell) / 2; buy = avg + StDevByHeight / 2; sell = buy - StDevByHeight; }
+                if (!Trades.Any() && corridorLengthOk && angleOk) {
+                  _buyLevel.RateEx = sell;
+                  _sellLevel.RateEx = buy;
+                  if (IsAutoStrategy) _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = CorridorCrossesMaximum; });
+                }
+                var tradeHeight = StDevByPriceAvg;
+                if (Trades.Any() && _buyLevel.Rate.Abs(_sellLevel.Rate) > tradeHeight) {
+                  if (Trades.HaveBuy()) _sellLevel.RateEx = _buyLevel.Rate - tradeHeight;
+                  else _buyLevel.RateEx = _sellLevel.Rate + tradeHeight;
                 }
               }
               {
@@ -1365,7 +1362,22 @@ namespace HedgeHog.Alice.Store {
       #endregion
     }
 
-    IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin,out double levelOut) {
+    public static IDictionary<bool, double[]> FractalsRsd(IList<Rate> rates, int fractalLength, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var prices = rates.Select(r => new { PriceHigh = priceHigh(r), PriceLow = priceLow(r) }).ToArray();
+      var indexMiddle = fractalLength / 2;
+      var zipped = prices.Zip(prices.Skip(1), (f, s) => new[] { f, s }.ToList());
+      for (var i = 2; i < fractalLength; i++)
+        zipped = zipped.Zip(prices.Skip(i), (z, v) => { z.Add(v); return z; });
+      var zipped2 = zipped.Where(z => z.Count == fractalLength)
+        .Select(z => new { max = z.Max(a => a.PriceHigh), min = z.Min(a => a.PriceLow), middle = z[indexMiddle] })
+        .Select(a => new { price = a.middle, isUp = a.max == a.middle.PriceHigh, IsDpwm = a.middle.PriceLow == a.min })
+        .ToArray();
+      return zipped2
+        .Where(a => a.isUp || a.IsDpwm)
+        .GroupBy(a => a.isUp, a => a.isUp ? a.price.PriceHigh : a.price.PriceLow)
+        .ToDictionary(g => g.Key, g => g.ToArray());
+    }
+    IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin, out double levelOut) {
       Func<double, Tuple<Rate, Rate>, bool> isOk = (l, t) => l.Between(t.Item1.PriceAvg, t.Item2.PriceAvg);
       IList<Tuple<Rate, Rate>> ratesFused = rates.Zip(rates.Skip(1), (f, s) => new Tuple<Rate, Rate>(f, s)).ToArray();
       var maxIntervals = new { span = TimeSpan.Zero, level = double.NaN}.IEnumerable().ToList();

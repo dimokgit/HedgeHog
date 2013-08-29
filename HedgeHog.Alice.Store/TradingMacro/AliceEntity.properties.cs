@@ -564,8 +564,22 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region TurnOffOnProfit
+    private bool _TurnOffOnProfit;
+    [Category(categoryTrading)]
+    public bool TurnOffOnProfit {
+      get { return _TurnOffOnProfit; }
+      set {
+        if (_TurnOffOnProfit != value) {
+          _TurnOffOnProfit = value;
+          OnPropertyChanged("TurnOffOnProfit");
+        }
+      }
+    }
+
+    #endregion
     #region DoNews
-    private bool _DoNews;
+    private bool _DoNews = true;
     [Category(categoryTrading)]
     public bool DoNews {
       get { return _DoNews; }
@@ -789,12 +803,25 @@ namespace HedgeHog.Alice.Store {
       var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
     }
+    DayOfWeek[] TradingDays() {
+      switch (TradingDaysRange) {
+        case WeekDays.Full: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.MoTh: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.TuFr: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.TuTh: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.SuFr: return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
+        case WeekDays.SuTh: return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+      }
+      throw new NotImplementedException(new { TradingDaysRange } + "");
+    }
+
     public enum WeekDays {
       Full = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
       MoTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday,
       TuFr = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
       TuTh = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday,
-      SuFr = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday + DayOfWeek.Sunday
+      SuFr = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday + DayOfWeek.Saturday,
+      SuTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Saturday
     }
     [DisplayName("Trading Hours")]
     [Description("21:00-5:00")]
@@ -820,14 +847,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    DayOfWeek[] TradingDays() {
-      switch (TradingDaysRange) {
-        case WeekDays.TuFr: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
-        case WeekDays.MoTh: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
-        case WeekDays.TuTh: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
-        default: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
-      }
-    }
     [DisplayName("SuppRes Levels Count")]
     [Category(categoryCorridor)]
     public int SuppResLevelsCount_ {
