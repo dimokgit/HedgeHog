@@ -714,6 +714,9 @@ namespace HedgeHog {
       return d == DateTime.MaxValue ? d1 : d;
     }
 
+    public static int Sub(this int v, int other) {
+      return v - other;
+    }
     public static double Sub(this double v, double other) {
       return v - other;
     }

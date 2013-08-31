@@ -66,7 +66,7 @@ namespace HedgeHog.Alice.Store {
     private int CalcCorridorByStDevBalanceAndMaxLength3(double[] ratesReversed, int stopIndex) {
       var stDevRatio = 0.99;
       Func<double, double, bool> isMore = (h, p) => h / p >= stDevRatio;
-      var lenths = Lib.IteratonSequence(stopIndex/10, stopIndex).ToArray();
+      var lenths = Lib.IteratonSequence(stopIndex / 10, stopIndex).ToArray();
       return Partitioner.Create(lenths, true).AsParallel()
         .Select(length => new { ratio = CalcStDevBalanceRatio(ratesReversed, length), length }).ToArray()
         .OrderByDescending(r => r.ratio).First().length;

@@ -987,12 +987,15 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    [DisplayName("Close All On Profit")]
-    [Category(categoryXXX_NU)]
-    [Description("Ex: if(trade.PL > Profit) ClosePair()")]
-    public bool CloseAllOnProfit_ {
+    [DisplayName("Adjust Exit By Time")]
+    [Category(categoryActive)]
+    [Description("Adjust exit level according to price movements since Trade started.")]
+    public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
-      set { CloseAllOnProfit = value; }
+      set { 
+        CloseAllOnProfit = value;
+        OnPropertyChanged("DoAdjustExitLevelByTradeTime");
+      }
     }
 
     const string categoryXXX = "XXX";

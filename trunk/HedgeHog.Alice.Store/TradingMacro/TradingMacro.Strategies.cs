@@ -998,23 +998,24 @@ namespace HedgeHog.Alice.Store {
               #region FirstTime
               if (firstTime) {
                 LogTrades = DoNews = !IsInVitualTrading;
-                Log = new Exception(new { WaveStDevRatio } + "");
+                Log = new Exception(new { WaveStDevRatio, DoAdjustExitLevelByTradeTime, CorrelationMinimum } + "");
                 onCloseTradeLocal = t => { };
                 onOpenTradeLocal = t => { };
               }
               #endregion
               {
-                var ratesInner = RatesArray.ReverseIfNot();
+                double h = RateLast.PriceAvg2, l = RateLast.PriceAvg3; 
+                var ratesInner = RatesArray.Where(r => r.PriceAvg.Between(l, h)).Reverse().ToArray();
                 var levels = CorridorByStDev(ratesInner, StDevByHeight);
                 double level = levels[0].Level, stDev = levels[0].StDev;
-                var isCountOk = levels[0].Count < StDevLevelsCountsAverage;
-                bool ok = isCountOk &&
-                  (!Trades.Any()
-                  || Trades.HaveBuy() && level < Trades.NetClose() || Trades.HaveSell() && level > Trades.NetClose());
-                var corridorJumped = corridorLevel.IfNaN(0).Abs(level) > stDev;
                 var offset = stDev;
                 CenterOfMassBuy = level + offset;
                 CenterOfMassSell = level - offset;
+                var isCountOk = CorridorStats.Rates.Count >= RatesArray.Count * WaveStDevRatio;// levels[0].Count < StDevLevelsCountsAverage;
+                bool ok = isCountOk && CenterOfMassBuy.Abs(CenterOfMassSell) > InPoints(CorrelationMinimum) &&
+                  (!Trades.Any()
+                  || Trades.HaveBuy() && level < Trades.NetClose() || Trades.HaveSell() && level > Trades.NetClose());
+                var corridorJumped = corridorLevel.IfNaN(0).Abs(level) > stDev;
 
                 CenterOfMassLevels.Clear();
                 CenterOfMassLevels.AddRange(levels.Skip(1).Select(a => new[] { a.Level/* + a.StDev, a.Level - a.StDev*/ }).SelectMany(a => a));
@@ -1037,7 +1038,7 @@ namespace HedgeHog.Alice.Store {
                   _buySellLevelsForEach(sr => { sr.CanTradeEx = false; });
 
               }
-              adjustExitLevels1();
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
               break;
             #endregion
             #region Rsd
@@ -1277,15 +1278,7 @@ namespace HedgeHog.Alice.Store {
                   else _buyLevel.RateEx = _sellLevel.Rate + tradeHeight;
                 }
               }
-              {
-                Func<double, IEnumerable<double>> rateSynceTrade = def => {
-                  var d = Trades.Max(t => t.Time);
-                  return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
-                };
-                var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min() : _buyLevel.Rate;
-                var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max() : _sellLevel.Rate;
-                adjustExitLevels(buyLevel, sellLevel);
-              }
+              AdjustExitLevelsByTradeTime(adjustExitLevels);
               break;
             #endregion
             default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
@@ -1360,6 +1353,16 @@ namespace HedgeHog.Alice.Store {
       if (IsTradingActive)
         _adjustEnterLevels();
       #endregion
+    }
+
+    private void AdjustExitLevelsByTradeTime(Action<double, double> adjustExitLevels) {
+      Func<double, IEnumerable<double>> rateSynceTrade = def => {
+        var d = Trades.Max(t => t.Time);
+        return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
+      };
+      var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min() : _buyLevel.Rate;
+      var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max() : _sellLevel.Rate;
+      adjustExitLevels(buyLevel, sellLevel);
     }
 
     public static IDictionary<bool, double[]> FractalsRsd(IList<Rate> rates, int fractalLength, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1552,7 +1555,7 @@ namespace HedgeHog.Alice.Store {
       var corridorHeightInPips = InPips(height);
       var half = height / 2;
       var halfInPips = InPips(half).ToInt();
-      var levels = Enumerable.Range(halfInPips, ratesHeightInPips - halfInPips)
+      var levels = Enumerable.Range(halfInPips, ratesHeightInPips.Sub(halfInPips).Max(halfInPips))
         .Select(levelInner => levelMin + levelInner * point).ToArray();
       var levelsByCount = levels.AsParallel().Select(levelInner => {
         var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
