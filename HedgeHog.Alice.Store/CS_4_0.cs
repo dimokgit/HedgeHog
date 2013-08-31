@@ -2849,7 +2849,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ReverseStrategy_"/></summary>
         public const string ReverseStrategy_ = "ReverseStrategy_";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseAllOnProfit_"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoAdjustExitLevelByTradeTime"/></summary>
         public const string CloseAllOnProfit_ = "CloseAllOnProfit_";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.categoryXXX"/></summary>
@@ -5811,7 +5811,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ReverseStrategy_"/></summary>
         public static PropertyPath ReverseStrategy_Path { get { return new PropertyPath("ReverseStrategy_"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CloseAllOnProfit_"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoAdjustExitLevelByTradeTime"/></summary>
         public static PropertyPath CloseAllOnProfit_Path { get { return new PropertyPath("CloseAllOnProfit_"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.CorridorCrossesMaximum"/></summary>
