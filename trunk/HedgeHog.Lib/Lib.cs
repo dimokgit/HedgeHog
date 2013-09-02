@@ -720,6 +720,9 @@ namespace HedgeHog {
     public static double Sub(this double v, double other) {
       return v - other;
     }
+    public static double Div(this double v, double other) {
+      return v / other;
+    }
 
     public static double Avg(this double v, double other) {
       return (v + other) / 2;

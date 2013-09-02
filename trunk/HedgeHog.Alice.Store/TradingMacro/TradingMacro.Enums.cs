@@ -43,7 +43,8 @@ namespace HedgeHog.Alice.Store {
     Rsd = 140,
     Rsd2 = 141,
     Fft = 142, 
-    Backdoor = 150
+    Backdoor = 150,
+    LongLine = 160
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,

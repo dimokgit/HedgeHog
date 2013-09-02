@@ -41,7 +41,20 @@
 					<TextBlock Text="{Binding Header}"
 										 Foreground="{Binding IsActive,ConverterParameter=Black|DarkRed|DarkGreen,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
 										 FontWeight="{Binding IsSelected,ConverterParameter=Normal|Normal|Black,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
-										 />
+                     ToolTipService.ShowDuration="120000"
+										 >
+            <TextBlock.ToolTip>
+              <TextBlock FontFamily="Courier New">
+                <Run>M   - Manual Mode (On/Off)</Run><LineBreak/>
+                <Run>T   - Buy/Sell (On/Off)</Run><LineBreak/>
+                <Run>0,1 - Corridor Cross Count</Run><LineBreak/>
+                <Run>H   - Fit chart to view</Run><LineBreak/>
+                <Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
+                <Run>/?p - Pause Virtual Trading(On/Off)</Run><LineBreak/>
+                <Run>> - Advance on bar</Run>
+              </TextBlock>
+            </TextBlock.ToolTip>
+          </TextBlock>
 				</TextBlock>
 			</DataTemplate>
 			<DataTemplate x:Key="RadPaneContextMenu">

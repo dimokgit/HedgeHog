@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace HedgeHog {
   public static partial class Lib {
@@ -152,6 +154,25 @@ namespace HedgeHog {
         return list;
       }, list => //!list.Any() ? crossesCount > 1 ? values.Edge(step, crossesCount - 1) : new EdgeInfo[0]:
          list.GroupBy(l => l.height.Sign()).Select(l => l.OrderBy(a=>a.sumAvg).First().height).ToArray());
+    }
+
+    public static IList<Tuple<double,int>> CrossedLevelsWithGap(this double[] values, double step) {
+      if (values.Length < 3) return new[] { new Tuple<double, int>(double.NaN, 0) };
+      Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
+      var min = values.Min();
+      var max = values.Max();
+      var steps = max.Sub(min).Div(step).ToInt();
+      var heights = Enumerable.Range(1, steps - 1).Select(s => min + s * step).ToArray();
+      return Partitioner.Create(heights,true).AsParallel()
+        .Aggregate(new Tuple<double, int>(double.NaN, 0).AsList(), (list, height) => {
+          var line = Enumerable.Repeat(height, values.Length).ToArray();
+          var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
+          if (indexes.Length > 1) {
+            var gap = indexes.Zip(indexes.Skip(1), (p, n) => n - p).Max();
+            list.Add(new Tuple<double, int>(height, gap));
+          }
+          return list;
+        });
     }
 
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs = null) {

@@ -28,6 +28,9 @@ namespace HedgeHog.Alice.Store {
         GlobalStorage._Instance = value; 
       }
     }
+    static GlobalStorage() {
+      Instance = new GlobalStorage();
+    }
     static ForexEntities _forexContext;
     static AliceEntities _context;
     static object contextLocker = new object();
@@ -53,7 +56,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public GlobalStorage() {
-      Instance = this;
+      //Instance = this;
       //var list = new[] { new { Index = 1, Value = 48 } };
       //SetGenericList(list);
     }
@@ -154,8 +157,9 @@ namespace HedgeHog.Alice.Store {
             } else
               if (false && GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
                 _context = new AliceEntities("metadata=res://*/Models.Alice.csdl|res://*/Models.Alice.ssdl|res://*/Models.Alice.msl;provider=System.Data.SqlServerCe.3.5;provider connection string=\"Data Source=Store\\Alice.sdf\"");
-              else
-                _context = InitAliceEntityContext();
+              else if (true)
+                _context = new AliceEntities();
+              else InitAliceEntityContext();
         return _context;
       }
     }
