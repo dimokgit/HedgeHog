@@ -1356,8 +1356,8 @@ namespace HedgeHog.Alice.Client {
     private void Initialize(){
       var settings = new WpfPersist.UserSettingsStorage.Settings().Dictionary;
       DatabasePath = settings.Where(kv => kv.Key.Contains("DatabasePath")).LastOrDefault().Value;
-      if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
-      else DatabasePath = GlobalStorage.DatabasePath;
+      //if (!string.IsNullOrWhiteSpace(DatabasePath)) GlobalStorage.DatabasePath = DatabasePath;
+      //else DatabasePath = GlobalStorage.DatabasePath;
 
       ServerTradesList = new ListCollectionView(ServerTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
       ServerTradesList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Trade>(t => t.Pair), ListSortDirection.Ascending));

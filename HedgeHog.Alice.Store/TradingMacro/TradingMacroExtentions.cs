@@ -1347,6 +1347,7 @@ namespace HedgeHog.Alice.Store {
 
     object _replayLocker = new object();
     public void Replay(ReplayArguments args) {
+      if (!args.DateStart.HasValue) throw new ApplicationException("Start Date error.");
       Func<TradingMacro[]> tms = () => args.TradingMacros.Cast<TradingMacro>().ToArray();
       Action<RepayPauseMessage> pra = m => args.InPause = !args.InPause;
       Action<RepayBackMessage> sba = m => args.StepBack = true;
@@ -2846,7 +2847,6 @@ namespace HedgeHog.Alice.Store {
           : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
       LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
-      var td = TradingDistance;
       LotSizeByLossBuy = AllowedLotSizeCore();
       LotSizeByLossSell = AllowedLotSizeCore();
       //Math.Max(tm.LotSize, FXW.GetLotSize(Math.Ceiling(tm.CurrentLossPercent.Abs() / tm.LotSizePercent) * tm.LotSize, fw.MinimumQuantity));
@@ -2860,7 +2860,7 @@ namespace HedgeHog.Alice.Store {
       LimitAmount = limitAmount;
     }
 
-    private int MaxPipsToPMC() { return (TakeProfitPips * 2).ToInt(); }
+    private int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
 
     private int CalcLotSizeByPMC(Account account) {
       return TradingStatistics.TradingMacros == null ? 0
@@ -3823,6 +3823,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public double RatesStDevAdjustedInPips { get { return InPips(RatesStDevAdjusted); } }
+
     List<LambdaBinding> _tradingStateLambdaBindings = new List<LambdaBinding>();
     bool __tradingStateLambdaBinding;
     public bool TradingState {
@@ -3851,6 +3852,31 @@ namespace HedgeHog.Alice.Store {
       return Strategy != Strategies.None && IsTradingActive
        && (_buyLevel != null && _buyLevel.CanTrade || _sellLevel != null && _sellLevel.CanTrade);
     }
+
+
+    List<LambdaBinding> _BuySellHeightLambdaBindings = new List<LambdaBinding>();
+    bool __BuySellHeightLambdaBinding;
+    public double BuySellHeight {
+      get {
+        if (!__BuySellHeightLambdaBinding) {
+          __BuySellHeightLambdaBinding = true;
+          try {
+            _BuySellHeightLambdaBindings.AddRange(new[]{ 
+              LambdaBinding.BindOneWay(() => BuyLevel.Rate, () => BuySellHeight, (s) => double.NaN),
+              LambdaBinding.BindOneWay(() => SellLevel.Rate, () => BuySellHeight, (s) => double.NaN)
+            });
+          } catch (Exception exc) {
+            Log = exc;
+          }
+        }
+        return _buyLevel == null || _sellLevel == null ? 0 : _buyLevel.Rate.Abs(_sellLevel.Rate);
+      }
+      set {
+        OnPropertyChanged(() => BuySellHeight);
+        OnPropertyChanged(() => BuySellHeightInPips);
+      }
+    }
+    public double BuySellHeightInPips { get { return InPips(BuySellHeight); } }
 
   }
   public static class WaveInfoExtentions {

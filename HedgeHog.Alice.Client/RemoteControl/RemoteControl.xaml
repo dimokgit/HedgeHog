@@ -275,7 +275,7 @@
                 <WrapPanel Name="CorridorBlock" Background="PapayaWhip">
                   <TextBlock Text="{Binding TradingDistanceInPips,StringFormat=[{0:n0}}" ToolTip="Trading Distance" Margin="-2,0,-1,0"/>
                   <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
-                  <TextBlock Text="{Binding Custom1,StringFormat=|{0:n0}]}" Margin="0,0">
+                  <TextBlock Text="{Binding BuySellHeightInPips,StringFormat=|{0:n0}]}" Margin="0,0" ToolTip="Buy-Sell Height">
                   </TextBlock>
                 <!--<LineBreak/>
                 <TextBlock Margin="-3">/</TextBlock>
