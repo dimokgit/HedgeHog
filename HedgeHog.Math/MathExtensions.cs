@@ -125,6 +125,12 @@ namespace HedgeHog {
     public static double Percentage<T>(this int v, double other) {
       return other.Percentage(v);
     }
+    /// <summary>
+    /// (one - other) / Math.Max(one, other);
+    /// </summary>
+    /// <param name="v"></param>
+    /// <param name="other"></param>
+    /// <returns></returns>
     public static double Percentage(this double v, double other) {
       return (v - other) / Math.Max(v, other);
     }

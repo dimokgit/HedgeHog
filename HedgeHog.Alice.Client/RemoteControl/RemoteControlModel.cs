@@ -377,7 +377,8 @@ namespace HedgeHog.Alice.Client {
         corridorLengthMinimum: tm.CorridorLengthMinimum, corridorCrossHighLowMethodInt: tm.CorridorCrossHighLowMethodInt,
         priceCmaLevels: tm.PriceCmaLevels, volumeTresholdIterations: tm.VolumeTresholdIterations, stDevTresholdIterations: tm.StDevTresholdIterations,
         stDevAverageLeewayRatio:tm.StDevAverageLeewayRatio, 
-        extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment,corridorBigToSmallRatio:tm.CorridorBigToSmallRatio);
+        extreamCloseOffset:tm.ExtreamCloseOffset,currentLossInPipsCloseAdjustment:tm.CurrentLossInPipsCloseAdjustment,corridorBigToSmallRatio:tm.CorridorBigToSmallRatio,
+        voltageFunction:tm.VoltageFunction);
       tmNew.PropertyChanged += TradingMacro_PropertyChanged;
       //foreach (var p in tradingMacro.GetType().GetProperties().Where(p => p.GetCustomAttributes(typeof(DataMemberAttribute), false).Count() > 0))
       //  if (!(p.GetCustomAttributes(typeof(EdmScalarPropertyAttribute), false)

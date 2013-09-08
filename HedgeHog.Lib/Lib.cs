@@ -155,18 +155,21 @@ namespace HedgeHog {
         yield return i;
     }
 
-    private static int NestStep(int rc) {
+    public static int NestStep(int rc) {
       return (rc / 100.0).ToInt() + 1;
     }
 
     public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
       return new Queue<T>(t);
     }
-    private static List<T> AsList<T>(this T v) {
-      return v.IEnumerable().ToList();
+    public static List<T> AsList<T>(this T v, int take = 0) {
+      return v.IEnumerable(take).ToList();
     }
-    public static IEnumerable<T> IEnumerable<T>(this T v)  {
-      return new[] { v }.Take(0);
+    public static IEnumerable<T> IEnumerable<T>(this T v,int take = 0)  {
+      return new[] { v }.Take(take);
+    }
+    public static T[] AsArray<T>(this T v, int size) {
+      return new T[size];
     }
     public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {
       return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile();
@@ -273,6 +276,12 @@ namespace HedgeHog {
     }
     public static IEnumerable<double> UnShrink(this IEnumerable<double> values, int groupLength) {
       return values.Select(v => Enumerable.Repeat(v, groupLength)).SelectMany(v => v);
+    }
+
+    public static IEnumerable<R> Shrink<T, R>(this IEnumerable<T> values, Func<T, double> getValue, Func<int, int> nextStep, Func<double, int, R> getOut) {
+      return from r in values.Select((r, i) => new { r = getValue(r), i = i / nextStep(i), groupBy = nextStep(i) })
+             group r by new { r.i, r.groupBy } into g
+             select getOut(g.Average(a => a.r), g.Key.i * g.Key.groupBy);
     }
 
     public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list, int count) {

@@ -62,7 +62,7 @@
           <Property Name="FreezLimit" Type="int" Nullable="false" />
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
           <Property Name="FreezeStop" Type="int" Nullable="false" />
-          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="8" />
+          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="256" />
           <Property Name="FibMin" Type="float" Nullable="false" />
           <Property Name="CorridornessMin" Type="float" Nullable="false" />
           <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
@@ -137,6 +137,7 @@
           <Property Name="CurrentLossInPipsCloseAdjustment" Type="float" Nullable="false" />
           <Property Name="CorridorBigToSmallRatio" Type="float" Nullable="false" />
           <Property Name="ResetOnBalance" Type="float" />
+          <Property Name="VoltageFunction" Type="int" Nullable="false" />
         </EntityType>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
@@ -257,6 +258,7 @@
           <Property Type="Double" Name="CurrentLossInPipsCloseAdjustment" Nullable="false" />
           <Property Type="Double" Name="CorridorBigToSmallRatio" Nullable="false" />
           <Property Type="Double" Name="ResetOnBalance" />
+          <Property Type="Int32" Name="VoltageFunction" Nullable="false" />
         </EntityType>
         <EntityType Name="OrderTemplate">
           <Key>
@@ -343,6 +345,7 @@
           <EntitySetMapping Name="TradingMacroes">
             <EntityTypeMapping TypeName="IsTypeOf(AliceModel.TradingMacro)">
               <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="VoltageFunction" ColumnName="VoltageFunction" />
                 <ScalarProperty Name="ResetOnBalance" ColumnName="ResetOnBalance" />
                 <ScalarProperty Name="CorridorBigToSmallRatio" ColumnName="CorridorBigToSmallRatio" />
                 <ScalarProperty Name="CurrentLossInPipsCloseAdjustment" ColumnName="CurrentLossInPipsCloseAdjustment" />
