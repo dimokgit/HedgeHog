@@ -75,11 +75,13 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
-    private CorridorStatistics ShowVolts(double volt) {
+    private CorridorStatistics ShowVolts(double volt,int averageIterations) {
       if (GetVoltage(RatesArray[0]).IsNaN()) RatesArray.ToList().ForEach(r => SetVoltage(r, volt));
       else SetVoltage(RateLast, volt);
-      var voltageAvg = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Average();
-      GetVoltageAverage = () => voltageAvg;
+      List<double> avgs = new List<double>();
+      var voltageAvg = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(averageIterations, avgs).Average();
+      GetVoltageAverage = () => avgs.Last();
+      GetVoltageHigh = () => voltageAvg;
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
@@ -637,7 +639,7 @@ namespace HedgeHog.Alice.Store {
       if (!correlations.Any()) correlations.Add(new { corr = GetVoltage(RatePrev), length = 1000000 });
       WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray());
       CorridorCorrelation = ratesReversedOriginal.Volatility(_priceAvg, GetPriceMA);
-      return ShowVolts(CorridorCorrelation);
+      return ShowVolts(CorridorCorrelation, 1);
     }
 
     private CorridorStatistics ScanCorridorByParabola_4(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
