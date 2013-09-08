@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+namespace HedgeHog.Alice {
+  public enum VoltageFunction {
+    None = 0,
+    AboveBelowRatio = 10,
+    StDevInsideOutRatio = 20
+  }
+}
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Void = 0,
@@ -40,6 +47,7 @@ namespace HedgeHog.Alice.Store {
     Manual = 110,
     Void = 111,
     StDev = 120,
+    StDev2 = 121,
     Rsd = 140,
     Rsd2 = 141,
     Fft = 142, 

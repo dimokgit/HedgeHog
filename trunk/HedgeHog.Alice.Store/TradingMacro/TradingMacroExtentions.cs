@@ -2223,7 +2223,7 @@ namespace HedgeHog.Alice.Store {
     public double TradingDistanceInPips {
       get {
         try {
-          return InPips(_tradingDistance).Max(_tradingDistanceMax);
+          return InPips(TradingDistance).Max(_tradingDistanceMax);
         } catch {
           return double.NaN;
         }
@@ -2748,6 +2748,15 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Void: return ScanCorridorVoid;
       }
       throw new NotSupportedException(function + "");
+    }
+
+    Func<CorridorStatistics> GetShowVoltageFunction() {
+      switch (VoltageFunction_) {
+        case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
+        case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
+        case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
+      }
+      throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
 
     public double CommissionByTrade(Trade trade) { return TradesManager.CommissionByTrade(trade); }
@@ -3279,7 +3288,7 @@ namespace HedgeHog.Alice.Store {
       set { _waveRates = value; }
     }
     private double CorridorAngleFromTangent() {
-      return AngleFromTangent(CorridorStats.Coeffs.LineSlope());
+      return AngleFromTangent(-CorridorStats.Coeffs.LineSlope());
     }
 
     private double AngleFromTangent(double tangent) {

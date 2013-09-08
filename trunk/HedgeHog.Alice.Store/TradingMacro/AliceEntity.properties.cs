@@ -706,6 +706,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+
+    [DisplayName("Voltage Function")]
+    [Category(categoryActiveFuncs)]
+    public VoltageFunction VoltageFunction_ {
+      get { return (VoltageFunction)VoltageFunction; }
+      set {
+        if (VoltageFunction != (int)value) {
+          VoltageFunction = (int)value;
+          OnPropertyChanged("VoltageFunction_");
+        }
+      }
+    }
+
     [DisplayName("Scan Corridor By")]
     [Category(categoryActiveFuncs)]
     [Description("ScanCorridor By")]
