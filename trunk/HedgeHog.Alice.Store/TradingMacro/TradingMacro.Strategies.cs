@@ -617,6 +617,7 @@ namespace HedgeHog.Alice.Store {
 
         #region adjustLevels
         var firstTime = true;
+        var errorsCount = 0;
         #region Watchers
         var watcherSetCorridor = new ObservableValue<bool>(false, true);
         var watcherCanTrade = new ObservableValue<bool>(true, true);
@@ -1106,7 +1107,7 @@ namespace HedgeHog.Alice.Store {
               {
                 double h = CorridorStats.RatesMax, l = CorridorStats.RatesMin;
                 var ratesInner = RatesArray.Where(r => r.PriceAvg.Between(l, h)).Reverse().ToArray();
-                if (!ratesInner.Any()) Debugger.Break();
+                if (!ratesInner.Any()) { var exc = new Exception("ratesInner is empty."); if (errorsCount++ > 1000) throw exc; Log = exc; return; }
                 //var levels = CorridorByStDev(ratesInner, StDevByHeight);
                 var levels = StDevsByHeight(ratesInner, StDevByHeight).OrderByDescending(a => a.Count / a.StDev).Take(1).ToArray();
                 double level = levels[0].Level, stDev = levels[0].StDev;
@@ -1132,6 +1133,88 @@ namespace HedgeHog.Alice.Store {
                 }
                 if (IsAutoStrategy && !(isCountOk && angleOk))
                   _buySellLevelsForEach(sr => { sr.CanTradeEx = false; });
+
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+            #region StDev4
+            case TrailingWaveMethod.StDev4:
+              #region FirstTime
+              if (firstTime) {
+                LogTrades = DoNews = !IsInVitualTrading;
+                Log = new Exception(new { WaveStDevRatio, DoAdjustExitLevelByTradeTime, CorrelationMinimum, TradingAngleRange } + "");
+                onCloseTradeLocal = t => {
+                  if (t.PL > PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
+                };
+                onOpenTradeLocal = t => { };
+              }
+              #endregion
+              {
+                double h = CorridorStats.RatesMax, l = CorridorStats.RatesMin;
+                var ratesInner = RatesArray.Where(r => r.PriceAvg.Between(l, h)).Reverse().ToArray();
+                if (!ratesInner.Any()) { var exc = new Exception("ratesInner is empty."); if (errorsCount++ > 1000) throw exc; Log = exc; return; }
+                //var levels = CorridorByStDev(ratesInner, StDevByHeight);
+                var levels = StDevsByHeight(ratesInner, StDevByHeight).OrderByDescending(a => a.Count / a.StDev).Take(1).ToArray();
+                double level = levels[0].Level, stDev = levels[0].StDev;
+                var offset = stDev * DistanceIterations;
+                CenterOfMassBuy = level + offset;
+                CenterOfMassSell = level - offset;
+                var isCountOk = CorridorStats.Rates.Count >= RatesArray.Count * WaveStDevRatio;// levels[0].Count < StDevLevelsCountsAverage;
+                var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell, CenterOfMassBuy);
+                var angleOk = VoltageCurrent > GetVoltageAverage();
+                bool ok = isCountOk
+                  && angleOk
+                  && CenterOfMassBuy.Abs(CenterOfMassSell) > InPoints(CorrelationMinimum)
+                  && (!Trades.Any() || isPriceInside);
+
+                CenterOfMassLevels.Clear();
+                CenterOfMassLevels.AddRange(levels.Skip(1).Select(a => new[] { a.Level/* + a.StDev, a.Level - a.StDev*/ }).SelectMany(a => a));
+                if (ok) {
+                  corridorLevel = level;
+                  _buyLevel.RateEx = CenterOfMassBuy;
+                  _sellLevel.RateEx = CenterOfMassSell;
+                  if (IsAutoStrategy && isPriceInside && !_buySellLevels.All(sr => sr.CanTrade))
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.ResetPricePosition(); });
+                }
+                if (IsAutoStrategy && !(isCountOk && angleOk))
+                  _buySellLevelsForEach(sr => { sr.CanTradeEx = false; });
+
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+            #region StDev5
+            case TrailingWaveMethod.StDev5:
+              #region FirstTime
+              if (firstTime) {
+                LogTrades = DoNews = !IsInVitualTrading;
+                Log = new Exception(new { WaveStDevRatio, DoAdjustExitLevelByTradeTime, CorrelationMinimum, TradingAngleRange } + "");
+                onCloseTradeLocal = t => {
+                  if (t.PL > PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
+                };
+                onOpenTradeLocal = t => { };
+              }
+              #endregion
+              {
+                double h = CorridorStats.RatesMax, l = CorridorStats.RatesMin;
+                var ratesInner = RatesArray.AsEnumerable().Reverse().ToArray();
+                if (!ratesInner.Any()) { var exc = new Exception("ratesInner is empty."); if (errorsCount++ > 1000) throw exc; Log = exc; return; }
+                var levels = StDevsByHeight(ratesInner, StDevByHeight).OrderByDescending(a => a.Count / a.StDev).Take(1).ToArray();
+                double level = levels[0].Level, stDev = levels[0].StDev;
+                var offset = stDev * DistanceIterations;
+                CenterOfMassBuy = level + offset;
+                CenterOfMassSell = level - offset;
+                var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell, CenterOfMassBuy);
+                bool ok = CenterOfMassBuy.Abs(CenterOfMassSell) > InPoints(CorrelationMinimum)
+                  && isPriceInside;
+
+                if (ok) {
+                  _buyLevel.RateEx = CenterOfMassBuy;
+                  _sellLevel.RateEx = CenterOfMassSell;
+                  if (IsAutoStrategy && !_buySellLevels.All(sr => sr.CanTrade))
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.ResetPricePosition(); });
+                }
 
               }
               if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
@@ -1414,10 +1497,11 @@ namespace HedgeHog.Alice.Store {
               AdjustExitLevelsByTradeTime(adjustExitLevels);
               break;
             #endregion
-            default: var exc = new Exception(TrailingDistanceFunction + " is not supported."); Log = exc; throw exc;
+            default: throw new Exception(TrailingDistanceFunction + " is not supported.");
           }
           if (firstTime) {
             firstTime = false;
+            BarsCountCalc = null;
             ForEachSuppRes(sr => sr.ResetPricePosition());
           }
         };

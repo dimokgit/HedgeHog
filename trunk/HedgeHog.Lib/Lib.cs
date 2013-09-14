@@ -79,6 +79,12 @@ namespace HedgeHog {
     public static T Cast<T>(object obj, Func<T> type) {
       return (T)obj;
     }
+    public static T[] CopyToArray<T>(this T[] values, int count) {
+      var array = new T[count];
+      Array.Copy(values, array, array.Length);
+      return array;
+    }
+
     public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
       return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
     }

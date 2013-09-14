@@ -576,6 +576,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Tests\Test_EURJPY_StDev3.txt" />
     <Resource Include="Tests\Params_EURJPY_StDev2.txt" />
     <Resource Include="Tests\Params_EURJPY_StDev_CorrByBal.txt" />
     <Resource Include="Tests\Params_EURJPY_ReversedVoid.txt" />

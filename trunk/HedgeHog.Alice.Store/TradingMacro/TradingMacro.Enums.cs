@@ -7,7 +7,8 @@ namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
     AboveBelowRatio = 10,
-    StDevInsideOutRatio = 20
+    StDevInsideOutRatio = 20,
+    Volatility = 30
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -20,6 +21,7 @@ namespace HedgeHog.Alice.Store {
     WaveStDevHeight = 8,
     DayDistance = 90,
     Regression = 100,
+    Regression2 = 101,
     Parabola = 110,
     Sinus = 20,
     Sinus1 = 21,
@@ -33,6 +35,7 @@ namespace HedgeHog.Alice.Store {
     Height = 60,
     Time = 61,
     TimeFrame = 62,
+    TimeRatio = 59,
     Rsd = 63,
     Ftt = 64
   }
@@ -49,6 +52,8 @@ namespace HedgeHog.Alice.Store {
     StDev = 120,
     StDev2 = 121,
     StDev3 = 122,
+    StDev4 = 123,
+    StDev5 = 124,
     Rsd = 140,
     Rsd2 = 141,
     Fft = 142, 

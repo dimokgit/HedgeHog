@@ -570,10 +570,6 @@ namespace HedgeHog {
       }
     }
 
-    VerticalLine lineTimeTakeProfit = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
-    public DateTime LineTimeTakeProfit {
-      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit.Value = dateAxis.ConvertToDouble(value)); }
-    }
     VerticalLine lineTimeTakeProfit1 = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
     public DateTime LineTimeTakeProfit1 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit1.Value = dateAxis.ConvertToDouble(value)); }
@@ -585,14 +581,6 @@ namespace HedgeHog {
     VerticalLine lineTimeTakeProfit3 = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
     public DateTime LineTimeTakeProfit3 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit3.Value = dateAxis.ConvertToDouble(value)); }
-    }
-
-    Action<DateTime>[] _lineTimeTakeProfits;
-
-    public Action<DateTime>[] LineTimeTakeProfits {
-      get {
-        return _lineTimeTakeProfits ?? (_lineTimeTakeProfits = new Action<DateTime>[] { d => LineTimeTakeProfit = d, d => LineTimeTakeProfit1 = d, d => LineTimeTakeProfit2 = d, d => LineTimeTakeProfit3 = d });
-      }
     }
 
     #endregion
@@ -1328,7 +1316,6 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
-      plotter.Children.Add(lineTimeTakeProfit);
       plotter.Children.Add(lineTimeTakeProfit1);
       plotter.Children.Add(lineTimeTakeProfit2);
       plotter.Children.Add(lineTimeTakeProfit3);
