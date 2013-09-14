@@ -1,14 +1,17 @@
 BarPeriod=m1
 
-DistanceIterations=3,4
+DistanceIterations=4
 
 CorrelationMinimum=15
 CorridorDistanceRatio=480
-BarsCount=1720
+
+BarsCount=1440-2000,60
+
 TakeProfitLimitRatio=1.5
 TradingHoursRange=00:00-13:00
 PolyOrder=10
 DoAdjustExitLevelByTradeTime=True
+IsCorridorForwardOnly=True
 
 ScanCorridorBy=Regression
 TrailingDistanceFunction=StDev3
@@ -24,7 +27,6 @@ DoStreatchRates_=False
 Eval=a.stDev
 ExitFunction=Void
 FftReversed=False
-IsCorridorForwardOnly=False
 MaxLotByTakeProfitRatio_=1
 MedianFunction=Density
 MovingAverageType=Cma

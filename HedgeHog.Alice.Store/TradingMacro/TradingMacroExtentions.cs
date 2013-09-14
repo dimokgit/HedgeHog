@@ -1400,6 +1400,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         #region Init stuff
+        BarsCountCalc = null;
         CorridorStats.Rates = null;
         RatesInternal.Clear();
         RateLast = null;
@@ -1474,7 +1475,7 @@ namespace HedgeHog.Alice.Store {
                 else {
                   Debugger.Break();
                 }
-              while (RatesInternal.Count > (BarsCount * 10).Max(1440 * 3)
+              while (RatesInternal.Count > (BarsCount * 10)
                   && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || RatesInternal[0] < CorridorStats.Rates.LastBC())))
                 RatesInternal.RemoveAt(0);
             }
@@ -1995,7 +1996,7 @@ namespace HedgeHog.Alice.Store {
       Func<IEnumerable<Rate>> a = () => {
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
         var countByDate = startDate.HasValue && DoStreatchRates ? RatesInternal.Count(r => r.StartDate >= startDate) : 0;
-        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCount).ToInt()).Max(0));
+        return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1.05).Max(BarsCountCalc.GetValueOrDefault(BarsCount)).ToInt()).Max(0));
         //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : RatesInternal.GetMinuteTicks((int)BarPeriod, false, false);
@@ -2728,6 +2729,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.WaveDistance43: return ScanCorridorByDistance43;
         case ScanCorridorFunction.DayDistance: return ScanCorridorByDayDistance;
         case ScanCorridorFunction.Regression: return ScanCorridorByRegression;
+        case ScanCorridorFunction.Regression2: return ScanCorridorByRegression2;
         case ScanCorridorFunction.Parabola: return ScanCorridorByParabola;
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
@@ -2735,6 +2737,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
+        case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
         case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
@@ -2755,6 +2758,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
+        case HedgeHog.Alice.VoltageFunction.Volatility: return ShowVoltsByVolatility;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }

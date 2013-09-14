@@ -963,8 +963,6 @@ namespace HedgeHog.Alice.Client {
         if (tm == null) return;
         if (rates.Count() == 0) return;
           rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-        Enumerable.Range(0, charter.LineTimeTakeProfits.Length.Min(tm.WaveRates.Count())).ToList()
-          .ForEach(i => charter.LineTimeTakeProfits[i](tm.WaveRates[i].Rate.StartDateContinuous));
         var price = tm.CurrentPrice;
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
@@ -1036,7 +1034,6 @@ namespace HedgeHog.Alice.Client {
             charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
           if (tm.WaveShort.HasRates)
             charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
-          charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistanceRatio.ToInt()).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));
