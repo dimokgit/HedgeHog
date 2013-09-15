@@ -1,4 +1,6 @@
-﻿CREATE VIEW [dbo].[v_TradeSession] AS
+﻿
+
+CREATE VIEW [dbo].[v_TradeSession] AS
 SELECT        TS.Pair, TS.SessionId, S.SuperUid AS SuperSessionUid, TS.TimeStamp, TS.Count, TS.GrossPL, TS.Days,S.Profitability, ISNULL(S.MaximumLot, TS.Lot * 1.4) AS Lot, 
                          TS.LotA / O.BaseUnitSize AS LotA, TS.LotSD / O.BaseUnitSize AS LotSD, TS.DollarsPerMonth, TS.PL, TS.MinutesInTest, TS.DaysPerMinute, ISNULL(S.Profitability, 
                          TS.DollarsPerMonth) / TS.Lot * O.BaseUnitSize AS DollarPerLot, TS.SessionInfo,
@@ -14,7 +16,9 @@ SELECT        TS.Pair, TS.SessionId, S.SuperUid AS SuperSessionUid, TS.TimeStamp
                          DistanceIterations.Value AS DistanceIterations, 
                          CorrelationMinimum.Value AS CorrelationMinimum, 
                          ScanCorridorBy.Value AS ScanCorridorBy,
-                         TPLR.Value AS TakeProfitLimitRatio              
+                         TPLR.Value AS TakeProfitLimitRatio,
+                         TradingAngleRange.Value TradingAngleRange,
+                         PolyOrder.Value PolyOrder
 FROM            dbo.v_TradeSession_10 AS TS 
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TakeProfitLimitRatio')TPLR
 INNER JOIN dbo.t_Offer AS O ON TS.Pair = O.Pair
@@ -28,6 +32,8 @@ OUTER APPLY fGetSessionValue(TS.SessionInfo, 'CorridorDistanceRatio')CorridorDis
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PLToCorridorExitRatio') AS PLToCorridorExitRatio
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'ProfitToLossExitRatio_') AS ProfitToLossExitRatio
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'BarsCount') AS BarsCount
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TradingAngleRange_') AS TradingAngleRange
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PolyOrder') AS PolyOrder
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane1', @value = N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]

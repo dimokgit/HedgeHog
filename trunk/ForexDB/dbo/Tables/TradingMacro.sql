@@ -83,8 +83,11 @@
     [CurrentLossInPipsCloseAdjustment] FLOAT (53)       CONSTRAINT [DF__TradingMa__Curre__1625EDCE] DEFAULT ((0.9)) NOT NULL,
     [CorridorBigToSmallRatio]          FLOAT (53)       CONSTRAINT [DF__TradingMa__Corri__171A1207] DEFAULT ((2)) NOT NULL,
     [ResetOnBalance]                   FLOAT (53)       NULL,
+    [VoltageFunction]                  INT              CONSTRAINT [DF_TradingMacro_VoltageFunction] DEFAULT ((0)) NOT NULL,
     CONSTRAINT [PK__TradingMacro__0000000000000086] PRIMARY KEY CLUSTERED ([UID] ASC)
 );
+
+
 
 
 GO
