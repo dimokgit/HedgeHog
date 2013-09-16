@@ -379,8 +379,14 @@
                 
               </TextBlock>
                 <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
+                  <Border.ToolTip>Trading Active</Border.ToolTip>
                     <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
                       Fill="{Binding TradingState,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
+                </Border>
+                <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
+                  <Border.ToolTip>In Trading Hours</Border.ToolTip>
+                    <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
+                      Fill="{Binding TradingTimeState,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
                 </Border>
               </StackPanel>
             </DataTemplate>

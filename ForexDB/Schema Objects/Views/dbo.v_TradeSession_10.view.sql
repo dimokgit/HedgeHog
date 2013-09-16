@@ -1,10 +1,13 @@
-﻿CREATE VIEW dbo.v_TradeSession_10
+﻿
+CREATE VIEW [dbo].[v_TradeSession_10]
 AS
 SELECT        TOP (100000) Pair, SessionId, MAX(TimeStamp) AS TimeStamp, COUNT(*) AS Count, SUM(GrossPL) AS GrossPL, DATEDIFF(dd, MIN(TimeOpen), MAX(TimeClose)) 
                          AS Days, MAX(Lot) AS Lot, AVG(Lot) AS LotA, STDEV(Lot) AS LotSD, SUM(GrossPL) / NULLIF (DATEDIFF(hh, MIN(TimeOpen), MAX(TimeClose)), 0) 
                          * 30.5 * 24 AS DollarsPerMonth, CONVERT(numeric(10, 2), SUM(PL * Lot) / SUM(Lot)) AS PL, DATEDIFF(n, MIN(TimeStamp), MAX(TimeStamp)) AS MinutesInTest, 
                          CONVERT(float, DATEDIFF(dd, MIN(TimeOpen), MAX(TimeClose))) / NULLIF (DATEDIFF(n, MIN(TimeStamp), MAX(TimeStamp)), 0.0) AS DaysPerMinute, 
-                         MAX(SessionInfo) AS SessionInfo, MIN(RunningBalance) AS MinimumGross, CAST(MIN(TimeOpen) AS date) AS DateStart, CAST(MAX(TimeClose) AS date) 
+                         MAX(SessionInfo) AS SessionInfo,
+                         MAX(SessionInfo2) AS SessionInfo2,
+                          MIN(RunningBalance) AS MinimumGross, CAST(MIN(TimeOpen) AS date) AS DateStart, CAST(MAX(TimeClose) AS date) 
                          AS DateStop
 FROM            dbo.v_TradeSession_05 AS T
 GROUP BY SessionId, Pair

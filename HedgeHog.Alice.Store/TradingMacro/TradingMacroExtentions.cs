@@ -1329,15 +1329,16 @@ namespace HedgeHog.Alice.Store {
     string _sessionInfo = "";
     public string SessionInfo {
       get {
+        var separator = "\t";
         if (string.IsNullOrEmpty(_sessionInfo)) {
           var l = new List<string>();
           foreach (var p in GetType().GetProperties()) {
             var ca = p.GetCustomAttributes(typeof(CategoryAttribute), false).FirstOrDefault() as CategoryAttribute;
             if (ca != null && sessionInfoCategories.Contains(ca.Category)) {
-              l.Add(p.Name + ":" + p.GetValue(this, null));
+              l.Add(p.Name + separator + p.GetValue(this, null));
             }
           }
-          l.Add("TestFileName:" + TestFileName);
+          l.Add("TestFileName" + separator + TestFileName);
           _sessionInfo = string.Join(",", l);
         }
         return _sessionInfo;
@@ -1976,6 +1977,8 @@ namespace HedgeHog.Alice.Store {
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
+            OnPropertyChanged(TradingMacroMetadata.TradingTimeState);
+
           }
           return _rateArray;
         } catch (Exception exc) {
@@ -3259,7 +3262,6 @@ namespace HedgeHog.Alice.Store {
           _TakeProfitDistance = value;
           OnPropertyChanged(TradingMacroMetadata.TakeProfitDistance);
           OnPropertyChanged(TradingMacroMetadata.TakeProfitDistanceInPips);
-          OnPropertyChanged(TradingMacroMetadata.TrendNessRatio);
         }
       }
     }
