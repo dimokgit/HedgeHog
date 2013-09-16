@@ -9,9 +9,11 @@ namespace HedgeHog.DB {
     public static void UseForexContext(Action<ForexEntities> action,  Action<ForexEntities> exit = null) {
       UseForexContext(action, null, exit);
     }
-    public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null, Action<ForexEntities> exit = null) {
+    public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null, Action<ForexEntities> exit = null, int commandTimeout = 0) {
       using (var context = ForexEntitiesFactory())
         try {
+          if (commandTimeout > 0)
+            context.CommandTimeout = commandTimeout;
           action(context);
           if (exit != null) exit(context);
         } catch (Exception exc) {

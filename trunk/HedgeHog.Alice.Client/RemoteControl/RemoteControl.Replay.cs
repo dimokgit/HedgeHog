@@ -158,8 +158,6 @@ namespace HedgeHog.Alice.Client {
             testParameter.ForEach(tp => {
               try {
                 tm.SetProperty(tp.Key, tp.Value);
-                if (tp.Key == "CorridorDistanceRatio")
-                  tm.BarsCount = tm.CorridorDistanceRatio.ToInt() + 1;
               }catch(SetLotSizeException){
               } catch (Exception exc) {
                 if(!(exc.InnerException is SetLotSizeException))
