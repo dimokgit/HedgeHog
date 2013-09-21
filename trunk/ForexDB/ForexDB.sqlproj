@@ -35,9 +35,9 @@
     <ArithAbort>True</ArithAbort>
     <AutoClose>False</AutoClose>
     <AutoCreateStatistics>True</AutoCreateStatistics>
-    <AutoShrink>False</AutoShrink>
+    <AutoShrink>True</AutoShrink>
     <AutoUpdateStatistics>True</AutoUpdateStatistics>
-    <AutoUpdateStatisticsAsynchronously>False</AutoUpdateStatisticsAsynchronously>
+    <AutoUpdateStatisticsAsynchronously>True</AutoUpdateStatisticsAsynchronously>
     <ChangeTrackingRetentionPeriod>2</ChangeTrackingRetentionPeriod>
     <ChangeTrackingRetentionUnit>Days</ChangeTrackingRetentionUnit>
     <CloseCursorOnCommitEnabled>False</CloseCursorOnCommitEnabled>
@@ -59,7 +59,7 @@
     <Parameterization>SIMPLE</Parameterization>
     <QuotedIdentifier>True</QuotedIdentifier>
     <ReadCommittedSnapshot>False</ReadCommittedSnapshot>
-    <Recovery>FULL</Recovery>
+    <Recovery>SIMPLE</Recovery>
     <RecursiveTriggersEnabled>False</RecursiveTriggersEnabled>
     <ServiceBrokerOption>DisableBroker</ServiceBrokerOption>
     <SupplementalLoggingOn>False</SupplementalLoggingOn>
@@ -71,7 +71,7 @@
     <PostConversionRemoveFromScc>;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqldeployment;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqlsettings;Properties\Database.sqlsettings;Properties\Database.sqldeployment;Properties\Database.sqlcmdvars;Properties\Database.sqlpermissions;Schema Objects\Storage\Files\Forex_log.sqlfile.sql;Schema Objects\Storage\Files\PRIMARY.Forex.sqlfile.sql;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\ForexDB.dbproj</PostConversionRemoveFromScc>
     <PostConversionAddToScc>
     </PostConversionAddToScc>
-    <CompatibilityMode>100</CompatibilityMode>
+    <CompatibilityMode>110</CompatibilityMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>.\sql\release\</OutputPath>
@@ -530,6 +530,9 @@
     <None Include="Assemblies\SQLCLR_6.dll" />
     <None Include="Assemblies\SQL_DateFuncs_2.dll" />
     <None Include="Assemblies\LightLib_6.dll" />
+    <None Include="Assemblies\TA-Lib-Core_7.dll" />
+    <None Include="Assemblies\SQLCLR_7.dll" />
+    <None Include="Assemblies\LightLib_7.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
@@ -561,14 +564,6 @@
       <SqlAssemblyName>TA-Lib-Core</SqlAssemblyName>
       <SqlOwnerName>dbo</SqlOwnerName>
       <SqlPermissionSet>UNSAFE</SqlPermissionSet>
-    </Reference>
-    <Reference Include="SQL_DateFuncs">
-      <HintPath>Assemblies\SQL_DateFuncs_2.dll</HintPath>
-      <SqlAssemblyName>SQL_DateFuncs</SqlAssemblyName>
-      <IsModelAware>True</IsModelAware>
-      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
-      <SqlOwnerName>dbo</SqlOwnerName>
-      <SqlPermissionSet>SAFE</SqlPermissionSet>
     </Reference>
   </ItemGroup>
   <ItemGroup>

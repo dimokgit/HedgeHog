@@ -17,6 +17,10 @@ AS
 
 
 
+
+
+
+
 GO
 EXECUTE sp_addextendedproperty @name = N'AutoDeployed', @value = N'yes', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'FUNCTION', @level1name = N'clr_RegEx_Replace';
 
