@@ -19,8 +19,11 @@
     [SessionInfo]          NVARCHAR (4000)  NULL,
     [RunningBalance]       FLOAT (53)       NULL,
     [RunningBalanceTotal]  FLOAT (53)       NULL,
+    [SessionInfo2]         VARCHAR (1024)   NULL,
     CONSTRAINT [PK_t_Trade] PRIMARY KEY CLUSTERED ([Id] ASC)
 );
+
+
 
 
 
