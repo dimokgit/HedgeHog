@@ -451,6 +451,7 @@ namespace HedgeHog.Alice.Store {
         _buyLevel.CanTrade = _sellLevel.CanTrade = false;
         var _buySellLevels = new[] { _buyLevel, _sellLevel }.ToList();
         Action<Action<SuppRes>> _buySellLevelsForEach = a => _buySellLevels.ForEach(sr => a(sr));
+        Action<Func<SuppRes, bool>, Action<SuppRes>> _buySellLevelsForEachWhere = (where, a) => _buySellLevels.Where(where).ToList().ForEach(sr => a(sr));
         _buySellLevelsForEach(sr => sr.ResetPricePosition());
         Action<SuppRes, bool> setCloseLevel = (sr, overWrite) => {
           if (!overWrite && sr.InManual) return;
@@ -1105,7 +1106,7 @@ namespace HedgeHog.Alice.Store {
                 var ratesInner = RatesArray.Where(r => r.PriceAvg.Between(l, h)).Reverse().ToArray();
                 if (!ratesInner.Any()) { var exc = new Exception("ratesInner is empty."); if (errorsCount++ > 1000) throw exc; Log = exc; return; }
                 //var levels = CorridorByStDev(ratesInner, StDevByHeight);
-                var levels = StDevsByHeight(ratesInner, StDevByHeight).OrderByDescending(a => a.Count / a.StDev).Take(1).ToArray();
+                var levels = StDevsByHeight1(ratesInner, StDevByHeight).OrderByDescending(a => a.Count / a.StDev).Take(1).ToArray();
                 double level = levels[0].Level, stDev = levels[0].StDev;
                 var offset = stDev * DistanceIterations;
                 CenterOfMassBuy = level + offset;
@@ -1268,11 +1269,9 @@ namespace HedgeHog.Alice.Store {
                 double h = CorridorStats.RatesMax, l = CorridorStats.RatesMin;
                 var ratesInner = RatesArray.AsEnumerable().Reverse().ToArray();
                 if (!ratesInner.Any()) { var exc = new Exception("ratesInner is empty."); if (errorsCount++ > 1000) throw exc; Log = exc; return; }
-                var levels0 = StDevsByHeight3(ratesInner, StDevByHeight);
-                var countAvg = levels0.AverageByIterations(a => a.Count, (a, d) => a <= d, 1).Average(a => a.Count);
-                var levels = levels0.Where(a => a.Count > countAvg).OrderByDescending(a => a.StDev).Take(1).ToArray();
-                double level = levels[0].Level, stDev = levels[0].StDev;
-                var offset = (stDev * DistanceIterations).Min(StDevByPriceAvg);
+                var levels = StDevsByHeight2(ratesInner, StDevByHeight).OrderBy(a => a.Count / a.StDev).Take(1).ToArray();
+                double level = levels[0].Level;
+                var offset = GetValueByTakeProfitFunction(TakeProfitFunction) / 2;
                 CenterOfMassBuy = level + offset;
                 CenterOfMassSell = level - offset;
                 var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell, CenterOfMassBuy);
@@ -1285,6 +1284,7 @@ namespace HedgeHog.Alice.Store {
                   if (IsAutoStrategy && !_buySellLevels.All(sr => sr.CanTrade))
                     _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.ResetPricePosition(); });
                 }
+
               }
               if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
               break;
@@ -1525,6 +1525,41 @@ namespace HedgeHog.Alice.Store {
                 var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max() : _sellLevel.Rate;
                 adjustExitLevels(buyLevel, sellLevel);
               }
+              break;
+            #endregion
+            #region Flat
+            case TrailingWaveMethod.Flat:
+              #region FirstTime
+              if (firstTime) {
+                LogTrades = DoNews = !IsInVitualTrading;
+                Log = new Exception(new { TradingAngleRange,  WaveStDevRatio, PolyOrder } + "");
+                if (WaveStDevRatio < 1) throw new ArgumentOutOfRangeException(new { WaveStDevRatio } + " is out of range(>1).");
+                if (!TradingAngleRange.Between(0.1, 3)) throw new ArgumentOutOfRangeException(new { TradingAngleRange } + " is out of range.")  ;
+                onCloseTradeLocal = t => {
+                  if (t.PL > PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
+                };
+                onOpenTradeLocal = t => { };
+              }
+              #endregion
+              {
+                var lengthOk = CorridorStats.Rates.Count.Div(CorridorDistanceRatio) > WaveStDevRatio;
+                var angleOk = CorridorAngleFromTangent().Abs() <= TradingAngleRange;
+                var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell, CenterOfMassBuy);
+                var ok = lengthOk && angleOk;
+                if (ok) {
+                  CenterOfMassBuy = getRateLast(r => r.PriceAvg2);
+                  CenterOfMassSell = getRateLast(r => r.PriceAvg3);
+                  if (true || isPriceInside) {
+                    _buyLevel.RateEx = CenterOfMassBuy;
+                    _sellLevel.RateEx = CenterOfMassSell;
+                    _buySellLevelsForEachWhere(sr => !sr.CanTrade, sr => {
+                      sr.TradesCountEx = CorridorCrossesMaximum;
+                      sr.CanTradeEx = true;
+                    });
+                  }
+                }
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
               break;
             #endregion
             #region Void
@@ -1853,6 +1888,29 @@ namespace HedgeHog.Alice.Store {
         Level = a.level, StDev = a.stDev, Count = a.count
       }).ToArray();
     }
+    IList<CorridorByStDev_Results> StDevsByHeight1(IList<Rate> ratesReversed, double height) {
+      var price = _priceAvg;
+      var point = InPoints(1);
+      var rountTo = TradesManager.GetDigits(Pair) - 1;
+      var rates = ratesReversed.Select((rate, index) => new { index, rate }).ToArray();
+      Func<double, double, Rate, bool> isOk = (h, l, rate) => rate.PriceAvg.Between(l, h);
+      var levelMin = (ratesReversed.Select(price).DefaultIfEmpty(double.NaN).Min() * Math.Pow(10, rountTo)).Ceiling() / Math.Pow(10, rountTo);
+      var ratesHeightInPips = InPips(ratesReversed.Height(price)).Floor();
+      var corridorHeightInPips = InPips(height);
+      var half = height / 2;
+      var halfInPips = InPips(half).ToInt()*0;
+      var levels = Enumerable.Range(halfInPips, ratesHeightInPips.Sub(halfInPips * 2).Max(halfInPips))
+        .Select(levelInner => levelMin + levelInner * point).ToArray();
+      var levelsByCount = levels.AsParallel().Select(levelInner => {
+        var ratesInner = ratesReversed.Where(r => isOk(levelInner - half, levelInner + half, r)).ToArray();
+        if (ratesInner.Length < 2) return null;
+        return new { level = levelInner, stDev = ratesInner.StDev(_priceAvg), count = ratesInner.Length };
+      }).Where(a => a != null).ToList();
+      return levelsByCount.Select(a => new CorridorByStDev_Results() {
+        Level = a.level, StDev = a.stDev, Count = a.count
+      }).ToArray();
+    }
+
     IList<CorridorByStDev_Results> StDevsByHeight2(IList<Rate> ratesReversed, double height) {
       var price = _priceAvg;
       var point = InPoints(1);

@@ -44,6 +44,7 @@ namespace HedgeHog.Alice.Store {
     MagnetFft = 2,
     Magnet2 = 3,
     LongCross = 10,
+    Flat = 20,
     Count = 90, 
     CountWithAngle = 92,
     Wavelette = 93,

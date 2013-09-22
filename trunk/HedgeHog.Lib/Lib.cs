@@ -84,6 +84,11 @@ namespace HedgeHog {
       Array.Copy(values, array, array.Length);
       return array;
     }
+    public static T[] CopyToArray<T>(this T[] values,int start, int count) {
+      var array = new T[count];
+      Array.Copy(values, start, array, 0, array.Length);
+      return array;
+    }
 
     public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
       return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
@@ -729,6 +734,9 @@ namespace HedgeHog {
       return d == DateTime.MaxValue ? d1 : d;
     }
 
+    public static double Div(this int v, double other) {
+      return v / other;
+    }
     public static int Sub(this int v, int other) {
       return v - other;
     }

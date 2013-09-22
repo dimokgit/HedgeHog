@@ -1213,7 +1213,7 @@ namespace HedgeHog.Alice.Store {
               OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
             } catch (Exception exc) { Log = exc; }
           })
-          .Latest().ToObservable(ThreadPoolScheduler.Instance)
+          .Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
           .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
         if (false)
           fw.PriceChangedBroadcast.AsObservable()
@@ -3022,7 +3022,7 @@ namespace HedgeHog.Alice.Store {
             Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
             var sw = Stopwatch.StartNew();
             var serverTime = ServerTime;
-            var periodsBack = (BarsCount * 5).Max(1440 * 5);
+            var periodsBack = BarsCount * 10;
             var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/ CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
             var startDate = TradesManagerStatic.FX_DATE_NOW;
             if (!useDefaultInterval) {
@@ -3170,9 +3170,6 @@ namespace HedgeHog.Alice.Store {
           goto case TradingMacroMetadata.IsSuppResManual;
         case TradingMacroMetadata.IsSuppResManual:
         case TradingMacroMetadata.TakeProfitFunction:
-        case TradingMacroMetadata.CorridorDistanceRatio:
-          OnScanCorridor(RatesArray);
-          goto case TradingMacroMetadata.RangeRatioForTradeLimit;
         case TradingMacroMetadata.RangeRatioForTradeLimit:
         case TradingMacroMetadata.RangeRatioForTradeStop:
         case TradingMacroMetadata.IsColdOnTrades:

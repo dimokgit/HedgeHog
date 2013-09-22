@@ -5,7 +5,7 @@ DistanceIterations=4
 CorrelationMinimum=15
 CorridorDistanceRatio=480
 
-BarsCount=1440-2000,60
+BarsCount=1720
 
 TakeProfitLimitRatio=1.5
 TradingHoursRange=00:00-13:00
