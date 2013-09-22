@@ -600,16 +600,18 @@ namespace HedgeHog.Alice.Store {
       var ratesReversedOriginal = ratesForCorridor.ReverseIfNot();
       var ratesReversed = ratesReversedOriginal.TakeWhile(r => r.StartDate >= dateMin).Shrink(CorridorPrice, groupLength).ToArray();
       var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      var ratesToRegress = new List<double>() { ratesReversed[0] };
-      foreach (var rate in ratesReversed.Skip(1)) {
-        ratesToRegress.Add(rate);
-        if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
+      for (var i = 2; i < ratesReversedOriginal.Count; i += 2) {
+        if (ratesReversedOriginal.SafeArray().CopyToArray(i / 2, i / 2).Height()
+          .Min(ratesReversedOriginal.SafeArray().CopyToArray(i / 2).Height()) > stDev) {
+          CorridorDistanceRatio = i;
+          break;
+        }
       }
       var correlations = new { corr = 0.0, length = 0 }.IEnumerable().ToList();
       var corr = double.NaN;
       var locker = new object();
-      var start = ratesToRegress.Count.Max(polyOrder + 1);
-      Partitioner.Create(Enumerable.Range(start, ratesReversed.Length.Sub(start)).ToArray(), true)
+      var start = CorridorDistanceRatio.Div(groupLength).Max(polyOrder + 1).ToInt();
+      Partitioner.Create(Enumerable.Range(start, ratesReversed.Length.Sub(start).Min(1)).ToArray(), true)
         .AsParallel().ForAll(rates => {
           try {
             var prices = new double[rates];
@@ -644,7 +646,7 @@ namespace HedgeHog.Alice.Store {
         bc++;
       BarsCountCalc = bc;
       var ratesCount = BarsCountCalc.Value;
-      if (GetVoltage(ratesInternalReversed[1]).IsNaN()) {
+      if (GetVoltage(ratesInternalReversed[10]).IsNaN()) {
         Log = new Exception("Loading volts.");
         var count = ratesCount.Min(ratesInternalReversed.Length - ratesCount);
         Enumerable.Range(0, count).ToList().ForEach(index => {

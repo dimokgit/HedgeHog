@@ -37,6 +37,7 @@ using ReactiveUI;
 using System.Collections.Specialized;
 using Microsoft.Research.DynamicDataDisplay.Charts.Navigation;
 using System.Globalization;
+using System.Threading;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -570,6 +571,10 @@ namespace HedgeHog {
       }
     }
 
+    VerticalLine lineTimeTakeProfit = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    public DateTime LineTimeTakeProfit {
+      set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit.Value = dateAxis.ConvertToDouble(value)); }
+    }
     VerticalLine lineTimeTakeProfit1 = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
     public DateTime LineTimeTakeProfit1 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit1.Value = dateAxis.ConvertToDouble(value)); }
@@ -821,7 +826,7 @@ namespace HedgeHog {
             _OtherVerticalLinesSubject = new Subject<IEnumerable<DateTime>>();
             _OtherVerticalLinesSubject
               .Latest()
-              .ToObservable( ThreadPoolScheduler.Instance)
+              .ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
               .Subscribe(s => {
                 Observable.Start(() => {
                 }, new System.Reactive.Concurrency.DispatcherScheduler(plotter.Dispatcher));
@@ -1316,6 +1321,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       plotter.Children.Add(lineAvgAsk);
       plotter.Children.Add(lineAvgBid);
+      plotter.Children.Add(lineTimeTakeProfit);
       plotter.Children.Add(lineTimeTakeProfit1);
       plotter.Children.Add(lineTimeTakeProfit2);
       plotter.Children.Add(lineTimeTakeProfit3);
