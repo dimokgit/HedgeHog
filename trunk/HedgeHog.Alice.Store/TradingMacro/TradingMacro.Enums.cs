@@ -31,6 +31,7 @@ namespace HedgeHog.Alice.Store {
     StDevUDCross = 43,
     StDevBalance = 44,
     StDevBalanceR = 45,
+    StDevSplits = 46,
     Balance = 50,
     Height = 60,
     Time = 61,
