@@ -1534,9 +1534,9 @@ namespace HedgeHog.Alice.Store {
                 LogTrades = DoNews = !IsInVitualTrading;
                 Log = new Exception(new { TradingAngleRange,  WaveStDevRatio, PolyOrder } + "");
                 if (WaveStDevRatio < 1) throw new ArgumentOutOfRangeException(new { WaveStDevRatio } + " is out of range(>1).");
-                if (!TradingAngleRange.Between(0.1, 3)) throw new ArgumentOutOfRangeException(new { TradingAngleRange } + " is out of range.")  ;
+                if (!TradingAngleRange.Between(0.1, 100)) throw new ArgumentOutOfRangeException(new { TradingAngleRange } + " is out of range(0.1, 100).");
                 onCloseTradeLocal = t => {
-                  if (t.PL > PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
+                  if (t.PL > -PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
                 };
                 onOpenTradeLocal = t => { };
               }
@@ -1544,19 +1544,20 @@ namespace HedgeHog.Alice.Store {
               {
                 var lengthOk = CorridorStats.Rates.Count.Div(CorridorDistanceRatio) > WaveStDevRatio;
                 var angleOk = CorridorAngleFromTangent().Abs() <= TradingAngleRange;
-                var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell, CenterOfMassBuy);
+                var offest = CenterOfMassBuy.Sub(CenterOfMassSell).Div(4);
+                var isPriceInside = CurrentPrice.Average.Between(CenterOfMassSell + offest, CenterOfMassBuy - offest);
                 var ok = lengthOk && angleOk;
                 if (ok) {
                   CenterOfMassBuy = getRateLast(r => r.PriceAvg2);
                   CenterOfMassSell = getRateLast(r => r.PriceAvg3);
-                  if (true || isPriceInside) {
-                    _buyLevel.RateEx = CenterOfMassBuy;
-                    _sellLevel.RateEx = CenterOfMassSell;
-                    _buySellLevelsForEachWhere(sr => !sr.CanTrade, sr => {
-                      sr.TradesCountEx = CorridorCrossesMaximum;
-                      sr.CanTradeEx = true;
-                    });
-                  }
+                }
+                if (lengthOk && isPriceInside) {
+                  _buyLevel.RateEx = CenterOfMassBuy;
+                  _sellLevel.RateEx = CenterOfMassSell;
+                  _buySellLevelsForEachWhere(sr => !sr.CanTrade, sr => {
+                    sr.TradesCountEx = CorridorCrossesMaximum;
+                    sr.CanTradeEx = true;
+                  });
                 }
               }
               if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();

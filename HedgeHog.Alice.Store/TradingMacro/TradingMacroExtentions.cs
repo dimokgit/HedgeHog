@@ -2748,6 +2748,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
+        case ScanCorridorFunction.StDevSplits: return ScanCorridorBySplitHeights;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
         case ScanCorridorFunction.HorizontalProbe2: return ScanCorridorByHorizontalLineCrosses3;
