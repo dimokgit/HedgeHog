@@ -600,17 +600,15 @@ namespace HedgeHog.Alice.Store {
       var ratesReversedOriginal = ratesForCorridor.ReverseIfNot();
       var ratesReversed = ratesReversedOriginal.TakeWhile(r => r.StartDate >= dateMin).Shrink(CorridorPrice, groupLength).ToArray();
       var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      for (var i = 2; i < ratesReversedOriginal.Count; i += 2) {
-        if (ratesReversedOriginal.SafeArray().CopyToArray(i / 2, i / 2).Height()
-          .Min(ratesReversedOriginal.SafeArray().CopyToArray(i / 2).Height()) > stDev) {
-          CorridorDistanceRatio = i;
-          break;
-        }
+      var ratesToRegress = new List<double>() { ratesReversed[0] };
+      foreach (var rate in ratesReversed.Skip(1)) {
+        ratesToRegress.Add(rate);
+        if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
       }
       var correlations = new { corr = 0.0, length = 0 }.IEnumerable().ToList();
       var corr = double.NaN;
       var locker = new object();
-      var start = CorridorDistanceRatio.Div(groupLength).Max(polyOrder + 1).Min(ratesReversed.Length - 1).ToInt();
+      var start = ratesToRegress.Count.Max(polyOrder + 1);
       Partitioner.Create(Enumerable.Range(start, ratesReversed.Length.Sub(start)).ToArray(), true)
         .AsParallel().ForAll(rates => {
           try {
@@ -626,7 +624,7 @@ namespace HedgeHog.Alice.Store {
           }
         });
       correlations.Sort((a, b) => a.corr.CompareTo(b.corr));
-      if (!correlations.Any()) correlations.Add(new { corr = GetVoltage(RatePrev), length = polyOrder });
+      if (!correlations.Any()) correlations.Add(new { corr = GetVoltage(RatePrev), length = 1000000 });
       WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray());
       CorridorCorrelation = ratesReversedOriginal.Volatility(_priceAvg, GetPriceMA);
       return ShowVolts(CorridorCorrelation, 1);
@@ -661,18 +659,6 @@ namespace HedgeHog.Alice.Store {
       return ShowVolts(CorridorCorrelation, 1);
     }
 
-    private CorridorStatistics ScanCorridorBySplitHeights(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorBySplitHeights, GetShowVoltageFunction());
-    }
-    private int CalcCorridorBySplitHeights(IList<Rate> rates) {
-      var ratesReversedOriginal = rates.ReverseIfNot().SafeArray();
-      var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      for (var i = 2; i < ratesReversedOriginal.Length; i += 2)
-        if (ratesReversedOriginal.SafeArray().CopyToArray(i / 2, i / 2).Height()
-          .Min(ratesReversedOriginal.SafeArray().CopyToArray(i / 2).Height()) > stDev)
-          return i;
-      return ratesReversedOriginal.Length;
-    }
     private int CalcCorridorByRegressionCorrelation(IList<Rate> ratesReversedOriginal) {
       var groupLength = WaveShort.HasRates ? (WaveShort.Rates.Count / 100).Max(1) : 5;
       var dateMin = WaveShort.HasRates ? WaveShort.Rates.LastBC().StartDate.AddMinutes(-BarPeriodInt * groupLength * 2) : DateTime.MinValue;
