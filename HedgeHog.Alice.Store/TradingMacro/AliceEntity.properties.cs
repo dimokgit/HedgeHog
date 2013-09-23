@@ -850,7 +850,7 @@ namespace HedgeHog.Alice.Store {
     WeekDays _TradingDaysRange = WeekDays.Full;
 
     [DisplayName("Trading Days")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public WeekDays TradingDaysRange {
       get { return (WeekDays)CorridorRatioForRange; }
       set {
@@ -968,12 +968,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Close On Profit")]
-    [Category(categoryXXX_NU)]
-    [Description("Ex: if( PL > Limit) CloseTrade()")]
-    public bool CloseOnProfit_ {
+    [DisplayName("Exit By BuySell Level")]
+    [Category(categoryActive)]
+    [Description("(X ? _buySell:eve.Rate : trade.Open) + takeProfit ")]
+    public bool ExitByBuySellLevel {
       get { return CloseOnProfit; }
-      set { CloseOnProfit = value; }
+      set {
+        CloseOnProfit = value;
+        OnPropertyChanged(() => ExitByBuySellLevel);
+      }
     }
 
     [DisplayName("Close On Profit Only")]
@@ -1234,7 +1237,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Corridor Height By")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public CorridorHeightMethods CorridorHeightMethod {
       get { return (CorridorHeightMethods)CorridorIterationsOut; }
       set {
@@ -1287,7 +1290,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {

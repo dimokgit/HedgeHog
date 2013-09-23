@@ -1734,8 +1734,8 @@ namespace HedgeHog.Alice.Store {
         var d = Trades.Max(t => t.Time);
         return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
       };
-      var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min()/*.Min(_buyLevel.Rate)*/ : _buyLevel.Rate;
-      var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max()/*.Max(_sellLevel.Rate)*/ : _sellLevel.Rate;
+      var buyLevel = Trades.HaveBuy() ? rateSynceTrade(_buyLevel.Rate).Min().Min(ExitByBuySellLevel ? _buyLevel.Rate : double.NaN) : _buyLevel.Rate;
+      var sellLevel = Trades.HaveSell() ? rateSynceTrade(_sellLevel.Rate).Max().Max(ExitByBuySellLevel ? _sellLevel.Rate : double.NaN) : _sellLevel.Rate;
       adjustExitLevels(buyLevel, sellLevel);
     }
 

@@ -75,7 +75,7 @@ namespace HedgeHog.Alice.Client {
           _testParamsRaw.AddRange(paramsDict.Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
         } else {
           var testParams = tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => a.Category == TradingMacro.categoryTest);
-          var paramsDict = testParams.ToDictionary(p => p.Name.Substring(4), p => p.GetValue(tmOriginal, null).ToString().ParseParamRange());
+          var paramsDict = testParams.ToDictionary(p => p.Item2.Name.Substring(4), p => p.Item2.GetValue(tmOriginal, null).ToString().ParseParamRange());
           _testParamsRaw.AddRange(paramsDict.Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
             .Select(kv => kv.Value.Split(c).Select(v => new KeyValuePair<string, object>(kv.Key, v)).ToArray()));
         }
@@ -175,8 +175,12 @@ namespace HedgeHog.Alice.Client {
 
     void SaveTradingSettings(TradingMacro tmOriginal) {
       try {
-      tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
-        .ForEach(p => Debug.WriteLine("{0}={1}", p.Name, p.GetValue(tmOriginal, null)));
+        var attrs=  new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs };
+        tmOriginal.GetPropertiesByAttibute<CategoryAttribute>(a => attrs.Contains(a.Category))
+          .GroupBy(a => a.Item2.Name).ToList().ForEach(g => {
+          });
+
+        //.ForEach(p => Debug.WriteLine("{0}={1}", p.Name, p.GetValue(tmOriginal, null)));
       } catch { }
     }
     #endregion
