@@ -49,7 +49,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>bin\Debug_RealMicro\</OutputPath>
     <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -576,6 +576,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Tests\Test_EURJPY_StDev3_Original.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev3.txt" />
     <Resource Include="Tests\Params_EURJPY_StDev2.txt" />
     <Resource Include="Tests\Params_EURJPY_StDev_CorrByBal.txt" />

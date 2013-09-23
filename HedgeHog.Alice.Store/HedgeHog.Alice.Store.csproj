@@ -180,6 +180,7 @@
     <Compile Include="TradingMacro\TradingMacro.BreakoutInfo.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.cs" />
     <None Include="TradingMacro\TradingMacro.AdjustLevelsByHour.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ChainedObserver\ChainedObserver\ChainedObserver.csproj">
