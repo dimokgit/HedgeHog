@@ -280,8 +280,12 @@ namespace HedgeHog.Alice.Client {
     }
     void OnSaveTradingSettings(TradingMacro tm) {
       try {
-        var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs }.Contains(a.Category))
-          .Select(p => "{0}={1}".Formater(p.Name, p.GetValue(tm, null))).OrderBy(s => s);
+        //var attrs = new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs };
+        var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => true)
+          .OrderBy(a=>a.Item1.Category)
+          .GroupBy(a => a.Item1.Category)
+          .ToList().SelectMany(g =>
+            new[] { "//{0}//".Formater(g.Key) }.Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(tm, null))).OrderBy(s => s)));
         var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
         if (!odRes.GetValueOrDefault()) return;
