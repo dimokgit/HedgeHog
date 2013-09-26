@@ -796,14 +796,14 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
-    [Category(categoryActive)]
+    [Category(categoryActiveYesNo)]
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
     }
     [Description("TradingDistance=F(AllowedLotSize)")]
     [DisplayName("Corridor Follows Price")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     public bool CorridorFollowsPrice {
       get { return StrictTradeClose; }
       set { StrictTradeClose = value; }
@@ -969,7 +969,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Exit By BuySell Level")]
-    [Category(categoryActive)]
+    [Category(categoryActiveYesNo)]
     [Description("(X ? _buySell:eve.Rate : trade.Open) + takeProfit ")]
     public bool ExitByBuySellLevel {
       get { return CloseOnProfit; }
@@ -980,7 +980,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Close On Profit Only")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     [Description("Ex: if( PL > Limit) OpenTrade()")]
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
@@ -1004,7 +1004,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Adjust Exit By Time")]
-    [Category(categoryActive)]
+    [Category(categoryActiveYesNo)]
     [Description("Adjust exit level according to price movements since Trade started.")]
     public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
@@ -1019,6 +1019,7 @@ namespace HedgeHog.Alice.Store {
     const string categoryCorridor = "Corridor";
     const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
+    public const string categoryActiveYesNo = "Active Yes or No";
     public const string categoryActiveFuncs = "Active Funcs";
     public const string categoryTest = "Test";
     public const string categoryTestControl = "Test Control";
@@ -1046,7 +1047,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryActive)]
+    [Category(categoryActiveYesNo)]
     [DisplayName("Corr.Forward Only")]
     [Description("IsCorridorForwardOnly")]
     public bool IsCorridorForwardOnly {
@@ -1081,14 +1082,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [Category(categoryActive)]
+    [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
     public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
     }
 
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     [DisplayName("Trade On BOW")]
     [Description("If ExitOnFriday, consider this as well")]
     public bool TradeOnBOW {
@@ -1314,7 +1315,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("FFT Reversed")]
-    [Category(categoryActive)]
+    [Category(categoryXXX_NU)]
     public bool FftReversed {
       get { return DoAdjustTimeframeByAllowedLot; }
       set {

@@ -8,6 +8,15 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
+    private static int CalcCorridorByMinWaveHeight(Rate[] rates, double minHeight, int wavesCount) {
+      for (var i = wavesCount; i < rates.Length; i += wavesCount) {
+        if (Chunk(rates, i, wavesCount).Min() > minHeight)
+          return i;
+      }
+      return rates.Length;
+    }
+
+
     private CorridorStatistics ScanCorridorBySplitHeights(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorBySplitHeights, GetShowVoltageFunction());
     }
