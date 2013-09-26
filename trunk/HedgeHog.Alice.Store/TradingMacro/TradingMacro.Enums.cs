@@ -60,6 +60,7 @@ namespace HedgeHog.Alice.Store {
     StDev5 = 124,
     StDev6 = 125,
     StDev7 = 126,
+    StDev31 = 127,
     Rsd = 140,
     Rsd2 = 141,
     Fft = 142, 
