@@ -10,7 +10,7 @@ namespace Edmx {
   class Program {
     static void Main(string[] args) {
       try {
-        var fileName = args.FirstOrDefault() ?? @"C:\Inetpub\wwwroot\DS\KPI\App_Code\KpiModel.edmx";
+        var fileName = args.FirstOrDefault();
         var fileNames = new List<string>();
         if ((Path.GetExtension(fileName) + "").ToLower() == ".edmx") fileNames.Add(fileName);
         else {
@@ -18,7 +18,8 @@ namespace Edmx {
           if (!fileNames.Any())
             fileNames.AddRange(Directory.GetFiles(Path.Combine(fileName, "App_Code"), "*.edmx"));
         }
-        fileNames.ForEach(fn => ProcessEdmx(fn));
+        var entityNames = args.Skip(1).ToArray();
+        fileNames.ForEach(fn => ProcessEdmx(fn, entityNames));
       } catch (Exception exc) {
         Console.WriteLine(exc + "");
         Console.WriteLine("Press any key ...");
@@ -26,10 +27,12 @@ namespace Edmx {
       }
     }
 
-    private static void ProcessEdmx(string fileName) {
+    private static void ProcessEdmx(string fileName, string[] entityNames) {
       File.Copy(fileName, fileName + ".bak", true);
       var xDoc = XDocument.Load(fileName);
-      xDoc.XPathSelectElements("//*").Where(e => e.Name.LocalName == "DefiningQuery").ToList().ForEach(d => {
+      var dqs = xDoc.XPathSelectElements("//*").Where(e => e.Name.LocalName == "DefiningQuery" && entityNames.Contains(e.Parent.Attribute("Name").Value) ).ToList();
+      if( !dqs.Any()) throw new Exception("No Entities provided in command string.");
+      dqs.ForEach(d => {
         var aSchema = d.Parent.Attributes().Single(a => a.Name.LocalName == "Schema");
         d.Parent.Add(new XAttribute(XName.Get("Schema"), aSchema.Value));
         aSchema.Remove();
