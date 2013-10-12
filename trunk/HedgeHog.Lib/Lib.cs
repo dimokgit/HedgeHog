@@ -734,6 +734,9 @@ namespace HedgeHog {
       return d == DateTime.MaxValue ? d1 : d;
     }
 
+    public static double Div(this int v, int other) {
+      return (v / (double)other);
+    }
     public static double Div(this int v, double other) {
       return v / other;
     }

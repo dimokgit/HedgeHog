@@ -5,6 +5,7 @@ using System.Text;
 using HedgeHog;
 using HedgeHog.Bars;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -45,12 +46,18 @@ namespace HedgeHog.Alice.Store {
             break;
           };
       });
-      for (var i = hopsCount; i < rates.Length; i += hopsCount) {
-        if (Chunk(rates, i, hopsCount).Min() > stDev)
-          return i;
-      }
+      var hops = new List<int>();
+      for (var i = hopsCount; i < rates.Length; i += hopsCount) hops.Add(i);
+      var lengthMax = double.NaN;
+      Parallel.ForEach(Partitioner.Create(hops.ToArray(), true), new ParallelOptions() { MaxDegreeOfParallelism = IsInVitualTrading ? -1 : 1 }
+        , (i, pls) => {
+        if (Chunk(rates, i, hopsCount).Min() > stDev) {
+          lengthMax = lengthMax.Min(i);
+          pls.Stop();
+        }
+      });
       if (lengthMin == 0) WaveShortLeft.ResetRates(rates);
-      return rates.Length;
+      return lengthMax.IfNaN(rates.Length).ToInt();
     }
 
     private static double[] Chunk(Rate[] rates, int chunksLength, int chunksCount) {

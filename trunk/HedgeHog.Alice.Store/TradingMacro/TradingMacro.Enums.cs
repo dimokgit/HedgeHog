@@ -8,12 +8,16 @@ namespace HedgeHog.Alice {
     None = 0,
     AboveBelowRatio = 10,
     StDevInsideOutRatio = 20,
-    Volatility = 30
+    Volatility = 30,
+    HourlyStDevAvg = 40,
+    HourlyRsdAvg = 41,
+    StDevByHeight = 50
   }
 }
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Void = 0,
+    Fixed = 1,
     HorizontalProbe = 10,
     HorizontalProbe2 = 11,
     WaveDistance42 = 72,
@@ -46,13 +50,12 @@ namespace HedgeHog.Alice.Store {
     MagnetFft = 2,
     Magnet2 = 3,
     LongCross = 10,
-    Flat = 20,
-    Flat1 = 21,
     Count = 90, 
     CountWithAngle = 92,
     Wavelette = 93,
     Manual = 110,
     Void = 111,
+    Void1 = 112,
     StDev = 120,
     StDev2 = 121,
     StDev3 = 122,
@@ -61,6 +64,9 @@ namespace HedgeHog.Alice.Store {
     StDev6 = 125,
     StDev7 = 126,
     StDev31 = 127,
+    StDev32 = 128,
+    StDev33 = 129,
+    StDev34 = 130,
     Rsd = 140,
     Rsd2 = 141,
     Fft = 142, 

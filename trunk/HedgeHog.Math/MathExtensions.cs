@@ -261,6 +261,9 @@ namespace HedgeHog {
         .Where(a => a.signFirst != a.signSecond)
         .Select(a => a.first);
     }
+    public static IEnumerable<T> Crosses<T>(this IList<T> list, double signal, Func<T, double> getValue) {
+      return list.Crosses(Enumerable.Repeat(signal, list.Count).ToArray(), getValue);
+    }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
       Func<T, double, double> sign = (v1, v2) => Math.Sign(getValue(v1) - v2);
       return list.Mash()
@@ -555,7 +558,26 @@ namespace HedgeHog {
       minOut = min;
       return ret;
     }
-
+    /// <summary>
+    /// Returns Value - min
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="values"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IEnumerable<double> Normalize<T>(this IList<T> values, Func<T, double> value) {
+      var min = values.Min(value);
+      return values.Select(v => value(v) - min);
+    }
+    public static double Rsd(this IList<double> values) {
+      var stDev = values.StDev();
+      var height = values.Average();
+      return stDev / height;
+    }
+    public static double RsdNormalized<T>(this IList<T> values, Func<T, double> value) {
+      var norm = values.Normalize(value).ToArray();
+      return norm.Rsd();
+    }
 
     public static double OpsiteCathetusByFegrees(this double adjacentCathetus, double angleInDegrees) {
       return adjacentCathetus * Math.Tan(angleInDegrees.Radians());
@@ -652,6 +674,8 @@ namespace HedgeHog {
     }
 
     public static int Floor(this double d) { return (int)Math.Floor(d); }
+    public static int Floor(this double d, double other) { return (int)Math.Floor(d / other); }
+    public static int Floor(this int d, double other) { return (int)Math.Floor(d / other); }
     public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
     public static int ToInt(this double d, bool useCeiling) {
       return (int)(useCeiling ? Math.Ceiling(d) : Math.Floor(d));
@@ -659,7 +683,7 @@ namespace HedgeHog {
     public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, Hour, Day,DayFloor, Month, MonthEnd, Week }
+    public enum RoundTo { Second, Minute, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch (rt) {
@@ -674,6 +698,9 @@ namespace HedgeHog {
         case RoundTo.Hour:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
           if (d.Minute >= 30) dtRounded = dtRounded.AddHours(1);
+          break;
+        case RoundTo.HourFloor:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);
           break;
         case RoundTo.DayFloor:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, 0, 0, 0);
