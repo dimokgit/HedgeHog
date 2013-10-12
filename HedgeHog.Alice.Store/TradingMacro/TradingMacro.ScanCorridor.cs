@@ -34,26 +34,16 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorFixed(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), r => CorridorDistanceRatio.ToInt(), GetShowVoltageFunction());
+    }
+
     private CorridorStatistics ScanCorridorByStDevBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.Reverse().ToArray();
       var lazyCount = new Lazy<int>(() => CalcCorridorByStDevBalanceAndMaxLength2(ratesReversed.Select(_priceAvg).ToArray(), CorridorDistanceRatio.ToInt()));
       return ScanCorridorLazy(ratesReversed, lazyCount, GetShowVoltageFunction());
     }
 
-    CorridorStatistics ShowVoltsByStDevPercentage(){
-      var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-      var middle = WaveShort.Rates.Average(_priceAvg);
-      var levelUp = middle + corridor.StDevByHeight;
-      var levelDown = middle - corridor.StDevByHeight;
-      var prices = RatesArray.Select(_priceAvg).ToArray();
-      var stDevIn = prices.Where(p => p.Between(levelDown, levelUp)).ToArray().StDev();
-      var stDevOut = prices.Where(p => !p.Between(levelDown, levelUp)).ToArray().StDev();
-      var stDevRatio = GetVoltage(RatePrev).Cma(prices.Length / 100.0, stDevOut.Percentage(stDevIn));
-      SetVoltage(RateLast, stDevRatio);
-      var voltageAvg = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Average();
-      GetVoltageAverage = ()=> voltageAvg;
-      return corridor;
-    }
 
     private CorridorStatistics ScanCorridorByStDevBalanceR(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.Reverse().ToArray();
@@ -88,10 +78,10 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ShowVolts(double volt,int averageIterations) {
       RatesArray.Where(r => GetVoltage(r).IsNaN()).ToList().ForEach(r => SetVoltage(r, volt));
       //SetVoltage(RateLast, volt);
-      List<double> avgs = new List<double>();
-      var voltageAvg = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(averageIterations, avgs).Average();
-      GetVoltageAverage = () => avgs.Last();
-      GetVoltageHigh = () => voltageAvg;
+      var voltageAvgLow = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(-averageIterations).Average();
+      GetVoltageAverage = () => voltageAvgLow;
+      var voltageAvgHigh = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(averageIterations).Average();
+      GetVoltageHigh = () => voltageAvgHigh;
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
@@ -603,26 +593,28 @@ namespace HedgeHog.Alice.Store {
       var ratesToRegress = new List<double>() { ratesReversed[0] };
       foreach (var rate in ratesReversed.Skip(1)) {
         ratesToRegress.Add(rate);
-        if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
+        if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev && ratesToRegress.Count > polyOrder * 2) break;
       }
       var correlations = new { corr = 0.0, length = 0 }.IEnumerable().ToList();
       var corr = double.NaN;
       var locker = new object();
       var start = ratesToRegress.Count.Max(polyOrder + 1);
-      Partitioner.Create(Enumerable.Range(start, ratesReversed.Length.Sub(start)).ToArray(), true)
-        .AsParallel().ForAll(rates => {
-          try {
-            var prices = new double[rates];
-            Array.Copy(ratesReversed, prices, prices.Length);
-            var parabola = prices.Regression(polyOrder);
-            corr = corr.Cma(5, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length).Abs());
-            lock (locker) {
-              correlations.Add(new { corr, length = prices.Length });
+      var corrLength = ratesReversed.Length.Sub(start);
+      if (corrLength > 1)
+        Partitioner.Create(Enumerable.Range(start, corrLength).ToArray(), true)
+          .AsParallel().ForAll(rates => {
+            try {
+              var prices = new double[rates];
+              Array.Copy(ratesReversed, prices, prices.Length);
+              var parabola = prices.Regression(polyOrder);
+              corr = corr.Cma(5, AlgLib.correlation.pearsoncorrelation(ref prices, ref parabola, prices.Length).Abs());
+              lock (locker) {
+                correlations.Add(new { corr, length = prices.Length });
+              }
+            } catch {
+              Debugger.Break();
             }
-          } catch {
-            Debugger.Break();
-          }
-        });
+          });
       correlations.Sort((a, b) => a.corr.CompareTo(b.corr));
       if (!correlations.Any()) correlations.Add(new { corr = GetVoltage(RatePrev), length = 1000000 });
       WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray());
@@ -630,33 +622,9 @@ namespace HedgeHog.Alice.Store {
       return ShowVolts(CorridorCorrelation, 1);
     }
 
-    private CorridorStatistics ScanCorridorByRegression2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorByRegressionCorrelation, ShowVoltsByVolatility);
-    }
-
-    private CorridorStatistics ShowVoltsByVolatility() {
-      var ratesInternalReversed = RatesInternal.AsEnumerable().Reverse().ToArray();
-      var ratesHeightMin = WaveShort.RatesHeight * 2;
-      var bc = BarsCountCalc.GetValueOrDefault(BarsCount);
-      while (bc > BarsCount && ratesInternalReversed.CopyToArray(bc).Height() > ratesHeightMin)
-        bc--;
-      while (bc < ratesInternalReversed.Length && ratesInternalReversed.CopyToArray(bc).Height() < ratesHeightMin)
-        bc++;
-      BarsCountCalc = bc;
-      var ratesCount = BarsCountCalc.Value;
-      if (GetVoltage(ratesInternalReversed[10]).IsNaN()) {
-        Log = new Exception("Loading volts.");
-        var count = ratesCount.Min(ratesInternalReversed.Length - ratesCount);
-        Enumerable.Range(0, count).ToList().ForEach(index => {
-          var rates = new Rate[count];
-          Array.Copy(ratesInternalReversed, index, rates, 0, rates.Length);
-          rates.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
-          SetVoltage(rates[0], rates.Volatility(_priceAvg, GetPriceMA));
-        });
-        Log = new Exception("Done Loading volts.");
-      }
-      CorridorCorrelation = ratesInternalReversed.Take(BarsCountCalc.Value).ToArray().Volatility(_priceAvg, GetPriceMA);
-      return ShowVolts(CorridorCorrelation, 1);
+    private CorridorStatistics 
+      ScanCorridorByRegression2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorByRegressionCorrelation, GetShowVoltageFunction());
     }
 
     private int CalcCorridorByRegressionCorrelation(IList<Rate> ratesReversedOriginal) {
@@ -1519,6 +1487,11 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    public int? BarsCountCalc { get; set; }
+    private int? _BarsCountCalc;
+
+    public int? BarsCountCalc {
+      get { return _BarsCountCalc.GetValueOrDefault(BarsCount); }
+      set { _BarsCountCalc = value; }
+    }
   }
 }

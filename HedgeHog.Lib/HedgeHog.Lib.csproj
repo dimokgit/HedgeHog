@@ -104,11 +104,13 @@
     <Compile Include="Class1.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="Dynamic.cs" />
+    <Compile Include="EnumExtensions.cs" />
     <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
+    <Compile Include="GroupAdjacent.cs" />
     <Compile Include="KeyEqualityComparer.cs" />
     <Compile Include="LambdaComparer.cs" />
     <Compile Include="MEF.cs" />

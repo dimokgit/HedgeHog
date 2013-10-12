@@ -123,6 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BarBaseTest.cs" />
+    <Compile Include="Enum.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="LibTest.cs" />
     <Compile Include="MathExtensionsTest.cs" />

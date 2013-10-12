@@ -170,5 +170,32 @@ namespace UnitLib
       var actual = Lib.Edge(values, step,3);
       Assert.AreEqual(0.62352314519258079, actual[0].SumAvg);
     }
+
+    /// <summary>
+    ///A test for Round
+    ///</summary>
+    [TestMethod()]
+    public void RoundTest() {
+      DateTime dt = DateTime.Parse("1/1/1990  15:34");
+      int period = 3;
+      DateTime expected = new DateTime(); // TODO: Initialize to an appropriate value
+      DateTime actual;
+      actual = MathExtensions.Round(dt, period);
+      Assert.AreEqual(expected, actual);
+      Assert.Inconclusive("Verify the correctness of this test method.");
+    }
+
+    /// <summary>
+    ///A test for RSD
+    ///</summary>
+
+    [TestMethod()]
+    public void RSDTest() {
+      IList<double> values = new double[] { 1, 5, 6, 8, 10, 40, 65, 88 };
+      double expected = 118.04;
+      double actual;
+      actual = (values.Rsd() * 100).Round(2);
+      Assert.AreEqual(expected, actual);
+    }
   }
 }

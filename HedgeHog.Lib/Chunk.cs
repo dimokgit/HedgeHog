@@ -6,6 +6,32 @@ using System.Diagnostics;
 
 namespace HedgeHog {
   public static partial class Lib {
+    public static IEnumerable<T[]> Chunk<T>(T[] rates, int chunksLength, int chunksCount) {
+      throw new NotSupportedException();
+      var hops = Enumerable.Range(0, chunksCount).ToArray();
+      var chunk = chunksLength / chunksCount;
+      var chunks = hops.Select(hop => hop * chunk).ToArray();
+      return chunks.Select(start => rates.CopyToArray(start, chunk));
+    }
+    /// <summary>
+    /// Try not to materialize it.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="rates"></param>
+    /// <param name="chunksLength"></param>
+    /// <returns></returns>
+    public static IEnumerable<T[]> Integral<T>(this IList<T> ratesOriginal, int chunksLength) {
+      var rates = ratesOriginal.SafeArray();
+      return Enumerable.Range(0, rates.Length - chunksLength).Select(start => rates.CopyToArray(start, chunksLength));
+    }
+
+    public static IEnumerable<IEnumerable<T>> Chop<T>(this IList<T> source, int numberOfChunks) {
+      var size = source.Count / numberOfChunks;
+      return source.Take(size * numberOfChunks).Clump(size);
+    }
+    public static IEnumerable<IEnumerable<T>> ClumpToSameSize<T>(this IList<T> source, int size) {
+      return source.Take((source.Count / size) * size).Clump(size);
+    }
     /// <summary>
     /// Clumps items into same size lots.
     /// </summary>

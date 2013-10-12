@@ -7,6 +7,7 @@ using HedgeHog.Bars;
 using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Shared;
 using HedgeHog.Models;
+using System.Reactive.Concurrency;
 
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
@@ -50,6 +51,8 @@ namespace HedgeHog.Alice.Store {
       get { return _CanTrade; }
       set {
         if (_CanTrade != value) {
+          if (value && IsExitOnly)
+            Scheduler.Default.Schedule(() => CanTrade = false);
           _CanTrade = value;
           OnPropertyChanged("CanTrade");
           OnPropertyChanged("CanTradeEx");
@@ -291,6 +294,7 @@ namespace HedgeHog.Alice.Store {
         if (_IsExitOnly != value) {
           _IsExitOnly = value;
           OnPropertyChanged("IsExitOnly");
+          if (value) CanTrade = false;
         }
       }
     }
@@ -801,12 +805,18 @@ namespace HedgeHog.Alice.Store {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
     }
-    [Description("TradingDistance=F(AllowedLotSize)")]
-    [DisplayName("Corridor Follows Price")]
-    [Category(categoryXXX_NU)]
-    public bool CorridorFollowsPrice {
+    [Description("RatesArray.Height() > PrevHeightAvg")]
+    [DisplayName("Use Prev Height")]
+    [Category(categoryActiveYesNo)]
+    public bool UsePrevHeight {
       get { return StrictTradeClose; }
-      set { StrictTradeClose = value; }
+      set {
+        StrictTradeClose = value;
+        OnPropertyChanged(() => UsePrevHeight);
+      }
+    }
+    partial void OnStrictTradeCloseChanged() {
+      OnPropertyChanged(() => UsePrevHeight);
     }
 
     private bool IsTradingDay(DateTime time) {
@@ -1709,5 +1719,7 @@ namespace HedgeHog.Alice.Store {
 
     public Func<Rate, double> ChartPriceHigh { get; set; }
     public Func<Rate, double> ChartPriceLow { get; set; }
+
+    public DateTime? LineTimeMin { get; set; }
   }
 }
