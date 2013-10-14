@@ -11,7 +11,8 @@ namespace HedgeHog.Alice {
     Volatility = 30,
     HourlyStDevAvg = 40,
     HourlyRsdAvg = 41,
-    StDevByHeight = 50
+    StDevByHeight = 50,
+    StDevSumRatio = 60
   }
 }
 namespace HedgeHog.Alice.Store {

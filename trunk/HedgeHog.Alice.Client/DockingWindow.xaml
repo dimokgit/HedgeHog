@@ -179,7 +179,8 @@
 					<DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ClosedTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
 						<DataGrid.Columns>
 							<DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
-							<DataGridTextColumn Header="Time" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+              <DataGridTextColumn Header="Open" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+              <DataGridTextColumn Header="Close" Binding="{Binding TimeClose,StringFormat='dd HH:mm:ss'}"/>
 							<DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
 							<DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
 								<DataGridTextColumn.ElementStyle>
@@ -188,7 +189,9 @@
 									</Style>
 								</DataGridTextColumn.ElementStyle>
 							</DataGridTextColumn>
-							<DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
+              <DataGridTextColumn Header="Open$" Binding="{Binding Open}"/>
+              <DataGridTextColumn Header="Close$" Binding="{Binding Close}"/>
+              <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
 								<DataGridTextColumn.CellStyle>
 									<Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
 										<Setter Property="Background" Value="{Binding PL,Converter={StaticResource ProfitToColorConverter}}"/>

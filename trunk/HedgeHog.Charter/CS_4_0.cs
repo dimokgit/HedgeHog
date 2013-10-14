@@ -825,7 +825,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl.otherHLines"/></summary>
         public const string otherHLines = "otherHLines";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.otherVLines"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.newsVLines"/></summary>
         public const string otherVLines = "otherVLines";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.Corridors_Closing"/></summary>

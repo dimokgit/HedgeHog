@@ -1368,6 +1368,7 @@ namespace HedgeHog.Alice.Client {
       OrdersList.SortDescriptions.Add(new SortDescription(Lib.GetLambda<Order>(t => t.IsBuy), ListSortDirection.Descending));
 
       ClosedTradesList = new ListCollectionView(ClosedTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
+      ClosedTradesList.SortDescriptions.Add(new SortDescription("Time", ListSortDirection.Descending));
       AbsentTradesList = new ListCollectionView(AbsentTrades = new NotifyCollectionChangedWrapper<Trade>(new ObservableCollection<Trade>()));
 
       MarketsList = new ListCollectionView(Markets = new NotifyCollectionChangedWrapper<MarketHours>(new ObservableCollection<MarketHours>()));

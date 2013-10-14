@@ -27,6 +27,7 @@ using System.Runtime.Caching;
 using System.Reactive;
 using System.Threading.Tasks.Dataflow;
 using System.Collections.Concurrent;
+using HedgeHog;
 using HedgeHog.Shared.Messages;
 using Hardcodet.Util.Dependencies;
 using ChainedObserver;
@@ -1213,9 +1214,7 @@ namespace HedgeHog.Alice.Store {
               TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
               OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
             } catch (Exception exc) { Log = exc; }
-          })
-          .Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
-          .Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+          }).SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
         if (false)
           fw.PriceChangedBroadcast.AsObservable()
             .Where(pce => pce.Pair == Pair)
@@ -1312,6 +1311,7 @@ namespace HedgeHog.Alice.Store {
     void TradesManager_TradeClosed(object sender, TradeEventArgs e) {
       if (!IsMyTrade(e.Trade) || HistoryMaximumLot == 0) return;
       CurrentLot = Trades.Sum(t => t.Lots);
+      CloseAtZero = false;
       EnsureActiveSuppReses();
       SetEntryOrdersBySuppResLevels();
       RaisePositionsChanged();
@@ -1958,8 +1958,8 @@ namespace HedgeHog.Alice.Store {
     double _ratesSpreadSum;
     public List<Rate> RatesArraySafe {
       get {
-        if (!Monitor.TryEnter(_rateArrayLocker, 1000)) {
-          Log = new Exception("_rateArrayLocker was busy for more then 1 second.");
+        if (!Monitor.TryEnter(_rateArrayLocker, 5000)) {
+          Log = new Exception("_rateArrayLocker was busy for more then 5 second.");
           throw new TimeoutException();
         }
         try {
@@ -1967,9 +1967,9 @@ namespace HedgeHog.Alice.Store {
             //Log = new RatesAreNotReadyException();
             return new List<Rate>();
           }
-          var rateLast = RatesInternal.Last();
-          var rs = rateLast.AskHigh - rateLast.BidLow;
-          if (rateLast != RateLast || rs != _ratesSpreadSum || _rateArray == null || !_rateArray.Any()) {
+          var rateLast = RatesInternal.LastOrDefault();
+          var rs = double.NaN;// rateLast.AskHigh - rateLast.BidLow;
+          if (rateLast != null && (rateLast != RateLast || rs != _ratesSpreadSum || _rateArray == null || !_rateArray.Any())) {
             _ratesSpreadSum = rs;
             #region Quick Stuff
             RateLast = RatesInternal[RatesInternal.Count - 1];
@@ -2042,6 +2042,7 @@ namespace HedgeHog.Alice.Store {
             Angle = corridor.Slope.Angle(BarPeriodInt, PointSize);
             OnPropertyChanged(() => RatesRsd);
             OnScanCorridor(_rateArray);
+            try { RunStrategy(); } catch (Exception exc) { Log = exc; if (IsInVitualTrading) Strategy = Strategies.None; throw; }
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
             OnPropertyChanged(() => SpreadForCorridorInPips);
@@ -2842,6 +2843,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.HourlyStDevAvg: return ShowVoltsByHourlyStDevAvg;
         case HedgeHog.Alice.VoltageFunction.HourlyRsdAvg: return ShowVoltsByHourlyRsdAvg;
         case HedgeHog.Alice.VoltageFunction.StDevByHeight: return ShowVoltsByStDevByHeight;
+        case HedgeHog.Alice.VoltageFunction.StDevSumRatio: return ShowVoltsByStDevSumRatio;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");
     }
@@ -2879,9 +2881,9 @@ namespace HedgeHog.Alice.Store {
         lock (_GeneralPurposeSubjectLocker)
           if (_GeneralPurposeSubject == null) {
             _GeneralPurposeSubject = new Subject<Action>();
-            _GeneralPurposeSubject
-              .Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
-              .Subscribe(s => s(), exc => Log = exc);
+            _GeneralPurposeSubject.SubscribeToLatestOnBGThread(exc => Log = exc);
+              //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
+              //.Subscribe(s => s(), exc => Log = exc);
           }
         return _GeneralPurposeSubject;
       }
@@ -2915,14 +2917,8 @@ namespace HedgeHog.Alice.Store {
             NewEventsCurrent.AddRange(newsEventsCurrent.Except(NewEventsCurrent).ToArray());
           });
         SetLotSize();
-        try {
-          RunStrategy();
-        } catch (Exception exc) {
-          Log = exc;
-          if (IsInVitualTrading)
-            Strategy = Strategies.None;
-          throw;
-        }
+        if (RatesArraySafe.Count == 0)
+          RatesArray.Clear();
       } catch (Exception exc) { Log = exc; }
       if (!IsInVitualTrading && sw.Elapsed > TimeSpan.FromSeconds(5))
         Log = new Exception("RunPrice(" + Pair + ") took " + Math.Round(sw.Elapsed.TotalSeconds, 1) + " secods");
@@ -3098,7 +3094,11 @@ namespace HedgeHog.Alice.Store {
       try {
         if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {
           InfoTooltip = "Loading Rates";
-          lock (_Rates) {
+          if (!Monitor.TryEnter(_rateArrayLocker, 5000)) {
+            Log = new Exception("_rateArrayLocker was busy for more then 5 second.");
+            throw new TimeoutException();
+          }
+          try {
             Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
             var sw = Stopwatch.StartNew();
             var serverTime = ServerTime;
@@ -3138,6 +3138,9 @@ namespace HedgeHog.Alice.Store {
                   RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
               }
             }
+            var rateLastDate = RatesInternal.Last().StartDate;
+            if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes())
+              throw new Exception("Last rate time:{0} is far from ServerTyme:{1}".Formater(rateLastDate, ServerTime));
             AddRatesStats(RatesInternal);
             OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
             if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
@@ -3149,10 +3152,12 @@ namespace HedgeHog.Alice.Store {
               } catch (Exception exc) { Log = exc; }
             };
             Scheduler.Default.Schedule(a);
+          } finally {
+            Monitor.Exit(_rateArrayLocker);
           }
-          {
-            RatesArraySafe.SavePairCsv(Pair);
-          }
+          //{
+          //  RatesArraySafe.SavePairCsv(Pair);
+          //}
           //if (!HasCorridor) ScanCorridor();
         }
       } catch (Exception exc) {
@@ -3229,6 +3234,9 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroMetadata.Pair:
           _pointSize = double.NaN;
           goto case TradingMacroMetadata.CorridorBarMinutes;
+        case TradingMacroMetadata.UsePrevHeight:
+          BarsCountCalc = null;
+          goto case TradingMacroMetadata.BarsCount;
         case TradingMacroMetadata.BarsCount:
         case TradingMacroMetadata.CorridorBarMinutes:
         case TradingMacroMetadata.LimitBar:

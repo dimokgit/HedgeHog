@@ -66,21 +66,26 @@ namespace HedgeHog.Alice.Store {
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 
     private CorridorStatistics ShowVoltsByHourlyRsdAvg() {
-      var averageIterations = 2;
-      Func<IList<Rate>, double> calcVolatility = (rates) =>
-        rates.ReverseIfNot().Integral(_integrationPeriod).AsParallel().Select(g => g.RsdNormalized(_priceAvg)).ToArray().AverageInRange(averageIterations, -averageIterations).Average() * 100;
-      if (GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
-        var ratesInternalReversed = RatesInternal.AsEnumerable().Reverse().ToArray();
-        var ratesCount = BarsCount.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
-        var count = ratesInternalReversed.Length - ratesCount;
-        Log = new Exception("Loading volts.");
-        ParallelEnumerable.Range(0, count).ForAll(index => {
-          var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
-          SetVoltage(rates[0], calcVolatility(rates));
-        });
-        Log = new Exception("Done Loading volts.");
-      }
-      return ShowVolts(CorridorCorrelation = calcVolatility(RatesArray), 2);
+        var averageIterations = 2;
+        Func<IList<Rate>, double> calcVolatility = (rates) =>
+          rates.ReverseIfNot().Integral(_integrationPeriod).AsParallel().Select(g => g.RsdNormalized(_priceAvg)).ToArray().AverageInRange(averageIterations, -averageIterations).Average() * 100;
+        if (GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
+          var ratesInternalReversed = RatesInternal.AsEnumerable().Reverse().ToArray();
+          var ratesCount = BarsCount.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
+          var count = ratesInternalReversed.Length - ratesCount;
+          Log = new Exception("Loading volts.");
+          ParallelEnumerable.Range(0, count).ForAll(index => {
+            try {
+              var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
+              SetVoltage(rates[0], calcVolatility(rates));
+            } catch {
+              Debugger.Break();
+              throw;
+            }
+          });
+          Log = new Exception("Done Loading volts.");
+        }
+        return ShowVolts(CorridorCorrelation = calcVolatility(RatesArray), 2);
     }
     IDisposable _t;
     private CorridorStatistics ShowVoltsByStDevByHeight() {
@@ -117,8 +122,8 @@ namespace HedgeHog.Alice.Store {
       if (_t == null && GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
         _t = new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }).Schedule(() => {
           var RatesInternalReversedOriginal = RatesInternal.ReverseIfNot();
-          var ratesInternalReversed = RatesInternal.Select(_priceAvg).Reverse().ToArray();
-          var ratesCount = BarsCount.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
+          var ratesInternalReversed = RatesInternalReversedOriginal.Select(_priceAvg).ToArray();
+          var ratesCount = CorridorDistanceRatio.ToInt();
           var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
@@ -130,7 +135,7 @@ namespace HedgeHog.Alice.Store {
           Log = new Exception("Done Loading volts.");
         });
       }
-      return ShowVolts(CorridorCorrelation = calcVolatility(WaveShort.Rates.Select(_priceAvg).ToArray(), RatesArray.Select(_priceAvg).ToArray()), 2);
+      return ShowVolts(CorridorCorrelation = calcVolatility(WaveShort.Rates.Select(_priceAvg).ToArray(), RatesArray.Select(_priceAvg).ToArray()), 1);
     }
   }
 }

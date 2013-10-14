@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cmdrekay.snippet" />
+    <None Include="DimokTimeLines.snippet" />
     <None Include="dimokYieldBroadcast.snippet" />
     <None Include="dimokevent.snippet" />
     <None Include="dimokSubject.snippet" />
