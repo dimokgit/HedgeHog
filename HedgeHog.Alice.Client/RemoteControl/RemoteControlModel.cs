@@ -55,16 +55,19 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void RequestAddCharterToUI(CharterControl charter) {
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
-      });
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
-        var charterNew = Dispatcher.CurrentDispatcher.Invoke(new Func<CharterControl>(() => new CharterControl(tradingMacro.CompositeId, App.container))) as CharterControl;
+        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container);
         RequestAddCharterToUI(charterNew);
-        charters.Add(tradingMacro, charterNew);
+        try {
+          charters.Add(tradingMacro, charterNew);
+        } catch (ArgumentException exc) {
+          Log = new Exception(new { tradingMacro.Pair } + "", exc);
+          return charters[tradingMacro];
+        }
         charterNew.CorridorStartPositionChanged += charter_CorridorStartPositionChanged;
         charterNew.SupportResistanceChanged += charter_SupportResistanceChanged;
         charterNew.LineTimeShortChanged += charterNew_LineTimeShortChanged;
@@ -187,7 +190,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.GannAnglesOffset = e.Offset.Abs() / tm.GannAngle1x1;
       tm.SetGannAngles();
-      ShowChart(tm);
+      AddShowChart(tm);
     }
 
     void charter_Play(object sender, PlayEventArgs e) {
@@ -393,7 +396,7 @@ namespace HedgeHog.Alice.Client {
       try {
         GlobalStorage.UseAliceContext(c => c.AddToTradingMacroes(tmNew), true);
         TradingMacrosCopy_Add(tmNew);
-        InitTradingMacro(tmNew);
+        new Action(() => InitTradingMacro(tmNew)).ScheduleOnUI(2.FromSeconds());
       } catch (Exception exc) {
         Log = exc;
       }
@@ -694,7 +697,9 @@ namespace HedgeHog.Alice.Client {
       }
     }
     private void InitializeModel() {
-      GlobalStorage.AliceMaterializerSubject.Subscribe(e => Context_ObjectMaterialized(null, e));
+      GlobalStorage.AliceMaterializerSubject
+        .SubscribeOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
+        .Subscribe(e => Context_ObjectMaterialized(null, e));
       //GlobalStorage.AliceContext.ObjectMaterialized += Context_ObjectMaterialized;
       GlobalStorage.AliceContext.ObjectStateManager.ObjectStateManagerChanged += ObjectStateManager_ObjectStateManagerChanged;
     }
@@ -714,7 +719,10 @@ namespace HedgeHog.Alice.Client {
       if (MasterModel != null) {
         MasterModel.CoreFX.LoggedIn -= CoreFX_LoggedInEvent;
         MasterModel.CoreFX.LoggedOff -= CoreFX_LoggedOffEvent;
-        TradingMacrosCopy.ForEach(tm => InitTradingMacro(tm, true));
+        TradingMacrosCopy.ToObservable()
+          .SubscribeOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
+          .Take(10000)
+          .Subscribe(tm => InitTradingMacro(tm, true));
       }
     }
     #endregion
@@ -739,7 +747,8 @@ namespace HedgeHog.Alice.Client {
       if (tm == null) return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
       tm.ShowChart += TradingMacro_ShowChart;
-      new Action(() => InitTradingMacro(tm)).ScheduleOnUI(2.FromSeconds());
+      //new Action(() => InitTradingMacro(tm)).ScheduleOnUI(2.FromSeconds());
+      InitTradingMacro(tm);
     }
 
     internal IScheduler findDispatcherScheduler() {
@@ -766,7 +775,7 @@ namespace HedgeHog.Alice.Client {
 
         if (e.PropertyName == TradingMacroMetadata.IsActive) {
           _tradingMacrosDictionary.Clear();
-          InitTradingMacro(tm);
+           ScheduleInitTradingMacro(tm);
         }
         if (e.PropertyName == TradingMacroMetadata.CurrentPrice) {
           try {
@@ -775,7 +784,10 @@ namespace HedgeHog.Alice.Client {
               charter.Dispatcher.Invoke(new Action(() => {
                 charter.LineAvgAsk = tm.CurrentPrice.Ask;
                 charter.LineAvgBid = tm.CurrentPrice.Bid;
-                charter.SetLastPoint(tm.RateLast);
+                var high = tm.CalculateLastPrice(tm.RateLast, tm.ChartHighPrice());
+                var low = tm.CalculateLastPrice(tm.RateLast, tm.ChartLowPrice());
+                var ma = tm.CalculateLastPrice(tm.RateLast, tm.GetPriceMA());
+                charter.SetLastPoint(high, low, ma, tm.RateLast); ;
                 //Debug.WriteLineIf(tm.Pair == "EUR/JPY", string.Format("Current price:{0} @ {1:mm:ss}", tm.CurrentPrice.Average.Round(3), tm.CurrentPrice.Time));
               }), DispatcherPriority.Send);
             }
@@ -787,7 +799,7 @@ namespace HedgeHog.Alice.Client {
 
         if (e.PropertyName == TradingMacroMetadata.GannAngles_) {
           tm.SetGannAngles();
-          ShowChart(tm);
+          AddShowChart(tm);
         }
 
         if (e.PropertyName == TradingMacroMetadata.Log) {
@@ -916,8 +928,7 @@ namespace HedgeHog.Alice.Client {
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.Error -= fw_Error;
 
-        foreach (var tm in TradingMacrosCopy)
-          InitTradingMacro(tm, true);
+        TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
       }
     }
 
@@ -936,19 +947,21 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    static ITargetBlock<TradingMacro> _showChartQueue;
-    ITargetBlock<TradingMacro> ShowChartQueue {
+    object _showChartQueueLocker = new object();
+    static ISubject<Action> _showChartQueue;
+    ISubject<Action> ShowChartQueue {
       get {
-        if (_showChartQueue == null)
-          _showChartQueue = new Action<TradingMacro>(tm => ShowChart(tm)).CreateYieldingTargetBlock(false,TaskScheduler.FromCurrentSynchronizationContext());
+        lock (_showChartQueueLocker) {
+          if (_showChartQueue == null) {
+            _showChartQueue = new Subject<Action>();
+            _showChartQueue.SubscribeToLatestOnBGThread(action => action.InvoceOnUI(), exc => Log = exc);
+          }
+        }
         return _showChartQueue;
       }
     }
     void AddShowChart(TradingMacro tm) {
-      if (IsInVirtualTrading || tradesManager.IsInTest || tm.IsInPlayback)
-        ShowChart(tm);
-      else
-        ShowChartQueue.Post(tm);
+      ShowChartQueue.OnNext(() => ShowChart(tm));
     }
     bool _isMinimized = false;
     void IsMinimized(Window w) {
@@ -958,10 +971,11 @@ namespace HedgeHog.Alice.Client {
     }
     void ShowChart(TradingMacro tm) {
       try {
-        var charter = GetCharter(tm);
-        if (_isMinimized || charter.IsParentHidden) return;
-        Rate[] rates = tm.RatesArraySafe.ToArray();//.RatesCopy();
+        if (_isMinimized) return;
+        Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
+        var charter = GetCharter(tm);
+        if (charter.IsParentHidden) return;
         string pair = tm.Pair;
         if (tm.IsCharterMinimized) return;
         if (tm == null) return;
@@ -1045,12 +1059,13 @@ namespace HedgeHog.Alice.Client {
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));
           charter.SetSellRates(dic);
-          charter.SetTradeLines(tm.Trades, tm.CurrentPrice.Spread / 2);
+          charter.SetTradeLines(tm.Trades);
           charter.SuppResMinimumDistance = tm.Strategy.HasFlag(Strategies.Hot) ? tm.SuppResMinimumDistance : 0;
 
           var times = tm.NewEventsCurrent.Select(ne => ne.Time.DateTime)
-          .Concat(tm.Fractals.SelectMany(r => r).Select(r => r.StartDate));
-          charter.DrawVertivalLines(times.ToArray());
+            .Concat(tm.Fractals.SelectMany(r => r).Select(r => r.StartDate));
+          //charter.DrawNewsLines(times.ToArray());
+          charter.DrawTradeTimes(tm.Trades.Select(t => t.Time).DefaultIfEmpty(tm.LastTrade.TimeClose).Where(d => !d.IsMin()));
 
           charter.DrawLevels(tm.CenterOfMassLevels);
         } catch (Exception exc) {
@@ -1362,15 +1377,15 @@ namespace HedgeHog.Alice.Client {
         RaisePropertyChangedCore("TradingMacros");
       }));
     }
+    void ScheduleInitTradingMacro(TradingMacro tm, bool unwind = false) {
+      new Action(() => InitTradingMacro(tm, unwind)).ScheduleOnUI();
+    }
     private void InitTradingMacro(TradingMacro tm, bool unwind = false) {
       var isFilterOk = TradingMacroFilter(tm) && tm.IsActive;
       if (!unwind && isFilterOk) {
         tm.TradingStatistics = _tradingStatistics;
         try {
           tm.SubscribeToTradeClosedEVent(() => tradesManager);
-          GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-            GetCharter(tm);
-          });
         } catch (Exception exc) {
           Log = exc;
         }

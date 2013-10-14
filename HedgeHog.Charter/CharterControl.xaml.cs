@@ -91,11 +91,6 @@ namespace HedgeHog {
       this.Name = name.Replace("/", "");
       InitializeComponent();
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
-
-      otherTimes.ItemsAdded.ObserveOnDispatcher().Subscribe(OnOtherTimeAdded);
-      otherTimes.ItemsRemoved.ObserveOnDispatcher().Subscribe(OnOtherTimeRemoved);
-      otherVLines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
-      otherVLines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
 
     #region Attached Properties
@@ -816,31 +811,6 @@ namespace HedgeHog {
       set { _ActiveDraggablePoint = value; }
     }
 
-    #region OtherVerticalLines Subject
-    object _OtherVerticalLinesSubjectLocker = new object();
-    ISubject<IEnumerable<DateTime>> _OtherVerticalLinesSubject;
-    ISubject<IEnumerable<DateTime>> OtherVerticalLinesSubject {
-      get {
-        lock (_OtherVerticalLinesSubjectLocker)
-          if (_OtherVerticalLinesSubject == null) {
-            _OtherVerticalLinesSubject = new Subject<IEnumerable<DateTime>>();
-            _OtherVerticalLinesSubject
-              .Latest()
-              .ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
-              .Subscribe(s => {
-                Observable.Start(() => {
-                }, new System.Reactive.Concurrency.DispatcherScheduler(plotter.Dispatcher));
-              }, exc => { });
-          }
-        return _OtherVerticalLinesSubject;
-      }
-    }
-    void OnOtherVerticalLines(IEnumerable<DateTime> p) {
-      OtherVerticalLinesSubject.OnNext(p);
-    }
-    #endregion
-
-
     ReactiveCollection<HorizontalLine> levelLines = new ReactiveCollection<HorizontalLine>();
     DispatcherScheduler _plotterScheduler = null;
     public DispatcherScheduler PlotterScheduler { get { return _plotterScheduler ?? (_plotterScheduler = new DispatcherScheduler(plotter.Dispatcher)); } }
@@ -861,15 +831,21 @@ namespace HedgeHog {
       });
     }
 
-    ReactiveCollection<DateTime> otherTimes = new ReactiveCollection<DateTime>();
-    ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
-
-    void OnOtherTimeAdded(DateTime date) {
+    #region Reactive Lines
+    void InitVLines<TLine>(ReactiveCollection<DateTime> times, ReactiveCollection<TLine> lines, Color color,Func<DateTime,string> tooltip) where TLine : SimpleLine, new() {
+      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeAdded(dt, lines, color, tooltip));
+      times.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeRemoved(dt, lines));
+      lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
+      lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
+    }
+    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveCollection<TLine> otherVLines,Color color, Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
       try {
-        var vl = new VerticalLine() {
+        var vl = new TLine() {
           Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = { 2 },
-          Stroke = new SolidColorBrush(Colors.MediumVioletRed),
-          StrokeThickness = 1
+          Stroke = new SolidColorBrush(color),
+          StrokeThickness = 2,
+          ToolTip = tooltip(date)
+
         };
         SetTime(vl, date);
         otherVLines.Add(vl);
@@ -877,7 +853,7 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-    void OnOtherTimeRemoved(DateTime date) {
+    static void OnOtherTimeRemoved<TLine>(DateTime date, ReactiveCollection<TLine> otherVLines) where TLine : SimpleLine, new() {
       try {
         var vl = otherVLines.SingleOrDefault(l => GetTime(l) == date);
         if (vl != null) otherVLines.Remove(vl);
@@ -885,14 +861,42 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-
-    public void DrawVertivalLines(IList<DateTime> times) {
+    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveCollection<DateTime> otherTimes) {
       times = times.Distinct().ToArray();
-      Observable.Start(() => {
-        otherTimes.RemoveAll(ot => !times.Contains(ot));
-        otherTimes.AddRange(times.Except(otherTimes));
-      }, new System.Reactive.Concurrency.DispatcherScheduler(plotter.Dispatcher));
+      otherTimes.RemoveAll(ot => true);//!times.Contains(ot));
+      otherTimes.AddRange(times.Except(otherTimes));
     }
+    #endregion
+
+    #region News Times
+    ReactiveCollection<DateTime> _newsTimes;
+    public ReactiveCollection<DateTime> newsTimes {
+      get {
+        if (_newsTimes == null) {
+          _newsTimes = new ReactiveCollection<DateTime>();
+          InitVLines(newsTimes, newsVLines, Colors.MediumVioletRed, d => "News @ {0:g}".Formater(d));
+        }
+        return _newsTimes;
+      }
+    }
+    ReactiveCollection<VerticalLine> newsVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawNewsLines(IEnumerable<DateTime> times) { DrawVertivalLines(times, newsTimes); }
+    #endregion
+
+    #region Trade Times
+    ReactiveCollection<DateTime> _TradeTimes;
+    public ReactiveCollection<DateTime> TradeTimes {
+      get {
+        if (_TradeTimes == null) {
+          _TradeTimes = new ReactiveCollection<DateTime>();
+          InitVLines(TradeTimes, TradeTimesVLines, Colors.Green, d => "Trade @ {0:g}".Formater(d));
+        }
+        return _TradeTimes;
+      }
+    }
+    ReactiveCollection<VerticalLine> TradeTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes); }
+    #endregion
     #endregion
 
     #region Window Events
@@ -945,7 +949,7 @@ namespace HedgeHog {
 
     static double[] StrokeArrayForTrades = new double[] { 5, 2, 2, 2 };
     Dictionary<string, HorizontalLine> tradeLines = new Dictionary<string, HorizontalLine>();
-    public void SetTradeLines(ICollection<Trade> trades, double spread) {
+    public void SetTradeLines(ICollection<Trade> trades) {
       var a = new Action(() => {
         var tradesAdd = from value in trades.Select(t => t.Id).Except(this.tradeLines.Select(t => t.Key))
                         join trade in trades on value equals trade.Id
@@ -1211,7 +1215,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       if (IsPlotterInitialised) return;
 
       CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = true };
-      ccg.XTextMapping = x => dateAxis.ConvertFromDouble(x).ToString(CultureInfo.CurrentCulture);
+      ccg.XTextMapping = x => GetPriceStartDate(dateAxis.ConvertFromDouble(x)).ToString("ddd dd HH:mm");
+      ccg.YTextMapping = x => x.Round(_roundTo) + "";
       plotter.Children.Add(ccg);
 
       dateAxis.MayorLabelProvider = null;
@@ -1694,10 +1699,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       if (inRendering) return;
       PriceBar[] voltsByTick = voltsByTicks.FirstOrDefault();
       #region Conversion Functions
-      var roundTo = lastPrice.Digits - 1;
-      var rateToPoint = new Func<Rate, Point>(t =>
-        new Point(dateAxis.ConvertToDouble(t.StartDateContinuous), t.PriceAvg.Round(roundTo)));
-      //(t.PriceAvg > t.PriceAvg1 ? t.PriceHigh : t.PriceAvg < t.PriceAvg1 ? t.PriceLow : t.PriceAvg).Round(roundTo)));  
+      _roundTo = lastPrice.Digits;
       #endregion
       ticks = new List<Rate>(ticks).ToArray();
       #region Set DataSources
@@ -1876,32 +1878,31 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     }
     #region SetLastPoint Subject
     object _SetLastPointSubjectLocker = new object();
-    ISubject<Rate> _SetLastPointSubject;
-    ISubject<Rate> SetLastPointSubject {
+    ISubject<Action> _SetLastPointSubject;
+    ISubject<Action> SetLastPointSubject {
       get {
         lock (_SetLastPointSubjectLocker)
           if (_SetLastPointSubject == null) {
-            _SetLastPointSubject = new Subject<Rate>();
-            _SetLastPointSubject
-              .Throttle(1.FromSeconds())
-              .ObserveOn(Dispatcher)
-              .Subscribe(_SetLastPoint, exc => LogMessage.Send(exc));
+            _SetLastPointSubject = new Subject<Action>();
+            _SetLastPointSubject.SubscribeToLatestOnBGThread(action => action.InvoceOnUI(), LogMessage.Send);
           }
         return _SetLastPointSubject;
       }
     }
-    public void SetLastPoint(Rate p) {
-      SetLastPointSubject.OnNext(p);
+    public void SetLastPoint(double high, double low, double ma, Rate rate) {
+      SetLastPointSubject.OnNext(() => _SetLastPoint(high, low, ma, rate));
     }
     #endregion
 
 
-    private void _SetLastPoint(Rate rateLast) {
+    private void _SetLastPoint(double high,double low, double ma, Rate rateLast) {
       try {
-        SetPoint(animatedPriceY.Count - 1, GetPriceHigh(rateLast), GetPriceLow(rateLast), GetPriceMA(rateLast), rateLast);
-        //animatedDataSourceBid.RaiseDataChanged();
+        SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);
+        animatedDataSourceBid.RaiseDataChanged();
         animatedDataSource.RaiseDataChanged();
-      } catch (Exception exc) { LogMessage.Send(exc); }
+      } catch (Exception exc) {
+        LogMessage.Send(exc);
+      }
     }
     private void SetPoint(int i, double high, double low, double ma, Rate rateLast) {
       animatedPriceY[i] = high.IfNaN(ma);
@@ -1913,6 +1914,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     Func<Rate, bool> hasGannAnglesFilter = r => r.GannPrice1x1 > 0;
     private LineGraph _voltGraph;
+    private int _roundTo;
     private void SetGannAngles(ICollection<Rate> rates, int selectedIndex) {
       var rateFirst = rates.FirstOrDefault(hasGannAnglesFilter);
       if (rateFirst == null) return;
