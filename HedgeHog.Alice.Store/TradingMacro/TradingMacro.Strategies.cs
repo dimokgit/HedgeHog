@@ -499,6 +499,12 @@ namespace HedgeHog.Alice.Store {
             lot += AllowedLotSizeCore();
             suppRes.TradeDate = ServerTime;
           }
+          //var ghost = SuppRes.SingleOrDefault(sr => sr.IsExitOnly && sr.IsBuy == isBuy && sr.InManual && sr.CanTrade && sr.TradesCount <= 0);
+          //if (ghost != null) {
+          //  var real = _buySellLevels.Single(sr => sr.IsBuy == isBuy);
+          //  if (real.IsBuy && real.Rate < ghost.Rate || real.IsSell && real.Rate > ghost.Rate)
+          //    real.Rate = ghost.Rate;
+          //}
           OpenTrade(isBuy, lot, "enterCrossHandler:" + new { isBuy, suppRes.IsExitOnly });
           return canTrade;
         };
