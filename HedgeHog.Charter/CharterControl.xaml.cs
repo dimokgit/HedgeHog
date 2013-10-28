@@ -38,6 +38,8 @@ using System.Collections.Specialized;
 using Microsoft.Research.DynamicDataDisplay.Charts.Navigation;
 using System.Globalization;
 using System.Threading;
+using System.Windows.Interactivity;
+using Microsoft.Expression.Interactivity.Layout;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -258,6 +260,7 @@ namespace HedgeHog {
     List<DateTime> animatedTime0X = new List<DateTime>();
     List<double> animatedPriceY = new List<double>();
     EnumerableDataSource<double> animatedDataSource = null;
+    EnumerableDataSource<double> animatedDataSource1 = null;
 
     List<double> animatedPriceBidY = new List<double>();
     EnumerableDataSource<double> animatedDataSourceBid = null;
@@ -376,7 +379,7 @@ namespace HedgeHog {
     }
 
     static Brush centerOfMassBrush = new SolidColorBrush(Colors.SteelBlue);
-    static int centerOfMassStrokeThickness = 1;
+    static int centerOfMassStrokeThickness = 0;
     static DoubleCollection centerOfMassStrokeDashArray = new DoubleCollection(new double[] { 5, 2, 2, 2 });
     HorizontalLine CenterOfMassFactory(double value = 0.0) {
       return new HorizontalLine() {
@@ -817,13 +820,13 @@ namespace HedgeHog {
 
     public void DrawLevels(IList<double> levelsToAdd) {
       PlotterScheduler.Schedule(() => {
-        levelLines.Skip(levelsToAdd.Count).ToList().ForEach(line => {
+        levelLines.ToArray().Skip(levelsToAdd.Count).ToList().ForEach(line => {
           levelLines.Remove(line);
           plotter.Children.Remove(line);
         });
         levelLines.Zip(levelsToAdd, (line, level) => new { line, level })
           .ToList().ForEach(a => a.line.Value = a.level);
-        levelsToAdd.Skip(levelLines.Count).ToList().ForEach(level => {
+        levelsToAdd.ToArray().Skip(levelLines.Count).ToList().ForEach(level => {
           var line = CenterOfMassFactory(level);
           levelLines.Add(line);
           plotter.Children.Add(line);
@@ -1007,6 +1010,7 @@ namespace HedgeHog {
         dpRates.Remove(guid);
       }
     }
+
     bool _isShiftDown;
     bool _dragPointPositionChanged;
     void SetBuySellRates(Dictionary<Guid, BuySellLevel> suppReses) {
@@ -1019,9 +1023,27 @@ namespace HedgeHog {
         Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
         if (!rates.ContainsKey(uid)) {
           string anchorTemplateName = "DraggArrow" + (isBuy ? "Up" : "Down");
+          var dragPoint = new TemplateableDraggablePoint() { MarkerTemplate = FindResource(anchorTemplateName) as ControlTemplate };
+
           Brush brush = new SolidColorBrush(isBuy ? Colors.DarkRed : Colors.Navy);
           var line = new HorizontalLine() { Stroke = brush, StrokeDashArray = { 2 } };
-          var dragPoint = new TemplateableDraggablePoint() { MarkerTemplate = FindResource(anchorTemplateName) as ControlTemplate };
+
+          if (line == null) {
+            var mdeb = new MouseDragElementBehavior();
+            mdeb.Attach(line);
+            mdeb.DragBegun += (s, e) => { e.Handled = true; };
+            mdeb.DragFinished += (s, e) => {
+              Point mouseInData = e.GetPosition(plotter.ViewportPanel).ScreenToData(plotter.Viewport.Transform);
+              if (mouseInData != null)
+                DispatcherScheduler.Current.Schedule(() => dragPoint.Position = new Point(dragPoint.Position.X, mouseInData.Y));
+            };
+          }
+
+          line.SetBinding(HorizontalLine.OpacityProperty, new Binding("IsGhost") {
+            Source = suppRes.Value.DataContext,
+            Converter = BoolToSrtingConverter.Default,
+            ConverterParameter = "1|1|0.3"
+          });
           SetFriend(dragPoint, line);
           plotter.Children.Add(line);
           plotter.Children.Add(dragPoint);
@@ -1251,7 +1273,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
         EnumerableDataSource<DateTime> xSrc = new EnumerableDataSource<DateTime>(animatedTimeX);
 
-        EnumerableDataSource<double> animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
+        animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
         animatedDataSource1.SetYMapping(y => y);
         plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
           .Description.LegendItem.Visibility = Visibility.Collapsed;
@@ -1316,7 +1338,9 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #endregion
 
       #region Add Lines
-      _tradingHorisontalRange = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightBlue) };
+      
+      _tradingHorisontalRange = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 0 };
+
       plotter.Children.Add(_tradingHorisontalRange);
       _shortWaveVerticalRange = new RectangleHighlight() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 1, Opacity = _tradingHorisontalRange.Opacity };
       plotter.Children.Add(_shortWaveVerticalRange);
@@ -1900,6 +1924,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);
         animatedDataSourceBid.RaiseDataChanged();
         animatedDataSource.RaiseDataChanged();
+        animatedDataSource1.RaiseDataChanged();
       } catch (Exception exc) {
         LogMessage.Send(exc);
       }

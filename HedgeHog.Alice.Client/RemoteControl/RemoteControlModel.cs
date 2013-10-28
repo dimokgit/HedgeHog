@@ -55,7 +55,8 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void RequestAddCharterToUI(CharterControl charter) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add);
+      DispatcherScheduler.Current.Schedule(3.FromSeconds(), () =>
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add));
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
     CharterControl GetCharter(TradingMacro tradingMacro) {
@@ -609,6 +610,25 @@ namespace HedgeHog.Alice.Client {
     }
     #endregion
 
+
+    #region ToggleCloseAtZero
+    ICommand _ToggleCloseAtZeroCommand;
+    public ICommand ToggleCloseAtZeroCommand {
+      get {
+        if (_ToggleCloseAtZeroCommand == null) {
+          _ToggleCloseAtZeroCommand = new Gala.RelayCommand<object>(ToggleCloseAtZero, (tm) => true);
+        }
+
+        return _ToggleCloseAtZeroCommand;
+      }
+    }
+    void ToggleCloseAtZero(object o) {
+      var tm = o as TradingMacro;
+      if (tm == null) MessageBox.Show("ToggleCloseAtZero needs TradingMacro");
+      tm.CloseAtZero = !tm.CloseAtZero;
+    }
+    #endregion
+
     #region Ctor
     void CleanEntryOrders() {
       try {
@@ -961,7 +981,10 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void AddShowChart(TradingMacro tm) {
-      ShowChartQueue.OnNext(() => ShowChart(tm));
+      if (tm.IsInVitualTrading)
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.Input);
+      else
+        ShowChartQueue.OnNext(() => ShowChart(tm));
     }
     bool _isMinimized = false;
     void IsMinimized(Window w) {
@@ -1012,7 +1035,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{9:n1},{10:n1}]↨"///↨↔
+            string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{9:n1},{10:n2}]↨"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + (tm.RatesArray.Count == tm.BarsCount ? "" : (',' + tm.BarsCount.ToString()))
             /*2*/, tm.CorridorAngle
@@ -1023,7 +1046,7 @@ namespace HedgeHog.Alice.Client {
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
             /*9*/, tm.RatesStDevHourlyAvgNativeInPips
-           /*10*/, tm.RatesStDevMinInPips
+            /*10*/, tm.CorridorCorrelation
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.CalculateLastPrice = tm.CalculateLastPrice;
@@ -1054,7 +1077,7 @@ namespace HedgeHog.Alice.Client {
             charter.LineTimeMin = tm.LineTimeMin.Value;
           if (tm.WaveShort.HasRates)
             charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
-          charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistanceRatio.ToInt()).First().StartDateContinuous;
+          charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistance).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s,s.Rate, false));

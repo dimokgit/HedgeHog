@@ -193,5 +193,11 @@ namespace HedgeHog {
       }
       return newMap;
     }
+    public static ParallelQuery<double> Mirror(this ParallelQuery<double> prices, double linePrice) {
+      return prices.Select(p => linePrice * 2 - p);
+    }
+    public static IEnumerable<double> Mirror(this double[] prices, double linePrice) {
+      return prices.Select(p => linePrice * 2 - p);
+    }
   }
 }

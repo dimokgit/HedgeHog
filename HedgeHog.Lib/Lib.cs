@@ -334,6 +334,12 @@ namespace HedgeHog {
       }
     }
 
+    public static IDisposable SubscribeToPropertiesChanged<T>(this T me, Action<T> fire, params Expression<Func<T, object>>[] props) where T : class,INotifyPropertyChanged {
+      return Observable.Merge<T>(props.Select(p => me.ObservePropertyChanged(p)).ToArray())
+        .Throttle(0.1.FromSeconds())
+              .ObserveOnDispatcher()
+              .Subscribe(sr => fire(sr));
+    }
     public static IDisposable SubscribeToPropertyChanged<TPropertySource>(
       this TPropertySource source
       , Expression<Func<TPropertySource, object>> property

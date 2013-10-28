@@ -1185,7 +1185,7 @@ namespace HedgeHog.Alice.Store {
     delegate double InPipsDelegate(string pair, double? price);
     InPipsDelegate _inPips;
     public double InPips(double? d) {
-      if (_inPips == null)
+      if (_inPips == null && TradesManager != null)
         _inPips = TradesManager.InPips;
       return _inPips == null ? double.NaN : _inPips(Pair, d);
     }
@@ -1455,14 +1455,16 @@ namespace HedgeHog.Alice.Store {
           Rate rate;
           try {
             if (args.StepBack) {
-              args.InPause = true;
-              rate = _replayRates.Previous(RatesInternal[0]);
-              if (rate != null) {
-                RatesInternal.Insert(0, rate);
+              if (RatesInternal.Last().StartDate > args.DateStart.Value) {
+                args.InPause = true;
+                rate = _replayRates.Previous(RatesInternal[0]);
+                if (rate != null) RatesInternal.Insert(0, rate);
+                else rate = RatesInternal[0];
                 RatesInternal.Remove(RatesInternal.Last());
                 RatesArraySafe.Count();
-                indexCurrent--;
-              }
+                rate = RatesInternal.Last();
+                indexCurrent = _replayRates.IndexOf(rate);
+              } else rate = RatesInternal.Last();
             } else {
               if (RateLast != null && tms().Length > 1) {
                 var a = tms().Select(tm => tm.RatesInternal.LastByCountOrDefault(new Rate()).StartDate).ToArray();
@@ -1477,7 +1479,7 @@ namespace HedgeHog.Alice.Store {
               if (rate != null)
                 if (RatesInternal.Count == 0 || rate > RatesInternal.LastBC())
                   RatesInternal.Add(rate);
-                else {
+                else if(args.StepBack){
                   Debugger.Break();
                 }
               while (RatesInternal.Count > (BarsCount * 10)
@@ -1492,16 +1494,17 @@ namespace HedgeHog.Alice.Store {
             }
             if (RatesInternal.LastBC().StartDate < args.DateStart.Value) {
               continue;
-            } else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
-              continue;
+            //} else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
+            //  continue;
             } else {
-              LastRatePullTime = RateLast.StartDate;
+              var rateLast = RatesInternal.Last();
+              LastRatePullTime = rateLast.StartDate;
               //TradesManager.RaisePriceChanged(Pair, RateLast);
               var d = Stopwatch.StartNew();
               if (rate != null) {
                 args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCount) / (_replayRates.Count - BarsCount)).ToInt();
 
-                var price = new Price(Pair, RateLast, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
+                var price = new Price(Pair, rateLast, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
                 TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true));
 
                 //RunPriceChanged(new PriceChangedEventArgs(Pair, price, TradesManager.GetAccount(), new Trade[0]), null);
@@ -2621,6 +2624,7 @@ namespace HedgeHog.Alice.Store {
     }
     private static Func<Rate, double> GetPriceMA(MovingAverageType movingAverageType) {
       switch (movingAverageType) {
+        case Store.MovingAverageType.FFT:
         case Store.MovingAverageType.RegressByMA:
         case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
@@ -2633,20 +2637,23 @@ namespace HedgeHog.Alice.Store {
     }
     double _sqrt2 = 1.5;// Math.Sqrt(1.5);
 
-    private void SetMA(int? period = null) {
+    private void SetMA() {
       switch (MovingAverageType) {
+        case Store.MovingAverageType.FFT:
+          var rates = RatesArray;
+          SetMAByFtt(rates);
+            RatesArray.SetCma((p, r) => r.PriceWave, PriceCmaLevels, PriceCmaLevels);
+          break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
-          RatesArraySafe.SetRegressionPrice1(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
+          RatesArray.AsParallel().SetRegressionPriceP(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
           break;
         case Store.MovingAverageType.Regression:
           Action<Rate, double> a = (r, d) => r.PriceCMALast = d;
-          RatesArraySafe.SetRegressionPrice1(PriceCmaLevels, _priceAvg, a);
+          RatesArray.AsParallel().SetRegressionPriceP(PriceCmaLevels, _priceAvg, a);
           break;
         case Store.MovingAverageType.Cma:
-          if (period.HasValue)
-            RatesArray.SetCma(period.Value, period.Value);
-          else if (PriceCmaLevels > 0) {
+          if (PriceCmaLevels > 0) {
             //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
@@ -2657,6 +2664,21 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.Trima:
           RatesArray.SetTrima(PriceCmaLevels); break;
       }
+    }
+
+    private void SetMAByFtt(IList<Rate> rates) {
+      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      var prices = rates.AsParallel().Select(_priceAvg).ToArray();
+      var mirror = prices.AsParallel().Mirror(prices.Last()).Reverse().ToArray();
+      mirror = prices.Concat(mirror).ToArray();
+      var mirror2 = prices.AsParallel().Mirror(prices[0]).Reverse().ToArray();
+      mirror = mirror2.Concat(mirror).ToArray();
+      var bins = mirror.Fft0();
+      var lastHarmonic = PolyOrder;
+      var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
+      double[] ifft;
+      alglib.fftr1dinv(bins1, out ifft);
+      rates.Zip(ifft.Skip(rates.Count), (rate, d) => { rate.PriceWave = d; return 0; }).Count();
     }
 
     Func<double, double, double> _max = (d1, d2) => Math.Max(d1, d2);
@@ -2843,6 +2865,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.HourlyStDevAvg: return ShowVoltsByHourlyStDevAvg;
         case HedgeHog.Alice.VoltageFunction.HourlyRsdAvg: return ShowVoltsByHourlyRsdAvg;
         case HedgeHog.Alice.VoltageFunction.StDevByHeight: return ShowVoltsByStDevByHeight;
+        case HedgeHog.Alice.VoltageFunction.AvgHourHeight: return ShowVoltsByCorridorRsd;
         case HedgeHog.Alice.VoltageFunction.StDevSumRatio: return ShowVoltsByStDevSumRatio;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");

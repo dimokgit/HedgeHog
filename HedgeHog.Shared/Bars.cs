@@ -250,8 +250,13 @@ namespace HedgeHog.Bars {
     #region Price Indicators
     [DataMember]
     public double? PriceSpeed { get; set; }
+
+    double _PriceWave = double.NaN;
     [DataMember]
-    public double PriceWave { get; set; }
+    public double PriceWave {
+      get { return _PriceWave; }
+      set { _PriceWave = value; }
+    }
 
     [DataMember]
     public double? PriceRsi { get; set; }

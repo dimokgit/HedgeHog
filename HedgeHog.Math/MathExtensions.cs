@@ -84,6 +84,11 @@ namespace HedgeHog {
       alglib.fftr1d(signal.Zip(line, (r, l) => r - l).ToArray(), out bins);
       return bins;
     }
+    public static IList<alglib.complex> Fft0(this IEnumerable<double> values) {
+      alglib.complex[] bins;
+      alglib.fftr1d(values.SafeArray(), out bins);
+      return bins;
+    }
     public static IList<alglib.complex> FftHarmonic(this IList<alglib.complex> bins, int harmonic) {
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
       return bins.Take(1)
@@ -262,6 +267,7 @@ namespace HedgeHog {
         .Select(a => a.first);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, double signal, Func<T, double> getValue) {
+      if (double.IsNaN(signal)) return new T[0];
       return list.Crosses(Enumerable.Repeat(signal, list.Count).ToArray(), getValue);
     }
     public static IEnumerable<T> Crosses<T>(this IList<T> list, IList<double> signal, Func<T, double> getValue) {
@@ -559,24 +565,46 @@ namespace HedgeHog {
       return ret;
     }
     /// <summary>
-    /// Returns Value - min
+    /// Returns Value - avg
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="values"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static IEnumerable<double> Normalize<T>(this IList<T> values, Func<T, double> value) {
-      var min = values.Min(value);
-      return values.Select(v => value(v) - min);
+    static IEnumerable<double> Normalize<T>(this IList<T> values, Func<T, double> value,out double level) {
+      var l = level = (values.Max(value) + values.Min(value)) / 2;
+      return values.Select(v => value(v) - l);
+    }
+    static IEnumerable<double> Normalize(this IList<double> values,  out double level) {
+      var l = level = (values.Max() + values.Min()) / 2;
+      return values.Select(v => v - l);
     }
     public static double Rsd(this IList<double> values) {
       var stDev = values.StDev();
-      var height = values.Average();
+      var height = values.Height();
       return stDev / height;
     }
-    public static double RsdNormalized<T>(this IList<T> values, Func<T, double> value) {
-      var norm = values.Normalize(value).ToArray();
+    public static double RsdNormalized(this IList<double> values) {
+      double level;
+      var norm = values.Normalize(out level).ToArray();
       return norm.Rsd();
+    }
+    public static double RsdNormalized<T>(this IList<T> values, Func<T, double> value) {
+      double level;
+      var norm = values.Normalize(value, out level).ToArray();
+      return norm.Rsd();
+    }
+
+    static double Height(this IList<double> rates) {
+      double min, max;
+      return rates.Height(out min, out max);
+    }
+    static double Height(this IList<double> rates, out double min, out double max) {
+      if (!rates.Any())
+        return min = max = double.NaN;
+      min = rates.Min();
+      max = rates.Max();
+      return max - min;
     }
 
     public static double OpsiteCathetusByFegrees(this double adjacentCathetus, double angleInDegrees) {
