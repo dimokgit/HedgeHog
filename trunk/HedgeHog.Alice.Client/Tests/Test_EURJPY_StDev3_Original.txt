@@ -16,7 +16,6 @@ TrailingDistanceFunction=StDev3
 CloseOnProfitOnly_=True
 CorridorCalcMethod=Height
 CorridorCrossesMaximum=0
-CorridorFollowsPrice=False
 CorridorHeightMax=1.06
 CorridorHeightMethod=ByStDevHP
 CorridorHighLowMethod=PriceMA

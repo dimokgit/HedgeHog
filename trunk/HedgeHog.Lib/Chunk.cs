@@ -20,7 +20,7 @@ namespace HedgeHog {
     /// <param name="rates"></param>
     /// <param name="chunksLength"></param>
     /// <returns></returns>
-    public static IEnumerable<T[]> Integral<T>(this IList<T> ratesOriginal, int chunksLength) {
+    public static IEnumerable<T[]> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
       var rates = ratesOriginal.SafeArray();
       return Enumerable.Range(0, rates.Length - chunksLength).Select(start => rates.CopyToArray(start, chunksLength));
     }

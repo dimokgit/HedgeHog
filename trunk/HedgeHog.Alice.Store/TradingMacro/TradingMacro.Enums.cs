@@ -12,7 +12,8 @@ namespace HedgeHog.Alice {
     HourlyStDevAvg = 40,
     HourlyRsdAvg = 41,
     StDevByHeight = 50,
-    StDevSumRatio = 60
+    StDevSumRatio = 60,
+    AvgHourHeight = 70
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -72,7 +73,9 @@ namespace HedgeHog.Alice.Store {
     Rsd2 = 141,
     Fft = 142, 
     Backdoor = 150,
-    LongLine = 160
+    LongLine = 160,
+    GhostLevel = 170,
+    StDevRsd = 180
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -129,7 +132,8 @@ namespace HedgeHog.Alice.Store {
     GrossTP1 = 6,
     Limit = 7,
     Friday = 8,
-    Harmonic = 9
+    Harmonic = 9,
+    CorrTouch = 10
   }
   public enum MedianFunctions {
     Void = -1,
@@ -175,6 +179,6 @@ namespace HedgeHog.Alice.Store {
   }
   public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, AskBidByMA = 5, PriceByMA = 6, BidAskByMA = 7, PriceMA = 8 }
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1,AskBidByMA = 2,Trima = 3 }
-  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3 }
+  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4 }
 
 }

@@ -197,5 +197,23 @@ namespace UnitLib
       actual = (values.Rsd() * 100).Round(2);
       Assert.AreEqual(expected, actual);
     }
+
+    /// <summary>
+    ///A test for FftSignalBins
+    ///</summary>
+    [TestMethod()]
+    public void FftSignalBinsTest() {
+      var r = new Random();
+      IEnumerable<double> signalIn = Enumerable.Range(0, 1000).Select(i => (double)r.Next(10)).ToArray();
+      IList<alglib.complex> expected = null; // TODO: Initialize to an appropriate value
+      IList<alglib.complex> bins = MathExtensions.Fft0(signalIn);
+      //bins[0] = new alglib.complex(0);
+      //Enumerable.Range(500, 499).ToList().ForEach(i => bins[i] = new alglib.complex(0));
+      double[] ifft;
+      alglib.fftr1dinv(bins.SafeArray(), out ifft);
+
+      Assert.AreEqual(expected, bins);
+      Assert.Inconclusive("Verify the correctness of this test method.");
+    }
   }
 }

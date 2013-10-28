@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
     #region ScanCorridor Extentions
     #region New
     private CorridorStatistics ScanCorridorFixed(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), r => CorridorDistanceRatio.ToInt(), GetShowVoltageFunction());
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), r => CorridorDistance, GetShowVoltageFunction());
     }
 
     private CorridorStatistics ScanCorridorByStDevBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -82,6 +82,7 @@ namespace HedgeHog.Alice.Store {
       GetVoltageAverage = () => voltageAvgLow;
       var voltageAvgHigh = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray().AverageByIterations(averageIterations).Average();
       GetVoltageHigh = () => voltageAvgHigh;
+      CorridorCorrelation = AlgLib.correlation.spearmanrankcorrelation(RatesArray.Select(_priceAvg).ToArray(), RatesArray.Select(GetVoltage).ToArray(), RatesArray.Count);
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
@@ -611,14 +612,14 @@ namespace HedgeHog.Alice.Store {
               lock (locker) {
                 correlations.Add(new { corr, length = prices.Length });
               }
-            } catch {
-              Debugger.Break();
+            } catch(Exception exc) {
+              Log = exc;
             }
           });
       correlations.Sort((a, b) => a.corr.CompareTo(b.corr));
       if (!correlations.Any()) correlations.Add(new { corr = GetVoltage(RatePrev), length = 1000000 });
       WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().Take(correlations[0].length * groupLength).TakeWhile(r => r.StartDate >= dateMin).ToArray());
-      CorridorCorrelation = ratesReversedOriginal.Volatility(_priceAvg, GetPriceMA);
+      CorridorCorrelation = ratesReversedOriginal.Volatility(_priceAvg, GetPriceMA, UseSpearmanVolatility);
       return ShowVolts(CorridorCorrelation, 1);
     }
 
@@ -756,7 +757,7 @@ namespace HedgeHog.Alice.Store {
         var rates = ratesForCorridor.ReverseIfNot().Take(lengthByCorr * groupLength).ToList();
         WaveShort.Rates = rates;
       }
-      CorridorCorrelation = ratesForCorridor.ReverseIfNot().Take((WaveShort.Rates.Count * 1.5).ToInt()).ToArray().Volatility(_priceAvg,GetPriceMA);
+      CorridorCorrelation = ratesForCorridor.ReverseIfNot().Take((WaveShort.Rates.Count * 1.5).ToInt()).ToArray().Volatility(_priceAvg, GetPriceMA, UseSpearmanVolatility);
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
@@ -1302,7 +1303,7 @@ namespace HedgeHog.Alice.Store {
         upDownRatiosForAreas.FillGaps(kv => double.IsNaN(kv.Value.value), kv => kv.Value.value, (kv, d) => kv.Value.value.Value = d);
         Task.Factory.StartNew(() => upDownRatiosForAreas.ForEach(
           kv => ratesReversed[kv.Key].DistanceHistory = kv.Key < CorridorDistanceRatio ? double.NaN : kv.Value.value));
-        upDownRatiosForAreas.SetRegressionPrice1(PolyOrder, kv => kv.Value.value
+        upDownRatiosForAreas.AsParallel().SetRegressionPriceP(PolyOrder, kv => kv.Value.value
           , (kv, d) => { if (kv.Key > CorridorDistanceRatio) ratesReversed[kv.Key].Distance1 = d; kv.Value.line.Value = d; });
 
         var areaInfos = upDownRatiosForAreas.OrderBy(kv => kv.Key).SkipWhile(kv => kv.Key < CorridorDistanceRatio).ToArray()
@@ -1347,15 +1348,6 @@ namespace HedgeHog.Alice.Store {
 
     private static int NestStep(int rc) {
       return (rc / 100.0).ToInt() + 1;
-    }
-
-    public double CorridorBalance() {
-      var rates = CorridorStats.Rates;
-      Action<Rate,double> a = (r,d)=>r.PriceAvg1 = d;
-      rates.SetRegressionPrice1(1, _priceAvg, a);
-      var upCount = rates.Count(r => r.PriceAvg > r.PriceAvg1);
-      var downCount = rates.Count(r => r.PriceAvg < r.PriceAvg1);
-      return Fibonacci.FibRatioSign(upCount , downCount);
     }
 
     private CorridorStatistics ScanCorridorByStDevAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {

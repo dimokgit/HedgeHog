@@ -46,10 +46,11 @@ namespace HedgeHog.Bars {
       return waves.FirstOrDefault(w => date.Between(w.LastBC().StartDate, w[0].StartDate));
     }
 
-    public static double Volatility<T>(this IList<T> rates, Func<T, double> value1, Func<T, double> value2) {
+    public static double Volatility<T>(this IList<T> rates, Func<T, double> value1, Func<T, double> value2, bool useSpearmanVolatility) {
       var corr1 = rates.Select(value1).ToArray();
       var corr2 = rates.Select(value2).ToArray();
-      return AlgLib.correlation.pearsoncorrelation(ref corr1, ref corr2, corr1.Length);
+      return !useSpearmanVolatility ? AlgLib.correlation.pearsoncorrelation(ref corr1, ref corr2, corr1.Length)
+        : AlgLib.correlation.spearmanrankcorrelation(corr1, corr2, corr1.Length); ;
     }
 
     /// <summary>
@@ -188,6 +189,12 @@ namespace HedgeHog.Bars {
       return rates.Select((r, i) => price(r) > lineGet(i) ? priceHigh(r) : priceLow(r));
     }
 
+    static void SetRegressionPrice<T>(this ParallelQuery<T> ticks, double[] coeffs, Action<T, double> a) {
+      ticks.Select((tick, i) => {
+        a(tick, coeffs.RegressionValue(i));
+        return i;
+      }).ToArray();
+    }
     static void SetRegressionPrice<T>(this IEnumerable<T> ticks, double[] coeffs, Action<T, double> a) {
       int i1 = 0;
       foreach (var tick in ticks) {
@@ -200,7 +207,7 @@ namespace HedgeHog.Bars {
       coeffs.SetRegressionPrice(0, ticks.Count(), writeTo);
       return coeffs;
     }
-    public static double[] SetRegressionPrice1<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
+    public static double[] SetRegressionPriceP<T>(this ParallelQuery<T> ticks, int polyOrder, Func<T, double> readFrom, Action<T, double> writeTo) {
       var coeffs = ticks.Select(readFrom).ToArray().Regress(polyOrder);
       ticks.SetRegressionPrice(coeffs, writeTo);
       return coeffs;
@@ -225,23 +232,6 @@ namespace HedgeHog.Bars {
         setPriceHigh1(r, pl + heightUp1);
         setPriceLow1(r, pl - heightDown1);
       });
-    }
-
-
-    public static double[] SetCorridorPrices(this IEnumerable<Rate> rates, double heightUp0, double heightDown0, double heightUp, double heightDown
-      , Func<Rate, double> getPriceForLine, Func<Rate, double> getPriceLine, Action<Rate, double> setPriceLine
-      , Action<Rate, double> setPriceHigh0, Action<Rate, double> setPriceLow0
-      , Action<Rate, double> setPriceHigh, Action<Rate, double> setPriceLow
-      ) {
-        var coeffs = rates.SetRegressionPrice1(1, getPriceForLine, setPriceLine);
-      rates.AsParallel().ForAll(r => {
-        var pl = getPriceLine(r);
-        setPriceHigh0(r, pl + heightUp0);
-        setPriceLow0(r, pl - heightDown0);
-        setPriceHigh(r, pl + heightUp);
-        setPriceLow(r, pl - heightDown);
-      });
-      return coeffs;// heightAvg * 2;// heightAvgUp + heightAvgDown;
     }
 
     public static IList<Tuple<TBar, double>> GetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
@@ -1553,23 +1543,27 @@ namespace HedgeHog.Bars {
       });
     }
     public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, double cmaPeriod, int cmaLevels = 3) where TBar : BarBase {
-      var cmas = new List<double>(cmaLevels);
-      var first = ticks.First();
-      var firstAvg = ticks.Take(cmaPeriod.ToInt()).Zip(ticks.Skip(1).Take(cmaPeriod.ToInt()), (f, s) => getValue(s, f)).Average();
-      for (var i = 0; i < cmaLevels; i++)
-        cmas.Add(firstAvg);
-      
-      first.PriceCMA = cmas; first.PriceCMALast = firstAvg;
+      if (cmaPeriod == 0)
+        ticks.ToList().ForEach(t => t.PriceCMALast = double.NaN);
+      else {
+        var cmas = new List<double>(cmaLevels);
+        var first = ticks.First();
+        var firstAvg = ticks.Take(cmaPeriod.ToInt()).Zip(ticks.Skip(1).Take(cmaPeriod.ToInt()), (f, s) => getValue(s, f)).Average();
+        for (var i = 0; i < cmaLevels; i++)
+          cmas.Add(firstAvg);
 
-      ticks.Aggregate((p, t) => {
-        if (t.PriceCMA != null) t.PriceCMA.Clear();
-        else t.PriceCMA = new List<double>(cmaLevels);
-        t.PriceCMA.Add(cmas[0] = cmas[0].Cma(cmaPeriod, getValue(p, t)));
-        for (var i = 1; i < cmaLevels; i++)
-          t.PriceCMA.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
-        t.PriceCMALast = t.PriceCMA[t.PriceCMA.Count - 1];
-        return t;
-      });
+        first.PriceCMA = cmas; first.PriceCMALast = firstAvg;
+
+        ticks.Aggregate((p, t) => {
+          if (t.PriceCMA != null) t.PriceCMA.Clear();
+          else t.PriceCMA = new List<double>(cmaLevels);
+          t.PriceCMA.Add(cmas[0] = cmas[0].Cma(cmaPeriod, getValue(p, t)));
+          for (var i = 1; i < cmaLevels; i++)
+            t.PriceCMA.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
+          t.PriceCMALast = t.PriceCMA[t.PriceCMA.Count - 1];
+          return t;
+        });
+      }
     }
     public static void SetCma<TBars>(this ICollection<TBars> ticks, double cmaPeriod, int cmaLevels = 3) where TBars : BarBase {
       var cmas = new List<double>(cmaLevels);

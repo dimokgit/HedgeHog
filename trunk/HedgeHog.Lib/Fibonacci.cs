@@ -7,6 +7,29 @@ namespace HedgeHog {
   public static class Fibonacci {
     static double[] InsideLevels = new[] { 1.618, 1.382, 1.272, .764, .618, .382, .236, -.272, -.382, -.618 };
 
+    static Func<int, int> fib { get {
+      return Y<int, int>(f => n => {
+        if (n > 1)
+          return f(n - 1) + f(n - 2);
+        return n;
+      });
+      } 
+    }
+    static Func<A, R> Y<A, R>(Func<Func<A, R>, Func<A, R>> f) {
+      Func<A, R> g = null;
+      g = f(a => g(a));
+      return g;
+    }
+    //public static int Number(this int i) { return fib(i); }
+
+    //delegate Func<int, int> Recursive(Recursive recursive);
+    //static Func<Func<Func<int, int>, Func<int, int>>, Func<int, int>> Y =
+    //        f => ((Recursive)(g => (f(x => g(g)(x)))))((Recursive)(g => f(x => g(g)(x))));
+    
+    //static Func<int,int> fac = Y(f => x => x < 2 ? 1 : x * f(x - 1));
+    //static Func<int, int> fib = Y(f => x => x < 2 ? x : f(x - 1) + f(x - 2));
+    public static int Number(int i) { return fib(i); }
+
     public static double[] Levels(double up, double down) {
       var spread = up - down;
       var levels = new List<double>();

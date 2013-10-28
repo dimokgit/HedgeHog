@@ -24,6 +24,9 @@ namespace HedgeHog.AlgLib
 {
     public static class correlation
     {
+      public static double pearsoncorrelation(double[] x, double[] y) {
+        return pearsoncorrelation(ref x, ref y, x.Length);
+      }
         /*************************************************************************
         Pearson product-moment correlation coefficient
 

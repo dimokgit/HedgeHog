@@ -90,6 +90,7 @@ namespace HedgeHog.Alice.Store {
 
     private CorridorStatistics ScanCorridorByFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot().ToArray();
+      var FftReversed = false;
 
       FttMax = ratesReversed.Select(_priceAvg).FftFrequency(FftReversed).ToInt();
 

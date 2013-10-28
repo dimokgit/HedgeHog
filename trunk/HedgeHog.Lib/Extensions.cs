@@ -46,11 +46,11 @@ namespace HedgeHog {
   }
 
   public static class DispatcherEx {
-    public static void Invoke(this Dispatcher d, Action action) {
+    public static void Invoke(this Dispatcher d, Action action,DispatcherPriority priority = DispatcherPriority.Normal) {
       if (d.CheckAccess()) {
         action();
       } else {
-        d.Invoke(action);
+        d.Invoke(action, priority);
       }
     }
   }

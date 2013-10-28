@@ -21,6 +21,9 @@ namespace HedgeHog.Alice.Store {
 
 
 
+    public double CalculateLastPrice(Func<Rate, double> price) {
+      return CalculateLastPrice(RateLast, price);
+    }
     public double CalculateLastPrice(Rate rate, Func<Rate, double> price) {
       try {
         if (TradesManager.IsInTest || IsInPlayback) return price(rate);

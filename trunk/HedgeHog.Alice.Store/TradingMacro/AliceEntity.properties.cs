@@ -8,6 +8,9 @@ using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Shared;
 using HedgeHog.Models;
 using System.Reactive.Concurrency;
+using ReactiveUI;
+using System.Reactive.Linq;
+using System.Linq.Expressions;
 
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
@@ -45,14 +48,34 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #region IsGhost
+    IDisposable _isGhostDisposable;
+    public bool IsGhost {
+      get {
+        if (_isGhostDisposable == null) {
+          _isGhostDisposable = this.SubscribeToPropertiesChanged(sr => OnPropertyChanged("IsGhost")
+            , x => x.InManual
+            , x => x.IsExitOnly
+            , x => x.CanTrade
+            , x => x.TradesCount
+            );
+        }
+        return InManual 
+          && IsExitOnly 
+          && CanTrade 
+          && TradesCount <= 0; 
+      }
+    }
+
+    #endregion
     #region CanTrade
     private bool _CanTrade;
     public bool CanTrade {
       get { return _CanTrade; }
       set {
         if (_CanTrade != value) {
-          if (value && IsExitOnly)
-            Scheduler.Default.Schedule(() => CanTrade = false);
+          //if (value && IsExitOnly)
+          //  Scheduler.Default.Schedule(() => CanTrade = false);
           _CanTrade = value;
           OnPropertyChanged("CanTrade");
           OnPropertyChanged("CanTradeEx");
@@ -915,6 +938,7 @@ namespace HedgeHog.Alice.Store {
         if (CorridorStDevRatioMax != value) {
           CorridorStDevRatioMax = value;
           OnPropertyChanged(() => CorridorDistanceRatio);
+          OnPropertyChanged(() => CorridorDistance);
         }
       }
     }
@@ -1324,14 +1348,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("FFT Reversed")]
-    [Category(categoryXXX_NU)]
-    public bool FftReversed {
+    [DisplayName("Spearman Volatility")]
+    [Category(categoryActiveYesNo)]
+    public bool UseSpearmanVolatility {
       get { return DoAdjustTimeframeByAllowedLot; }
       set {
         if (DoAdjustTimeframeByAllowedLot != value) {
           DoAdjustTimeframeByAllowedLot = value;
-          OnPropertyChanged("FttReversed");
+          OnPropertyChanged("UseSpearmanVolatility");
         }
       }
     }
@@ -1658,7 +1682,7 @@ namespace HedgeHog.Alice.Store {
     }
     public DateTime ServerTime {
       get {
-        return IsInVitualTrading ? RatesArray.LastBC().StartDate.AddMinutes(BarPeriodInt) : TradesManager.ServerTime;
+        return IsInVitualTrading ? RatesInternal.Any() ? RatesInternal.Last().StartDate.AddMinutes(BarPeriodInt) : DateTime.MinValue : TradesManager.ServerTime;
       }
     }
     Price GetVirtualCurrentPrice() {
