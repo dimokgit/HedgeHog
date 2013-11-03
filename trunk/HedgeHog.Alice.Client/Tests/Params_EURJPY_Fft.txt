@@ -13,6 +13,7 @@ DistanceIterations=1.3
 DoStreatchRates_=True
 Eval=a.stDev
 ExitFunction=Void
+FftReversed=False
 IsCorridorForwardOnly=False
 MaxLotByTakeProfitRatio_=1
 MedianFunction=Density
