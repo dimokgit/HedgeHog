@@ -762,6 +762,23 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorByHorizontalLineCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      WaveShort.Rates = null;
+      double level;
+      var rates = CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), GetTradeEnterBy(), CorridorDistanceRatio.ToInt(), out level);
+      if (rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate > CorridorStats.StartDate)) {
+        MagnetPrice = level;
+        WaveShort.Rates = rates;
+      }
+      if (!WaveShort.HasRates) {
+        if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
+          var dateStop = CorridorStats.Rates.LastBC().StartDate;
+          WaveShort.Rates = ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray();
+        } else
+          WaveShort.Rates = ratesForCorridor.ReverseIfNot();
+      }
+      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+    }
+    private CorridorStatistics ScanCorridorByHorizontalLineCrossesFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
 
       var minuteMin = 30;
