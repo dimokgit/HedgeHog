@@ -2865,7 +2865,9 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.HourlyStDevAvg: return ShowVoltsByHourlyStDevAvg;
         case HedgeHog.Alice.VoltageFunction.HourlyRsdAvg: return ShowVoltsByHourlyRsdAvg;
         case HedgeHog.Alice.VoltageFunction.StDevByHeight: return ShowVoltsByStDevByHeight;
-        case HedgeHog.Alice.VoltageFunction.AvgHourHeight: return ShowVoltsByCorridorRsd;
+        case HedgeHog.Alice.VoltageFunction.CorridorRsd: return ShowVoltsByCorridorRsd;
+        case HedgeHog.Alice.VoltageFunction.CorridorRsdI: return ShowVoltsByCorridorRsdI;
+        case HedgeHog.Alice.VoltageFunction.CorridorStDevIR: return ShowVoltsByCorridorStDevIR;
         case HedgeHog.Alice.VoltageFunction.StDevSumRatio: return ShowVoltsByStDevSumRatio;
       }
       throw new NotSupportedException(VoltageFunction_ + " not supported.");

@@ -61,7 +61,7 @@ namespace HedgeHog.Alice.Client {
     [MethodImpl(MethodImplOptions.Synchronized)]
     CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
-        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container);
+        var charterNew = new CharterControl(tradingMacro.CompositeId, App.container) { tm = tradingMacro };
         RequestAddCharterToUI(charterNew);
         try {
           charters.Add(tradingMacro, charterNew);

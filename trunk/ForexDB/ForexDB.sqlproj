@@ -33,7 +33,7 @@
     <AnsiPadding>True</AnsiPadding>
     <AnsiWarnings>True</AnsiWarnings>
     <ArithAbort>True</ArithAbort>
-    <AutoClose>False</AutoClose>
+    <AutoClose>True</AutoClose>
     <AutoCreateStatistics>True</AutoCreateStatistics>
     <AutoShrink>True</AutoShrink>
     <AutoUpdateStatistics>True</AutoUpdateStatistics>
@@ -492,6 +492,7 @@
     <Build Include="dbo\Tables\t_Trade_Bak.sql" />
     <Build Include="dbo\Functions\SqlFunction1.sql" />
     <Build Include="dbo\Functions\clrSplitTwo.sql" />
+    <Build Include="Security\DIMONFX_TradersCM.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
@@ -533,6 +534,9 @@
     <None Include="Assemblies\TA-Lib-Core_7.dll" />
     <None Include="Assemblies\SQLCLR_7.dll" />
     <None Include="Assemblies\LightLib_7.dll" />
+    <None Include="Assemblies\TA-Lib-Core_8.dll" />
+    <None Include="Assemblies\SQLCLR_8.dll" />
+    <None Include="Assemblies\LightLib_8.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">

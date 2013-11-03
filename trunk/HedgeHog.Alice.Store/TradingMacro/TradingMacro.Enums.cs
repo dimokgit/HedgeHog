@@ -13,7 +13,9 @@ namespace HedgeHog.Alice {
     HourlyRsdAvg = 41,
     StDevByHeight = 50,
     StDevSumRatio = 60,
-    AvgHourHeight = 70
+    CorridorRsd = 70,
+    CorridorRsdI = 71,
+    CorridorStDevIR = 72
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -75,7 +77,9 @@ namespace HedgeHog.Alice.Store {
     Backdoor = 150,
     LongLine = 160,
     GhostLevel = 170,
-    StDevRsd = 180
+    StDevRsd = 180,
+    StDevRsd1 = 181,
+    GhopStop = 190
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,

@@ -95,6 +95,20 @@ namespace HedgeHog {
       DispatcherScheduler.Current.Schedule(() => OnPropertyChanged(Metadata.CharterControlMetadata.Header));
     }
 
+    #region tm
+    private object _tm;
+    public object tm {
+      get { return _tm; }
+      set {
+        if (_tm != value) {
+          _tm = value;
+          OnPropertyChanged("tm");
+        }
+      }
+    }
+    
+    #endregion
+
     #region Attached Properties
 
 
