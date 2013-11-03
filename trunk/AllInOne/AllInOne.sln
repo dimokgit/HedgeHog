@@ -1147,8 +1147,6 @@ Global
 		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Mixed Platforms.Deploy.0 = Release|Any CPU
 		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Win32.ActiveCfg = Release|Any CPU
 		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|x86.ActiveCfg = Release|Any CPU
 		{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU

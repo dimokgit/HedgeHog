@@ -1,5 +1,7 @@
 ﻿
 
+
+
 CREATE VIEW [dbo].[v_TradeSession] AS
 SELECT        TS.Pair, TS.SessionId, S.SuperUid AS SuperSessionUid, TS.TimeStamp, TS.Count, TS.GrossPL, TS.Days,S.Profitability, ISNULL(S.MaximumLot, TS.Lot * 1.4) AS Lot, 
                          TS.LotA / O.BaseUnitSize AS LotA, TS.LotSD / O.BaseUnitSize AS LotSD, TS.DollarsPerMonth, TS.PL, TS.MinutesInTest, TS.DaysPerMinute, ISNULL(S.Profitability, 
@@ -18,7 +20,10 @@ SELECT        TS.Pair, TS.SessionId, S.SuperUid AS SuperSessionUid, TS.TimeStamp
                          ScanCorridorBy.Value AS ScanCorridorBy,
                          TPLR.Value AS TakeProfitLimitRatio,
                          TradingAngleRange.Value TradingAngleRange,
-                         PolyOrder.Value PolyOrder
+                         PolyOrder.Value PolyOrder,
+                         MovingAverageType.Value MovingAverageType,
+                         PriceCmaLevels_.Value PriceCmaLevels_,
+                         TestFileName.Value TestFileName
 FROM            dbo.v_TradeSession_10 AS TS 
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TakeProfitLimitRatio')TPLR
 INNER JOIN dbo.t_Offer AS O ON TS.Pair = O.Pair
@@ -34,6 +39,9 @@ OUTER APPLY fGetSessionValue(TS.SessionInfo, 'ProfitToLossExitRatio_') AS Profit
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'BarsCount') AS BarsCount
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TradingAngleRange_') AS TradingAngleRange
 OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PolyOrder') AS PolyOrder
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'TestFileName') AS TestFileName
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'MovingAverageType') AS MovingAverageType
+OUTER APPLY fGetSessionValue(TS.SessionInfo, 'PriceCmaLevels_') AS PriceCmaLevels_
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_DiagramPane1', @value = N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]

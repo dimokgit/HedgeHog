@@ -1682,9 +1682,9 @@ namespace HedgeHog.Alice.Store {
     }
     public DateTime ServerTime {
       get {
-        return IsInVitualTrading 
-          ? RatesInternal.Any() 
-          ? RatesInternal.Last().StartDate.AddMinutes(BarPeriodInt) 
+        return IsInVitualTrading
+          ? RatesInternal.Count > 0 
+          ? RatesInternal.LastBC().StartDate.AddMinutes(BarPeriodInt) 
           : DateTime.MinValue 
           : TradesManager == null ? DateTime.MinValue 
           : TradesManager.ServerTime;
