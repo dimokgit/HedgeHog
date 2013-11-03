@@ -175,12 +175,6 @@ namespace HedgeHog {
         });
     }
 
-    public static double StDevByRegressoin(this IList<double> values, double[] coeffs = null) {
-      if(coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
-      var line = new double[values.Count];
-      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
-      return line.Zip(values, (l, v) => l - v).ToArray().StDev();
-    }
     public static T MergeLeft<T, K, V>(this T me, params IDictionary<K, V>[] others)
         where T : IDictionary<K, V>, new() {
       T newMap = new T();

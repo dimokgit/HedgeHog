@@ -564,6 +564,30 @@ namespace HedgeHog {
       minOut = min;
       return ret;
     }
+    public static T[] CopyToArray<T>(this T[] values, int count) {
+      var array = new T[count];
+      Array.Copy(values, array, array.Length);
+      return array;
+    }
+    public static T[] CopyToArray<T>(this T[] values, int start, int count) {
+      var array = new T[count];
+      Array.Copy(values, start, array, 0, array.Length);
+      return array;
+    }
+    /// <summary>
+    /// Try not to materialize it.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="rates"></param>
+    /// <param name="chunksLength"></param>
+    /// <returns></returns>
+    public static IEnumerable<T[]> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
+      var rates = ratesOriginal.SafeArray();
+      return Enumerable.Range(0, rates.Length - chunksLength).Select(start => rates.CopyToArray(start, chunksLength));
+    }
+    public static IEnumerable<double> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength,Func<IEnumerable<T>,double> func) {
+      return ratesOriginal.Integral(chunksLength).Select(func);
+    }
     /// <summary>
     /// Returns Value - avg
     /// </summary>
@@ -584,6 +608,22 @@ namespace HedgeHog {
       var height = values.Height();
       return stDev / height;
     }
+    public static double StDevByRegressoin(this IList<double> values, double[] coeffs = null, Action<double[]> callCC = null) {
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      var line = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      var diffs = line.Zip(values, (l, v) => l - v).ToArray();
+      if (callCC != null) callCC(diffs);
+      return diffs.StDev();
+    }
+    public static double RsdByRegression(this IEnumerable<double> values) {
+      double min = 0.0, max = 0.0;
+      var stDev = values.SafeArray().StDevByRegressoin(null, diffs => {
+        min = diffs.Where(d => d < 0).Average();
+        max = diffs.Where(d => d >= 0).Average();
+      });
+      return stDev / (max - min);
+    }
     public static double RsdNormalized(this IList<double> values) {
       double level;
       var norm = values.Normalize(out level).ToArray();
@@ -593,6 +633,10 @@ namespace HedgeHog {
       double level;
       var norm = values.Normalize(value, out level).ToArray();
       return norm.Rsd();
+    }
+
+    public static double RsdIntegral(this IList<double> values,int period) {
+      return values.Integral(period).Select(i => i.Rsd()).Average();
     }
 
     static double Height(this IList<double> rates) {

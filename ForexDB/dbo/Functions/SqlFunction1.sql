@@ -4,3 +4,5 @@ RETURNS NVARCHAR (4000)
 AS
  EXTERNAL NAME [SQL_DateFuncs].[UserDefinedFunctions].[SqlFunction1]
 
+
+
