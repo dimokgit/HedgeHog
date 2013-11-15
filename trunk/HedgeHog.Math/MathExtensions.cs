@@ -583,7 +583,7 @@ namespace HedgeHog {
     /// <returns></returns>
     public static IEnumerable<T[]> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
       var rates = ratesOriginal.SafeArray();
-      return Enumerable.Range(0, rates.Length - chunksLength).Select(start => rates.CopyToArray(start, chunksLength));
+      return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1)).Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
     }
     public static IEnumerable<double> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength,Func<IEnumerable<T>,double> func) {
       return ratesOriginal.Integral(chunksLength).Select(func);

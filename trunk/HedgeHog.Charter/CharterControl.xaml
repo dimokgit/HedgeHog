@@ -106,9 +106,12 @@
                 <telerik:PropertyDefinition Binding="{Binding PriceCmaLevels}" DisplayName="Price Cma" />
                 <telerik:PropertyDefinition Binding="{Binding ScanCorridorBy}" DisplayName="Scan Corridor" />
                 <telerik:PropertyDefinition Binding="{Binding TakeProfitFunction}" DisplayName="Take Profit" />
+                <telerik:PropertyDefinition Binding="{Binding TakeProfitLimitRatio}" DisplayName="WinBack Ratio" Description="TakeProfitMax = TakeProfit * X" />
                 <telerik:PropertyDefinition Binding="{Binding TradeEnterBy}" DisplayName="Trade Enter" />
                 <telerik:PropertyDefinition Binding="{Binding TradeExitBy}" DisplayName="Trade Exit" />
                 <telerik:PropertyDefinition Binding="{Binding TradingHoursRange}" DisplayName="Trading Hours" />
+                <telerik:PropertyDefinition Binding="{Binding TrailingDistanceFunction}" DisplayName="Trade Corridor" />
+                <telerik:PropertyDefinition Binding="{Binding VoltageFunction_}" DisplayName="Volatility" />
               </telerik:RadPropertyGrid.PropertyDefinitions>
             </telerik:RadPropertyGrid>
           </Expander>

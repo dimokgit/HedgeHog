@@ -1350,7 +1350,10 @@ namespace HedgeHog.Alice.Store {
     List<Rate> _replayRates;
     object _replayLocker = new object();
     public void Replay(ReplayArguments args) {
-      if (!args.DateStart.HasValue) throw new ApplicationException("Start Date error.");
+      if (!args.DateStart.HasValue) {
+        Log = new ApplicationException("Start Date error.");
+        return;
+      }
       Func<TradingMacro[]> tms = () => args.TradingMacros.Cast<TradingMacro>().ToArray();
       Action<RepayPauseMessage> pra = m => args.InPause = !args.InPause;
       Action<RepayBackMessage> sba = m => args.StepBack = true;
@@ -1947,6 +1950,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    object _innerRateArrayLocker = new object();
     object _rateArrayLocker = new object();
     List<Rate> _rateArray = new List<Rate>();
     public List<Rate> RatesArray {
@@ -1961,6 +1965,10 @@ namespace HedgeHog.Alice.Store {
     double _ratesSpreadSum;
     public List<Rate> RatesArraySafe {
       get {
+        if (!Monitor.TryEnter(_innerRateArrayLocker, 1000)) {
+          Log = new Exception(new { Pair, Message = "Loading rates", Count = RatesInternal.Count, CountMax = BarsCount * 10 } + "");
+          return _rateArray;
+        }
         if (!Monitor.TryEnter(_rateArrayLocker, 5000)) {
           Log = new Exception("_rateArrayLocker was busy for more then 5 second.");
           throw new TimeoutException();
@@ -2058,6 +2066,7 @@ namespace HedgeHog.Alice.Store {
           return _rateArray;
         } finally {
           Monitor.Exit(_rateArrayLocker);
+          Monitor.Exit(_innerRateArrayLocker);
         }
       }
     }
@@ -2844,6 +2853,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
+        case ScanCorridorFunction.RangeDistance: return ScanCorridorByDistanceHeightRatio;
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.StDevSplits: return ScanCorridorBySplitHeights;
         case ScanCorridorFunction.StDevSplits2: return ScanCorridorBySplitHeights2;
@@ -3120,66 +3130,67 @@ namespace HedgeHog.Alice.Store {
         if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {
           InfoTooltip = "Loading Rates";
           if (!Monitor.TryEnter(_rateArrayLocker, 5000)) {
-            Log = new Exception("_rateArrayLocker was busy for more then 5 second.");
+            Log = new Exception(new { LoadRates = "_rateArrayLocker was busy for more then 5 second." } + "");
             throw new TimeoutException();
           }
-          try {
-            Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
-            var sw = Stopwatch.StartNew();
-            var serverTime = ServerTime;
-            var periodsBack = BarsCount * 10;
-            var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/ CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
-            var startDate = TradesManagerStatic.FX_DATE_NOW;
-            if (!useDefaultInterval) {
-              var intervalToAdd = Math.Max(5, RatesInternal.Count / 10);
-              if (CorridorStartDate.HasValue)
-                startDate = CorridorStartDate.Value;
-              else if (CorridorStats == null)
-                startDate = TradesManagerStatic.FX_DATE_NOW;
-              else {
-                startDate = CorridorStats.StartDate;//.AddMinutes(-(int)BarPeriod * intervalToAdd);
-                var periodsByStartDate = RatesInternal.Count(r => r.StartDate >= startDate) + intervalToAdd;
-                periodsBack = periodsBack.Max(periodsByStartDate);
+          lock(_innerRateArrayLocker)
+            try {
+              Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
+              var sw = Stopwatch.StartNew();
+              var serverTime = ServerTime;
+              var periodsBack = BarsCount * 10;
+              var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/ CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
+              var startDate = TradesManagerStatic.FX_DATE_NOW;
+              if (!useDefaultInterval) {
+                var intervalToAdd = Math.Max(5, RatesInternal.Count / 10);
+                if (CorridorStartDate.HasValue)
+                  startDate = CorridorStartDate.Value;
+                else if (CorridorStats == null)
+                  startDate = TradesManagerStatic.FX_DATE_NOW;
+                else {
+                  startDate = CorridorStats.StartDate;//.AddMinutes(-(int)BarPeriod * intervalToAdd);
+                  var periodsByStartDate = RatesInternal.Count(r => r.StartDate >= startDate) + intervalToAdd;
+                  periodsBack = periodsBack.Max(periodsByStartDate);
+                }
               }
-            }
-            RatesInternal.RemoveAll(r => !r.IsHistory);
-            if (RatesInternal.Count != RatesInternal.Distinct().Count()) {
-              var ri = RatesInternal.Distinct().ToList();
-              RatesInternal.Clear();
-              RatesInternal.AddRange(ri);
-            }
+              RatesInternal.RemoveAll(r => !r.IsHistory);
+              if (RatesInternal.Count != RatesInternal.Distinct().Count()) {
+                var ri = RatesInternal.Distinct().ToList();
+                RatesInternal.Clear();
+                RatesInternal.AddRange(ri);
+              }
 
-            bool wereRatesPulled = false;
-            using (var ps = new PriceService.PriceServiceClient()) {
-              try {
-                //var ratesPulled = ps.FillPrice(Pair, RatesInternal.Select(r => r.StartDate).DefaultIfEmpty().Max());
-                //RatesInternal.AddRange(ratesPulled);
-                //wereRatesPulled = true;
-                var DensityMin = true ? 0 : ps.PriceStatistics(Pair).BidHighAskLowSpread;
-              } catch (Exception exc) {
-                Log = exc;
-              } finally {
-                if (!wereRatesPulled)
-                  RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
+              bool wereRatesPulled = false;
+              using (var ps = new PriceService.PriceServiceClient()) {
+                try {
+                  //var ratesPulled = ps.FillPrice(Pair, RatesInternal.Select(r => r.StartDate).DefaultIfEmpty().Max());
+                  //RatesInternal.AddRange(ratesPulled);
+                  //wereRatesPulled = true;
+                  var DensityMin = true ? 0 : ps.PriceStatistics(Pair).BidHighAskLowSpread;
+                } catch (Exception exc) {
+                  Log = exc;
+                } finally {
+                  if (!wereRatesPulled)
+                    RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
+                }
               }
+              var rateLastDate = RatesInternal.Last().StartDate;
+              if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes())
+                throw new Exception("Last rate time:{0} is far from ServerTyme:{1}".Formater(rateLastDate, ServerTime));
+              AddRatesStats(RatesInternal);
+              OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
+              if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
+                Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
+              LastRatePullTime = ServerTime;
+              Action a = () => {
+                try {
+                  Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if (DoLogSaveRates) Log = new Exception(obj + ""); });
+                } catch (Exception exc) { Log = exc; }
+              };
+              Scheduler.Default.Schedule(a);
+            } finally {
+              Monitor.Exit(_rateArrayLocker);
             }
-            var rateLastDate = RatesInternal.Last().StartDate;
-            if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes())
-              throw new Exception("Last rate time:{0} is far from ServerTyme:{1}".Formater(rateLastDate, ServerTime));
-            AddRatesStats(RatesInternal);
-            OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
-            if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
-              Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
-            LastRatePullTime = ServerTime;
-            Action a = () => {
-              try {
-                Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if (DoLogSaveRates) Log = new Exception(obj + ""); });
-              } catch (Exception exc) { Log = exc; }
-            };
-            Scheduler.Default.Schedule(a);
-          } finally {
-            Monitor.Exit(_rateArrayLocker);
-          }
           //{
           //  RatesArraySafe.SavePairCsv(Pair);
           //}
@@ -3854,6 +3865,16 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
     public double WaveDistanceInPips { get { return InPips(WaveDistance); } }
+
+    public void MakeGhosts() {
+      var srExit = SuppRes.Where(sr => sr.IsExitOnly).ToList();
+      if (!srExit.Any()) throw new Exception("No ExitOnly levels was found.");
+      var offset = BuyLevel.Rate.Abs(SellLevel.Rate) / 5;
+      srExit.Single(sr => sr.IsSell).Rate = BuyLevel.Rate - offset;
+      srExit.Single(sr => sr.IsBuy).Rate = SellLevel.Rate + offset;
+      srExit.ForEach(sr => sr.IsGhost = true);
+      SuppRes.ToList().ForEach(sr => sr.InManual = true);
+    }
 
     IEnumerable<SuppRes> _suppResesForBulk() { return SuppRes.Where(sr => !sr.IsExitOnly || sr.InManual); }
     public void ResetSuppResesInManual() {

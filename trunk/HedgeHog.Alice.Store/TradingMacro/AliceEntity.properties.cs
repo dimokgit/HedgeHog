@@ -65,6 +65,18 @@ namespace HedgeHog.Alice.Store {
           && CanTrade 
           && TradesCount <= 0; 
       }
+      set {
+        if (!IsExitOnly) throw new Exception("Not an exit Level.");
+        if (value) {
+          InManual = true;
+          CanTrade = true;
+          TradesCount = TradesCount.Min(0);
+        } else {
+          InManual = false;
+          CanTrade = false;
+          TradesCount = 9;
+        }
+      }
     }
 
     #endregion
@@ -745,7 +757,9 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    partial void OnVoltageFunctionChanged() {
+      OnPropertyChanged("VoltageFunction_");
+    }
     [DisplayName("Scan Corridor By")]
     [Category(categoryActiveFuncs)]
     [Description("ScanCorridor By")]
@@ -1686,7 +1700,7 @@ namespace HedgeHog.Alice.Store {
           ? RatesInternal.Count > 0 
           ? RatesInternal.LastBC().StartDate.AddMinutes(BarPeriodInt) 
           : DateTime.MinValue 
-          : TradesManager == null ? DateTime.MinValue 
+          : TradesManager == null || !TradesManager.IsLoggedIn ? DateTime.MinValue 
           : TradesManager.ServerTime;
       }
     }
