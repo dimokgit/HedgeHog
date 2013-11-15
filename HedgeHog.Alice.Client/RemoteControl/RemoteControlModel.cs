@@ -142,6 +142,9 @@ namespace HedgeHog.Alice.Client {
           charter.FitToView();
           tm.CorridorStartDate = null;
           break;
+        case Key.G:
+          tm.MakeGhosts();
+          break;
         case Key.M:
           tm.ResetSuppResesInManual();
           break;

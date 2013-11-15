@@ -133,7 +133,7 @@ namespace HedgeHog.Alice.Store {
       if (_t == null && GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
         _t = new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }).Schedule(() => {
           var RatesInternalReversedOriginal = RatesInternal.ReverseIfNot();
-          var ratesInternalReversed = RatesInternal.Select(_priceAvg).Reverse().ToArray();
+          var ratesInternalReversed = RatesInternalReversedOriginal.Select(_priceAvg).ToArray();
           var ratesCount = CorridorDistance;
           var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
@@ -148,7 +148,7 @@ namespace HedgeHog.Alice.Store {
       return ShowVolts(calcVolatility(WaveShort.Rates.Select(_priceAvg).ToArray()), 3);
     }
     private CorridorStatistics ShowVoltsByCorridorRsdI() {
-      Func<IList<double>, double> calcVolatility = (rates) => rates.RsdIntegral(60.Div(BarPeriodInt).ToInt());
+      Func<IList<double>, double> calcVolatility = (rates) =>  rates.RsdIntegral(60.Div(BarPeriodInt).ToInt());
       if (_t == null && GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
         _t = new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }).Schedule(() => {
           var RatesInternalReversedOriginal = RatesInternal.ReverseIfNot();

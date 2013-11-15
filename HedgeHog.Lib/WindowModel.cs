@@ -286,7 +286,9 @@ namespace HedgeHog.Models {
         ValueChangedEvent.GetInvocationList().OfType<EventHandler<EventArgs>>().ToList().ForEach(eh => ValueChangedEvent -= eh);
     }
 
-
+    public override string ToString() {
+      return new { this.Value } + "";
+    }
     public bool HasChanged { get; set; }
     public bool HasChangedTo { get; set; }
   }

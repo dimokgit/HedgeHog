@@ -97,7 +97,7 @@ namespace Order2GoAddIn {
     bool noTimer = true;
     public readonly int ServerTimeOffset = -4;
     private TimeSpan _serverTimeOffset = TimeSpan.Zero;
-    public static readonly string DefaultUrl = "http://www.fxcorporate.com";
+    public static readonly string DefaultUrl = " http://www.fxcorporate.com/Hosts.jsp";
     private DateTime serverTimeLast = DateTime.MaxValue;
     public DateTime ServerTime {
       get {

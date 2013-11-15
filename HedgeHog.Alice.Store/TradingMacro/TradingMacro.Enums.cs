@@ -28,6 +28,7 @@ namespace HedgeHog.Alice.Store {
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
     DayDistance = 90,
+    RangeDistance = 91,
     Regression = 100,
     Regression2 = 101,
     Parabola = 110,
@@ -76,10 +77,10 @@ namespace HedgeHog.Alice.Store {
     Fft = 142, 
     Backdoor = 150,
     LongLine = 160,
-    GhostLevel = 170,
+    Ghost = 170,
+    Ghost2 = 171,
     StDevRsd = 180,
-    StDevRsd1 = 181,
-    GhopStop = 190
+    StDevRsd1 = 181
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
