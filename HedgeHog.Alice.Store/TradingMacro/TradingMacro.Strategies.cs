@@ -775,6 +775,28 @@ namespace HedgeHog.Alice.Store {
         Action adjustEnterLevels = () => {
           if (!WaveShort.HasRates) return;
           switch (TrailingDistanceFunction) {
+            #region PriceAvg23
+            case TrailingWaveMethod.PriceAvg23:
+              #region firstTime
+              if (firstTime) {
+                Log = new Exception(new { CorrelationMinimum } + "");
+                onCloseTradeLocal = t => {
+                  if (t.PL >= -PriceSpreadAverageInPips) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+              }
+              #endregion
+              if (IsAutoStrategy && CurrentPrice.Average.Between(RateLast.PriceAvg3, RateLast.PriceAvg2)) {
+                BuyLevel.RateEx = RateLast.PriceAvg2;
+                SellLevel.RateEx = RateLast.PriceAvg3;
+                _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = CorridorCrossesMaximum; });
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+
             #region Count
             case TrailingWaveMethod.Count:
               #region firstTime
