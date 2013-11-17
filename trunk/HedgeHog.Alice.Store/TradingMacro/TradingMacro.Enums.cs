@@ -29,6 +29,7 @@ namespace HedgeHog.Alice.Store {
     WaveStDevHeight = 8,
     DayDistance = 90,
     RangeDistance = 91,
+    RangeDistance2 = 92,
     Regression = 100,
     Regression2 = 101,
     Parabola = 110,
@@ -51,10 +52,11 @@ namespace HedgeHog.Alice.Store {
     Ftt = 64
   }
   public enum TrailingWaveMethod {
+    PriceAvg23 = -10,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,
-    LongCross = 10,
+    LongCross = 80,
     Count = 90, 
     CountWithAngle = 92,
     Wavelette = 93,
