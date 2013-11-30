@@ -809,14 +809,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Show Chart On Trade")]
+    [DisplayName("Show Trade On Chart")]
     [Category(categoryCorridor)]
-    public bool ShowChartOnTrade {
+    public bool DoShowTradeOnChart {
       get { return TradeOnCrossOnly; }
       set {
         if (TradeOnCrossOnly == value) return;
         TradeOnCrossOnly = value;
-        OnPropertyChanged(() => ShowChartOnTrade);
+        OnPropertyChanged(() => DoShowTradeOnChart);
       }
     }
 

@@ -1565,11 +1565,6 @@ namespace HedgeHog.Alice.Client {
         }
       });
     }
-    private void ShowTrades<TList>(List<TList> tradesList, ObservableCollection<TList> tradesCollection) {
-      tradesCollection.Clear();
-      tradesList.ForEach(a => tradesCollection.Add(a));
-    }
-
     #endregion
 
     #region WCF Service

@@ -27,9 +27,11 @@ namespace HedgeHog.Alice.Store {
     WaveDistance42 = 72,
     WaveDistance43 = 73,
     WaveStDevHeight = 8,
+    StDevMinInRange = 80,
     DayDistance = 90,
     RangeDistance = 91,
-    RangeDistance2 = 92,
+    RangeDistanceMax = 92,
+    RangeDistanceMin = 93,
     Regression = 100,
     Regression2 = 101,
     Parabola = 110,
@@ -52,7 +54,11 @@ namespace HedgeHog.Alice.Store {
     Ftt = 64
   }
   public enum TrailingWaveMethod {
+    PriceAvg23_2 = -8,
+    PriceAvg23_2R = -9,
     PriceAvg23 = -10,
+    DistAvgMin = -11,
+    DistAvgMax = -12,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,
@@ -90,6 +96,8 @@ namespace HedgeHog.Alice.Store {
     CorridorHeight = 5,
     BuySellLevels = 6,
     BuySellLevels2 = 7,
+    BuySellLevels_2 = 8,
+    BuySellLevels_3 = 9,
     RatesHeight = 10,
     RatesStDevMax = 11,
     RatesHeight_2 = 12,

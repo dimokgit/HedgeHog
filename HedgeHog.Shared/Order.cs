@@ -139,7 +139,9 @@ namespace HedgeHog.Shared {
     public int TypeLimit { get; set; }
     [DataMember]
     public int OCOBulkID { get; set; }
-
+    [DataMember]
+    public string PrimaryOrderID { get; set; }
+    
     [DataMember]
     [UpdateOnUpdate]
     public double StopInPips { get; set; }

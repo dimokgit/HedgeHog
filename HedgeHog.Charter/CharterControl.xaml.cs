@@ -914,6 +914,36 @@ namespace HedgeHog {
     ReactiveCollection<VerticalLine> TradeTimesVLines = new ReactiveCollection<VerticalLine>();
     public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes); }
     #endregion
+  
+    #region NYTimes
+    ReactiveCollection<DateTime> _NYTimes;
+    public ReactiveCollection<DateTime> NYTimes {
+      get {
+        if (_NYTimes == null) {
+          _NYTimes = new ReactiveCollection<DateTime>();
+          InitVLines(NYTimes, NYTimesVLines, Colors.RoyalBlue, d => "NY Forex @ {0:g}".Formater(d));
+        }
+        return _NYTimes;
+      }
+    }
+    ReactiveCollection<VerticalLine> NYTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawNYTimes(IList<DateTime> times) { DrawVertivalLines(times, NYTimes); }
+    #endregion
+
+          #region LindonTimes
+    ReactiveCollection<DateTime> _LindonTimes;
+    public ReactiveCollection<DateTime> LindonTimes {
+      get {
+        if (_LindonTimes == null) {
+          _LindonTimes = new ReactiveCollection<DateTime>();
+          InitVLines(LindonTimes, LindonTimesVLines, Colors.MediumVioletRed, d => "Londot Forex @ {0:g}".Formater(d));
+        }
+        return _LindonTimes;
+      }
+    }
+    ReactiveCollection<VerticalLine> LindonTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawLindonTimes(IList<DateTime> times) { DrawVertivalLines(times, LindonTimes); }
+    #endregion
     #endregion
 
     #region Window Events
@@ -1723,6 +1753,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       }), DispatcherPriority.DataBind);
     }
 
+
     bool inRendering;
     private bool IsPlotterInitialised;
     public void AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
@@ -1761,6 +1792,21 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #endregion
       #region Update Main Chart
       {
+        {
+          var worDays = new[] { DayOfWeek.Sunday, DayOfWeek.Saturday };
+          {
+            var firstDate = ticks[0].StartDate.Round(MathExtensions.RoundTo.Hour);
+            var lastDate = ticks.Last().StartDate.Round(MathExtensions.RoundTo.Hour);
+            var NYTimes = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 8 || d.Hour == 16)).ToArray();
+            DrawNYTimes(NYTimes);
+          }
+          {
+            var firstDate = ticks[0].StartDate.Round(MathExtensions.RoundTo.Hour);
+            var lastDate = ticks.Last().StartDate.Round(MathExtensions.RoundTo.Hour);
+            var times = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 3 || d.Hour == 11)).ToArray();
+            DrawLindonTimes(times);
+          }
+        }
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) try {
             ReAdjustXY(animatedTimeX, animatedPriceY, ticks.Count());
