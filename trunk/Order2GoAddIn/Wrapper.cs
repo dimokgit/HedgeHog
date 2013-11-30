@@ -1318,9 +1318,9 @@ namespace Order2GoAddIn {
     #endregion
 
     #region GetOrders
-    string[] _stopLimitOrderTypes = new[] { "S", "L" };
-    bool IsNetOrderFilter(Order order) { return IsFIFO(order.Pair) ? order.IsNetOrder : _stopLimitOrderTypes.Contains(order.Type); }
-    bool IsEntryOrderFilter(Order order) { return !IsNetOrderFilter(order); }
+    string[] _stopLimitOrderTypes = new[] { "S", "L", "SE", "LE" };
+    bool IsNetOrderFilter(Order order) { return IsFIFO(order.Pair) ? order.IsNetOrder || order.OCOBulkID > 0 : _stopLimitOrderTypes.Contains(order.Type); }
+    bool IsEntryOrderFilter(Order order) { return order.OCOBulkID == 0 && string.IsNullOrWhiteSpace(order.PrimaryOrderID) && !order.IsNetOrder; }
     public double GetOffer(bool buy) {
       if (!IsLoggedIn) return double.NaN;
       var offer = GetOffers().FirstOrDefault(o => o.Pair == Pair);
@@ -1409,6 +1409,8 @@ namespace Order2GoAddIn {
       order.TypeStop = (int)row.CellValue("TypeStop");
       order.TypeLimit = (int)row.CellValue("TypeLimit");
       order.OCOBulkID = (int)row.CellValue("OCOBulkID");
+      order.PrimaryOrderID = (string)row.CellValue("PrimaryOrderID");
+      
       order.PipCost = GetPipCost(order.Pair);
       order.PointSize = GetPipSize(order.Pair);
       //order.PipsTillRate = InPips(order.Pair, (order.Rate - GetCurrentPrice(order.Pair, order.IsBuy)).Abs());

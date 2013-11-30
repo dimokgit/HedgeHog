@@ -2912,7 +2912,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitFunction"/></summary>
         public const string TakeProfitFunction = "TakeProfitFunction";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowChartOnTrade"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoShowTradeOnChart"/></summary>
         public const string ShowChartOnTrade = "ShowChartOnTrade";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._GannAnglesList"/></summary>
@@ -6195,7 +6195,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitFunction"/></summary>
         public static PropertyPath TakeProfitFunctionPath { get { return new PropertyPath("TakeProfitFunction"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ShowChartOnTrade"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DoShowTradeOnChart"/></summary>
         public static PropertyPath ShowChartOnTradePath { get { return new PropertyPath("ShowChartOnTrade"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.GannAnglesList"/></summary>

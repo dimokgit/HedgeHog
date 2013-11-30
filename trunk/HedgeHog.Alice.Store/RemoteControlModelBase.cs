@@ -265,6 +265,7 @@ namespace HedgeHog.Alice.Store {
   }
   
   public class RatesLoader {
+    [MethodImpl(MethodImplOptions.Synchronized)]
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
       if (ratesList.Count() > 0 && (ratesList[0].StartDate - ratesList[1].StartDate).Duration() > TimeSpan.FromMinutes(Math.Max(1, periodMinutes)))

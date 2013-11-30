@@ -161,14 +161,17 @@ namespace HedgeHog.Bars {
     #region PriceChartHigh
     double _PriceChartAsk = double.NaN;
     public double PriceChartAsk {
-      get { return _PriceChartAsk; }
-      set { _PriceChartAsk = value; }
+      get { return double.IsNaN(_PriceChartAsk) ? AskHigh : _PriceChartAsk; }
+      set {
+        if (_PriceChartAsk != value)
+          _PriceChartAsk = value;
+      }
     }
     #endregion
     #region PriceChartBid
     private double _PriceChartBid = double.NaN;
     public double PriceChartBid {
-      get { return _PriceChartBid; }
+      get { return double.IsNaN(_PriceChartBid) ? BidLow : _PriceChartBid; }
       set {
         if (_PriceChartBid != value) {
           _PriceChartBid = value;
@@ -177,6 +180,8 @@ namespace HedgeHog.Bars {
     }
     #endregion
     public void SetPriceChart() {
+      _PriceChartAsk = _PriceChartBid = double.NaN;
+      return;
       if (PriceAvg > PriceAvg1) {
         PriceChartAsk = AskHigh;
         PriceChartBid = BidHigh;

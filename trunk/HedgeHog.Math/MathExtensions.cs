@@ -550,7 +550,7 @@ namespace HedgeHog {
     }
     public static double StDev(this IList<double> values, out double avgOut, out double maxOut, out double minOut) {
       double ret = 0, avg = 0, max = double.MinValue, min = double.MaxValue;
-      if (values.Count() > 0) {
+      if (values.Count > 0) {
         avg = values.Average(v => {
           if (max < v) max = v;
           if (min > v) min = v;

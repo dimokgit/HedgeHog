@@ -96,9 +96,9 @@ namespace HedgeHog {
       if (step <= 0.0) step = (step == 0.0) ? 1.0 : -step;
 
       if (from <= to) {
-        for (DateTime dt = from; dt <= to; dt = dt.AddDays(step)) yield return dt;
+        for (DateTime dt = from; dt <= to; dt = dt.AddMinutes(step)) yield return dt;
       } else {
-        for (DateTime dt = from; dt >= to; dt = dt.AddDays(-step)) yield return dt;
+        for (DateTime dt = from; dt >= to; dt = dt.AddMinutes(-step)) yield return dt;
       }
     }
 

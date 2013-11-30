@@ -133,6 +133,7 @@
     <Compile Include="TBar.cs" />
     <Compile Include="UI\GroupFilter.cs" />
     <Compile Include="MarkupExtemssions.cs" />
+    <Compile Include="ValueTrigger.cs" />
     <Compile Include="ViewModelLocator.cs" />
     <Compile Include="WindowModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
