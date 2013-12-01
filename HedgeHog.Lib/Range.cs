@@ -92,6 +92,16 @@ namespace HedgeHog {
       }
     }
 
+    public static IEnumerable<DateTimeOffset> DateTime(DateTimeOffset from, DateTimeOffset to, double step) {
+      if (step <= 0.0) step = (step == 0.0) ? 1.0 : -step;
+
+      if (from <= to) {
+        for (DateTimeOffset dt = from; dt <= to; dt = dt.AddMinutes(step)) yield return dt;
+      } else {
+        for (DateTimeOffset dt = from; dt >= to; dt = dt.AddMinutes(-step)) yield return dt;
+      }
+    }
+
     public static IEnumerable<DateTime> DateTime(DateTime from, DateTime to, double step) {
       if (step <= 0.0) step = (step == 0.0) ? 1.0 : -step;
 
