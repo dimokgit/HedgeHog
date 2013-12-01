@@ -103,6 +103,7 @@
     <Compile Include="Chunk.cs" />
     <Compile Include="Class1.cs" />
     <Compile Include="Converters.cs" />
+    <Compile Include="DateTimeZone.cs" />
     <Compile Include="Dynamic.cs" />
     <Compile Include="EnumExtensions.cs" />
     <Compile Include="ExceptionEventArgs.cs" />

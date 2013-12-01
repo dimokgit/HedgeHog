@@ -15,6 +15,7 @@ using Microsoft.Research.DynamicDataDisplay.Charts.Shapes;
 using Microsoft.Research.DynamicDataDisplay.Charts;
 using Microsoft.Research.DynamicDataDisplay;
 using HedgeHog.Bars;
+using HedgeHog.DateTimeZone;
 using System.Collections.ObjectModel;
 using HedgeHog.Models;
 using HedgeHog.Shared;
@@ -858,11 +859,11 @@ namespace HedgeHog {
     void OnOtherTimeAdded<TLine>(DateTime date,ReactiveCollection<TLine> otherVLines,Color color, Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
       try {
         var vl = new TLine() {
-          Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = { 2 },
+          Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = { 2, 4, 4, 4 },
           Stroke = new SolidColorBrush(color),
           StrokeThickness = 2,
-          ToolTip = tooltip(date)
-
+          ToolTip = tooltip(date),
+          Opacity = .75
         };
         SetTime(vl, date);
         otherVLines.Add(vl);
@@ -930,7 +931,7 @@ namespace HedgeHog {
     public void DrawNYTimes(IList<DateTime> times) { DrawVertivalLines(times, NYTimes); }
     #endregion
 
-          #region LindonTimes
+    #region LindonTimes
     ReactiveCollection<DateTime> _LindonTimes;
     public ReactiveCollection<DateTime> LindonTimes {
       get {
@@ -944,6 +945,20 @@ namespace HedgeHog {
     ReactiveCollection<VerticalLine> LindonTimesVLines = new ReactiveCollection<VerticalLine>();
     public void DrawLindonTimes(IList<DateTime> times) { DrawVertivalLines(times, LindonTimes); }
     #endregion
+    #region TokyoTimes
+    ReactiveCollection<DateTime> _TokyoTimes;
+    public ReactiveCollection<DateTime> TokyoTimes {
+      get {
+        if (_TokyoTimes == null) {
+          _TokyoTimes = new ReactiveCollection<DateTime>();
+          InitVLines(TokyoTimes, TokyoTimesVLines, Colors.DarkGoldenrod, d => "TokyoTimes @ {0:g}".Formater(d));
+        }
+        return _TokyoTimes;
+      }
+    }
+    ReactiveCollection<VerticalLine> TokyoTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawTokyoTimes(IList<DateTime> times) { DrawVertivalLines(times, TokyoTimes); }
+    #endregion  
     #endregion
 
     #region Window Events
@@ -1794,18 +1809,16 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       {
         {
           var worDays = new[] { DayOfWeek.Sunday, DayOfWeek.Saturday };
-          {
-            var firstDate = ticks[0].StartDate.Round(MathExtensions.RoundTo.Hour);
-            var lastDate = ticks.Last().StartDate.Round(MathExtensions.RoundTo.Hour);
-            var NYTimes = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 8 || d.Hour == 16)).ToArray();
-            DrawNYTimes(NYTimes);
-          }
-          {
-            var firstDate = ticks[0].StartDate.Round(MathExtensions.RoundTo.Hour);
-            var lastDate = ticks.Last().StartDate.Round(MathExtensions.RoundTo.Hour);
-            var times = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 3 || d.Hour == 11)).ToArray();
-            DrawLindonTimes(times);
-          }
+          Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes = (firstDate, lastDate, tz, drawTimes) => {
+            firstDate = TimeZoneInfo.ConvertTime(firstDate.Round(60), tz);
+            lastDate = TimeZoneInfo.ConvertTime(lastDate.Round(60), tz);
+            var times = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 8 || d.Hour == 16)).ToArray();
+            drawTimes(times.Select(d => d.ToLocalTime().DateTime).ToArray());
+
+          };
+          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, TimeZoneInfo.Local, DrawNYTimes);
+          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, DateTimeZone.DateTimeZone.TokyoZone, DrawTokyoTimes);
+          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, DateTimeZone.DateTimeZone.LondonZone, DrawLindonTimes);
         }
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) try {

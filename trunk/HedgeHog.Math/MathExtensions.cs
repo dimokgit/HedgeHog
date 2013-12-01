@@ -795,9 +795,9 @@ namespace HedgeHog {
     }
     public static DateTimeOffset Round(this DateTimeOffset dt) { return new DateTimeOffset(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute,0, dt.Offset); }
     public static DateTimeOffset Round_(this DateTimeOffset dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
-    public static DateTimeOffset Round(this DateTimeOffset dt, int period) {
+    public static DateTimeOffset Round(this DateTimeOffset dt, int minutes) {
       dt = dt.Round();
-      return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
+      return dt.AddMinutes(dt.Minute / minutes * minutes - dt.Minute);
     }
 
     public static DateTime Round(this DateTime dt) { return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0); }

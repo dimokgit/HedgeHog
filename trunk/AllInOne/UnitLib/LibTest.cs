@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime.Caching;
 using System.Threading;
 using HedgeHog.Bars;
+using HedgeHog.DateTimeZone;
 using System.Reflection;
 using System.Threading.Tasks.Dataflow;
 using System.Reactive.Linq;
@@ -299,6 +300,14 @@ Privet:2.3 3.4
       double expected = 2.857142857;
       double actual = Lib.WeightedAverage(values, value, weight).Round(9);
       Assert.AreEqual(expected, actual);
+    }
+
+    [TestMethod]
+    public void TimeZone() {
+      var tzs = (from tz in TimeZoneInfo.GetSystemTimeZones()
+                 select tz).ToArray();
+      var ld = DateTimeOffset.Parse("11/1/2013").InLondon();
+      TestContext.WriteLine(ld + ""+tzs.Count());
     }
 
   }

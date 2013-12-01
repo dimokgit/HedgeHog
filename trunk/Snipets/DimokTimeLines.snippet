@@ -5,7 +5,7 @@
       <SnippetTypes>
         <SnippetType>Expansion</SnippetType>
       </SnippetTypes>
-      <Title>SnippetFile1</Title>
+      <Title>TimeLines</Title>
       <Author>dimon</Author>
       <Description>
       </Description>
@@ -23,15 +23,15 @@
           </Function>
         </Literal>
       </Declarations>
-      <Code Language="csharp"><![CDATA[    #region $Name$
+      <Code Language="csharp"><![CDATA[#region $Name$
     ReactiveCollection<DateTime> _$Name$;
     public ReactiveCollection<DateTime> $Name$ {
       get {
         if (_$Name$ == null) {
           _$Name$ = new ReactiveCollection<DateTime>();
-          InitOtherVLines($Name$, $Name$VLines, Colors.SomeColor);
+          InitVLines($Name$, $Name$VLines, Colors.SomeColor, d => "$Name$ @ {0:g}".Formater(d));
         }
-        return _newsTimes;
+        return _$Name$;
       }
     }
     ReactiveCollection<VerticalLine> $Name$VLines = new ReactiveCollection<VerticalLine>();
