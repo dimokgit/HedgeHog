@@ -1,0 +1,10 @@
+﻿<Application x:Class="HedgeHog.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             LoadCompleted="Application_LoadCompleted"
+              Exit="Application_Exit"
+    StartupUri="HedgeHogMainWindow.xaml" >
+    <Application.Resources>
+         
+    </Application.Resources>
+</Application>

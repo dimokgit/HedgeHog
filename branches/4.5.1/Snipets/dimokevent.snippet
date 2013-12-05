@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <SnippetTypes>
+        <SnippetType>Expansion</SnippetType>
+      </SnippetTypes>
+      <Title>SnippetFile1</Title>
+      <Author>user</Author>
+      <Description>
+      </Description>
+      <HelpUrl>
+      </HelpUrl>
+      <Shortcut>dimokevent</Shortcut>
+    </Header>
+    <Snippet>
+      <Declarations>
+        <Literal Editable="true">
+          <ID>eventType</ID>
+          <ToolTip>eventType</ToolTip>
+          <Default>EventArgs</Default>
+          <Function>
+          </Function>
+        </Literal>
+        <Literal Editable="true">
+          <ID>EventName</ID>
+          <ToolTip>EventName</ToolTip>
+          <Default>EventName</Default>
+          <Function>
+          </Function>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp"><![CDATA[#region $EventName$ Event
+event EventHandler<$eventType$> $EventName$Event;
+public event EventHandler<$eventType$>  $EventName$ {
+    add {
+    if ($EventName$Event == null || !$EventName$Event.GetInvocationList().Contains(value))
+        $EventName$Event += value;
+    }
+    remove {
+    $EventName$Event -= value;
+    }
+}
+protected void Raise$EventName$() {
+    if ($EventName$Event != null) $EventName$Event(this,new $eventType$());
+}
+#endregion
+]]></Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>

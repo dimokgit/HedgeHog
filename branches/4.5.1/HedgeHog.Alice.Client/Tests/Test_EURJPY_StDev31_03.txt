@@ -1,0 +1,99 @@
+//Active//
+BarsCount=1720
+ CorrelationMinimum=15
+CorridorCrossesMaximum=0
+CorridorDistanceRatio=120,180,240
+CorridorHeightMax=1.06
+ DistanceIterations=4
+Eval=a.stDev
+MaxLotByTakeProfitRatio_=1
+ PolyOrder=10
+PriceCmaLevels_=2
+ProfitToLossExitRatio_=2
+TakeProfitLimitRatio=1.5
+ TradingAngleRange_=1.5
+ TradingHoursRange=00:00-14:00
+ WaveStDevRatio=0.5
+
+//Active Funcs//
+BarPeriod=m1
+CorridorCalcMethod=Height
+CorridorHeightMethod=ByStDevHP
+CorridorHighLowMethod=PriceMA
+ExitFunction=Void
+MedianFunction=Density
+MovingAverageType=Cma
+ ScanCorridorBy=Regression
+ TakeProfitFunction=BuySellLevels2
+TradeEnterBy=PriceCMA
+TradeExitBy=PriceCMA
+ TradingDaysRange=SuFr
+TradingDistanceFunction=RatesHeight_2
+ TrailingDistanceFunction=StDev31
+TurnOffFunction=Void
+VarianceFunction=Zero
+VoltageFunction_=StDevInsideOutRatio
+
+//Active Yes or No//
+DoAdjustExitLevelByTradeTime=True
+DoStreatchRates_=False
+ExitByBuySellLevel=True
+IsCorridorForwardOnly=False
+TradingRatioByPMC=True
+
+//Corridor//
+ChartHighMethod=Average
+ChartLowMethod=Average
+CorridorCrossHighLowMethod=AskHighBidLow
+CorridorLengthMinimum_=0.1
+DistanceIterationsReal=0
+IsAutoSync=False
+ShowChartOnTrade=True
+ShowParabola=False
+SuppResLevelsCount_=2
+SyncAll=False
+//Session//
+MinimumGross=NaN
+Strategy=UniversalA
+//Test//
+TestBarsCount=
+TestCorrelationMinimum=
+TestCorridorDistanceRatio=
+TestDistanceIterations=
+TestPriceCmaLevels=
+TestProfitToLossExitRatio=
+TestRatesHeightMinimum=
+TestWaveStDevRatio=
+//Test Control//
+TestFileName=
+TestSuperSessionUid_=00000000-0000-0000-0000-000000000000
+TestUseSuperSession=False
+UseTestFile=True
+//Trading//
+CanDoEntryOrders=True
+ClosePriceMode=Average
+CurrentLoss_=-20253.2400512695
+DoNews=True
+LastProfitStartDate=
+LogTrades=True
+MaximumPositions_=1
+StreatchTakeProfit=True
+TradingRatio_=30
+TurnOffOnProfit=False
+//XXX//
+CloseOnOpen_=False
+CurrentLossInPipsCloseAdjustment_=0.9
+DoLogSaveRates=False
+ForceOpenTrade=
+IsGannAnglesManual_=False
+IsSuppResManual_=False
+LoadRatesSecondsWarning_=5
+ReverseStrategy_=False
+//XXX_NU//
+CloseByMomentum_=False
+CloseOnProfitOnly_=True
+CorridorFollowsPrice=False
+FftReversed=False
+ResetOnBalance_=0
+TradeByRateDirection_=False
+TradeOnBOW=True

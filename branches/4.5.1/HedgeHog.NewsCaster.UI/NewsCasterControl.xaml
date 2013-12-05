@@ -1,0 +1,148 @@
+﻿<UserControl x:Class="HedgeHog.UI.NewsCasterControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:models="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+             xmlns:my="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+             xmlns:local="clr-namespace:HedgeHog.UI"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d" 
+             DataContext="{x:Static Member=local:NewsCasterModel.Default}"
+>
+  <UserControl.Resources>
+    <my:PassThroughConverter x:Key="PassThroughConverter" />
+    <my:CompareValueConverter x:Key="CompareValueConverter" />
+    <sys:String x:Key="Level">√</sys:String>
+    <Style x:Key="GroupHeaderStyle" TargetType="{x:Type GroupItem}">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type GroupItem}">
+            <Expander IsExpanded="True">
+              <Expander.Header>
+                <TextBlock Text="{Binding Name,StringFormat=\{0:dddd dd MMMM\}}"/>
+              </Expander.Header>
+              <ItemsPresenter />
+            </Expander>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SelectableTextBlockLikeStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+
+      <Setter Property="IsReadOnly" Value="True"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="-2,0,0,0"/>
+      <!-- The Padding -2,0,0,0 is required because the TextBox
+                    seems to have an inherent "Padding" of about 2 pixels.
+                    Without the Padding property,
+                    the text seems to be 2 pixels to the left
+                    compared to a TextBlock
+                    -->
+      <Style.Triggers>
+        <MultiTrigger>
+          <MultiTrigger.Conditions>
+            <Condition Property="IsMouseOver" Value="False" />
+            <Condition Property="IsFocused" Value="False" />
+          </MultiTrigger.Conditions>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="{x:Type TextBox}">
+                <TextBlock Text="{TemplateBinding Text}" 
+                     FontSize="{TemplateBinding FontSize}"
+                     FontStyle="{TemplateBinding FontStyle}"
+                     FontFamily="{TemplateBinding FontFamily}"
+                     FontWeight="{TemplateBinding FontWeight}"
+                     TextWrapping="{TemplateBinding TextWrapping}"
+                     Foreground="{DynamicResource NormalText}"
+                     Padding="0,0,0,0"
+                               />
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
+        </MultiTrigger>
+      </Style.Triggers>
+
+    </Style>
+
+  </UserControl.Resources>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <StackPanel Orientation="Horizontal">
+      <CheckBox IsChecked="{Binding DoShowAll}" Content="Show All" VerticalAlignment="Center" />
+      <TextBox Text="{Binding AutoTradeOffset}" ToolTip="Auto Trade Offset In Munutes"/>
+    </StackPanel>
+    <DataGrid ItemsSource="{Binding NewsView}" AutoGenerateColumns="False" HeadersVisibility="None" Grid.Row="1" EnableRowVirtualization="True" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden">
+      <DataGrid.GroupStyle>
+        <GroupStyle ContainerStyle="{StaticResource GroupHeaderStyle}">
+          <GroupStyle.Panel>
+            <ItemsPanelTemplate>
+              <DataGridRowsPresenter/>
+            </ItemsPanelTemplate>
+          </GroupStyle.Panel>
+        </GroupStyle>
+      </DataGrid.GroupStyle>
+      <DataGrid.RowStyle>
+        <Style TargetType="{x:Type DataGridRow}" BasedOn="{StaticResource {x:Type DataGridRow}}">
+          <Setter Property="Background" Value="{Binding DidHappen,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Wheat|Wheat|#BEBEBC}"/>
+          <Setter Property="FontWeight" Value="{Binding IsToday,Converter={x:Static Member=my:BoolToSrtingConverter.Default},ConverterParameter=Normal|Normal|Bold}" />
+        </Style>
+      </DataGrid.RowStyle>
+      <DataGrid.Columns>
+        <DataGridTemplateColumn>
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Button Command="{Binding DataContext.ShowNewsEventSnapshotCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
+                      CommandParameter="{Binding BindsDirectlyToSource=True}"
+                      FontWeight="Bold" HorizontalAlignment="Center">
+                <Button.Template>
+                  <ControlTemplate>
+                    <TextBlock Text="{Binding Event.Country}" HorizontalAlignment="Stretch"
+                               Background="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=H|#FFD700|#F6A39C}"/>
+                  </ControlTemplate>
+                </Button.Template>
+              </Button>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <!--<DataGridTextColumn Header="" Binding="{Binding Event.Country}" IsReadOnly="True">
+          <DataGridTextColumn.CellStyle>
+            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+              <Setter Property="Background" Value="{Binding Event.Level,Converter={x:Static Member=my:CompareValueConverter.Default},ConverterParameter=H|#FFD700|#F6A39C}"/>
+              <Setter Property="VerticalAlignment" Value="Center"/>
+              <Setter Property="FontWeight" Value="Bold" />
+            </Style>
+          </DataGridTextColumn.CellStyle>
+          <DataGridTextColumn.ElementStyle>
+            <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+              <Setter Property="HorizontalAlignment" Value="Center"/>
+            </Style>
+          </DataGridTextColumn.ElementStyle>
+        </DataGridTextColumn>-->
+        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:H:mm\}}" IsReadOnly="True">
+          <DataGridTextColumn.CellStyle>
+            <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+              <Setter Property="Background" Value="{Binding Color}"/>
+              <Setter Property="HorizontalAlignment" Value="Right"/>
+            </Style>
+          </DataGridTextColumn.CellStyle>
+        </DataGridTextColumn>
+        <DataGridCheckBoxColumn Binding="{Binding AutoTrade}"/>
+        <DataGridTextColumn Binding="{Binding Countdown}"  IsReadOnly="True"/>
+        <DataGridTextColumn Header="Name" Binding="{Binding Event.Name}" IsReadOnly="True">
+          <DataGridTextColumn.CellStyle>
+            <Style TargetType="DataGridCell">
+              <Setter Property="ToolTip" Value="{Binding Event.Name}" />
+            </Style>
+          </DataGridTextColumn.CellStyle>
+        </DataGridTextColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

@@ -1,0 +1,92 @@
+﻿<hhm:WindowModel x:Class="Temp.Test"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Loaded="Window_Loaded"
+        Unloaded="Window_Unloaded"
+        Title="Test"
+        xmlns:s="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:hhm="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+        xmlns:settings="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:nc="clr-namespace:HedgeHog.UI;assembly=HedgeHog.NewsCaster.UI"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Height="{s:UserSettings}" Width="{s:UserSettings}"
+        Top="{s:UserSettings}" Left="{s:UserSettings}"
+        xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}" xmlns:my="clr-namespace:HedgeHog;assembly=HedgeHog.Lib">
+  <hhm:WindowModel.Resources>
+    <my:PassThroughConverter x:Key="PassThroughConverter" />
+    <my:CompareValueConverter x:Key="CompareValueConverter" />
+    <sys:String x:Key="Level">√</sys:String>
+    <Style x:Key="GroupHeaderStyle" TargetType="{x:Type GroupItem}">
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type GroupItem}">
+            <Expander IsExpanded="True">
+              <Expander.Header>
+                <TextBlock Text="{Binding Name,StringFormat=\{0:dddd dd MMMM\}}"/>
+              </Expander.Header>
+              <ItemsPresenter />
+            </Expander>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="SelectableTextBlockLikeStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+
+      <Setter Property="IsReadOnly" Value="True"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="-2,0,0,0"/>
+      <!-- The Padding -2,0,0,0 is required because the TextBox
+                    seems to have an inherent "Padding" of about 2 pixels.
+                    Without the Padding property,
+                    the text seems to be 2 pixels to the left
+                    compared to a TextBlock
+                    -->
+      <Style.Triggers>
+        <MultiTrigger>
+          <MultiTrigger.Conditions>
+            <Condition Property="IsMouseOver" Value="False" />
+            <Condition Property="IsFocused" Value="False" />
+          </MultiTrigger.Conditions>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="{x:Type TextBox}">
+                <TextBlock Text="{TemplateBinding Text}" 
+                     FontSize="{TemplateBinding FontSize}"
+                     FontStyle="{TemplateBinding FontStyle}"
+                     FontFamily="{TemplateBinding FontFamily}"
+                     FontWeight="{TemplateBinding FontWeight}"
+                     TextWrapping="{TemplateBinding TextWrapping}"
+                     Foreground="{DynamicResource NormalText}"
+                     Padding="0,0,0,0"
+                               />
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
+        </MultiTrigger>
+      </Style.Triggers>
+
+    </Style>
+    
+  </hhm:WindowModel.Resources>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <Expander IsExpanded="{Binding IsLogExpanded,Mode=TwoWay}">
+      <Expander.Header>
+        <StackPanel Orientation="Horizontal">
+          <Label>Show Log:</Label>
+        </StackPanel>
+      </Expander.Header>
+      <ScrollViewer MaxHeight="75">
+        <TextBox Text="{Binding Log}" Style="{StaticResource SelectableTextBlockLikeStyle}" IsReadOnly="True" Background="Transparent" TextWrapping="Wrap"></TextBox>
+      </ScrollViewer>
+    </Expander>
+    <nc:NewsCasterControl VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Grid.Row="1" />
+  </Grid>
+</hhm:WindowModel>

@@ -1,0 +1,36 @@
+﻿<Window x:Class="Googlette.MainWindow" 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+        xmlns:ui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
+        xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+        xmlns:galaCommand="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        Top="{state:UserSettings Default=100}" Left="{state:UserSettings Default=100}" Height="{state:UserSettings Default=300}" Width="{state:UserSettings Default=300}"
+        DataContext="{Binding Main,Source={StaticResource Locator}}" Title="Googlette"
+        >
+  <Window.Resources>
+    <lib:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
+    <Style TargetType="{x:Type Separator}" BasedOn="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"/>
+  </Window.Resources>
+  <i:Interaction.Triggers>
+    <i:EventTrigger EventName="Closing">
+      <galaCommand:EventToCommand Command="{Binding OnWindowCloseCommand}"/>
+    </i:EventTrigger>
+  </i:Interaction.Triggers>
+  <Grid>
+    <DockPanel>
+      <ToolBar DockPanel.Dock="Top"  BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+          <TextBlock VerticalAlignment="Center">Address:</TextBlock>
+          <ui:TextBox Text="{Binding Url}" Text2="{state:UserSettings}" VerticalAlignment="Center" />
+          <TextBlock VerticalAlignment="Center">Search:</TextBlock>
+          <ui:TextBox Text="{Binding SearchText}" Text2="{state:UserSettings}" VerticalAlignment="Center" />
+        <Separator Margin="2,0"/>
+          <Button Command="{Binding StartSearchCommand}" Content="{Binding IsSearchRunning,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=Start|Start|Stop}"></Button>
+      </ToolBar>
+      <Border BorderBrush="Navy" BorderThickness="1">
+
+      </Border>
+    </DockPanel>
+  </Grid>
+</Window>

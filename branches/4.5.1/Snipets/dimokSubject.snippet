@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <SnippetTypes>
+        <SnippetType>Expansion</SnippetType>
+      </SnippetTypes>
+      <Title>SnippetFile1</Title>
+      <Author>user</Author>
+      <Description>
+      </Description>
+      <HelpUrl>
+      </HelpUrl>
+      <Shortcut>dimokSubject</Shortcut>
+    </Header>
+    <Snippet>
+      <Declarations>
+        <Literal Editable="true">
+          <ID>Type</ID>
+          <ToolTip>Type</ToolTip>
+          <Default>Type</Default>
+          <Function>
+          </Function>
+        </Literal>
+        <Literal Editable="true">
+          <ID>Name</ID>
+          <ToolTip>Name</ToolTip>
+          <Default>Name</Default>
+          <Function>
+          </Function>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp"><![CDATA[#region $Name$ Subject
+    object _$Name$SubjectLocker = new object();
+    ISubject<$Type$> _$Name$Subject;
+    ISubject<$Type$> $Name$Subject {
+      get {
+        lock(_$Name$SubjectLocker)
+            if (_$Name$Subject == null) {
+              _$Name$Subject = new Subject<$Type$>();
+              _$Name$Subject
+                .Throttle(THROTTLE_INTERVAL)
+                .Subscribe(s => {},exc=>{});
+            }
+        return _$Name$Subject;
+      }
+    }
+    void On$Name$($Type$ p) {
+      $Name$Subject.OnNext(p);
+    }
+    #endregion
+]]></Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>
