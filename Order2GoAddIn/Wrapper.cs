@@ -36,114 +36,6 @@ namespace Order2GoAddIn {
   }
   #endregion
 
-  #region FxcmIndicatorsExtensions
-  public static class FxcmIndicatorsExtensions {
-    public static void FillTSI_CR(this Rate[] ticks) {
-      (from dp in Indicators.TSI_CR(ticks)
-       join tick in ticks on dp.Time equals tick.StartDate
-       select new { tick, dp }).ToList()
-       .ForEach(tdp => { tdp.tick.PriceTsi = tdp.dp.Point; tdp.tick.PriceTsiCR = tdp.dp.Point1; });
-    }
-    public static void FillTSI(this Rate[] ticks, Action<Rate, double?> priceRsi) {
-      (from dp in Indicators.TSI(ticks)
-       join tick in ticks on dp.Time equals tick.StartDate
-       select new { tick, dp.Point }
-                  ).ToList().ForEach(tdp => priceRsi(tdp.tick, tdp.Point));
-    }
-    public static void FillRLW(this Rate[] ticks) {
-      (from dp in Indicators.RLW(ticks,14)
-       join tick in ticks on dp.Time equals tick.StartDate
-       select new { tick, dp.Point }
-                  ).ToList().ForEach(tdp => tdp.tick.PriceRlw = tdp.Point);
-    }
-    private static void FillRSI(this Rate[] ticks, int period, Func<Rate, double> priceSource, Action<Rate, double?> priceRsi) {
-      (from dp in Indicators.RSI(ticks, priceSource, period)
-                  join tick in ticks on dp.Time equals tick.StartDate
-                  select new { tick, dp.Point }
-                  ).ToList().ForEach(tdp => priceRsi(tdp.tick, tdp.Point));
-    }
-    private static void FillRSI(this Rate[] ticks, int period,
-      Func<Rate, double> priceSource, Func<Rate, double?> priceDestination, 
-      Action<Rate, double?> priceRsi) 
-    {
-      var startDate = (ticks.FirstOrDefault(t => priceDestination(t).HasValue) ?? ticks.First()).StartDate;
-      IndicatorPoint dpPrevious = new IndicatorPoint();
-      ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
-        if (!priceDestination(t).HasValue) {
-          var ticksLocal = ticks
-            .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
-            .ToList().GetMinuteTicks(1);
-          if (ticksLocal.Count() >= period) {
-            var dp = Indicators.RSI(ticksLocal, priceSource, period).Last();
-            if (dp.Point == 0) dp.Point = dpPrevious.Point;
-            else dpPrevious = dp;
-            priceRsi(t, dp.Point);
-          }
-        }
-      }
-      );
-    }
-    public static void FillTSI(this Rate[] rates, 
-      Func<Rate, double?> priceDestination, Action<Rate, double?> priceRsi) {
-      int period = 14;
-      var startDate = (rates.FirstOrDefault(t => priceDestination(t).HasValue) ?? rates.First()).StartDate;
-      IndicatorPoint dpPrevious = new IndicatorPoint();
-      rates.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
-        if (!priceDestination(t).HasValue) {
-          var ticksLocal = rates
-            .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-period - 2), t.StartDate))
-            .ToArray().GetMinuteTicks(1);
-          if (ticksLocal.Count() >= period) {
-            var dp = Indicators.TSI(ticksLocal).Last();
-            if (dp.Point == 0) dp.Point = dpPrevious.Point;
-            else dpPrevious = dp;
-            priceRsi(t, dp.Point);
-          }
-        }
-      }
-      );
-    }
-
-    //static void FractalSell<T>(T[] rates,T rate)where T:Rate {
-    //  if (rates[1].AskHigh > Math.Max(rates[0].AskHigh, rates[2].AskHigh))
-    //    rate.FractalSell = rates[2].PriceClose;
-    //  else rate.FractalSell = 0;
-    //}
-    //static void FractalBuy<T>(T[] rates,T rate) where T : Rate {
-    //  if (rates[1].BidLow < Math.Min(rates[0].BidLow, rates[2].BidLow))
-    //    rate.FractalBuy = rates[2].PriceClose;
-    //  else rate.FractalBuy = 0;
-    //}
-    //public static void FillFractal_<T>(this IEnumerable<T> ticks) where T : Rate {
-    //  var lastFractal = ticks.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
-    //  var startDate = lastFractal == null ? ticks.First().StartDate.AddMinutes(-3): lastFractal.StartDate;
-    //  ticks.Where(t => t.StartDate >= startDate).ToList().ForEach(t => {
-    //      var ticksLocal = ticks
-    //        .Where(t1 => t1.StartDate.Between(t.StartDate.AddMinutes(-3), t.StartDate))
-    //        .ToArray().GetMinuteTicks(1).ToArray();
-    //      if (ticksLocal.Length > 3) {
-    //        FractalSell(ticksLocal.Skip(1).ToArray(), t);
-    //        FractalBuy(ticksLocal.Skip(1).ToArray(), t);
-    //      }
-    //  }
-    //  );
-    //  var fb = ticks.Where(t => t.FractalBuy > 0).ToArray();
-    //  var fs = ticks.Where(t => t.FractalSell > 0).ToArray();
-    //}
-    //public static void FillFractal(this Rate[] rates) {
-    //  var lastFractal = rates.LastOrDefault(t => t.FractalSell.HasValue || t.FractalBuy.HasValue);
-    //  var startDate = lastFractal == null ? rates.First().StartDate.AddMinutes(-3) : lastFractal.StartDate;
-    //  for (int i = 1; i < rates.Length - 1; i++) {
-    //    var ratesLocal = new[] { rates[i - 1], rates[i], rates[i + 1] };
-    //    FractalSell(ratesLocal, rates[i]);
-    //    FractalBuy(ratesLocal, rates[i]);
-    //  }
-    //  var fb = rates.Where(t => t.FractalBuy > 0).ToArray();
-    //  var fs = rates.Where(t => t.FractalSell > 0).ToArray();
-    //}
-
-  }
-  #endregion
 
   #region EventArgs classes
   public class OrderErrorEventArgs : ErrorEventArgs {
@@ -771,7 +663,6 @@ namespace Order2GoAddIn {
           AskLow = Math.Round(r.AskLow, digits), AskOpen = Math.Round(r.AskOpen, digits),
           BidClose = Math.Round(r.BidClose, digits), BidHigh = Math.Round(r.BidHigh, digits),
           BidLow = Math.Round(r.BidLow, digits), BidOpen = Math.Round(r.BidOpen, digits),
-          StartDate = ConvertDateToLocal(r.StartDate),
           StartDate2 = r.StartDate,
           Volume = r.Volume
         };

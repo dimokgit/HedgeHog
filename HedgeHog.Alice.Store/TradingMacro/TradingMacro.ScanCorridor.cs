@@ -135,8 +135,9 @@ namespace HedgeHog.Alice.Store {
     }
     private CorridorStatistics ShowVoltsByDistanceAverage(bool show) {
       Func<IList<Rate>, double> calcVolatility = (rates) => InPips(rates.Distance() / CorridorDistance);
-      if (!IsInVitualTrading || GetVoltage(RatesInternal.AsEnumerable().Reverse().ElementAt(10)).IsNaN()) {
-        RatesInternal.ReverseIfNot().Integral(CorridorDistance).ToList()
+      var revs = RatesInternal.Reverse<Rate>();
+      if (GetVoltage(revs.ElementAt(10)).IsNaN()) {
+        revs.Integral(CorridorDistance).ToList()
           .ForEach(rates => SetVoltage(rates[0], calcVolatility(rates)));
       }
       return !show ? null : ShowVolts(calcVolatility(RatesArray.Reverse<Rate>().Take(CorridorDistance).ToArray()), 3);

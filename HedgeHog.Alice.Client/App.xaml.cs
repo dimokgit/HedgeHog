@@ -1,14 +1,16 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Composition.Hosting ;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Windows;
 using System.IO;
-using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
 using HedgeHog.Alice.Store;
+using System.ComponentModel.Composition;
+using System.ComponentModel.Composition.Hosting;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -16,7 +18,7 @@ namespace HedgeHog.Alice.Client {
   /// </summary>
   public partial class App : Application {
     public static bool IsInDesignMode { get { return GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic; } }
-  static public CompositionContainer container;
+  static public  CompositionContainer container;
   static public List<Window> ChildWindows = new List<Window>();
     App() {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
@@ -32,8 +34,25 @@ namespace HedgeHog.Alice.Client {
 
     void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
       try {
-        var mm = GetTraderModelBase();
-        if (mm != null) mm.Log = e.Exception;
+          var markUpException = e.Exception as System.Windows.Markup.XamlParseException;
+          if (markUpException != null)
+          {
+              var message = new Dictionary<string, string>();
+              message.Add("mesasge", markUpException + "");
+              //message.Add("file", ((e.Exception as System.Windows.Markup.XamlParseException)).BaseUri +"");
+              //message.Add("line", ((e.Exception as System.Windows.Markup.XamlParseException)).LineNumber + "");
+              var rtlException = markUpException.InnerException as System.Reflection.ReflectionTypeLoadException;
+              if (rtlException!=null)
+              {
+                  rtlException.LoaderExceptions.ToList().Select((le, i) => { message.Add("Errors[" + i + "]", le.Message); return 0; }).ToArray();
+              }
+              MessageBox.Show(string.Join(Environment.NewLine + Environment.NewLine, message.Select(kv => kv.Key + ":" + kv.Value)));
+          }
+          else
+          {
+              var mm = GetTraderModelBase();
+              if (mm != null) mm.Log = e.Exception;
+          }
       } catch (ObjectDisposedException) {
         MessageBox.Show(e.Exception + "");
       }

@@ -1154,13 +1154,13 @@ namespace HedgeHog.Bars {
     public static IList<Rate> GetMinuteTicks<TBar>(this IList<TBar> fxTicks, int period, bool Round, bool startFromEnd = true) where TBar : BarBase {
       fxTicks = startFromEnd ? fxTicks.OrderBarsDescending().ToList() : fxTicks.OrderBars().ToList();
       if (fxTicks.Count() == 0) return new Rate[] { };
-      var startDate = startFromEnd ? fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate) : fxTicks.Min(t => t == null ? DateTime.MinValue : t.StartDate);
-      if (Round) startDate = startDate.Round().AddMinutes(1);
+      var startDate2 = startFromEnd ? fxTicks.Max(t => t == null ? DateTime.MinValue : t.StartDate2) : fxTicks.Min(t => t == null ? DateTime.MinValue : t.StartDate2);
+      if (Round) startDate2 = startDate2.Round().AddMinutes(1);
       double? tempRsi;
       var rsiAverage = fxTicks.Average(t => t.PriceRsi.GetValueOrDefault());
       return (from t in fxTicks
               where period > 0
-              group t by (((int)Math.Floor((startDate - t.StartDate).TotalMinutes) / period)) * period into tg
+              group t by (((int)Math.Floor((startDate2 - t.StartDate2).TotalMinutes) / period)) * period into tg
               orderby startFromEnd ? tg.Key : -tg.Key
               select new Rate() {
                 AskHigh = tg.Max(t => t.AskHigh),
@@ -1176,15 +1176,15 @@ namespace HedgeHog.Bars {
                 Mass = tg.Sum(t => t.Mass),
                 PriceRsi = !(tempRsi = tg.Average(t => t.PriceRsi)).HasValue ? tempRsi
                              : tempRsi > rsiAverage ? tg.Max(t => t.PriceRsi) : tg.Min(t => t.PriceRsi),
-                StartDate = startDate.AddMinutes(-tg.Key)
+                StartDate2 = startDate2.AddMinutes(-tg.Key)
               }
                 ).ToList();
     }
     public static IEnumerable<Rate> GroupTicksToRates(this IEnumerable<Rate> ticks) {
       return from tick in ticks
-             group tick by tick.StartDate.AddMilliseconds(-tick.StartDate.Millisecond) into gt
+             group tick by tick.StartDate.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
              select new Rate() {
-               StartDate = gt.Key,
+               StartDate2 = gt.Key,
                AskOpen = gt.First().AskOpen,
                AskClose = gt.Last().AskClose,
                AskHigh = gt.Max(t => t.AskHigh),
@@ -1686,7 +1686,7 @@ namespace HedgeHog.Bars {
       double askMin = double.MaxValue;
       double bidMax = double.MinValue;
       double bidMin = double.MaxValue;
-      DateTime firstBarDate = DateTime.MaxValue;
+      DateTimeOffset firstBarDate = DateTimeOffset.MaxValue;
       int digits = 4;
       Func<int, double> calcRowOffest = i => Math.Pow(rowCountOffset, 1 / Math.Pow(i, 1 / 4.0));
       var rates_01 = Rates.Select(((r, i) =>{
@@ -1700,7 +1700,7 @@ new {
                /*Rates.Take(i + 1).Max((al => al.AskHigh))*/askMax - r.AskLow),
   SpreadBid = spreadBid = Math.Max(r.BidHigh - bidMin/*Rates.Take(i + 1).Min(al => al.BidLow)*/,
                /*Rates.Take(i + 1).Max(((al => al.BidHigh)))*/bidMax - r.BidLow),
-  StartDate = (i == 0) ? (firstBarDate = r.StartDate) : r.StartDate,
+  StartDate2 = (i == 0) ? (firstBarDate = r.StartDate2) : r.StartDate2,
   Row = rowCurr = Math.Min(/*(serverTime - firstBarDate).TotalMinutes / (periodMin)*/0, 0.0) + i,
   SpeedAsk = spreadAsk / ((rowCurr + calcRowOffest(i + 1)) * periodMin),
   SpeedBid = spreadBid / ((rowCurr + calcRowOffest(i + 1)) * periodMin)
@@ -1709,7 +1709,7 @@ new {
       return rates_01
         .Select(((r, i) => new PriceBar { AskHigh = r.AskHigh, AskLow = r.AskLow, BidLow = r.BidLow, BidHigh = r.BidHigh, 
           Spread = ((r.SpreadAsk + r.SpreadBid) / 2.0) / PointSize, 
-          Speed = ((r.SpeedAsk + r.SpeedBid) / 2.0) / PointSize, Row = r.Row, StartDate = r.StartDate })).ToArray();
+          Speed = ((r.SpeedAsk + r.SpeedBid) / 2.0) / PointSize, Row = r.Row, StartDate2 = r.StartDate2 })).ToArray();
     }
 
   }

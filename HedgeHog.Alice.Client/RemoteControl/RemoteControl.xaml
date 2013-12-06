@@ -12,8 +12,8 @@
              xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
              xmlns:hhBars="clr-namespace:HedgeHog.Bars;assembly=HedgeHog.Shared"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
-             xmlns:gala="clr-namespace:GalaSoft.MvvmLight;assembly=GalaSoft.MvvmLight.WPF4" 
-             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4" 
+             xmlns:gala="clr-namespace:GalaSoft.MvvmLight;assembly=GalaSoft.MvvmLight.WPF45" 
+             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF45" 
              mc:Ignorable="d" 
 >
   <UserControl.Resources>

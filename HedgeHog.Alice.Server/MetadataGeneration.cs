@@ -14,6 +14,15 @@ using System.Linq.Expressions;
 
 namespace HedgeHog.Alice.Server.XamlMetadata.Metadata
 {
+    /// <summary>Metadata for XAML App.xaml</summary>
+    public static class AppXamlMetadata
+    {
+            /// <summary>Represents x:Key="Locator"/></summary>
+            public static string LocatorKey { get { return "Locator"; } }
+
+
+    }
+
 }
 
 
@@ -434,6 +443,31 @@ namespace HedgeHog.Alice.Server.Properties.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.Properties.Settings.Default"/></summary>
         public static PropertyPath DefaultPath { get { return new PropertyPath("Default"); } }
+
+    }
+
+}
+
+namespace HedgeHog.Alice.Server.ViewModel.Metadata
+{
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.ViewModel.MainViewModel"/></summary>
+    public static class MainViewModelMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator"/></summary>
+    public static class ViewModelLocatorMetadata
+    {
+                /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Main"/></summary>
+        public const string Main = "Main";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Cleanup"/></summary>
+        public const string Cleanup = "Cleanup";
+
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Server.ViewModel.ViewModelLocator.Main"/></summary>
+        public static PropertyPath MainPath { get { return new PropertyPath("Main"); } }
 
     }
 

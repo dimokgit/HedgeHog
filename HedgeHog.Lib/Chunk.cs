@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace HedgeHog {
   public static partial class Lib {
     public static IEnumerable<T[]> Chunk<T>(T[] rates, int chunksLength, int chunksCount) {
-      throw new NotSupportedException();
+      if(chunksCount>0) throw new NotSupportedException();
       var hops = Enumerable.Range(0, chunksCount).ToArray();
       var chunk = chunksLength / chunksCount;
       var chunks = hops.Select(hop => hop * chunk).ToArray();

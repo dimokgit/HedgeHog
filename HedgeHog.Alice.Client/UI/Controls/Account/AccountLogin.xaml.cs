@@ -11,8 +11,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.ComponentModel.Composition;
 using HedgeHog.Alice.Store;
+using System.ComponentModel.Composition;
 
 namespace HedgeHog.Alice.Client.UI.Controls {
   /// <summary>

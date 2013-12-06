@@ -928,16 +928,17 @@ namespace HedgeHog.Alice.Client {
     }
     void OpenNewServerAccount() {
       try {
-        Using(tsc => {
-          string account, password;
-          FXCM.Lib.GetNewAccount(out account, out password);
-          TradingAccount = account;
-          TradingPassword = password;
-          TradingDemo = true;
-          if( isInRemoteMode)
-            tsc.OpenNewAccount(account, password);
-          Log = new Exception("New Rabit has arrived");
-        });
+          throw new NotImplementedException();
+        //Using(tsc => {
+        //  string account, password;
+        //  FXCM.Lib.GetNewAccount(out account, out password);
+        //  TradingAccount = account;
+        //  TradingPassword = password;
+        //  TradingDemo = true;
+        //  if( isInRemoteMode)
+        //    tsc.OpenNewAccount(account, password);
+        //  Log = new Exception("New Rabit has arrived");
+        //});
       } catch (Exception exc) { Log = exc; }
     }
 
@@ -971,17 +972,20 @@ namespace HedgeHog.Alice.Client {
       }
     }
     void CloseServerTrade(string tradeId) {
-      if (isInRemoteMode)
-        Using(tsc => {
-          try {
-            Log = new Exception("Trade " + tradeId + " was closed with OrderId " + tsc.CloseTrade(tradeId));
-          } catch (Exception exc) { Log = exc; }
-        });
-      else
-        try {
-          TradesManager.CloseTrade(TradesManager.GetTrades().Single(t=>t.Id == tradeId));
-          Log = new Exception("Trade " + tradeId + " was closed");
-        } catch (Exception exc) { Log = exc; }
+        if (isInRemoteMode)
+            throw new NotImplementedException();
+        //Using(tsc => {
+        //  try {
+        //    Log = new Exception("Trade " + tradeId + " was closed with OrderId " + tsc.CloseTrade(tradeId));
+        //  } catch (Exception exc) { Log = exc; }
+        //});
+        else
+            try
+            {
+                TradesManager.CloseTrade(TradesManager.GetTrades().Single(t => t.Id == tradeId));
+                Log = new Exception("Trade " + tradeId + " was closed");
+            }
+            catch (Exception exc) { Log = exc; }
     }
     #endregion
 
@@ -1063,13 +1067,14 @@ namespace HedgeHog.Alice.Client {
 
     private void CloseAllServerTrades() {
       if (isInRemoteMode)
-        Using(tsc => {
-          try {
-            Log = new Exception("Closing all server trades.");
-            var ordersIds = tsc.CloseAllTrades();
-            Log = new Exception("Trades closed:" + string.Join(",", ordersIds));
-          } catch (Exception exc) { Log = exc; }
-        });
+          throw new NotImplementedException();
+      //Using(tsc => {
+        //  try {
+        //    Log = new Exception("Closing all server trades.");
+        //    var ordersIds = tsc.CloseAllTrades();
+        //    Log = new Exception("Trades closed:" + string.Join(",", ordersIds));
+        //  } catch (Exception exc) { Log = exc; }
+        //});
       else {
         try {
           Log = new Exception("Closing all trades.");
@@ -1320,14 +1325,14 @@ namespace HedgeHog.Alice.Client {
         };
         #endregion
 
-        if (false) {
-          Using_FetchServerTrades = () => Using(FetchServerTrades);
-          if (!isInDesign) {
-            GetTradesScheduler = new Schedulers.ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
-            Using_FetchServerTrades,
-            (s, e) => { Log = e.Exception; });
-          }
-        }
+        //if (false) {
+        //  Using_FetchServerTrades = () => Using(FetchServerTrades);
+        //  if (!isInDesign) {
+        //    GetTradesScheduler = new Schedulers.ThreadScheduler(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1),
+        //    Using_FetchServerTrades,
+        //    (s, e) => { Log = e.Exception; });
+        //  }
+        //}
       }
     }
 
@@ -1475,11 +1480,11 @@ namespace HedgeHog.Alice.Client {
     }
 
 
-    void FetchServerTrades(TraderService.TraderServiceClient tsc) {
-      try {
-        OnInvokeSyncronize(tsc.GetAccount());
-      } catch (Exception exc) { Log = exc; }
-    }
+    //void FetchServerTrades(TraderService.TraderServiceClient tsc) {
+    //  try {
+    //    OnInvokeSyncronize(tsc.GetAccount());
+    //  } catch (Exception exc) { Log = exc; }
+    //}
 
     class InvokeSyncronizeEventArgs:EventArgs {
       public Account Account { get; set; }
@@ -1568,22 +1573,22 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     #region WCF Service
-    public void Using(Action<TraderService.TraderServiceClient> action) {
-      if (!isInRemoteMode || isInDesign) return;
-      var service = new TraderService.TraderServiceClient("NetTcpBinding_ITraderService", ServerAddress);
-      bool success = false;
-      try {
-        action(service);
-        if (service.State != CommunicationState.Faulted) {
-          service.Close();
-          success = true;
-        }
-      } finally {
-        if (!success) {
-          service.Abort();
-        }
-      }
-    }
+    //public void Using(Action<TraderService.TraderServiceClient> action) {
+    //  if (!isInRemoteMode || isInDesign) return;
+    //  var service = new TraderService.TraderServiceClient("NetTcpBinding_ITraderService", ServerAddress);
+    //  bool success = false;
+    //  try {
+    //    action(service);
+    //    if (service.State != CommunicationState.Faulted) {
+    //      service.Close();
+    //      success = true;
+    //    }
+    //  } finally {
+    //    if (!success) {
+    //      service.Abort();
+    //    }
+    //  }
+    //}
     #endregion
 
     #region Methods

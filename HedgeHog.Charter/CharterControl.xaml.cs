@@ -1809,6 +1809,15 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       {
         {
           var worDays = new[] { DayOfWeek.Sunday, DayOfWeek.Saturday };
+          Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes2 = (firstDate, lastDate, tz, drawTimes) => {
+            var daysCount = (lastDate - firstDate).TotalDays.Ceiling() + 2;
+            var dateStart = TimeZoneInfo.ConvertTime(firstDate, tz);
+            dateStart = dateStart.Subtract(dateStart.TimeOfDay);
+            var times = Enumerable.Range(0, daysCount)
+              .Select(d => new[] { dateStart.AddDays(d).AddHours(8).ToLocalTime().DateTime, dateStart.AddDays(d).AddHours(16).ToLocalTime().DateTime })
+              .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate)).ToArray();
+            drawTimes(times);
+          };
           Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes = (firstDate, lastDate, tz, drawTimes) => {
             firstDate = TimeZoneInfo.ConvertTime(firstDate.Round(60), tz);
             lastDate = TimeZoneInfo.ConvertTime(lastDate.Round(60), tz);
@@ -1816,9 +1825,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             drawTimes(times.Select(d => d.ToLocalTime().DateTime).ToArray());
 
           };
-          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, TimeZoneInfo.Local, DrawNYTimes);
-          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, DateTimeZone.DateTimeZone.TokyoZone, DrawTokyoTimes);
-          marketTimes(ticks[0].StartDate2, ticks.Last().StartDate2, DateTimeZone.DateTimeZone.LondonZone, DrawLindonTimes);
+          var tickFirstDate = ticks[0].StartDate;
+          var tickLastDate = ticks.Last().StartDate;
+          marketTimes2(tickFirstDate, tickLastDate, TimeZoneInfo.Local, DrawNYTimes);
+          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.TokyoZone, DrawTokyoTimes);
+          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.LondonZone, DrawLindonTimes);
         }
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) try {
