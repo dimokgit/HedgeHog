@@ -130,8 +130,8 @@ namespace Temp {
         var ratesToChart = rates.Where(t => t.PriceRsi.GetValueOrDefault(50) != 50).ToList();
         if (NoGaps) {
           var i = 0;
-          var startDate = ratesToChart.Max(r => r.StartDate);
-          ratesToChart.OrderBarsDescending().Skip(1).ToList().ForEach(r => r.StartDate = startDate.AddMinutes(-(++i)));
+          var startDate2 = ratesToChart.Max(r => r.StartDate2);
+          ratesToChart.OrderBarsDescending().Skip(1).ToList().ForEach(r => r.StartDate2 = startDate2.AddMinutes(-(++i)));
         }
         var rsi = ratesToChart.Select(t => new Volt() { Volts = t.PriceRsi.GetValueOrDefault(), StartDate = t.StartDate }).ToList();
         AddLog("Chart.");

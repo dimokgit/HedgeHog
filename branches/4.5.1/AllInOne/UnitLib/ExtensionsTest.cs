@@ -59,9 +59,9 @@ namespace UnitLib {
     [TestInitialize()]
     public void MyTestInitialize() {
       var dateStart = DateTime.Now;
-      ratesForPrev = Enumerable.Range(0, 10000).Select(i => new Rate() { StartDate = dateStart.AddMinutes(i) }).ToList();
+      ratesForPrev = Enumerable.Range(0, 10000).Select(i => new Rate() { StartDate2 = dateStart.ToUniversalTime().AddMinutes(i) }).ToList();
       var r = new Random();
-      ratesForCrosses = Enumerable.Range(0, 10000).Select(i => new Rate() { StartDate = dateStart.AddMinutes(i + r.Next(100)) }).ToList();
+      ratesForCrosses = Enumerable.Range(0, 10000).Select(i => new Rate() { StartDate2 = dateStart.ToUniversalTime().AddMinutes(i + r.Next(100)) }).ToList();
 
     }
     //

@@ -1201,9 +1201,6 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.fwMaster_OrderAdded"/></summary>
         public const string fwMaster_OrderAdded = "fwMaster_OrderAdded";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.FetchServerTrades"/></summary>
-        public const string FetchServerTrades = "FetchServerTrades";
-
         /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.TraderModel.InvokeSyncronizeEventArgs"/></summary>
         public static class InvokeSyncronizeEventArgsMetadata
         {
@@ -3161,20 +3158,6 @@ namespace HedgeHog.Alice.Client.FileMetadata.ServiceReferences.PriceService.Meta
 
     }
 
-    /// <summary>Metadata for File HedgeHog.Alice.Client.PriceService.PriceStatistics.datasource</summary>
-    public static class HedgeHogAliceClientPriceServicePriceStatisticsDatasource    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Alice.Client.PriceService.PriceStatistics.datasource", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Alice.Client.PriceService.PriceStatistics.datasource"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/HedgeHog.Alice.Client.PriceService.PriceStatistics.datasource")); } }
-
-
-    }
-
     /// <summary>Metadata for File service.wsdl</summary>
     public static class ServiceWsdl    {
             /// <summary>Resource pack URI for file.</summary>
@@ -3213,163 +3196,6 @@ namespace HedgeHog.Alice.Client.FileMetadata.ServiceReferences.PriceService.Meta
 
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/PriceService/service1.xsd")); } }
-
-
-    }
-
-}
-
-namespace HedgeHog.Alice.Client.PriceService.Metadata
-{
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics"/></summary>
-    public static class PriceStatisticsMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.extensionDataField"/></summary>
-        public const string extensionDataField = "extensionDataField";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.BidHighAskLowSpreadField"/></summary>
-        public const string BidHighAskLowSpreadField = "BidHighAskLowSpreadField";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.ExtensionData"/></summary>
-        public const string ExtensionData = "ExtensionData";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.BidHighAskLowSpread"/></summary>
-        public const string BidHighAskLowSpread = "BidHighAskLowSpread";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.RaisePropertyChanged"/></summary>
-        public const string RaisePropertyChanged = "RaisePropertyChanged";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.ExtensionData"/></summary>
-        public static PropertyPath ExtensionDataPath { get { return new PropertyPath("ExtensionData"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatistics.BidHighAskLowSpread"/></summary>
-        public static PropertyPath BidHighAskLowSpreadPath { get { return new PropertyPath("BidHighAskLowSpread"); } }
-
-    }
-
-    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.PriceService.IPriceService"/></summary>
-    public static class IPriceServiceMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.FillPrice"/></summary>
-        public const string FillPrice = "FillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.BeginFillPrice"/></summary>
-        public const string BeginFillPrice = "BeginFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.EndFillPrice"/></summary>
-        public const string EndFillPrice = "EndFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.PriceStatistics"/></summary>
-        public const string PriceStatistics = "PriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.BeginPriceStatistics"/></summary>
-        public const string BeginPriceStatistics = "BeginPriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.IPriceService.EndPriceStatistics"/></summary>
-        public const string EndPriceStatistics = "EndPriceStatistics";
-
-
-    }
-
-    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.PriceService.IPriceServiceChannel"/></summary>
-    public static class IPriceServiceChannelMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PriceService.FillPriceCompletedEventArgs"/></summary>
-    public static class FillPriceCompletedEventArgsMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.FillPriceCompletedEventArgs.results"/></summary>
-        public const string results = "results";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.FillPriceCompletedEventArgs.Result"/></summary>
-        public const string Result = "Result";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.FillPriceCompletedEventArgs.Result"/></summary>
-        public static PropertyPath ResultPath { get { return new PropertyPath("Result"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PriceService.PriceStatisticsCompletedEventArgs"/></summary>
-    public static class PriceStatisticsCompletedEventArgsMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceStatisticsCompletedEventArgs.results"/></summary>
-        public const string results = "results";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatisticsCompletedEventArgs.Result"/></summary>
-        public const string Result = "Result";
-
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.PriceService.PriceStatisticsCompletedEventArgs.Result"/></summary>
-        public static PropertyPath ResultPath { get { return new PropertyPath("Result"); } }
-
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient"/></summary>
-    public static class PriceServiceClientMetadata
-    {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onBeginFillPriceDelegate"/></summary>
-        public const string onBeginFillPriceDelegate = "onBeginFillPriceDelegate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onEndFillPriceDelegate"/></summary>
-        public const string onEndFillPriceDelegate = "onEndFillPriceDelegate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onFillPriceCompletedDelegate"/></summary>
-        public const string onFillPriceCompletedDelegate = "onFillPriceCompletedDelegate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onBeginPriceStatisticsDelegate"/></summary>
-        public const string onBeginPriceStatisticsDelegate = "onBeginPriceStatisticsDelegate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onEndPriceStatisticsDelegate"/></summary>
-        public const string onEndPriceStatisticsDelegate = "onEndPriceStatisticsDelegate";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.onPriceStatisticsCompletedDelegate"/></summary>
-        public const string onPriceStatisticsCompletedDelegate = "onPriceStatisticsCompletedDelegate";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.FillPrice"/></summary>
-        public const string FillPrice = "FillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.BeginFillPrice"/></summary>
-        public const string BeginFillPrice = "BeginFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.EndFillPrice"/></summary>
-        public const string EndFillPrice = "EndFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnBeginFillPrice"/></summary>
-        public const string OnBeginFillPrice = "OnBeginFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnEndFillPrice"/></summary>
-        public const string OnEndFillPrice = "OnEndFillPrice";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnFillPriceCompleted"/></summary>
-        public const string OnFillPriceCompleted = "OnFillPriceCompleted";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.FillPriceAsync"/></summary>
-        public const string FillPriceAsync = "FillPriceAsync";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.PriceStatistics"/></summary>
-        public const string PriceStatistics = "PriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.BeginPriceStatistics"/></summary>
-        public const string BeginPriceStatistics = "BeginPriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.EndPriceStatistics"/></summary>
-        public const string EndPriceStatistics = "EndPriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnBeginPriceStatistics"/></summary>
-        public const string OnBeginPriceStatistics = "OnBeginPriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnEndPriceStatistics"/></summary>
-        public const string OnEndPriceStatistics = "OnEndPriceStatistics";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.OnPriceStatisticsCompleted"/></summary>
-        public const string OnPriceStatisticsCompleted = "OnPriceStatisticsCompleted";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.PriceService.PriceServiceClient.PriceStatisticsAsync"/></summary>
-        public const string PriceStatisticsAsync = "PriceStatisticsAsync";
 
 
     }
@@ -3458,20 +3284,6 @@ namespace HedgeHog.Alice.Client.FileMetadata.ServiceReferences.TraderService.Met
 
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/TraderService/Reference.svcmap")); } }
-
-
-    }
-
-    /// <summary>Metadata for File HedgeHog.Alice.Client.TraderService.CompositeType.datasource</summary>
-    public static class HedgeHogAliceClientTraderServiceCompositeTypeDatasource    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Service References/TraderService/HedgeHog.Alice.Client.TraderService.CompositeType.datasource", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/TraderService/HedgeHog.Alice.Client.TraderService.CompositeType.datasource"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Service References/TraderService/HedgeHog.Alice.Client.TraderService.CompositeType.datasource")); } }
 
 
     }
@@ -3569,66 +3381,6 @@ namespace HedgeHog.Alice.Client.TraderService.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderService.CompositeType.StringValue"/></summary>
         public static PropertyPath StringValuePath { get { return new PropertyPath("StringValue"); } }
-
-    }
-
-    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.TraderService.ITraderService"/></summary>
-    public static class ITraderServiceMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.GetData"/></summary>
-        public const string GetData = "GetData";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.GetDataUsingDataContract"/></summary>
-        public const string GetDataUsingDataContract = "GetDataUsingDataContract";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.OpenNewAccount"/></summary>
-        public const string OpenNewAccount = "OpenNewAccount";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.GetAccount"/></summary>
-        public const string GetAccount = "GetAccount";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.CloseTrade"/></summary>
-        public const string CloseTrade = "CloseTrade";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.CloseTrades"/></summary>
-        public const string CloseTrades = "CloseTrades";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.ITraderService.CloseAllTrades"/></summary>
-        public const string CloseAllTrades = "CloseAllTrades";
-
-
-    }
-
-    /// <summary>Metadata for interface <see cref="HedgeHog.Alice.Client.TraderService.ITraderServiceChannel"/></summary>
-    public static class ITraderServiceChannelMetadata
-    {
-        
-    }
-
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient"/></summary>
-    public static class TraderServiceClientMetadata
-    {
-                /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.GetData"/></summary>
-        public const string GetData = "GetData";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.GetDataUsingDataContract"/></summary>
-        public const string GetDataUsingDataContract = "GetDataUsingDataContract";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.OpenNewAccount"/></summary>
-        public const string OpenNewAccount = "OpenNewAccount";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.GetAccount"/></summary>
-        public const string GetAccount = "GetAccount";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.CloseTrade"/></summary>
-        public const string CloseTrade = "CloseTrade";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.CloseTrades"/></summary>
-        public const string CloseTrades = "CloseTrades";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderService.TraderServiceClient.CloseAllTrades"/></summary>
-        public const string CloseAllTrades = "CloseAllTrades";
-
 
     }
 

@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Store {
           if (value == RateLast.StartDate)
             CorridorStats.StopRate = RateLast;
           else {
-            var index = RatesArray.IndexOf(new Rate() { StartDate = value });
+            var index = RatesArray.IndexOf(new Rate() { StartDate2 = new DateTimeOffset(value) });
             CorridorStats.StopRate = RatesArray.Reverse<Rate>().SkipWhile(r => r.StartDate > value).First();
             if (CorridorStats.StopRate != null)
               _CorridorStopDate = CorridorStats.StopRate.StartDate;

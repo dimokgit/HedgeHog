@@ -30,7 +30,6 @@ using System.Collections.Concurrent;
 using HedgeHog;
 using HedgeHog.Shared.Messages;
 using Hardcodet.Util.Dependencies;
-using ChainedObserver;
 using HedgeHog.UI;
 using System.ComponentModel.Composition;
 using ReactiveUI;
@@ -292,7 +291,6 @@ namespace HedgeHog.Alice.Store {
           Enumerable.Range(0, CorridorDistanceRatio.ToInt()).ForEach(i => {
             RatesInternal.RemoveAt(0);
             var rate = RatesInternal.LastBC().Clone() as Rate;
-            rate.StartDate = rate.StartDate.AddMinutes(BarPeriodInt);
             rate.StartDate2 = rate.StartDate2.AddMinutes(BarPeriodInt);
             RatesInternal.Add(rate);
           });
@@ -1967,7 +1965,7 @@ namespace HedgeHog.Alice.Store {
     public List<Rate> RatesArraySafe {
       get {
         if (!Monitor.TryEnter(_innerRateArrayLocker, 5000)) {
-          Log = new Exception("_innerRateArrayLocker was busy for more then 5 second.");
+          Log = new Exception("[" + Pair + "]_innerRateArrayLocker was busy for more then 5 second. RatesInternal.Count:" + RatesInternal.Count);
           return _rateArray;
         }
         try {
@@ -2358,8 +2356,8 @@ namespace HedgeHog.Alice.Store {
           RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
         } else {
           if (price.Time > RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod)) {
-            RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(RatesInternal.Last().StartDate.AddMinutes((int)BarPeriod), price.Ask, price.Bid, false));
-          } else RatesInternal.Last().AddTick(price.Time, price.Ask, price.Bid);
+            RatesInternal.Add(isTick ? new Tick(price, 0, false) : new Rate(RatesInternal.Last().StartDate.ToUniversalTime().AddMinutes((int)BarPeriod), price.Ask, price.Bid, false));
+          } else RatesInternal.Last().AddTick(price.Time.ToUniversalTime(), price.Ask, price.Bid);
         }
       } finally {
         Monitor.Exit(_Rates);
@@ -3132,7 +3130,7 @@ namespace HedgeHog.Alice.Store {
         if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {
           InfoTooltip = "Loading Rates";
           if (!Monitor.TryEnter(_innerRateArrayLocker, 1000)) {
-            Log = new Exception(new { LoadRates = "_innerRateArrayLocker was busy for more then 1 second." } + "");
+            Log = new Exception(new { LoadRates = "["+Pair+"]_innerRateArrayLocker was busy for more then 1 second." } + "");
             throw new TimeoutException();
           }
           try {
@@ -3161,20 +3159,7 @@ namespace HedgeHog.Alice.Store {
               RatesInternal.AddRange(ri);
             }
 
-            bool wereRatesPulled = false;
-            using (var ps = new PriceService.PriceServiceClient()) {
-              try {
-                //var ratesPulled = ps.FillPrice(Pair, RatesInternal.Select(r => r.StartDate).DefaultIfEmpty().Max());
-                //RatesInternal.AddRange(ratesPulled);
-                //wereRatesPulled = true;
-                var DensityMin = true ? 0 : ps.PriceStatistics(Pair).BidHighAskLowSpread;
-              } catch (Exception exc) {
-                Log = exc;
-              } finally {
-                if (!wereRatesPulled)
-                  RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
-              }
-            }
+            RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, RatesInternal);
             var rateLastDate = RatesInternal.Last().StartDate;
             if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes())
               throw new Exception("Last rate time:{0} is far from ServerTyme:{1}".Formater(rateLastDate, ServerTime));

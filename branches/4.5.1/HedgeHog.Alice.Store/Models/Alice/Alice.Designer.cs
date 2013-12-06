@@ -8,12 +8,13 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.ComponentModel;
+using System.Data.EntityClient;
 using System.Data.Objects;
 using System.Data.Objects.DataClasses;
-using System.Data.EntityClient;
-using System.ComponentModel;
-using System.Xml.Serialization;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Xml.Serialization;
 
 [assembly: EdmSchemaAttribute()]
 #region EDM Relationship Metadata
@@ -135,6 +136,7 @@ namespace HedgeHog.Alice.Store
         private ObjectSet<SuppRes> _SuppRes;
 
         #endregion
+
         #region AddTo Methods
     
         /// <summary>
@@ -170,11 +172,11 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
     }
-    
 
     #endregion
-    
+
     #region Entities
     
     /// <summary>
@@ -209,6 +211,7 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -383,6 +386,7 @@ namespace HedgeHog.Alice.Store
         partial void OnPairChanged();
 
         #endregion
+
     
     }
     
@@ -416,6 +420,7 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -542,6 +547,7 @@ namespace HedgeHog.Alice.Store
         partial void OnTradesCountChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -584,6 +590,7 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -622,6 +629,7 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -892,6 +900,7 @@ namespace HedgeHog.Alice.Store
         partial void OnPipsToExitChanged();
 
         #endregion
+
     
     }
     
@@ -1065,6 +1074,7 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -3111,6 +3121,7 @@ namespace HedgeHog.Alice.Store
         partial void OnVoltageFunctionChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -3137,8 +3148,10 @@ namespace HedgeHog.Alice.Store
         }
 
         #endregion
+
     }
 
     #endregion
+
     
 }

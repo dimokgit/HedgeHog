@@ -19,6 +19,7 @@ namespace HedgeHog.Bars {
       set {
         if (_StartDate2 != value) {
           _StartDate2 = value;
+          StartDate = TimeZoneInfo.ConvertTimeFromUtc(value.DateTime, TimeZoneInfo.Local);
         }
       }
     }
@@ -28,7 +29,7 @@ namespace HedgeHog.Bars {
     [DataMember]
     public DateTime StartDate {
       get { return _StartDate; }
-      set {
+      private set {
         if (_StartDate == value) return;
         _StartDate = StartDateContinuous = value;
       }
@@ -497,18 +498,19 @@ namespace HedgeHog.Bars {
     void SetAsk(double ask) { AskOpen = AskLow = AskClose = AskHigh = ask; }
     void SetBid(double bid) { BidOpen = BidLow = BidClose = BidHigh = bid; }
 
-    public BarBase(DateTime startDate, double ask, double bid, bool isHistory) {
+    public BarBase(DateTimeOffset startDate, double ask, double bid, bool isHistory) {
       SetAsk(ask);
       SetBid(bid);
-      StartDate = startDate;
+      StartDate2 = startDate;
       IsHistory = isHistory;
     }
-    public void AddTick(Price price) { AddTick(price.Time, price.Ask, price.Bid); }
+    public void AddTick(Price price) { AddTick(price.Time.ToUniversalTime(), price.Ask, price.Bid); }
     public void AddTick(DateTime startDate, double ask, double bid) {
+      if (startDate.Kind != DateTimeKind.Utc) throw new ArgumentException("startDate must be of Utc kind");
       if (Count++ == 0) {
         SetAsk(ask);
         SetBid(bid);
-        StartDate = startDate.Round();
+        StartDate2 = startDate.Round();
       } else {
         if (ask > AskHigh) AskHigh = ask;
         if (ask < AskLow) AskLow = ask;
@@ -594,6 +596,7 @@ namespace HedgeHog.Bars {
     public Rate(double AskHigh, double AskLow, double AskOpen, double AskClose,
                     double BidHigh, double BidLow, double BidOpen, double BidClose,
                     DateTime StartDate) {
+      if (StartDate.Kind != DateTimeKind.Utc) throw new ArgumentException("StartDate must be of Utc kind");
       this.AskHigh = AskHigh;
       this.AskLow = AskLow;
       this.AskOpen = AskOpen;
@@ -604,7 +607,7 @@ namespace HedgeHog.Bars {
       this.BidOpen = BidOpen;
       this.BidClose = BidClose;
 
-      this.StartDate = StartDate;
+      this.StartDate2 = StartDate;
     }
 
     double _distanceHistory = double.NaN;

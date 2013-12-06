@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Controls.Primitives;
-using System.ComponentModel.Composition;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
