@@ -121,7 +121,7 @@
               </telerik:RadPropertyGrid.PropertyDefinitions>
             </telerik:RadPropertyGrid>
           </Expander>
-          <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value=".86" SmallChange="0.05" LargeChange="0.15" Minimum="0.35" Maximum="1" Name="sldOpacity"></Slider>
+          <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value=".86" SmallChange="0.05" LargeChange="0.15" Minimum="0.5" Maximum="1" Name="sldOpacity"></Slider>
         </StackPanel>
       </Border>
       

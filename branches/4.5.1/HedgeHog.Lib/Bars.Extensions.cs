@@ -510,6 +510,7 @@ namespace HedgeHog.Bars {
       double distance = (rates.LastBC().Distance - rates[0].Distance).Abs();
       if (distance == 0)
         rates.Aggregate((p, n) => { distance += (getPrice(p) - getPrice(n)).Abs(); return n; });
+      if (distance.IsNaN()) throw new InvalidDataException("Distance calculation resulted in NaN.");
       return distance;
     }
 
@@ -600,7 +601,11 @@ namespace HedgeHog.Bars {
         return n;
       });
     }
-    public static void FillDistance<TBar>(this IEnumerable<TBar> bars,Action<TBar,TBar,double> setDistance = null) where TBar : BarBase {
+    public static IList<TBar> FillDistance<TBar>(this IList<TBar> bars, Action<TBar, TBar, double> setDistance = null) where TBar : BarBase {
+      (bars as IEnumerable<TBar>).FillDistance();
+      return bars;
+    }
+    public static void FillDistance<TBar>(this IEnumerable<TBar> bars, Action<TBar, TBar, double> setDistance = null) where TBar : BarBase {
       bars.First().Distance = 0;
       bars.Aggregate((p, n) => {
         var diff = (p.PriceAvg - n.PriceAvg).Abs();

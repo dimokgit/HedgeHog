@@ -65,7 +65,11 @@ namespace HedgeHog.Alice.Store {
       var startMax = new Lazy<DateTime>(() => CorridorStopDate.IfMin(DateTime.MaxValue));
       var startMin = CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate);
       var rates = !CorridorStartDate.HasValue
-        ? ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
+        ? !CorridorStopDate.IsMin()
+        ? ratesReversed
+          .SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value)
+          .TakeWhile(r => r.StartDate > ratesReversed[lazyCount.Value].StartDate).ToArray()
+        : ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax.Value).TakeWhile(r => r.StartDate >= startMin).ToArray();
       WaveShort.ResetRates(rates);
       if (postProcess != null) postProcess();
@@ -124,7 +128,8 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorByDistanceHeightRatio(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = ratesForCorridor.Reverse().ToArray();
+      var revsCount = RatesArray.Count + CorridorDistance * 2;
+      var ratesReversed = RatesInternal.SafeArray().CopyToArray(RatesInternal.Count - revsCount, revsCount).Reverse().ToArray().FillDistance().SafeArray();
       var lazyCount = new Lazy<int>(() => CalcCorridorByDistanceHeightRatioMinMax(ratesReversed, CorridorDistance));
       Action postProcess = () => MagnetPrice = WaveShort.Rates.Average(_priceAvg);
       return ScanCorridorLazy(ratesReversed, lazyCount, ShowVoltsByDistanceAverage, postProcess);
@@ -137,10 +142,12 @@ namespace HedgeHog.Alice.Store {
       Func<IList<Rate>, double> calcVolatility = (rates) => InPips(rates.Distance() / CorridorDistance);
       var revs = RatesInternal.Reverse<Rate>();
       if (GetVoltage(revs.ElementAt(10)).IsNaN()) {
-        revs.Integral(CorridorDistance).ToList()
+        revs.TakeWhile(r => !r.Distance.IsNaN()).Integral(CorridorDistance).ToList()
           .ForEach(rates => SetVoltage(rates[0], calcVolatility(rates)));
       }
-      return !show ? null : ShowVolts(calcVolatility(RatesArray.Reverse<Rate>().Take(CorridorDistance).ToArray()), 3);
+      var voltsCurrent = calcVolatility(RatesArray.Reverse<Rate>().Take(CorridorDistance).ToArray());
+      if (!show) { SetVoltage(RatesArray.Last(), voltsCurrent); return null; }
+      return ShowVolts(voltsCurrent, 3);
     }
     private CorridorStatistics ScanCorridorByDistanceHeightRatioMin(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.Reverse().ToArray();
@@ -178,11 +185,114 @@ namespace HedgeHog.Alice.Store {
       }
       return range;
     }
-
     private int CalcCorridorByDistanceHeightRatioMinMax(Rate[] ratesReversed, int range) {
+      ShowVoltsByDistanceAverage(false);
       var ps = PointSize;
-      ratesReversed = RatesInternal.Reverse<Rate>().Take(RatesArray.Count + CorridorDistance).ToArray();
-      ratesReversed.FillDistance();
+      var corrRate = CorridorStats.Rates.LastOrDefault();
+      int? takeCount0 = corrRate == null ? (int?)null : RatesArray.Count - RatesArray.IndexOf(corrRate);
+      var takeCount = takeCount0.HasValue ? (range * 1.1).ToInt() : int.MaxValue;
+      Func<int, int> getIndex = (take) => {
+        var extreams = ratesReversed.Take(take)
+          .TakeWhile(d => !GetVoltage(d).IsNaN())
+          .Extreams(GetVoltage, range);
+        var first = extreams.SkipWhile(d => d.Slope < 0).FirstOrDefault();
+        if (first == null) return 0;
+        var index = first.Index;
+        return ratesReversed.CopyToArray(index, range).Select((r, i) => new { r, i }).OrderBy(d => GetVoltage(d.r)).Last().i + index;
+      };
+      var index2 = getIndex(takeCount);
+      if (index2 > 0) {
+        CorridorStopDate = DateTime.MinValue;
+        return index2;
+      }
+      return !takeCount0.HasValue ? getIndex(int.MaxValue) : takeCount0.Value;
+    }
+    private int CalcCorridorByDistanceHeightRatioMinMax_Good4(Rate[] ratesReversed, int range) {
+      ShowVoltsByDistanceAverage(false);
+      var ps = PointSize;
+      var corrRate = CorridorStats.Rates.LastOrDefault();
+      int? takeCount0 = corrRate == null ? (int?)null : RatesArray.Count - RatesArray.IndexOf(corrRate);
+      var takeCount = takeCount0.HasValue ? (range * 1.1).ToInt() : int.MaxValue;
+      Func<int, int> getIndex = (take) => {
+        var datas = ratesReversed.Take(take).Select(GetVoltage).Integral(range)
+          .Select((rates, i) => new { rates, i })
+          .TakeWhile(d => !d.rates.Last().IsNaN())
+          .AsParallel()
+          .Select(d => new { d.i, slope = d.rates.Regress(1).LineSlope() })
+          .OrderBy(d => d.i).ToArray();
+        var extreams = new { i = 0, slope = 0.0 }.Return(0).ToList();
+        datas
+          .SkipWhile(d => d.slope.IsNaN())
+          .TakeWhile(d => !d.slope.IsNaN())
+          .Aggregate((p, n) => {
+            if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
+            return n;
+          });
+        var first = extreams.OrderBy(d => d.i).SkipWhile(d => d.slope < 0).FirstOrDefault();
+        if (first == null) return 0;
+        var index = first.i;
+        return ratesReversed.CopyToArray(index, range).Select((r, i) => new { r, i }).OrderBy(d => GetVoltage(d.r)).Last().i + index;
+      };
+      var index2 = getIndex(takeCount);
+      if (index2 > 0) return index2;
+      return !takeCount0.HasValue ? getIndex(int.MaxValue) : takeCount0.Value;
+    }
+
+    private int CalcCorridorByDistanceHeightRatioMinMax_Good3(Rate[] ratesReversed, int range) {
+      ShowVoltsByDistanceAverage(false);
+      var ps = PointSize;
+      var corrRate = CorridorStats.Rates.LastOrDefault();
+      var takeCount = corrRate == null ? int.MaxValue : RatesArray.Count - RatesArray.IndexOf(corrRate) + (range * 1.1).ToInt();
+      Func<int,int, int> getIndex = (take,iterations) => {
+        var datas = ratesReversed.Take(take).Select(GetVoltage).Integral(range)
+          .Select((rates, i) => new { rates, i, h = rates.Height() })
+          .TakeWhile(d => !d.h.IsNaN())
+          .ToArray().AverageByIterations(d => d.h, (v, a) => v <= a, iterations)
+          .AsParallel()
+          .Select(d => new { d.i, slope = d.rates.Regress(1).LineSlope() })
+          .OrderBy(d => d.i).ToArray();
+        var extreams = new { i = 0, slope = 0.0 }.Return(0).ToList();
+        datas
+          .SkipWhile(d => d.slope.IsNaN())
+          .TakeWhile(d => !d.slope.IsNaN())
+          .Aggregate((p, n) => {
+            if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
+            return n;
+          });
+        var first = extreams.OrderBy(d => d.i).SkipWhile(d => d.slope < 0).FirstOrDefault();
+        if (first == null) return 0;
+        var index = first.i;
+        return ratesReversed.CopyToArray(index, range).Select((r, i) => new { r, i }).OrderBy(d => GetVoltage(d.r)).Last().i + index;
+      };
+      var iter = 2;
+      do {
+        var index = getIndex(takeCount, iter);
+        if (index > 0) return index;
+      } while (iter-- > 0);
+      return getIndex(int.MaxValue, 0);
+    }
+    private int CalcCorridorByDistanceHeightRatioMinMax_Good2(Rate[] ratesReversed, int range) {
+      ShowVoltsByDistanceAverage(false);
+      var ps = PointSize;
+      var datas = ratesReversed.Integral(range)
+        .AsParallel()
+        .Select((rates, i) => new { i, slope = rates.Regress(1, GetVoltage).LineSlope() })
+        .OrderBy(d => d.i).ToArray();
+      var extreams = new { i = 0, slope = 0.0 }.AsList();
+      datas
+        .SkipWhile(d => d.slope.IsNaN())
+        .TakeWhile(d => !d.slope.IsNaN())
+        .Aggregate((p, n) => {
+          if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
+          return n;
+        });
+      var index = extreams.OrderBy(d => d.i).SkipWhile(d => d.slope < 0).First().i;
+      index = ratesReversed.CopyToArray(index, range).Select((r, i) => new { r, i }).OrderBy(d => GetVoltage(d.r)).Last().i + index;
+      return index;
+    }
+
+    private int CalcCorridorByDistanceHeightRatioMinMax_Good(Rate[] ratesReversed, int range) {
+      var ps = PointSize;
       var datas = ratesReversed.Integral(range)
         .Select(Extensions.Distance)
         .Integral(range)

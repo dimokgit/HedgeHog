@@ -160,6 +160,7 @@ namespace HedgeHog {
             return (rc / 100.0).ToInt() + 1;
         }
 
+        public static IEnumerable<T> Return<T>(this T v, int count = 1) { return Enumerable.Repeat(v, count); }
         public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
             return new Queue<T>(t);
         }

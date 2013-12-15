@@ -574,6 +574,35 @@ namespace HedgeHog {
       Array.Copy(values, start, array, 0, array.Length);
       return array;
     }
+    private static int Sign(this double d) { return Math.Sign(d); }
+    private static bool IsNaN(this double d) { return double.IsNaN(d); }
+    public class Extream<T> {
+      public T Element { get; set; }
+      public double Slope { get; set; }
+      public int Index { get; set; }
+      public Extream(T element,double slope,int index) {
+        Element = element;
+        Slope = slope;
+        Index = index;
+      }
+    }
+    public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range) {
+      var datas = input.Integral(range)
+        .Select((rates, i) => new { rates, i })
+        .AsParallel()
+        .Select(d => new { d.i, slope = d.rates.Regress(1, value).LineSlope(), rate = d.rates[0] })
+        .OrderBy(d => d.i).ToArray();
+      var extreams = Enumerable.Repeat(new { i = 0, slope = 0.0, rate = default(T) }, 0).ToList();
+      datas
+        .SkipWhile(d => d.slope.IsNaN())
+        .TakeWhile(d => !d.slope.IsNaN())
+        .Aggregate((p, n) => {
+          if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
+          return n;
+        });
+      return extreams.OrderBy(d => d.i).Select(d => new Extream<T>(d.rate, d.slope, d.i)).ToArray();
+    }
+
     /// <summary>
     /// Try not to materialize it.
     /// </summary>
@@ -708,7 +737,7 @@ namespace HedgeHog {
     }
 
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<T, double, bool> compare, double iterations, List<double> averagesOut = null) {
-      var avg = values.DefaultIfEmpty().Average(getValue);
+      var avg = iterations == 0 && averagesOut == null ? double.NaN : values.DefaultIfEmpty().Average(getValue);
       if (averagesOut != null) averagesOut.Insert(0, avg);
       return values.Count < 2 || iterations == 0 ? values : values.Where(r => compare(r, avg)).ToArray().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }

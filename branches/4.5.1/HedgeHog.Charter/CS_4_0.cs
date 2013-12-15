@@ -983,13 +983,13 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawNYTimes"/></summary>
         public const string DrawNYTimes = "DrawNYTimes";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._LindonTimes"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl._LondonTimes"/></summary>
         public const string _LindonTimes = "_LindonTimes";
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LindonTimes"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonTimes"/></summary>
         public const string LindonTimes = "LindonTimes";
 
-        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.LindonTimesVLines"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.CharterControl.LondonTimesVLines"/></summary>
         public const string LindonTimesVLines = "LindonTimesVLines";
 
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.DrawLindonTimes"/></summary>
@@ -1554,7 +1554,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.NYTimes"/></summary>
         public static PropertyPath NYTimesPath { get { return new PropertyPath("NYTimes"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LindonTimes"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.CharterControl.LondonTimes"/></summary>
         public static PropertyPath LindonTimesPath { get { return new PropertyPath("LindonTimes"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.CharterControl.TokyoTimes"/></summary>
