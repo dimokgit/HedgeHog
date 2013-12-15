@@ -258,7 +258,7 @@ namespace HedgeHog.Alice.Store {
 
     static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {
       var ratesList = new List<Rate>();
-      bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDateLocal.Value) { Volume = b.Volume,StartDate2 = b.StartDate }));
+      bars.ToList().ForEach(b => ratesList.Add(new Rate(b.AskHigh, b.AskLow, b.AskOpen, b.AskClose, b.BidHigh, b.BidLow, b.BidOpen, b.BidClose, b.StartDate.UtcDateTime) { Volume = b.Volume }));
       return ratesList.OrderBars().ToList();
     }
 

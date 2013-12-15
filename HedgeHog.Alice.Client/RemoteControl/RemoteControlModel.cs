@@ -216,7 +216,7 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.IsTradingActive = false;
       if (tm.CorridorStartDate == e.NewPosition) return;
-      var index = tm.RatesArray.IndexOf(new Rate() { StartDate2 = new DateTimeOffset( e.NewPosition) });
+      var index = tm.RatesArray.IndexOf(new Rate() { StartDate2 = e.NewPosition.ToUniversalTime() });
       var rate = tm.RatesArray.GetRange(index - 5, 10).OrderByDescending(r => r.PriceHigh - r.PriceLow).First();
       tm.CorridorStartDate = rate.StartDate;
     }
@@ -985,7 +985,7 @@ namespace HedgeHog.Alice.Client {
     }
     void AddShowChart(TradingMacro tm) {
       if (tm.IsInVitualTrading)
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.Input);
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.DataBind);
       else
         ShowChartQueue.OnNext(() => ShowChart(tm));
     }
@@ -1090,7 +1090,7 @@ namespace HedgeHog.Alice.Client {
 
           var times = tm.NewEventsCurrent.Select(ne => ne.Time.DateTime)
             .Concat(tm.Fractals.SelectMany(r => r).Select(r => r.StartDate));
-          //charter.DrawNewsLines(times.ToArray());
+          charter.DrawNewsTimes(times.ToArray());
           var tradeTime = tm.DoShowTradeOnChart ? tm.Trades.Select(t => t.Time).DefaultIfEmpty(tm.LastTrade.TimeClose).Where(d => !d.IsMin()) : new DateTime[0];
           charter.DrawTradeTimes(tradeTime);
 

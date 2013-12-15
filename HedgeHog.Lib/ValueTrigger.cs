@@ -19,10 +19,10 @@ namespace HedgeHog {
     public ValueTrigger<T> Set(bool on, T value) {
       return Set(on, null, value);
     }
-    public ValueTrigger<T> Set(bool on, Action onAction = null, T value = default(T)) {
+    public ValueTrigger<T> Set(bool on, Action<ValueTrigger<T>> onAction = null, T value = default(T)) {
       if (on && !_on) {
         _on = true;
-        if (onAction != null) onAction();
+        if (onAction != null) onAction(this);
         if (_actionOn != null) _actionOn();
         Value = value;
         if (RunAction != null) RunAction();

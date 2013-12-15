@@ -850,21 +850,26 @@ namespace HedgeHog {
     }
 
     #region Reactive Lines
-    void InitVLines<TLine>(ReactiveCollection<DateTime> times, ReactiveCollection<TLine> lines, Color color,Func<DateTime,string> tooltip) where TLine : SimpleLine, new() {
-      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeAdded(dt, lines, color, tooltip));
+    void InitVLines<TLine>(ReactiveCollection<DateTime> times, ReactiveCollection<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN) where TLine : SimpleLine, new() {
+      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip));
       times.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeRemoved(dt, lines));
       lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
       lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
-    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveCollection<TLine> otherVLines,Color color, Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
+    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveCollection<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
       try {
         var vl = new TLine() {
-          Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = { 2, 4, 4, 4 },
+          Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = new DoubleCollection(strokeArray),
           Stroke = new SolidColorBrush(color),
           StrokeThickness = 2,
           ToolTip = tooltip(date),
-          Opacity = .75
+          Opacity = strokeThickness > 1 ? .75 : 1
         };
+        vl.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseOver") {
+          Source = vl,
+          Converter = BoolToSrtingConverter.Default,
+          ConverterParameter = "{0}|{0}|4".Formater(strokeThickness)
+        });
         SetTime(vl, date);
         otherVLines.Add(vl);
       } catch (Exception exc) {
@@ -879,26 +884,39 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveCollection<DateTime> otherTimes) {
-      times = times.Distinct().ToArray();
-      otherTimes.RemoveAll(ot => true);//!times.Contains(ot));
-      otherTimes.AddRange(times.Except(otherTimes));
+    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveCollection<DateTime> otherTimes, ReactiveCollection<VerticalLine> timesVLines) {
+      times = times.Distinct().Where(IsDateInChartRange).ToArray();
+      otherTimes.RemoveAll(ot => !times.Contains(ot));
+      otherTimes.AddRange(times.Except(otherTimes).Take(4));
+      otherTimes.ToList().ForEach(time => {
+        var line = timesVLines.SingleOrDefault(l => GetTime(l) == time);
+        if (line != null) {
+          var value = ConvertStartDateToContiniousDouble(time);
+          if (line.Value != value) line.Value = value;
+        }
+      });
+    }
+    private bool IsDateInChartRange(DateTime date) {
+      if (animatedTime0X == null || !animatedTime0X.Any()) return false;
+      var dateStart = animatedTime0X[0];
+      var dateEnd = animatedTime0X.Last();
+      return date.Between(dateStart, dateEnd);
     }
     #endregion
 
-    #region News Times
-    ReactiveCollection<DateTime> _newsTimes;
-    public ReactiveCollection<DateTime> newsTimes {
+    #region NewsTimes
+    ReactiveCollection<DateTime> _NewsTimes;
+    public ReactiveCollection<DateTime> NewsTimes {
       get {
-        if (_newsTimes == null) {
-          _newsTimes = new ReactiveCollection<DateTime>();
-          InitVLines(newsTimes, newsVLines, Colors.MediumVioletRed, d => "News @ {0:g}".Formater(d));
+        if (_NewsTimes == null) {
+          _NewsTimes = new ReactiveCollection<DateTime>();
+          InitVLines(NewsTimes, NewsTimesVLines, Colors.MediumPurple, d => "NewsTimes @ {0:g}".Formater(d), new[] { 2.0, 6, 2, 6 }, 2);
         }
-        return _newsTimes;
+        return _NewsTimes;
       }
     }
-    ReactiveCollection<VerticalLine> newsVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawNewsLines(IEnumerable<DateTime> times) { DrawVertivalLines(times, newsTimes); }
+    ReactiveCollection<VerticalLine> NewsTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawNewsTimes(IList<DateTime> times) { DrawVertivalLines(times, NewsTimes, NewsTimesVLines); }
     #endregion
 
     #region Trade Times
@@ -913,7 +931,7 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> TradeTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes); }
+    public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes, TradeTimesVLines); }
     #endregion
   
     #region NYTimes
@@ -928,22 +946,22 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> NYTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawNYTimes(IList<DateTime> times) { DrawVertivalLines(times, NYTimes); }
+    public void DrawNYTimes(IList<DateTime> times) { DrawVertivalLines(times, NYTimes, NYTimesVLines); }
     #endregion
 
     #region LindonTimes
-    ReactiveCollection<DateTime> _LindonTimes;
-    public ReactiveCollection<DateTime> LindonTimes {
+    ReactiveCollection<DateTime> _LondonTimes;
+    public ReactiveCollection<DateTime> LondonTimes {
       get {
-        if (_LindonTimes == null) {
-          _LindonTimes = new ReactiveCollection<DateTime>();
-          InitVLines(LindonTimes, LindonTimesVLines, Colors.MediumVioletRed, d => "Londot Forex @ {0:g}".Formater(d));
+        if (_LondonTimes == null) {
+          _LondonTimes = new ReactiveCollection<DateTime>();
+          InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d));
         }
-        return _LindonTimes;
+        return _LondonTimes;
       }
     }
-    ReactiveCollection<VerticalLine> LindonTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawLindonTimes(IList<DateTime> times) { DrawVertivalLines(times, LindonTimes); }
+    ReactiveCollection<VerticalLine> LondonTimesVLines = new ReactiveCollection<VerticalLine>();
+    public void DrawLindonTimes(IList<DateTime> times) { DrawVertivalLines(times, LondonTimes, LondonTimesVLines); }
     #endregion
     #region TokyoTimes
     ReactiveCollection<DateTime> _TokyoTimes;
@@ -957,7 +975,7 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> TokyoTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawTokyoTimes(IList<DateTime> times) { DrawVertivalLines(times, TokyoTimes); }
+    public void DrawTokyoTimes(IList<DateTime> times) { DrawVertivalLines(times, TokyoTimes, TokyoTimesVLines); }
     #endregion  
     #endregion
 
@@ -1230,6 +1248,7 @@ namespace HedgeHog {
     }
     RectangleHighlight _shortWaveVerticalRange = null;
     HorizontalRange _tradingHorisontalRange = null;
+    VerticalRange _londonSessionHorisontalRange = null;
     // Minor ticks
     DifferenceIn? GetDifference(TimeSpan span) {
       span = span.Duration();
@@ -1397,10 +1416,13 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #endregion
 
       #region Add Lines
-      
+
       _tradingHorisontalRange = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 0 };
+      _londonSessionHorisontalRange = new VerticalRange() { Fill = new SolidColorBrush(Colors.MediumVioletRed), StrokeThickness = 0, Opacity = .04 };
 
       plotter.Children.Add(_tradingHorisontalRange);
+      plotter.Children.Add(_londonSessionHorisontalRange);
+
       _shortWaveVerticalRange = new RectangleHighlight() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 1, Opacity = _tradingHorisontalRange.Opacity };
       plotter.Children.Add(_shortWaveVerticalRange);
 
@@ -1652,6 +1674,9 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       var x = animatedTime0X.OrderBy(d => (d - startDate).Duration()).First();
       return animatedTimeX[animatedTime0X.IndexOf(x)];
     }
+    double ConvertStartDateToContiniousDouble(DateTime date){
+      return dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)) ;
+    }
     Schedulers.ThreadScheduler corridorStartDateScheduler;
     void CorridorStopPointX_IsMouseCapturedChanged(object sender, DependencyPropertyChangedEventArgs e) {
       if ((bool)e.NewValue) CorridorStopPositionOld = GetPriceStartDate(dateAxis.ConvertFromDouble(CorridorStopPointX.Position.X));
@@ -1808,28 +1833,28 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #region Update Main Chart
       {
         {
-          var worDays = new[] { DayOfWeek.Sunday, DayOfWeek.Saturday };
+          var weekEnd = new[] { DayOfWeek.Sunday, DayOfWeek.Saturday };
           Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes2 = (firstDate, lastDate, tz, drawTimes) => {
             var daysCount = (lastDate - firstDate).TotalDays.Ceiling() + 2;
             var dateStart = TimeZoneInfo.ConvertTime(firstDate, tz);
             dateStart = dateStart.Subtract(dateStart.TimeOfDay);
             var times = Enumerable.Range(0, daysCount)
               .Select(d => new[] { dateStart.AddDays(d).AddHours(8).ToLocalTime().DateTime, dateStart.AddDays(d).AddHours(16).ToLocalTime().DateTime })
-              .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate)).ToArray();
+              .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate) && !weekEnd.Contains(d.DayOfWeek)).ToArray();
             drawTimes(times);
-          };
-          Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes = (firstDate, lastDate, tz, drawTimes) => {
-            firstDate = TimeZoneInfo.ConvertTime(firstDate.Round(60), tz);
-            lastDate = TimeZoneInfo.ConvertTime(lastDate.Round(60), tz);
-            var times = Range.DateTime(firstDate, lastDate, 60).Where(d => !worDays.Contains(d.DayOfWeek) && (d.Hour == 8 || d.Hour == 16)).ToArray();
-            drawTimes(times.Select(d => d.ToLocalTime().DateTime).ToArray());
-
           };
           var tickFirstDate = ticks[0].StartDate;
           var tickLastDate = ticks.Last().StartDate;
           marketTimes2(tickFirstDate, tickLastDate, TimeZoneInfo.Local, DrawNYTimes);
           marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.TokyoZone, DrawTokyoTimes);
-          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.LondonZone, DrawLindonTimes);
+          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.LondonZone, times => {
+            DrawLindonTimes(times);
+            var lastSession = LondonTimesVLines.OrderByDescending(t => t.Value).SkipWhile(t => GetTime(t).InLondon().Hour != 16).Take(2).ToArray();
+            if (lastSession.Length > 1) {
+              _londonSessionHorisontalRange.Value1 = lastSession[1].Value;
+              _londonSessionHorisontalRange.Value2 = lastSession[0].Value;
+            }
+          });
         }
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) try {
