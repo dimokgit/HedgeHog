@@ -39,8 +39,9 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Entity" />
-    <Reference Include="TA-Lib-Core">
-      <HintPath>..\..\..\..\..\Projects\HedgeHog\ta-lib-0.4.0-msvc\TA-Lib-Core.dll</HintPath>
+    <Reference Include="TA-Lib-Core, Version=1.0.2813.38892, Culture=neutral, PublicKeyToken=fdb2a6b268f56aa5, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
