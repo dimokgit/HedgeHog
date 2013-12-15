@@ -165,10 +165,6 @@
       <Project>{4C4043A9-F08D-40FD-9114-AE6133263DB3}</Project>
       <Name>ChainedObserver</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Lambda Dependencies\Dependency Monitor\Lambda Dependencies.csproj">
-      <Project>{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}</Project>
-      <Name>Lambda Dependencies</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
       <Project>{8883734D-B6B0-4210-9746-108A126EB84A}</Project>
       <Name>NotifyCollectionChangedWrapper</Name>
