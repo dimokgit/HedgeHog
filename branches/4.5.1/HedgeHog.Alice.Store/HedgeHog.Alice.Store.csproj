@@ -183,10 +183,6 @@
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Lambda Dependencies\Dependency Monitor\Lambda Dependencies.csproj">
-      <Project>{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}</Project>
-      <Name>Lambda Dependencies</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">
       <Project>{7A8203A2-9BFC-4711-9836-9DFF55D9D1D0}</Project>
       <Name>VTClasses</Name>
@@ -214,6 +210,10 @@
     <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Lambda Dependencies\Dependency Monitor\Lambda Dependencies.csproj">
+      <Project>{c7d8d111-b848-4d00-92db-7ca49f1d8ec2}</Project>
+      <Name>Lambda Dependencies</Name>
     </ProjectReference>
     <ProjectReference Include="..\NotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\TestNotifyCollectionChangedWrapper\NotifyCollectionChangedWrapper.csproj">
       <Project>{2f657876-b4f3-4f84-93a7-598382008310}</Project>
