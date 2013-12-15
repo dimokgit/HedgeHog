@@ -159,10 +159,6 @@
       <Project>{BB1DA090-B58A-456B-8B72-54375260486B}</Project>
       <Name>Persistance</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Telerik\Telerik.csproj">
-      <Project>{b005825c-7051-4e72-a39a-a0bd3de7994f}</Project>
-      <Name>Telerik</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
