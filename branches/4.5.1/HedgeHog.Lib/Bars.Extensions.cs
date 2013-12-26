@@ -606,12 +606,13 @@ namespace HedgeHog.Bars {
       return bars;
     }
     public static void FillDistance<TBar>(this IEnumerable<TBar> bars, Action<TBar, TBar, double> setDistance = null) where TBar : BarBase {
-      bars.First().Distance = 0;
+      if (setDistance == null)
+        setDistance = (n, p, diff) => n.Distance = p.Distance + diff;
+      var count = 0;
       bars.Aggregate((p, n) => {
+        if (count++ == 0) p.Distance = 0;
         var diff = (p.PriceAvg - n.PriceAvg).Abs();
-        if (setDistance == null)
-          n.Distance = p.Distance + diff;
-        else setDistance(n, p, diff);
+        setDistance(n, p, diff);
         return n;
       });
     }

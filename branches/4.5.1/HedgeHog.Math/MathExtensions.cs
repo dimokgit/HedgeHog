@@ -580,27 +580,51 @@ namespace HedgeHog {
       public T Element { get; set; }
       public double Slope { get; set; }
       public int Index { get; set; }
+      internal Extream() { }
       public Extream(T element,double slope,int index) {
         Element = element;
         Slope = slope;
         Index = index;
       }
+      public void Clone(Extream<T> extream) {
+        this.Index = extream.Index;
+        this.Slope = extream.Slope;
+        this.Element = extream.Element;
+      }
     }
-    public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range) {
+    public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range, Func<Extream<T>, bool> mustContinue) {
+      var extreams = Enumerable.Repeat(new Extream<T>(), 0).ToList();
+      var pp = Partitioner.Create(input.Integral(range).Select((rates, i) => new { rates, i }).ToArray(), true);
+      var datas = pp
+        .AsParallel().AsOrdered()
+        .Select(d => new Extream<T>(d.rates[0], d.rates.Regress(1, value).LineSlope(), d.i))
+        .TakeWhile(mustContinue)
+        .OrderBy(d => d.Index).ToArray();
+      datas
+        .SkipWhile(d => d.Slope.IsNaN())
+        .TakeWhile(d => !d.Slope.IsNaN())
+        .Aggregate((p, n) => {
+          if (n.Slope.Sign() != p.Slope.Sign()) extreams.Add(p);
+          return n;
+        });
+      return extreams.OrderBy(d => d.Index).ToArray();
+    }
+    public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range, Action<string> error = null) {
+      var extreams = Enumerable.Repeat(new { i = 0, slope = 0.0, rate = default(T) }, 0).ToList();
       var datas = input.Integral(range)
         .Select((rates, i) => new { rates, i })
         .AsParallel()
         .Select(d => new { d.i, slope = d.rates.Regress(1, value).LineSlope(), rate = d.rates[0] })
         .OrderBy(d => d.i).ToArray();
-      var extreams = Enumerable.Repeat(new { i = 0, slope = 0.0, rate = default(T) }, 0).ToList();
       datas
         .SkipWhile(d => d.slope.IsNaN())
         .TakeWhile(d => !d.slope.IsNaN())
+        .DefaultIfEmpty()
         .Aggregate((p, n) => {
           if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
           return n;
         });
-      return extreams.OrderBy(d => d.i).Select(d => new Extream<T>(d.rate, d.slope, d.i)).ToArray();
+      return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => new Extream<T>(d.rate, d.slope, d.i)).ToArray();
     }
 
     /// <summary>

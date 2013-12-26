@@ -885,7 +885,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMacrosCopy.Length > 0) {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)tradesManager;
-            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm=>tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().RatesInternal);
+            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri));
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           PriceChangeSubscriptionDispose();
