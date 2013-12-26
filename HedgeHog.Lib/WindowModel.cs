@@ -240,6 +240,11 @@ namespace HedgeHog.Models {
       if (HasChanged) onChanged(this.Value);
       return this;
     }
+    public ObservableValue<TValue> SetValue(TValue value,TValue valueTo, Action onChanged) {
+      this.Value = value;
+      if (ChangedTo(valueTo)) onChanged();
+      return this;
+    }
     public bool ChangedTo(TValue value) {
       return HasChanged && Value.Equals(value);
     }

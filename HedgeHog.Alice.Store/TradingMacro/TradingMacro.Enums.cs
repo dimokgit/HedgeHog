@@ -15,7 +15,8 @@ namespace HedgeHog.Alice {
     StDevSumRatio = 60,
     CorridorRsd = 70,
     CorridorRsdI = 71,
-    CorridorStDevIR = 72
+    CorridorStDevIR = 72,
+    DistanceAvg = 80
   }
 }
 namespace HedgeHog.Alice.Store {
@@ -59,6 +60,9 @@ namespace HedgeHog.Alice.Store {
     PriceAvg23 = -10,
     DistAvgMin = -11,
     DistAvgMax = -12,
+    DistAvgMinMax = -13,
+    DistAvg = -14,
+    DistAvgLT = -15,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,

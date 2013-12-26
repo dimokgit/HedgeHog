@@ -65,21 +65,6 @@ namespace UnitLib
 
 
     /// <summary>
-    ///A test for SubscribeToTradeClosedEVent
-    ///</summary>
-    [TestMethod()]
-    public void SubscribeToTradeClosedEVentTest() {
-      TradingMacro tm = new TradingMacro() { Pair = "EUR/USD" }; // TODO: Initialize to an appropriate value
-      var m = new VirtualTradesManager("AAAAAA", t => 0);
-      Func<ITradesManager> getTradesManager = () => m; // TODO: Initialize to an appropriate value
-      tm.SubscribeToTradeClosedEVent(getTradesManager);
-      tm.RatesInternal.AddRange(new[] { new Rate(), new Rate(), new Rate() });
-      var rates = tm.RatesArraySafe;
-      var td = tm.TradingDistance;
-      Assert.Inconclusive("A method that does not return a value cannot be verified.");
-    }
-
-    /// <summary>
     ///A test for Fractals
     ///</summary>
     //[TestMethod()]

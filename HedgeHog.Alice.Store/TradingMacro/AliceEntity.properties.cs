@@ -1697,8 +1697,8 @@ namespace HedgeHog.Alice.Store {
     public DateTime ServerTime {
       get {
         return IsInVitualTrading
-          ? RatesInternal.Count > 0 
-          ? RatesInternal.LastBC().StartDate.AddMinutes(BarPeriodInt) 
+          ? _Rates.Count > 0
+          ? _Rates.LastBC().StartDate.AddMinutes(BarPeriodInt)
           : DateTime.MinValue 
           : TradesManager == null || !TradesManager.IsLoggedIn ? DateTime.MinValue 
           : TradesManager.ServerTime;
