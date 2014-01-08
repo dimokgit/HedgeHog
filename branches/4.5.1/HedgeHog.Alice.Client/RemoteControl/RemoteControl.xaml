@@ -135,7 +135,7 @@
         <TextBlock Text="{Binding CurrentLot,StringFormat=/{0:n0}],Converter={x:Static lib:PerMilleConverter.Default}}" ToolTip="Total Lot"/>
         <TextBlock Visibility="{Binding IsInVirtualTrading,Converter={StaticResource BooleanToVisibilityConverter}}">
           <TextBlock Text="{Binding Profitability,StringFormat=c0}" ToolTip="Profitability Per Month"/>
-          <TextBlock Text="{Binding MinimumGross,StringFormat=/{0:c0}}" ToolTip="Minimum Gross" />
+          <TextBlock Text="{Binding MinimumOriginalProfit,StringFormat=/{0:p1}}" ToolTip="Minimum Original Profit" />
           <TextBlock Text="{Binding HistoryMaximumLot,StringFormat=/{0:n0}}" ToolTip="History Maximum Lot" />
           <TextBlock Text="{Binding ProfitabilityRatio,StringFormat=/{0:n3}}" ToolTip="Profitability Ratio" />
         </TextBlock>

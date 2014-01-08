@@ -164,6 +164,9 @@ namespace HedgeHog {
         public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
             return new Queue<T>(t);
         }
+        public static IEnumerable<T> ToMaybe<T>(this T v) {
+          yield return v;
+        }
         public static List<T> AsList<T>(this T v, int take = 0) {
             return v.IEnumerable(take).ToList();
         }

@@ -714,6 +714,7 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips * tm.Trades.Lots()) / tms.Sum(tm => tm.Trades.Lots());
           _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
+          _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
         }
       } catch (Exception exc) {
         Log = exc;
@@ -985,7 +986,7 @@ namespace HedgeHog.Alice.Client {
     }
     void AddShowChart(TradingMacro tm) {
       if (tm.IsInVitualTrading)
-        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.DataBind);
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.ContextIdle);
       else
         ShowChartQueue.OnNext(() => ShowChart(tm));
     }

@@ -117,6 +117,7 @@
     <Compile Include="GroupAdjacent.cs" />
     <Compile Include="KeyEqualityComparer.cs" />
     <Compile Include="LambdaComparer.cs" />
+    <Compile Include="Maybe.cs" />
     <Compile Include="MEF.cs" />
     <Compile Include="NameValueParser.cs" />
     <Compile Include="ObservableCollectionEx.cs" />

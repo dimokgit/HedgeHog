@@ -272,5 +272,6 @@ namespace HedgeHog.Alice.Store {
     public IList<TradingMacro> TradingMacros { get; set; }
 
     public double CurrentLoss { get; set; }
+    public double OriginalProfit { get; set; }
   }
 }

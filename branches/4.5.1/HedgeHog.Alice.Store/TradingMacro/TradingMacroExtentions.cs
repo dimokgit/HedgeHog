@@ -1364,7 +1364,7 @@ namespace HedgeHog.Alice.Store {
         GlobalStorage.UseForexContext(c => {
           var session = c.t_Session.Single(s => s.Uid == SessionId);
           session.MaximumLot = HistoryMaximumLot;
-          session.MinimumGross = this.MinimumGross;
+          session.MinimumGross = MinimumOriginalProfit;
           session.Profitability = Profitability;
           session.DateMin = e.Trade.TimeClose;
           if (session.DateMin == null) session.DateMin = e.Trade.Time;
@@ -2103,7 +2103,7 @@ namespace HedgeHog.Alice.Store {
       return rates.Reverse().Take(BarsCount).Reverse();
     }
     List<Rate> _Rates = new List<Rate>();
-    List<Rate> RatesInternal_ {
+    List<Rate> RatesInternal {
       get {
         return _Rates;
       }
@@ -2194,7 +2194,10 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    void ResetMinimumGross() { MinimumGross = double.NaN; }
+    void ResetMinimumGross() { 
+      MinimumGross = double.NaN;
+      MinimumOriginalProfit = double.NaN;
+    }
     private double _MinimumGross = double.NaN;
     [Category(categorySession)]
     public double MinimumGross {
@@ -2206,7 +2209,20 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #region MinimumOriginalProfit
+    private double _MinimumOriginalProfit = double.NaN;
+    public double MinimumOriginalProfit {
+      get { return _MinimumOriginalProfit; }
+      set {
+        if (_MinimumOriginalProfit < value) return;
+        {
+          _MinimumOriginalProfit = value;
+          OnPropertyChanged("MinimumOriginalProfit");
+        }
+      }
+    }
 
+    #endregion
     private int _HistoryMinimumPL;
     public int HistoryMinimumPL {
       get { return _HistoryMinimumPL; }
@@ -2946,6 +2962,7 @@ namespace HedgeHog.Alice.Store {
         CalcTakeProfitDistance();
         if (!price.IsReal) price = TradesManager.GetPrice(Pair);
         MinimumGross = CurrentGross;
+        MinimumOriginalProfit = TradingStatistics.OriginalProfit;
         CurrentLossPercent = CurrentGross / account.Balance;
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
@@ -3135,10 +3152,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     public T UseRatesInternal<T>(Func<List<Rate>, T> func) {
-      if (!Monitor.TryEnter(_innerRateArrayLocker, 1000)) {
-        Log = new Exception(new { LoadRates = "[" + Pair + "]_innerRateArrayLocker was busy for more then 1 second." } + "");
-        throw new TimeoutException();
-      }
+      if (!Monitor.TryEnter(_innerRateArrayLocker, 1000))
+        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then 1 second. RatesInternal.Count:" + RatesInternal.Count);
       try {
         return func(_Rates);
       } finally {
