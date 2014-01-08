@@ -578,6 +578,7 @@ namespace HedgeHog {
     private static bool IsNaN(this double d) { return double.IsNaN(d); }
     public class Extream<T> {
       public T Element { get; set; }
+      public T Element0 { get; set; }
       public double Slope { get; set; }
       public int Index { get; set; }
       internal Extream() { }
@@ -610,6 +611,7 @@ namespace HedgeHog {
       return extreams.OrderBy(d => d.Index).ToArray();
     }
     public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range, Action<string> error = null) {
+      input = input.SafeArray();
       var extreams = Enumerable.Repeat(new { i = 0, slope = 0.0, rate = default(T) }, 0).ToList();
       var datas = input.Integral(range)
         .Select((rates, i) => new { rates, i })
@@ -624,7 +626,12 @@ namespace HedgeHog {
           if (n.slope.Sign() != p.slope.Sign()) extreams.Add(p);
           return n;
         });
-      return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => new Extream<T>(d.rate, d.slope, d.i)).ToArray();
+      Func<Extream<T>, Extream<T>> fill = ext => {
+        Func<Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>>> s = () => ext.Slope > 0 ? (Func<IEnumerable<T>, Func<T, double>, IOrderedEnumerable<T>>)Enumerable.OrderByDescending : Enumerable.OrderBy;
+        ext.Element0 = s()(input.SafeArray().CopyToArray(ext.Index, range), value).First();
+        return ext;
+      };
+      return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
     /// <summary>

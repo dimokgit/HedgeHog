@@ -969,15 +969,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Current Loss Close Adjustment")]
-    [Category(categoryXXX)]
-    [Description("CurrentLossInPips * 0.9")]
-    public double CurrentLossInPipsCloseAdjustment_ {
+    [Category(categoryActive)]
+    [Description("CanTradeLocal Ratio")]
+    public double CanTradeLocalRatio {
       get { return CurrentLossInPipsCloseAdjustment; }
       set {
         if (CurrentLossInPipsCloseAdjustment != value) {
           CurrentLossInPipsCloseAdjustment = value;
-          OnPropertyChanged(TradingMacroMetadata.CurrentLossInPipsCloseAdjustment_);
+          OnPropertyChanged("CanTradeLocalRatio");
         }
       }
     }
@@ -1111,7 +1110,14 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("TakeProfit Limit Ratio")]
     [Description("Ex:Exit <= TakeProfit * X")]
     public double TakeProfitLimitRatio {
-      get { return RangeRatioForTradeStop; }
+      get {
+        if (RangeRatioForTradeStop < 1) {
+          RangeRatioForTradeStop = 1;
+          Log = new Exception("TakeProfitLimitRatio is less then 1. It is being set to 1.".Formater(TakeProfitLimitRatio));
+          OnPropertyChanged(() => TakeProfitLimitRatio);
+        }
+        return RangeRatioForTradeStop;
+      }
       set {
         if (RangeRatioForTradeStop == value) return;
         RangeRatioForTradeStop = value;

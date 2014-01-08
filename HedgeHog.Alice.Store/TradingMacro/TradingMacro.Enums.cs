@@ -92,7 +92,8 @@ namespace HedgeHog.Alice.Store {
     Ghost = 170,
     Ghost2 = 171,
     StDevRsd = 180,
-    StDevRsd1 = 181
+    StDevRsd1 = 181,
+    TallCorridor = 190
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -148,7 +149,7 @@ namespace HedgeHog.Alice.Store {
     Void = -1,
     GrossTP = 4,
     Wavelette = 5,
-    GrossTP1 = 6,
+    JumpOut = 6,
     Limit = 7,
     Friday = 8,
     Harmonic = 9,
