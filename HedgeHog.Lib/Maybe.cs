@@ -5,7 +5,7 @@ using System.Text;
 using System.Collections;
 
 namespace HedgeHog {
-  class Maybe<T> : IEnumerable<T> {
+  public class Maybe<T> : IEnumerable<T> {
     private readonly IEnumerable<T> values;
     public Maybe() {
       this.values = new T[0];
@@ -20,7 +20,7 @@ namespace HedgeHog {
       return this.GetEnumerator();
     }
   }
-  static class Maybe {
+  public static class Maybe {
     public static Maybe<T> ToMaybe<T>(this T value) {
       return new Maybe<T>(value);
     }
