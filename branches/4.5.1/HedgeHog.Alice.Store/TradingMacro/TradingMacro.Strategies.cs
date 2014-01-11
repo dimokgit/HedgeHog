@@ -640,7 +640,7 @@ namespace HedgeHog.Alice.Store {
               if (isProfitOk()) CloseAtZero = true;
               var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || MustExitOnReverse;
               var tpCloseInPips = close0 ? 0 : TakeProfitPips - CurrentLossInPips.Min(0);
-              var tpColse = InPoints(tpCloseInPips.Min(TakeProfitPips * takeProfitLimitRatio())).Min(TradingDistance);
+              var tpColse = InPoints(tpCloseInPips.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
               var ratesShort = RatesArray.Reverse<Rate>().Skip(1).Take(5).ToArray();
               var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)) - PointSize / 10;
               var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)) + PointSize / 10;
@@ -698,6 +698,7 @@ namespace HedgeHog.Alice.Store {
         var doubleTrigger = new ValueTrigger<double>(false);
         var corridorMovedTrigger = new ValueTrigger<ValueTrigger<bool>>(false) { Value = new ValueTrigger<bool>(false) };
         var dateTrigger = new ValueTrigger<DateTime>(false);
+        object any = null;
         #endregion
 
         #region Funcs
@@ -1003,6 +1004,71 @@ namespace HedgeHog.Alice.Store {
                     var range = extreamsSaved == null ? RatesInternal.Count
                       : (RatesArray.Count - RatesArray.IndexOf(extreamsSaved[0].Element) + tail).Min(CorridorDistance + tail);
                     var ratesReversed = UseRatesInternal(ri => 
+                      ri.SafeArray().CopyToArray(ri.Count - range, range).Reverse().ToArray());
+                    var extreamsAll = ratesReversed.Extreams(GetVoltage, CorridorDistance);
+                    var extreams = extreamsAll.Where(e => e.Slope < 0).Take(2).ToArray();
+                    if (range > RatesArray.Count && extreams.Length < 2)
+                      throw new Exception("Range {0} is to short for two valleys.".Formater(BarsCount));
+                    Func<MathExtensions.Extream<Rate>, double> getLevel = e => ratesReversed.Skip(e.Index).Take(CorridorDistance).Average(_priceAvg);
+                    var levels = extreams.Select(e => getLevel(e)).OrderBy(d => d).ToArray();
+                    if (levels.Length == 1)
+                      levels = new[] { levels[0], levels[0] > CenterOfMassBuy ? CenterOfMassBuy : CenterOfMassSell }
+                        .OrderBy(d => d).ToArray();
+                    if (levels.Length == 2) {
+                      CenterOfMassBuy = levels[1];
+                      CenterOfMassSell = levels[0];
+                      extreamsSaved = extreamsAll;
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    }
+                  } catch (Exception exc) {
+                    Log = exc;
+                  }
+                });
+                var angleOk = calcAngleOk();
+                var buy = RateLast.PriceAvg2;
+                var sell = RateLast.PriceAvg3;
+                var inRange = buy.Avg(sell).Between(CenterOfMassSell, CenterOfMassBuy);
+                var canTrade = angleOk && inRange;
+                watcherCanTrade.SetValue(canTrade, true, () => {
+                  BuyLevel.RateEx = buy;
+                  SellLevel.RateEx = sell;
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                });
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+            #region DistAvgLT2
+            case TrailingWaveMethod.DistAvgLT2:
+              #region firstTime
+              if (firstTime) {
+                any = new Queue<double[]>();
+                watcherCanTrade.Value = false;
+                onCloseTradeLocal = t => {
+                  if (t.PL >= TakeProfitPips / 2) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+              }
+              #endregion
+              {
+                var ranges = (Queue<double[]>)any;
+                Func<double[], double[]> getLengthByAngle = ratesRev => {
+                  var start = 60;
+                  while (start < ratesRev.Length) {
+                    if (AngleFromTangent(ratesRev.CopyToArray(start++).Regress(1).LineSlope()).Abs().ToInt() == 0)
+                      break;
+                  }
+                  ratesRev = ratesRev.CopyToArray(start - 1);
+                  return new[] { ratesRev.Max(), ratesRev.Min() };
+                };
+                GeneralPurposeSubject.OnNext(() => {
+                  try {
+                    var tail = CorridorDistance.Div(10).ToInt();
+                    var range = extreamsSaved == null ? RatesInternal.Count
+                      : (RatesArray.Count - RatesArray.IndexOf(extreamsSaved[0].Element) + tail).Min(CorridorDistance + tail);
+                    var ratesReversed = UseRatesInternal(ri =>
                       ri.SafeArray().CopyToArray(ri.Count - range, range).Reverse().ToArray());
                     var extreamsAll = ratesReversed.Extreams(GetVoltage, CorridorDistance);
                     var extreams = extreamsAll.Where(e => e.Slope < 0).Take(2).ToArray();
