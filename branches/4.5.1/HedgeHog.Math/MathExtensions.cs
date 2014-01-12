@@ -587,10 +587,8 @@ namespace HedgeHog {
         Slope = slope;
         Index = index;
       }
-      public void Clone(Extream<T> extream) {
-        this.Index = extream.Index;
-        this.Slope = extream.Slope;
-        this.Element = extream.Element;
+      public override string ToString() {
+        return new { Index = Index, Slope = Slope, Element0 = Element0 } + "";
       }
     }
     public static IList<Extream<T>> Extreams<T>(this IEnumerable<T> input, Func<T, double> value, int range, Func<Extream<T>, bool> mustContinue) {

@@ -699,6 +699,7 @@ namespace HedgeHog.Alice.Store {
         var corridorMovedTrigger = new ValueTrigger<ValueTrigger<bool>>(false) { Value = new ValueTrigger<bool>(false) };
         var dateTrigger = new ValueTrigger<DateTime>(false);
         object any = null;
+        object[] bag = null;
         #endregion
 
         #region Funcs
@@ -1074,29 +1075,119 @@ namespace HedgeHog.Alice.Store {
                     var extreams = extreamsAll.Where(e => e.Slope < 0).Take(2).ToArray();
                     if (range > RatesArray.Count && extreams.Length < 2)
                       throw new Exception("Range {0} is to short for two valleys.".Formater(BarsCount));
-                    Func<MathExtensions.Extream<Rate>, double> getLevel = e => ratesReversed.Skip(e.Index).Take(CorridorDistance).Average(_priceAvg);
-                    var levels = extreams.Select(e => getLevel(e)).OrderBy(d => d).ToArray();
-                    if (levels.Length == 1)
-                      levels = new[] { levels[0], levels[0] > CenterOfMassBuy ? CenterOfMassBuy : CenterOfMassSell }
-                        .OrderBy(d => d).ToArray();
-                    if (levels.Length == 2) {
-                      CenterOfMassBuy = levels[1];
-                      CenterOfMassSell = levels[0];
+                    Func<IList<double>, double[]> minMax = rates => new[] { rates.Min(), rates.Max() };
+                    Func<MathExtensions.Extream<Rate>, double[]> getMinMax = e =>
+                      minMax(ratesReversed.SkipWhile(r => r > e.Element0).Take(CorridorDistance / 2).ToArray(_priceAvg));
+                    var levels = extreams.Select(e => getMinMax(e)).ToList();
+                    while (ranges.Count + levels.Count > 2) ranges.Dequeue();
+                    levels.ToArray(l => { 
+                      ranges.Enqueue(l);
+                      return ranges.First(); 
+                    }).Take(1).ForEach(lh => {
+                      CenterOfMassBuy = lh[1];
+                      CenterOfMassSell = lh[0];
                       extreamsSaved = extreamsAll;
                       _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    }
+                    });
                   } catch (Exception exc) {
                     Log = exc;
                   }
                 });
                 var angleOk = calcAngleOk();
-                var buy = RateLast.PriceAvg2;
-                var sell = RateLast.PriceAvg3;
-                var inRange = buy.Avg(sell).Between(CenterOfMassSell, CenterOfMassBuy);
+                var inRange = CalculateLastPrice(GetTradeEnterBy()).Between(CenterOfMassSell, CenterOfMassBuy);
                 var canTrade = angleOk && inRange;
                 watcherCanTrade.SetValue(canTrade, true, () => {
-                  BuyLevel.RateEx = buy;
-                  SellLevel.RateEx = sell;
+                  BuyLevel.RateEx = CenterOfMassBuy;
+                  SellLevel.RateEx = CenterOfMassSell;
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                });
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+            #region DistAvgLT3
+            case TrailingWaveMethod.DistAvgLT3:
+              #region firstTime
+              if (firstTime) {
+                bag = new object[] { new Queue<double[]>(), new Queue<MathExtensions.Extream<Rate>>(), false };
+                watcherCanTrade.Value = false;
+                onCloseTradeLocal = t => {
+                  if (t.PL >= TakeProfitPips / 2) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+              }
+              #endregion
+              {
+                var ranges = (Queue<double[]>)bag[0];
+                var extreamsQueue = (Queue<MathExtensions.Extream<Rate>>)bag[1];
+                var isBusy = (bool)bag[2];
+                Func<double[], double[]> getLengthByAngle = ratesRev => {
+                  var start = 60;
+                  while (start < ratesRev.Length) {
+                    if (AngleFromTangent(ratesRev.CopyToArray(start++).Regress(1).LineSlope()).Abs().ToInt() == 0)
+                      break;
+                  }
+                  ratesRev = ratesRev.CopyToArray(start - 1);
+                  return new[] { ratesRev.Max(), ratesRev.Min() };
+                };
+                GeneralPurposeSubject.OnNext(() => {
+                  Action debug = () => { if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch(); };
+                  try {
+                    if (isBusy) throw new Exception("I am busy.");
+                    isBusy = true;
+                    var tail = CorridorDistance.Div(10).ToInt();
+                    var range = !extreamsQueue.Any() ? RatesInternal.Count
+                      : (RatesArray.Count - RatesArray.IndexOf(extreamsQueue.Last().Element) + tail).Min(CorridorDistance + tail);
+                    var ratesReversed = UseRatesInternal(ri =>
+                      ri.SafeArray().CopyToArray(ri.Count - range, range).Reverse().ToArray());
+                    {
+                      var extreamsAll = ratesReversed.Extreams(GetVoltage, CorridorDistance).Reverse().ToArray();
+                      if (!extreamsQueue.Any())
+                        extreamsAll.ForEach(extreamsQueue.Enqueue);
+                      else extreamsAll
+                        .SkipWhile(e => extreamsQueue.Last().Slope.Sign() == e.Slope.Sign())
+                        .ForEach(extreamsQueue.Enqueue);
+                      var _1 = extreamsQueue.Zip(extreamsQueue.Skip(1), (ep, en) => new { ep, en }).Where(epn => epn.ep.Slope.Sign() == epn.en.Slope.Sign()).ToArray();
+                      _1.ForEach(epn => debug());
+                      while (extreamsQueue.Count > 10) extreamsQueue.Dequeue();
+                    }
+                    var extreams = extreamsQueue.Reverse().SkipWhile(e => e.Slope > 0).Take(4).Reverse().ToArray();
+                    if (range > RatesArray.Count && extreams.Length < 2)
+                      throw new Exception("Range {0} is to short for two valleys.".Formater(BarsCount));
+                    Func<IList<double>, double[]> minMax = rates => new[] { rates.Min(), rates.Max() };
+                    var levels = UseRatesInternal(ri =>
+                      extreams.Where(e => e.Slope > 0).Zip(extreams.Where(e => e.Slope < 0), (eu, ed) => new { eu, ed })
+                        .Select(eud =>
+                          minMax(ri
+                          .SkipWhile(r => r <= eud.eu.Element0)
+                          .TakeWhile(r => r < eud.ed.Element0)
+                          .ToArray(_priceAvg)))
+                        .ToList()
+                    );
+                    while (ranges.Count + levels.Count > 2) ranges.Dequeue();
+                    levels.ToArray(l => {
+                      ranges.Enqueue(l);
+                      return ranges.First();
+                    }).Take(1).ForEach(lh => {
+                      CenterOfMassBuy = lh[1];
+                      CenterOfMassSell = lh[0];
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    });
+                  } catch (Exception exc) {
+                    Log = exc;
+                    debug();
+                  } finally {
+                    isBusy = false;
+                  }
+                });
+                var angleOk = calcAngleOk();
+                var inRange = CalculateLastPrice(GetTradeEnterBy()).Between(CenterOfMassSell, CenterOfMassBuy);
+                var canTrade = angleOk && inRange;
+                watcherCanTrade.SetValue(canTrade, true, () => {
+                  BuyLevel.RateEx = CenterOfMassBuy;
+                  SellLevel.RateEx = CenterOfMassSell;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = true);
                 });
               }

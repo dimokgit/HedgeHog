@@ -64,6 +64,7 @@ namespace HedgeHog.Alice.Store {
     DistAvg = -14,
     DistAvgLT = -15,
     DistAvgLT2 = -16,
+    DistAvgLT3 = -17,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,
