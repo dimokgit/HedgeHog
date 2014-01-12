@@ -186,6 +186,9 @@ namespace HedgeHog {
             foreach (T e in es)
                 a(e);
         }
+        public static U[] ToArray<T,U>(this IEnumerable<T> es, Func<T,U> a) {
+          return es.Select(a).ToArray();
+        }
         public static T FirstOrDefault<T>(this IEnumerable<T> v, T defaultValue) {
             return v.Take(1).DefaultIfEmpty(defaultValue).Single();
         }
@@ -193,16 +196,6 @@ namespace HedgeHog {
             return v.Take(1).Select(projector).DefaultIfEmpty(defaultValue).Single();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="es"></param>
-        /// <param name="a">Return true in order to stop iterations</param>
-        public static void ForEach<T>(this IEnumerable<T> es, Func<T, bool> a) {
-            foreach (T e in es)
-                if (a(e)) break;
-        }
         public static string Formater(this string format, params object[] args) {
             return string.Format(format, args);
         }
