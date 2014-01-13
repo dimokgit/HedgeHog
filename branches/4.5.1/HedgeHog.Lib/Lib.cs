@@ -164,9 +164,6 @@ namespace HedgeHog {
         public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
             return new Queue<T>(t);
         }
-        public static IEnumerable<T> ToMaybe<T>(this T v) {
-          yield return v;
-        }
         public static List<T> AsList<T>(this T v, int take = 0) {
             return v.IEnumerable(take).ToList();
         }
@@ -195,7 +192,32 @@ namespace HedgeHog {
         public static TOut FirstOrDefault<TIn, TOut>(this IEnumerable<TIn> v, Func<TIn, TOut> projector, TOut defaultValue) {
             return v.Take(1).Select(projector).DefaultIfEmpty(defaultValue).Single();
         }
+        public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
+              Action thenSelector,
+              Action elseSelector) {
+          if (enumerable == null)
+            throw new ArgumentNullException("enumerable");
 
+          if (!enumerable.Any()) thenSelector(); else elseSelector();
+          return enumerable;
+        }
+        public static T IfEmpty<T>(this T enumerable,
+              Action<T> thenSelector,
+              Action<T> elseSelector) where T : IEnumerable {
+          if (enumerable == null)
+            throw new ArgumentNullException("enumerable");
+
+          if (!enumerable.GetEnumerator().MoveNext()) thenSelector(enumerable); else elseSelector(enumerable);
+          return enumerable;
+        }
+        public static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
+              Func<TResult> thenSelector,
+              Func<TResult> elseSelector) {
+          if (enumerable == null)
+            throw new ArgumentNullException("enumerable");
+
+          return (!enumerable.Any()) ? thenSelector() : elseSelector();
+        }
         public static string Formater(this string format, params object[] args) {
             return string.Format(format, args);
         }

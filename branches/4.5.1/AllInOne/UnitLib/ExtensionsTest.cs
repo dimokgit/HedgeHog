@@ -72,7 +72,11 @@ namespace UnitLib {
     //}
     //
     #endregion
-
+    [TestMethod]
+    public void TestAny() {
+      var any = Enumerable.Range(0, 10).Select(i => { TestContext.WriteLine("i:{0}", i); return i; });
+      Assert.IsTrue(any.Any());
+    }
     [TestMethod]
     public void TestCrossec() {
       var stDev = Enumerable.Range(1, 60).Select(i => (double)i).ToArray().StDevP();
