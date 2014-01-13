@@ -868,7 +868,8 @@ namespace HedgeHog {
         vl.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseOver") {
           Source = vl,
           Converter = BoolToSrtingConverter.Default,
-          ConverterParameter = "{0}|{0}|4".Formater(strokeThickness)
+          ConverterParameter = "{0}|{0}|4".Formater(strokeThickness),
+          Delay = 300
         });
         SetTime(vl, date);
         otherVLines.Add(vl);

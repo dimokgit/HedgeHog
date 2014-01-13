@@ -117,6 +117,9 @@ namespace HedgeHog {
     public static T[] SafeArray<T>(this IEnumerable<T> values) {
       return values as T[] ?? values.ToArray();
     }
+    public static List<T> SafeList<T>(this IEnumerable<T> values) {
+      return values as List<T> ?? values.ToList();
+    }
 
     /// <summary>
     /// Ratio between Max(a,b)/Min(a,b)

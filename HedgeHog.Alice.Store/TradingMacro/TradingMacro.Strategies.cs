@@ -30,6 +30,7 @@ using System.Collections.Concurrent;
 using HedgeHog.Models;
 using System.Web.UI;
 using DynamicExpresso;
+using System.Reactive.Linq;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -1143,41 +1144,46 @@ namespace HedgeHog.Alice.Store {
                     var ratesReversed = UseRatesInternal(ri =>
                       ri.SafeArray().CopyToArray(ri.Count - range, range).Reverse().ToArray());
                     {
+                      Func<IList<double>, double[]> minMax = rates => new[] { rates.Min(), rates.Max() };
                       var extreamsAll = ratesReversed.Extreams(GetVoltage, CorridorDistance).Reverse().ToArray();
-                      if (!extreamsQueue.Any())
-                        extreamsAll.ForEach(extreamsQueue.Enqueue);
-                      else extreamsAll
-                        .SkipWhile(e => extreamsQueue.Last().Slope.Sign() == e.Slope.Sign())
-                        .ForEach(extreamsQueue.Enqueue);
-                      var _1 = extreamsQueue.Zip(extreamsQueue.Skip(1), (ep, en) => new { ep, en }).Where(epn => epn.ep.Slope.Sign() == epn.en.Slope.Sign()).ToArray();
-                      _1.ForEach(epn => debug());
-                      while (extreamsQueue.Count > 10) extreamsQueue.Dequeue();
+                      extreamsQueue.IfEmpty(
+                        (eq) => extreamsAll.ForEach(eq.Enqueue),
+                        (eq) => extreamsAll
+                          .SkipWhile(e => eq.Last().Slope.Sign() == e.Slope.Sign())
+                          .ForEach(eq.Enqueue)
+                      )
+                      .ToMaybe2(() => (MathExtensions.Extream<Rate>)null)
+                      .Do2((eq) => eq.Original.Skip(10).ToList().ForEach(eq1 => eq.Original.Dequeue()))
+                      .Reverse().SkipWhile(e => e.Slope > 0).Take(4).Reverse().ToArray()
+                      .AsMaybe().Do(extreams => {
+                        if (range > RatesArray.Count && extreams.SafeArray().Length < 2)
+                          throw new Exception("Range {0} is to short for two valleys.".Formater(BarsCount));
+                      }, exc => { })
+                      .Do(extreams =>
+                        UseRatesInternal(ri =>
+                          extreams.Where(e => e.Slope > 0).Zip(extreams.Where(e => e.Slope < 0), (eu, ed) => new { eu, ed })
+                            .Select(eud =>
+                              minMax(ri
+                              .SkipWhile(r => r <= eud.eu.Element0)
+                              .TakeWhile(r => r < eud.ed.Element0)
+                              .ToArray(_priceAvg)))
+                            .ToList()
+                        ).AsMaybe()
+                      ).Do(levels => { 
+                        while (ranges.Count + levels.SafeList().Count > 2) ranges.Dequeue();
+                        levels.ToArray(l => {
+                          ranges.Enqueue(l);
+                          return ranges.First();
+                        }).Take(1).ForEach(lh => {
+                          CenterOfMassBuy = lh[1];
+                          CenterOfMassSell = lh[0];
+                          _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                        });
+                      },null);
+                      //extreamsQueue.Zip(extreamsQueue.Skip(1), (ep, en) => new { ep, en }).Where(epn => epn.ep.Slope.Sign() == epn.en.Slope.Sign()).ForEach(epn => debug());
                     }
-                    var extreams = extreamsQueue.Reverse().SkipWhile(e => e.Slope > 0).Take(4).Reverse().ToArray();
-                    if (range > RatesArray.Count && extreams.Length < 2)
-                      throw new Exception("Range {0} is to short for two valleys.".Formater(BarsCount));
-                    Func<IList<double>, double[]> minMax = rates => new[] { rates.Min(), rates.Max() };
-                    var levels = UseRatesInternal(ri =>
-                      extreams.Where(e => e.Slope > 0).Zip(extreams.Where(e => e.Slope < 0), (eu, ed) => new { eu, ed })
-                        .Select(eud =>
-                          minMax(ri
-                          .SkipWhile(r => r <= eud.eu.Element0)
-                          .TakeWhile(r => r < eud.ed.Element0)
-                          .ToArray(_priceAvg)))
-                        .ToList()
-                    );
-                    while (ranges.Count + levels.Count > 2) ranges.Dequeue();
-                    levels.ToArray(l => {
-                      ranges.Enqueue(l);
-                      return ranges.First();
-                    }).Take(1).ForEach(lh => {
-                      CenterOfMassBuy = lh[1];
-                      CenterOfMassSell = lh[0];
-                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    });
                   } catch (Exception exc) {
                     Log = exc;
-                    debug();
                   } finally {
                     isBusy = false;
                   }
@@ -1189,6 +1195,120 @@ namespace HedgeHog.Alice.Store {
                   BuyLevel.RateEx = CenterOfMassBuy;
                   SellLevel.RateEx = CenterOfMassSell;
                   _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                });
+              }
+              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              break;
+            #endregion
+            #region DistAvgLT31
+            case TrailingWaveMethod.DistAvgLT31:
+              #region firstTime
+              if (firstTime) {
+                bag = new object[] { new Queue<double[]>(), new Queue<MathExtensions.Extream<Rate>>(), false, new List<double[]>() };
+                watcherCanTrade.Value = false;
+                onCloseTradeLocal = t => {
+                  if (t.PL >= TakeProfitPips / 2) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+              }
+              #endregion
+              {
+                var ranges = (Queue<double[]>)bag[0];
+                var extreamsQueue = (Queue<MathExtensions.Extream<Rate>>)bag[1];
+                var isBusy = (bool)bag[2];
+                var valleyLevels = (List<double[]>)bag[3];
+                Func<double[], double[]> getLengthByAngle = ratesRev => {
+                  var start = 60;
+                  while (start < ratesRev.Length) {
+                    if (AngleFromTangent(ratesRev.CopyToArray(start++).Regress(1).LineSlope()).Abs().ToInt() == 0)
+                      break;
+                  }
+                  ratesRev = ratesRev.CopyToArray(start - 1);
+                  return new[] { ratesRev.Max(), ratesRev.Min() };
+                };
+                var angleOk = calcAngleOk();
+                //var inRange = CalculateLastPrice(GetTradeEnterBy()).Return()
+                //  .All(a => a.Between(CenterOfMassSell, CenterOfMassBuy) || a.Between(SellLevel.Rate, BuyLevel.Rate));
+                Func<double[], bool> setRates = minMax => {
+                  var inRange = CalculateLastPrice(GetTradeEnterBy()).Between(minMax[0], minMax[1]);
+                  var canTrade = angleOk && inRange;
+                  watcherCanTrade.SetValue(canTrade, true, () => {
+                    BuyLevel.RateEx = minMax[1];
+                    SellLevel.RateEx = minMax[0];
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                  });
+                  return canTrade;
+                };
+                new[] { new[] { CenterOfMassSell, CenterOfMassBuy }, new[] { SellLevel.Rate, BuyLevel.Rate } }
+                  .Concat(valleyLevels).Any(setRates);
+                GeneralPurposeSubject.OnNext(() => {
+                  Action debug = () => { if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch(); };
+                  try {
+                    if (isBusy) throw new Exception("I am busy.");
+                    isBusy = true;
+                    var tail = CorridorDistance.Div(2).ToInt();
+                    var range = !extreamsQueue.Any() ? RatesInternal.Count
+                      : (RatesArray.Count - RatesArray.IndexOf(extreamsQueue.Last().Element) + tail).Min(CorridorDistance + tail);
+                    var ratesReversed = UseRatesInternal(ri =>
+                      ri.SafeArray().CopyToArray(ri.Count - range, range).Reverse().ToArray());
+                    Func<IList<double>, double[]> minMax = rates => new[] { rates.Min(), rates.Max() };
+                    var extreamsAll = ratesReversed.Extreams(GetVoltage, CorridorDistance).Reverse().ToArray();
+                    Func<double, double, bool> isSameSlope = (slope1, slope2) => slope1.Sign() == slope2.Sign();
+                    Func<double> getLastSlope = () => extreamsQueue.Select(eq => eq.Slope).LastOrDefault();
+                    var lastSlope = getLastSlope();
+                    extreamsAll
+                      .SkipWhile(e => isSameSlope(lastSlope, e.Slope))
+                      .Select(ex => {
+                        extreamsQueue.Enqueue(ex);
+                        return ex;
+                      }).ToArray().Take(1).ForEach(_1 => {
+                        var levelsCount = 3;
+                        extreamsQueue.Skip(10).ToList().ForEach(eq1 => extreamsQueue.Dequeue());
+                        extreamsQueue
+                          .Reverse().SkipWhile(e => e.Slope > 0).Take(levelsCount * 2).Reverse().ToArray()
+                          .Return()
+                          .Select(extreams => {
+                            if (range > RatesArray.Count && extreams.Length < levelsCount)
+                              throw new Exception("Range {0} is too short for {1} valleys.".Formater(BarsCount, levelsCount));
+                            return UseRatesInternal(ri =>
+                              extreams.Where(e => e.Slope > 0).Zip(extreams.Where(e => e.Slope < 0), (eu, ed) => new { eu, ed })
+                                .Select(eud =>
+                                  minMax(ri
+                                  .SkipWhile(r => r <= eud.eu.Element0)
+                                  .TakeWhile(r => r < eud.ed.Element0)
+                                  .ToArray(_priceAvg)))
+                                .ToArray()
+                            );
+                          })
+                          .Select(levels => {
+                            while (ranges.Count + levels.SafeList().Count > levelsCount) ranges.Dequeue();
+                            var skipToFirst = levelsCount - 2;
+                            levels.ToArray(l => {
+                              ranges.Enqueue(l);
+                              return l;
+                            })
+                            .Take(1)
+                            .Select(l => ranges.Skip(skipToFirst).First())
+                            .ForEach(lh => {
+                              CenterOfMassBuy = lh[1];
+                              CenterOfMassSell = lh[0];
+                              _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                            });
+                            return new { levels, skipToFirst };
+                          })
+                          .ForEach(levels => {
+                            valleyLevels.Clear();
+                            valleyLevels.AddRange(levels.levels.Take(levels.skipToFirst));
+                          });
+                      });
+                    extreamsQueue.Zip(extreamsQueue.Skip(1), (ep, en) => new { ep, en }).Where(epn => epn.ep.Slope.Sign() == epn.en.Slope.Sign()).ForEach(epn => debug());
+                  } catch (Exception exc) {
+                    Log = exc;
+                  } finally {
+                    isBusy = false;
+                  }
                 });
               }
               if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
