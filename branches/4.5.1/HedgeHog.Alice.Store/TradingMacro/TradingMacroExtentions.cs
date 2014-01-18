@@ -346,8 +346,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => WaveShortDistanceInPips);
         _broadcastCorridorDateChanged();
       };
-      if (GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher != null)
-        _processCorridorDatesChange = DataFlowProcessors.CreateYieldingActionOnDispatcher();
       SuppRes.AssociationChanged += new CollectionChangeEventHandler(SuppRes_AssociationChanged);
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<RequestPairForHistoryMessage>(this
         , a => {
@@ -1069,6 +1067,7 @@ namespace HedgeHog.Alice.Store {
       get { return CurrentLoss + OpenTradesGross; }
     }
 
+    public double CurrentGrossLot { get { return Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(); } }
     public double CurrentGrossInPips {
       get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(), Pair); }
     }
@@ -1973,26 +1972,24 @@ namespace HedgeHog.Alice.Store {
     double _ratesSpreadSum;
     public List<Rate> RatesArraySafe {
       get {
-        if (!Monitor.TryEnter(_innerRateArrayLocker, 5000)) {
-          Log = new Exception("[" + Pair + "]_innerRateArrayLocker was busy for more then 5 second. RatesInternal.Count:" + UseRatesInternal(ri => ri.Count));
-          return _rateArray;
-        }
         try {
-          if (!SnapshotArguments.IsTarget && _Rates.Count < Math.Max(1, BarsCount)) {
+          if (!SnapshotArguments.IsTarget && UseRatesInternal(ri=>ri.Count) < Math.Max(1, BarsCount)) {
             //Log = new RatesAreNotReadyException();
             return new List<Rate>();
           }
           
           Stopwatch sw = Stopwatch.StartNew();
-          var rateLast = _Rates.LastOrDefault();
+          var rateLast = UseRatesInternal(ri => ri.LastOrDefault());
           var rs = double.NaN;// rateLast.AskHigh - rateLast.BidLow;
           if (rateLast != null && (rateLast != RateLast || rs != _ratesSpreadSum || _rateArray == null || !_rateArray.Any())) {
             _ratesSpreadSum = rs;
             #region Quick Stuff
-            RateLast = _Rates.Last();
-            RatePrev = _Rates[_Rates.Count - 2];
-            RatePrev1 = _Rates[_Rates.Count - 3];
-            _rateArray = GetRatesSafe().ToList();
+            UseRatesInternal(ri => {
+              RateLast = ri.Last();
+              RatePrev = ri[ri.Count - 2];
+              RatePrev1 = ri[ri.Count - 3];
+              _rateArray = GetRatesSafe(ri).ToList();
+            });
             RatesHeight = _rateArray.Height(r => r.PriceAvg, out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
             Func<int, int> chunkSize = i => (i).Div(60.Div(BarPeriodInt)).ToInt();
             if (IsInVitualTrading)
@@ -2077,8 +2074,6 @@ namespace HedgeHog.Alice.Store {
         } catch (Exception exc) {
           Log = exc;
           return _rateArray;
-        } finally {
-          Monitor.Exit(_innerRateArrayLocker);
         }
       }
     }
@@ -2088,16 +2083,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     public bool HasRates { get { return _rateArray.Any(); } }
-    private IEnumerable<Rate> GetRatesSafe() {
+    private IEnumerable<Rate> GetRatesSafe() { return UseRatesInternal(ri => GetRatesSafe(ri)); }
+    private IEnumerable<Rate> GetRatesSafe(IList<Rate> ri) {
       Func<IEnumerable<Rate>> a = () => {
-        return UseRatesInternal(ri => {
-          var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
-          var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate) : 0;
-          return ri.Skip((ri.Count - (countByDate * 1.05).Max(BarsCountCalc.GetValueOrDefault(BarsCount)).ToInt()).Max(0));
-        });
+        var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
+        var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate) : 0;
+        return ri.Skip((ri.Count - (countByDate * 1.05).Max(BarsCountCalc.GetValueOrDefault(BarsCount)).ToInt()).Max(0));
         //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
-      return _limitBarToRateProvider == (int)BarPeriod ? a() : UseRatesInternal(ri => ri.GetMinuteTicks((int)BarPeriod, false, false));
+      return _limitBarToRateProvider == (int)BarPeriod ? a() : ri.GetMinuteTicks((int)BarPeriod, false, false);
     }
     IEnumerable<Rate> GetRatesForStDev(IEnumerable<Rate> rates) {
       return rates.Reverse().Take(BarsCount).Reverse();
@@ -2995,9 +2989,30 @@ namespace HedgeHog.Alice.Store {
       if (account == null) return;
       Trade[] trades = Trades;
       try {
-        LotSize = TradingRatioByPMC ? CalcLotSizeByPMC(account)
-          : TradingRatio <= 0 ? 0 : TradingRatio >= 1 ? (TradingRatio * BaseUnitSize).ToInt()
+        LotSize = TradingRatioByPMC 
+          ? CalcLotSizeByPMC(account)
+          : TradingRatio <= 0 
+          ? 0 
+          : TradingRatio >= 1 
+          ? (TradingRatio * BaseUnitSize).ToInt()
           : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
+        Func<int> calcSizeByTradingRatio = () =>
+            TradingRatio.Return()
+              .Where(tr => tr > 0)
+              .Select(tr => tr >= 1
+                ? (TradingRatio * BaseUnitSize).ToInt()
+                : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize))
+              .FirstOrDefault();
+        TradingRatioByPMC.Return()
+          .Where(pmc => pmc)
+          .Select(_ => new Func<int>(() => CalcLotSizeByPMC(account)))
+          .DefaultIfEmpty(calcSizeByTradingRatio)
+          .ToObservable()
+          .ForEach(a => {
+            var ls = a();
+            if (ls != LotSize)
+              throw new Exception(new { LotSize, ls , Message = "LotSize is different from ls" } + "");
+          });
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
       LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
       LotSizeByLossBuy = AllowedLotSizeCore();
@@ -3151,8 +3166,8 @@ namespace HedgeHog.Alice.Store {
         return (int)BarPeriod;// Enum.GetValues(typeof(BarsPeriodTypeFXCM)).Cast<int>().Where(i => i <= (int)BarPeriod).Max();
       }
     }
-    public T UseRatesInternal<T>(Func<List<Rate>, T> func) {
-      if (!Monitor.TryEnter(_innerRateArrayLocker, 1000))
+    public T UseRatesInternal<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 1000) {
+      if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
         throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then 1 second. RatesInternal.Count:" + RatesInternal.Count);
       try {
         return func(_Rates);
@@ -3255,14 +3270,6 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChangedCore(property);
       //OnPropertyChangedQueue.Add(this, property);
     }
-
-    ITargetBlock<Action> _processCorridorDatesChange;
-    ITargetBlock<Action> processCorridorDatesChange {
-      get {
-        return _processCorridorDatesChange;
-      }
-    }
-
 
     int _broadcastCounter;
     BroadcastBlock<Action<int>> _broadcastCorridorDatesChange;
