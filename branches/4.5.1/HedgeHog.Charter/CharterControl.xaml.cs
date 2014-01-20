@@ -865,12 +865,12 @@ namespace HedgeHog {
           ToolTip = tooltip(date),
           Opacity = strokeThickness > 1 ? .75 : 1
         };
-        vl.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseOver") {
-          Source = vl,
-          Converter = BoolToSrtingConverter.Default,
-          ConverterParameter = "{0}|{0}|4".Formater(strokeThickness),
-          Delay = 300
-        });
+        //vl.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseOver") {
+        //  Source = vl,
+        //  Converter = BoolToSrtingConverter.Default,
+        //  ConverterParameter = "{0}|{0}|4".Formater(strokeThickness),
+        //  Delay = 300
+        //});
         SetTime(vl, date);
         otherVLines.Add(vl);
       } catch (Exception exc) {
