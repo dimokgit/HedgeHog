@@ -18,7 +18,6 @@ using System.ComponentModel.DataAnnotations;
 using System.Windows.Media;
 using HedgeHog.Models;
 using System.Reflection;
-using HedgeHog;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -314,7 +313,7 @@ namespace HedgeHog.Alice.Store {
           .AsParallel()
           .Select(d => new { d.i, slope = d.rates.Regress(1).LineSlope() })
           .OrderBy(d => d.i).ToArray();
-        var extreams = new { i = 0, slope = 0.0 }.Return(0).ToList();
+        var extreams = new { i = 0, slope = 0.0 }.YieldBreak().ToList();
         datas
           .SkipWhile(d => d.slope.IsNaN())
           .TakeWhile(d => !d.slope.IsNaN())
@@ -372,7 +371,7 @@ namespace HedgeHog.Alice.Store {
         .AsParallel()
         .Select((rates, i) => new { i, slope = rates.Regress(1, GetVoltage).LineSlope() })
         .OrderBy(d => d.i).ToArray();
-      var extreams = new { i = 0, slope = 0.0 }.AsList();
+      var extreams = new { i = 0, slope = 0.0 }.YieldBreak().ToList();
       datas
         .SkipWhile(d => d.slope.IsNaN())
         .TakeWhile(d => !d.slope.IsNaN())
@@ -1006,7 +1005,7 @@ namespace HedgeHog.Alice.Store {
         ratesToRegress.Add(rate);
         if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
       }
-      var correlationsQueue = new { corr = 0.0, length = 0 }.IEnumerable().ToConcurrentQueue();
+      var correlationsQueue = new { corr = 0.0, length = 0 }.Yield().ToConcurrentQueue();
       var corr = double.NaN;
       var locker = new object();
       var start = ratesToRegress.Count.Max(polyOrder + 1);
@@ -1040,7 +1039,7 @@ namespace HedgeHog.Alice.Store {
         ratesToRegress.Add(rate);
         if (ratesToRegress.Take(ratesToRegress.Count / 2).ToArray().Height() > stDev) break;
       }
-      var correlations = new { corr = 0.0, length = 0 }.IEnumerable().ToList();
+      var correlations = new { corr = 0.0, length = 0 }.YieldBreak().ToList();
       var corr = double.NaN;
       var locker = new object();
       Enumerable.Range(ratesToRegress.Count, (ratesReversed.Length - ratesToRegress.Count).Max(0)).AsParallel().ForAll(rates => {

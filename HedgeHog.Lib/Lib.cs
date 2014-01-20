@@ -160,15 +160,17 @@ namespace HedgeHog {
             return (rc / 100.0).ToInt() + 1;
         }
 
+        public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
+        public static IEnumerable<T> YieldBreak<T>(this T v) { yield break; }
         public static IEnumerable<T> Return<T>(this T v, int count = 1) { return Enumerable.Repeat(v, count); }
         public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
             return new Queue<T>(t);
         }
-        public static List<T> AsList<T>(this T v, int take = 0) {
-            return v.IEnumerable(take).ToList();
+        public static List<T> YieldBreakAsList<T>(this T v) {
+          return Enumerable.Repeat(v, 0).ToList();
         }
-        public static IEnumerable<T> IEnumerable<T>(this T v, int take = 0) {
-            return new[] { v }.Take(take);
+        public static IEnumerable<T> IEnumerable<T>(this T v) {
+            return new[] { v };
         }
         public static T[] AsArray<T>(this T v, int size) {
             return new T[size];
@@ -178,10 +180,6 @@ namespace HedgeHog {
         }
         public static T Evaluate<T>(this string expression, params ParameterExpression[] parameters) {
             return (T)System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile().DynamicInvoke();
-        }
-        public static void ForEach<T>(this IEnumerable<T> es, Action<T> a) {
-            foreach (T e in es)
-                a(e);
         }
         public static U[] ToArray<T,U>(this IEnumerable<T> es, Func<T,U> a) {
           return es.Select(a).ToArray();
@@ -712,8 +710,14 @@ namespace HedgeHog {
             if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
             return Cma(MA, Periods, NewValue);
         }
+        public static Func<T> ToFunc<T>(this T value) {
+          return () => value;
+        }
         public static bool IsNaN(this double d) {
             return double.IsNaN(d);
+        }
+        public static bool IsNotNaN(this double d) {
+          return !double.IsNaN(d);
         }
         public static double IfNaN(this double d, double defaultValue) {
             return double.IsNaN(d) ? defaultValue : d;

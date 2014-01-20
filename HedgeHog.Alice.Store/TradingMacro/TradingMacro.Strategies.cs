@@ -599,15 +599,36 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustExitLevels
-        Action<double, double> adjustExitLevels = null;
-        adjustExitLevels = (buyLevel, sellLevel) => {
-          var tradesCount = Trades.Length;
+        Action<double, double> adjustExitLevels = (buyLevel, sellLevel) => {
+          #region Set (buy/sell)Level
+          {
+              var d = Trades.TakeLast(1).Select(t => t.Time).FirstOrDefault();
+              var rateSinceTrade = EnumerableEx.If(() => !d.IsMin() && DoAdjustExitLevelByTradeTime, RatesArray
+                .Reverse<Rate>()
+                .TakeWhile(r => r.StartDate >= d)
+                .Select(_priceAvg))
+                .Memoize(2);
+            
+            Func<SuppRes, double> getLevel = sr => 
+              EnumerableEx.If(() => !ExitByBuySellLevel, Trades.Select(trade => trade.Open)).DefaultIfEmpty(sr.Rate).Last();
+            Func<double, SuppRes, IEnumerable<double>> getLevels = (level, sr) =>
+             rateSinceTrade
+              .Concat(level.Yield()
+                .Expand(l => EnumerableEx.If(l.IsNaN().ToFunc(), getLevel(sr).Yield()))
+                .Where(Lib.IsNotNaN)
+                .Take(1)
+              );
+            buyLevel = getLevels(buyLevel, BuyLevel).Min();
+            sellLevel = getLevels(sellLevel, SellLevel).Max();
+          }
+          #endregion
           if (buyLevel.Min(sellLevel) < .5) {
             Log = new Exception(new { buyLevel, sellLevel } + "");
             return;
           }
           buyCloseLevel.SetPrice(exitPrice(false));
           sellCloseLevel.SetPrice(exitPrice(true));
+          #region setExitLevel
           Action<SuppRes> setExitLevel = sr => {
             if (sr.IsGhost && sr.Rate.Between(SellLevel.Rate, BuyLevel.Rate)) {
               var enterLevel = GetTradeEnterBy(sr.IsBuy)(RateLast);
@@ -627,16 +648,17 @@ namespace HedgeHog.Alice.Store {
               sr.ResetPricePosition();
             }
           };
+          #endregion
+          var tradesCount = Trades.Length;
           if (tradesCount == 0) {
             setExitLevel(buyCloseLevel);
             setExitLevel(sellCloseLevel);
           } else {
-            //buyCloseLevel.SetPrice(r(false));
-            //sellCloseLevel.SetPrice(r(true));
             if (!Trades.Any()) {
-              adjustExitLevels(buyLevel, sellLevel);
-              buyCloseLevel.ResetPricePosition();
-              sellCloseLevel.ResetPricePosition();
+              throw new Exception("Should have some trades here.");
+              //adjustExitLevels(buyLevel, sellLevel);
+              //buyCloseLevel.ResetPricePosition();
+              //sellCloseLevel.ResetPricePosition();
             } else {
               if (isProfitOk()) CloseAtZero = true;
               var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || MustExitOnReverse;
@@ -758,13 +780,6 @@ namespace HedgeHog.Alice.Store {
         };
         #endregion
         Func<bool> runOnce = null;
-
-        #region getLevels
-        Func<object> notImplemented = () => { throw new NotImplementedException(); };
-        var levelsSample = new { levelUp = 0.0, levelDown = 0.0 };
-        Func<double, double, object> newLevels = (levelUp, levelDown) => new { levelUp, levelDown };
-        Func<object> getLevels = notImplemented;
-        #endregion
 
         #region SetTrendlines
         Func<double, double, Func<Rate[]>> setTrendLinesByParams = (h, l) => {
@@ -1228,21 +1243,17 @@ namespace HedgeHog.Alice.Store {
                   ratesRev = ratesRev.CopyToArray(start - 1);
                   return new[] { ratesRev.Max(), ratesRev.Min() };
                 };
+
                 var angleOk = calcAngleOk();
-                //var inRange = CalculateLastPrice(GetTradeEnterBy()).Return()
-                //  .All(a => a.Between(CenterOfMassSell, CenterOfMassBuy) || a.Between(SellLevel.Rate, BuyLevel.Rate));
-                Func<double[], bool> setRates = minMax => {
-                  var inRange = CalculateLastPrice(GetTradeEnterBy()).Between(minMax[0], minMax[1]);
-                  var canTrade = angleOk && inRange;
-                  watcherCanTrade.SetValue(canTrade, true, () => {
-                    BuyLevel.RateEx = minMax[1];
-                    SellLevel.RateEx = minMax[0];
-                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
-                  });
-                  return canTrade;
-                };
-                new[] { new[] { CenterOfMassSell, CenterOfMassBuy }, new[] { SellLevel.Rate, BuyLevel.Rate } }
-                  .Concat(valleyLevels).Any(setRates);
+                Func<double[], bool> setRates = minMax => angleOk && CalculateLastPrice(GetTradeEnterBy()).Between(minMax[0], minMax[1]);
+                var canTrade = valleyLevels.Any(setRates);
+                watcherCanTrade.SetValue(canTrade, true, () => {
+                  var minMax = valleyLevels.Last();
+                  BuyLevel.RateEx = minMax[1];
+                  SellLevel.RateEx = minMax[0];
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                });
+
                 GeneralPurposeSubject.OnNext(() => {
                   Action debug = () => { if (Debugger.IsAttached) Debugger.Break(); else Debugger.Launch(); };
                   try {
@@ -1268,18 +1279,17 @@ namespace HedgeHog.Alice.Store {
                         extreamsQueue.Skip(10).ToList().ForEach(eq1 => extreamsQueue.Dequeue());
                         extreamsQueue
                           .Reverse().SkipWhile(e => e.Slope > 0).Take(levelsCount * 2).Reverse().ToArray()
-                          .Return()
+                          .Yield()
                           .Select(extreams => {
                             if (range > RatesArray.Count && extreams.Length < levelsCount)
                               throw new Exception("Range {0} is too short for {1} valleys.".Formater(BarsCount, levelsCount));
                             return UseRatesInternal(ri =>
                               extreams.Where(e => e.Slope > 0).Zip(extreams.Where(e => e.Slope < 0), (eu, ed) => new { eu, ed })
-                                .Select(eud =>
+                                .ToArray(eud =>
                                   minMax(ri
                                   .SkipWhile(r => r <= eud.eu.Element0)
                                   .TakeWhile(r => r < eud.ed.Element0)
                                   .ToArray(_priceAvg)))
-                                .ToArray()
                             );
                           })
                           .Select(levels => {
@@ -1298,9 +1308,9 @@ namespace HedgeHog.Alice.Store {
                             });
                             return new { levels, skipToFirst };
                           })
-                          .ForEach(levels => {
+                          .ForEach(_ => {
                             valleyLevels.Clear();
-                            valleyLevels.AddRange(levels.levels.Take(levels.skipToFirst));
+                            valleyLevels.AddRange(_.levels.Skip(_.skipToFirst));
                           });
                       });
                     extreamsQueue.Zip(extreamsQueue.Skip(1), (ep, en) => new { ep, en }).Where(epn => epn.ep.Slope.Sign() == epn.en.Slope.Sign()).ForEach(epn => debug());
@@ -1311,7 +1321,7 @@ namespace HedgeHog.Alice.Store {
                   }
                 });
               }
-              if (DoAdjustExitLevelByTradeTime) AdjustExitLevelsByTradeTime(adjustExitLevels); else adjustExitLevels1();
+              adjustExitLevels0();
               break;
             #endregion
             #region PriceAvg23
@@ -2775,7 +2785,12 @@ namespace HedgeHog.Alice.Store {
       Func<double, IEnumerable<double>> rateSinceTrade = def => {
         var d = Trades.Max(t => t.Time);
         //d = d - ServerTime.Subtract(d);
-        return RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= d).Select(_priceAvg).DefaultIfEmpty(def);
+        return RatesArray
+          .Take(DoAdjustExitLevelByTradeTime ? RatesArray.Count : 0)
+          .Reverse()
+          .TakeWhile(r => r.StartDate >= d)
+          .Select(_priceAvg)
+          .DefaultIfEmpty(def);
       };
       var buyLevel = Trades.HaveBuy() ? rateSinceTrade(_buyLevel.Rate).Min().Min(ExitByBuySellLevel ? _buyLevel.Rate : double.NaN) : _buyLevel.Rate;
       var sellLevel = Trades.HaveSell() ? rateSinceTrade(_sellLevel.Rate).Max().Max(ExitByBuySellLevel ? _sellLevel.Rate : double.NaN) : _sellLevel.Rate;

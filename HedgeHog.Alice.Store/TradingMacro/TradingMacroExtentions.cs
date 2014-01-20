@@ -2989,43 +2989,31 @@ namespace HedgeHog.Alice.Store {
       if (account == null) return;
       Trade[] trades = Trades;
       try {
-        LotSize = TradingRatioByPMC 
-          ? CalcLotSizeByPMC(account)
-          : TradingRatio <= 0 
-          ? 0 
-          : TradingRatio >= 1 
-          ? (TradingRatio * BaseUnitSize).ToInt()
-          : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize);
-        Func<int> calcSizeByTradingRatio = () =>
-            TradingRatio.Return()
-              .Where(tr => tr > 0)
-              .Select(tr => tr >= 1
-                ? (TradingRatio * BaseUnitSize).ToInt()
-                : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), TradingRatio, BaseUnitSize))
-              .FirstOrDefault();
-        TradingRatioByPMC.Return()
+        TradingRatioByPMC.Yield()
           .Where(pmc => pmc)
-          .Select(_ => new Func<int>(() => CalcLotSizeByPMC(account)))
-          .DefaultIfEmpty(calcSizeByTradingRatio)
-          .ToObservable()
-          .ForEach(a => {
-            var ls = a();
-            if (ls != LotSize)
-              throw new Exception(new { LotSize, ls , Message = "LotSize is different from ls" } + "");
+          .Select(_ => CalcLotSizeByPMC(account))
+          .Concat(TradingRatio.Yield()
+            .Where(tr => tr > 0)
+            .Select(tr => tr >= 1
+              ? (tr * BaseUnitSize).ToInt()
+              : TradesManagerStatic.GetLotstoTrade(account.Balance, TradesManager.Leverage(Pair), tr, BaseUnitSize)))
+          .Concat(0.Yield())
+          .Take(1)
+          .ForEach(ls => {
+            LotSize = ls;
+            LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
+            LotSizeByLossBuy = AllowedLotSizeCore();
+            LotSizeByLossSell = AllowedLotSizeCore();
           });
+        var stopAmount = 0.0;
+        var limitAmount = 0.0;
+        foreach (var trade in trades.ByPair(Pair)) {
+          stopAmount += trade.StopAmount;
+          limitAmount += trade.LimitAmount;
+        }
+        StopAmount = stopAmount;
+        LimitAmount = limitAmount;
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
-      LotSizePercent = LotSize / account.Balance / TradesManager.Leverage(Pair);
-      LotSizeByLossBuy = AllowedLotSizeCore();
-      LotSizeByLossSell = AllowedLotSizeCore();
-      //Math.Max(tm.LotSize, FXW.GetLotSize(Math.Ceiling(tm.CurrentLossPercent.Abs() / tm.LotSizePercent) * tm.LotSize, fw.MinimumQuantity));
-      var stopAmount = 0.0;
-      var limitAmount = 0.0;
-      foreach (var trade in trades.ByPair(Pair)) {
-        stopAmount += trade.StopAmount;
-        limitAmount += trade.LimitAmount;
-      }
-      StopAmount = stopAmount;
-      LimitAmount = limitAmount;
     }
 
     private int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
