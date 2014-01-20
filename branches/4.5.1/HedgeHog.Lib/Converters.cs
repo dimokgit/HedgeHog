@@ -47,6 +47,21 @@ namespace HedgeHog {
     }
   }
 
+  [ValueConversion(typeof(object), typeof(string))]
+  public class StringFormatConverter : IValueConverter {
+    private static readonly StringFormatConverter defaultInstance = new StringFormatConverter();
+    public static StringFormatConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      if (ReferenceEquals(value, DependencyProperty.UnsetValue))
+        return DependencyProperty.UnsetValue;
+      return string.Format(culture, (string)parameter, value);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotSupportedException();
+    }
+  }
+
   [ValueConversion(typeof(string), typeof(DateTime?))]
   public class DateTimeConverter : IValueConverter {
     private static readonly DateTimeConverter defaultInstance = new DateTimeConverter();

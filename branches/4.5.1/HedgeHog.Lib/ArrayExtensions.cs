@@ -32,7 +32,7 @@ namespace HedgeHog {
       var linesCount = (height / step).ToInt();
 
       var levels = ParallelEnumerable.Range(0, linesCount).Select(level => min + level * step).ToArray();
-      var levelsWithCrosses = levels.Aggregate(new { level = 0.0, indexes = new int[0], distAvg = 0.0 }.AsList(), (list, level) => {
+      var levelsWithCrosses = levels.Aggregate(new { level = 0.0, indexes = new int[0], distAvg = 0.0 }.YieldBreakAsList(), (list, level) => {
         var line = Enumerable.Repeat(level, values.Count()).ToArray();
         var indexes = values.Crosses3(line).Select(t => t.Item2).ToArray();
         if (indexes.Length > 1) {
@@ -44,13 +44,13 @@ namespace HedgeHog {
       }, list => list.ToArray());
       //levelsWithCrosses = levelsWithCrosses.OrderByDescending(l => l.distAvg).ToArray();
       //levelsWithCrosses = levelsWithCrosses.AverageByIterations(l => l.distAvg, (v, a) => v >= a, 3).ToArray();
-      return levelsWithCrosses.Aggregate(new { level = 0.0, sumAvg = 0.0, indexes = new int[0] }.AsList(), (list, levelWithCrosses) => {
+      return levelsWithCrosses.Aggregate(new { level = 0.0, sumAvg = 0.0, indexes = new int[0] }.YieldBreakAsList(), (list, levelWithCrosses) => {
         var level = levelWithCrosses.level;
         var crosses = levelWithCrosses.indexes;
         if (crosses.Count() >= crossesCount * 2) {
           var crossesZipped = crosses.Zip(crosses.Skip(1), (t1, t2) => new { index1 = t1, index2 = t2 }).ToArray();
           if (crossesZipped.Any()) {
-            var indexSums = crossesZipped.Aggregate(new { sum = 0.0, index = 0 }.AsList(), (l, t) => {
+            var indexSums = crossesZipped.Aggregate(new { sum = 0.0, index = 0 }.YieldBreakAsList(), (l, t) => {
               var frame = t.index2 - t.index1;
               var frameValues = new double[frame];
               Array.Copy(values, t.index1, frameValues, 0, frameValues.Length);
@@ -87,7 +87,7 @@ namespace HedgeHog {
       while (min < max)
         heights.Add(min += step);
       return heights.Where(h => !h.Between(-minimumHeight, minimumHeight))
-        .Aggregate(new { height = 0.0, distance = 0 }.AsList(), (list, height) => {
+        .Aggregate(new { height = 0.0, distance = 0 }.YieldBreakAsList(), (list, height) => {
           var line = middleLine.Select(ml => ml + height).ToArray();
           var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
           var distanses = indexes.Zip(indexes.Skip(1), (p, n) => n - p).ToArray();
@@ -108,7 +108,7 @@ namespace HedgeHog {
       while (min < max)
         heights.Add(min += step);
       var levelsWithCrosses = heights.Where(h => !h.Between(-heightMin, heightMin))
-        .Aggregate(new { line = new double[0], height = 0.0, indexes = new int[0], distAvg = 0.0 }.AsList(), (list, height) => {
+        .Aggregate(new { line = new double[0], height = 0.0, indexes = new int[0], distAvg = 0.0 }.YieldBreakAsList(), (list, height) => {
         var line = middleLine.Select(ml => ml + height).ToArray();
         var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
         if (indexes.Length >= 4) {
@@ -120,14 +120,14 @@ namespace HedgeHog {
       }, list => list.ToArray());
       //levelsWithCrosses = levelsWithCrosses.OrderByDescending(l => l.distAvg).ToArray();
       //levelsWithCrosses = levelsWithCrosses.AverageByIterations(l => l.distAvg, (v, a) => v >= a, 3).ToArray();
-      return levelsWithCrosses.Aggregate(new { height = 0.0, sumAvg = 0.0, indexes = new int[0] }.AsList(), (list, levelWithCrosses) => {
+      return levelsWithCrosses.Aggregate(new { height = 0.0, sumAvg = 0.0, indexes = new int[0] }.YieldBreakAsList(), (list, levelWithCrosses) => {
         var line = levelWithCrosses.line;
         var height = levelWithCrosses.height;
         var crosses = levelWithCrosses.indexes;
         if (crosses.Count() >= crossesCount * 2) {
           var crossesZipped = crosses.Zip(crosses.Skip(1), (t1, t2) => new { index1 = t1, index2 = t2 }).ToArray();
           if (crossesZipped.Any()) {
-            var indexSums = crossesZipped.Aggregate(new { sum = 0.0, index = 0 }.AsList(), (l, t) => {
+            var indexSums = crossesZipped.Aggregate(new { sum = 0.0, index = 0 }.YieldBreakAsList(), (l, t) => {
               var frame = t.index2 - t.index1;
               var frameValues = new double[frame];
               Array.Copy(values, t.index1, frameValues, 0, frameValues.Length);
@@ -164,7 +164,7 @@ namespace HedgeHog {
       var steps = max.Sub(min).Div(step).ToInt();
       var heights = Enumerable.Range(1, steps - 1).Select(s => min + s * step).ToArray();
       return Partitioner.Create(heights,true).AsParallel()
-        .Aggregate(new Tuple<double, int>(double.NaN, 0).AsList(), (list, height) => {
+        .Aggregate(new Tuple<double, int>(double.NaN, 0).YieldBreakAsList(), (list, height) => {
           var line = Enumerable.Repeat(height, values.Length).ToArray();
           var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
           if (indexes.Length > 1) {

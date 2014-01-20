@@ -711,7 +711,9 @@ namespace HedgeHog.Alice.Client {
           var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
-          _tradingStatistics.CurrentGrossInPips = tms.Sum(tm => tm.CurrentGrossInPips * tm.Trades.Lots()) / tms.Sum(tm => tm.Trades.Lots());
+          _tradingStatistics.CurrentGrossInPips = tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
+            .Yield()
+            .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
           _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
@@ -886,7 +888,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMacrosCopy.Length > 0) {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)tradesManager;
-            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri));
+            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri,2000));
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           PriceChangeSubscriptionDispose();
