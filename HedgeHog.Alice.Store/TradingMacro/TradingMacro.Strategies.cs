@@ -461,7 +461,7 @@ namespace HedgeHog.Alice.Store {
         if (_sellLevel != null) _sellLevel.Crossed -= null;
         bool exitCrossed = false;
         Action<Trade> onCloseTradeLocal = null;
-        Action<Trade> onOpenTradeLocal = null;
+        Action<Trade> onOpenTradeLocal = t => { };
 
         #region Levels
         if (SuppResLevelsCount != 2) SuppResLevelsCount = 2;
@@ -502,17 +502,17 @@ namespace HedgeHog.Alice.Store {
           return other;
         };
         #endregion
+        Func<bool, bool> onCanTradeLocal = canTrade => canTrade;
         Func<SuppRes, bool> canTradeLocal = sr => {
-          //if (sr.TradesCount < 0) return true;
-          var ratio = CanTradeLocalRatio;
-          var corr = BuyLevel.Rate.Abs(SellLevel.Rate);
-          var tradeDist = InPips((sr.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (SellLevel.Rate - CurrentPrice.Bid))).Round(1);
-          var tradeRange = (sr.IsBuy ? (CurrentPrice.Ask - SellLevel.Rate) : (BuyLevel.Rate - CurrentPrice.Bid)) / corr;
-          var tradeDistMax = InPips(PriceSpreadAverage * ratio).Round(1);
-          var canTrade = /*tradeDist < tradeDistMax;// ||*/ tradeRange < ratio;
+          var canTrade = (
+            from ratio in CanTradeLocalRatio.Yield()
+            let corr = BuyLevel.Rate.Abs(SellLevel.Rate)
+            from tradeRange in ((sr.IsBuy ? (CurrentPrice.Ask - SellLevel.Rate) : (BuyLevel.Rate - CurrentPrice.Bid)) / corr).Yield()
+            select new { canTrade = tradeRange < ratio, tradeRange, ratio }
+          ).Single();
           //if (!canTrade) 
-          Log = new Exception(new { /*tradeRange,*/ tradeDist, tradeDistMax, canTrade, ratio } + "");
-          return canTrade;
+          Log = new Exception(canTrade + "");
+          return onCanTradeLocal(canTrade.canTrade);
         };
         Func<bool> isTradingHourLocal = () => IsTradingHour() && IsTradingDay();
         Func<SuppRes, bool> suppResCanTrade = (sr) =>
@@ -1227,6 +1227,27 @@ namespace HedgeHog.Alice.Store {
                     if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                   }
                 };
+                {
+                  Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
+                    (from offset in (trade.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (CurrentPrice.Bid - SellLevel.Rate)).Yield()
+                     from sr in new[] { BuyLevel, SellLevel }
+                     select Tuple.Create(sr, offset));
+                  Action<Trade> ootl = null;
+                  ootl = trade => {
+                    ootl_(trade).ForEach(tpl => tpl.Item1.Rate += tpl.Item2);
+                    onOpenTradeLocal -= ootl;
+                  };
+                  onCanTradeLocal = canTrade => {
+                    if (!canTrade) {
+                      if (!onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
+                        onOpenTradeLocal += ootl;
+                      }
+                    }else if (onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
+                        onOpenTradeLocal -= ootl;
+                      }
+                    return true;
+                  };
+                }
               }
               #endregion
               {
