@@ -25,6 +25,7 @@
     <DocumentationFile>bin\Debug\HedgeHog.Alice.Store.XML</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
     <NoWarn>1591</NoWarn>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -192,6 +193,7 @@
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.cs" />
     <None Include="TradingMacro\TradingMacro.AdjustLevelsByHour.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lazy.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">

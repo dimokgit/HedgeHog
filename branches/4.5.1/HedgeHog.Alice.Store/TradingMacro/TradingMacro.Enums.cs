@@ -23,6 +23,7 @@ namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Void = 0,
     Fixed = 1,
+    TillFlat = 2,
     HorizontalProbe = 10,
     HorizontalProbe2 = 11,
     WaveDistance42 = 72,

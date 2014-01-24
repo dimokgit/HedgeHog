@@ -5,7 +5,6 @@ using System.Text;
 using HedgeHog.Bars;
 using System.Diagnostics;
 using System.Windows;
-using HedgeHog.Bars;
 
 namespace HedgeHog.Alice.Store {
   public class LineInfo {
