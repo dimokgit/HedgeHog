@@ -10,8 +10,8 @@ namespace UnitLib {
   public class UnitTest1 {
     [TestMethod]
     public void TestMethod1() {
-      var date = DateTime.Parse("1/1/2013 23:00");
-      Debug.WriteLine(date.AddMinutes(1));
+      Func<int,int> counter = count => count;
+      Debug.WriteLine(counter(1));
     }
   }
 }

@@ -118,6 +118,7 @@
     <Compile Include="Dynamic.cs" />
     <Compile Include="EnumExtensions.cs" />
     <Compile Include="ExceptionEventArgs.cs" />
+    <Compile Include="Expression.cs" />
     <Compile Include="Expressions.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Fibonacci.cs" />

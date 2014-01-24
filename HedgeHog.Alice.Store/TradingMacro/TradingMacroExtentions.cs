@@ -2877,6 +2877,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.HorizontalProbe2: return ScanCorridorByHorizontalLineCrosses3;
         case ScanCorridorFunction.Void: return ScanCorridorVoid;
         case ScanCorridorFunction.Fixed: return ScanCorridorFixed;
+        case ScanCorridorFunction.TillFlat: return ScanCorridorTillFlat;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3202,11 +3203,12 @@ namespace HedgeHog.Alice.Store {
                 _Rates.AddRange(ri);
                 Log = new Exception("[{0}]:Distinct count check point. New count:{1}".Formater(Pair, _Rates.Count));
               }
-
+              if (_Rates.Count < BarsCount / 2)
+                if (Debugger.IsAttached) Debugger.Break();
               RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, _Rates);
               var rateLastDate = _Rates.Last().StartDate;
               if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes()) {
-                Log = new Exception("Last rate time:{0} is far from ServerTyme:{1}".Formater(rateLastDate, ServerTime));
+                Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 _Rates.RemoveAt(_Rates.Count - 1);
                 RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, _Rates);
               }
