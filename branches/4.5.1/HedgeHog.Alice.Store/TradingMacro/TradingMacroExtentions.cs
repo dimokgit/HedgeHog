@@ -3203,8 +3203,6 @@ namespace HedgeHog.Alice.Store {
                 _Rates.AddRange(ri);
                 Log = new Exception("[{0}]:Distinct count check point. New count:{1}".Formater(Pair, _Rates.Count));
               }
-              if (_Rates.Count < BarsCount / 2)
-                if (Debugger.IsAttached) Debugger.Break();
               RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, _Rates);
               var rateLastDate = _Rates.Last().StartDate;
               if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes()) {
