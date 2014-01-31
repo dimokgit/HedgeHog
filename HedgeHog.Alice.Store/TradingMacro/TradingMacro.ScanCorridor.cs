@@ -35,11 +35,12 @@ namespace HedgeHog.Alice.Store {
     #region New
     private CorridorStatistics ScanCorridorTillFlat(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
-        var counter = (from revs in rates.ReverseIfNot().SafeArray().Yield()
-                 from length in Lib.IteratonSequence(CorridorDistance, revs.Length - CorridorDistance)
-                 select new { length, slope = revs.CopyToArray(0, length).Regress(1, _priceAvg).LineSlope() }
-                ).DistinctUntilChanged(d => d.slope.Sign())
-                .Take(2).Last().length;
+        var counter = (
+          from revs in rates.ReverseIfNot().SafeArray().Yield()
+          from length in Lib.IteratonSequence(CorridorDistance, revs.Length - CorridorDistance)
+          select new { length, slope = revs.CopyToArray(0, length).Regress(1, _priceAvg).LineSlope() }
+        ).DistinctUntilChanged(d => d.slope.Sign())
+        .Take(2).Last().length;
         return counter;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
@@ -1076,7 +1077,7 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorByHorizontalLineCrosses(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       WaveShort.Rates = null;
       double level;
-      var rates = CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), GetTradeEnterBy(), CorridorDistanceRatio.ToInt(), out level);
+      var rates = CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), _priceAvg, CorridorDistanceRatio.ToInt(), out level);
       if (rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate > CorridorStats.StartDate)) {
         MagnetPrice = level;
         WaveShort.Rates = rates;

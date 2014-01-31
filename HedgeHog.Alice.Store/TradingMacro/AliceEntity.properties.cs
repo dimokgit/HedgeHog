@@ -1229,8 +1229,8 @@ namespace HedgeHog.Alice.Store {
       set { CloseByMomentum = value; }
     }
 
-    Func<Rate, double> GetTradeEnterBy(bool? isBuy = null) { return _getTradeBy(TradeEnterBy, isBuy); }
-    Func<Rate, double> GetTradeExitBy(bool? isBuy = null) { return _getTradeBy(TradeExitBy, isBuy); }
+    Func<Rate, double> GetTradeEnterBy(bool? isBuy) { return _getTradeBy(TradeEnterBy, isBuy); }
+    Func<Rate, double> GetTradeExitBy(bool? isBuy) { return _getTradeBy(TradeExitBy, isBuy.HasValue ? !isBuy : null); }
     Func<Rate, double> _getTradeBy(TradeCrossMethod method, bool? isBuy = null) {
       switch (method) {
         case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
@@ -1238,6 +1238,9 @@ namespace HedgeHog.Alice.Store {
         case TradeCrossMethod.ChartAskBid:
           if (!isBuy.HasValue) throw new NotSupportedException(new { method, isBuy } + " is not supported.");
           if (isBuy.Value) return r => r.PriceChartAsk; else return r => r.PriceChartBid;
+        case TradeCrossMethod.PriceCurr:
+          if (!isBuy.HasValue) return _ => CurrentPrice.Average;
+          if (isBuy.Value) return _ => CurrentPrice.Ask; else return _ => CurrentPrice.Bid;
       }
       throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");
     }

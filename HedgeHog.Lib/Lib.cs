@@ -76,8 +76,20 @@ namespace HedgeHog {
         /// <param name="obj">Anonymous object</param>
         /// <param name="type">Dummy lambda returning object of T type</param>
         /// <returns></returns>
-        public static T Cast<T>(object obj, Func<T> type) {
+        public static T Cast<T>(this object obj, Func<T> type) {
             return (T)obj;
+        }
+
+        public static T Caster<T>(this T c, object any) {
+          return (T)any;
+        }
+        public static Func<object, T> Caster<T>(this T c, out object any) {
+          Func<object, T> f = o => (T)o;
+          any = c;
+          return f;
+        }
+        public static Func<object, T> Caster<T>(this T c) {
+          return o => (T)o;
         }
 
         public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
@@ -161,6 +173,11 @@ namespace HedgeHog {
         }
 
         public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
+        public static IEnumerable<T> Yield<T>(this T v, Func<T, bool> predicate) {
+          if (predicate(v))
+            yield return v;
+          else yield break;
+        }
         public static IEnumerable<T> YieldBreak<T>(this T v) { yield break; }
         public static IEnumerable<T> Return<T>(this T v, int count = 1) { return Enumerable.Repeat(v, count); }
         public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
