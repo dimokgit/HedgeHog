@@ -1041,7 +1041,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{9:n1},{10:n2}]↨"///↨↔
+            string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{9:n0},{10:n2}]↨"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + (tm.RatesArray.Count == tm.BarsCount ? "" : (',' + tm.BarsCount.ToString()))
             /*2*/, tm.CorridorAngle
@@ -1051,7 +1051,7 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.RatesStDevHourlyAvgNativeInPips
+            /*9*/, tm.DistanceIterations
             /*10*/, tm.CorridorCorrelation
           );
           charter.SetTrendLines(tm.SetTrendLines());

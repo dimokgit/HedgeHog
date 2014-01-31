@@ -1067,9 +1067,11 @@ namespace HedgeHog.Alice.Store {
       get { return CurrentLoss + OpenTradesGross; }
     }
 
-    public double CurrentGrossLot { get { return Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(); } }
+    public double CurrentGrossLot { get { return Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
     public double CurrentGrossInPips {
-      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(), Pair); }
+      get {
+        return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
+      }
     }
 
     public double CurrentLossInPips {

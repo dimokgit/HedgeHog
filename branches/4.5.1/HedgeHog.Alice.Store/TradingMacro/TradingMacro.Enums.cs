@@ -67,6 +67,7 @@ namespace HedgeHog.Alice.Store {
     DistAvgLT2 = -16,
     DistAvgLT3 = -17,
     DistAvgLT31 = -18,
+    TillFlat = -19,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,
@@ -75,8 +76,6 @@ namespace HedgeHog.Alice.Store {
     CountWithAngle = 92,
     Wavelette = 93,
     Manual = 110,
-    Void = 111,
-    Void1 = 112,
     StDev = 120,
     StDev2 = 121,
     StDev3 = 122,
@@ -197,6 +196,7 @@ namespace HedgeHog.Alice.Store {
   }
   public enum MovingAverageValues { PriceAverage = 0, Volume = 1, PriceSpread = 2, PriceMove = 3 }
   public enum TradeCrossMethod {
+    PriceCurr = -1,
     PriceAvg = 0,
     PriceCMA = 1,
     ChartAskBid = 2
