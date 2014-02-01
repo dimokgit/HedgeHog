@@ -193,5 +193,9 @@ namespace HedgeHog {
     public static IEnumerable<double> Mirror(this double[] prices, double linePrice) {
       return prices.Select(p => linePrice * 2 - p);
     }
+    public static IEnumerable<IGrouping<int,T>> Gaps<T>(this IEnumerable<T> values,double level,Func<T,double> valueFunc) {
+      return values.ChunkBy(value => valueFunc(value).SignUp(level)).Skip(1).SkipLast(1);
+    }
+
   }
 }

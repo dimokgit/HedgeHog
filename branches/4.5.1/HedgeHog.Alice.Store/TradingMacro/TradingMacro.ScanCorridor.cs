@@ -33,6 +33,30 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorByBigGap(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        return (
+          from revs in rates.Yield()
+          let point = InPoints(1)
+          let min = rates.MinBy(_priceAvg).First().PriceAvg
+          let max = rates.MaxBy(_priceAvg).First().PriceAvg
+          let range = InPips(max - min).ToInt()
+          from level in Enumerable.Range(0, range).Select(i => min + i * point).AsParallel()
+          from gap in revs.Gaps(level, _priceAvg).Skip(1).SkipLast(1)
+          group gap by level into gapsGrouped
+          orderby gapsGrouped.Where(g => g.Key == 1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
+                + gapsGrouped.Where(g => g.Key == -1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
+                descending
+          select gapsGrouped.OrderByDescending(g => g.Count()).First()
+        )
+        .Take(1)
+        .Select(gap => new { stop = gap.First(), start = gap.Last() })
+        .Do(gap => SetCorridorStopDate(gap.stop))
+        .Select(gap => rates.TakeWhile(rate => rate >= gap.start).Count())
+        .First();
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorTillFlat(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var counter = (
@@ -44,6 +68,11 @@ namespace HedgeHog.Alice.Store {
         return counter;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+
+    private void LongestGap(IList<Rate> ratesForCorridor) {
+      var middle = ratesForCorridor.Average(_priceAvg);
+      var result = ratesForCorridor.Gaps(middle, _priceAvg).MaxBy(g => g.Count()).First().Count();
     }
 
     private CorridorStatistics ScanCorridorFixed(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
