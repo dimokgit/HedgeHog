@@ -67,6 +67,9 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Interactive">
+      <HintPath>..\AllInOne\packages\Ix-Main.1.2.2\lib\net45\System.Interactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.Reactive.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\Rx-Core.2.2.2\lib\net45\System.Reactive.Core.dll</HintPath>
@@ -112,6 +115,7 @@
     <Compile Include="ArrayExtensions.cs" />
     <Compile Include="BlockingConsumerBase.cs" />
     <Compile Include="Chunk.cs" />
+    <Compile Include="ChunkIt.cs" />
     <Compile Include="Class1.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="DateTimeZone.cs" />

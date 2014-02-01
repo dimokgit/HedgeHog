@@ -113,7 +113,7 @@ namespace HedgeHog.Alice.Store {
     bool _isCorridorStopDateManual { get { return CorridorStopDate != DateTime.MinValue; } }
     void SetCorridorStopDate(Rate rate) {
       CorridorStats.StopRate = rate;
-      _CorridorStopDate = rate == null ? DateTime.MinValue : CorridorStats.StopRate.StartDate;
+      _CorridorStopDate = CorridorStats.StopRate == null || rate == null ? DateTime.MinValue : CorridorStats.StopRate.StartDate;
     }
     DateTime _CorridorStopDate;
     public DateTime CorridorStopDate {
@@ -516,7 +516,7 @@ namespace HedgeHog.Alice.Store {
             select new { canTrade = tradeRange < ratio, tradeRange, ratio }
           ).Single();
           //if (!canTrade) 
-          Log = new Exception(canTrade + "");
+          //Log = new Exception(canTrade + "");
           return onCanTradeLocal(canTrade.canTrade);
         };
         Func<bool> isTradingHourLocal = () => IsTradingHour() && IsTradingDay();
@@ -1361,6 +1361,10 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.TillFlat:
               #region firstTime
               var bagType = new { areaMin = new Lib.Box<double>(0) };
+              Action setTradeCorridor = () => {
+                BuyLevel.RateEx = CorridorStats.RatesMax;
+                SellLevel.RateEx = CorridorStats.RatesMin;
+              };
               if (firstTime) {
                 any = bagType;
                 Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
@@ -1374,6 +1378,70 @@ namespace HedgeHog.Alice.Store {
                 {
                   if (ScanCorridorBy != ScanCorridorFunction.TillFlat) {
                     ScanCorridorBy = ScanCorridorFunction.TillFlat;
+                    Log = new Exception(new { ScanCorridorBy, ScanCorridor = "changed" } + "");
+                  }
+                }
+                {
+                  Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
+                    (from offset in (trade.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (CurrentPrice.Bid - SellLevel.Rate)).Yield()
+                     from sr in new[] { BuyLevel, SellLevel }
+                     select Tuple.Create(sr, offset));
+                  Action<Trade> ootl = null;
+                  ootl = trade => {
+                    ootl_(trade).ForEach(tpl => tpl.Item1.Rate += tpl.Item2);
+                    setTradeCorridor();
+                    onOpenTradeLocal -= ootl;
+                  };
+                  onCanTradeLocal = canTrade => {
+                    if (!canTrade) {
+                      if (!onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
+                        onOpenTradeLocal += ootl;
+                      }
+                    } else if (onOpenTradeLocal.GetInvocationList().Select(m => m.Method.Name).Contains(ootl.Method.Name)) {
+                      onOpenTradeLocal -= ootl;
+                    }
+                    return true;
+                  };
+                }
+              }
+              #endregion
+              {
+                var gBag = bagType.Caster(any);
+                var angleOk = calcAngleOk();
+                DistanceIterations = CorridorStats.Rates.Count.Div(CorridorStats.RatesHeightInPips).ToInt();
+                if (CorridorStats.Rates.Count <= CorridorDistance * 1.1)
+                  gBag.areaMin.Value = DistanceIterations;
+                gBag.areaMin.Value = DistanceIterations.Min(gBag.areaMin);
+                var canTrade = angleOk
+                  && isTradingHourLocal()
+                  && DistanceIterations > gBag.areaMin * WaveStDevRatio;
+                watcherCanTrade.SetValue(canTrade, true, () => {
+                  Func<double, double, bool> tradeCorridorOk = (h, l) => !h.Avg(l).Between(SellLevel.Rate, BuyLevel.Rate);
+                  CorridorStats.Rates.SkipWhile(r => r.PriceAvg2 == 0).Take(1)
+                    .Where(_ => tradeCorridorOk(CorridorStats.RatesMax, CorridorStats.RatesMin))
+                    .ForEach(rate => {
+                      setTradeCorridor();
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                    });
+                });
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region BigGap
+            case TrailingWaveMethod.BigGap:
+              #region firstTime
+              if (firstTime) {
+                Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
+                onCloseTradeLocal = t => {
+                  if (t.PL >= TakeProfitPips / 2) {
+                    _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                  }
+                };
+                {
+                  if (ScanCorridorBy != ScanCorridorFunction.BigGap) {
+                    ScanCorridorBy = ScanCorridorFunction.BigGap;
                     Log = new Exception(new { ScanCorridorBy, ScanCorridor = "changed" } + "");
                   }
                 }
@@ -1401,21 +1469,17 @@ namespace HedgeHog.Alice.Store {
               }
               #endregion
               {
-                var gBag = bagType.Caster(any);
                 var angleOk = calcAngleOk();
-                DistanceIterations = CorridorStats.Rates.Count * CorridorStats.RatesHeightInPips;
-                if (CorridorStats.Rates.Count <= CorridorDistance * 1.1)
-                  gBag.areaMin.Value = DistanceIterations;
-                var canTrade = angleOk
-                  && isTradingHourLocal()
-                  && DistanceIterations > gBag.areaMin * WaveStDevRatio;
-                watcherCanTrade.SetValue(canTrade, true, () => {
-                  CorridorStats.Rates.SkipWhile(r => r.PriceAvg2 == 0).Take(1).ForEach(rate => {
+                var canTrade = angleOk;
+                Func<Rate, bool> tradeCorridorOk = rate => 
+                  new[] { GetTradeEnterBy(true), GetTradeEnterBy(false) }.All(p => p(RateLast).Between(rate.PriceAvg3, rate.PriceAvg2));
+                RatesArray.TakeLast(3).Reverse().SkipWhile(r => r.PriceAvg2 == 0).Take(1)
+                  .Where(rate => tradeCorridorOk(rate))
+                  .ForEach(rate => {
                     BuyLevel.RateEx = rate.PriceAvg2;
                     SellLevel.RateEx = rate.PriceAvg3;
                     _buySellLevelsForEach(sr => sr.CanTradeEx = true);
                   });
-                });
               }
               adjustExitLevels0();
               break;

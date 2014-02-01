@@ -813,6 +813,14 @@ namespace HedgeHog {
         public static int Sign(this double v, double other) {
             return Math.Sign(v - other);
         }
+        public static int SignUp(this double v, double other) {
+          var s = Math.Sign(v - other);
+          return s >= 0 ? 1 : -1;
+        }
+        public static int SignDown(this double v, double other) {
+          var s = Math.Sign(v - other);
+          return s > 0 ? 1 : -1;
+        }
         public static double Max(this double? v, double? other) {
             return !v.HasValue ? other.GetValueOrDefault(double.NaN) : !other.HasValue ? v.GetValueOrDefault(double.NaN) : Math.Max(v.Value, other.Value);
         }
