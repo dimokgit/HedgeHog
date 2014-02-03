@@ -35,27 +35,54 @@ namespace HedgeHog.Alice.Store {
     #region New
     private CorridorStatistics ScanCorridorByBigGap(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
-        return (
-          from revs in rates.Yield()
-          let point = InPoints(1)
-          let min = rates.MinBy(_priceAvg).First().PriceAvg
-          let max = rates.MaxBy(_priceAvg).First().PriceAvg
-          let range = InPips(max - min).ToInt()
-          from level in Enumerable.Range(0, range).Select(i => min + i * point).AsParallel()
-          from gap in revs.Gaps(level, _priceAvg).Skip(1).SkipLast(1)
-          group gap by level into gapsGrouped
-          orderby gapsGrouped.Where(g => g.Key == 1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
-                + gapsGrouped.Where(g => g.Key == -1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
-                descending
-          select gapsGrouped.OrderByDescending(g => g.Count()).First()
-        )
+        return PriceRangeGaps(rates.Take(CorridorDistance).ToArray())
+          .First()
+          .Take(1)
+          .Select(gap => new { stop = gap.First(), start = gap.Last() })
+          .Do(gap => SetCorridorStopDate(gap.stop))
+          .Select(gap => rates.TakeWhile(rate => rate >= gap.start).Count())
+          .First();
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorByBigGap2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var gapsAll = PriceRangeGaps(rates.Take(CorridorDistance).ToArray()).ToArray();
+        Func<IEnumerable<IGrouping<int, Rate>>, bool> whereAll = gaps => true;
+        Func<IEnumerable<IGrouping<int, Rate>>, bool> whereByCurrent = gaps => gaps.SelectMany(gap => gap.Select(_priceAvg)).Yield()
+            .Select(rts => rts.Memoize(2))
+            .Where(rts => rts.Count() > 60)
+            .Select(rts => new { min = rts.Min(), max = rts.Max() })
+            .Any(rts => CurrentPrice.Average.Between(rts.min, rts.max));
+        Func<Func<IEnumerable<IGrouping<int, Rate>>, bool>, IEnumerable<int>> getGaps = where => {
+          return gapsAll
+            .Where(where)
+            .Take(1)
+            .SelectMany(gaps => gaps
+              .Take(1)
+              .Select(gap => new { stop = gap.First(), start = gap.Last() })
+              .Do(gap => SetCorridorStopDate(gap.stop))
+              .Select(gap => rates.TakeWhile(rate => rate >= gap.start).Count())
+              );
+        };
+        return getGaps(whereByCurrent).IfEmpty(() => getGaps(whereAll)).First();
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+
+    private int NewMethod(IList<Rate> rates, IEnumerable<IGrouping<int, Rate>>[] gapsAll, Func<IEnumerable<IGrouping<int, Rate>>, bool> whereByCurrent) {
+      return gapsAll
+        .Where(whereByCurrent)
+        .First()
         .Take(1)
         .Select(gap => new { stop = gap.First(), start = gap.Last() })
         .Do(gap => SetCorridorStopDate(gap.stop))
         .Select(gap => rates.TakeWhile(rate => rate >= gap.start).Count())
         .First();
-      };
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+
+    private IEnumerable<IEnumerable<IGrouping<int, Rate>>> PriceRangeGaps(IList<Rate> rates) {
+      return rates.PriceRangeGaps(InPoints(1), _priceAvg, InPips);
     }
     private CorridorStatistics ScanCorridorTillFlat(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
