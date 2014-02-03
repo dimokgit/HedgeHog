@@ -196,6 +196,23 @@ namespace HedgeHog {
     public static IEnumerable<IGrouping<int,T>> Gaps<T>(this IEnumerable<T> values,double level,Func<T,double> valueFunc) {
       return values.ChunkBy(value => valueFunc(value).SignUp(level)).Skip(1).SkipLast(1);
     }
+    public static IEnumerable<IEnumerable<IGrouping<int, T>>> PriceRangeGaps<T>(this IList<T> rates
+      , double point
+      , Func<T, double> getPrice
+      , Func<double?, double> toSteps) {
+      return from revs in rates.Yield()
+             let min = getPrice(rates.MinBy(getPrice).First())
+             let max = getPrice(rates.MaxBy(getPrice).First())
+             let range = toSteps(max - min).ToInt()
+             from level in Enumerable.Range(0, range).Select(i => min + i * point).AsParallel()
+             from gap in revs.Gaps(level, getPrice).Skip(1).SkipLast(1)
+             group gap by level into gapsGrouped
+             orderby gapsGrouped.Where(g => g.Key == 1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
+                   + gapsGrouped.Where(g => g.Key == -1).Select(g => g.Count()).OrderByDescending(c => c).FirstOrDefault()
+                   descending
+             select gapsGrouped.OrderByDescending(g => g.Count())
+      ;
+    }
 
   }
 }

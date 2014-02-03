@@ -91,6 +91,9 @@ namespace HedgeHog {
         public static Func<object, T> Caster<T>(this T c) {
           return o => (T)o;
         }
+        public static Func<U,T> Caster<U,T>(this T c, Func<U,object> func) {
+          return u => (T)func(u);
+        }
 
         public static ConcurrentDictionary<K, V> ToConcurrentDictionary<T, K, V>(this IEnumerable<T> list, Func<T, K> keyFactory, Func<T, V> valueFactory) {
             return new ConcurrentDictionary<K, V>(list.ToDictionary(keyFactory, valueFactory));
@@ -208,13 +211,31 @@ namespace HedgeHog {
             return v.Take(1).Select(projector).DefaultIfEmpty(defaultValue).Single();
         }
         public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
-              Action thenSelector,
-              Action elseSelector) {
+              Action emptyAction) {
           if (enumerable == null)
             throw new ArgumentNullException("enumerable");
 
-          if (!enumerable.Any()) thenSelector(); else elseSelector();
-          return enumerable;
+          var isEmpty = true;
+          foreach (var e in enumerable) {
+            isEmpty = false;
+            yield return e;
+          }
+          if (isEmpty)
+            emptyAction();
+        }
+        public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
+              Func<IEnumerable<T>> emptySelector) {
+          if (enumerable == null)
+            throw new ArgumentNullException("enumerable");
+
+          var isEmpty = true;
+          foreach (var e in enumerable) {
+            isEmpty = false;
+            yield return e;
+          }
+          if (isEmpty)
+            foreach (var e in emptySelector())
+              yield return e;
         }
         public static T IfEmpty<T>(this T enumerable,
               Action<T> thenSelector,
