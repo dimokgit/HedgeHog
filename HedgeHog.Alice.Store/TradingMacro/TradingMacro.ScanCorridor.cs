@@ -50,8 +50,8 @@ namespace HedgeHog.Alice.Store {
         var gapsAll = PriceRangeGaps(rates.Take(CorridorDistance).ToArray()).ToArray();
         Func<IEnumerable<IGrouping<int, Rate>>, bool> whereAll = gaps => true;
         Func<IEnumerable<IGrouping<int, Rate>>, bool> whereByCurrent = gaps => gaps.SelectMany(gap => gap.Select(_priceAvg)).Yield()
-            .Select(rts => rts.Memoize(2))
-            .Where(rts => rts.Count() > 60)
+            .Select(rts => rts.Memoize(3))
+            .Where(rts => rts.Count() > CorrelationMinimum)
             .Select(rts => new { min = rts.Min(), max = rts.Max() })
             .Any(rts => CurrentPrice.Average.Between(rts.min, rts.max));
         Func<Func<IEnumerable<IGrouping<int, Rate>>, bool>, IEnumerable<int>> getGaps = where => {
