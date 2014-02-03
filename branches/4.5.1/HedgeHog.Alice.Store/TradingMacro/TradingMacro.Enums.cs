@@ -72,6 +72,7 @@ namespace HedgeHog.Alice.Store {
     TillFlat = -19,
     BigGap = -20,
     BigGap2 = -21,
+    BigGap21 = -22,
     Magnet = 1,
     MagnetFft = 2,
     Magnet2 = 3,

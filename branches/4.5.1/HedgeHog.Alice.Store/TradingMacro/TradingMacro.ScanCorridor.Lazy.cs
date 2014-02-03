@@ -27,7 +27,9 @@ namespace HedgeHog.Alice.Store {
           .TakeWhile(r => r.StartDate > ratesReversed[lazyCount.Value].StartDate).ToArray()
         : ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax.Value).TakeWhile(r => r.StartDate >= startMin).ToArray();
-      WaveShort.ResetRates(rates);
+      if (IsCorridorForwardOnly && _isCorridorStopDateManual && rates.Last().StartDate < CorridorStats.StartDate)
+        WaveShort.ResetRates(CorridorStats.Rates);
+      else WaveShort.ResetRates(rates);
       if (postProcess != null) postProcess();
       return (showVolts ?? ShowVoltsNone)();
     }
