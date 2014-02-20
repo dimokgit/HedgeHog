@@ -28,6 +28,7 @@ using HedgeHog.Charter;
 using System.Reactive.Concurrency;
 using System.Threading;
 using ReactiveUI;
+using HedgeHog.Shared;
 using HedgeHog.UI;
 using System.ComponentModel.Composition;
 namespace HedgeHog.Alice.Client {
@@ -699,8 +700,9 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.TakeProfitDistanceInPips = double.NaN;
         }
         tms = GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToArray();
+        _tradingStatistics.TradingMacros = tms;
+        _tradingStatistics.GrossToExitInPips = MasterModel.AccountModel.GrossToExitInPips;
         if (tms.Any()) {
-          _tradingStatistics.TradingMacros = tms;
           _tradingStatistics.StDevPips = tms.Select(tm => tm.InPips(tm.CorridorStats.RatesStDev)).ToList().AverageByIterations(1).Average();
           _tradingStatistics.TakeProfitPips = tms.Select(tm => tm.CalculateTakeProfitInPips()).ToList().AverageByIterations(2).Average();
           _tradingStatistics.VolumeRatioH = tms.Select(tm => tm.VolumeShortToLongRatio).ToArray().AverageByIterations(2).Average();
@@ -711,10 +713,19 @@ namespace HedgeHog.Alice.Client {
           var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
-          _tradingStatistics.CurrentGrossInPips = tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
-            .Yield()
-            .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
-          _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
+          var currentLoss = _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
+          {
+            var totalGross = tradesManager.GetTrades().Gross() + currentLoss;
+            Func<TradingMacro, double> calcGrossInPips = tm => tradesManager.MoneyAndLotToPips(totalGross, tm.CurrentGrossLot, tm.Pair);
+            var currentGrossInPips = tms.Where(tm => tm.Trades.Any())
+              .IfEmpty(() => tms)
+              .Select(calcGrossInPips)
+              .Average();
+            _tradingStatistics.CurrentGrossInPips = currentGrossInPips;
+              //tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
+              //.ToArray().Yield()
+              //.Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
+          }
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
         }

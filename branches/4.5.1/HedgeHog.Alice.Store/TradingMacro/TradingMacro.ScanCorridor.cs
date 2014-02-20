@@ -87,11 +87,11 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorTillFlat(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var counter = (
-          from revs in rates.ReverseIfNot().SafeArray().Yield()
+          from revs in rates.ReverseIfNot().Take(CorridorDistance * 3).ToArray().Yield()
           from length in Lib.IteratonSequence(CorridorDistance, revs.Length - CorridorDistance)
           select new { length, slope = revs.CopyToArray(0, length).Regress(1, _priceAvg).LineSlope() }
         ).DistinctUntilChanged(d => d.slope.Sign())
-        .Take(2).Last().length;
+        .Take(2).Select(a=>a.length).DefaultIfEmpty(CorridorDistance).Last();
         return counter;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());

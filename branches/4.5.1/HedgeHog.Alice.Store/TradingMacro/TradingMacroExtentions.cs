@@ -354,7 +354,8 @@ namespace HedgeHog.Alice.Store {
         });
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CloseAllTradesMessage>(this, a => {
         if (IsActive && TradesManager != null && Trades.Any())
-          CloseAtZero = true;
+          //CloseAtZero = true;
+          CloseTrading("CloseAllTradesMessage");
       });
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<TradeLineChangedMessage>(this, a => {
         if (a.Target == this && _strategyOnTradeLineChanged != null)
@@ -1075,7 +1076,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     public double CurrentLossInPips {
-      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentLoss, Trades.Length == 0 ? AllowedLotSizeCore() : Trades.NetLots().Abs(), Pair); }
+      get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentLoss, CurrentGrossLot, Pair); }
+    }
+    private double CurrentLossInPipTotal { get { return TradingStatistics.CurrentLossInPips; } }
+    private double CurrentGrossInPipTotal {
+      get {
+        return TradesManager == null 
+          ? double.NaN 
+          : TradesManager.MoneyAndLotToPips(_tradingStatistics.TradingMacros.Sum(tm=>tm.CurrentLoss)+ TradesManager.GetTrades().Gross(), CurrentGrossLot, Pair);
+      }
     }
 
     public int PositionsBuy { get { return Trades.IsBuy(true).Length; } }
@@ -1551,7 +1560,7 @@ namespace HedgeHog.Alice.Store {
           args.TradingMacros.Remove(this);
           args.MustStop = true;
           args.SessionStats.ProfitToLossRatio = ProfitabilityRatio;
-          TradesManager.ClosePair(Pair);
+          TradesManager.CloseAllTrades();
           TradesManager.TradeClosed -= tc;
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, pra);
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Unregister(this, sba);
@@ -2952,8 +2961,11 @@ namespace HedgeHog.Alice.Store {
 
     ReactiveUI.ReactiveCollection<NewsEvent> _newEventsCurrent = new ReactiveCollection<NewsEvent>();
     public ReactiveUI.ReactiveCollection<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
+    Queue<Price> _priceQueue = new Queue<Price>();
     private void RunPrice(PriceChangedEventArgs e, Trade[] trades) {
       Price price = e.Price;
+      while (_priceQueue.Count > PriceCmaLevels.Max(5)) _priceQueue.Dequeue();
+      _priceQueue.Enqueue(price);
       Account account = e.Account;
       var timeSpanDict = new Dictionary<string, long>();
       var sw = Stopwatch.StartNew();
@@ -3021,11 +3033,13 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
     }
 
-    private int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
+    public int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
 
     private int CalcLotSizeByPMC(Account account) {
-      return TradingStatistics.TradingMacros == null ? 0
-        : TradesManagerStatic.GetLotSize((TradesManagerStatic.LotToMarginCall(MaxPipsToPMC(), account.Equity, BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)) / TradingStatistics.TradingMacros.Count, BaseUnitSize);
+      var tms = TradingStatistics.TradingMacros;
+      return tms == null || !tms.Any() ? 0
+        : TradesManagerStatic.GetLotSize(
+        (TradesManagerStatic.LotToMarginCall(MaxPipsToPMC(), account.Equity / tms.Count(tm => tm.TradingRatioByPMC), BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)), BaseUnitSize);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -3173,6 +3187,7 @@ namespace HedgeHog.Alice.Store {
     }
     static object _loadRatesLoader = new object();
     public void LoadRates(bool dontStreachRates = false) {
+      if (!IsActive) return;
       lock(_loadRatesLoader)
         try {
           if (TradesManager != null && !TradesManager.IsInTest && !IsInPlayback && isLoggedIn && !IsInVitualTrading) {

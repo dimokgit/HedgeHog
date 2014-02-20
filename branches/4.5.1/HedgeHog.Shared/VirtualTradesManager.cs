@@ -172,6 +172,9 @@ namespace HedgeHog.Shared {
     }
 
     #region Close Trade
+    public void CloseAllTrades() {
+      tradesOpened.ToList().ForEach(CloseTrade);
+    }
     public void CloseTradeAsync(Trade trade) {
       CloseTrade(trade);
     }
@@ -189,7 +192,7 @@ namespace HedgeHog.Shared {
     }
     public bool ClosePair(string pair, bool isBuy,int lot) {
       try {
-        foreach (var trade in tradesOpened.ToArray()) {
+        foreach (var trade in tradesOpened.Where(t => t.Pair == pair).ToArray()) {
           CloseTrade(trade, Math.Min(trade.Lots, lot), null);
           lot -= trade.Lots;
           if (lot <= 0) break;

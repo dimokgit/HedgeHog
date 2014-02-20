@@ -42,6 +42,7 @@ namespace HedgeHog.Shared {
 
     PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price);
 
+    void CloseAllTrades();
     void CloseTrade(Trade trade);
     bool CloseTrade(Trade trade,int lot,Price price);
     bool ClosePair(string pair, bool isBuy,int lot);
