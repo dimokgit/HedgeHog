@@ -83,10 +83,10 @@ namespace HedgeHog {
         public static T Caster<T>(this T c, object any) {
           return (T)any;
         }
-        public static Func<object, T> Caster<T>(this T c, out object any) {
+        public static Func<T> Caster<T>(this T c, out object any) {
           Func<object, T> f = o => (T)o;
           any = c;
-          return f;
+          return () => f(c);
         }
         public static Func<object, T> Caster<T>(this T c) {
           return o => (T)o;
@@ -176,7 +176,7 @@ namespace HedgeHog {
         }
 
         public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
-        public static IEnumerable<T> Yield<T>(this T v, Func<T, bool> predicate) {
+        public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate) {
           if (predicate(v))
             yield return v;
           else yield break;
@@ -212,8 +212,6 @@ namespace HedgeHog {
         }
         public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
               Action emptyAction) {
-          if (enumerable == null)
-            throw new ArgumentNullException("enumerable");
 
           var isEmpty = true;
           foreach (var e in enumerable) {
@@ -225,8 +223,6 @@ namespace HedgeHog {
         }
         public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
               Func<IEnumerable<T>> emptySelector) {
-          if (enumerable == null)
-            throw new ArgumentNullException("enumerable");
 
           var isEmpty = true;
           foreach (var e in enumerable) {
@@ -240,8 +236,6 @@ namespace HedgeHog {
         public static T IfEmpty<T>(this T enumerable,
               Action<T> thenSelector,
               Action<T> elseSelector) where T : IEnumerable {
-          if (enumerable == null)
-            throw new ArgumentNullException("enumerable");
 
           if (!enumerable.GetEnumerator().MoveNext()) thenSelector(enumerable); else elseSelector(enumerable);
           return enumerable;
@@ -249,8 +243,6 @@ namespace HedgeHog {
         public static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
               Func<TResult> thenSelector,
               Func<TResult> elseSelector) {
-          if (enumerable == null)
-            throw new ArgumentNullException("enumerable");
 
           return (!enumerable.Any()) ? thenSelector() : elseSelector();
         }

@@ -104,6 +104,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region GrossToExitInPips
+    private double? _GrossToExitInPips;
+    public double? GrossToExitInPips {
+      get { return _GrossToExitInPips; }
+      set {
+        if (_GrossToExitInPips != value) {
+          _GrossToExitInPips = value;
+          RaisePropertyChanged("GrossToExitInPips");
+        }
+      }
+    }
+
+    #endregion
+
+
     private double _VolumeRatioH;
     [DataMember]
     public double VolumeRatioH {
@@ -269,7 +284,11 @@ namespace HedgeHog.Alice.Store {
 
     public double CurrentLossInPips { get; set; }
 
-    public IList<TradingMacro> TradingMacros { get; set; }
+    IList<TradingMacro> _TradingMacros = new TradingMacro[0];
+    public IList<TradingMacro> TradingMacros {
+      get { return _TradingMacros; }
+      set { _TradingMacros = value; }
+    }
 
     public double CurrentLoss { get; set; }
     public double OriginalProfit { get; set; }

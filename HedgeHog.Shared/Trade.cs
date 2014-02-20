@@ -43,7 +43,7 @@ namespace HedgeHog.Shared {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Close * t.Lots) / trades.Sum(t => t.Lots);
     }
     public static double Gross(this IEnumerable<Trade> trades) {
-      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.GrossPL);
+      return trades == null ? 0 : trades.Select(t => t.GrossPL).DefaultIfEmpty(0).Sum(t => t);
     }
     public static Trade[] ByPair(this ICollection<Trade> trades, string pair) {
       return (string.IsNullOrWhiteSpace(pair) ? trades : trades.Where(t => t.Pair == pair)).ToArray();
@@ -158,7 +158,7 @@ namespace HedgeHog.Shared {
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
     public int Lots { get; set; }
-    public int AmountK { get { return Lots / BaseUnitSize; } }
+    public int AmountK { get { return Lots / (BaseUnitSize == 0 ? 1000 : BaseUnitSize); } }
 
     [DataMember]
     public string OpenOrderID { get; set; }
