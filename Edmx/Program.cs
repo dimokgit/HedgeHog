@@ -31,13 +31,13 @@ namespace Edmx {
       File.Copy(fileName, fileName + ".bak", true);
       var xDoc = XDocument.Load(fileName);
       var dqs = xDoc.XPathSelectElements("//*").Where(e => e.Name.LocalName == "DefiningQuery" && entityNames.Contains(e.Parent.Attribute("Name").Value) ).ToList();
-      if( !dqs.Any()) throw new Exception("No Entities provided in command string.");
+      //if( !dqs.Any()) throw new Exception("No Entities provided in command string.");
       dqs.ForEach(d => {
         var aSchema = d.Parent.Attributes().Single(a => a.Name.LocalName == "Schema");
         d.Parent.Add(new XAttribute(XName.Get("Schema"), aSchema.Value));
         aSchema.Remove();
-        var aName = d.Parent.Attributes().Single(a => a.Name.LocalName == "Name" && !string.IsNullOrWhiteSpace(a.Name.NamespaceName));
-        aName.Remove();
+        d.Parent.Attributes().Where(a => a.Name.LocalName == "Name" && !string.IsNullOrWhiteSpace(a.Name.NamespaceName))
+          .ToList().ForEach(aName => aName.Remove());
         d.Remove();
       });
       xDoc.Save(fileName);
