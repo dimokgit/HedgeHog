@@ -1,43 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using DynamicExpresso;
 using HedgeHog.Bars;
-using HedgeHog.Shared;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Threading;
-using System.Diagnostics;
-using System.Reflection;
-using System.Collections.Specialized;
-using System.Windows;
-using HedgeHog.Alice.Store.Metadata;
-using System.Linq.Expressions;
-using System.Windows.Input;
-using Gala = GalaSoft.MvvmLight.Command;
-using System.Data.Objects.DataClasses;
-using System.Reactive.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Subjects;
-using System.Web;
-using System.Web.Caching;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Runtime.Caching;
-using System.Reactive;
-using System.Threading.Tasks.Dataflow;
-using System.Collections.Concurrent;
 using HedgeHog.Models;
-using System.Web.UI;
-using DynamicExpresso;
+using HedgeHog.Shared;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
-using HedgeHog.Shared.Messages;
-using HedgeHog.DateTimeZone;
+using System.Reactive.Subjects;
+using System.Threading.Tasks.Dataflow;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
-    bool IsTradingHour() { return IsTradingHour(ServerTime) && !IsEndOfWeek(); }
+    bool IsTradingHour() { return IsTradingHour(ServerTime); }
     bool IsTradingDay() { return IsTradingDay(ServerTime); }
     bool IsTradingTime() { return IsTradingDay() && IsTradingHour(); }
     public bool TradingTimeState { get { try { return IsTradingTime(); } catch { throw; } } }
@@ -1280,12 +1258,6 @@ namespace HedgeHog.Alice.Store {
                     }
                   };
                   {
-                    if (ScanCorridorBy != ScanCorridorFunction.TillFlat) {
-                      ScanCorridorBy = ScanCorridorFunction.TillFlat;
-                      Log = new Exception(new { ScanCorridorBy, ScanCorridor = "changed" } + "");
-                    }
-                  }
-                  {
                     Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
                       (from offset in (trade.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (CurrentPrice.Bid - SellLevel.Rate)).Yield()
                        from sr in new[] { BuyLevel, SellLevel }
@@ -1326,7 +1298,7 @@ namespace HedgeHog.Alice.Store {
                       return CorridorStats.StartDate;
                     });
                   if (ServerTime.Hour == 8 && CurrentGrossInPipTotal > InPips(BuyLevel.Rate.Abs(SellLevel.Rate) / 2))
-                    CloseTrading("After 8 profit.");
+                    CloseTrading("After 8 o'clock profit.");
                 }
               }
               adjustExitLevels0();
@@ -1335,7 +1307,62 @@ namespace HedgeHog.Alice.Store {
             #region SharpMove
             case TrailingWaveMethod.SharpMove: {
                 #region firstTime
-                var hotValue = new { isUp = new Lib.Box<bool?>(null) };
+              var hotValue = new { isUp = new Lib.Box<bool?>(null), tradingOnDate = new Lib.Box<DateTime>(DateTime.MinValue) };
+                if (firstTime) {
+                  hotValue.Caster(out any);
+                  onCloseTradeLocal = t => {
+                    if (t.PL >= TakeProfitPips / 2) {
+                      _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                      if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
+                    }
+                  };
+                  onOpenTradeLocal = t => { hotValue.Caster(any).isUp.Value = null; };
+                }
+                #endregion
+                {
+                  var rateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg2 == 0).First();
+                  Action<bool?> setExitLevels = isBuy => {
+                    if (isBuy.HasValue) {
+                      if (isBuy.Value) buyCloseLevel.RateEx = ExitLevelByCurrentPrice(true).Min(rateLast.PriceAvg2);
+                      else sellCloseLevel.RateEx = ExitLevelByCurrentPrice(false).Max(rateLast.PriceAvg3);
+                    } 
+                    if (isBuy.GetValueOrDefault(false) == false)
+                      buyCloseLevel.RateEx = _RatesMax + RatesHeight / 2;
+                    if (isBuy.GetValueOrDefault(true) == true)
+                      sellCloseLevel.RateEx = _RatesMin - RatesHeight / 2;
+                  };
+                  var locals = hotValue.Caster(any);
+                  locals.isUp.Value = (isTradingHourLocal() && !locals.isUp.Value.HasValue).YieldIf(() =>
+                    !Trades.HaveBuy() && enter(true) > rateLast.PriceAvg2 ? (bool?)true
+                    : !Trades.HaveSell() && enter(false) < rateLast.PriceAvg3 ? (bool?)false
+                    : null
+                  ).DefaultIfEmpty(locals.isUp.Value).Single();
+
+                  var canTrade = locals.isUp.Value.HasValue && CorridorStats.Rates.Count.Between(CorridorDistance, RatesArray.Count - 5);
+                  if (canTrade) {
+                    var offset = StDevByHeight;
+                    BuyLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg2 + offset : rateLast.PriceAvg3;
+                    SellLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg2 : rateLast.PriceAvg3 - offset;
+                    _buySellLevelsForEach(sr => {
+                      sr.ResetPricePosition();
+                      sr.CanTradeEx = sr.IsBuy != locals.isUp.Value.Value;
+                      sr.TradesCountEx = 0;// sr.IsBuy == locals.isUp.Value.Value ? 1 : 0;
+                    });
+                    locals.isUp.Value = null;
+                    locals.tradingOnDate.Value = ServerTime;
+                  }
+                  if ((ServerTime - locals.tradingOnDate.Value).Duration() > 30.FromMinutes())
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  setExitLevels(Trades.Select(t => (bool?)t.IsBuy).DefaultIfEmpty(null).FirstOrDefault());
+                }
+              }
+              //adjustExitLevels0();
+              break;
+            #endregion
+            #region SharpMoveOut
+            case TrailingWaveMethod.SharpMoveOut: {
+                #region firstTime
+                var hotValue = new { isUp = new Lib.Box<bool?>(null), tradingOnDate = new Lib.Box<DateTime>(DateTime.MinValue) };
                 if (firstTime) {
                   hotValue.Caster(out any);
                   onCloseTradeLocal = t => {
@@ -1347,12 +1374,6 @@ namespace HedgeHog.Alice.Store {
                   onOpenTradeLocal = t => {
                     hotValue.Caster(any).isUp.Value = null;
                   };
-                  {
-                    if (ScanCorridorBy != ScanCorridorFunction.StDevSplits) {
-                      ScanCorridorBy = ScanCorridorFunction.StDevSplits;
-                      Log = new Exception(new { ScanCorridorBy, ScanCorridor = "changed" } + "");
-                    }
-                  }
                   {
                     Func<Trade, IEnumerable<Tuple<SuppRes, double>>> ootl_ = (trade) =>
                       (from offset in (trade.IsBuy ? (CurrentPrice.Ask - BuyLevel.Rate) : (CurrentPrice.Bid - SellLevel.Rate)).Yield()
@@ -1377,8 +1398,8 @@ namespace HedgeHog.Alice.Store {
                 }
                 #endregion
                 {
-                  var locals = hotValue.Caster(any);
                   var rateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg2 == 0).First();
+                  var locals = hotValue.Caster(any);
                   if (isTradingHourLocal() && !locals.isUp.Value.HasValue) {
                     if (enter(true) > rateLast.PriceAvg21) locals.isUp.Value = true;
                     if (enter(false) < rateLast.PriceAvg31) locals.isUp.Value = false;
@@ -1386,11 +1407,11 @@ namespace HedgeHog.Alice.Store {
                   var canTrade = locals.isUp.Value.HasValue;
                   if (canTrade) {
                     var offset = StDevByHeight;
-                    BuyLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg21 + offset : rateLast.PriceAvg31;
-                    SellLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg21 : rateLast.PriceAvg31 - offset;
+                    BuyLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg21 : rateLast.PriceAvg1;
+                    SellLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg1 : rateLast.PriceAvg31;
                     _buySellLevelsForEach(sr => {
-                      sr.CanTradeEx = true;
-                      sr.TradesCount = sr.IsBuy == locals.isUp.Value.Value ? 1 : 0;
+                      sr.CanTradeEx = true;// sr.IsBuy != locals.isUp.Value.Value;
+                      sr.TradesCountEx = 0;// sr.IsBuy == locals.isUp.Value.Value ? 1 : 0;
                     });
                     locals.isUp.Value = null;
                   }
@@ -3056,149 +3077,6 @@ namespace HedgeHog.Alice.Store {
         tm.SuppRes.ForEach(sr1 => sr1.CanTrade = false);
       });
     }
-
-    private Store.SuppRes SellCloseSupResLevel() {
-      var sellCloseLevel = Resistance1(); sellCloseLevel.IsExitOnly = true;
-      return sellCloseLevel;
-    }
-
-    private Store.SuppRes BuyCloseSupResLevel() {
-      var buyCloseLevel = Support1(); buyCloseLevel.IsExitOnly = true;
-      return buyCloseLevel;
-    }
-
-    private Action<double, double> AdjustCloseLevels(
-      Func<double> takeProfitLimitRatio, 
-      Func<bool, double> crossLevelDefault,
-      Func<bool, double> exitPrice, 
-      ObservableValue<double> ghostLevelOffset) 
-    {
-      Store.SuppRes buyCloseLevel = BuyCloseSupResLevel();
-      Store.SuppRes sellCloseLevel = SellCloseSupResLevel();
-      Action<double, double> adjustExitLevels = (buyLevel, sellLevel) => {
-        #region Set (buy/sell)Level
-        {
-          var d = Trades.TakeLast(1).Select(t => t.Time).FirstOrDefault();
-          var rateSinceTrade = EnumerableEx.If(() => !d.IsMin() && DoAdjustExitLevelByTradeTime, RatesArray
-            .Reverse<Rate>()
-            .TakeWhile(r => r.StartDate >= d)
-            .Select(_priceAvg))
-            .Memoize(2);
-
-          Func<SuppRes, double> getLevel = sr =>
-            EnumerableEx.If(() => !ExitByBuySellLevel, Trades.Select(trade => trade.Open)).DefaultIfEmpty(sr.Rate).Last();
-          Func<double, SuppRes, IEnumerable<double>> getLevels = (level, sr) =>
-           rateSinceTrade
-            .Concat(level.Yield()
-              .Expand(l => EnumerableEx.If(l.IsNaN().ToFunc(), getLevel(sr).Yield()))
-              .Where(Lib.IsNotNaN)
-              .Take(1)
-            );
-          buyLevel = getLevels(buyLevel, BuyLevel).Min();
-          sellLevel = getLevels(sellLevel, SellLevel).Max();
-        }
-        #endregion
-        if (buyLevel.Min(sellLevel) < .5) {
-          Log = new Exception(new { buyLevel, sellLevel } + "");
-          return;
-        }
-        buyCloseLevel.SetPrice(exitPrice(false));
-        sellCloseLevel.SetPrice(exitPrice(true));
-        #region setExitLevel
-        Action<SuppRes> setExitLevel = sr => {
-          if (sr.IsGhost && sr.Rate.Between(SellLevel.Rate, BuyLevel.Rate)) {
-            if (ghostLevelOffset == null) throw new ArgumentException(new { ghostLevelOffset } + "");
-            var enterLevel = GetTradeEnterBy(sr.IsBuy)(RateLast);
-            var offset = PointSize / 10;
-            var rate = sr.Rate;
-            if (sr.IsBuy) {
-              if (sr.Rate - enterLevel > offset) {
-                ghostLevelOffset.Value = enterLevel + offset - rate;
-              }
-            } else {
-              if (enterLevel - sr.Rate > offset) {
-                ghostLevelOffset.Value = enterLevel - offset - rate;
-              }
-            }
-          } else {
-            sr.RateEx = crossLevelDefault(sr.IsSell);
-            sr.ResetPricePosition();
-          }
-        };
-        #endregion
-        var tradesCount = Trades.Length;
-        if (tradesCount == 0) {
-          setExitLevel(buyCloseLevel);
-          setExitLevel(sellCloseLevel);
-        } else {
-          if (!Trades.Any()) {
-            throw new Exception("Should have some trades here.");
-            //adjustExitLevels(buyLevel, sellLevel);
-            //buyCloseLevel.ResetPricePosition();
-            //sellCloseLevel.ResetPricePosition();
-          } else {
-            var clozeAtZero = false;// CloseAtZero;
-            //if (isProfitOk()) CloseAtZero = true;
-            var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || MustExitOnReverse;
-            var masterTakeProfit = _tradingStatistics.GrossToExitInPips.GetValueOrDefault(double.NaN);
-            var tpCloseInPips = close0 ? 0 : TakeProfitPips - CurrentGrossInPipTotal / _tradingStatistics.TradingMacros.Count;
-            var tpColse = InPoints(tpCloseInPips.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
-            var ratesShort = RatesArray.TakeLast(5).ToArray();
-            var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)) - PointSize / 10;
-            var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)) + PointSize / 10;
-            var currentPriceMax = _priceQueue.Average(p => p.Bid);
-            var currentPriceMin = _priceQueue.Average(p => p.Ask);
-            if (buyCloseLevel.IsGhost)
-              setExitLevel(buyCloseLevel);
-            else if (buyCloseLevel.InManual) {
-              if (buyCloseLevel.Rate <= priceAvgMax)
-                buyCloseLevel.Rate = priceAvgMax;
-            } else if (Trades.HaveBuy()) {
-              var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
-              buyCloseLevel.RateEx = new[]{
-                CurrentPrice.Bid + tpColse, 
-                currentPriceMax
-              }.Max();
-              if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
-                buyCloseLevel.ResetPricePosition();
-            } else buyCloseLevel.RateEx = crossLevelDefault(true);
-
-            if (sellCloseLevel.IsGhost)
-              setExitLevel(sellCloseLevel);
-            else if (sellCloseLevel.InManual) {
-              if (sellCloseLevel.Rate >= priceAvgMin)
-                sellCloseLevel.Rate = priceAvgMin;
-            } else if (Trades.HaveSell()) {
-              var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
-              sellCloseLevel.RateEx = new[] { 
-                CurrentPrice.Ask-tpColse,
-                currentPriceMin
-              }.Min();
-              if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
-                sellCloseLevel.ResetPricePosition();
-            } else sellCloseLevel.RateEx = crossLevelDefault(false);
-          }
-        }
-      };
-      return adjustExitLevels;
-    }
-
-    private void AdjustExitLevelsByTradeTime(Action<double, double> adjustExitLevels) {
-      Func<double, IEnumerable<double>> rateSinceTrade = def => {
-        var d = Trades.Max(t => t.Time);
-        //d = d - ServerTime.Subtract(d);
-        return RatesArray
-          .Take(DoAdjustExitLevelByTradeTime ? RatesArray.Count : 0)
-          .Reverse()
-          .TakeWhile(r => r.StartDate >= d)
-          .Select(_priceAvg)
-          .DefaultIfEmpty(def);
-      };
-      var buyLevel = Trades.HaveBuy() ? rateSinceTrade(_buyLevel.Rate).Min().Min(ExitByBuySellLevel ? _buyLevel.Rate : double.NaN) : _buyLevel.Rate;
-      var sellLevel = Trades.HaveSell() ? rateSinceTrade(_sellLevel.Rate).Max().Max(ExitByBuySellLevel ? _sellLevel.Rate : double.NaN) : _sellLevel.Rate;
-      adjustExitLevels(buyLevel, sellLevel);
-    }
-
     public static IDictionary<bool, double[]> FractalsRsd(IList<Rate> rates, int fractalLength, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var prices = rates.Select(r => new { PriceHigh = priceHigh(r), PriceLow = priceLow(r) }).ToArray();
       var indexMiddle = fractalLength / 2;

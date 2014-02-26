@@ -1072,6 +1072,22 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
 
+    #region CloseAfterTradingHours
+    private bool _CloseAfterTradingHours;
+    [Category(categoryActiveYesNo)]
+    public bool CloseAfterTradingHours {
+      get { return _CloseAfterTradingHours; }
+      set {
+        if (_CloseAfterTradingHours != value) {
+          _CloseAfterTradingHours = value;
+          OnPropertyChanged("CloseAfterTradingHours");
+          SaveActiveSettings();
+        }
+      }
+    }
+
+    #endregion
+
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]

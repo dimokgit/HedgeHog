@@ -392,6 +392,27 @@ namespace HedgeHog.Alice.Store {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
       if (fw != null && fw.IsLoggedIn)
         fw.DeleteOrders(fw.GetEntryOrders(Pair, true));
+      SaveActiveSettings();
+    }
+    void SaveActiveSettings() {
+      SaveActiveSettings(Lib.CurrentDirectory + "\\Settings", "{0}_Last.txt".Formater(Pair));
+    }
+    void SaveActiveSettings(string folder, string file) {
+      try {
+        Directory.CreateDirectory(folder);
+        SaveActiveSettings(Path.Combine(folder, file.Replace("/", "")));
+      } catch (Exception exc) { Log = exc; }
+    }
+    public void SaveActiveSettings(string path) {
+      File.WriteAllLines(path, GetActiveSettings().ToArray());
+    }
+    IEnumerable<string> GetActiveSettings() {
+      return
+        from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
+        group setting by setting.Item1.Category into g
+        orderby g.Key
+        from g2 in new[] { "//{0}//".Formater(g.Key) }.Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
+        select g2;
     }
     #endregion
 
@@ -2848,6 +2869,8 @@ namespace HedgeHog.Alice.Store {
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_3)
             tp /= 3;
           break;
+        case TradingMacroTakeProfitFunction.RegressionLevels:
+          throw new NotImplementedException("RegressionLevels must be implemented locally.");
         default:
           throw new NotImplementedException(new { function } + "");
       }
@@ -2883,6 +2906,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.StDevSplits: return ScanCorridorBySplitHeights;
         case ScanCorridorFunction.StDevSplits2: return ScanCorridorBySplitHeights2;
+        case ScanCorridorFunction.StDevSplits3: return ScanCorridorBySplitHeights3;
         case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
         case ScanCorridorFunction.HorizontalProbe2: return ScanCorridorByHorizontalLineCrosses3;
