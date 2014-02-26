@@ -194,6 +194,7 @@
     <None Include="TradingMacro\TradingMacro.AdjustLevelsByHour.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Chunks.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lazy.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Strategies.AdjustExit.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">

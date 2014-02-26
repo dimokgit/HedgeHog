@@ -1,11 +1,24 @@
-﻿using System;
+﻿using HedgeHog;
+using HedgeHog.Alice.Store;
+using HedgeHog.Alice.Store.Metadata;
+using HedgeHog.Bars;
+using HedgeHog.Charter;
+using HedgeHog.Shared;
+using Order2GoAddIn;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Composition;
 using System.Data.Objects;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Windows;
@@ -13,24 +26,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
-using HedgeHog.Alice.Store;
-using HedgeHog.Alice.Store.Metadata;
-using HedgeHog.Bars;
-using HedgeHog.Models;
-//using HedgeHog.Schedulers;
-using HedgeHog.Shared;
-using Order2GoAddIn;
 using Gala = GalaSoft.MvvmLight.Command;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Reflection;
-using HedgeHog.Charter;
-using System.Reactive.Concurrency;
-using System.Threading;
-using ReactiveUI;
-using HedgeHog.Shared;
-using HedgeHog.UI;
-using System.ComponentModel.Composition;
 namespace HedgeHog.Alice.Client {
   [Export]
   public partial class RemoteControlModel : RemoteControlModelBase {
@@ -288,16 +284,10 @@ namespace HedgeHog.Alice.Client {
     }
     void OnSaveTradingSettings(TradingMacro tm) {
       try {
-        //var attrs = new[] { TradingMacro.categoryActive, TradingMacro.categoryActiveFuncs };
-        var settings = tm.GetPropertiesByAttibute<CategoryAttribute>(a => true)
-          .OrderBy(a=>a.Item1.Category)
-          .GroupBy(a => a.Item1.Category)
-          .ToList().SelectMany(g =>
-            new[] { "//{0}//".Formater(g.Key) }.Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(tm, null))).OrderBy(s => s)));
         var od = new Microsoft.Win32.SaveFileDialog() { FileName = "Params_" + tm.Pair.Replace("/", ""), DefaultExt = ".txt", Filter = "Text documents(.txt)|*.txt" };
         var odRes = od.ShowDialog();
         if (!odRes.GetValueOrDefault()) return;
-        File.WriteAllLines(od.FileName, settings);
+        tm.SaveActiveSettings(od.FileName);
       } catch (Exception exc) {
         Log = exc;
         return;
