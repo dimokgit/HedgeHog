@@ -1233,34 +1233,25 @@ namespace HedgeHog.Alice.Store {
       this.TradesManager.TradeAdded += TradeAddedHandler;
       var fw = GetFXWraper();
       var digits = TradesManager.GetDigits(Pair);
-      if (fw != null && !IsInPlayback) {
-        PriceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
-          , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
-          .Where(pce => pce.EventArgs.Pair == Pair)
-          //.Sample((0.1).FromSeconds())
-          .DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
-          .Do(pce => {
-            try {
-              CurrentPrice = pce.EventArgs.Price;
-              if (!TradesManager.IsInTest && !IsInPlayback)
-                AddCurrentTick(pce.EventArgs.Price);
-              TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
-              OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
-            } catch (Exception exc) { Log = exc; }
-          }).SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
-        if (false)
-          fw.PriceChangedBroadcast.AsObservable()
-            .Where(pce => pce.Pair == Pair)
-            .Do(pce => {
-              CurrentPrice = pce.Price;
-              if (!TradesManager.IsInTest && !IsInPlayback)
-                AddCurrentTick(pce.Price);
-              TicksPerMinuteSet(pce.Price, ServerTime);
-              OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
-            })
-            .Latest().ToObservable(ThreadPoolScheduler.Instance)
-            .Subscribe(pce => RunPriceChanged(pce, null), exc => Log = exc, () => Log = new Exception(Pair + " got terminated."));
+      var a = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>
+        , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
+        .Where(pce => pce.EventArgs.Pair == Pair)
+        //.Sample((0.1).FromSeconds())
+        .DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
+        .Do(pce => {
+          try {
+            CurrentPrice = pce.EventArgs.Price;
+            if (!TradesManager.IsInTest && !IsInPlayback)
+              AddCurrentTick(pce.EventArgs.Price);
+            TicksPerMinuteSet(pce.EventArgs.Price, ServerTime);
+            OnPropertyChanged(TradingMacroMetadata.PipsPerPosition);
+          } catch (Exception exc) { Log = exc; }
+        });
+      if (!IsInVitualTrading)
+        PriceChangedSubscribsion = a.SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+      else PriceChangedSubscribsion = a.SubscribeOn(DispatcherScheduler.Current).Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
 
+      if (fw != null && !IsInPlayback) {
         fw.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
         fw.OrderAdded += TradesManager_OrderAdded;
         fw.OrderChanged += TradesManager_OrderChanged;
@@ -1555,7 +1546,8 @@ namespace HedgeHog.Alice.Store {
                   Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
                   CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
                 }
-                Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
+                if (RateLast != null)
+                  Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
               } else
                 Log = new Exception("Replay:End");
               ReplayCancelationToken.ThrowIfCancellationRequested();
@@ -1622,11 +1614,11 @@ namespace HedgeHog.Alice.Store {
 
     #region TradesStatistics
     protected Dictionary<string, TradeStatistics> TradeStatisticsDictionary = new Dictionary<string, TradeStatistics>();
-    public void SetTradesStatistics(Price price, Trade[] trades) {
+    public void SetTradesStatistics(Trade[] trades) {
       foreach (var trade in trades)
-        SetTradeStatistics(price, trade);
+        SetTradeStatistics(trade);
     }
-    public TradeStatistics SetTradeStatistics(Price price, Trade trade) {
+    public TradeStatistics SetTradeStatistics(Trade trade) {
       if (!TradeStatisticsDictionary.ContainsKey(trade.Id))
         TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics());
       var ts = TradeStatisticsDictionary[trade.Id];
@@ -3001,7 +2993,7 @@ namespace HedgeHog.Alice.Store {
         CurrentLossPercent = CurrentGross / account.Balance;
         BalanceOnStop = account.Balance + StopAmount.GetValueOrDefault();
         BalanceOnLimit = account.Balance + LimitAmount.GetValueOrDefault();
-        SetTradesStatistics(price, trades);
+        SetTradesStatistics(trades);
         if (DoNews && RatesArray.Any())
           OnGeneralPurpose(() => {
             var dateStart = RatesArray[0].StartDate;

@@ -147,7 +147,6 @@ namespace HedgeHog.Alice.Client {
           break;
         case Key.T:
           tm.ToggleCanTrade();
-          tm.SetTradeCount(0);
           break;
       }
     }
@@ -775,7 +774,7 @@ namespace HedgeHog.Alice.Client {
       tm.PropertyChanged += TradingMacro_PropertyChanged;
       tm.ShowChart += TradingMacro_ShowChart;
       //new Action(() => InitTradingMacro(tm)).ScheduleOnUI(2.FromSeconds());
-      InitTradingMacro(tm);
+      //InitTradingMacro(tm);
     }
 
     internal IScheduler findDispatcherScheduler() {
@@ -889,29 +888,13 @@ namespace HedgeHog.Alice.Client {
         if (TradingMacrosCopy.Length > 0) {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)tradesManager;
-            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri,2000));
+            vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000));
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
           PriceChangeSubscriptionDispose();
-          if (!IsInVirtualTrading)
-            //_priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
-            //  h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-            //  .Buffer(TimeSpan.FromSeconds(1))
-            //  .Subscribe(el => {
-            //    el.GroupBy(e2 => e2.EventArgs.Pair).Select(e2 => e2.Last()).ToList()
-            //      .ForEach(ie => fw_PriceChanged(ie.Sender, ie.EventArgs));
-            //  });
-            _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(
-              h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-              .Sample(1.FromSeconds())
-                .Subscribe(pce => {
-                  UpdateTradingStatistics();
-                }, exc => Log = exc);
-          else
-            tradesManager.PriceChanged += fw_PriceChanged;
-          //.GroupByUntil(g => g.EventArgs.Pair, g => Observable.Timer(TimeSpan.FromSeconds(1)))
-          //.SubscribeOn(System.Concurrency.Scheduler.ThreadPool)
-          //.Subscribe(g => g.TakeLast(1).Subscribe(ie => fw_PriceChanged(ie.Sender, ie.EventArgs), exc => Log = exc), exc => Log = exc);
+          _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>
+            (h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
+            .Subscribe(pce => { UpdateTradingStatistics(); }, exc => Log = exc);
           tradesManager.TradeAdded += fw_TradeAdded;
           tradesManager.TradeClosed += fw_TradeClosed;
           tradesManager.Error += fw_Error;
@@ -951,29 +934,12 @@ namespace HedgeHog.Alice.Client {
     void CoreFX_LoggedOffEvent(object sender, EventArgs e) {
       if (tradesManager != null) {
         PriceChangeSubscriptionDispose();
-        tradesManager.PriceChanged -= fw_PriceChanged;
         tradesManager.TradeAdded -= fw_TradeAdded;
         tradesManager.Error -= fw_Error;
 
         TradingMacrosCopy.ToList().ForEach(tm => new Action(() => InitTradingMacro(tm, true)).InvoceOnUI());
       }
     }
-
-    void fw_PriceChanged(object sender, PriceChangedEventArgs e) {
-      Price price = e.Price;
-      try {
-        var sw = Stopwatch.StartNew();
-        if (price != null) SetCurrentPrice(price);
-        var pair = price.Pair;
-        foreach (var tm in GetTradingMacros(pair).Where(t => !IsInVirtualTrading && !t.IsInPlayback || IsInVirtualTrading && t.BarPeriodInt == e.BarPeriod /*&& t.IsInPlayback*/)) {
-          tm.RunPriceChanged(e, null/*OpenTradeByStop*/);
-        }
-        UpdateTradingStatistics();
-      } catch (Exception exc) {
-        Log = exc;
-      }
-    }
-
     object _showChartQueueLocker = new object();
     static ISubject<Action> _showChartQueue;
     ISubject<Action> ShowChartQueue {
@@ -1120,7 +1086,7 @@ namespace HedgeHog.Alice.Client {
         tm.CurrentLot = trades.Sum(t => t.Lots);
         var amountK = tm.CurrentLot / tm.BaseUnitSize;
         if (tm.HistoryMaximumLot < amountK) tm.HistoryMaximumLot = amountK;
-        var ts = tm.SetTradeStatistics(GetCurrentPrice(tm.Pair), trade);
+        var ts = tm.SetTradeStatistics(trade);
       } catch (Exception exc) {
         Log = exc;
       }
