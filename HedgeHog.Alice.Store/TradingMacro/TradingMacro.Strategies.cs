@@ -1344,7 +1344,6 @@ namespace HedgeHog.Alice.Store {
                     BuyLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg2 + offset : rateLast.PriceAvg3;
                     SellLevel.RateEx = locals.isUp.Value.Value ? rateLast.PriceAvg2 : rateLast.PriceAvg3 - offset;
                     _buySellLevelsForEach(sr => {
-                      sr.ResetPricePosition();
                       sr.CanTradeEx = sr.IsBuy != locals.isUp.Value.Value;
                       sr.TradesCountEx = 0;// sr.IsBuy == locals.isUp.Value.Value ? 1 : 0;
                     });

@@ -161,17 +161,6 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    #region PriceByPair
-    Dictionary<string, Price> pricesByPair = new Dictionary<string, Price>();
-    protected void SetCurrentPrice(Price price) {
-      pricesByPair[price.Pair] = price;
-    }
-    protected Price GetCurrentPrice(string pair) {
-      //if (!IsLoggedIn) return new Price();
-      if (!pricesByPair.ContainsKey(pair)) pricesByPair[pair] = tradesManager.GetPrice(pair);
-      return pricesByPair[pair];
-    }
-    #endregion
     protected Account accountCached = new Account();
 
 
