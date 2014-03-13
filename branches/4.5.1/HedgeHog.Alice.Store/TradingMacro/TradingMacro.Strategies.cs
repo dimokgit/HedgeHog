@@ -1301,6 +1301,21 @@ namespace HedgeHog.Alice.Store {
                     CloseTrading("After 8 o'clock profit.");
                 }
               }
+              if (CanDoEntryOrders) {
+                Func<SuppRes, bool> canTrade = (sr) => sr.CanTrade && sr.TradesCount <= 0 
+                  && !Trades.IsBuy(sr.IsBuy).Any() && GetEntryOrders(sr.IsBuy).Any();
+                if (canTrade(BuyLevel)) {
+                  OnCreateEntryOrder(BuyLevel.IsBuy, LotSizeByLossBuy, BuyLevel.Rate);
+                  GetEntryOrders(true).Skip(1).ForEach(OnDeletingOrder);
+                  GetEntryOrders(true).Take(1).ForEach(eo =>
+                    GetFXWraper().YieldNotNull(eo.Lot.Ratio(LotSizeByLossBuy) > 1.05)
+                      .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, LotSizeByLossBuy))
+                  );
+                }
+                if (canTrade(SellLevel)) {
+                  OnCreateEntryOrder(SellLevel.IsBuy, LotSizeByLossSell, SellLevel.Rate);
+                }
+              }
               adjustExitLevels0();
               break;
             #endregion

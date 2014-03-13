@@ -130,6 +130,9 @@ namespace HedgeHog {
     public static double Ratio(this double v, double other) {
       return v > other ? v / other : other / v;
     }
+    public static double Ratio(this int v, double other) {
+      return other.Ratio(v);
+    }
     public static double Percentage<T>(this int v, double other) {
       return other.Percentage(v);
     }

@@ -176,6 +176,16 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
+    public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {
+      if (v == null) yield break;
+      if (!condition.HasValue || condition.Value) yield return v;
+      yield break;
+    }
+    public static IEnumerable<T> YieldIf<T>(this T v, bool condition) {
+      if (condition)
+        yield return v;
+      else yield break;
+    }
     public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate) {
       if (predicate(v))
         yield return v;
