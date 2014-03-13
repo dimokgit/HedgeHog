@@ -66,6 +66,9 @@ namespace HedgeHog.Alice.Store {
         return _DeleteOrderSubject;
       }
     }
+    protected void OnDeletingOrder(Order order) {
+      DeleteOrderSubject.OnNext(order.OrderID);
+    }
     protected void OnDeletingOrder(string orderId) {
       DeleteOrderSubject.OnNext(orderId);
     }
@@ -2424,11 +2427,15 @@ namespace HedgeHog.Alice.Store {
       IsPriceSpreadOk = this.CurrentPrice.Spread < this.PriceSpreadAverage * 1.2;
     }
     private bool _CanDoEntryOrders = true;
-    [Category(categoryTrading)]
+    [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Entry Orders")]
     public bool CanDoEntryOrders {
       get { return _CanDoEntryOrders; }
-      set { _CanDoEntryOrders = value; }
+      set {
+        _CanDoEntryOrders = value;
+        if(value)
+          GetEntryOrders().ToList().ForEach(o => OnDeletingOrder(o.OrderID));
+      }
     }
     private bool CanDoNetOrders {
       get {

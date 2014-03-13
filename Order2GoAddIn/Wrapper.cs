@@ -1725,7 +1725,13 @@ namespace Order2GoAddIn {
         }
       }
     }
-    public void ChangeEntryOrderPeggedLimit(string orderId,double rate) {
+    public void ChangeEntryOrderLot(string orderId, int lot) {
+      object o1;
+      var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);
+      if (order != null)
+        Desk.ChangeEntryOrderAmountAsync(orderId, lot, out o1);
+    }
+    public void ChangeEntryOrderPeggedLimit(string orderId, double rate) {
       object o1;
       var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);
       if (order != null) {
