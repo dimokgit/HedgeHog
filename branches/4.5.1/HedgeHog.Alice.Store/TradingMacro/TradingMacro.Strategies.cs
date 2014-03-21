@@ -1248,12 +1248,17 @@ namespace HedgeHog.Alice.Store {
                 var hotValue = new { _ = new Subject<Func<bool, DateTime>>() };
                 Action setTradeRange = () => { if (Debugger.IsAttached)Debugger.Break(); else Debugger.Launch(); };
                 if (firstTime) {
+                  CanDoEntryOrders = false;
                   hotValue.Caster(out any)()._.DistinctUntilChanged(a => a(false)).Subscribe(a => a(true));
                   Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
                   watcherCanTrade.Value = false;
                   onCloseTradeLocal = t => {
-                    if (t.PL >= TakeProfitPips / 2) {
-                      _buySellLevelsForEach(sr => { sr.CanTradeEx = false; sr.TradesCountEx = CorridorCrossesMaximum; });
+                    if (t.PL >= PriceSpreadAverageInPips) {
+                      _buySellLevelsForEach(sr => { 
+                        sr.CanTradeEx = false; 
+                        sr.TradesCountEx = CorridorCrossesMaximum;
+                        GetEntryOrders(sr.IsBuy).ForEach(OnDeletingOrder);
+                      });
                       if (TurnOffOnProfit) Strategy = Strategy & ~Strategies.Auto;
                     }
                   };
@@ -1302,19 +1307,30 @@ namespace HedgeHog.Alice.Store {
                 }
               }
               if (CanDoEntryOrders) {
-                Func<SuppRes, bool> canTrade = (sr) => sr.CanTrade && sr.TradesCount <= 0 
-                  && !Trades.IsBuy(sr.IsBuy).Any() && GetEntryOrders(sr.IsBuy).Any();
-                if (canTrade(BuyLevel)) {
-                  OnCreateEntryOrder(BuyLevel.IsBuy, LotSizeByLossBuy, BuyLevel.Rate);
-                  GetEntryOrders(true).Skip(1).ForEach(OnDeletingOrder);
-                  GetEntryOrders(true).Take(1).ForEach(eo =>
-                    GetFXWraper().YieldNotNull(eo.Lot.Ratio(LotSizeByLossBuy) > 1.05)
-                      .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, LotSizeByLossBuy))
-                  );
-                }
-                if (canTrade(SellLevel)) {
-                  OnCreateEntryOrder(SellLevel.IsBuy, LotSizeByLossSell, SellLevel.Rate);
-                }
+                GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
+                  //.Concat(_buySellLevels.Where(sr=>!sr.CanTrade).Select(sr=>GetEntryOrders(sr.IsBuy)).SelectMany(eo=>eo))
+                  //.ForEach(OnDeletingOrder);
+                Func<SuppRes, bool> canTrade = (sr) => isTradingHourLocal() && sr.CanTrade && sr.TradesCount <= 0 
+                  && !Trades.IsBuy(sr.IsBuy).Any();
+                Func<bool, int> lotSize = isBuy => 
+                  (_buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0) 
+                  + Trades.IsBuy(!isBuy).Lots();
+                _buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
+                  .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
+                  .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
+                 .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
+
+                Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
+                  .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy)));
+                
+                Func<bool, double> orderRate = isBuy => _buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
+                Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
+                  .ForEach(fw => fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy)));
+
+                GetEntryOrders().ForEach(eo => {
+                  changeLimit(eo);
+                  changeRate(eo);
+                });
               }
               adjustExitLevels0();
               break;

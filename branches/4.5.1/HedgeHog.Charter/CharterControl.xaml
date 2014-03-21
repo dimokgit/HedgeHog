@@ -104,10 +104,9 @@
               <telerik:RadPropertyGrid.PropertyDefinitions>
                 <telerik:PropertyDefinition Binding="{Binding DoAdjustExitLevelByTradeTime}" GroupName="Yes/No" DisplayName="AdjustExitByTime" Description="Adjust Exit Level By Min/Max since Trade Time" />
                 <telerik:PropertyDefinition Binding="{Binding ExitByBuySellLevel}" GroupName="Yes/No" DisplayName="ExitByBuySellLevel" Description="Exit level is calculated using Buy/Sell level instead of open price" />
+                <telerik:PropertyDefinition Binding="{Binding CanDoEntryOrders}" GroupName="Yes/No" DisplayName="CanDoEntryOrders" Description="Sync buy/sell levels with live entry orders" />
                 
-                <telerik:PropertyDefinition Binding="{Binding CorridorCrossesMaximum}" DisplayName="Corridor Crosses" GroupName="Numeric" />
                 <telerik:PropertyDefinition Binding="{Binding CorridorDistanceRatio}" DisplayName="Corridor Range" Description="CorridorDistanceRatio" GroupName="Numeric" />
-                <telerik:PropertyDefinition Binding="{Binding CorrelationMinimum}" DisplayName="Correl. Minimum" GroupName="Numeric" />
                 <telerik:PropertyDefinition Binding="{Binding PriceCmaLevels}" DisplayName="Price Cma" GroupName="Numeric" />
                 <telerik:PropertyDefinition Binding="{Binding ScanCorridorBy}" DisplayName="Scan Corridor" />
                 <telerik:PropertyDefinition Binding="{Binding TakeProfitFunction}" DisplayName="Take Profit" />
@@ -116,8 +115,7 @@
                 <telerik:PropertyDefinition Binding="{Binding TradeExitBy}" DisplayName="Trade Exit" />
                 <telerik:PropertyDefinition Binding="{Binding TradingAngleRange}" DisplayName="Trading Angle" GroupName="Numeric" />
                 <telerik:PropertyDefinition Binding="{Binding TradingHoursRange}" DisplayName="Trading Hours" />
-                <telerik:PropertyDefinition Binding="{Binding TrailingDistanceFunction}" DisplayName="Trade Levels" />
-                <telerik:PropertyDefinition Binding="{Binding VoltageFunction_}" DisplayName="Volatility" Description="VoltageFunction"/>
+                <telerik:PropertyDefinition Binding="{Binding TrailingDistanceFunction}" DisplayName="Trade Levels Strat." />
               </telerik:RadPropertyGrid.PropertyDefinitions>
             </telerik:RadPropertyGrid>
           </Expander>
