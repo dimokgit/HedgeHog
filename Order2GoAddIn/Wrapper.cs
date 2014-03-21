@@ -1725,6 +1725,12 @@ namespace Order2GoAddIn {
         }
       }
     }
+    public void ChangeEntryOrderRate(string orderId, double rate) {
+      object o1;
+      var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);
+      if (order != null)
+        Desk.ChangeOrderRate2(orderId, rate, 1);
+    }
     public void ChangeEntryOrderLot(string orderId, int lot) {
       object o1;
       var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);

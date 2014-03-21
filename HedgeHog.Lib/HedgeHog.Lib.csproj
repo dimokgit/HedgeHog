@@ -133,6 +133,7 @@
     <Compile Include="Maybe.cs" />
     <Compile Include="MEF.cs" />
     <Compile Include="NameValueParser.cs" />
+    <Compile Include="NTP.cs" />
     <Compile Include="ObservableCollectionEx.cs" />
     <Compile Include="correlation.cs" />
     <Compile Include="DataPoint.cs" />

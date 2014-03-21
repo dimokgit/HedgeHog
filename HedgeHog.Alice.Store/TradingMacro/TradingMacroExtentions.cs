@@ -2426,14 +2426,14 @@ namespace HedgeHog.Alice.Store {
     public void SetPriceSpreadOk() {
       IsPriceSpreadOk = this.CurrentPrice.Spread < this.PriceSpreadAverage * 1.2;
     }
-    private bool _CanDoEntryOrders = true;
+    private bool _CanDoEntryOrders = false;
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Entry Orders")]
     public bool CanDoEntryOrders {
       get { return _CanDoEntryOrders; }
       set {
         _CanDoEntryOrders = value;
-        if(value)
+        if(!value)
           GetEntryOrders().ToList().ForEach(o => OnDeletingOrder(o.OrderID));
       }
     }
@@ -3223,7 +3223,7 @@ namespace HedgeHog.Alice.Store {
               Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
               var sw = Stopwatch.StartNew();
               var serverTime = ServerTime;
-              var periodsBack = BarsCount * 10;
+              var periodsBack = BarsCount * 2;
               var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/ CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
               var startDate = TradesManagerStatic.FX_DATE_NOW;
               if (!useDefaultInterval) {
@@ -3903,6 +3903,28 @@ namespace HedgeHog.Alice.Store {
 
     private static TaskScheduler _currentDispatcher;
 
+    #region FireOnNotIsTradingActive Subject
+    object _FireOnNotIsTradingActiveSubjectLocker = new object();
+    ISubject<Action> _FireOnNotIsTradingActiveSubject;
+    ISubject<Action> FireOnNotIsTradingActiveSubject {
+      get {
+        lock (_FireOnNotIsTradingActiveSubjectLocker)
+          if (_FireOnNotIsTradingActiveSubject == null) {
+            _FireOnNotIsTradingActiveSubject = new Subject<Action>();
+            _FireOnNotIsTradingActiveSubject
+              .Where(_=>!IsTradingActive)
+              .Delay(15.FromSeconds())
+              .Where(_ => !IsTradingActive)
+              .Subscribe(s => s(), exc => { });
+          }
+        return _FireOnNotIsTradingActiveSubject;
+      }
+    }
+    void OnFireOnNotIsTradingActive(Action p) {
+      FireOnNotIsTradingActiveSubject.OnNext(p);
+    }
+    #endregion
+
     public bool IsTradingActive {
       get { return _IsTradingActive; }
       set {
@@ -3910,6 +3932,7 @@ namespace HedgeHog.Alice.Store {
           _IsTradingActive = value;
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           OnPropertyChanged(() => IsTradingActive);
+          OnFireOnNotIsTradingActive(() => { Debugger.Break(); });
         }
       }
     }

@@ -936,6 +936,19 @@ namespace HedgeHog {
     #endregion
   
     #region NYTimes
+    ReactiveCollection<VerticalRange> _NYSessions;
+    public ReactiveCollection<VerticalRange> NYSessions {
+      get {
+        if (_NYSessions == null) {
+          _NYSessions = new ReactiveCollection<VerticalRange>();
+          _NYSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
+            InitSessionVerticalRange(vr, Colors.RoyalBlue);
+          });
+          _NYSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
+        }
+        return _NYSessions;
+      }
+    }
     ReactiveCollection<DateTime> _NYTimes;
     public ReactiveCollection<DateTime> NYTimes {
       get {
@@ -947,10 +960,26 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> NYTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawNYTimes(IList<DateTime> times) { DrawVertivalLines(times, NYTimes, NYTimesVLines); }
+    public void DrawNYTimes(IList<DateTime> times) {
+      DrawVertivalLines(times, NYTimes, NYTimesVLines);
+      SetVerticalRanges(times, NYSessions);
+    }
     #endregion
 
     #region LindonTimes
+    ReactiveCollection<VerticalRange> _londonSessions;
+    public ReactiveCollection<VerticalRange> LondonSessions {
+      get {
+        if (_londonSessions == null) {
+          _londonSessions = new ReactiveCollection<VerticalRange>();
+          _londonSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
+            InitSessionVerticalRange(vr, Colors.MediumVioletRed);
+          });
+          _londonSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
+        }
+        return _londonSessions;
+      }
+    }
     ReactiveCollection<DateTime> _LondonTimes;
     public ReactiveCollection<DateTime> LondonTimes {
       get {
@@ -962,9 +991,27 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> LondonTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawLindonTimes(IList<DateTime> times) { DrawVertivalLines(times, LondonTimes, LondonTimesVLines); }
+    public void DrawLindonTimes(IList<DateTime> times) {
+      DrawVertivalLines(times, LondonTimes, LondonTimesVLines);
+      SetVerticalRanges(times, LondonSessions);
+    }
+
     #endregion
     #region TokyoTimes
+    ReactiveCollection<VerticalRange> _tokyoSessions;
+    public ReactiveCollection<VerticalRange> tokyoSessions {
+      get {
+        if (_tokyoSessions == null) {
+          _tokyoSessions = new ReactiveCollection<VerticalRange>();
+          _tokyoSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
+            InitSessionVerticalRange(vr, Colors.DarkGoldenrod, 0.4);
+          });
+          _tokyoSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
+        }
+        return _tokyoSessions;
+      }
+    }
+
     ReactiveCollection<DateTime> _TokyoTimes;
     public ReactiveCollection<DateTime> TokyoTimes {
       get {
@@ -976,8 +1023,26 @@ namespace HedgeHog {
       }
     }
     ReactiveCollection<VerticalLine> TokyoTimesVLines = new ReactiveCollection<VerticalLine>();
-    public void DrawTokyoTimes(IList<DateTime> times) { DrawVertivalLines(times, TokyoTimes, TokyoTimesVLines); }
+    public void DrawTokyoTimes(IList<DateTime> times) {
+      DrawVertivalLines(times, TokyoTimes, TokyoTimesVLines);
+      SetVerticalRanges(times, tokyoSessions);
+    }
     #endregion  
+    private void SetVerticalRanges(IList<DateTime> times, ReactiveCollection<VerticalRange> vRanges) {
+      var timePairs = times.Clump(2);
+      while (vRanges.Count < timePairs.Count())
+        vRanges.Add(new VerticalRange());
+      while (vRanges.Count > timePairs.Count())
+        vRanges.RemoveAt(vRanges.Count - 1);
+      timePairs.ForEach((timePair, i) =>
+        SetVerticalRange(vRanges[i], timePair.TakeLast(2).First(), timePair.Last()));
+    }
+    private void InitSessionVerticalRange(VerticalRange vr, Color fillColor,double opacity = 0.04) {
+      vr.Fill = new SolidColorBrush(fillColor);
+      vr.StrokeThickness = 0;
+      vr.Opacity = .04;
+      plotter.Children.Add(vr);
+    }
     #endregion
 
     #region Window Events
@@ -1250,6 +1315,7 @@ namespace HedgeHog {
     RectangleHighlight _shortWaveVerticalRange = null;
     HorizontalRange _tradingHorisontalRange = null;
     VerticalRange _londonSessionHorisontalRange = null;
+
     // Minor ticks
     DifferenceIn? GetDifference(TimeSpan span) {
       span = span.Duration();
@@ -1838,24 +1904,20 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           Action<DateTimeOffset, DateTimeOffset, TimeZoneInfo, Action<IList<DateTime>>> marketTimes2 = (firstDate, lastDate, tz, drawTimes) => {
             var daysCount = (lastDate - firstDate).TotalDays.Ceiling() + 2;
             var dateStart = TimeZoneInfo.ConvertTime(firstDate, tz);
+            var dateEnd = TimeZoneInfo.ConvertTime(lastDate, tz);
             dateStart = dateStart.Subtract(dateStart.TimeOfDay);
             var times = Enumerable.Range(0, daysCount)
               .Select(d => new[] { dateStart.AddDays(d).AddHours(8).ToLocalTime().DateTime, dateStart.AddDays(d).AddHours(16).ToLocalTime().DateTime })
-              .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate) && !weekEnd.Contains(d.DayOfWeek)).ToArray();
+              .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate) && !weekEnd.Contains(d.DayOfWeek)).ToList();
+            if (TimeZoneInfo.ConvertTime(times.Last(), tz).Hour == 8) times.Add(times.Last().AddHours(8));
+            if (TimeZoneInfo.ConvertTime(times[0], tz).Hour == 16) times.Insert(0, times[0].AddHours(-8));
             drawTimes(times);
           };
           var tickFirstDate = ticks[0].StartDate;
           var tickLastDate = ticks.Last().StartDate;
           marketTimes2(tickFirstDate, tickLastDate, TimeZoneInfo.Local, DrawNYTimes);
           marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.TokyoZone, DrawTokyoTimes);
-          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.LondonZone, times => {
-            DrawLindonTimes(times);
-            var lastSession = LondonTimesVLines.OrderByDescending(t => t.Value).SkipWhile(t => GetTime(t).InLondon().Hour != 16).Take(2).ToArray();
-            if (lastSession.Length > 1) {
-              _londonSessionHorisontalRange.Value1 = lastSession[1].Value;
-              _londonSessionHorisontalRange.Value2 = lastSession[0].Value;
-            }
-          });
+          marketTimes2(tickFirstDate, tickLastDate, DateTimeZone.DateTimeZone.LondonZone, DrawLindonTimes);
         }
         var correlation = 0;// global::alglib.pearsoncorrelation(animatedPriceY.ToArray(), ticks.Select(r => r.PriceAvg).ToArray());
         if (correlation < 1.99) try {
@@ -2009,6 +2071,13 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           inRendering = false;
         }
       }
+    }
+
+    private void SetVerticalRange(VerticalRange range, DateTime date1, DateTime date2) {
+      try {
+        range.Value1 = ConvertStartDateToContiniousDouble(date1);
+        range.Value2 = ConvertStartDateToContiniousDouble(date2);
+      } catch { }
     }
     #region SetLastPoint Subject
     object _SetLastPointSubjectLocker = new object();
