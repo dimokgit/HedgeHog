@@ -829,7 +829,7 @@ namespace HedgeHog {
       set { _ActiveDraggablePoint = value; }
     }
 
-    ReactiveCollection<HorizontalLine> levelLines = new ReactiveCollection<HorizontalLine>();
+    ReactiveList<HorizontalLine> levelLines = new ReactiveList<HorizontalLine>();
     DispatcherScheduler _plotterScheduler = null;
     public DispatcherScheduler PlotterScheduler { get { return _plotterScheduler ?? (_plotterScheduler = new DispatcherScheduler(plotter.Dispatcher)); } }
 
@@ -850,13 +850,13 @@ namespace HedgeHog {
     }
 
     #region Reactive Lines
-    void InitVLines<TLine>(ReactiveCollection<DateTime> times, ReactiveCollection<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN) where TLine : SimpleLine, new() {
+    void InitVLines<TLine>(ReactiveList<DateTime> times, ReactiveList<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN) where TLine : SimpleLine, new() {
       times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip));
       times.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeRemoved(dt, lines));
       lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
       lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
-    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveCollection<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
+    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveList<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
       try {
         var vl = new TLine() {
           Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = new DoubleCollection(strokeArray),
@@ -877,7 +877,7 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-    static void OnOtherTimeRemoved<TLine>(DateTime date, ReactiveCollection<TLine> otherVLines) where TLine : SimpleLine, new() {
+    static void OnOtherTimeRemoved<TLine>(DateTime date, ReactiveList<TLine> otherVLines) where TLine : SimpleLine, new() {
       try {
         var vl = otherVLines.SingleOrDefault(l => GetTime(l) == date);
         if (vl != null) otherVLines.Remove(vl);
@@ -885,7 +885,7 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveCollection<DateTime> otherTimes, ReactiveCollection<VerticalLine> timesVLines) {
+    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveList<DateTime> otherTimes, ReactiveList<VerticalLine> timesVLines) {
       times = times.Distinct().Where(IsDateInChartRange).ToArray();
       otherTimes.RemoveAll(ot => !times.Contains(ot));
       otherTimes.AddRange(times.Except(otherTimes).Take(4));
@@ -906,41 +906,41 @@ namespace HedgeHog {
     #endregion
 
     #region NewsTimes
-    ReactiveCollection<DateTime> _NewsTimes;
-    public ReactiveCollection<DateTime> NewsTimes {
+    ReactiveList<DateTime> _NewsTimes;
+    public ReactiveList<DateTime> NewsTimes {
       get {
         if (_NewsTimes == null) {
-          _NewsTimes = new ReactiveCollection<DateTime>();
+          _NewsTimes = new ReactiveList<DateTime>();
           InitVLines(NewsTimes, NewsTimesVLines, Colors.MediumPurple, d => "NewsTimes @ {0:g}".Formater(d), new[] { 2.0, 6, 2, 6 }, 2);
         }
         return _NewsTimes;
       }
     }
-    ReactiveCollection<VerticalLine> NewsTimesVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> NewsTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawNewsTimes(IList<DateTime> times) { DrawVertivalLines(times, NewsTimes, NewsTimesVLines); }
     #endregion
 
     #region Trade Times
-    ReactiveCollection<DateTime> _TradeTimes;
-    public ReactiveCollection<DateTime> TradeTimes {
+    ReactiveList<DateTime> _TradeTimes;
+    public ReactiveList<DateTime> TradeTimes {
       get {
         if (_TradeTimes == null) {
-          _TradeTimes = new ReactiveCollection<DateTime>();
+          _TradeTimes = new ReactiveList<DateTime>();
           InitVLines(TradeTimes, TradeTimesVLines, Colors.Green, d => "Trade @ {0:g}".Formater(d));
         }
         return _TradeTimes;
       }
     }
-    ReactiveCollection<VerticalLine> TradeTimesVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> TradeTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes, TradeTimesVLines); }
     #endregion
   
     #region NYTimes
-    ReactiveCollection<VerticalRange> _NYSessions;
-    public ReactiveCollection<VerticalRange> NYSessions {
+    ReactiveList<VerticalRange> _NYSessions;
+    public ReactiveList<VerticalRange> NYSessions {
       get {
         if (_NYSessions == null) {
-          _NYSessions = new ReactiveCollection<VerticalRange>();
+          _NYSessions = new ReactiveList<VerticalRange>();
           _NYSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
             InitSessionVerticalRange(vr, Colors.RoyalBlue);
           });
@@ -949,17 +949,17 @@ namespace HedgeHog {
         return _NYSessions;
       }
     }
-    ReactiveCollection<DateTime> _NYTimes;
-    public ReactiveCollection<DateTime> NYTimes {
+    ReactiveList<DateTime> _NYTimes;
+    public ReactiveList<DateTime> NYTimes {
       get {
         if (_NYTimes == null) {
-          _NYTimes = new ReactiveCollection<DateTime>();
+          _NYTimes = new ReactiveList<DateTime>();
           InitVLines(NYTimes, NYTimesVLines, Colors.RoyalBlue, d => "NY Forex @ {0:g}".Formater(d));
         }
         return _NYTimes;
       }
     }
-    ReactiveCollection<VerticalLine> NYTimesVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> NYTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawNYTimes(IList<DateTime> times) {
       DrawVertivalLines(times, NYTimes, NYTimesVLines);
       SetVerticalRanges(times, NYSessions);
@@ -967,11 +967,11 @@ namespace HedgeHog {
     #endregion
 
     #region LindonTimes
-    ReactiveCollection<VerticalRange> _londonSessions;
-    public ReactiveCollection<VerticalRange> LondonSessions {
+    ReactiveList<VerticalRange> _londonSessions;
+    public ReactiveList<VerticalRange> LondonSessions {
       get {
         if (_londonSessions == null) {
-          _londonSessions = new ReactiveCollection<VerticalRange>();
+          _londonSessions = new ReactiveList<VerticalRange>();
           _londonSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
             InitSessionVerticalRange(vr, Colors.MediumVioletRed);
           });
@@ -980,17 +980,17 @@ namespace HedgeHog {
         return _londonSessions;
       }
     }
-    ReactiveCollection<DateTime> _LondonTimes;
-    public ReactiveCollection<DateTime> LondonTimes {
+    ReactiveList<DateTime> _LondonTimes;
+    public ReactiveList<DateTime> LondonTimes {
       get {
         if (_LondonTimes == null) {
-          _LondonTimes = new ReactiveCollection<DateTime>();
+          _LondonTimes = new ReactiveList<DateTime>();
           InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d));
         }
         return _LondonTimes;
       }
     }
-    ReactiveCollection<VerticalLine> LondonTimesVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> LondonTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawLindonTimes(IList<DateTime> times) {
       DrawVertivalLines(times, LondonTimes, LondonTimesVLines);
       SetVerticalRanges(times, LondonSessions);
@@ -998,11 +998,11 @@ namespace HedgeHog {
 
     #endregion
     #region TokyoTimes
-    ReactiveCollection<VerticalRange> _tokyoSessions;
-    public ReactiveCollection<VerticalRange> tokyoSessions {
+    ReactiveList<VerticalRange> _tokyoSessions;
+    public ReactiveList<VerticalRange> tokyoSessions {
       get {
         if (_tokyoSessions == null) {
-          _tokyoSessions = new ReactiveCollection<VerticalRange>();
+          _tokyoSessions = new ReactiveList<VerticalRange>();
           _tokyoSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
             InitSessionVerticalRange(vr, Colors.DarkGoldenrod, 0.4);
           });
@@ -1012,23 +1012,23 @@ namespace HedgeHog {
       }
     }
 
-    ReactiveCollection<DateTime> _TokyoTimes;
-    public ReactiveCollection<DateTime> TokyoTimes {
+    ReactiveList<DateTime> _TokyoTimes;
+    public ReactiveList<DateTime> TokyoTimes {
       get {
         if (_TokyoTimes == null) {
-          _TokyoTimes = new ReactiveCollection<DateTime>();
+          _TokyoTimes = new ReactiveList<DateTime>();
           InitVLines(TokyoTimes, TokyoTimesVLines, Colors.DarkGoldenrod, d => "TokyoTimes @ {0:g}".Formater(d));
         }
         return _TokyoTimes;
       }
     }
-    ReactiveCollection<VerticalLine> TokyoTimesVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> TokyoTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawTokyoTimes(IList<DateTime> times) {
       DrawVertivalLines(times, TokyoTimes, TokyoTimesVLines);
       SetVerticalRanges(times, tokyoSessions);
     }
     #endregion  
-    private void SetVerticalRanges(IList<DateTime> times, ReactiveCollection<VerticalRange> vRanges) {
+    private void SetVerticalRanges(IList<DateTime> times, ReactiveList<VerticalRange> vRanges) {
       var timePairs = times.Clump(2);
       while (vRanges.Count < timePairs.Count())
         vRanges.Add(new VerticalRange());

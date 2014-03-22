@@ -1,16 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
   <!-- EF Runtime content -->
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="AliceModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
-        <EntityContainer Name="AliceModelStoreContainer">
-          <EntitySet Name="OrderTemplate" EntityType="AliceModel.Store.OrderTemplate" store:Type="Tables" Schema="dbo" />
-          <EntitySet Name="SuppRes" EntityType="AliceModel.Store.SuppRes" store:Type="Tables" Schema="dbo" />
-          <EntitySet Name="TradingAccount" EntityType="AliceModel.Store.TradingAccount" store:Type="Tables" Schema="dbo" />
-          <EntitySet Name="TradingMacro" EntityType="AliceModel.Store.TradingMacro" store:Type="Tables" Schema="dbo" />
-        </EntityContainer>
+    <Schema Namespace="AliceModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="OrderTemplate">
           <Key>
             <PropertyRef Name="ID" />
@@ -37,23 +31,23 @@
           <Key>
             <PropertyRef Name="Id" />
           </Key>
-          <Property Name="Password" Type="nvarchar" Nullable="false" MaxLength="50" />
+          <Property Name="Password" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="MasterId" Type="nvarchar" MaxLength="50" />
           <Property Name="IsDemo" Type="bit" Nullable="false" />
           <Property Name="AccountId" Type="nvarchar" MaxLength="50" />
           <Property Name="Id" Type="uniqueidentifier" Nullable="false" />
           <Property Name="IsMaster" Type="bit" Nullable="false" />
-          <Property Name="TradeRatio" Type="nvarchar" Nullable="false" MaxLength="6" />
+          <Property Name="TradeRatio" Type="nvarchar" MaxLength="6" Nullable="false" />
           <Property Name="Commission" Type="float" Nullable="false" />
           <Property Name="IsActive" Type="bit" Nullable="false" />
-          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="TradingMacroName" Type="nvarchar" MaxLength="64" Nullable="false" />
           <Property Name="PipsToExit" Type="float" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
             <PropertyRef Name="UID" />
           </Key>
-          <Property Name="Pair" Type="nvarchar" Nullable="false" MaxLength="8" />
+          <Property Name="Pair" Type="nvarchar" MaxLength="8" Nullable="false" />
           <Property Name="TradingRatio" Type="float" Nullable="false" />
           <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
           <Property Name="LimitBar" Type="int" Nullable="false" />
@@ -62,18 +56,18 @@
           <Property Name="FreezLimit" Type="int" Nullable="false" />
           <Property Name="CorridorMethod" Type="int" Nullable="false" />
           <Property Name="FreezeStop" Type="int" Nullable="false" />
-          <Property Name="FibMax" Type="nvarchar" Nullable="false" MaxLength="256" />
+          <Property Name="FibMax" Type="nvarchar" MaxLength="256" Nullable="false" />
           <Property Name="FibMin" Type="float" Nullable="false" />
           <Property Name="CorridornessMin" Type="float" Nullable="false" />
           <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
           <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
-          <Property Name="CorridorIterations" Type="nvarchar" Nullable="false" MaxLength="16" />
+          <Property Name="CorridorIterations" Type="nvarchar" MaxLength="16" Nullable="false" />
           <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
           <Property Name="PairIndex" Type="int" Nullable="false" />
           <Property Name="TradingGroup" Type="int" Nullable="false" />
           <Property Name="MaximumPositions" Type="int" Nullable="false" />
           <Property Name="IsActive" Type="bit" Nullable="false" />
-          <Property Name="TradingMacroName" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="TradingMacroName" Type="nvarchar" MaxLength="64" Nullable="false" />
           <Property Name="LimitCorridorByBarHeight" Type="bit" Nullable="false" />
           <Property Name="MaxLotByTakeProfitRatio" Type="float" Nullable="false" />
           <Property Name="BarPeriodsLow" Type="int" Nullable="false" />
@@ -108,7 +102,7 @@
           <Property Name="SupportDate" Type="datetime" />
           <Property Name="ResistanceDate" Type="datetime" />
           <Property Name="GannAnglesOffset" Type="float" />
-          <Property Name="GannAngles" Type="nvarchar" Nullable="false" MaxLength="1024" />
+          <Property Name="GannAngles" Type="nvarchar" MaxLength="1024" Nullable="false" />
           <Property Name="IsGannAnglesManual" Type="bit" Nullable="false" />
           <Property Name="GannAnglesAnchorDate" Type="datetime" />
           <Property Name="SpreadShortToLongTreshold" Type="float" Nullable="false" />
@@ -139,11 +133,17 @@
           <Property Name="ResetOnBalance" Type="float" />
           <Property Name="VoltageFunction" Type="int" Nullable="false" />
         </EntityType>
+        <EntityContainer Name="AliceModelStoreContainer">
+          <EntitySet Name="OrderTemplate" EntityType="Self.OrderTemplate" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="SuppRes" EntityType="Self.SuppRes" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TradingAccount" EntityType="Self.TradingAccount" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TradingMacro" EntityType="Self.TradingMacro" Schema="dbo" store:Type="Tables" />
+        </EntityContainer>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
-      <Schema Namespace="AliceModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
-        <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true">
+      <Schema Namespace="AliceModel" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/11/edm" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+        <EntityContainer Name="AliceEntities" annotation:LazyLoadingEnabled="true" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
           <EntitySet Name="TradingAccounts" EntityType="AliceModel.TradingAccount" />
           <EntitySet Name="TradingMacroes" EntityType="AliceModel.TradingMacro" />
           <EntitySet Name="OrderTemplates" EntityType="AliceModel.OrderTemplate" />
@@ -173,7 +173,7 @@
           <Key>
             <PropertyRef Name="UID" />
           </Key>
-          <Property Name="Pair" Type="String" Nullable="false" MaxLength="7" Unicode="true" FixedLength="false" />
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="8" Unicode="true" FixedLength="false" />
           <Property Name="TradingRatio" Type="Double" Nullable="false" />
           <Property Name="UID" Type="Guid" Nullable="false" />
           <Property Name="LimitBar" Type="Int32" Nullable="false" />
@@ -182,7 +182,7 @@
           <Property Name="FreezLimit" Type="Int32" Nullable="false" />
           <Property Name="CorridorMethod" Type="Int32" Nullable="false" />
           <Property Name="FreezeStop" Type="Int32" Nullable="false" />
-          <Property Name="FibMax" Type="String" Nullable="false" MaxLength="8" Unicode="true" FixedLength="false" />
+          <Property Name="FibMax" Type="String" Nullable="false" MaxLength="256" Unicode="true" FixedLength="false" />
           <Property Name="FibMin" Type="Double" Nullable="false" />
           <Property Name="CorridornessMin" Type="Double" Nullable="false" />
           <Property Name="CorridorIterationsIn" Type="Int32" Nullable="false" />
@@ -204,7 +204,7 @@
           <Property Type="Int32" Name="CorridorAverageDaysBack" Nullable="false" />
           <Property Type="Int32" Name="CorridorPeriodsStart" Nullable="false" />
           <Property Type="Int32" Name="CorridorPeriodsLength" Nullable="false" />
-          <Property Type="DateTime" Name="CorridorStartDate" />
+          <Property Type="DateTime" Name="CorridorStartDate" Precision="3" />
           <Property Type="Double" Name="CorridorRatioForRange" Nullable="false" />
           <Property Type="Double" Name="CorridorRatioForBreakout" Nullable="false" />
           <Property Type="Double" Name="RangeRatioForTradeLimit" Nullable="false" />
@@ -225,12 +225,12 @@
           <Property Type="Double" Name="TradingAngleRange" Nullable="false" />
           <Property Type="Boolean" Name="CloseByMomentum" Nullable="false" />
           <Property Type="Boolean" Name="TradeByRateDirection" Nullable="false" />
-          <Property Type="DateTime" Name="SupportDate" />
-          <Property Type="DateTime" Name="ResistanceDate" />
+          <Property Type="DateTime" Name="SupportDate" Precision="3" />
+          <Property Type="DateTime" Name="ResistanceDate" Precision="3" />
           <Property Type="Double" Name="GannAnglesOffset" />
           <Property Type="String" Name="GannAngles" Nullable="false" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Type="Boolean" Name="IsGannAnglesManual" Nullable="false" />
-          <Property Type="DateTime" Name="GannAnglesAnchorDate" />
+          <Property Type="DateTime" Name="GannAnglesAnchorDate" Precision="3" />
           <Property Type="Double" Name="SpreadShortToLongTreshold" Nullable="false" />
           <Property Type="Double" Name="SupportPriceStore" />
           <Property Type="Double" Name="ResistancePriceStore" />
@@ -299,7 +299,7 @@
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
     <edmx:Mappings>
-      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
         <EntityContainerMapping StorageEntityContainer="AliceModelStoreContainer" CdmEntityContainer="AliceEntities">
           <EntitySetMapping Name="OrderTemplates">
             <EntityTypeMapping TypeName="IsTypeOf(AliceModel.OrderTemplate)">
@@ -438,31 +438,32 @@
     </edmx:Mappings>
   </edmx:Runtime>
   <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
-  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
-    <Connection>
-      <DesignerInfoPropertySet>
-        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
-      </DesignerInfoPropertySet>
-    </Connection>
-    <Options>
-      <DesignerInfoPropertySet>
-        <DesignerProperty Name="ValidateOnBuild" Value="true" />
-        <DesignerProperty Name="EnablePluralization" Value="False" />
-        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
-      </DesignerInfoPropertySet>
-    </Options>
+  <edmx:Designer>
+    <edmx:Connection>
+      <edmx:DesignerInfoPropertySet>
+        <edmx:DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </edmx:DesignerInfoPropertySet>
+    </edmx:Connection>
+    <edmx:Options>
+      <edmx:DesignerInfoPropertySet>
+        <edmx:DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <edmx:DesignerProperty Name="EnablePluralization" Value="False" />
+        <edmx:DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <edmx:DesignerProperty Name="UseLegacyProvider" Value="True" />
+      </edmx:DesignerInfoPropertySet>
+    </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
-    <Diagrams>
-      <Diagram Name="Alice" ZoomLevel="39">
-        <EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
-        <EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="false" />
-        <EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
-        <EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="5.375" Height="2.1725878906249996" />
-        <AssociationConnector Association="AliceModel.TradingMacro_SuppRes" >
-          <ConnectorPoint PointX="4.6249999999999973" PointY="5.275" />
-          <ConnectorPoint PointX="5.375" PointY="5.375" />
-        </AssociationConnector>
-      </Diagram>
-    </Diagrams>
-  </Designer>
+    <edmx:Diagrams>
+      <edmx:Diagram Name="Alice" ZoomLevel="39">
+        <edmx:EntityTypeShape EntityType="AliceModel.TradingAccount" Width="1.5" PointX="2.75" PointY="0.75" Height="2.2496956380208335" IsExpanded="true" />
+        <edmx:EntityTypeShape EntityType="AliceModel.TradingMacro" Width="1.875" PointX="2.75" PointY="4.875" Height="0.4" IsExpanded="false" />
+        <edmx:EntityTypeShape EntityType="AliceModel.OrderTemplate" Width="1.5" PointX="7.375" PointY="0.75" Height="1.9210009765624996" />
+        <edmx:EntityTypeShape EntityType="AliceModel.SuppRes" Width="1.5" PointX="5.375" PointY="5.375" Height="2.1725878906249996" />
+        <edmx:AssociationConnector Association="AliceModel.TradingMacro_SuppRes">
+          <edmx:ConnectorPoint PointX="4.6249999999999973" PointY="5.275" />
+          <edmx:ConnectorPoint PointX="5.375" PointY="5.375" />
+        </edmx:AssociationConnector>
+      </edmx:Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
 </edmx:Edmx>

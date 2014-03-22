@@ -47,124 +47,9 @@ namespace HedgeHog.Alice.Store {
       //_loadRatesAction.SendAsync(this);
     }
 
-    #region DeleteOrder Subject
-    static object _DeleteOrderSubjectLocker = new object();
-    static ISubject<string> _DeleteOrderSubject;
-    ISubject<string> DeleteOrderSubject {
-      get {
-        lock (_DeleteOrderSubjectLocker)
-          if (_DeleteOrderSubject == null) {
-            _DeleteOrderSubject = new Subject<string>();
-            _DeleteOrderSubject
-              .DistinctUntilChanged()
-              .Subscribe(s => {
-                try {
-                  GetFXWraper().DeleteOrder(s);
-                } catch (Exception exc) { Log = exc; }
-              }, exc => Log = exc);
-          }
-        return _DeleteOrderSubject;
-      }
-    }
-    protected void OnDeletingOrder(Order order) {
-      DeleteOrderSubject.OnNext(order.OrderID);
-    }
-    protected void OnDeletingOrder(string orderId) {
-      DeleteOrderSubject.OnNext(orderId);
-    }
-    #endregion
-
-
-
-    #region CreateEntryOrder Subject
-    class CreateEntryOrderHelper {
-      public string Pair { get; set; }
-      public bool IsBuy { get; set; }
-      public int Amount { get; set; }
-      public double Rate { get; set; }
-      public CreateEntryOrderHelper(string pair, bool isbuy, int amount, double rate) {
-        this.Pair = pair;
-        this.IsBuy = isbuy;
-        this.Amount = amount;
-        this.Rate = rate;
-      }
-    }
-    static ISubject<CreateEntryOrderHelper> _CreateEntryOrderSubject;
-
-    ISubject<CreateEntryOrderHelper> CreateEntryOrderSubject {
-      get {
-        if (_CreateEntryOrderSubject == null) {
-          _CreateEntryOrderSubject = new Subject<CreateEntryOrderHelper>();
-          _CreateEntryOrderSubject
-            .GroupByUntil(g => new { g.Pair, g.IsBuy }, g => Observable.Timer(THROTTLE_INTERVAL))
-              .SelectMany(o => o.TakeLast(1))
-              .SubscribeOn(Scheduler.Default)
-              .Subscribe(s => {
-                try {
-                  CheckPendingAction("EO", (pa) => { pa(); GetFXWraper().CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
-                } catch (Exception exc) {
-                  Log = exc;
-                }
-              });
-        }
-        return _CreateEntryOrderSubject;
-      }
-    }
-
-    void OnCreateEntryOrder(bool isBuy, int amount, double rate) {
-      CreateEntryOrderSubject.OnNext(new CreateEntryOrderHelper(Pair, isBuy, amount, rate));
-    }
-    #endregion
-
-
     #region ScanCorridor Broadcast
     void OnScanCorridor(IList<Rate> rates) { ScanCorridor(rates); }
     #endregion
-    #endregion
-
-    #region Pending Action
-    bool HasPendingEntryOrders { get { return PendingEntryOrders.Count() > 0; } }
-    static MemoryCache _pendingEntryOrders;
-    MemoryCache PendingEntryOrders {
-      [MethodImpl(MethodImplOptions.Synchronized)]
-      get {
-        if (_pendingEntryOrders == null)
-          _pendingEntryOrders = new MemoryCache(Pair);
-        return _pendingEntryOrders;
-      }
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void ReleasePendingAction(string key) {
-      if (PendingEntryOrders.Contains(key)) {
-        PendingEntryOrders.Remove(key);
-        Debug.WriteLine("Pending[" + Pair + "] " + key + " released.");
-      }
-    }
-    private bool HasPendingOrders() { return PendingEntryOrders.Any(); }
-    private bool HasPendingKey(string key) { return !CheckPendingKey(key); }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private bool CheckPendingKey(string key) {
-      return !PendingEntryOrders.Contains(key);
-    }
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void CheckPendingAction(string key, Action<Action> action = null) {
-      if (!HasPendingOrders()) {
-        if (action != null) {
-          try {
-            Action a = () => {
-              var cip = new CacheItemPolicy() { AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(1), RemovedCallback = ce => { if (!IsInVitualTrading) Log = new Exception(ce.CacheItem.Key + "[" + Pair + "] expired."); } };
-              PendingEntryOrders.Add(key, DateTimeOffset.Now, cip);
-            };
-            action(a);
-          } catch (Exception exc) {
-            ReleasePendingAction(key);
-            Log = exc;
-          }
-        }
-      } else {
-        Debug.WriteLine(Pair + "." + key + " is pending:" + PendingEntryOrders[key] + " in " + Lib.CallingMethod());
-      }
-    }
     #endregion
 
     #region Events
@@ -322,6 +207,7 @@ namespace HedgeHog.Alice.Store {
     [Import]
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
     public TradingMacro() {
+      SubscribeToEntryOrderRelatedEvents();
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy!= Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {
@@ -389,7 +275,6 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
-
     }
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
@@ -2309,6 +2194,9 @@ namespace HedgeHog.Alice.Store {
         if (_Strategy != value) {
           _Strategy = value;
           OnPropertyChanged(TradingMacroMetadata.Strategy);
+          Task.Run(() => {
+            _broadcastCorridorDateChanged();
+          }); 
         }
       }
     }
@@ -2426,24 +2314,6 @@ namespace HedgeHog.Alice.Store {
     public void SetPriceSpreadOk() {
       IsPriceSpreadOk = this.CurrentPrice.Spread < this.PriceSpreadAverage * 1.2;
     }
-    private bool _CanDoEntryOrders = false;
-    [Category(categoryActiveYesNo)]
-    [DisplayName("Can Do Entry Orders")]
-    public bool CanDoEntryOrders {
-      get { return _CanDoEntryOrders; }
-      set {
-        _CanDoEntryOrders = value;
-        if(!value)
-          GetEntryOrders().ToList().ForEach(o => OnDeletingOrder(o.OrderID));
-      }
-    }
-    private bool CanDoNetOrders {
-      get {
-        var canDo = false && IsAutoStrategy && (HasCorridor || IsAutoStrategy);
-        return canDo;
-      }
-    }
-
     static TradingMacro() {
       Scheduler.Default.Schedule(5.FromSeconds(), () => {
         var dups = ((TrailingWaveMethod)0).HasDuplicates();
@@ -2465,7 +2335,8 @@ namespace HedgeHog.Alice.Store {
 
     private Order2GoAddIn.FXCoreWrapper GetFXWraper(bool failTradesManager = true) {
       if (TradesManager == null)
-        FailTradesManager();
+        if (failTradesManager) FailTradesManager();
+        else Log = new Exception("Request to TradesManager failed. TradesManager is null.");
       return TradesManager as Order2GoAddIn.FXCoreWrapper;
     }
 
@@ -2586,7 +2457,7 @@ namespace HedgeHog.Alice.Store {
 
     #region GetEntryOrders
     private Order[] GetEntryOrders() {
-      Order2GoAddIn.FXCoreWrapper fw = GetFXWraper();
+      Order2GoAddIn.FXCoreWrapper fw = GetFXWraper(false);
       return fw == null ? new Order[0] : fw.GetEntryOrders(Pair);
     }
     private Order[] GetEntryOrders(bool isBuy) {
@@ -2982,8 +2853,8 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
 
-    ReactiveUI.ReactiveCollection<NewsEvent> _newEventsCurrent = new ReactiveCollection<NewsEvent>();
-    public ReactiveUI.ReactiveCollection<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
+    ReactiveList<NewsEvent> _newEventsCurrent = new ReactiveList<NewsEvent>();
+    public ReactiveUI.ReactiveList<NewsEvent> NewEventsCurrent { get { return _newEventsCurrent; } }
     Queue<Price> _priceQueue = new Queue<Price>();
     private void RunPrice(PriceChangedEventArgs e, Trade[] trades) {
       Price price = e.Price;
@@ -3531,14 +3402,33 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => BuyLevel);
       }
     }
-    private Store.SuppRes _sellLevel;
+    private Store.SuppRes _buyCloseLevel;
+    public Store.SuppRes BuyCloseLevel {
+      get { return _buyCloseLevel; }
+      set {
+        if (_buyCloseLevel == value) return;
+        _buyCloseLevel = value;
+        OnPropertyChanged(() => BuyCloseLevel);
+      }
+    }
 
+    private Store.SuppRes _sellLevel;
     public Store.SuppRes SellLevel {
       get { return _sellLevel; }
       set {
         if (_sellLevel == value) return;
         _sellLevel = value;
         OnPropertyChanged(() => SellLevel);
+      }
+    }
+
+    private Store.SuppRes _sellCloseLevel;
+    public Store.SuppRes SellCloseLevel {
+      get { return _sellCloseLevel; }
+      set {
+        if (_sellCloseLevel == value) return;
+        _sellCloseLevel = value;
+        OnPropertyChanged(() => SellCloseLevel);
       }
     }
     private IList<IList<Rate>> _waves;
@@ -3924,7 +3814,19 @@ namespace HedgeHog.Alice.Store {
       FireOnNotIsTradingActiveSubject.OnNext(p);
     }
     #endregion
+    #region MustStopTrading
+    private bool _MustStopTrading;
+    public bool MustStopTrading {
+      get { return _MustStopTrading; }
+      set {
+        if (_MustStopTrading != value) {
+          _MustStopTrading = value;
+          OnPropertyChanged("MustStopTrading");
+        }
+      }
+    }
 
+    #endregion
     public bool IsTradingActive {
       get { return _IsTradingActive; }
       set {
@@ -3932,7 +3834,9 @@ namespace HedgeHog.Alice.Store {
           _IsTradingActive = value;
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           OnPropertyChanged(() => IsTradingActive);
-          OnFireOnNotIsTradingActive(() => { Debugger.Break(); });
+          if (value) MustStopTrading = false;
+          else
+            OnFireOnNotIsTradingActive(() => MustStopTrading = true);
         }
       }
     }

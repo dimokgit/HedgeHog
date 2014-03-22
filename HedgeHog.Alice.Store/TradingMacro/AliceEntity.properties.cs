@@ -11,7 +11,8 @@ using System.Reactive.Concurrency;
 using ReactiveUI;
 using System.Reactive.Linq;
 using System.Linq.Expressions;
-
+using ReactiveUI;
+ 
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
     public static SuppRes[] Active(this ICollection<SuppRes> supReses,bool isBuy) {

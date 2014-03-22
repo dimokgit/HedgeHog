@@ -19,7 +19,6 @@ using System.Windows.Threading;
 using HedgeHog.Shared;
 using HedgeHog.DB;
 using ReactiveUI;
-using ReactiveUI.Xaml;
 using System.Collections.Specialized;
 using System.Reactive.Concurrency;
 
@@ -76,8 +75,8 @@ namespace HedgeHog {
     }
 
     #endregion
-    ReactiveCollection<Event__News> _newsEventHistory = new ReactiveCollection<Event__News>();
-    public ReactiveCollection<Event__News> NewsEventHistory {
+    ReactiveList<Event__News> _newsEventHistory = new ReactiveList<Event__News>();
+    public ReactiveList<Event__News> NewsEventHistory {
       get { return _newsEventHistory; }
     }
 
@@ -166,7 +165,7 @@ namespace HedgeHog {
     #endregion
 
     #region Draw 
-    ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> otherVLines = new ReactiveList<VerticalLine>();
     public void DrawVertivalLines(IList<DateTime> times) {
       var times0 = times.Select(t => dateAxis.ConvertToDouble(GetPriceStartDateContinuous(t))).ToArray();
       var timeSelectedDouble = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(DateStart.GetValueOrDefault()));

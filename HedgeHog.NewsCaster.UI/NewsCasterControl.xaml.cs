@@ -164,7 +164,7 @@ namespace HedgeHog.UI {
       private bool _AutoTrade;
       public bool AutoTrade {
         get { return _AutoTrade; }
-        set { this.RaiseAndSetIfChanged(a => a.AutoTrade, value); }
+        set { this.RaiseAndSetIfChanged(ref _AutoTrade, value); }
       }
 
       #endregion
@@ -172,7 +172,7 @@ namespace HedgeHog.UI {
       private bool _DidHappen = false;
       public bool DidHappen {
         get { return _DidHappen; }
-        set { this.RaiseAndSetIfChanged(a => a.DidHappen, value); }
+        set { this.RaiseAndSetIfChanged(ref _DidHappen, value); }
       }
 
       #endregion
@@ -180,14 +180,14 @@ namespace HedgeHog.UI {
       private int? _Countdown = null;
       public int? Countdown {
         get { return _Countdown; }
-        set { this.RaiseAndSetIfChanged(a => a.Countdown, value < -30 ? null : value); }
+        set { this.RaiseAndSetIfChanged(ref _Countdown, value < -30 ? null : value); }
       }
       #endregion
       #region IsToday
       private bool _IsToday = false;
       public bool IsToday {
         get { return _IsToday; }
-        set { this.RaiseAndSetIfChanged(a => a.IsToday, value); }
+        set { this.RaiseAndSetIfChanged(ref _IsToday, value); }
       }
 
       #endregion
@@ -195,14 +195,14 @@ namespace HedgeHog.UI {
       private string _Color = "White";
       public string Color {
         get { return _Color; }
-        set { this.RaiseAndSetIfChanged(a => a.Color, value); }
+        set { this.RaiseAndSetIfChanged(ref _Color, value); }
       }
       #endregion
       #region Date
       private DateTime _Date = DateTime.MinValue;
       public DateTime Date {
         get { return _Date; }
-        set { this.RaiseAndSetIfChanged(a => a.Date, value); }
+        set { this.RaiseAndSetIfChanged(ref _Date, value); }
       }
 
       #endregion
@@ -249,15 +249,16 @@ namespace HedgeHog.UI {
     }
     static NewsCasterModel() {
       SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()
-        .Select(ne=>new NewsEvent(){
+        .Select(ne => new NewsEvent() {
           Country = ne.Country,
           Level = (NewsEventLevel)Enum.Parse(typeof(NewsEventLevel), ne.Level),
           Name = ne.Name,
-          Time = ne.Time}).ToArray(),
+          Time = ne.Time
+        }).ToArray(),
           (c, e) => {
-        Default.Log = e;
-        SavedNews = new NewsEvent[0];
-      });
+            Default.Log = e;
+            SavedNews = new NewsEvent[0];
+          });
     }
     #region Countdown Subject
     object _CountdownSubjectLocker = new object();

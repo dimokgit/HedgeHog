@@ -105,6 +105,7 @@
                 <telerik:PropertyDefinition Binding="{Binding DoAdjustExitLevelByTradeTime}" GroupName="Yes/No" DisplayName="AdjustExitByTime" Description="Adjust Exit Level By Min/Max since Trade Time" />
                 <telerik:PropertyDefinition Binding="{Binding ExitByBuySellLevel}" GroupName="Yes/No" DisplayName="ExitByBuySellLevel" Description="Exit level is calculated using Buy/Sell level instead of open price" />
                 <telerik:PropertyDefinition Binding="{Binding CanDoEntryOrders}" GroupName="Yes/No" DisplayName="CanDoEntryOrders" Description="Sync buy/sell levels with live entry orders" />
+                <telerik:PropertyDefinition Binding="{Binding CanDoNetLimitOrders}" GroupName="Yes/No" DisplayName="CanDoNetLimitOrders" Description="Sync buy/sell levels with live net limit/stop orders" />
                 
                 <telerik:PropertyDefinition Binding="{Binding CorridorDistanceRatio}" DisplayName="Corridor Range" Description="CorridorDistanceRatio" GroupName="Numeric" />
                 <telerik:PropertyDefinition Binding="{Binding PriceCmaLevels}" DisplayName="Price Cma" GroupName="Numeric" />
