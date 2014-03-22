@@ -1600,6 +1600,7 @@ namespace HedgeHog.Alice.Client {
     void changeStops() {
       changeStopsOrLimits(stopDeltas, trade => trade.Stop, (id, v) => changeStop(id, v), changeStopScheduler);
     }
+    // TODO: sync new level with others by using NessageBus
     void changeLimit(string tradeId, double newLimit) {
       fwMaster.FixOrderSetLimit(tradeId, newLimit, "");
     }

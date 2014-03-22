@@ -126,10 +126,22 @@ namespace HedgeHog.Shared {
     public double LimitInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Open : Open - Limit); } }
     [DisplayName("")]
     public double LimitToCloseInPips { get { return Limit == 0 ? 0 : InPips(IsBuy ? Limit - Close : Close - Limit); } }
+    #region Stop
+    private double _Stop;
     [DisplayName("")]
     [DataMember]
-    [UpdateOnUpdate("StopInPips","StopToCloseInPips")]
-    public double Stop { get; set; }
+    [UpdateOnUpdate("StopInPips", "StopToCloseInPips")]
+    public double Stop {
+      get { return _Stop; }
+      set {
+        if (_Stop != value) {
+          _Stop = value;
+          OnPropertyChanged("Stop");
+        }
+      }
+    }
+
+    #endregion
     [DisplayName("")]
     public double StopInPips { get { return Stop == 0 ? 0 : InPips(IsBuy ? Stop - Open : Open - Stop); } }
     [DisplayName("")]

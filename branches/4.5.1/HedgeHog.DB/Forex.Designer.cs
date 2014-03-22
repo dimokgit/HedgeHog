@@ -8,12 +8,13 @@
 //------------------------------------------------------------------------------
 
 using System;
+using System.ComponentModel;
+using System.Data.EntityClient;
 using System.Data.Objects;
 using System.Data.Objects.DataClasses;
-using System.Data.EntityClient;
-using System.ComponentModel;
-using System.Xml.Serialization;
+using System.Linq;
 using System.Runtime.Serialization;
+using System.Xml.Serialization;
 
 [assembly: EdmSchemaAttribute()]
 #region EDM Relationship Metadata
@@ -279,6 +280,7 @@ namespace HedgeHog.DB
         private ObjectSet<EventLevel__News> _EventLevel__News;
 
         #endregion
+
         #region AddTo Methods
     
         /// <summary>
@@ -386,6 +388,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Function Imports
     
         /// <summary>
@@ -660,11 +663,11 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
     }
-    
 
     #endregion
-    
+
     #region Entities
     
     /// <summary>
@@ -695,6 +698,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -803,6 +807,7 @@ namespace HedgeHog.DB
         partial void OnCountryChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -845,6 +850,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -873,6 +879,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -951,6 +958,7 @@ namespace HedgeHog.DB
         partial void OnLevelChanged();
 
         #endregion
+
     
         #region Navigation Properties
     
@@ -977,6 +985,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
     }
     
     /// <summary>
@@ -1013,6 +1022,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -1193,6 +1203,7 @@ namespace HedgeHog.DB
         partial void OnDateChanged();
 
         #endregion
+
     
     }
     
@@ -1242,6 +1253,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -1608,6 +1620,7 @@ namespace HedgeHog.DB
         partial void OnRowChanged();
 
         #endregion
+
     
     }
     
@@ -1643,6 +1656,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -1802,6 +1816,7 @@ namespace HedgeHog.DB
         partial void OnStDevHeightChanged();
 
         #endregion
+
     
     }
     
@@ -1837,6 +1852,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -1987,6 +2003,7 @@ namespace HedgeHog.DB
         partial void OnBaseUnitSizeChanged();
 
         #endregion
+
     
     }
     
@@ -2014,6 +2031,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -2092,6 +2110,7 @@ namespace HedgeHog.DB
         partial void OnTimeLocalChanged();
 
         #endregion
+
     
     }
     
@@ -2123,6 +2142,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -2345,6 +2365,7 @@ namespace HedgeHog.DB
         partial void OnBallanceMaxChanged();
 
         #endregion
+
     
     }
     
@@ -2382,6 +2403,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -2556,6 +2578,7 @@ namespace HedgeHog.DB
         partial void OnNameChanged();
 
         #endregion
+
     
     }
     
@@ -2611,6 +2634,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -3095,8 +3119,33 @@ namespace HedgeHog.DB
         private Nullable<global::System.Double> _RunningBalanceTotal;
         partial void OnRunningBalanceTotalChanging(Nullable<global::System.Double> value);
         partial void OnRunningBalanceTotalChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String SessionInfo2
+        {
+            get
+            {
+                return _SessionInfo2;
+            }
+            set
+            {
+                OnSessionInfo2Changing(value);
+                ReportPropertyChanging("SessionInfo2");
+                _SessionInfo2 = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("SessionInfo2");
+                OnSessionInfo2Changed();
+            }
+        }
+        private global::System.String _SessionInfo2;
+        partial void OnSessionInfo2Changing(global::System.String value);
+        partial void OnSessionInfo2Changed();
 
         #endregion
+
     
     }
     
@@ -3126,6 +3175,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -3306,6 +3356,7 @@ namespace HedgeHog.DB
         partial void OnTimeStopLocalChanged();
 
         #endregion
+
     
     }
     
@@ -3335,6 +3386,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -3419,6 +3471,7 @@ namespace HedgeHog.DB
         partial void OnWeight2Changed();
 
         #endregion
+
     
     }
     
@@ -3446,6 +3499,7 @@ namespace HedgeHog.DB
         }
 
         #endregion
+
         #region Primitive Properties
     
         /// <summary>
@@ -4197,12 +4251,206 @@ namespace HedgeHog.DB
         private global::System.String _TakeProfitLimitRatio;
         partial void OnTakeProfitLimitRatioChanging(global::System.String value);
         partial void OnTakeProfitLimitRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String TradingAngleRange
+        {
+            get
+            {
+                return _TradingAngleRange;
+            }
+            set
+            {
+                OnTradingAngleRangeChanging(value);
+                ReportPropertyChanging("TradingAngleRange");
+                _TradingAngleRange = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("TradingAngleRange");
+                OnTradingAngleRangeChanged();
+            }
+        }
+        private global::System.String _TradingAngleRange;
+        partial void OnTradingAngleRangeChanging(global::System.String value);
+        partial void OnTradingAngleRangeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String PolyOrder
+        {
+            get
+            {
+                return _PolyOrder;
+            }
+            set
+            {
+                OnPolyOrderChanging(value);
+                ReportPropertyChanging("PolyOrder");
+                _PolyOrder = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("PolyOrder");
+                OnPolyOrderChanged();
+            }
+        }
+        private global::System.String _PolyOrder;
+        partial void OnPolyOrderChanging(global::System.String value);
+        partial void OnPolyOrderChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String MovingAverageType
+        {
+            get
+            {
+                return _MovingAverageType;
+            }
+            set
+            {
+                OnMovingAverageTypeChanging(value);
+                ReportPropertyChanging("MovingAverageType");
+                _MovingAverageType = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("MovingAverageType");
+                OnMovingAverageTypeChanged();
+            }
+        }
+        private global::System.String _MovingAverageType;
+        partial void OnMovingAverageTypeChanging(global::System.String value);
+        partial void OnMovingAverageTypeChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String PriceCmaLevels_
+        {
+            get
+            {
+                return _PriceCmaLevels_;
+            }
+            set
+            {
+                OnPriceCmaLevels_Changing(value);
+                ReportPropertyChanging("PriceCmaLevels_");
+                _PriceCmaLevels_ = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("PriceCmaLevels_");
+                OnPriceCmaLevels_Changed();
+            }
+        }
+        private global::System.String _PriceCmaLevels_;
+        partial void OnPriceCmaLevels_Changing(global::System.String value);
+        partial void OnPriceCmaLevels_Changed();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String TestFileName
+        {
+            get
+            {
+                return _TestFileName;
+            }
+            set
+            {
+                OnTestFileNameChanging(value);
+                ReportPropertyChanging("TestFileName");
+                _TestFileName = StructuralObject.SetValidValue(value, true);
+                ReportPropertyChanged("TestFileName");
+                OnTestFileNameChanged();
+            }
+        }
+        private global::System.String _TestFileName;
+        partial void OnTestFileNameChanging(global::System.String value);
+        partial void OnTestFileNameChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> ProfitCount
+        {
+            get
+            {
+                return _ProfitCount;
+            }
+            set
+            {
+                OnProfitCountChanging(value);
+                ReportPropertyChanging("ProfitCount");
+                _ProfitCount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("ProfitCount");
+                OnProfitCountChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _ProfitCount;
+        partial void OnProfitCountChanging(Nullable<global::System.Int32> value);
+        partial void OnProfitCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> LossCount
+        {
+            get
+            {
+                return _LossCount;
+            }
+            set
+            {
+                OnLossCountChanging(value);
+                ReportPropertyChanging("LossCount");
+                _LossCount = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("LossCount");
+                OnLossCountChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _LossCount;
+        partial void OnLossCountChanging(Nullable<global::System.Int32> value);
+        partial void OnLossCountChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> PLRatio
+        {
+            get
+            {
+                return _PLRatio;
+            }
+            set
+            {
+                OnPLRatioChanging(value);
+                ReportPropertyChanging("PLRatio");
+                _PLRatio = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("PLRatio");
+                OnPLRatioChanged();
+            }
+        }
+        private Nullable<global::System.Double> _PLRatio;
+        partial void OnPLRatioChanging(Nullable<global::System.Double> value);
+        partial void OnPLRatioChanged();
 
         #endregion
+
     
     }
 
     #endregion
+
     #region ComplexTypes
     
     /// <summary>
@@ -4456,6 +4704,7 @@ namespace HedgeHog.DB
         partial void OnDateOpenChanged();
 
         #endregion
+
     }
     
     /// <summary>
@@ -4517,6 +4766,7 @@ namespace HedgeHog.DB
         partial void OnStDevChanged();
 
         #endregion
+
     }
     
     /// <summary>
@@ -4914,6 +5164,7 @@ namespace HedgeHog.DB
         partial void OnHeightToStDevVolChanged();
 
         #endregion
+
     }
     
     /// <summary>
@@ -5215,8 +5466,10 @@ namespace HedgeHog.DB
         partial void OnStartDateMinChanged();
 
         #endregion
+
     }
 
     #endregion
+
     
 }

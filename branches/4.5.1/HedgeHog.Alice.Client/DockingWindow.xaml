@@ -252,7 +252,18 @@
 					</Button>
 				</Grid>
 			</DataTemplate>
-			<!--OrdersOnServer-->
+      <DataTemplate x:Key="OpenOrdersTitleTemplate">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <ContentPresenter Content="{Binding}" Margin="0,0,5,0" />
+          <TextBlock Text="{Binding DataContext.OrdersList.Count,StringFormat=[{0:n0}],RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
+										 Grid.Column="1"/>
+        </Grid>
+      </DataTemplate>
+      <!--OrdersOnServer-->
 			<DataTemplate x:Key="OrdersOnServer">
 				<!--Server Orders-->
 				<Grid Background="#FFF7F3F7">
@@ -580,7 +591,13 @@
 													 Title="OpenTrades" TitleTemplate="{StaticResource OpenTradesTitleTemplate}"
 													 ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" />
 						<telerik:RadPane Header="Closed Trades" ContentTemplate="{StaticResource ClosedTradesTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="ClosedTrades" CanUserClose="False"/>
-						<telerik:RadPane IsSelected="{state:UserSettings}" Header="Open Orders" Title="Open Orders" telerik:RadDocking.SerializationTag="OpenedOrders" Name="OpenedOrders" ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" CanUserClose="False"/>
+						<telerik:RadPane IsSelected="{state:UserSettings}" 
+                             Header="Open Orders" Title="Open Orders" 
+                             HeaderTemplate="{StaticResource OpenOrdersTitleTemplate}"
+                             telerik:RadDocking.SerializationTag="OpenedOrders" 
+                             Name="OpenedOrders" 
+                             ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" 
+                             CanUserClose="False"/>
 					</telerik:RadPaneGroup>
 					<telerik:RadSplitContainer Name="ChartsSplitter" Orientation="Horizontal" telerik:RadDocking.SerializationTag="ChartsSplitter">
 						<telerik:RadPaneGroup telerik:RadDocking.SerializationTag="ChartsPaneGroup"/>

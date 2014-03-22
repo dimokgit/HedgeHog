@@ -131,8 +131,8 @@ namespace HedgeHog {
     }
 
     #endregion
-    ReactiveCollection<Event__News> _newsEventHistory = new ReactiveCollection<Event__News>();
-    public ReactiveCollection<Event__News> NewsEventHistory {
+    ReactiveList<Event__News> _newsEventHistory = new ReactiveList<Event__News>();
+    public ReactiveList<Event__News> NewsEventHistory {
       get { return _newsEventHistory; }
     }
 
@@ -210,13 +210,13 @@ namespace HedgeHog {
 
     #endregion
 
-    ReactiveCollection<Event__News> _NewsEvents = new ReactiveCollection<Event__News>();
-    public ReactiveCollection<Event__News> NewsEvents {
+    ReactiveList<Event__News> _NewsEvents = new ReactiveList<Event__News>();
+    public ReactiveList<Event__News> NewsEvents {
       get { return _NewsEvents; }
     }
 
-    ReactiveCollection<v_Pair> _pairs = new ReactiveCollection<v_Pair>();
-    public ReactiveCollection<v_Pair> Pairs {
+    ReactiveList<v_Pair> _pairs = new ReactiveList<v_Pair>();
+    public ReactiveList<v_Pair> Pairs {
       get { return _pairs; }
     }
 
@@ -314,7 +314,7 @@ namespace HedgeHog {
     #endregion
 
     #region Draw 
-    ReactiveCollection<VerticalLine> otherVLines = new ReactiveCollection<VerticalLine>();
+    ReactiveList<VerticalLine> otherVLines = new ReactiveList<VerticalLine>();
     public void DrawVertivalLines(IList<DateTime> times) {
       var times0 = times.Select(t => dateAxis.ConvertToDouble(GetPriceStartDateContinuous(t))).ToArray();
       var timeSelectedDouble = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(DateStart.GetValueOrDefault()));

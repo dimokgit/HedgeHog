@@ -212,7 +212,7 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -231,7 +231,7 @@ namespace HedgeHog.Alice.Store
                 {
                     OnIDChanging(value);
                     ReportPropertyChanging("ID");
-                    _ID = StructuralObject.SetValidValue(value);
+                    _ID = StructuralObject.SetValidValue(value, "ID");
                     ReportPropertyChanged("ID");
                     OnIDChanged();
                 }
@@ -256,7 +256,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStopChanging(value);
                 ReportPropertyChanging("Stop");
-                _Stop = StructuralObject.SetValidValue(value);
+                _Stop = StructuralObject.SetValidValue(value, "Stop");
                 ReportPropertyChanged("Stop");
                 OnStopChanged();
             }
@@ -280,7 +280,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLimitChanging(value);
                 ReportPropertyChanging("Limit");
-                _Limit = StructuralObject.SetValidValue(value);
+                _Limit = StructuralObject.SetValidValue(value, "Limit");
                 ReportPropertyChanged("Limit");
                 OnLimitChanged();
             }
@@ -304,7 +304,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPriceChanging(value);
                 ReportPropertyChanging("Price");
-                _Price = StructuralObject.SetValidValue(value);
+                _Price = StructuralObject.SetValidValue(value, "Price");
                 ReportPropertyChanged("Price");
                 OnPriceChanged();
             }
@@ -328,7 +328,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLotChanging(value);
                 ReportPropertyChanging("Lot");
-                _Lot = StructuralObject.SetValidValue(value);
+                _Lot = StructuralObject.SetValidValue(value, "Lot");
                 ReportPropertyChanged("Lot");
                 OnLotChanged();
             }
@@ -352,7 +352,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStopOrderIDChanging(value);
                 ReportPropertyChanging("StopOrderID");
-                _StopOrderID = StructuralObject.SetValidValue(value);
+                _StopOrderID = StructuralObject.SetValidValue(value, "StopOrderID");
                 ReportPropertyChanged("StopOrderID");
                 OnStopOrderIDChanged();
             }
@@ -376,7 +376,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPairChanging(value);
                 ReportPropertyChanging("Pair");
-                _Pair = StructuralObject.SetValidValue(value, true);
+                _Pair = StructuralObject.SetValidValue(value, true, "Pair");
                 ReportPropertyChanged("Pair");
                 OnPairChanged();
             }
@@ -387,7 +387,6 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -421,7 +420,7 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -438,7 +437,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnRateChanging(value);
                 ReportPropertyChanging("Rate");
-                _Rate = StructuralObject.SetValidValue(value);
+                _Rate = StructuralObject.SetValidValue(value, "Rate");
                 ReportPropertyChanged("Rate");
                 OnRateChanged();
             }
@@ -462,7 +461,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsSupportChanging(value);
                 ReportPropertyChanging("IsSupport");
-                _IsSupport = StructuralObject.SetValidValue(value);
+                _IsSupport = StructuralObject.SetValidValue(value, "IsSupport");
                 ReportPropertyChanged("IsSupport");
                 OnIsSupportChanged();
             }
@@ -486,7 +485,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingMacroIDChanging(value);
                 ReportPropertyChanging("TradingMacroID");
-                _TradingMacroID = StructuralObject.SetValidValue(value);
+                _TradingMacroID = StructuralObject.SetValidValue(value, "TradingMacroID");
                 ReportPropertyChanged("TradingMacroID");
                 OnTradingMacroIDChanged();
             }
@@ -512,7 +511,7 @@ namespace HedgeHog.Alice.Store
                 {
                     OnUIDChanging(value);
                     ReportPropertyChanging("UID");
-                    _UID = StructuralObject.SetValidValue(value);
+                    _UID = StructuralObject.SetValidValue(value, "UID");
                     ReportPropertyChanged("UID");
                     OnUIDChanged();
                 }
@@ -537,7 +536,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradesCountChanging(value);
                 ReportPropertyChanging("TradesCount");
-                _TradesCount = StructuralObject.SetValidValue(value);
+                _TradesCount = StructuralObject.SetValidValue(value, "TradesCount");
                 ReportPropertyChanged("TradesCount");
                 OnTradesCountChanged();
             }
@@ -548,7 +547,6 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-    
         #region Navigation Properties
     
         /// <summary>
@@ -630,7 +628,7 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -647,7 +645,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPasswordChanging(value);
                 ReportPropertyChanging("Password");
-                _Password = StructuralObject.SetValidValue(value, false);
+                _Password = StructuralObject.SetValidValue(value, false, "Password");
                 ReportPropertyChanged("Password");
                 OnPasswordChanged();
             }
@@ -671,7 +669,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnMasterIdChanging(value);
                 ReportPropertyChanging("MasterId");
-                _MasterId = StructuralObject.SetValidValue(value, true);
+                _MasterId = StructuralObject.SetValidValue(value, true, "MasterId");
                 ReportPropertyChanged("MasterId");
                 OnMasterIdChanged();
             }
@@ -695,7 +693,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsDemoChanging(value);
                 ReportPropertyChanging("IsDemo");
-                _IsDemo = StructuralObject.SetValidValue(value);
+                _IsDemo = StructuralObject.SetValidValue(value, "IsDemo");
                 ReportPropertyChanged("IsDemo");
                 OnIsDemoChanged();
             }
@@ -719,7 +717,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnAccountIdChanging(value);
                 ReportPropertyChanging("AccountId");
-                _AccountId = StructuralObject.SetValidValue(value, true);
+                _AccountId = StructuralObject.SetValidValue(value, true, "AccountId");
                 ReportPropertyChanged("AccountId");
                 OnAccountIdChanged();
             }
@@ -745,7 +743,7 @@ namespace HedgeHog.Alice.Store
                 {
                     OnIdChanging(value);
                     ReportPropertyChanging("Id");
-                    _Id = StructuralObject.SetValidValue(value);
+                    _Id = StructuralObject.SetValidValue(value, "Id");
                     ReportPropertyChanged("Id");
                     OnIdChanged();
                 }
@@ -770,7 +768,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsMasterChanging(value);
                 ReportPropertyChanging("IsMaster");
-                _IsMaster = StructuralObject.SetValidValue(value);
+                _IsMaster = StructuralObject.SetValidValue(value, "IsMaster");
                 ReportPropertyChanged("IsMaster");
                 OnIsMasterChanged();
             }
@@ -794,7 +792,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeRatioChanging(value);
                 ReportPropertyChanging("TradeRatio");
-                _TradeRatio = StructuralObject.SetValidValue(value, false);
+                _TradeRatio = StructuralObject.SetValidValue(value, false, "TradeRatio");
                 ReportPropertyChanged("TradeRatio");
                 OnTradeRatioChanged();
             }
@@ -818,7 +816,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCommissionChanging(value);
                 ReportPropertyChanging("Commission");
-                _Commission = StructuralObject.SetValidValue(value);
+                _Commission = StructuralObject.SetValidValue(value, "Commission");
                 ReportPropertyChanged("Commission");
                 OnCommissionChanged();
             }
@@ -842,7 +840,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsActiveChanging(value);
                 ReportPropertyChanging("IsActive");
-                _IsActive = StructuralObject.SetValidValue(value);
+                _IsActive = StructuralObject.SetValidValue(value, "IsActive");
                 ReportPropertyChanged("IsActive");
                 OnIsActiveChanged();
             }
@@ -866,7 +864,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingMacroNameChanging(value);
                 ReportPropertyChanging("TradingMacroName");
-                _TradingMacroName = StructuralObject.SetValidValue(value, false);
+                _TradingMacroName = StructuralObject.SetValidValue(value, false, "TradingMacroName");
                 ReportPropertyChanged("TradingMacroName");
                 OnTradingMacroNameChanged();
             }
@@ -890,7 +888,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPipsToExitChanging(value);
                 ReportPropertyChanging("PipsToExit");
-                _PipsToExit = StructuralObject.SetValidValue(value);
+                _PipsToExit = StructuralObject.SetValidValue(value, "PipsToExit");
                 ReportPropertyChanged("PipsToExit");
                 OnPipsToExitChanged();
             }
@@ -901,7 +899,6 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -1075,7 +1072,7 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -1092,7 +1089,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPairChanging(value);
                 ReportPropertyChanging("Pair");
-                _Pair = StructuralObject.SetValidValue(value, false);
+                _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                 ReportPropertyChanged("Pair");
                 OnPairChanged();
             }
@@ -1116,7 +1113,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingRatioChanging(value);
                 ReportPropertyChanging("TradingRatio");
-                _TradingRatio = StructuralObject.SetValidValue(value);
+                _TradingRatio = StructuralObject.SetValidValue(value, "TradingRatio");
                 ReportPropertyChanged("TradingRatio");
                 OnTradingRatioChanged();
             }
@@ -1142,7 +1139,7 @@ namespace HedgeHog.Alice.Store
                 {
                     OnUIDChanging(value);
                     ReportPropertyChanging("UID");
-                    _UID = StructuralObject.SetValidValue(value);
+                    _UID = StructuralObject.SetValidValue(value, "UID");
                     ReportPropertyChanged("UID");
                     OnUIDChanged();
                 }
@@ -1167,7 +1164,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLimitBarChanging(value);
                 ReportPropertyChanging("LimitBar");
-                _LimitBar = StructuralObject.SetValidValue(value);
+                _LimitBar = StructuralObject.SetValidValue(value, "LimitBar");
                 ReportPropertyChanged("LimitBar");
                 OnLimitBarChanged();
             }
@@ -1191,7 +1188,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCurrentLossChanging(value);
                 ReportPropertyChanging("CurrentLoss");
-                _CurrentLoss = StructuralObject.SetValidValue(value);
+                _CurrentLoss = StructuralObject.SetValidValue(value, "CurrentLoss");
                 ReportPropertyChanged("CurrentLoss");
                 OnCurrentLossChanged();
             }
@@ -1215,7 +1212,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnReverseOnProfitChanging(value);
                 ReportPropertyChanging("ReverseOnProfit");
-                _ReverseOnProfit = StructuralObject.SetValidValue(value);
+                _ReverseOnProfit = StructuralObject.SetValidValue(value, "ReverseOnProfit");
                 ReportPropertyChanged("ReverseOnProfit");
                 OnReverseOnProfitChanged();
             }
@@ -1239,7 +1236,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnFreezLimitChanging(value);
                 ReportPropertyChanging("FreezLimit");
-                _FreezLimit = StructuralObject.SetValidValue(value);
+                _FreezLimit = StructuralObject.SetValidValue(value, "FreezLimit");
                 ReportPropertyChanged("FreezLimit");
                 OnFreezLimitChanged();
             }
@@ -1263,7 +1260,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorMethodChanging(value);
                 ReportPropertyChanging("CorridorMethod");
-                _CorridorMethod = StructuralObject.SetValidValue(value);
+                _CorridorMethod = StructuralObject.SetValidValue(value, "CorridorMethod");
                 ReportPropertyChanged("CorridorMethod");
                 OnCorridorMethodChanged();
             }
@@ -1287,7 +1284,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnFreezeStopChanging(value);
                 ReportPropertyChanging("FreezeStop");
-                _FreezeStop = StructuralObject.SetValidValue(value);
+                _FreezeStop = StructuralObject.SetValidValue(value, "FreezeStop");
                 ReportPropertyChanged("FreezeStop");
                 OnFreezeStopChanged();
             }
@@ -1311,7 +1308,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnFibMaxChanging(value);
                 ReportPropertyChanging("FibMax");
-                _FibMax = StructuralObject.SetValidValue(value, false);
+                _FibMax = StructuralObject.SetValidValue(value, false, "FibMax");
                 ReportPropertyChanged("FibMax");
                 OnFibMaxChanged();
             }
@@ -1335,7 +1332,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnFibMinChanging(value);
                 ReportPropertyChanging("FibMin");
-                _FibMin = StructuralObject.SetValidValue(value);
+                _FibMin = StructuralObject.SetValidValue(value, "FibMin");
                 ReportPropertyChanged("FibMin");
                 OnFibMinChanged();
             }
@@ -1359,7 +1356,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridornessMinChanging(value);
                 ReportPropertyChanging("CorridornessMin");
-                _CorridornessMin = StructuralObject.SetValidValue(value);
+                _CorridornessMin = StructuralObject.SetValidValue(value, "CorridornessMin");
                 ReportPropertyChanged("CorridornessMin");
                 OnCorridornessMinChanged();
             }
@@ -1383,7 +1380,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorIterationsInChanging(value);
                 ReportPropertyChanging("CorridorIterationsIn");
-                _CorridorIterationsIn = StructuralObject.SetValidValue(value);
+                _CorridorIterationsIn = StructuralObject.SetValidValue(value, "CorridorIterationsIn");
                 ReportPropertyChanged("CorridorIterationsIn");
                 OnCorridorIterationsInChanged();
             }
@@ -1407,7 +1404,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorIterationsOutChanging(value);
                 ReportPropertyChanging("CorridorIterationsOut");
-                _CorridorIterationsOut = StructuralObject.SetValidValue(value);
+                _CorridorIterationsOut = StructuralObject.SetValidValue(value, "CorridorIterationsOut");
                 ReportPropertyChanged("CorridorIterationsOut");
                 OnCorridorIterationsOutChanged();
             }
@@ -1431,7 +1428,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorIterationsChanging(value);
                 ReportPropertyChanging("CorridorIterations");
-                _CorridorIterations = StructuralObject.SetValidValue(value, false);
+                _CorridorIterations = StructuralObject.SetValidValue(value, false, "CorridorIterations");
                 ReportPropertyChanged("CorridorIterations");
                 OnCorridorIterationsChanged();
             }
@@ -1455,7 +1452,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorBarMinutesChanging(value);
                 ReportPropertyChanging("CorridorBarMinutes");
-                _CorridorBarMinutes = StructuralObject.SetValidValue(value);
+                _CorridorBarMinutes = StructuralObject.SetValidValue(value, "CorridorBarMinutes");
                 ReportPropertyChanged("CorridorBarMinutes");
                 OnCorridorBarMinutesChanged();
             }
@@ -1479,7 +1476,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPairIndexChanging(value);
                 ReportPropertyChanging("PairIndex");
-                _PairIndex = StructuralObject.SetValidValue(value);
+                _PairIndex = StructuralObject.SetValidValue(value, "PairIndex");
                 ReportPropertyChanged("PairIndex");
                 OnPairIndexChanged();
             }
@@ -1503,7 +1500,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingGroupChanging(value);
                 ReportPropertyChanging("TradingGroup");
-                _TradingGroup = StructuralObject.SetValidValue(value);
+                _TradingGroup = StructuralObject.SetValidValue(value, "TradingGroup");
                 ReportPropertyChanged("TradingGroup");
                 OnTradingGroupChanged();
             }
@@ -1527,7 +1524,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnMaximumPositionsChanging(value);
                 ReportPropertyChanging("MaximumPositions");
-                _MaximumPositions = StructuralObject.SetValidValue(value);
+                _MaximumPositions = StructuralObject.SetValidValue(value, "MaximumPositions");
                 ReportPropertyChanged("MaximumPositions");
                 OnMaximumPositionsChanged();
             }
@@ -1551,7 +1548,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsActiveChanging(value);
                 ReportPropertyChanging("IsActive");
-                _IsActive = StructuralObject.SetValidValue(value);
+                _IsActive = StructuralObject.SetValidValue(value, "IsActive");
                 ReportPropertyChanged("IsActive");
                 OnIsActiveChanged();
             }
@@ -1575,7 +1572,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingMacroNameChanging(value);
                 ReportPropertyChanging("TradingMacroName");
-                _TradingMacroName = StructuralObject.SetValidValue(value, false);
+                _TradingMacroName = StructuralObject.SetValidValue(value, false, "TradingMacroName");
                 ReportPropertyChanged("TradingMacroName");
                 OnTradingMacroNameChanged();
             }
@@ -1599,7 +1596,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLimitCorridorByBarHeightChanging(value);
                 ReportPropertyChanging("LimitCorridorByBarHeight");
-                _LimitCorridorByBarHeight = StructuralObject.SetValidValue(value);
+                _LimitCorridorByBarHeight = StructuralObject.SetValidValue(value, "LimitCorridorByBarHeight");
                 ReportPropertyChanged("LimitCorridorByBarHeight");
                 OnLimitCorridorByBarHeightChanged();
             }
@@ -1623,7 +1620,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnMaxLotByTakeProfitRatioChanging(value);
                 ReportPropertyChanging("MaxLotByTakeProfitRatio");
-                _MaxLotByTakeProfitRatio = StructuralObject.SetValidValue(value);
+                _MaxLotByTakeProfitRatio = StructuralObject.SetValidValue(value, "MaxLotByTakeProfitRatio");
                 ReportPropertyChanged("MaxLotByTakeProfitRatio");
                 OnMaxLotByTakeProfitRatioChanged();
             }
@@ -1647,7 +1644,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnBarPeriodsLowChanging(value);
                 ReportPropertyChanging("BarPeriodsLow");
-                _BarPeriodsLow = StructuralObject.SetValidValue(value);
+                _BarPeriodsLow = StructuralObject.SetValidValue(value, "BarPeriodsLow");
                 ReportPropertyChanged("BarPeriodsLow");
                 OnBarPeriodsLowChanged();
             }
@@ -1671,7 +1668,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnBarPeriodsHighChanging(value);
                 ReportPropertyChanging("BarPeriodsHigh");
-                _BarPeriodsHigh = StructuralObject.SetValidValue(value);
+                _BarPeriodsHigh = StructuralObject.SetValidValue(value, "BarPeriodsHigh");
                 ReportPropertyChanged("BarPeriodsHigh");
                 OnBarPeriodsHighChanged();
             }
@@ -1695,7 +1692,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStrictTradeCloseChanging(value);
                 ReportPropertyChanging("StrictTradeClose");
-                _StrictTradeClose = StructuralObject.SetValidValue(value);
+                _StrictTradeClose = StructuralObject.SetValidValue(value, "StrictTradeClose");
                 ReportPropertyChanged("StrictTradeClose");
                 OnStrictTradeCloseChanged();
             }
@@ -1719,7 +1716,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnBarPeriodsLowHighRatioChanging(value);
                 ReportPropertyChanging("BarPeriodsLowHighRatio");
-                _BarPeriodsLowHighRatio = StructuralObject.SetValidValue(value);
+                _BarPeriodsLowHighRatio = StructuralObject.SetValidValue(value, "BarPeriodsLowHighRatio");
                 ReportPropertyChanged("BarPeriodsLowHighRatio");
                 OnBarPeriodsLowHighRatioChanged();
             }
@@ -1743,7 +1740,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLongMAPeriodChanging(value);
                 ReportPropertyChanging("LongMAPeriod");
-                _LongMAPeriod = StructuralObject.SetValidValue(value);
+                _LongMAPeriod = StructuralObject.SetValidValue(value, "LongMAPeriod");
                 ReportPropertyChanged("LongMAPeriod");
                 OnLongMAPeriodChanged();
             }
@@ -1767,7 +1764,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorAverageDaysBackChanging(value);
                 ReportPropertyChanging("CorridorAverageDaysBack");
-                _CorridorAverageDaysBack = StructuralObject.SetValidValue(value);
+                _CorridorAverageDaysBack = StructuralObject.SetValidValue(value, "CorridorAverageDaysBack");
                 ReportPropertyChanged("CorridorAverageDaysBack");
                 OnCorridorAverageDaysBackChanged();
             }
@@ -1791,7 +1788,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorPeriodsStartChanging(value);
                 ReportPropertyChanging("CorridorPeriodsStart");
-                _CorridorPeriodsStart = StructuralObject.SetValidValue(value);
+                _CorridorPeriodsStart = StructuralObject.SetValidValue(value, "CorridorPeriodsStart");
                 ReportPropertyChanged("CorridorPeriodsStart");
                 OnCorridorPeriodsStartChanged();
             }
@@ -1815,7 +1812,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorPeriodsLengthChanging(value);
                 ReportPropertyChanging("CorridorPeriodsLength");
-                _CorridorPeriodsLength = StructuralObject.SetValidValue(value);
+                _CorridorPeriodsLength = StructuralObject.SetValidValue(value, "CorridorPeriodsLength");
                 ReportPropertyChanged("CorridorPeriodsLength");
                 OnCorridorPeriodsLengthChanged();
             }
@@ -1839,7 +1836,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorStartDateChanging(value);
                 ReportPropertyChanging("CorridorStartDate");
-                _CorridorStartDate = StructuralObject.SetValidValue(value);
+                _CorridorStartDate = StructuralObject.SetValidValue(value, "CorridorStartDate");
                 ReportPropertyChanged("CorridorStartDate");
                 OnCorridorStartDateChanged();
             }
@@ -1863,7 +1860,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorRatioForRangeChanging(value);
                 ReportPropertyChanging("CorridorRatioForRange");
-                _CorridorRatioForRange = StructuralObject.SetValidValue(value);
+                _CorridorRatioForRange = StructuralObject.SetValidValue(value, "CorridorRatioForRange");
                 ReportPropertyChanged("CorridorRatioForRange");
                 OnCorridorRatioForRangeChanged();
             }
@@ -1887,7 +1884,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorRatioForBreakoutChanging(value);
                 ReportPropertyChanging("CorridorRatioForBreakout");
-                _CorridorRatioForBreakout = StructuralObject.SetValidValue(value);
+                _CorridorRatioForBreakout = StructuralObject.SetValidValue(value, "CorridorRatioForBreakout");
                 ReportPropertyChanged("CorridorRatioForBreakout");
                 OnCorridorRatioForBreakoutChanged();
             }
@@ -1911,7 +1908,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnRangeRatioForTradeLimitChanging(value);
                 ReportPropertyChanging("RangeRatioForTradeLimit");
-                _RangeRatioForTradeLimit = StructuralObject.SetValidValue(value);
+                _RangeRatioForTradeLimit = StructuralObject.SetValidValue(value, "RangeRatioForTradeLimit");
                 ReportPropertyChanged("RangeRatioForTradeLimit");
                 OnRangeRatioForTradeLimitChanged();
             }
@@ -1935,7 +1932,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeByAngleChanging(value);
                 ReportPropertyChanging("TradeByAngle");
-                _TradeByAngle = StructuralObject.SetValidValue(value);
+                _TradeByAngle = StructuralObject.SetValidValue(value, "TradeByAngle");
                 ReportPropertyChanged("TradeByAngle");
                 OnTradeByAngleChanged();
             }
@@ -1959,7 +1956,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnProfitToLossExitRatioChanging(value);
                 ReportPropertyChanging("ProfitToLossExitRatio");
-                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value);
+                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value, "ProfitToLossExitRatio");
                 ReportPropertyChanged("ProfitToLossExitRatio");
                 OnProfitToLossExitRatioChanged();
             }
@@ -1983,7 +1980,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeByFirstWaveChanging(value);
                 ReportPropertyChanging("TradeByFirstWave");
-                _TradeByFirstWave = StructuralObject.SetValidValue(value);
+                _TradeByFirstWave = StructuralObject.SetValidValue(value, "TradeByFirstWave");
                 ReportPropertyChanged("TradeByFirstWave");
                 OnTradeByFirstWaveChanged();
             }
@@ -2007,7 +2004,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPowerRowOffsetChanging(value);
                 ReportPropertyChanging("PowerRowOffset");
-                _PowerRowOffset = StructuralObject.SetValidValue(value);
+                _PowerRowOffset = StructuralObject.SetValidValue(value, "PowerRowOffset");
                 ReportPropertyChanged("PowerRowOffset");
                 OnPowerRowOffsetChanged();
             }
@@ -2031,7 +2028,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnRangeRatioForTradeStopChanging(value);
                 ReportPropertyChanging("RangeRatioForTradeStop");
-                _RangeRatioForTradeStop = StructuralObject.SetValidValue(value);
+                _RangeRatioForTradeStop = StructuralObject.SetValidValue(value, "RangeRatioForTradeStop");
                 ReportPropertyChanged("RangeRatioForTradeStop");
                 OnRangeRatioForTradeStopChanged();
             }
@@ -2055,7 +2052,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnReversePowerChanging(value);
                 ReportPropertyChanging("ReversePower");
-                _ReversePower = StructuralObject.SetValidValue(value);
+                _ReversePower = StructuralObject.SetValidValue(value, "ReversePower");
                 ReportPropertyChanged("ReversePower");
                 OnReversePowerChanged();
             }
@@ -2079,7 +2076,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorrelationTresholdChanging(value);
                 ReportPropertyChanging("CorrelationTreshold");
-                _CorrelationTreshold = StructuralObject.SetValidValue(value);
+                _CorrelationTreshold = StructuralObject.SetValidValue(value, "CorrelationTreshold");
                 ReportPropertyChanged("CorrelationTreshold");
                 OnCorrelationTresholdChanged();
             }
@@ -2103,7 +2100,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCloseOnProfitOnlyChanging(value);
                 ReportPropertyChanging("CloseOnProfitOnly");
-                _CloseOnProfitOnly = StructuralObject.SetValidValue(value);
+                _CloseOnProfitOnly = StructuralObject.SetValidValue(value, "CloseOnProfitOnly");
                 ReportPropertyChanged("CloseOnProfitOnly");
                 OnCloseOnProfitOnlyChanged();
             }
@@ -2127,7 +2124,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCloseOnProfitChanging(value);
                 ReportPropertyChanging("CloseOnProfit");
-                _CloseOnProfit = StructuralObject.SetValidValue(value);
+                _CloseOnProfit = StructuralObject.SetValidValue(value, "CloseOnProfit");
                 ReportPropertyChanged("CloseOnProfit");
                 OnCloseOnProfitChanged();
             }
@@ -2151,7 +2148,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCloseOnOpenChanging(value);
                 ReportPropertyChanging("CloseOnOpen");
-                _CloseOnOpen = StructuralObject.SetValidValue(value);
+                _CloseOnOpen = StructuralObject.SetValidValue(value, "CloseOnOpen");
                 ReportPropertyChanged("CloseOnOpen");
                 OnCloseOnOpenChanged();
             }
@@ -2175,7 +2172,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStreachTradingDistanceChanging(value);
                 ReportPropertyChanging("StreachTradingDistance");
-                _StreachTradingDistance = StructuralObject.SetValidValue(value);
+                _StreachTradingDistance = StructuralObject.SetValidValue(value, "StreachTradingDistance");
                 ReportPropertyChanged("StreachTradingDistance");
                 OnStreachTradingDistanceChanged();
             }
@@ -2199,7 +2196,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCloseAllOnProfitChanging(value);
                 ReportPropertyChanging("CloseAllOnProfit");
-                _CloseAllOnProfit = StructuralObject.SetValidValue(value);
+                _CloseAllOnProfit = StructuralObject.SetValidValue(value, "CloseAllOnProfit");
                 ReportPropertyChanged("CloseAllOnProfit");
                 OnCloseAllOnProfitChanged();
             }
@@ -2223,7 +2220,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnReverseStrategyChanging(value);
                 ReportPropertyChanging("ReverseStrategy");
-                _ReverseStrategy = StructuralObject.SetValidValue(value);
+                _ReverseStrategy = StructuralObject.SetValidValue(value, "ReverseStrategy");
                 ReportPropertyChanged("ReverseStrategy");
                 OnReverseStrategyChanged();
             }
@@ -2247,7 +2244,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeAndAngleSyncedChanging(value);
                 ReportPropertyChanging("TradeAndAngleSynced");
-                _TradeAndAngleSynced = StructuralObject.SetValidValue(value);
+                _TradeAndAngleSynced = StructuralObject.SetValidValue(value, "TradeAndAngleSynced");
                 ReportPropertyChanged("TradeAndAngleSynced");
                 OnTradeAndAngleSyncedChanged();
             }
@@ -2271,7 +2268,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradingAngleRangeChanging(value);
                 ReportPropertyChanging("TradingAngleRange");
-                _TradingAngleRange = StructuralObject.SetValidValue(value);
+                _TradingAngleRange = StructuralObject.SetValidValue(value, "TradingAngleRange");
                 ReportPropertyChanged("TradingAngleRange");
                 OnTradingAngleRangeChanged();
             }
@@ -2295,7 +2292,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCloseByMomentumChanging(value);
                 ReportPropertyChanging("CloseByMomentum");
-                _CloseByMomentum = StructuralObject.SetValidValue(value);
+                _CloseByMomentum = StructuralObject.SetValidValue(value, "CloseByMomentum");
                 ReportPropertyChanged("CloseByMomentum");
                 OnCloseByMomentumChanged();
             }
@@ -2319,7 +2316,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeByRateDirectionChanging(value);
                 ReportPropertyChanging("TradeByRateDirection");
-                _TradeByRateDirection = StructuralObject.SetValidValue(value);
+                _TradeByRateDirection = StructuralObject.SetValidValue(value, "TradeByRateDirection");
                 ReportPropertyChanged("TradeByRateDirection");
                 OnTradeByRateDirectionChanged();
             }
@@ -2343,7 +2340,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnSupportDateChanging(value);
                 ReportPropertyChanging("SupportDate");
-                _SupportDate = StructuralObject.SetValidValue(value);
+                _SupportDate = StructuralObject.SetValidValue(value, "SupportDate");
                 ReportPropertyChanged("SupportDate");
                 OnSupportDateChanged();
             }
@@ -2367,7 +2364,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnResistanceDateChanging(value);
                 ReportPropertyChanging("ResistanceDate");
-                _ResistanceDate = StructuralObject.SetValidValue(value);
+                _ResistanceDate = StructuralObject.SetValidValue(value, "ResistanceDate");
                 ReportPropertyChanged("ResistanceDate");
                 OnResistanceDateChanged();
             }
@@ -2391,7 +2388,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnGannAnglesOffsetChanging(value);
                 ReportPropertyChanging("GannAnglesOffset");
-                _GannAnglesOffset = StructuralObject.SetValidValue(value);
+                _GannAnglesOffset = StructuralObject.SetValidValue(value, "GannAnglesOffset");
                 ReportPropertyChanged("GannAnglesOffset");
                 OnGannAnglesOffsetChanged();
             }
@@ -2415,7 +2412,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnGannAnglesChanging(value);
                 ReportPropertyChanging("GannAngles");
-                _GannAngles = StructuralObject.SetValidValue(value, false);
+                _GannAngles = StructuralObject.SetValidValue(value, false, "GannAngles");
                 ReportPropertyChanged("GannAngles");
                 OnGannAnglesChanged();
             }
@@ -2439,7 +2436,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsGannAnglesManualChanging(value);
                 ReportPropertyChanging("IsGannAnglesManual");
-                _IsGannAnglesManual = StructuralObject.SetValidValue(value);
+                _IsGannAnglesManual = StructuralObject.SetValidValue(value, "IsGannAnglesManual");
                 ReportPropertyChanged("IsGannAnglesManual");
                 OnIsGannAnglesManualChanged();
             }
@@ -2463,7 +2460,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnGannAnglesAnchorDateChanging(value);
                 ReportPropertyChanging("GannAnglesAnchorDate");
-                _GannAnglesAnchorDate = StructuralObject.SetValidValue(value);
+                _GannAnglesAnchorDate = StructuralObject.SetValidValue(value, "GannAnglesAnchorDate");
                 ReportPropertyChanged("GannAnglesAnchorDate");
                 OnGannAnglesAnchorDateChanged();
             }
@@ -2487,7 +2484,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnSpreadShortToLongTresholdChanging(value);
                 ReportPropertyChanging("SpreadShortToLongTreshold");
-                _SpreadShortToLongTreshold = StructuralObject.SetValidValue(value);
+                _SpreadShortToLongTreshold = StructuralObject.SetValidValue(value, "SpreadShortToLongTreshold");
                 ReportPropertyChanged("SpreadShortToLongTreshold");
                 OnSpreadShortToLongTresholdChanged();
             }
@@ -2511,7 +2508,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnSupportPriceStoreChanging(value);
                 ReportPropertyChanging("SupportPriceStore");
-                _SupportPriceStore = StructuralObject.SetValidValue(value);
+                _SupportPriceStore = StructuralObject.SetValidValue(value, "SupportPriceStore");
                 ReportPropertyChanged("SupportPriceStore");
                 OnSupportPriceStoreChanged();
             }
@@ -2535,7 +2532,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnResistancePriceStoreChanging(value);
                 ReportPropertyChanging("ResistancePriceStore");
-                _ResistancePriceStore = StructuralObject.SetValidValue(value);
+                _ResistancePriceStore = StructuralObject.SetValidValue(value, "ResistancePriceStore");
                 ReportPropertyChanged("ResistancePriceStore");
                 OnResistancePriceStoreChanged();
             }
@@ -2559,7 +2556,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnSuppResLevelsCountChanging(value);
                 ReportPropertyChanging("SuppResLevelsCount");
-                _SuppResLevelsCount = StructuralObject.SetValidValue(value);
+                _SuppResLevelsCount = StructuralObject.SetValidValue(value, "SuppResLevelsCount");
                 ReportPropertyChanged("SuppResLevelsCount");
                 OnSuppResLevelsCountChanged();
             }
@@ -2583,7 +2580,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnDoStreatchRatesChanging(value);
                 ReportPropertyChanging("DoStreatchRates");
-                _DoStreatchRates = StructuralObject.SetValidValue(value);
+                _DoStreatchRates = StructuralObject.SetValidValue(value, "DoStreatchRates");
                 ReportPropertyChanged("DoStreatchRates");
                 OnDoStreatchRatesChanged();
             }
@@ -2607,7 +2604,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsSuppResManualChanging(value);
                 ReportPropertyChanging("IsSuppResManual");
-                _IsSuppResManual = StructuralObject.SetValidValue(value);
+                _IsSuppResManual = StructuralObject.SetValidValue(value, "IsSuppResManual");
                 ReportPropertyChanged("IsSuppResManual");
                 OnIsSuppResManualChanged();
             }
@@ -2631,7 +2628,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTradeOnCrossOnlyChanging(value);
                 ReportPropertyChanging("TradeOnCrossOnly");
-                _TradeOnCrossOnly = StructuralObject.SetValidValue(value);
+                _TradeOnCrossOnly = StructuralObject.SetValidValue(value, "TradeOnCrossOnly");
                 ReportPropertyChanged("TradeOnCrossOnly");
                 OnTradeOnCrossOnlyChanged();
             }
@@ -2655,7 +2652,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnTakeProfitFunctionIntChanging(value);
                 ReportPropertyChanging("TakeProfitFunctionInt");
-                _TakeProfitFunctionInt = StructuralObject.SetValidValue(value);
+                _TakeProfitFunctionInt = StructuralObject.SetValidValue(value, "TakeProfitFunctionInt");
                 ReportPropertyChanged("TakeProfitFunctionInt");
                 OnTakeProfitFunctionIntChanged();
             }
@@ -2679,7 +2676,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnDoAdjustTimeframeByAllowedLotChanging(value);
                 ReportPropertyChanging("DoAdjustTimeframeByAllowedLot");
-                _DoAdjustTimeframeByAllowedLot = StructuralObject.SetValidValue(value);
+                _DoAdjustTimeframeByAllowedLot = StructuralObject.SetValidValue(value, "DoAdjustTimeframeByAllowedLot");
                 ReportPropertyChanged("DoAdjustTimeframeByAllowedLot");
                 OnDoAdjustTimeframeByAllowedLotChanged();
             }
@@ -2703,7 +2700,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnIsColdOnTradesChanging(value);
                 ReportPropertyChanging("IsColdOnTrades");
-                _IsColdOnTrades = StructuralObject.SetValidValue(value);
+                _IsColdOnTrades = StructuralObject.SetValidValue(value, "IsColdOnTrades");
                 ReportPropertyChanged("IsColdOnTrades");
                 OnIsColdOnTradesChanged();
             }
@@ -2727,7 +2724,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorCrossesCountMinimumChanging(value);
                 ReportPropertyChanging("CorridorCrossesCountMinimum");
-                _CorridorCrossesCountMinimum = StructuralObject.SetValidValue(value);
+                _CorridorCrossesCountMinimum = StructuralObject.SetValidValue(value, "CorridorCrossesCountMinimum");
                 ReportPropertyChanged("CorridorCrossesCountMinimum");
                 OnCorridorCrossesCountMinimumChanged();
             }
@@ -2751,7 +2748,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStDevToSpreadRatioChanging(value);
                 ReportPropertyChanging("StDevToSpreadRatio");
-                _StDevToSpreadRatio = StructuralObject.SetValidValue(value);
+                _StDevToSpreadRatio = StructuralObject.SetValidValue(value, "StDevToSpreadRatio");
                 ReportPropertyChanged("StDevToSpreadRatio");
                 OnStDevToSpreadRatioChanged();
             }
@@ -2775,7 +2772,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnLoadRatesSecondsWarningChanging(value);
                 ReportPropertyChanging("LoadRatesSecondsWarning");
-                _LoadRatesSecondsWarning = StructuralObject.SetValidValue(value);
+                _LoadRatesSecondsWarning = StructuralObject.SetValidValue(value, "LoadRatesSecondsWarning");
                 ReportPropertyChanged("LoadRatesSecondsWarning");
                 OnLoadRatesSecondsWarningChanged();
             }
@@ -2799,7 +2796,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorHighLowMethodIntChanging(value);
                 ReportPropertyChanging("CorridorHighLowMethodInt");
-                _CorridorHighLowMethodInt = StructuralObject.SetValidValue(value);
+                _CorridorHighLowMethodInt = StructuralObject.SetValidValue(value, "CorridorHighLowMethodInt");
                 ReportPropertyChanged("CorridorHighLowMethodInt");
                 OnCorridorHighLowMethodIntChanged();
             }
@@ -2823,7 +2820,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorStDevRatioMaxChanging(value);
                 ReportPropertyChanging("CorridorStDevRatioMax");
-                _CorridorStDevRatioMax = StructuralObject.SetValidValue(value);
+                _CorridorStDevRatioMax = StructuralObject.SetValidValue(value, "CorridorStDevRatioMax");
                 ReportPropertyChanged("CorridorStDevRatioMax");
                 OnCorridorStDevRatioMaxChanged();
             }
@@ -2847,7 +2844,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorLengthMinimumChanging(value);
                 ReportPropertyChanging("CorridorLengthMinimum");
-                _CorridorLengthMinimum = StructuralObject.SetValidValue(value);
+                _CorridorLengthMinimum = StructuralObject.SetValidValue(value, "CorridorLengthMinimum");
                 ReportPropertyChanged("CorridorLengthMinimum");
                 OnCorridorLengthMinimumChanged();
             }
@@ -2871,7 +2868,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorCrossHighLowMethodIntChanging(value);
                 ReportPropertyChanging("CorridorCrossHighLowMethodInt");
-                _CorridorCrossHighLowMethodInt = StructuralObject.SetValidValue(value);
+                _CorridorCrossHighLowMethodInt = StructuralObject.SetValidValue(value, "CorridorCrossHighLowMethodInt");
                 ReportPropertyChanged("CorridorCrossHighLowMethodInt");
                 OnCorridorCrossHighLowMethodIntChanged();
             }
@@ -2895,7 +2892,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnMovingAverageTypeIntChanging(value);
                 ReportPropertyChanging("MovingAverageTypeInt");
-                _MovingAverageTypeInt = StructuralObject.SetValidValue(value);
+                _MovingAverageTypeInt = StructuralObject.SetValidValue(value, "MovingAverageTypeInt");
                 ReportPropertyChanged("MovingAverageTypeInt");
                 OnMovingAverageTypeIntChanged();
             }
@@ -2919,7 +2916,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnPriceCmaLevelsChanging(value);
                 ReportPropertyChanging("PriceCmaLevels");
-                _PriceCmaLevels = StructuralObject.SetValidValue(value);
+                _PriceCmaLevels = StructuralObject.SetValidValue(value, "PriceCmaLevels");
                 ReportPropertyChanged("PriceCmaLevels");
                 OnPriceCmaLevelsChanged();
             }
@@ -2943,7 +2940,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnVolumeTresholdIterationsChanging(value);
                 ReportPropertyChanging("VolumeTresholdIterations");
-                _VolumeTresholdIterations = StructuralObject.SetValidValue(value);
+                _VolumeTresholdIterations = StructuralObject.SetValidValue(value, "VolumeTresholdIterations");
                 ReportPropertyChanged("VolumeTresholdIterations");
                 OnVolumeTresholdIterationsChanged();
             }
@@ -2967,7 +2964,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStDevTresholdIterationsChanging(value);
                 ReportPropertyChanging("StDevTresholdIterations");
-                _StDevTresholdIterations = StructuralObject.SetValidValue(value);
+                _StDevTresholdIterations = StructuralObject.SetValidValue(value, "StDevTresholdIterations");
                 ReportPropertyChanged("StDevTresholdIterations");
                 OnStDevTresholdIterationsChanged();
             }
@@ -2991,7 +2988,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnStDevAverageLeewayRatioChanging(value);
                 ReportPropertyChanging("StDevAverageLeewayRatio");
-                _StDevAverageLeewayRatio = StructuralObject.SetValidValue(value);
+                _StDevAverageLeewayRatio = StructuralObject.SetValidValue(value, "StDevAverageLeewayRatio");
                 ReportPropertyChanged("StDevAverageLeewayRatio");
                 OnStDevAverageLeewayRatioChanged();
             }
@@ -3015,7 +3012,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnExtreamCloseOffsetChanging(value);
                 ReportPropertyChanging("ExtreamCloseOffset");
-                _ExtreamCloseOffset = StructuralObject.SetValidValue(value);
+                _ExtreamCloseOffset = StructuralObject.SetValidValue(value, "ExtreamCloseOffset");
                 ReportPropertyChanged("ExtreamCloseOffset");
                 OnExtreamCloseOffsetChanged();
             }
@@ -3039,7 +3036,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCurrentLossInPipsCloseAdjustmentChanging(value);
                 ReportPropertyChanging("CurrentLossInPipsCloseAdjustment");
-                _CurrentLossInPipsCloseAdjustment = StructuralObject.SetValidValue(value);
+                _CurrentLossInPipsCloseAdjustment = StructuralObject.SetValidValue(value, "CurrentLossInPipsCloseAdjustment");
                 ReportPropertyChanged("CurrentLossInPipsCloseAdjustment");
                 OnCurrentLossInPipsCloseAdjustmentChanged();
             }
@@ -3063,7 +3060,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnCorridorBigToSmallRatioChanging(value);
                 ReportPropertyChanging("CorridorBigToSmallRatio");
-                _CorridorBigToSmallRatio = StructuralObject.SetValidValue(value);
+                _CorridorBigToSmallRatio = StructuralObject.SetValidValue(value, "CorridorBigToSmallRatio");
                 ReportPropertyChanged("CorridorBigToSmallRatio");
                 OnCorridorBigToSmallRatioChanged();
             }
@@ -3087,7 +3084,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnResetOnBalanceChanging(value);
                 ReportPropertyChanging("ResetOnBalance");
-                _ResetOnBalance = StructuralObject.SetValidValue(value);
+                _ResetOnBalance = StructuralObject.SetValidValue(value, "ResetOnBalance");
                 ReportPropertyChanged("ResetOnBalance");
                 OnResetOnBalanceChanged();
             }
@@ -3111,7 +3108,7 @@ namespace HedgeHog.Alice.Store
             {
                 OnVoltageFunctionChanging(value);
                 ReportPropertyChanging("VoltageFunction");
-                _VoltageFunction = StructuralObject.SetValidValue(value);
+                _VoltageFunction = StructuralObject.SetValidValue(value, "VoltageFunction");
                 ReportPropertyChanged("VoltageFunction");
                 OnVoltageFunctionChanged();
             }
@@ -3122,7 +3119,6 @@ namespace HedgeHog.Alice.Store
 
         #endregion
 
-    
         #region Navigation Properties
     
         /// <summary>
@@ -3153,5 +3149,4 @@ namespace HedgeHog.Alice.Store
 
     #endregion
 
-    
 }

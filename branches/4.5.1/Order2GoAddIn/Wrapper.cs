@@ -1218,6 +1218,28 @@ namespace Order2GoAddIn {
       return offer == null ? double.NaN : buy ? offer.Ask : offer.Bid;
     }
     Func<Order, string> _ordersOrderBy = o => o.OrderID;
+    string GetNetStopOrderId(string pair) {
+      object stopId, limitId;
+      Desk.GetNetSLOrders(pair, AccountID, false, out stopId, out limitId);
+      return stopId + "";
+    }
+    public double GetNetSLLimitOrder(string pair) {
+      object stopId, limitId;
+      Desk.GetNetSLOrders(pair, AccountID, false, out stopId, out limitId);
+      return EntryOrders.Where(kv => kv.Key == limitId + "").Select(eo => eo.Value.Rate).DefaultIfEmpty().Single();
+    }
+    public double GetNetSLOrder(string pair) {
+      object stopId, limitId;
+      Desk.GetNetSLOrders(pair, AccountID, false, out stopId, out limitId);
+      return EntryOrders.Where(kv => kv.Key == limitId + "").Select(eo => eo.Value.Rate).DefaultIfEmpty().Single();
+    }
+
+    public double GetNetOrderRate(string pair,bool isStop, bool getFromInternal = false) {
+      return GetNetOrders(pair, getFromInternal)
+        .Where(IsNetOrderFilter)
+        .Where(o => o.Type.StartsWith(isStop ? "S" : "L"))
+        .Select(o => o.Rate).DefaultIfEmpty().Single();
+    }
     public Order GetNetStopOrder(Trade trade, bool getFromInternal = false) {
       return GetNetOrders(trade, getFromInternal).Where(IsNetOrderFilter).LastOrDefault(o => o.Type.StartsWith("S"));
     }
@@ -2335,17 +2357,17 @@ namespace Order2GoAddIn {
     ConcurrentDictionary<string, Trade> _OpenTrades;
     ConcurrentDictionary<string, Trade> OpenTrades {
       get {
-        lock (_OpenTradesLocker) {
           if (_OpenTrades == null)
-            try {
-              _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
-            } catch (Exception exc) {
-              RaiseError(exc);
-              _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
+            lock (_OpenTradesLocker) {
+              try {
+                _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
+              } catch (Exception exc) {
+                RaiseError(exc);
+                _OpenTrades = new ConcurrentDictionary<string, Trade>(GetTradesInternal("").Select(o => new KeyValuePair<string, Trade>(o.Id, o)));
+              }
             }
           return _OpenTrades;
         }
-      }
     }
     void OpenTradesReset(){
       lock (_OpenTradesLocker)
@@ -2475,7 +2497,7 @@ namespace Order2GoAddIn {
             break;
           case TABLE_TRADES:
             var trade = InitTrade(new NameValueParser(rowText));
-            OpenTrades[rowID] = trade;
+            OpenTrades.AddOrUpdate(rowID, trade, (k, t) => trade);
             RaiseTradeChanged(trade);
             break;
         }

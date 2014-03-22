@@ -11,6 +11,9 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks.Dataflow;
+using ReactiveUI;
+using System.ComponentModel;
+using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -451,8 +454,8 @@ namespace HedgeHog.Alice.Store {
         #region Levels
         if (SuppResLevelsCount != 2) SuppResLevelsCount = 2;
         SuppRes.ForEach(sr => sr.IsExitOnly = false);
-        var buyCloseLevel = BuyCloseSupResLevel();
-        var sellCloseLevel = SellCloseSupResLevel();
+        BuyCloseLevel = BuyCloseSupResLevel();
+        SellCloseLevel = SellCloseSupResLevel();
         BuyLevel = Resistance0();
         SellLevel = Support0();
         if (BuyLevel.Rate.Min(SellLevel.Rate) == 0) BuyLevel.RateEx = SellLevel.RateEx = RatesArray.Middle();
@@ -469,8 +472,8 @@ namespace HedgeHog.Alice.Store {
           if (sr.TradesCount != 9) sr.TradesCount = 9;
         };
         Func<SuppRes, SuppRes> suppResNearest = supRes => _suppResesForBulk().Where(sr => sr.IsSupport != supRes.IsSupport).OrderBy(sr => (sr.Rate - supRes.Rate).Abs()).First();
-        Action<bool> setCloseLevels = (overWrite) => setCloseLevel(buyCloseLevel, overWrite);
-        setCloseLevels += (overWrite) => setCloseLevel(sellCloseLevel, overWrite);
+        Action<bool> setCloseLevels = (overWrite) => setCloseLevel(BuyCloseLevel, overWrite);
+        setCloseLevels += (overWrite) => setCloseLevel(SellCloseLevel, overWrite);
         ForEachSuppRes(sr => {
           if (IsInVitualTrading) sr.InManual = false;
           sr.ResetPricePosition();
@@ -506,8 +509,8 @@ namespace HedgeHog.Alice.Store {
           sr.TradesCount <= 0 &&
           !HasTradesByDistance(isBuyR(sr)) &&
           canTradeLocal(sr);
-        Func<bool> isProfitOk = () => Trades.HaveBuy() && RateLast.BidHigh > buyCloseLevel.Rate ||
-          Trades.HaveSell() && RateLast.AskLow < sellCloseLevel.Rate;
+        Func<bool> isProfitOk = () => Trades.HaveBuy() && RateLast.BidHigh > BuyCloseLevel.Rate ||
+          Trades.HaveSell() && RateLast.AskLow < SellCloseLevel.Rate;
         #endregion
 
         #region SuppRes Event Handlers
@@ -583,8 +586,8 @@ namespace HedgeHog.Alice.Store {
           } else if (Trades.Any(t => t.IsBuy == sr.IsSell))
             exitCrossHandler(sr);
         };
-        buyCloseLevel.Crossed += crossedExit;
-        sellCloseLevel.Crossed += crossedExit;
+        BuyCloseLevel.Crossed += crossedExit;
+        SellCloseLevel.Crossed += crossedExit;
         #endregion
         #endregion
 
@@ -1306,32 +1309,6 @@ namespace HedgeHog.Alice.Store {
                     CloseTrading("After 8 o'clock profit.");
                 }
               }
-              if (CanDoEntryOrders) {
-                GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
-                  //.Concat(_buySellLevels.Where(sr=>!sr.CanTrade).Select(sr=>GetEntryOrders(sr.IsBuy)).SelectMany(eo=>eo))
-                  //.ForEach(OnDeletingOrder);
-                Func<SuppRes, bool> canTrade = (sr) => isTradingHourLocal() && sr.CanTrade && sr.TradesCount <= 0 
-                  && !Trades.IsBuy(sr.IsBuy).Any();
-                Func<bool, int> lotSize = isBuy => 
-                  (_buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0) 
-                  + Trades.IsBuy(!isBuy).Lots();
-                _buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
-                  .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
-                  .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
-                 .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
-
-                Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
-                  .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy)));
-                
-                Func<bool, double> orderRate = isBuy => _buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
-                Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
-                  .ForEach(fw => fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy)));
-
-                GetEntryOrders().ForEach(eo => {
-                  changeLimit(eo);
-                  changeRate(eo);
-                });
-              }
               adjustExitLevels0();
               break;
             #endregion
@@ -1354,13 +1331,13 @@ namespace HedgeHog.Alice.Store {
                   var rateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg2 == 0).First();
                   Action<bool?> setExitLevels = isBuy => {
                     if (isBuy.HasValue) {
-                      if (isBuy.Value) buyCloseLevel.RateEx = ExitLevelByCurrentPrice(true).Min(rateLast.PriceAvg2);
-                      else sellCloseLevel.RateEx = ExitLevelByCurrentPrice(false).Max(rateLast.PriceAvg3);
+                      if (isBuy.Value) BuyCloseLevel.RateEx = ExitLevelByCurrentPrice(true).Min(rateLast.PriceAvg2);
+                      else SellCloseLevel.RateEx = ExitLevelByCurrentPrice(false).Max(rateLast.PriceAvg3);
                     } 
                     if (isBuy.GetValueOrDefault(false) == false)
-                      buyCloseLevel.RateEx = _RatesMax + RatesHeight / 2;
+                      BuyCloseLevel.RateEx = _RatesMax + RatesHeight / 2;
                     if (isBuy.GetValueOrDefault(true) == true)
-                      sellCloseLevel.RateEx = _RatesMin - RatesHeight / 2;
+                      SellCloseLevel.RateEx = _RatesMin - RatesHeight / 2;
                   };
                   var locals = hotValue.Caster(any);
                   locals.isUp.Value = (isTradingHourLocal() && !locals.isUp.Value.HasValue).YieldIf(() =>
@@ -2017,7 +1994,7 @@ namespace HedgeHog.Alice.Store {
                 Log = new Exception(new { WaveStDevRatio, MedianFunction, DoNews } + "");
                 onCloseTradeLocal = t => {
                   if (IsAutoStrategy)
-                    buyCloseLevel.InManual = sellCloseLevel.InManual = false;
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                 };
                 onOpenTradeLocal = t => { };
                 if (ReverseStrategy) {
@@ -2027,7 +2004,7 @@ namespace HedgeHog.Alice.Store {
 
                 reverseStrategy = new ObservableValue<bool>(isReverseStrategy());
                 reverseStrategy.ValueChanged += (s, e) => {
-                  buyCloseLevel.InManual = sellCloseLevel.InManual = false;
+                  BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                 };
                 if (ReverseStrategy && !reverseStrategy.Value) {
                   _buyLevel.Rate = _RatesMin;
@@ -2059,15 +2036,15 @@ namespace HedgeHog.Alice.Store {
                   _buyLevel.RateEx = levelDown.IfNaN(CenterOfMassSell);
                   _sellLevel.RateEx = levelUp.IfNaN(CenterOfMassBuy);
                   var stopLoss = _buyLevel.Rate.Abs(_sellLevel.Rate);
-                  if (Trades.HaveBuy() && !sellCloseLevel.InManual) {
-                    sellCloseLevel.RateEx = Trades.NetOpen() - stopLoss;
-                    sellCloseLevel.ResetPricePosition();
-                    sellCloseLevel.InManual = true;
+                  if (Trades.HaveBuy() && !SellCloseLevel.InManual) {
+                    SellCloseLevel.RateEx = Trades.NetOpen() - stopLoss;
+                    SellCloseLevel.ResetPricePosition();
+                    SellCloseLevel.InManual = true;
                   }
-                  if (Trades.HaveSell() && !buyCloseLevel.InManual) {
-                    buyCloseLevel.RateEx = Trades.NetOpen() + stopLoss;
-                    buyCloseLevel.ResetPricePosition();
-                    buyCloseLevel.InManual = true;
+                  if (Trades.HaveSell() && !BuyCloseLevel.InManual) {
+                    BuyCloseLevel.RateEx = Trades.NetOpen() + stopLoss;
+                    BuyCloseLevel.ResetPricePosition();
+                    BuyCloseLevel.InManual = true;
                   }
                 } else {
                   _buyLevel.RateEx = levelUp.IfNaN(CenterOfMassBuy);
@@ -2964,7 +2941,7 @@ namespace HedgeHog.Alice.Store {
                   if (t.PL > -PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
                 };
                 onOpenTradeLocal = t => {
-                  buyCloseLevel.IsGhost = sellCloseLevel.IsGhost = false;
+                  BuyCloseLevel.IsGhost = SellCloseLevel.IsGhost = false;
                 };
                 ghostLevelOffset.ValueChanged += (s, e) => SuppRes.ToList().ForEach(sr => sr.Rate += ghostLevelOffset.Value);
 
@@ -2975,9 +2952,9 @@ namespace HedgeHog.Alice.Store {
                   BuyLevel.RateEx = RateLast.PriceAvg2;
                   SellLevel.RateEx = RateLast.PriceAvg3;
                   var offset = BuyLevel.Rate.Abs(SellLevel.Rate) / CorrelationMinimum;
-                  buyCloseLevel.Rate = BuyLevel.Rate - offset;
-                  sellCloseLevel.Rate = SellLevel.Rate + offset;
-                  buyCloseLevel.IsGhost = sellCloseLevel.IsGhost = true;
+                  BuyCloseLevel.Rate = BuyLevel.Rate - offset;
+                  SellCloseLevel.Rate = SellLevel.Rate + offset;
+                  BuyCloseLevel.IsGhost = SellCloseLevel.IsGhost = true;
                   SuppRes.ToList().ForEach(sr => {
                     sr.CanTrade = true;
                     sr.ResetPricePosition();
@@ -2997,7 +2974,7 @@ namespace HedgeHog.Alice.Store {
                   if (t.PL > -PriceSpreadAverage) _buySellLevelsForEach(sr => sr.CanTrade = false);
                 };
                 onOpenTradeLocal = t => {
-                  buyCloseLevel.IsGhost = sellCloseLevel.IsGhost = false;
+                  BuyCloseLevel.IsGhost = SellCloseLevel.IsGhost = false;
                 };
                 Func<SuppRes, double, bool> adjust = (sr, v) => v > 0 && (!sr.IsGhost && sr.IsBuy || sr.IsGhost && sr.IsSell)
                   || v < 0 && (!sr.IsGhost && sr.IsSell || sr.IsGhost && sr.IsBuy);
@@ -3007,12 +2984,12 @@ namespace HedgeHog.Alice.Store {
               #endregion
               {
                 if (IsAutoStrategy && !Trades.Any() && !SuppRes.Any(sr => sr.IsGhost) && CorridorAngleFromTangent().Abs() < TradingAngleRange) {
-                  buyCloseLevel.RateEx = RateLast.PriceAvg2;
-                  sellCloseLevel.RateEx = RateLast.PriceAvg3;
+                  BuyCloseLevel.RateEx = RateLast.PriceAvg2;
+                  SellCloseLevel.RateEx = RateLast.PriceAvg3;
                   var offset = BuyLevel.Rate.Abs(SellLevel.Rate) / CorrelationMinimum;
-                  BuyLevel.Rate = buyCloseLevel.Rate + offset;
-                  SellLevel.Rate = sellCloseLevel.Rate - offset;
-                  buyCloseLevel.IsGhost = sellCloseLevel.IsGhost = true;
+                  BuyLevel.Rate = BuyCloseLevel.Rate + offset;
+                  SellLevel.Rate = SellCloseLevel.Rate - offset;
+                  BuyCloseLevel.IsGhost = SellCloseLevel.IsGhost = true;
                   SuppRes.ToList().ForEach(sr => {
                     sr.CanTrade = true;
                     sr.ResetPricePosition();
@@ -3076,8 +3053,8 @@ namespace HedgeHog.Alice.Store {
             if (IsTradingActive) {
               _buyLevel.SetPrice(enter(true));
               _sellLevel.SetPrice(enter(false));
-              buyCloseLevel.SetPrice(exitPrice(true));
-              sellCloseLevel.SetPrice(exitPrice(false));
+              BuyCloseLevel.SetPrice(exitPrice(true));
+              SellCloseLevel.SetPrice(exitPrice(false));
             } else
               SuppRes.ForEach(sr => sr.ResetPricePosition());
           } catch (Exception exc) { Log = exc; }
@@ -3098,6 +3075,207 @@ namespace HedgeHog.Alice.Store {
       if (IsTradingActive)
         _adjustEnterLevels();
       #endregion
+    }
+
+    #region CanDoNetLimitOrders
+    private bool _CanDoNetLimitOrders;
+    [Category(categoryActiveYesNo)]
+    [DisplayName("Can Do Limit Orders")]
+    public bool CanDoNetLimitOrders {
+      get { return _CanDoNetLimitOrders; }
+      set {
+        if (_CanDoNetLimitOrders != value) {
+          _CanDoNetLimitOrders = value;
+          OnPropertyChanged("CanDoNetLimitOrders");
+        }
+      }
+    }
+
+    #endregion
+    private bool _CanDoEntryOrders = false;
+    [Category(categoryActiveYesNo)]
+    [DisplayName("Can Do Entry Orders")]
+    public bool CanDoEntryOrders {
+      get { return _CanDoEntryOrders; }
+      set {
+        if (_CanDoEntryOrders == value) return;
+        _CanDoEntryOrders = value;
+        OnPropertyChanged("CanDoEntryOrders");
+      }
+    }
+
+    IReactiveDerivedList<SuppRes> _reactiveBuySellLevels = null;
+    IReactiveDerivedList<SuppRes> _reactiveBuySellCloseLevels = null;
+    CompositeDisposable _reactiveBuySellLevelsSubscribtion = null;
+    CompositeDisposable _reactiveBuySellCloseLevelsSubscribtion = null;
+    ReactiveList<Trade> _reactiveTrades = null;
+    ReactiveList<Trade> ReactiveTrades {
+      get {
+        return _reactiveTrades ?? (_reactiveTrades = new ReactiveList<Trade>(Trades) { ChangeTrackingEnabled = true });
+      }
+    }
+    #region TradeLastChangeDate
+    private DateTime _TradeLastChangeDate;
+    public DateTime TradeLastChangeDate {
+      get { return _TradeLastChangeDate; }
+      set {
+        if (_TradeLastChangeDate != value) {
+          _TradeLastChangeDate = value;
+          OnPropertyChanged("TradeLastChangeDate");
+          ReactiveTrades.Clear();
+          ReactiveTrades.AddRange(Trades);
+        }
+      }
+    }
+
+    #endregion
+    void SubscribeToEntryOrderRelatedEvents() {
+      var bsThrottleTimeSpan = 0.1.FromSeconds();
+      var cpThrottleTimeSpan = 0.5.FromSeconds();
+      Action startBuySellLevelsTraking = () => {
+        _reactiveBuySellLevels = new[] { BuyLevel, SellLevel, BuyCloseLevel, SellCloseLevel }.CreateDerivedCollection(sr => sr);
+        _reactiveBuySellLevels.ChangeTrackingEnabled = true;
+        _reactiveBuySellLevelsSubscribtion = (CompositeDisposable)
+          _reactiveBuySellLevels.ItemChanged.Select(_ => _.Sender.IsBuy ? "BuyLevel" : "SellLevel")
+          .Merge(ReactiveTrades.ItemChanged.Where(_ => _.PropertyName == "Stop").Select(_ => _.Sender.IsBuy ? "BuyTrade" : "SellTrade"))
+          .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
+            h => GetFXWraper().OrderAdded += h, h => GetFXWraper().OrderAdded -= h).Select(e => "OrderAdded"))
+          .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
+            h => GetFXWraper().OrderChanged += h, h => GetFXWraper().OrderChanged -= h).Select(e => "OrderChanged"))
+          .Merge(Observable.FromEvent<OrderRemovedEventHandler,Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
+          .Throttle(bsThrottleTimeSpan)
+          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
+          .Subscribe(_ => UpdateEntryOrders());
+      };
+      Action startBuySellCloseLevelsTraking = () => {
+        var r = _reactiveBuySellCloseLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
+        r.ChangeTrackingEnabled = true;
+        _reactiveBuySellCloseLevelsSubscribtion = (CompositeDisposable)r
+          .ItemChanged.Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level").Throttle(bsThrottleTimeSpan)
+          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
+          .Subscribe(_ => {
+            UpdateTradeLimitOrders();
+            UpdateTradeStopOrders();
+          });
+      };
+      #region Init BuySellLevels
+      this.WhenAny(tm => tm.Strategy
+        , tm => tm.TrailingDistanceFunction
+        , tm => tm.BuyLevel
+        , tm => tm.SellLevel
+        , tm => tm.CanDoEntryOrders
+        , tm => tm.CanDoNetLimitOrders
+        , tm => tm.MustStopTrading
+        , (s, t, eo, no, ta, bl, sl) =>
+          Strategy == Strategies.Universal && BuyLevel != null && SellLevel != null && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading)
+          .DistinctUntilChanged()
+          .Throttle(bsThrottleTimeSpan)
+          .Subscribe(st => {// Turn on/off live entry orders
+            try {
+              if (st) {// Subscribe to events in order to update live entry orders
+                startBuySellLevelsTraking();
+              } else if (_reactiveBuySellLevelsSubscribtion != null) {
+                try {
+                  GetEntryOrders().ToList().ForEach(order => OnDeletingOrder(order.OrderID));
+                } catch (Exception exc) { Log = exc; }
+                CleanReactiveBuySell(ref _reactiveBuySellLevelsSubscribtion, ref _reactiveBuySellLevels);
+              }
+            } catch (Exception exc) { Log = exc; }
+          });
+      #endregion
+      #region Init BuySellCloseLevels
+      this.WhenAny(
+          tm => tm.BuyCloseLevel
+        , tm => tm.SellCloseLevel
+        , tm => tm.CanDoNetLimitOrders
+        , tm => tm.CanDoEntryOrders
+        , (b, s, no, eo) =>
+          BuyCloseLevel != null && SellCloseLevel != null && CanDoNetLimitOrders && !IsInVitualTrading)
+        .Subscribe(st => {// Turn on/off live net orders
+          try {
+            if (st) {// Subscribe to events in order to update live net orders
+              startBuySellCloseLevelsTraking();
+            } else if (_reactiveBuySellCloseLevelsSubscribtion != null) {
+              try {
+                Trades.ForEach(trade => SetTradeNet(trade, 0, 0));
+              } catch (Exception exc) { Log = exc; }
+              CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion,ref _reactiveBuySellCloseLevels);
+            }
+          } catch (Exception exc) { Log = exc; }
+        });
+      #endregion
+
+    }
+
+    private void CleanReactiveBuySell<T>(ref CompositeDisposable subscribsion, ref IReactiveDerivedList<T> reaciveList) {
+      if (subscribsion != null) {
+        subscribsion.Dispose();
+        subscribsion = null;
+        reaciveList.Dispose();
+        reaciveList = null;
+      }
+    }
+    private void UpdateTradeLimitOrders() {
+      var bsLevels = new[] { BuyCloseLevel, SellCloseLevel };
+      Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
+      Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Limit.Abs(levelRate(trade)) > PointSize)
+        .ForEach(fw => SetTradeNetLimit(trade, levelRate(trade)));
+      Trades.ForEach(changeRate);
+    }
+    private void UpdateTradeStopOrders() {
+      var bsLevels = new[] { BuyLevel, SellLevel };
+      Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
+      Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Stop.Abs(levelRate(trade)) > PointSize)
+        .ForEach(fw => SetTradeNetStop(trade, levelRate(trade)));
+      Trades.ForEach(changeRate);
+    }
+    
+    #region SetTradeNet
+    private void SetTradeNetLimit(Trade trade, double limit) {
+        SetTradeNet(trade, limit, double.NaN);
+    }
+    private void SetTradeNetStop(Trade trade, double stop) {
+        SetTradeNet(trade, double.NaN, stop);
+    }
+    private void SetTradeNet(Trade trade, double limit, double stop) {
+      if (!limit.IsNaN())
+        try {
+          GetFXWraper().FixOrderSetLimit(trade.Id, limit, "");
+        } catch (Exception exc) { Log = exc; }
+      if (!stop.IsNaN())
+        try {
+          GetFXWraper().FixOrderSetStop(trade.Id, stop, "");
+        } catch (Exception exc) { Log = exc; }
+      TradeLastChangeDate = DateTime.Now;
+    }
+    #endregion
+
+    private void UpdateEntryOrders() {
+      try {
+        var buySellLevels = new[] { BuyLevel, SellLevel };
+        GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
+        Func<SuppRes, bool> canTrade = (sr) =>/* IsTradingHour() &&*/ sr.CanTrade && sr.TradesCount <= 0
+          && !Trades.IsBuy(sr.IsBuy).Any();
+        Func<bool, int> lotSize = isBuy =>
+          (buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0)
+          + (GetFXWraper().GetNetOrderRate(Pair,true) > 0 ? 0 : Trades.IsBuy(!isBuy).Lots());
+        buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
+          .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
+          .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
+         .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
+
+        Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
+          .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy)));
+
+        Func<bool, double> orderRate = isBuy => buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
+        Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
+          .ForEach(fw => fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy)));
+
+        GetEntryOrders().ForEach(eo => {
+          changeLimit(eo);
+          changeRate(eo);
+        });
+      } catch (Exception exc) { Log = exc; }
     }
 
     private void CloseTrading(string reason) {
