@@ -3148,9 +3148,9 @@ namespace HedgeHog.Alice.Store {
           .Subscribe(_ => UpdateEntryOrders());
       };
       Action startBuySellCloseLevelsTraking = () => {
-        var r = _reactiveBuySellCloseLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
-        r.ChangeTrackingEnabled = true;
-        _reactiveBuySellCloseLevelsSubscribtion = (CompositeDisposable)r
+        _reactiveBuySellCloseLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
+        _reactiveBuySellCloseLevels.ChangeTrackingEnabled = true;
+        _reactiveBuySellCloseLevelsSubscribtion = (CompositeDisposable)_reactiveBuySellCloseLevels
           .ItemChanged.Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level").Throttle(bsThrottleTimeSpan)
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
           .Subscribe(_ => {
