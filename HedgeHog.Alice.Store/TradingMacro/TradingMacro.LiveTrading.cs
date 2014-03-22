@@ -79,15 +79,13 @@ namespace HedgeHog.Alice.Store {
         if (_CreateEntryOrderSubject == null) {
           _CreateEntryOrderSubject = new Subject<CreateEntryOrderHelper>();
           _CreateEntryOrderSubject
-            .GroupByUntil(g => new { g.Pair, g.IsBuy }, g => Observable.Timer(0.1.FromSeconds()))
-              .SelectMany(o => o.TakeLast(1))
-              .Subscribe(s => {
+              .SubscribeToLatestOnBGThread(s => {
                 try {
                   CheckPendingAction("EO", (pa) => { pa(); GetFXWraper().CreateEntryOrder(s.Pair, s.IsBuy, s.Amount, s.Rate, 0, 0); });
                 } catch (Exception exc) {
                   Log = exc;
                 }
-              });
+              },TradesManagerStatic.TradingScheduler, exc => Log = exc);
         }
         return _CreateEntryOrderSubject;
       }
@@ -111,7 +109,7 @@ namespace HedgeHog.Alice.Store {
                 try {
                   GetFXWraper().DeleteOrder(s, false);
                 } catch (Exception exc) { Log = exc; }
-              }, exc => Log = exc);
+              },TradesManagerStatic.TradingScheduler, exc => Log = exc);
           }
         return _DeleteOrderSubject;
       }

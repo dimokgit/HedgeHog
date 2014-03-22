@@ -1010,7 +1010,7 @@ namespace HedgeHog.Alice.Client {
           charter.HeaderText =
             string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{9:n0},{10:n2}]↨"///↨↔
             /*0*/, tm.BarPeriod
-            /*1*/, tm.RatesArray.Count + (tm.RatesArray.Count == tm.BarsCount ? "" : (',' + tm.BarsCount.ToString()))
+            /*1*/, tm.RatesArray.Count + (tm.RatesArray.Count == tm.BarsCountCalc ? "" : (',' + tm.BarsCountCalc.ToString()))
             /*2*/, tm.CorridorAngle
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips

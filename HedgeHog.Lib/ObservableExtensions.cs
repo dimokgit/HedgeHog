@@ -36,17 +36,30 @@ namespace HedgeHog {
       return seq.Scan(seed, accumulator)
                   .Where(list => list.Count == length);
     }
-    public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject, Action<TSource> onNext, Action<Exception> onError, ThreadPriority priority = ThreadPriority.Normal) {
+    public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
+      , Action<TSource> onNext, Action<Exception> onError, ThreadPriority priority = ThreadPriority.Normal) {
       return subject.SubscribeToLatestOnBGThread(onNext, onError, () => { }, priority);
     }
 
-    public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject, Action<TSource> onNext, Action<Exception> onError, Action onCompleted, ThreadPriority priority = ThreadPriority.Normal) {
+    static EventLoopScheduler BGTreadSchedulerFactory(ThreadPriority priority = ThreadPriority.Normal) {
+      return new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true, Priority = priority }; });
+    }
+    public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
+      , Action<TSource> onNext, EventLoopScheduler scheduler = null, Action<Exception> onError = null, Action onCompleted = null) {
+        return subject.Latest()
+          .ToObservable(scheduler ?? BGTreadSchedulerFactory())
+          .Subscribe(onNext, onError ?? (exc => { }), onCompleted ?? (() => { }));
+    }
+
+    public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
+      , Action<TSource> onNext, Action<Exception> onError, Action onCompleted, ThreadPriority priority = ThreadPriority.Normal) {
       return subject.Latest()
-        .ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true, Priority = priority }; }))
+        .ToObservable(BGTreadSchedulerFactory(priority))
         .Subscribe(onNext, onError, onCompleted);
     }
 
-    public static IDisposable SubscribeToLatestOnBGThread(this IObservable<Action> subject, Action<Exception> onError, ThreadPriority priority = ThreadPriority.Normal) {
+    public static IDisposable SubscribeToLatestOnBGThread(this IObservable<Action> subject
+      , Action<Exception> onError, ThreadPriority priority = ThreadPriority.Normal) {
       return subject.SubscribeToLatestOnBGThread(a => a(), onError, priority);
     }
   }

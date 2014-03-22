@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using HedgeHog.Bars;
+using System.Reactive.Concurrency;
+using System.Diagnostics;
+using System.Threading;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Windows;
 
 namespace HedgeHog.Shared {
   public interface ITradesManager {
@@ -15,7 +21,7 @@ namespace HedgeHog.Shared {
     double Leverage(string pair);
     double PipsToMarginCall { get; }
 
-    double Round(string pair, double value,int digitOffset = 0);
+    double Round(string pair, double value, int digitOffset = 0);
     double InPips(string pair, double? price);
     double InPoints(string pair, double? price);
     double GetPipSize(string pair);
@@ -44,8 +50,8 @@ namespace HedgeHog.Shared {
 
     void CloseAllTrades();
     void CloseTrade(Trade trade);
-    bool CloseTrade(Trade trade,int lot,Price price);
-    bool ClosePair(string pair, bool isBuy,int lot);
+    bool CloseTrade(Trade trade, int lot, Price price);
+    bool ClosePair(string pair, bool isBuy, int lot);
     bool ClosePair(string pair, bool isBuy);
     bool ClosePair(string pair);
 
@@ -94,7 +100,7 @@ namespace HedgeHog.Shared {
 
     Tick[] GetTicks(string pair, int periodsBack);
 
-    void GetBars(string pair, int periodMinutes,int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList,bool doTrim);
+    void GetBars(string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList, bool doTrim);
 
     PendingOrder OpenTrade(string Pair, bool isBuy, int lot, double takeProfit, double stopLoss, double rate, string comment);
   }
@@ -131,6 +137,29 @@ namespace HedgeHog.Shared {
 
 
   public static class TradesManagerStatic {
+    private static readonly EventLoopScheduler _tradingThread =
+      new EventLoopScheduler(ts => { Debugger.Break(); return new Thread(ts) { IsBackground = true }; });
+
+    public static EventLoopScheduler TradingScheduler { get { return _tradingThread; } }
+
+    private static object syncRoot = new Object();
+    private static volatile ISubject<Action> _tradingSubject;
+    public static ISubject<Action> TradingSubject {
+      get {
+        if (_tradingSubject == null)
+          lock (syncRoot)
+            if (_tradingSubject == null) {
+              _tradingSubject = new Subject<Action>();
+              _tradingSubject.ObserveOn(TradesManagerStatic.TradingScheduler).Subscribe(a => a()
+                , exc => {
+                  LogMessage.Send(exc);
+                  Debug.Fail("TradingSubject stopped working.", exc + "");
+                });
+            }
+        return _tradingSubject;
+      }
+    }
+
 
     public static DateTime GetVirtualServerTime(this IList<Rate> rates, int barMinutes) {
       if (rates == null || !rates.Any()) return DateTime.MinValue;
@@ -138,15 +167,15 @@ namespace HedgeHog.Shared {
       return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
     }
 
-    public static double RelativeDollar(int baseLotSize,int baseUnitSize,double pipCost) {
+    public static double RelativeDollar(int baseLotSize, int baseUnitSize, double pipCost) {
       return (baseLotSize / baseUnitSize) * pipCost;
     }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
-    public static int GetLotSize(double lot, int baseUnitSize,bool useCeiling) {
+    public static int GetLotSize(double lot, int baseUnitSize, bool useCeiling) {
       return (lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize;
     }
     public static int GetLotSize(double lot, int baseUnitSize) {
-      return GetLotSize(lot, baseUnitSize,false);
+      return GetLotSize(lot, baseUnitSize, false);
     }
     public static int GetLotstoTrade(double balance, double leverage, double tradeRatio, int baseUnitSize) {
       var amountToTrade = balance * leverage * tradeRatio;
@@ -156,7 +185,7 @@ namespace HedgeHog.Shared {
       return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
     }
     public static double MoneyAndLotToPips(this ITradesManager tm, double money, double lots, string pair) {
-      return tm == null ? double.NaN: MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.GetBaseUnitSize(pair));
+      return tm == null ? double.NaN : MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.GetBaseUnitSize(pair));
     }
     public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
       return money / lots / pipCost * baseUnitSize;
@@ -165,18 +194,18 @@ namespace HedgeHog.Shared {
       return lot / baseUnitSize * mmr;
     }
     public static double PipAmount(int lot, double baseUnitSize, double pipCost) {
-      return lot/(baseUnitSize/pipCost);
+      return lot / (baseUnitSize / pipCost);
     }
     public static double InPoins(ITradesManager tm, string pair, double? price) {
       return (price * tm.GetPipSize(pair)).GetValueOrDefault();
     }
-    public static double MarginLeft(int lot,double pl,double balance,double mmr, double baseUnitSize, double pipCost) {
+    public static double MarginLeft(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
       return balance - MarginRequired(lot, baseUnitSize, mmr) + pl * PipAmount(lot, baseUnitSize, pipCost);
     }
     public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
       return MarginLeft(lot, pl, balance, mmr, baseUnitSize, pipCost) / PipAmount(lot, baseUnitSize, pipCost);
     }
-    public static double LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost,double MMR) {
+    public static double LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost, double MMR) {
       var lot = balance / (pipsToMC * pipCost / baseUnitSize + 1.0 / baseUnitSize * MMR);
       return pipsToMC < 1 ? 0 : GetLotSize(lot, baseUnitSize);
     }
