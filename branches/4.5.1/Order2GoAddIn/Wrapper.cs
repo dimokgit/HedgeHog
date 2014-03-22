@@ -1638,9 +1638,7 @@ namespace Order2GoAddIn {
         RequestComplete -= rc;
         return orderId;
       } catch (Exception exc) {
-        var message = new { pair, isBuy, amount, rate, stop, limit } + "";
-        RaiseError(new Exception(message, exc));
-        return "";
+        throw new Exception(new { pair, isBuy, amount, rate, stop, limit } + "", exc);
       }
     }
 

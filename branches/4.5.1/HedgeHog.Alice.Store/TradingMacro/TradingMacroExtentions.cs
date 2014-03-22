@@ -207,7 +207,14 @@ namespace HedgeHog.Alice.Store {
     [Import]
     static NewsCasterModel _newsCaster { get { return NewsCasterModel.Default; } }
     public TradingMacro() {
-      SubscribeToEntryOrderRelatedEvents();
+      this.ObservableForProperty(tm => tm.Pair, false, false)
+        .Where(oc => !string.IsNullOrWhiteSpace(oc.Value) && !IsInVitualTrading)
+        .Throttle(1.FromSeconds())
+        .ObserveOnDispatcher()
+        .Subscribe(oc => {
+          LoadActiveSettings();
+          SubscribeToEntryOrderRelatedEvents();
+        });
       _newsCaster.CountdownSubject
         .Where(nc => IsActive && Strategy!= Strategies.None && nc.AutoTrade && nc.Countdown <= _newsCaster.AutoTradeOffset)
         .Subscribe(nc => {
@@ -282,13 +289,13 @@ namespace HedgeHog.Alice.Store {
         fw.DeleteOrders(fw.GetEntryOrders(Pair, true));
       SaveActiveSettings();
     }
+    #region Active Settings
+    string ActiveSettingsPath() { return Lib.CurrentDirectory + "\\Settings\\{0}_Last.txt".Formater(Pair.Replace("/", "")); }
     void SaveActiveSettings() {
-      SaveActiveSettings(Lib.CurrentDirectory + "\\Settings", "{0}_Last.txt".Formater(Pair));
-    }
-    void SaveActiveSettings(string folder, string file) {
       try {
-        Directory.CreateDirectory(folder);
-        SaveActiveSettings(Path.Combine(folder, file.Replace("/", "")));
+        string path = ActiveSettingsPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path))  ;
+        SaveActiveSettings(path);
       } catch (Exception exc) { Log = exc; }
     }
     public void SaveActiveSettings(string path) {
@@ -299,9 +306,26 @@ namespace HedgeHog.Alice.Store {
         from setting in this.GetPropertiesByAttibute<CategoryAttribute>(a => true)
         group setting by setting.Item1.Category into g
         orderby g.Key
-        from g2 in new[] { "//{0}//".Formater(g.Key) }.Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
+        from g2 in new[] { "//{0}//".Formater(g.Key) }
+        .Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
+        .Concat(new[] { Environment.NewLine })
         select g2;
     }
+    void LoadActiveSettings() { LoadActiveSettings(ActiveSettingsPath()); }
+    public void LoadActiveSettings(string path) {
+      try {
+        var exceptions = new[] { "Strategy" };
+        var settings = Lib.ReadTestParameters(path);
+        settings
+          .Where(kv=>!exceptions.Contains(kv.Key))
+          .ForEach(tp => this.SetProperty(tp.Key, (object)tp.Value));
+        Log = new Exception("{0} Settings loaded.".Formater(Pair));
+      } catch (Exception exc) {
+        Log = exc;
+      }
+    }
+
+    #endregion
     #endregion
 
     #region SuppRes Event Handlers
@@ -1319,7 +1343,7 @@ namespace HedgeHog.Alice.Store {
           }
         }
         #region Init stuff
-        BarsCountCalc = null;
+        _BarsCountCalc = null;
         CorridorStats.Rates = null;
         UseRatesInternal(ri => ri.Clear());
         RateLast = null;
@@ -1907,7 +1931,6 @@ namespace HedgeHog.Alice.Store {
             if (IsInVitualTrading)
               Trades.ToList().ForEach(t => t.UpdateByPrice(TradesManager, CurrentPrice));
             if (UsePrevHeight && _rateHeightByHour != null && _rateStDevByHour != null) {
-              BarsCountCalc = BarsCountCalc.GetValueOrDefault(_rateArray.Count);
 
               var hour = _rateArray.LastBC().StartDate.Round(MathExtensions.RoundTo.HourFloor);
               if (_ratesArrayBag.LastHour != hour) {
@@ -2000,7 +2023,7 @@ namespace HedgeHog.Alice.Store {
       Func<IEnumerable<Rate>> a = () => {
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
         var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate) : 0;
-        return ri.Skip((ri.Count - (countByDate * 1.05).Max(BarsCountCalc.GetValueOrDefault(BarsCount)).ToInt()).Max(0));
+        return ri.Skip((ri.Count - (countByDate * 1.05).Max(BarsCountCalc).ToInt()).Max(0));
         //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : ri.GetMinuteTicks((int)BarPeriod, false, false);
@@ -3209,7 +3232,7 @@ namespace HedgeHog.Alice.Store {
           _pointSize = double.NaN;
           goto case TradingMacroMetadata.CorridorBarMinutes;
         case TradingMacroMetadata.UsePrevHeight:
-          BarsCountCalc = null;
+          _BarsCountCalc = null;
           goto case TradingMacroMetadata.BarsCount;
         case TradingMacroMetadata.BarsCount:
         case TradingMacroMetadata.CorridorBarMinutes:

@@ -536,8 +536,8 @@ namespace HedgeHog.Alice.Client {
           //if (comExc != null && comExc.ErrorCode == -2147467259)
           //  AccountLogin(new LoginInfo(TradingAccount, TradingPassword, TradingDemo));
           lock (_logQueue) {
-            if (_logQueue.Count > 5) _logQueue.Dequeue();
-            var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss] ") + value.GetExceptionShort() });
+            while (_logQueue.Count > 150) _logQueue.Dequeue();
+            var messages = new List<string>(new[] { DateTime.Now.ToString("[dd HH:mm:ss.fff] ") + value.GetExceptionShort() });
             while (value.InnerException != null) {
               messages.Add(value.InnerException.GetExceptionShort());
               value = value.InnerException;

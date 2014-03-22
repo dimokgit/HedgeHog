@@ -3004,7 +3004,7 @@ namespace HedgeHog.Alice.Store {
           }
           if (firstTime) {
             firstTime = false;
-            BarsCountCalc = null;
+            _BarsCountCalc = null;
             ForEachSuppRes(sr => sr.ResetPricePosition());
             LogTrades = !IsInVitualTrading;
           }
@@ -3132,32 +3132,113 @@ namespace HedgeHog.Alice.Store {
     void SubscribeToEntryOrderRelatedEvents() {
       var bsThrottleTimeSpan = 0.1.FromSeconds();
       var cpThrottleTimeSpan = 0.5.FromSeconds();
-      Action startBuySellLevelsTraking = () => {
+      var buySelPropsExceptions = new[] { "CanTradeEx", "IsGhost" };
+      Func<IObservedChange<SuppRes, object>, bool> buySellPropsFilter = _ => !buySelPropsExceptions.Contains(_.PropertyName);
+      ISubject<Action> fxWraper = new Subject<Action>();
+      fxWraper.ObserveOn(TradesManagerStatic.TradingScheduler).Subscribe(a => a());
+
+      #region SetTradeNet
+      Action<Trade, double, double> SetTradeNet = (trade, limit, stop) => {
+        fxWraper.OnNext(() => {
+          if (!limit.IsNaN())
+            try {
+              GetFXWraper().FixOrderSetLimit(trade.Id, limit, "");
+            } catch (Exception exc) { Log = exc; }
+          if (!stop.IsNaN())
+            try {
+              GetFXWraper().FixOrderSetStop(trade.Id, stop, "");
+            } catch (Exception exc) { Log = exc; }
+          TradeLastChangeDate = DateTime.Now;
+        });
+      };
+      Action<Trade, double> SetTradeNetLimit = (trade, limit) => SetTradeNet(trade, limit, double.NaN);
+      Action<Trade, double> SetTradeNetStop = (trade, stop) => SetTradeNet(trade, double.NaN, stop);
+      #endregion
+
+      #region startBuySellLevelsTracking
+      Action startBuySellLevelsTracking = () => {
+        #region updateEntryOrders
+        Action<string> updateEntryOrders = (reason) => {
+          try {
+            Log = new Exception("UpdateEntryOrders:" + reason);
+            var buySellLevels = new[] { BuyLevel, SellLevel };
+            GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
+            Func<SuppRes, bool> canTrade = (sr) =>/* IsTradingHour() &&*/ sr.CanTrade && sr.TradesCount <= 0
+              && !Trades.IsBuy(sr.IsBuy).Any();
+            Func<bool, int> lotSize = isBuy =>
+              (buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0)
+              + (GetFXWraper().GetNetOrderRate(Pair, true) > 0 ? 0 : Trades.IsBuy(!isBuy).Lots());
+            buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
+              .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
+              .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
+             .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
+
+            Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
+              .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy)));
+
+            Func<bool, double> orderRate = isBuy => buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
+            Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
+              .ForEach(fw => fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy)));
+
+            GetEntryOrders().ForEach(eo => {
+              changeLimit(eo);
+              changeRate(eo);
+            });
+          } catch (Exception exc) { Log = exc; }
+        };
+        #endregion
         _reactiveBuySellLevels = new[] { BuyLevel, SellLevel, BuyCloseLevel, SellCloseLevel }.CreateDerivedCollection(sr => sr);
         _reactiveBuySellLevels.ChangeTrackingEnabled = true;
         _reactiveBuySellLevelsSubscribtion = (CompositeDisposable)
-          _reactiveBuySellLevels.ItemChanged.Select(_ => _.Sender.IsBuy ? "BuyLevel" : "SellLevel")
+          _reactiveBuySellLevels.ItemChanged
+          .Where(buySellPropsFilter)
+          .Throttle(bsThrottleTimeSpan)
+          .Do(_ => Log = new Exception(new { Name = "startBuySellLevelsTracking", _.PropertyName, Value = _.Value + "" } + ""))
+          .Select(_ => _.Sender.IsBuy ? "Buy" + (_.Sender.IsExitOnly ? "Close" : "") + "Level" : "Sell" + (_.Sender.IsExitOnly ? "Close" : "") + "Level")
           .Merge(ReactiveTrades.ItemChanged.Where(_ => _.PropertyName == "Stop").Select(_ => _.Sender.IsBuy ? "BuyTrade" : "SellTrade"))
           .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
             h => GetFXWraper().OrderAdded += h, h => GetFXWraper().OrderAdded -= h).Select(e => "OrderAdded"))
           .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
             h => GetFXWraper().OrderChanged += h, h => GetFXWraper().OrderChanged -= h).Select(e => "OrderChanged"))
-          .Merge(Observable.FromEvent<OrderRemovedEventHandler,Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
-          .Throttle(bsThrottleTimeSpan)
+          .Merge(Observable.FromEvent<OrderRemovedEventHandler, Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
-          .Subscribe(_ => UpdateEntryOrders());
+          .Subscribe(updateEntryOrders);
       };
-      Action startBuySellCloseLevelsTraking = () => {
+      #endregion
+      #region startBuySellCloseLevelsTracking
+      #region Net Update Implementations
+      Action updateTradeLimitOrders = () => {
+        var bsLevels = new[] { BuyCloseLevel, SellCloseLevel };
+        Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
+        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Limit.Abs(levelRate(trade)) > PointSize)
+          .ForEach(fw => SetTradeNetLimit(trade, levelRate(trade)));
+        Trades.Take(1).ForEach(changeRate);
+      };
+      Action updateTradeStopOrders = () => {
+        var bsLevels = new[] { BuyLevel, SellLevel };
+        Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
+        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Stop.Abs(levelRate(trade)) > PointSize)
+          .ForEach(fw => SetTradeNetStop(trade, levelRate(trade)));
+        Trades.Take(1).ForEach(changeRate);
+      };
+      #endregion
+      Action startBuySellCloseLevelsTracking = () => {
         _reactiveBuySellCloseLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
         _reactiveBuySellCloseLevels.ChangeTrackingEnabled = true;
         _reactiveBuySellCloseLevelsSubscribtion = (CompositeDisposable)_reactiveBuySellCloseLevels
-          .ItemChanged.Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level").Throttle(bsThrottleTimeSpan)
+          .ItemChanged
+          .Where(buySellPropsFilter)
+          .Throttle(bsThrottleTimeSpan)
+          .Do(_ => Log = new Exception(new { Name = "startBuySellCloseLevelsTracking", _.PropertyName, Value = _.Value + "" } + ""))
+          .Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level")
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
           .Subscribe(_ => {
-            UpdateTradeLimitOrders();
-            UpdateTradeStopOrders();
+            updateTradeLimitOrders();
+            updateTradeStopOrders();
           });
       };
+      #endregion
+
       #region Init BuySellLevels
       this.WhenAny(tm => tm.Strategy
         , tm => tm.TrailingDistanceFunction
@@ -3173,7 +3254,7 @@ namespace HedgeHog.Alice.Store {
           .Subscribe(st => {// Turn on/off live entry orders
             try {
               if (st) {// Subscribe to events in order to update live entry orders
-                startBuySellLevelsTraking();
+                startBuySellLevelsTracking();
               } else if (_reactiveBuySellLevelsSubscribtion != null) {
                 try {
                   GetEntryOrders().ToList().ForEach(order => OnDeletingOrder(order.OrderID));
@@ -3191,18 +3272,20 @@ namespace HedgeHog.Alice.Store {
         , tm => tm.CanDoEntryOrders
         , (b, s, no, eo) =>
           BuyCloseLevel != null && SellCloseLevel != null && CanDoNetLimitOrders && !IsInVitualTrading)
-        .Subscribe(st => {// Turn on/off live net orders
-          try {
-            if (st) {// Subscribe to events in order to update live net orders
-              startBuySellCloseLevelsTraking();
-            } else if (_reactiveBuySellCloseLevelsSubscribtion != null) {
-              try {
-                Trades.ForEach(trade => SetTradeNet(trade, 0, 0));
-              } catch (Exception exc) { Log = exc; }
-              CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion,ref _reactiveBuySellCloseLevels);
-            }
-          } catch (Exception exc) { Log = exc; }
-        });
+          .DistinctUntilChanged()
+          .Throttle(bsThrottleTimeSpan)
+          .Subscribe(st => {// Turn on/off live net orders
+            try {
+              if (st) {// Subscribe to events in order to update live net orders
+                startBuySellCloseLevelsTracking();
+              } else if (_reactiveBuySellCloseLevelsSubscribtion != null) {
+                try {
+                  Trades.Take(1).ForEach(trade => SetTradeNet(trade, 0, 0));
+                } catch (Exception exc) { Log = exc; }
+                CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion, ref _reactiveBuySellCloseLevels);
+              }
+            } catch (Exception exc) { Log = exc; }
+          });
       #endregion
 
     }
@@ -3215,69 +3298,7 @@ namespace HedgeHog.Alice.Store {
         reaciveList = null;
       }
     }
-    private void UpdateTradeLimitOrders() {
-      var bsLevels = new[] { BuyCloseLevel, SellCloseLevel };
-      Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
-      Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Limit.Abs(levelRate(trade)) > PointSize)
-        .ForEach(fw => SetTradeNetLimit(trade, levelRate(trade)));
-      Trades.ForEach(changeRate);
-    }
-    private void UpdateTradeStopOrders() {
-      var bsLevels = new[] { BuyLevel, SellLevel };
-      Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
-      Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Stop.Abs(levelRate(trade)) > PointSize)
-        .ForEach(fw => SetTradeNetStop(trade, levelRate(trade)));
-      Trades.ForEach(changeRate);
-    }
     
-    #region SetTradeNet
-    private void SetTradeNetLimit(Trade trade, double limit) {
-        SetTradeNet(trade, limit, double.NaN);
-    }
-    private void SetTradeNetStop(Trade trade, double stop) {
-        SetTradeNet(trade, double.NaN, stop);
-    }
-    private void SetTradeNet(Trade trade, double limit, double stop) {
-      if (!limit.IsNaN())
-        try {
-          GetFXWraper().FixOrderSetLimit(trade.Id, limit, "");
-        } catch (Exception exc) { Log = exc; }
-      if (!stop.IsNaN())
-        try {
-          GetFXWraper().FixOrderSetStop(trade.Id, stop, "");
-        } catch (Exception exc) { Log = exc; }
-      TradeLastChangeDate = DateTime.Now;
-    }
-    #endregion
-
-    private void UpdateEntryOrders() {
-      try {
-        var buySellLevels = new[] { BuyLevel, SellLevel };
-        GetEntryOrders().GroupBy(eo => eo.IsBuy).SelectMany(eog => eog.Skip(1)).ForEach(OnDeletingOrder);
-        Func<SuppRes, bool> canTrade = (sr) =>/* IsTradingHour() &&*/ sr.CanTrade && sr.TradesCount <= 0
-          && !Trades.IsBuy(sr.IsBuy).Any();
-        Func<bool, int> lotSize = isBuy =>
-          (buySellLevels.Where(sr => sr.IsBuy == isBuy).Any(canTrade) ? (isBuy ? LotSizeByLossBuy : LotSizeByLossSell) : 0)
-          + (GetFXWraper().GetNetOrderRate(Pair,true) > 0 ? 0 : Trades.IsBuy(!isBuy).Lots());
-        buySellLevels.Select(sr => new { sr.IsBuy, sr.Rate, lotSize = lotSize(sr.IsBuy) })
-          .Do(sr => GetEntryOrders(sr.IsBuy).Where(a => sr.lotSize == 0).ForEach(OnDeletingOrder))
-          .Where(sr => sr.lotSize > 0 && !GetEntryOrders(sr.IsBuy).Any())
-         .ForEach(level => OnCreateEntryOrder(level.IsBuy, level.lotSize, level.Rate));
-
-        Action<Order> changeLimit = eo => GetFXWraper().YieldNotNull(eo.Lot.Ratio(lotSize(eo.IsBuy)) > 1.025)
-          .ForEach(fw => fw.ChangeEntryOrderLot(eo.OrderID, lotSize(eo.IsBuy)));
-
-        Func<bool, double> orderRate = isBuy => buySellLevels.Where(sr => sr.IsBuy == isBuy).First().Rate;
-        Action<Order> changeRate = eo => GetFXWraper().YieldNotNull(eo.Rate.Abs(orderRate(eo.IsBuy)) > PointSize)
-          .ForEach(fw => fw.ChangeEntryOrderRate(eo.OrderID, orderRate(eo.IsBuy)));
-
-        GetEntryOrders().ForEach(eo => {
-          changeLimit(eo);
-          changeRate(eo);
-        });
-      } catch (Exception exc) { Log = exc; }
-    }
-
     private void CloseTrading(string reason) {
       Log = new Exception("Closing Trading:" + reason);
       TradingStatistics.TradingMacros.ForEach(tm => {

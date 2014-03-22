@@ -18,6 +18,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Windows.Media;
 using HedgeHog.Models;
 using System.Reflection;
+using ReactiveUI;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -1867,9 +1868,13 @@ namespace HedgeHog.Alice.Store {
 
     private int? _BarsCountCalc;
 
-    public int? BarsCountCalc {
+    public int BarsCountCalc {
       get { return _BarsCountCalc.GetValueOrDefault(BarsCount); }
-      set { _BarsCountCalc = value; }
+      set {
+        if (_BarsCountCalc == value) return;
+        _BarsCountCalc = value;
+        OnPropertyChanged("BarsCountCalc");
+      }
     }
   }
 }
