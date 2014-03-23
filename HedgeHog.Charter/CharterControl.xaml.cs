@@ -1909,8 +1909,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             var times = Enumerable.Range(0, daysCount)
               .Select(d => new[] { dateStart.AddDays(d).AddHours(8).ToLocalTime().DateTime, dateStart.AddDays(d).AddHours(16).ToLocalTime().DateTime })
               .SelectMany(d => d).Where(d => d.Between(firstDate, lastDate) && !weekEnd.Contains(d.DayOfWeek)).ToList();
-            if (TimeZoneInfo.ConvertTime(times.Last(), tz).Hour == 8) times.Add(times.Last().AddHours(8));
-            if (TimeZoneInfo.ConvertTime(times[0], tz).Hour == 16) times.Insert(0, times[0].AddHours(-8));
+            if (TimeZoneInfo.ConvertTime(times.LastOrDefault(), tz).Hour == 8) times.Add(times.Last().AddHours(8));
+            if (TimeZoneInfo.ConvertTime(times.FirstOrDefault(), tz).Hour == 16) times.Insert(0, times[0].AddHours(-8));
             drawTimes(times);
           };
           var tickFirstDate = ticks[0].StartDate;

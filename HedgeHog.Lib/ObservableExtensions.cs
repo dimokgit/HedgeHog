@@ -11,6 +11,9 @@ using System.Reactive.Subjects;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static ISubject<T> SubjectFuctory<T>(this T v) {
+      return new Subject<T>();
+    }
     public static IObservable<IList<T>> SlidingWindow<T>(
            this IObservable<T> src,
            int windowSize) {
