@@ -86,7 +86,7 @@ namespace HedgeHog.Alice.Store {
         };
         if (GetVoltage(UseRatesInternal(ri => ri.AsEnumerable().Reverse().ElementAt(10))).IsNaN()) {
           var ratesInternalReversed = UseRatesInternal(ri => ri.AsEnumerable().Reverse().ToArray());
-          var ratesCount = BarsCount.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
+          var ratesCount = BarsCountCalc.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
           var count = ratesInternalReversed.Length - ratesCount;
           Log = new Exception("Loading volts.");
           ParallelEnumerable.Range(0, count).ForAll(index => {
@@ -115,8 +115,8 @@ namespace HedgeHog.Alice.Store {
         _t = new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }).Schedule(() => {
           var RatesInternalReversedOriginal = UseRatesInternal(ri => ri.ReverseIfNot());
           var ratesInternalReversed = UseRatesInternal(ri => ri.Select(_priceAvg).Reverse().ToArray());
-          var ratesCount = BarsCount.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
-          var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
+          var ratesCount = BarsCountCalc.Max(1440.Div(BarPeriodInt).ToInt()).Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
+          var count = BarsCountCalc.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
             var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
@@ -135,7 +135,7 @@ namespace HedgeHog.Alice.Store {
           var RatesInternalReversedOriginal = UseRatesInternal(ri => ri.ReverseIfNot());
           var ratesInternalReversed = RatesInternalReversedOriginal.Select(_priceAvg).ToArray();
           var ratesCount = CorridorDistance;
-          var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
+          var count = BarsCountCalc.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
             var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
@@ -154,7 +154,7 @@ namespace HedgeHog.Alice.Store {
           var RatesInternalReversedOriginal = UseRatesInternal(ri => ri.ReverseIfNot());
           var ratesInternalReversed = UseRatesInternal(ri => ri.Select(_priceAvg).Reverse().ToArray());
           var ratesCount = CorridorDistance;
-          var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
+          var count = BarsCountCalc.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
             var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
@@ -173,7 +173,7 @@ namespace HedgeHog.Alice.Store {
           var RatesInternalReversedOriginal = UseRatesInternal(ri => ri.ReverseIfNot());
           var ratesInternalReversed = UseRatesInternal(ri => ri.Select(_priceAvg).Reverse().ToArray());
           var ratesCount = CorridorDistance;
-          var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
+          var count = BarsCountCalc.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
             var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
@@ -197,11 +197,11 @@ namespace HedgeHog.Alice.Store {
           var RatesInternalReversedOriginal = UseRatesInternal(ri => ri.ReverseIfNot());
           var ratesInternalReversed = RatesInternalReversedOriginal.Select(_priceAvg).ToArray();
           var ratesCount = CorridorDistanceRatio.ToInt();
-          var count = BarsCount.Min(ratesInternalReversed.Length - ratesCount);
+          var count = BarsCountCalc.Min(ratesInternalReversed.Length - ratesCount);
           Log = new Exception("Loading volts.");
           Enumerable.Range(0, count).ToList().ForEach(index => {
             var ratesSmall = ratesInternalReversed.CopyToArray(index, ratesCount);
-            var ratesBig = ratesInternalReversed.CopyToArray(index, BarsCount);
+            var ratesBig = ratesInternalReversed.CopyToArray(index, BarsCountCalc);
             SetVoltage(RatesInternalReversedOriginal[index], calcVolatility(ratesSmall, ratesBig));
           });
           _t = null;
