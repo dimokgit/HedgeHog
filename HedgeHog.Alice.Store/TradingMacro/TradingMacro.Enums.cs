@@ -51,10 +51,11 @@ namespace HedgeHog.Alice.Store {
     StDevSplits2 = 47,
     StDevSplits3 = 48,
     Balance = 50,
+    TimeRatio = 59,
     Height = 60,
     Time = 61,
     TimeFrame = 62,
-    TimeRatio = 59,
+    TimeFrame2 = 65,
     Rsd = 63,
     Ftt = 64
   }
@@ -80,6 +81,7 @@ namespace HedgeHog.Alice.Store {
     MagnetFft = 2,
     Magnet2 = 3,
     Realter = 4,
+    TimeFrame2 = 5,
     LongCross = 80,
     Count = 90, 
     CountWithAngle = 92,

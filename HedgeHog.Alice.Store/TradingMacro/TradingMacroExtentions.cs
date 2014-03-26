@@ -308,17 +308,15 @@ namespace HedgeHog.Alice.Store {
         orderby g.Key
         from g2 in new[] { "//{0}//".Formater(g.Key) }
         .Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
-        .Concat(new[] { Environment.NewLine })
+        .Concat(new[] { "\n" })
         select g2;
     }
     void LoadActiveSettings() { LoadActiveSettings(ActiveSettingsPath()); }
     public void LoadActiveSettings(string path) {
       try {
-        var exceptions = new[] { "Strategy" };
         var settings = Lib.ReadTestParameters(path);
-        settings
-          .Where(kv=>!exceptions.Contains(kv.Key))
-          .ForEach(tp => this.SetProperty(tp.Key, (object)tp.Value));
+        settings.ForEach(tp => 
+          this.SetProperty(tp.Key, (object)tp.Value, p => p.GetCustomAttribute<DnrAttribute>() == null));
         Log = new Exception("{0} Settings loaded.".Formater(Pair));
       } catch (Exception exc) {
         Log = exc;
@@ -1135,6 +1133,7 @@ namespace HedgeHog.Alice.Store {
       return _inPips == null ? double.NaN : _inPips(Pair, d);
     }
 
+    int Digits() { return TradesManager.GetDigits(Pair); }
     private const int RatesHeightMinimumOff = 0;
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
@@ -1936,7 +1935,7 @@ namespace HedgeHog.Alice.Store {
 
             SetMA();
             var cp = CorridorPrice();
-            var corridorTask = Task.Factory.StartNew(() => {
+            GeneralPurposeSubject.OnNext(() => {
               var corridor = _rateArray.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
               RatesStDev = corridor.StDev;
               StDevByPriceAvg = corridor.StDevs[CorridorCalculationMethod.PriceAverage];
@@ -1945,7 +1944,6 @@ namespace HedgeHog.Alice.Store {
               OnPropertyChanged(() => RatesRsd);
             });
             OnScanCorridor(_rateArray);
-            Task.WaitAll(corridorTask);
             try { RunStrategy(); } catch (Exception exc) { Log = exc; if (IsInVitualTrading) Strategy = Strategies.None; throw; }
             OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
             OnPropertyChanged(() => RatesStDevToRatesHeightRatio);
@@ -2161,6 +2159,7 @@ namespace HedgeHog.Alice.Store {
 
     private Strategies _Strategy;
     [Category(categorySession)]
+    [Dnr]
     public Strategies Strategy {
       get {
         return _Strategy;
@@ -2741,6 +2740,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
+        case ScanCorridorFunction.TimeFrame2: return ScanCorridorByTimeFrameAndAngle2;
         case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
@@ -3093,8 +3093,10 @@ namespace HedgeHog.Alice.Store {
               }
               RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, _Rates);
               var rateLastDate = _Rates.Last().StartDate;
-              if (ServerTime.Subtract(rateLastDate).Duration() > BarPeriodInt.FromMinutes()) {
-                Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
+              var delay = ServerTime.Subtract(rateLastDate).Duration();
+              if (delay > BarPeriodInt.FromMinutes()) {
+                if (delay > (BarPeriodInt * 2).FromMinutes())
+                  Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 _Rates.RemoveAt(_Rates.Count - 1);
                 RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, _Rates);
               }

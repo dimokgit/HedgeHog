@@ -850,20 +850,21 @@ namespace HedgeHog {
     }
 
     #region Reactive Lines
-    void InitVLines<TLine>(ReactiveList<DateTime> times, ReactiveList<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN) where TLine : SimpleLine, new() {
-      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip));
+    void InitVLines<TLine>(ReactiveList<DateTime> times, ReactiveList<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN,double opacity=double.NaN) where TLine : SimpleLine, new() {
+      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => 
+        OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip,opacity));
       times.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeRemoved(dt, lines));
       lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
       lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
-    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveList<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip)where TLine:SimpleLine,new() {
+    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveList<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip,double opacity = double.NaN)where TLine:SimpleLine,new() {
       try {
         var vl = new TLine() {
           Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = new DoubleCollection(strokeArray),
           Stroke = new SolidColorBrush(color),
           StrokeThickness = 2,
           ToolTip = tooltip(date),
-          Opacity = strokeThickness > 1 ? .75 : 1
+          Opacity = opacity.IfNaN(strokeThickness > 1 ? .75 : 1)
         };
         //vl.SetBinding(SimpleLine.StrokeThicknessProperty, new Binding("IsMouseOver") {
         //  Source = vl,
@@ -942,7 +943,7 @@ namespace HedgeHog {
         if (_NYSessions == null) {
           _NYSessions = new ReactiveList<VerticalRange>();
           _NYSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
-            InitSessionVerticalRange(vr, Colors.RoyalBlue);
+            InitSessionVerticalRange(vr, Colors.RoyalBlue,0.075);
           });
           _NYSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
         }
@@ -954,7 +955,7 @@ namespace HedgeHog {
       get {
         if (_NYTimes == null) {
           _NYTimes = new ReactiveList<DateTime>();
-          InitVLines(NYTimes, NYTimesVLines, Colors.RoyalBlue, d => "NY Forex @ {0:g}".Formater(d));
+          InitVLines(NYTimes, NYTimesVLines, Colors.RoyalBlue, d => "NY Forex @ {0:g}".Formater(d), null, double.NaN, 0.075);
         }
         return _NYTimes;
       }
@@ -973,7 +974,7 @@ namespace HedgeHog {
         if (_londonSessions == null) {
           _londonSessions = new ReactiveList<VerticalRange>();
           _londonSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
-            InitSessionVerticalRange(vr, Colors.MediumVioletRed);
+            InitSessionVerticalRange(vr, Colors.MediumVioletRed, 0.04);
           });
           _londonSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
         }
@@ -985,7 +986,7 @@ namespace HedgeHog {
       get {
         if (_LondonTimes == null) {
           _LondonTimes = new ReactiveList<DateTime>();
-          InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d));
+          InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d),null,double.NaN,0.04);
         }
         return _LondonTimes;
       }
@@ -1004,7 +1005,7 @@ namespace HedgeHog {
         if (_tokyoSessions == null) {
           _tokyoSessions = new ReactiveList<VerticalRange>();
           _tokyoSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
-            InitSessionVerticalRange(vr, Colors.DarkGoldenrod, 0.4);
+            InitSessionVerticalRange(vr, Colors.DarkGoldenrod, 0.0625);
           });
           _tokyoSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
         }
@@ -1017,7 +1018,7 @@ namespace HedgeHog {
       get {
         if (_TokyoTimes == null) {
           _TokyoTimes = new ReactiveList<DateTime>();
-          InitVLines(TokyoTimes, TokyoTimesVLines, Colors.DarkGoldenrod, d => "TokyoTimes @ {0:g}".Formater(d));
+          InitVLines(TokyoTimes, TokyoTimesVLines, Colors.DarkGoldenrod, d => "TokyoTimes @ {0:g}".Formater(d), null, double.NaN, 0.075);
         }
         return _TokyoTimes;
       }
@@ -1037,10 +1038,11 @@ namespace HedgeHog {
       timePairs.ForEach((timePair, i) =>
         SetVerticalRange(vRanges[i], timePair.TakeLast(2).First(), timePair.Last()));
     }
-    private void InitSessionVerticalRange(VerticalRange vr, Color fillColor,double opacity = 0.04) {
+    private void InitSessionVerticalRange(VerticalRange vr, Color fillColor,double opacity) {
       vr.Fill = new SolidColorBrush(fillColor);
       vr.StrokeThickness = 0;
-      vr.Opacity = .04;
+      vr.Opacity = opacity;
+      //vr.ObservableForProperty(v => v.Opacity).Subscribe(oc => { Debugger.Break(); });
       plotter.Children.Add(vr);
     }
     #endregion
