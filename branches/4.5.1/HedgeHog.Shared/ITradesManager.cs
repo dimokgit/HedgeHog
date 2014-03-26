@@ -138,7 +138,7 @@ namespace HedgeHog.Shared {
 
   public static class TradesManagerStatic {
     private static readonly EventLoopScheduler _tradingThread =
-      new EventLoopScheduler(ts => { Debugger.Break(); return new Thread(ts) { IsBackground = true }; });
+      new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; });
 
     public static EventLoopScheduler TradingScheduler { get { return _tradingThread; } }
 

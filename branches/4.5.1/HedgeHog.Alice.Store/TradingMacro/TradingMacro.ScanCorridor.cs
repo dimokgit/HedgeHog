@@ -523,6 +523,54 @@ namespace HedgeHog.Alice.Store {
       return stDevH / stDevP;
     }
 
+    SortedDictionary<DateTime, double> _timeFrameHeights = new SortedDictionary<DateTime, double>();
+    private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var revs = ratesForCorridor.ReverseIfNot();
+      DateTime dateMax = revs[0].StartDate, dateMin = revs.TakeLast(CorridorDistance+1).First().StartDate;
+      _timeFrameHeights.Keys.Where(d => !d.Between(dateMin, dateMax)).ToList().ForEach(d => _timeFrameHeights.Remove(d));
+      _timeFrameHeights.TakeWhile(kv => kv.Value == double.MaxValue).Select(kv => kv.Key).ToList().ForEach(d => _timeFrameHeights.Remove(d));
+      var dateStart = _timeFrameHeights.Keys.DefaultIfEmpty().Max();
+      Func<IList<Rate>, int> scan = (rates) => {
+        rates
+        .Integral(CorridorDistance)
+        .TakeWhile(chunk => chunk[0].StartDate > dateStart)
+        .Select(chunk => new { slope = AngleFromTangent(chunk.Regress(1, _priceAvg).LineSlope().Abs()), stDev = chunk.StDev(_priceAvg), date = chunk[0].StartDate })
+        .Where(a => a.slope < 0.025)
+        .OrderBy(a => a.date)
+        .ForEach(a => _timeFrameHeights.Add(a.date, a.stDev));
+        if (!_timeFrameHeights.ContainsKey(dateMax))
+          _timeFrameHeights.Add(dateMax, double.MaxValue);
+
+        var dateStop = _timeFrameHeights.MinBy(a => a.Value).First().Key;
+        var index = revs.TakeWhile(r => r.StartDate > dateStop).Count();
+        SetCorridorStopDate(revs[index]);
+        var count = index + CorridorDistance;
+        if (index > ratesForCorridor.Count* 2.0/ 3) {
+          var secondDateStart = revs[index- revs.Count / 3+1].StartDate;
+          var tfs = _timeFrameHeights.SkipWhile(kv => kv.Key < secondDateStart);
+          SetCOMs(revs, tfs);
+        } else if (index < ratesForCorridor.Count / 3) {
+          var secondDateStart = revs[count + revs.Count / 3-1].StartDate;
+          var tfs = _timeFrameHeights.TakeWhile(kv => kv.Key < secondDateStart);
+          SetCOMs(revs, tfs);
+        }
+        return count;
+      };
+      return ScanCorridorLazy(revs, scan, GetShowVoltageFunction());
+    }
+
+    private void SetCOMs(IList<Rate> revs, IEnumerable<KeyValuePair<DateTime, double>> tfs) {
+      var thirdDateStart = tfs.OrderBy(kv => kv.Value).Select(kv => kv.Key).DefaultIfEmpty().First();
+      SetCOMs(revs, thirdDateStart);
+    }
+
+    private void SetCOMs(IList<Rate> revs, DateTime thirdDateStart) {
+      var secondIndex = revs.TakeWhile(r => r.StartDate > thirdDateStart).Count();
+      double min, max;
+      revs.Skip(secondIndex).Take(CorridorDistance).Height(out min, out max);
+      CenterOfMassBuy = max;
+      CenterOfMassSell = min;
+    }
     private CorridorStatistics ScanCorridorByTimeFrameAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);

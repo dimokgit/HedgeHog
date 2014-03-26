@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using HedgeHog;
 using System.Collections;
+using System.Reflection;
 
 namespace HedgeHog {
   public static class RelativeStDevStore {
@@ -505,7 +506,7 @@ namespace HedgeHog {
     }
 
 
-    public static void SetProperty(this object o, string p, object v) {
+    public static void SetProperty(this object o, string p, object v,Func<PropertyInfo,bool> propertyPredicate = null) {
       var convert = new Func<object, Type, object>((valie, type) => {
         if (valie != null) {
           Type tThis = Nullable.GetUnderlyingType(type);
@@ -514,7 +515,8 @@ namespace HedgeHog {
         }
         return valie;
       });
-      System.Reflection.PropertyInfo pi = o.GetType().GetProperty(p);
+      var pi = o.GetType().GetProperty(p);
+      if (propertyPredicate != null && !propertyPredicate(pi)) return;
       if (pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
@@ -647,7 +649,8 @@ namespace HedgeHog {
     /// <returns></returns>
     public static IEnumerable<T[]> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
       var rates = ratesOriginal.SafeArray();
-      return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1)).Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
+      return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1))
+        .Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
     }
     public static IEnumerable<double> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength,Func<IEnumerable<T>,double> func) {
       return ratesOriginal.Integral(chunksLength).Select(func);

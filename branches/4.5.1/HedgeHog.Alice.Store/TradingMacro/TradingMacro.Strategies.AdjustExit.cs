@@ -105,9 +105,11 @@ namespace HedgeHog.Alice.Store {
                 buyCloseLevel.Rate = priceAvgMax;
             } else if (Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
+              var maxByTakeProfitLimitRatio = buyLevel + InPoints(TakeProfitPips * takeProfitLimitRatio());
               buyCloseLevel.RateEx = new[]{
-                ExitLevelByCurrentPrice(tpColse,true), 
-                currentPriceMax
+                ExitLevelByCurrentPrice(tpColse,true).Min(maxByTakeProfitLimitRatio)
+                //,priceAvgMax
+                //, currentPriceMax
               }.Max();
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
@@ -120,9 +122,11 @@ namespace HedgeHog.Alice.Store {
                 sellCloseLevel.Rate = priceAvgMin;
             } else if (Trades.HaveSell()) {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
+              var minByTakeProfitLimitRatio = sellLevel - InPoints(TakeProfitPips * takeProfitLimitRatio());
               sellCloseLevel.RateEx = new[] { 
-                ExitLevelByCurrentPrice(tpColse,false),
-                currentPriceMin
+                ExitLevelByCurrentPrice(tpColse,false).Max(minByTakeProfitLimitRatio)
+                //, priceAvgMin
+                //, currentPriceMin
               }.Min();
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
@@ -143,7 +147,7 @@ namespace HedgeHog.Alice.Store {
     private double ClosingDistanceByCurrentGross() { return ClosingDistanceByCurrentGross(() => TakeProfitLimitRatio, false); }
     private double ClosingDistanceByCurrentGross(Func<double> takeProfitLimitRatio, bool close0) {
       var tpCloseInPips = close0 ? 0 : TakeProfitPips - CurrentGrossInPipTotal / _tradingStatistics.TradingMacros.Count;
-      var tpColse = InPoints(tpCloseInPips.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
+      var tpColse = InPoints(tpCloseInPips);//.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
       return tpColse;
     }
 
