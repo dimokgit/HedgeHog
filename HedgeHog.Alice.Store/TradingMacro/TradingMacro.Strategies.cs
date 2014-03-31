@@ -516,7 +516,7 @@ namespace HedgeHog.Alice.Store {
         #region SuppRes Event Handlers
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
-          if (!IsTradingActive || reverseStrategy.Value && !suppRes.CanTrade) return false;
+          if (!IsTradingActive || (reverseStrategy.Value && !suppRes.CanTrade) || CanDoEntryOrders) return false;
           var isBuy = isBuyR(suppRes);
           var lot = Trades.IsBuy(!isBuy).Lots();
           var canTrade = suppResCanTrade(suppRes);
@@ -1343,11 +1343,50 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.TimeFrame2: {
                 #region firstTime
                 if (firstTime) {
-                  if (ScanCorridorBy != ScanCorridorFunction.TimeFrame2) {
-                    ScanCorridorBy = ScanCorridorFunction.TimeFrame2;
-                    Log = new Exception("Strategy was changed to " + ScanCorridorBy);
-                    return;
-                  }
+                  canTradeSubject
+                    .DistinctUntilChanged(a => a.canTrade)
+                    .Where(a => a.canTrade)
+                    .Subscribe(a => a.ifCan(), exc => Log = exc, () => { Debugger.Break(); });
+                  onCloseTradeLocal += t => {
+                    if (!IsInVitualTrading && CurrentGrossInPipTotal > -PriceSpreadAverageInPips) {
+                      IsTradingActive = false;
+                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                    }
+                  };
+                  initTradeRangeShift();
+                }
+                #endregion
+                {
+                  var lastPrice = CalculateLastPrice(GetTradeEnterBy(null));
+                  Func<double, double, bool> corrToHeightOk = (u, d) => u.Abs(d) < StDevByHeight.Min(StDevByPriceAvg);
+                  var tradeLevels = new[] { 
+                    CorridorStats.Rates.TakeLast(1).Select(r => new { up = r.PriceAvg2, down = r.PriceAvg3 })
+                    .Where(r=>this.IsAutoStrategy)
+                    ,new {up=BuyLevel.Rate,down=SellLevel.Rate}.Yield()
+                  }.SelectMany(a =>
+                    a.Where(tl => lastPrice.Between(tl.down, tl.up) && corrToHeightOk(tl.up, tl.down))
+                    ).ToArray();
+
+                  var angleOk = CorridorStats.Rates.Count > CorridorDistance;
+                  var canTrade = angleOk && isTradingHourLocal() && tradeLevels.Any();
+                  Action ifCan = () => {
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                    BuyLevel.RateEx = tradeLevels.First().up;
+                    SellLevel.RateEx = tradeLevels.First().down;
+                  };
+                  if (!corrToHeightOk(BuyLevel.Rate, SellLevel.Rate))
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  canTradeSubject.OnNext(new { canTrade, ifCan });
+                }
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+
+            #region ElliottWave
+            case TrailingWaveMethod.ElliottWave: {
+                #region firstTime
+                if (firstTime) {
                   canTradeSubject
                     .Where(a => a.canTrade)
                     .Subscribe(a => a.ifCan(), exc => Log = exc, () => { Debugger.Break(); });
@@ -1362,21 +1401,41 @@ namespace HedgeHog.Alice.Store {
                 }
                 #endregion
                 {
+                  GeneralPurposeSubject.OnNext(() => CalcFractals(RatesArray));
                   var lastPrice = CalculateLastPrice(GetTradeEnterBy(null));
-                  var tradeLevels = new[] { 
-                    CorridorStats.Rates.TakeLast(1).Select(r => new { up = r.PriceAvg21, down = r.PriceAvg31 })
-                    .Where(a=>IsAutoStrategy)
-                    ,new {up=BuyLevel.Rate,down=SellLevel.Rate}.Yield()
-                    //, new { up = CenterOfMassBuy, down = CenterOfMassSell } 
-                  }.SelectMany(a => a.Where(tl => lastPrice.Between(tl.down, tl.up))).ToArray();
-
-                  var canTrade = isTradingHourLocal() && tradeLevels.Any();
+                  var waveTimes = FractalTimes.OrderByDescending(d => d).ToArray();
+                  Func<DateTime, DateTime, IEnumerable<Rate>> ratesByDateRange = (dateMin, dateMax) =>
+                    RatesArray.SkipWhile(r => r.StartDate < dateMin).TakeWhile(r => r.StartDate <= dateMax);
+                  var waves = (from dates in waveTimes.Zip(waveTimes.Skip(1), (d1, d2) => new { min = d1.Min(d2), max = d1.Max(d2) })
+                               select ratesByDateRange(dates.min, dates.max).ToArray()
+                                     ).ToArray();
+                  var waveLengthAvg = waves.OrderByDescending(wave => wave.Length).Take(2);
+                  Func<Rate, double> corridorPrice = _priceAvg;
+                  var waveOk = (from wave1 in waves.Skip(1).Take(1)
+                                where wave1.Height() >= waveLengthAvg.Average(wave => wave.Height())
+                                && waves[0].Height() < wave1.Height() / 3
+                                let dates = new { dateMax = waveTimes[0], dateMin = waveTimes[1] }
+                                let rates = ratesByDateRange(dates.dateMin, dates.dateMax)
+                                let levels = new { min = rates.Min(corridorPrice), max = rates.Max(corridorPrice) }
+                                let height = levels.max - levels.min
+                                let ratesShort = RatesArray.TakeLast(10).ToArray()
+                                let levelUp = ratesShort.Average(GetTradeEnterBy(true)).Max(lastPrice, levels.max)
+                                let levelDown = ratesShort.Average(GetTradeEnterBy(false)).Min(lastPrice,levels.min)
+                                let corridors = new[] { 
+                                  new {min=levelUp,max = levelUp+height},
+                                  new {min=levelDown-height,max = levelDown}
+                                }
+                                from corridor in corridors
+                                where lastPrice.Between(corridor.min, corridor.max)
+                                select corridor
+                               ).ToArray();
+                  var canTrade = isTradingHourLocal() && waveOk.Any();
                   Action ifCan = () => {
                     _buySellLevelsForEach(sr => {
                       sr.CanTradeEx = true;
                     });
-                    BuyLevel.RateEx = tradeLevels.First().up;
-                    SellLevel.RateEx = tradeLevels.First().down;
+                    BuyLevel.RateEx = waveOk[0].max;
+                    SellLevel.RateEx = waveOk[0].min;
                   };
                   canTradeSubject.OnNext(new { canTrade, ifCan });
                 }
@@ -3486,6 +3545,11 @@ namespace HedgeHog.Alice.Store {
       set { _Fractals = value; }
     }
 
+    IEnumerable<DateTime> _fractalTimes = new DateTime[0];
+    public IEnumerable<DateTime> FractalTimes {
+      get { return _fractalTimes; }
+      set { _fractalTimes = value; }
+    }
     public int FttMax { get; set; }
 
     public bool MustExitOnReverse { get; set; }

@@ -523,36 +523,76 @@ namespace HedgeHog.Alice.Store {
       return stDevH / stDevP;
     }
 
+    void CalcFractals(IList<Rate> ratesForCorridor) {
+      Func<Rate, double> price = rate => rate.PriceCMALast;
+      Func<IList<Rate>, DateTime, DateTime, IEnumerable<Rate>> revRatesByDates = (rates, dtMin, dtMax) =>
+        rates.SkipWhile(r => r.StartDate > dtMax).TakeWhile(r => r.StartDate >= dtMin);
+      var fractalAnon = new { slope = 0, date = DateTime.MinValue };
+      var calcFractals = fractalAnon.Yield().ToFunc(new Rate[0] as IList<Rate>, DateTime.MinValue, 0);
+      calcFractals = (rates, dateToStart, distance) => rates
+            .Integral(distance)
+            .TakeWhile(chunk => chunk[0].StartDate > dateToStart)
+            .Select(chunk => new { slope = chunk.Regress(1, price).LineSlope().SignUp(), date = chunk[0].StartDate })
+            .DistinctUntilChanged(a => a.slope).Skip(1);//.SkipLast(1);
+      var revs = ratesForCorridor.ReverseIfNot();
+      var fractalDistance = FractalTimes.Concat(revs[0].StartDate.Yield()).OrderBy(date => date)
+        .Yield(dates => dates.ToArray())
+        .Select(dates => dates.Zip(dates.Skip(1), (d1, d2) => new { min = d1.Min(d2), max = d1.Max(d2) }))
+        .SelectMany(dates => dates, (dates, date) => revRatesByDates(revs, date.min, date.max).Count() * CorrelationMinimum)
+        .DefaultIfEmpty(60)
+        .Max().ToInt();
+      FractalTimes =
+        (from f in calcFractals(revs, DateTime.MinValue, fractalDistance)
+         let rates = revs.SkipWhile(r => r.StartDate > f.date).Take(fractalDistance).ToArray()
+         select (f.slope < 0 ? rates.MaxBy(_priceAvg) : rates.MinBy(_priceAvg)).First().StartDate).ToArray();
+
+    }
     SortedDictionary<DateTime, double> _timeFrameHeights = new SortedDictionary<DateTime, double>();
     private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<Rate, double> price = rate => rate.PriceCMALast;
+      Func<IList<Rate>, DateTime, DateTime, IEnumerable<Rate>> revRatesByDates = (rates, dtMin, dtMax) =>
+        rates.SkipWhile(r => r.StartDate > dtMax).TakeWhile(r => r.StartDate >= dtMin);
+      var fractalAnon = new { slope = 0, date = DateTime.MinValue };
+      var calcFractals = fractalAnon.Yield().ToFunc(new Rate[0] as IList<Rate>, DateTime.MinValue, 0);
+      calcFractals = (rates, dateToStart, distance) => rates
+            .Integral(distance)
+            .TakeWhile(chunk => chunk[0].StartDate > dateToStart)
+            .Select(chunk => new { slope = chunk.Regress(1, price).LineSlope().SignUp(), date = chunk[0].StartDate })
+            .DistinctUntilChanged(a => a.slope).Skip(1);//.SkipLast(1);
       var revs = ratesForCorridor.ReverseIfNot();
-      DateTime dateMax = revs[0].StartDate, dateMin = revs.TakeLast(CorridorDistance+1).First().StartDate;
+      var corridorDistance = FractalTimes.OrderBy(date => date)
+        .TakeLast(3)
+        .Yield(dates => dates.ToArray())
+        .Where(dates => dates.Length == 3)
+        .Select(dates => revs.SkipWhile(r => r.StartDate > dates[2]).TakeWhile(r => r.StartDate >= dates[0]).Count())
+        .DefaultIfEmpty(CorridorDistance).First().Max(CorridorDistance);
+      Func<DateTime, double> stDev = date => revs.SkipWhile(r => r.StartDate > date).Take(corridorDistance).Height(price);
+      DateTime dateMax = revs[0].StartDate, dateMin = revs.TakeLast((corridorDistance * 1.1).ToInt()).First().StartDate;
       _timeFrameHeights.Keys.Where(d => !d.Between(dateMin, dateMax)).ToList().ForEach(d => _timeFrameHeights.Remove(d));
-      _timeFrameHeights.TakeWhile(kv => kv.Value == double.MaxValue).Select(kv => kv.Key).ToList().ForEach(d => _timeFrameHeights.Remove(d));
-      var dateStart = _timeFrameHeights.Keys.DefaultIfEmpty().Max();
+      //_timeFrameHeights.TakeWhile(kv => kv.Value == double.MaxValue).Select(kv => kv.Key).ToList().ForEach(d => _timeFrameHeights.Remove(d));
+      //_timeFrameHeights.Clear();
+      var dateStart = _timeFrameHeights.Keys.LastOrDefault();
       Func<IList<Rate>, int> scan = (rates) => {
-        rates
-        .Integral(CorridorDistance)
-        .TakeWhile(chunk => chunk[0].StartDate > dateStart)
-        .Select(chunk => new { slope = AngleFromTangent(chunk.Regress(1, _priceAvg).LineSlope().Abs()), stDev = chunk.StDev(_priceAvg), date = chunk[0].StartDate })
-        .Where(a => a.slope < 0.025)
-        .OrderBy(a => a.date)
-        .ForEach(a => _timeFrameHeights.Add(a.date, a.stDev));
-        if (!_timeFrameHeights.ContainsKey(dateMax))
-          _timeFrameHeights.Add(dateMax, double.MaxValue);
+        calcFractals(rates,dateStart,corridorDistance)
+          .Select(a => new { a.slope, a.date, stDev = stDev(a.date) })
+          .ForEach(a => { if (_timeFrameHeights.ContainsKey(a.date))_timeFrameHeights.Remove(a.date); _timeFrameHeights.Add(a.date, a.stDev); });
+        //if (!_timeFrameHeights.ContainsKey(dateMax))
+        //  _timeFrameHeights.Add(dateMax, double.MaxValue);
 
-        var dateStop = _timeFrameHeights.MinBy(a => a.Value).First().Key;
+        var dateStop = _timeFrameHeights.DefaultIfEmpty(new KeyValuePair<DateTime,double>(revs[0].StartDate,0.0)).MinBy(a => a.Value).First().Key  ;
         var index = revs.TakeWhile(r => r.StartDate > dateStop).Count();
         SetCorridorStopDate(revs[index]);
-        var count = index + CorridorDistance;
+        var count = index + corridorDistance;
         if (index > ratesForCorridor.Count* 2.0/ 3) {
           var secondDateStart = revs[index- revs.Count / 3+1].StartDate;
           var tfs = _timeFrameHeights.SkipWhile(kv => kv.Key < secondDateStart);
           SetCOMs(revs, tfs);
         } else if (index < ratesForCorridor.Count / 3) {
-          var secondDateStart = revs[count + revs.Count / 3-1].StartDate;
-          var tfs = _timeFrameHeights.TakeWhile(kv => kv.Key < secondDateStart);
-          SetCOMs(revs, tfs);
+          revs.Skip(revs.Count * 2 / 3).Take(1).Select(r => r.StartDate)
+            .ForEach(secondDateStart => {
+              var tfs = _timeFrameHeights.TakeWhile(kv => kv.Key < secondDateStart);
+              SetCOMs(revs, tfs);
+            });
         }
         return count;
       };

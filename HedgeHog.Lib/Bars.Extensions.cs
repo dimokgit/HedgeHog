@@ -1551,9 +1551,9 @@ namespace HedgeHog.Bars {
         return t;
       });
     }
-    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, double cmaPeriod, int cmaLevels = 3) where TBar : BarBase {
+    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, double cmaPeriod, int cmaLevels) where TBar : BarBase {
       if (cmaPeriod == 0)
-        ticks.ToList().ForEach(t => t.PriceCMALast = double.NaN);
+        ticks.ToList().ForEach(t => t.PriceCMALast = getValue(t,t));
       else {
         var cmas = new List<double>(cmaLevels);
         var first = ticks.First();

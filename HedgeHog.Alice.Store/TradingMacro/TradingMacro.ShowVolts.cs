@@ -10,6 +10,20 @@ using System.Threading;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
+    CorridorStatistics ShowVoltsByFractalDensity() {
+      var volts = !FractalTimes.Any() ? double.NaN
+        : (from range in new { dateMin = FractalTimes.Min(), dateMax = FractalTimes.Max() }.Yield()
+           let rates = RatesArray.SkipWhile(r => r.StartDate <= range.dateMin).TakeWhile(r => r.StartDate <= range.dateMax).ToArray()
+           select rates.Length.Div( FractalTimes.Count()).ToInt()).First();
+      RatesArray.TakeWhile(r => GetVoltage(r).IsNaN())
+        .ForEach(r => SetVoltage(r,volts));
+      return ShowVolts(volts, 2);
+    }
+    CorridorStatistics ShowVoltsByVolume() {
+      RatesArray.AsEnumerable().Reverse().TakeWhile(r => GetVoltage(r).IsNaN())
+        .ForEach(rate => { SetVoltage(rate, rate.Volume); });
+      return ShowVolts(RateLast.Volume, 3);
+    }
     CorridorStatistics ShowVoltsByStDevPercentage() {
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       var middle = WaveShort.Rates.Average(_priceAvg);
@@ -37,7 +51,7 @@ namespace HedgeHog.Alice.Store {
         Enumerable.Range(0, count).ToList().ForEach(index => {
           var rates = ratesInternalReversed.CopyToArray(index, ratesCount);
           try {
-            SetMAByFtt(rates);
+            SetMAByFtt(rates, _priceAvg, (rate, v) => rate.PriceWave = v, PriceCmaLevels);
           } catch (Exception exc) {
             return;
           }
@@ -45,7 +59,7 @@ namespace HedgeHog.Alice.Store {
         });
         Log = new Exception("Done Loading volts.");
       }
-      if (value(RatesArray.Last()).IsNaN()) SetMAByFtt(RatesArray);
+      if (value(RatesArray.Last()).IsNaN()) SetMAByFtt(RatesArray, _priceAvg, (rate, v) => rate.PriceWave = v, PriceCmaLevels);
       CorridorCorrelation = volatility(WaveShort.Rates);
       return ShowVolts(CorridorCorrelation, 1);
     }

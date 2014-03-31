@@ -506,7 +506,10 @@ namespace HedgeHog {
     }
 
 
-    public static void SetProperty(this object o, string p, object v,Func<PropertyInfo,bool> propertyPredicate = null) {
+    public static void SetProperty(this object o, string p, object v) {
+      o.SetProperty(p, v, pi => true);
+    }
+    public static void SetProperty(this object o, string p, object v, Func<PropertyInfo, bool> propertyPredicate = null) {
       var convert = new Func<object, Type, object>((valie, type) => {
         if (valie != null) {
           Type tThis = Nullable.GetUnderlyingType(type);

@@ -946,7 +946,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("CorridorDistanceRatio")]
     [Category(categoryActive)]
-    [Description("CanTrade = MagnetPrice.Between CenterOfMass")]
+    [Description("X > 1 ? X : BarsCount * CorridorDistanceRatio")]
     public double CorridorDistanceRatio {
       get { return CorridorStDevRatioMax; }
       set {
@@ -1790,5 +1790,21 @@ namespace HedgeHog.Alice.Store {
     public Func<Rate, double> ChartPriceLow { get; set; }
 
     public DateTime? LineTimeMin { get; set; }
+
+    #region CanShowNews
+    private bool _CanShowNews;
+    [Category(categoryCorridor)]
+    [DisplayName("Can Show News")]
+    public bool CanShowNews {
+      get { return _CanShowNews; }
+      set {
+        if (_CanShowNews != value) {
+          _CanShowNews = value;
+          OnPropertyChanged("CanShowNews");
+        }
+      }
+    }
+
+    #endregion
   }
 }
