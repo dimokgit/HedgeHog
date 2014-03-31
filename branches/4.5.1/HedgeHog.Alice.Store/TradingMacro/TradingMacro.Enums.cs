@@ -6,6 +6,8 @@ using System.Text;
 namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
+    Volume = 5,
+    FractalDensity = 7,
     AboveBelowRatio = 10,
     StDevInsideOutRatio = 20,
     Volatility = 30,
@@ -82,6 +84,7 @@ namespace HedgeHog.Alice.Store {
     Magnet2 = 3,
     Realter = 4,
     TimeFrame2 = 5,
+    ElliottWave = 6,
     LongCross = 80,
     Count = 90, 
     CountWithAngle = 92,

@@ -90,6 +90,8 @@ namespace HedgeHog.Alice.Store {
     }
     public static CorridorStatistics ScanCorridorWithAngle<T>(this IList<T> rates,Func<T,double>price, Func<T, double> priceHigh, Func<T, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod)where T: Rate {
       try {
+        if (rates == null) throw new ArgumentNullException("Rates list must not be null.");
+        if (rates.Count == 0) throw new ArgumentOutOfRangeException("Rates list must not be empty.");
         #region Funcs
         double[] linePrices = new double[rates.Count()];
         Func<int, double> priceLine = index => linePrices[index];

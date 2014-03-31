@@ -175,6 +175,7 @@ namespace HedgeHog {
       return (rc / 100.0).ToInt() + 1;
     }
 
+    public static IEnumerable<U> Yield<T,U>(this T v,Func<T,U> m) { yield return m(v); }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
     public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {
       if (v == null) yield break;
@@ -769,6 +770,15 @@ namespace HedgeHog {
     public static Func<T> ToFunc<T>(this T value) {
       return () => value;
     }
+    public static Func<U,T> ToFunc<T,U>(this T value,U input) {
+      return u => value;
+    }
+    public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2) {
+      return (u1, u2) => value;
+    }
+    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3) {
+      return (u1, u2, u3) => value;
+    }
     public static bool IsNaN(this double d) {
       return double.IsNaN(d);
     }
@@ -852,9 +862,11 @@ namespace HedgeHog {
     public static int Sign(this double v, double other) {
       return Math.Sign(v - other);
     }
+    public static int SignUp(this double v) {
+      return Math.Sign(v) >= 0 ? 1 : -1;
+    }
     public static int SignUp(this double v, double other) {
-      var s = Math.Sign(v - other);
-      return s >= 0 ? 1 : -1;
+      return (v - other).SignUp();
     }
     public static int SignDown(this double v, double other) {
       var s = Math.Sign(v - other);

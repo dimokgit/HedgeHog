@@ -94,8 +94,8 @@ namespace HedgeHog.Alice.Store {
             var masterTakeProfit = _tradingStatistics.GrossToExitInPips.GetValueOrDefault(double.NaN);
             var tpColse = ClosingDistanceByCurrentGross(takeProfitLimitRatio, close0);
             var ratesShort = RatesArray.TakeLast(5).ToArray();
-            var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)) - PointSize / 10;
-            var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)) + PointSize / 10;
+            var priceAvgMax = ratesShort.Max(rate => rate.BidClose) - PointSize / 10;
+            var priceAvgMin = ratesShort.Min(rate => rate.AskClose) + PointSize / 10;
             var currentPriceMax = _priceQueue.Average(p => p.Bid);
             var currentPriceMin = _priceQueue.Average(p => p.Ask);
             if (buyCloseLevel.IsGhost)
@@ -108,7 +108,7 @@ namespace HedgeHog.Alice.Store {
               var maxByTakeProfitLimitRatio = buyLevel + InPoints(TakeProfitPips * takeProfitLimitRatio());
               buyCloseLevel.RateEx = new[]{
                 ExitLevelByCurrentPrice(tpColse,true).Min(maxByTakeProfitLimitRatio)
-                //,priceAvgMax
+                ,priceAvgMax
                 //, currentPriceMax
               }.Max();
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
@@ -123,9 +123,10 @@ namespace HedgeHog.Alice.Store {
             } else if (Trades.HaveSell()) {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var minByTakeProfitLimitRatio = sellLevel - InPoints(TakeProfitPips * takeProfitLimitRatio());
+              var sellExit = ExitLevelByCurrentPrice(tpColse, false).Max(minByTakeProfitLimitRatio);
               sellCloseLevel.RateEx = new[] { 
-                ExitLevelByCurrentPrice(tpColse,false).Max(minByTakeProfitLimitRatio)
-                //, priceAvgMin
+                sellExit
+                , priceAvgMin
                 //, currentPriceMin
               }.Min();
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())

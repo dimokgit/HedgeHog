@@ -1374,6 +1374,8 @@ namespace HedgeHog.Alice.Store {
         var currentPosition = -1;
         var indexCurrent = 0;
         LastTrade = new Trade();
+        _timeFrameHeights.Clear();
+        FractalTimes = FractalTimes.Take(0);
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2532,8 +2534,7 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
           var rates = RatesArray;
-          SetMAByFtt(rates);
-            RatesArray.SetCma((p, r) => r.PriceWave, PriceCmaLevels, PriceCmaLevels);
+          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, BarsCountCalc / PriceCmaLevels);
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
@@ -2557,19 +2558,18 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    private void SetMAByFtt(IList<Rate> rates) {
+    private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate,double> setValue, int lastHarmonic) {
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
-      var prices = rates.AsParallel().Select(_priceAvg).ToArray();
+      var prices = rates.AsParallel().Select(getPrice).ToArray();
       var mirror = prices.AsParallel().Mirror(prices.Last()).Reverse().ToArray();
       mirror = prices.Concat(mirror).ToArray();
       var mirror2 = prices.AsParallel().Mirror(prices[0]).Reverse().ToArray();
       mirror = mirror2.Concat(mirror).ToArray();
       var bins = mirror.Fft0();
-      var lastHarmonic = PolyOrder;
       var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
       double[] ifft;
       alglib.fftr1dinv(bins1, out ifft);
-      rates.Zip(ifft.Skip(rates.Count), (rate, d) => { rate.PriceWave = d; return 0; }).Count();
+      rates.Zip(ifft.Skip(rates.Count), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
 
     Func<double, double, double> _max = (d1, d2) => Math.Max(d1, d2);
@@ -2767,6 +2767,8 @@ namespace HedgeHog.Alice.Store {
     Func<CorridorStatistics> GetShowVoltageFunction() {
       switch (VoltageFunction_) {
         case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
+        case HedgeHog.Alice.VoltageFunction.Volume: return ShowVoltsByVolume;
+        case HedgeHog.Alice.VoltageFunction.FractalDensity: return ShowVoltsByFractalDensity;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
         case HedgeHog.Alice.VoltageFunction.Volatility: return ShowVoltsByVolatility;
@@ -3069,7 +3071,7 @@ namespace HedgeHog.Alice.Store {
               Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
               var sw = Stopwatch.StartNew();
               var serverTime = ServerTime;
-              var periodsBack = BarsCountCalc * 2;
+              var periodsBack = BarsCount * 2;
               var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/ CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
               var startDate = TradesManagerStatic.FX_DATE_NOW;
               if (!useDefaultInterval) {
