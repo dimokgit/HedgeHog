@@ -164,15 +164,24 @@ namespace HedgeHog.Alice.Store {
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
+    private ConcurrentQueue<Harmonic> CalcHurmonics(IList<Rate> binRates,int minutesPerHour) {
+      ConcurrentDictionary<int, double[]> invFfts;
+      ConcurrentQueue<Harmonic> harmonicsQueue;
+      CalcHurmonics(binRates,minutesPerHour, out harmonicsQueue, out invFfts);
+      return harmonicsQueue;
+    }
     private void CalcHurmonics(IList<Rate> binRates, out ConcurrentQueue<Harmonic> harmonicsQueue, out ConcurrentDictionary<int, double[]> invFfts) {
+      CalcHurmonics(binRates, 60,out  harmonicsQueue, out invFfts);
+    }
+    private void CalcHurmonics(IList<Rate> binRates,int minutesPerHour, out ConcurrentQueue<Harmonic> harmonicsQueue, out ConcurrentDictionary<int, double[]> invFfts) {
       var bins = binRates.Select(_priceAvg).FftSignalBins(false);
       harmonicsQueue = new Harmonic[0].ToConcurrentQueue();
       var iffts = invFfts = "".ToConcurrentDictionary(a => 0, a => new double[0]);
-      var harmonicHours = ParallelEnumerable.Range(1, binRates.Count).GroupBy(i => (binRates.Count / i / 60.0).ToInt()).Where(g => g.Key >= 1);
+      var harmonicHours = ParallelEnumerable.Range(1, binRates.Count).GroupBy(i => ((double)binRates.Count / i / minutesPerHour).ToInt()).Where(g => g.Key >= 1);
       var hq = harmonicsQueue;
       harmonicHours.ForAll(group => {
         var hour = group.Key;
-        var bins1 = bins.FftHarmonic(group.First(), group.Count());
+        var bins1 = bins.FftHarmonic(group.Min(), group.Count());
         double[] ifft;
         alglib.fftr1dinv(bins1.SafeArray(), out ifft);
         var height = ifft.Where(d => d > 0).Average();
@@ -194,7 +203,7 @@ namespace HedgeHog.Alice.Store {
         var bins1 = bins.FftHarmonic(minute);
         double[] ifft;
         alglib.fftr1dinv(bins1.SafeArray(), out ifft);
-        var height = ifft.Max();
+        var height = ifft.Height();
         hq.Enqueue(new Harmonic(hour, InPips(height).Round(1)));
         iffts.TryAdd(hour, ifft);
       });

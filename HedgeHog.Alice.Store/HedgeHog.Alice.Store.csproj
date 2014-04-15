@@ -207,6 +207,10 @@
     <Compile Include="TradingMacro\TradingMacro.Strategies.AdjustExit.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EnumerableHH\HedgeHog.EnumerableHH.csproj">
+      <Project>{8b110eee-4d1a-4b1a-b7d9-b5880af2b737}</Project>
+      <Name>HedgeHog.EnumerableHH</Name>
+    </ProjectReference>
     <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">
       <Project>{7A8203A2-9BFC-4711-9836-9DFF55D9D1D0}</Project>
       <Name>VTClasses</Name>

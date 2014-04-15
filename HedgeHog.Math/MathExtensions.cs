@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using HedgeHog;
 using System.Collections;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
 using System.Reflection;
 
 namespace HedgeHog {
@@ -171,21 +174,6 @@ namespace HedgeHog {
         .ToLookup(a => a.isUp, a => a.rate.r);
     }
 
-    public static IList<T> Wavelette<T>(this IList<T> values, Func<T, double> value) {
-      var wavelette = new List<T>(values.Take(2));
-      if (values.Count > 1) {
-        var sign = Math.Sign(value(values[1]) - value(values[0]));
-        var prev = values[1];
-        foreach (var curr in values.Skip(2)) {
-          var s = Math.Sign(value(curr) - value(prev));
-          if (s == -sign) break;
-          if (sign == 0) sign = s;
-          wavelette.Add(curr);
-          prev = curr;
-        }
-      }
-      return wavelette;
-    }
     public static IList<double> Wavelette(this IList<double> values) {
       var sign = Math.Sign(values[1] - values[0]);
       var wavelette = new List<double>(values.Take(2));
@@ -575,16 +563,23 @@ namespace HedgeHog {
       minOut = min;
       return ret;
     }
+    public static T[] CopyToArray<T>(this IList<T> values, int count) {
+      return values.SafeArray().CopyToArray(count);
+    }
     public static T[] CopyToArray<T>(this T[] values, int count) {
       var array = new T[count];
       Array.Copy(values, array, array.Length);
       return array;
+    }
+    public static T[] CopyToArray<T>(this IList<T> values, int start, int count) {
+      return values.SafeArray().CopyToArray(start, count);
     }
     public static T[] CopyToArray<T>(this T[] values, int start, int count) {
       var array = new T[count];
       Array.Copy(values, start, array, 0, array.Length);
       return array;
     }
+    private static double Abs(this double d) { return Math.Abs(d); }
     private static int Sign(this double d) { return Math.Sign(d); }
     private static bool IsNaN(this double d) { return double.IsNaN(d); }
     public class Extream<T> {
@@ -655,7 +650,7 @@ namespace HedgeHog {
       return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1))
         .Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
     }
-    public static IEnumerable<double> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength,Func<IEnumerable<T>,double> func) {
+    public static IEnumerable<U> Integral<T,U>(this IEnumerable<T> ratesOriginal, int chunksLength, Func<T[], U> func) {
       return ratesOriginal.Integral(chunksLength).Select(func);
     }
     /// <summary>
@@ -685,6 +680,54 @@ namespace HedgeHog {
       var diffs = line.Zip(values, (l, v) => l - v).ToArray();
       if (callCC != null) callCC(diffs);
       return diffs.StDev();
+    }
+    public static double HeightByRegressoin(this IList<double> values, double[] coeffs = null) {
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      var line = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      var diffs = line.Zip(values, (l, v) => l - v).ToArray();
+      return diffs.Max()-diffs.Min();
+    }
+    public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      var line = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a=>a.Sign());
+      return diffs.Select(g => g.Select(v => v)).SelectMany(a => a).ToArray().StDev() * 4;
+    }
+    static IEnumerable<int> IteratonSequence(int start, int end) {
+      return IteratonSequence(start, end, NestStep);
+    }
+    private static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
+      for (var i = start; i < end; i += nextStep(i))
+        yield return i;
+    }
+
+    public static int NestStep(int rc) {
+      return (rc / 100.0).ToInt() + 1;
+    }
+    /// <summary>
+    /// Scan values for Regression's slope sign changes,
+    /// then return lengths of start and end of every wave.
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="startIndex"></param>
+    /// <returns>One or two elements with slopes length</returns>
+    public static IEnumerable<Tuple<int,int,int>> ScanTillFlat(IList<double> values,int startIndex) {
+      return (
+        from length in IteratonSequence(startIndex, values.Count)
+        select new { length, slopeSign = values.CopyToArray(0, length).Regress(1).LineSlope().Sign() }
+      ).DistinctUntilChanged(d => d.slopeSign)
+      .Take(2)
+      .Integral(2, a => Tuple.Create(a[0].length, a.Last().length, a.Last().slopeSign));
+    }
+    public static IEnumerable<T> ScanTillFlat<T>(IList<double> values, int startIndex,Func<int,int,T> lengthAndSlope) {
+      return (
+        from length in IteratonSequence(startIndex, values.Count)
+        select new { length, slopeSign = values.CopyToArray(0, length).Regress(1).LineSlope().Sign() }
+      ).DistinctUntilChanged(d => d.slopeSign)
+      .Take(2)
+      .Select(a => lengthAndSlope(a.length, a.slopeSign));
     }
     public static double RsdByRegression(this IEnumerable<double> values) {
       double min = 0.0, max = 0.0;

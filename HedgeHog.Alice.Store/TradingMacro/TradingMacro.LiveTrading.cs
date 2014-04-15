@@ -125,6 +125,8 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    bool CanDoNetOrders { get { return CanDoNetStopOrders || CanDoNetLimitOrders; } }
+
     #region Real-time trading orders
     #region CanDoNetLimitOrders
     private bool _CanDoNetLimitOrders;
@@ -136,6 +138,21 @@ namespace HedgeHog.Alice.Store {
         if (_CanDoNetLimitOrders != value) {
           _CanDoNetLimitOrders = value;
           OnPropertyChanged("CanDoNetLimitOrders");
+        }
+      }
+    }
+
+    #endregion
+    #region CanDoNetStopOrders
+    private bool _CanDoNetStopOrders;
+    [Category(categoryActiveYesNo)]
+    [DisplayName("Can Do Stop Orders")]
+    public bool CanDoNetStopOrders {
+      get { return _CanDoNetStopOrders; }
+      set {
+        if (_CanDoNetStopOrders != value) {
+          _CanDoNetStopOrders = value;
+          OnPropertyChanged("CanDoNetStopOrders");
         }
       }
     }
@@ -297,8 +314,8 @@ namespace HedgeHog.Alice.Store {
           .Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level")
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
           .Subscribe(_ => {
-            updateTradeLimitOrders();
-            updateTradeStopOrders();
+            if (CanDoNetLimitOrders) updateTradeLimitOrders();
+            if(CanDoNetStopOrders) updateTradeStopOrders();
           });
       };
       #endregion
@@ -334,21 +351,20 @@ namespace HedgeHog.Alice.Store {
           tm => tm.BuyCloseLevel
         , tm => tm.SellCloseLevel
         , tm => tm.CanDoNetLimitOrders
+        , tm => tm.CanDoNetStopOrders
         , tm => tm.CanDoEntryOrders
-        , (b, s, no, eo) =>
-          BuyCloseLevel != null && SellCloseLevel != null && CanDoNetLimitOrders && !IsInVitualTrading)
+        , (b, s, non, nos, eo) =>
+          BuyCloseLevel != null && SellCloseLevel != null && CanDoNetOrders && !IsInVitualTrading)
           .DistinctUntilChanged()
           .Throttle(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders
             try {
-              if (st) {// Subscribe to events in order to update live net orders
+              CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion, ref _reactiveBuySellCloseLevels);
+              if (!CanDoNetLimitOrders) Trades.Take(1).ForEach(trade => SetTradeNetLimit(trade, 0));
+              if (!CanDoNetStopOrders) Trades.Take(1).ForEach(trade => SetTradeNetStop(trade, 0));
+              if (st) {// (Re)Subscribe to events in order to update live net orders
                 Log = new Exception("startBuySellCloseLevelsTracking");
                 startBuySellCloseLevelsTracking();
-              } else if (_reactiveBuySellCloseLevelsSubscribtion != null) {
-                try {
-                  Trades.Take(1).ForEach(trade => SetTradeNet(trade, 0, 0));
-                } catch (Exception exc) { Log = exc; }
-                CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion, ref _reactiveBuySellCloseLevels);
               }
             } catch (Exception exc) { Log = exc; }
           });

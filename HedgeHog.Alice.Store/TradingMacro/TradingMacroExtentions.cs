@@ -559,6 +559,7 @@ namespace HedgeHog.Alice.Store {
         if (_LotSizeByLossBuy != value) {
           _LotSizeByLossBuy = value;
           OnPropertyChanged("LotSizeByLossBuy");
+          OnPropertyChanged("PipAmount");
         }
       }
     }
@@ -1012,9 +1013,7 @@ namespace HedgeHog.Alice.Store {
     private double CurrentLossInPipTotal { get { return TradingStatistics.CurrentLossInPips; } }
     private double CurrentGrossInPipTotal {
       get {
-        return TradesManager == null 
-          ? double.NaN 
-          : TradesManager.MoneyAndLotToPips(_tradingStatistics.TradingMacros.Sum(tm=>tm.CurrentLoss)+ TradesManager.GetTrades().Gross(), CurrentGrossLot, Pair);
+        return _tradingStatistics.CurrentGrossInPips;
       }
     }
 
@@ -1326,7 +1325,7 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17 * 60 + 24 * 60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0);
-        var internalRateCount = 1440 * 8;
+        var internalRateCount = BarsCount * 2;
         _replayRates = GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt);
         AddRatesStats(_replayRates);
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
@@ -2007,6 +2006,14 @@ namespace HedgeHog.Alice.Store {
         return _pointSize;
       }
     }
+
+    #region PipAmount
+    private double _PipAmount;
+    public double PipAmount {
+      get { return TradesManagerStatic.PipAmount(AllowedLotSizeCore(), TradesManager.GetBaseUnitSize(Pair), PipCost); }
+    }
+
+    #endregion
 
     double _pipCost = double.NaN;
     public double PipCost {
@@ -2758,6 +2765,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Void: return ScanCorridorVoid;
         case ScanCorridorFunction.Fixed: return ScanCorridorFixed;
         case ScanCorridorFunction.TillFlat: return ScanCorridorTillFlat;
+        case ScanCorridorFunction.TillFlat2: return ScanCorridorTillFlat2;
         case ScanCorridorFunction.BigGap: return ScanCorridorByBigGap;
         case ScanCorridorFunction.BigGap2: return ScanCorridorByBigGap2;
       }
@@ -2768,6 +2776,7 @@ namespace HedgeHog.Alice.Store {
       switch (VoltageFunction_) {
         case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.Volume: return ShowVoltsByVolume;
+        case HedgeHog.Alice.VoltageFunction.HarmonicMin: return ShowVoltsByHarmonicMin;
         case HedgeHog.Alice.VoltageFunction.FractalDensity: return ShowVoltsByFractalDensity;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
@@ -2851,6 +2860,7 @@ namespace HedgeHog.Alice.Store {
         SetTradesStatistics(trades);
         if (DoNews && RatesArray.Any())
           OnGeneralPurpose(() => {
+            if (!RatesArray.Any()) return;
             var dateStart = RatesArray[0].StartDate;
             var dateEnd = RatesArray.LastBC().StartDate.AddHours(120);
             var newsEventsCurrent = NewsCasterModel.SavedNews.AsParallel().Where(ne => ne.Time.DateTime.Between(dateStart, dateEnd)).ToArray();
@@ -2901,16 +2911,20 @@ namespace HedgeHog.Alice.Store {
         }
         StopAmount = stopAmount;
         LimitAmount = limitAmount;
+        OnPropertyChanged("PipAmount");
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
     }
 
     public int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
 
-    private int CalcLotSizeByPMC(Account account) {
+    public int CalcLotSizeByPMC(Account account) {
       var tms = TradingStatistics.TradingMacros;
       return tms == null || !tms.Any() ? 0
-        : TradesManagerStatic.GetLotSize(
-        (TradesManagerStatic.LotToMarginCall(MaxPipsToPMC(), account.Equity / tms.Count(tm => tm.TradingRatioByPMC), BaseUnitSize, PipCost, TradesManager.GetOffer(Pair).MMR)), BaseUnitSize);
+        : TradesManagerStatic.LotToMarginCall(MaxPipsToPMC()
+        , account.Equity / tms.Count(tm => tm.TradingRatioByPMC)
+        , BaseUnitSize
+        , PipCost
+        , TradesManager.GetOffer(Pair).MMR);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -3185,7 +3199,7 @@ namespace HedgeHog.Alice.Store {
           SetLotSize();
           break;
         case TradingMacroMetadata.Pair:
-          _pointSize = double.NaN;
+          _pointSize = _pipCost = double.NaN;
           goto case TradingMacroMetadata.CorridorBarMinutes;
         case TradingMacroMetadata.UsePrevHeight:
           ResetBarsCountCalc();

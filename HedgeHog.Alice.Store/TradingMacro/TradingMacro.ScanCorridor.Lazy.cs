@@ -34,6 +34,8 @@ namespace HedgeHog.Alice.Store {
       return (showVolts ?? ShowVoltsNone)();
     }
     private CorridorStatistics ShowVoltsNone() {
+      if (!WaveShort.HasRates)
+        WaveShort.Rates = RatesArray.TakeLast(CorridorDistance).Reverse().ToArray();
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 

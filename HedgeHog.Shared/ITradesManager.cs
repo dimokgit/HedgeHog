@@ -205,7 +205,7 @@ namespace HedgeHog.Shared {
     public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
       return MarginLeft(lot, pl, balance, mmr, baseUnitSize, pipCost) / PipAmount(lot, baseUnitSize, pipCost);
     }
-    public static double LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost, double MMR) {
+    public static int LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost, double MMR) {
       var lot = balance / (pipsToMC * pipCost / baseUnitSize + 1.0 / baseUnitSize * MMR);
       return pipsToMC < 1 ? 0 : GetLotSize(lot, baseUnitSize);
     }
