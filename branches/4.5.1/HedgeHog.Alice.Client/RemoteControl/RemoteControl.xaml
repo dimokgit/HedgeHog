@@ -102,8 +102,15 @@
                 Command="{Binding DataContext.BuyCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
           <Button.ContentTemplate>
             <DataTemplate>
-              <TextBlock ToolTip="{Binding LotSizePercent,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"
-                         Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0" />
+              <TextBlock
+                         Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0">
+                <TextBlock.ToolTip>
+                  <StackPanel>
+                    <TextBlock Text="{Binding LotSizePercent,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"/>
+                    <TextBlock Text="{Binding PipAmount,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:c0}}"/>
+                  </StackPanel>
+                </TextBlock.ToolTip>
+              </TextBlock>
             </DataTemplate>
           </Button.ContentTemplate>
         </Button>
