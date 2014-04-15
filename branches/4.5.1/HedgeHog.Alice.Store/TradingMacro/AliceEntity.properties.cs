@@ -860,9 +860,13 @@ namespace HedgeHog.Alice.Store {
     private bool IsTradingDay(DateTime time) {
       return TradingDays().Contains(time.DayOfWeek);
     }
-    private bool IsTradingHour(DateTime time) {
+    private bool IsTradingHour_Old(DateTime time) {
       var hours = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s).Hour).ToArray();
       return hours[0] < hours[1] ? time.Hour.Between(hours[0], hours[1]) : !time.Hour.Between(hours[0] - 1, hours[1] + 1);
+    }
+    private bool IsTradingHour(DateTime time) {
+      var times = TradingHoursRange.Split('-').Select(s => DateTime.Parse(s)).ToArray();
+      return time.TimeOfDay.Between(times[0].TimeOfDay, times[1].TimeOfDay);
     }
     DayOfWeek[] TradingDays() {
       switch (TradingDaysRange) {
@@ -982,6 +986,22 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region IsTakeBack
+    private bool _IsTakeBack;
+    [Category(categoryActiveYesNo)]
+    [Description("Set exit level to no-loss.")]
+    public bool IsTakeBack {
+      get { return _IsTakeBack; }
+      set {
+        if (_IsTakeBack != value) {
+          _IsTakeBack = value;
+          OnPropertyChanged("IsTakeBack");
+        }
+      }
+    }
+
+    #endregion
+
     [DisplayName("Variance Function")]
     [Category(categoryActiveFuncs)]
     public VarainceFunctions VarianceFunction {
@@ -1064,8 +1084,8 @@ namespace HedgeHog.Alice.Store {
 
     const string categoryXXX = "XXX";
     const string categoryXXX_NU = "XXX_NU";
-    const string categoryCorridor = "Corridor";
-    const string categoryTrading = "Trading";
+    public const string categoryCorridor = "Corridor";
+    public const string categoryTrading = "Trading";
     public const string categoryActive = "Active";
     public const string categoryActiveYesNo = "Active Yes or No";
     public const string categoryActiveFuncs = "Active Funcs";

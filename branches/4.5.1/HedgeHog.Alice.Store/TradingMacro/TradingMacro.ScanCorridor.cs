@@ -70,26 +70,116 @@ namespace HedgeHog.Alice.Store {
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
-
-    private int NewMethod(IList<Rate> rates, IEnumerable<IGrouping<int, Rate>>[] gapsAll, Func<IEnumerable<IGrouping<int, Rate>>, bool> whereByCurrent) {
-      return gapsAll
-        .Where(whereByCurrent)
-        .First()
-        .Take(1)
-        .Select(gap => new { stop = gap.First(), start = gap.Last() })
-        .Do(gap => SetCorridorStopDate(gap.stop))
-        .Select(gap => rates.TakeWhile(rate => rate >= gap.start).Count())
-        .First();
-    }
-
     private IEnumerable<IEnumerable<IGrouping<int, Rate>>> PriceRangeGaps(IList<Rate> rates) {
       return rates.PriceRangeGaps(InPoints(1), _priceAvg, InPips);
+    }
+    Queue<double> _swQueue = new Queue<double>();
+    private CorridorStatistics ScanCorridorTillFlat21(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.ToArray(_priceAvg);
+        Func<int> getPrevCount = () => CorridorStats.Rates.Last().StartDate.Yield()
+          .Select(date => RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= date).Count())
+          .DefaultIfEmpty(CorridorDistance).First();
+
+        Stopwatch sw = Stopwatch.StartNew();
+        var swDict = new Dictionary<string, double>();
+        swDict.Add("1", sw.ElapsedMilliseconds);
+
+        var counter =
+          Lib.IteratonSequence(10, rates.Count)
+          .ToObservable()
+          .Select(length=>Observable.Start(() =>{
+          var rates2 = prices.CopyToArray(length);
+          var coeffs = rates2.Regress(1);
+          var height = rates2.HeightByRegressoin2();
+          return new { length, slope = coeffs.LineSlope(), height, heightOk = height.Between(StDevByHeight, StDevByPriceAvg) };
+          }
+          ,ThreadPoolScheduler.Instance))
+          .Merge(1)
+          .SkipWhile(a => !a.heightOk)
+          .TakeWhile(a => a.heightOk)
+          .DistinctUntilChanged(d => d.slope.Sign())
+          .Take(2).Select(a => a.length)
+          .ToEnumerable()
+          .IfEmpty(getPrevCount).Last();
+
+        _swQueue.Enqueue(sw.ElapsedMilliseconds);
+        Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, _swQueue.Average());
+        
+        return counter;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorTillFlat2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.ToArray(_priceAvg);
+        Func<int> getPrevCount = () => CorridorStats.Rates.Select(r=>r.StartDate).TakeLast(1)
+          .Select(date => RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= date).Count())
+          .DefaultIfEmpty(CorridorDistance).First();
+        Stopwatch sw = Stopwatch.StartNew();
+        var counter = (
+          from length in Lib.IteratonSequence(10, rates.Count)
+          let rates2 = prices.CopyToArray(length)
+          let coeffs = rates2.Regress(1)
+          let height = rates2.HeightByRegressoin(coeffs)
+          let height2 = rates2.HeightByRegressoin2(coeffs)
+          select new { length, slope = coeffs.LineSlope(), heightMin = height.Min(height2), heightMax = height.Max(height2) }
+        )
+        .SkipWhile(a => a.heightMax < StDevByHeight)
+        .TakeWhile(a => a.heightMin < StDevByHeight)
+        .GroupBy(d => d.slope.Sign())
+        .Buffer(2)
+        .Take(1)
+        .Where(b => b.Count > 1)
+        .Select(b => {
+          if (b[1].First().length < CorridorDistance) return 0;
+          SetCorridorStopDate(RatesArray.Last());
+          return b[1].First().length;
+        })
+        .Where(length => length > 0)
+        .IfEmpty(getPrevCount).Last();
+        if (counter >= RatesArray.Count) {
+          SetCorridorStopDate(null);
+          counter = RatesArray.Count - 1;
+        }
+        return counter;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorTillFlat20(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.ToArray(_priceAvg);
+        Func<int> getPrevCount = () => CorridorStats.Rates.Last().StartDate.Yield()
+          .Select(date => RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= date).Count())
+          .DefaultIfEmpty(CorridorDistance).First();
+        Stopwatch sw = Stopwatch.StartNew();
+        var swDict = new Dictionary<string, double>();
+        swDict.Add("1", sw.ElapsedMilliseconds);
+        var counter = (
+          from length in Lib.IteratonSequence(10, rates.Count)
+          let rates2 = prices.CopyToArray(length)
+          let coeffs = rates2.Regress(1)
+          let height = rates2.HeightByRegressoin2()
+          select new { length, slope = coeffs.LineSlope(), height, heightOk = height.Between(StDevByHeight, StDevByPriceAvg) }
+        )
+        .SkipWhile(a => !a.heightOk)
+        .TakeWhile(a => a.heightOk)
+        .OrderBy(a => a.length)
+        .DistinctUntilChanged(d => d.slope.Sign())
+        .Take(2).Select(a => a.length).IfEmpty(getPrevCount).Last();
+        
+        _swQueue.Enqueue(sw.ElapsedMilliseconds);
+        Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, _swQueue.Average());
+
+        return counter;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
     private CorridorStatistics ScanCorridorTillFlat(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var counter = (
-          from revs in rates.ReverseIfNot().Take(CorridorDistance * 3).ToArray().Yield()
-          from length in Lib.IteratonSequence(CorridorDistance, revs.Length - CorridorDistance)
+          from revs in rates.ReverseIfNot().Take((CorridorDistance * (Timeframe2CorridorLengthRatio + 1.0)).ToInt()).ToArray().Yield()
+          from length in Lib.IteratonSequence(CorridorDistance, revs.Length)
           select new { length, slope = revs.CopyToArray(0, length).Regress(1, _priceAvg).LineSlope() }
         ).DistinctUntilChanged(d => d.slope.Sign())
         .Take(2).Select(a=>a.length).DefaultIfEmpty(CorridorDistance).Last();
@@ -523,7 +613,10 @@ namespace HedgeHog.Alice.Store {
       return stDevH / stDevP;
     }
 
-    void CalcFractals(IList<Rate> ratesForCorridor) {
+    public int HarmonicMin { get; set; }
+    IList<Harmonic> CalcFractals(IList<Rate> ratesForCorridor) {
+      var minsPerHour = 20;
+      var harmonics = FastHarmonics(ratesForCorridor, minsPerHour,60);
       Func<Rate, double> price = rate => rate.PriceCMALast;
       Func<IList<Rate>, DateTime, DateTime, IEnumerable<Rate>> revRatesByDates = (rates, dtMin, dtMax) =>
         rates.SkipWhile(r => r.StartDate > dtMax).TakeWhile(r => r.StartDate >= dtMin);
@@ -535,18 +628,55 @@ namespace HedgeHog.Alice.Store {
             .Select(chunk => new { slope = chunk.Regress(1, price).LineSlope().SignUp(), date = chunk[0].StartDate })
             .DistinctUntilChanged(a => a.slope).Skip(1);//.SkipLast(1);
       var revs = ratesForCorridor.ReverseIfNot();
-      var fractalDistance = FractalTimes.Concat(revs[0].StartDate.Yield()).OrderBy(date => date)
-        .Yield(dates => dates.ToArray())
-        .Select(dates => dates.Zip(dates.Skip(1), (d1, d2) => new { min = d1.Min(d2), max = d1.Max(d2) }))
-        .SelectMany(dates => dates, (dates, date) => revRatesByDates(revs, date.min, date.max).Count() * CorrelationMinimum)
-        .DefaultIfEmpty(60)
-        .Max().ToInt();
+      var harmonicHours = harmonics.Select(h=>h.Hours).DefaultIfEmpty(ratesForCorridor.Count).ToArray();
+      var fractalDistance = harmonicHours.Take(2).OrderBy(h => h).First().ToInt();
+      HarmonicMin = harmonicHours[0].ToInt();
+        //FractalTimes.Concat(revs[0].StartDate.Yield()).OrderBy(date => date)
+        //.Yield(dates => dates.ToArray())
+        //.Select(dates => dates.Zip(dates.Skip(1), (d1, d2) => new { min = d1.Min(d2), max = d1.Max(d2) }))
+        //.SelectMany(dates => dates, (dates, date) => revRatesByDates(revs, date.min, date.max).Count() * CorrelationMinimum)
+        //.DefaultIfEmpty(60)
+        //.Max().ToInt();
       FractalTimes =
         (from f in calcFractals(revs, DateTime.MinValue, fractalDistance)
          let rates = revs.SkipWhile(r => r.StartDate > f.date).Take(fractalDistance).ToArray()
          select (f.slope < 0 ? rates.MaxBy(_priceAvg) : rates.MinBy(_priceAvg)).First().StartDate).ToArray();
 
+      return harmonics;
     }
+
+    Func<IList<Rate>, int,int, Harmonic[]> _FastHarmonics;
+    private Func<IList<Rate>, int,int, Harmonic[]> FastHarmonics {
+      get {
+        if (_FastHarmonics != null) return _FastHarmonics;
+        _FastHarmonics = MemoizeFastHarmonics();
+        this.WhenAny(tm => tm.BarsCount, _ => "BarsCount")
+        .Merge(this.WhenAny(tm => BarPeriod, _ => "Bars"))
+        .Merge(this.WhenAny(tm => CorridorDistanceRatio, _ => "CorridorDistanceRatio"))
+        .Subscribe(_ => FastHarmonics = null);
+        return _FastHarmonics;
+      }
+      set { _FastHarmonics = value ?? MemoizeFastHarmonics(); }
+    }
+    Func<IList<Rate>, int,int, Harmonic[]> MemoizeFastHarmonics() {
+      var map = new ConcurrentDictionary<Tuple<DateTime, DateTime, int,int>, Harmonic[]>();
+      return (ratesForCorridor, minsPerHour,minsMax) => {
+        var key = Tuple.Create(ratesForCorridor[0].StartDate, ratesForCorridor.Last().StartDate, minsPerHour, minsMax);
+        Harmonic[] harmonics;
+        if (map.TryGetValue(key, out harmonics))
+          return harmonics;
+        harmonics = (from mins in Enumerable.Range(minsPerHour, minsMax-minsPerHour).AsParallel()
+                     from harm in CalcHurmonicsAll(ratesForCorridor, mins).Select(h => new { h.Height, h.Hours, mins })
+                     group harm by harm.Height into gh
+                     let a = new Harmonic(gh.Select(h => h.Hours).Min(m => m), gh.Key)
+                     orderby a.Height/a.Hours descending
+                     select a
+                         ).ToArray();
+        map.TryAdd(key, harmonics);
+        return harmonics;
+      };
+    }
+
     SortedDictionary<DateTime, double> _timeFrameHeights = new SortedDictionary<DateTime, double>();
     private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<Rate, double> price = rate => rate.PriceCMALast;

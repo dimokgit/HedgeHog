@@ -22,7 +22,7 @@ namespace HedgeHog.Alice.Store {
     private Action<double, double> AdjustCloseLevels(
       Func<double> takeProfitLimitRatio,
       Func<bool, double> crossLevelDefault,
-      Func<bool, double> exitPrice,
+      Func<bool?, double> exitPrice,
       ObservableValue<double> ghostLevelOffset) {
       Store.SuppRes buyCloseLevel = BuyCloseSupResLevel();
       Store.SuppRes sellCloseLevel = SellCloseSupResLevel();
@@ -88,16 +88,13 @@ namespace HedgeHog.Alice.Store {
             //buyCloseLevel.ResetPricePosition();
             //sellCloseLevel.ResetPricePosition();
           } else {
-            var clozeAtZero = false;// CloseAtZero;
-            //if (isProfitOk()) CloseAtZero = true;
-            var close0 = CloseAtZero || _trimAtZero || _trimToLotSize || MustExitOnReverse;
-            var masterTakeProfit = _tradingStatistics.GrossToExitInPips.GetValueOrDefault(double.NaN);
-            var tpColse = ClosingDistanceByCurrentGross(takeProfitLimitRatio, close0);
+            var tpColse = InPoints((TakeProfitPips - CurrentGrossInPipTotal).Min(TakeProfitPips));// ClosingDistanceByCurrentGross(takeProfitLimitRatio);
+            var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
+            var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
+            var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0).Min(InPips(RatesHeight / 2));
             var ratesShort = RatesArray.TakeLast(5).ToArray();
-            var priceAvgMax = ratesShort.Max(rate => rate.BidClose) - PointSize / 10;
-            var priceAvgMin = ratesShort.Min(rate => rate.AskClose) + PointSize / 10;
-            var currentPriceMax = _priceQueue.Average(p => p.Bid);
-            var currentPriceMin = _priceQueue.Average(p => p.Ask);
+            var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(CurrentExitPrice(true)) - PointSize / 10;
+            var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(CurrentExitPrice(false)) + PointSize / 10;
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {
@@ -105,11 +102,9 @@ namespace HedgeHog.Alice.Store {
                 buyCloseLevel.Rate = priceAvgMax;
             } else if (Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
-              var maxByTakeProfitLimitRatio = buyLevel + InPoints(TakeProfitPips * takeProfitLimitRatio());
               buyCloseLevel.RateEx = new[]{
-                ExitLevelByCurrentPrice(tpColse,true).Min(maxByTakeProfitLimitRatio)
+                Trades.IsBuy(true).NetOpen()+InPoints(TakeProfitPips.Max(takeBackInPips))
                 ,priceAvgMax
-                //, currentPriceMax
               }.Max();
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
@@ -122,12 +117,10 @@ namespace HedgeHog.Alice.Store {
                 sellCloseLevel.Rate = priceAvgMin;
             } else if (Trades.HaveSell()) {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
-              var minByTakeProfitLimitRatio = sellLevel - InPoints(TakeProfitPips * takeProfitLimitRatio());
-              var sellExit = ExitLevelByCurrentPrice(tpColse, false).Max(minByTakeProfitLimitRatio);
+              var sellExit = ExitLevelByCurrentPrice(tpColse, false);
               sellCloseLevel.RateEx = new[] { 
-                sellExit
+                Trades.IsBuy(false  ).NetOpen()-InPoints(TakeProfitPips.Max(takeBackInPips))
                 , priceAvgMin
-                //, currentPriceMin
               }.Min();
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
@@ -145,9 +138,9 @@ namespace HedgeHog.Alice.Store {
       return isBuy ? CurrentPrice.Bid + colsingDistance : CurrentPrice.Ask - colsingDistance;
     }
 
-    private double ClosingDistanceByCurrentGross() { return ClosingDistanceByCurrentGross(() => TakeProfitLimitRatio, false); }
-    private double ClosingDistanceByCurrentGross(Func<double> takeProfitLimitRatio, bool close0) {
-      var tpCloseInPips = close0 ? 0 : TakeProfitPips - CurrentGrossInPipTotal / _tradingStatistics.TradingMacros.Count;
+    private double ClosingDistanceByCurrentGross() { return ClosingDistanceByCurrentGross(() => TakeProfitLimitRatio); }
+    private double ClosingDistanceByCurrentGross(Func<double> takeProfitLimitRatio) {
+      var tpCloseInPips =  TakeProfitPips - CurrentGrossInPipTotal / _tradingStatistics.TradingMacros.Count;
       var tpColse = InPoints(tpCloseInPips);//.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
       return tpColse;
     }
