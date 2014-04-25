@@ -34,6 +34,108 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorBySpike21(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates;
+        var lengths = Partitioner.Create(Lib.IteratonSequence(10, rates.Count).ToArray(), true);
+        var lengths1 = Spikes(prices, lengths, _priceAvg, _priceAvg)
+          .OrderByDescending(t => t.Item2)
+          .Select(t => t.Item1)
+          .Take(rates.Count / 20)
+          .ToArray()
+          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
+          .Take(3)
+          .Select(g => g.Select(g1 => g1))
+          .SelectMany(l => l)
+          .SelectMany(length => {
+            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
+            return Enumerable.Range(length - ns, ns * 2);
+          })
+          .Distinct()
+          .Where(l => l <= rates.Count)
+          .ToArray();
+        return Spikes(rates, Partitioner.Create(lengths1, true), _priceAvg, _priceAvg)
+          .OrderByDescending(t => t.Item2)
+          .First().Item1;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorBySpike2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.ToArray(r => r.BidHigh);
+        var lengths = Partitioner.Create(Enumerable.Range(10, rates.Count - 10).ToArray(), true);
+        //Lib.IteratonSequence(10, rates.Count)
+        var counter = (
+          from length in lengths.AsParallel()
+          let rates2 = prices.CopyToArray(length)
+          let coeffs = rates2.Regress(1)
+          let leftPoint = coeffs.RegressionValue(length - 1)
+          let rightPoint = coeffs.RegressionValue(0)
+          let distance = new[] { 
+            rates2.Last() - leftPoint,
+            leftPoint - rates2.Last(),
+            rates2[0] - rightPoint,
+            rightPoint - rates2[0] 
+          }
+          .Select(v => v.Abs())
+          .OrderByDescending(v => v)
+          .Take(2)
+          .Sum()
+          orderby distance descending
+          select length
+        )
+        .First();
+        return counter;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+
+    private static ParallelQuery<Tuple<int,double>> Spikes<T>(IList<T> prices, OrderablePartitioner<int> lengths,Func<T,double> priceUp,Func<T,double> priceDown) {
+      return (
+        from length in lengths.AsParallel()
+        let rates2 = prices.CopyToArray(length)
+        let coeffs = rates2.Regress(1,v=>priceDown(v).Avg(priceUp(v)))
+        //let stDev = rates2.Select(v => priceDown(v).Avg(priceUp(v))).ToArray().HeightByRegressoin()
+        let leftPoint = coeffs.RegressionValue(length - 1)
+        //let rightPoint = coeffs.RegressionValue(0)
+        let distances = new[] { 
+            priceUp(rates2.Last()) - leftPoint,
+            leftPoint - priceDown(rates2.Last())
+            //,
+            //priceUp(rates2[0]) - rightPoint,
+            //rightPoint - priceDown(rates2[0])
+        }
+        let distance = distances
+        .Select(v => v.Abs())
+        .Buffer(2)
+        .Select(b=>b.Max())
+        //.Where(v => v > stDev)
+        .Sum()
+        select Tuple.Create(length, distance/*/stDev*/)
+      );
+    }
+
+    private CorridorStatistics ScanCorridorBySpike(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.ToArray(_priceAvg);
+        var lengths = Partitioner.Create(Enumerable.Range(10, rates.Count - 10).ToArray(), true);
+        //Lib.IteratonSequence(10, rates.Count)
+        var counter = (
+          from length in lengths.AsParallel()
+          let rates2 = prices.CopyToArray(length)
+          let coeffs = rates2.Regress(1)
+          let leftPoint = coeffs.RegressionValue(length - 1)
+          let rightPoint = coeffs.RegressionValue(0)
+          let distance = rates2.Last().Abs(leftPoint).Avg(rates2[0].Abs(rightPoint)) 
+          orderby distance descending
+          select length
+        )
+        .First();
+        return counter;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+
     private CorridorStatistics ScanCorridorByBigGap(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         return PriceRangeGaps(rates.Take(CorridorDistance).ToArray())

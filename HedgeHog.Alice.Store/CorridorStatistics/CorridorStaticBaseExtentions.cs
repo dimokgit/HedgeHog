@@ -99,7 +99,7 @@ namespace HedgeHog.Alice.Store {
         var coeffs = rates.SetRegressionPrice(1, price, lineSet);
         var sineOffset = 1;// Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
         Func<T, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
-        Func<T, int, double> heightLow = (rate, index) => (priceLine(index) - priceLow(rate)) * sineOffset;
+        Func<T, int, double> heightLow = (rate, index) => (priceLow(rate) - priceLine(index)) * sineOffset;
         #endregion
         #region Locals
         var lineLow = new LineInfo(new Rate[0], 0, 0);

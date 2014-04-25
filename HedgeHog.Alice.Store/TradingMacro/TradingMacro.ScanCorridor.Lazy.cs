@@ -8,7 +8,15 @@ using System.Threading.Tasks;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Func<IList<Rate>, int> counter, Func<CorridorStatistics> showVolts = null) {
-      return ScanCorridorLazy(ratesReversed, new Lazy<int>(() => counter(ratesReversed)), showVolts);
+      IEnumerable<IList<Rate>> ratesCount = CorridorStats.Rates.TakeLast(1)
+        .Where(_ => IsCorridorForwardOnly)
+        .Select(rl => ratesReversed.TakeWhile(r => r.StartDate >= rl.StartDate)
+          .Count())
+          .Select(c => (c * 1.05).Min(RatesArray.Count).ToInt())
+          .Select(c => ratesReversed.Take(c).ToArray());
+      return ScanCorridorLazy(ratesReversed
+        , new Lazy<int>(() => counter(ratesCount.DefaultIfEmpty(ratesReversed).First()))
+        , showVolts);
     }
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
 
