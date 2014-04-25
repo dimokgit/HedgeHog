@@ -164,14 +164,14 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<int> IteratonSequence(int start, int end) {
-      return IteratonSequence(start, end, NestStep);
+      return IteratonSequence(start, end, IteratonSequenceNextStep);
     }
     private static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
       for (var i = start; i < end; i += nextStep(i))
         yield return i;
     }
 
-    public static int NestStep(int rc) {
+    public static int IteratonSequenceNextStep(int rc) {
       return (rc / 100.0).ToInt() + 1;
     }
     public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {
@@ -733,6 +733,9 @@ namespace HedgeHog {
     }
     public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3) {
       return (u1, u2, u3) => value;
+    }
+    public static bool IsZeroOrNaN(this double d) {
+      return d == 0 || double.IsNaN(d);
     }
     public static bool IsNaN(this double d) {
       return double.IsNaN(d);

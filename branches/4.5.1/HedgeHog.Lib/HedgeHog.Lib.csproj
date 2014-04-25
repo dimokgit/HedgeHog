@@ -160,6 +160,7 @@
     <Compile Include="RSI.cs" />
     <Compile Include="Schedulers\Schedulers.cs" />
     <Compile Include="Volt.cs" />
+    <Compile Include="Workflow.cs" />
     <Compile Include="YieldingProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
