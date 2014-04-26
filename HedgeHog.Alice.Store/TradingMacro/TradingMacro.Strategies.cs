@@ -1659,71 +1659,14 @@ namespace HedgeHog.Alice.Store {
                     }
                   };
                   #endregion
-                  initTradeRangeShift();
+                  //initTradeRangeShift();
                 }
                 #endregion
                 {
                   #region Set locals
                   var corridorRates = CorridorStats.Rates;
                   var lastPrice = CurrentEnterPrice(null);
-                  Func<bool> corridorOk = () => //corridorRates.Count >= CorridorDistance &&
-                    CorridorStopDate.Between(RateLast.StartDate.AddMinutes(-2 * BarPeriodInt), RateLast.StartDate);
-                  var corridorLevels = new[] { corridorRates[0], corridorRates.Last() }
-                    .Buffer(2)
-                    .Select(b => new { up = b.Max(r => r.PriceAvg2), down = b.Min(r => r.PriceAvg3) });
-                  var points = InPoints(1) * 5;
-                  var tlAnon = new { up = 0.0, down = 0.0 };
-                  var tlWithAngleAnon = new { tlAnon.up, tlAnon.down, angle = 0 };
-                  var tradeLevels = new[] { 
-                    corridorLevels
-                    .Where(r=>IsAutoStrategy && corridorOk()) //&& (CorridorStats.RatesMax>= (_RatesMax-points) || CorridorStats.RatesMin<= (_RatesMin+points))
-                    ,new {up=BuyLevel.Rate,down=SellLevel.Rate}.Yield()
-                    .Where(tl =>!IsAutoStrategy && lastPrice.Between(tl.down, tl.up)                      )
-                  }.SelectMany(a => a).ToArray();
                   var angleOk = calcAngleOk();
-                  #endregion
-                  var canTrade = angleOk && isTradingHourLocal() && tradeLevels.Any();
-
-                  #region setTradeLevels
-                  Action<double, double> setTradeLevels = (up, down) => {
-                    var h = up.Abs(down);
-                    _buySellLevelsForEach(sr => sr.ResetPricePosition());
-                    if (lastPrice > up) {
-                      BuyLevel.RateEx = up + h * 2;
-                      BuyLevel.CanTradeEx = true;
-                      BuyLevel.TradesCountEx = CorridorCrossesMaximum + 1;
-                      SellLevel.RateEx = up + h;
-                      SellLevel.CanTradeEx = true;
-                      SellLevel.TradesCountEx = CorridorCrossesMaximum;
-                    } else {
-                      BuyLevel.RateEx = down - h;
-                      BuyLevel.CanTradeEx = true;
-                      BuyLevel.TradesCountEx = CorridorCrossesMaximum;
-                      SellLevel.RateEx = down - h * 2;
-                      SellLevel.CanTradeEx = true;
-                      SellLevel.TradesCountEx = CorridorCrossesMaximum + 1;
-                    }
-                    _buySellLevelsForEach(sr => sr.ResetPricePosition());
-                  };
-                  Action<double, double> setTradeLevels2 = (up, down) => {
-                    _buySellLevelsForEach(sr => sr.ResetPricePosition());
-                    BuyLevel.RateEx = up;
-                    SellLevel.RateEx = down;
-                    _buySellLevelsForEach(sr => {
-                      if (!sr.CanTrade) sr.TradesCountEx = CorridorCrossesMaximum;
-                      sr.CanTradeEx = true;
-                      sr.ResetPricePosition();
-                    });
-                  };
-                  #endregion
-                  #region shortWaveAngle
-                  var shortWave = tlWithAngleAnon.ToFunc(() => {
-                    var rates = RatesArray.TakeLast(75).ToArray(_priceAvg);
-                    var coeffs = rates.Regress(1);
-                    var height2 = rates.HeightByRegressoin2(coeffs);
-                    var mean = rates.Max().Avg(rates.Min());
-                    return new { up = mean + height2 / 2, down = mean - height2 / 2, angle = coeffs.LineSlope().Sign() };
-                  });
                   #endregion
 
                   #region Trading workflow
@@ -1732,8 +1675,10 @@ namespace HedgeHog.Alice.Store {
                   var rateLast = corridorRates.SkipWhile(r => r.PriceAvg21.IsZeroOrNaN()).Take(1).ToArray();
                   var rateFirst = corridorRates.Where(r => !r.PriceAvg21.IsZeroOrNaN()).TakeLast(1).ToArray();
                   var cep = CurrentEnterPrice(null);
+                  var corridorOk = corridorRates.Count > CorridorDistance;
                   var canTrade2 =
-                    rateFirst.Where(rf => angleOk && (rf.AskHigh > rf.PriceAvg3 && rf.BidLow < rf.PriceAvg2))
+                    rateFirst.Where(rf => angleOk 
+                      && (rf.AskHigh > rf.PriceAvg3 && rf.BidLow < rf.PriceAvg2))
                     .Select(_ =>
                      new[]{ 1.YieldIf(rateLast.Any(rl => cep > rl.PriceAvg21) /*&& rateFirst.Any(rf=>rf.BidLow<rf.PriceAvg31)*/),
                           (-1).YieldIf(rateLast.Any(rl => cep < rl.PriceAvg31) /*&& rateFirst.Any(rf=>rf.AskHigh>rf.PriceAvg21)*/),
@@ -1764,17 +1709,20 @@ namespace HedgeHog.Alice.Store {
                   #region setBsLevels
                   Func<bool> setBSLevels = () => {
                     if (canTrade2 == 0) return false;
-                    rateLast.Select(rl => rl.PriceAvg21 - rl.PriceAvg2).ForEach(height => {
+                    rateLast.ForEach(_ => {
                       var ratesShort = RatesArray.TakeLast(30);
                       var corrHeight = CorridorStats.StDevByPriceAvg;
                       if (canTrade2 > 0) {
                         BuyLevel.RateEx = rateLast.First().PriceAvg21;
                         SellLevel.RateEx = rateLast.First().PriceAvg3;
+                        if (!Trades.Any()) BuyLevel.CanTradeEx = true;
+                        SellLevel.CanTradeEx = false;
                       } else {
                         SellLevel.RateEx = rateLast.First().PriceAvg31;
                         BuyLevel.RateEx = rateLast.First().PriceAvg2;
+                        if (!Trades.Any()) SellLevel.CanTradeEx = true;
+                        BuyLevel.CanTradeEx = false;
                       }
-                      if (!Trades.Any()) BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
                     });
                     return true;
                   };
