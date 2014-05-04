@@ -1,22 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using HedgeHog;
 using HedgeHog.Bars;
 using System.ComponentModel;
-using C = System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
-using System.ComponentModel.DataAnnotations;
-using System.Windows.Media;
-using HedgeHog.Models;
 using System.Reflection;
 using ReactiveUI;
 
@@ -34,6 +25,32 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorBySpike22(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates;
+        var lengths = Partitioner.Create(Lib.IteratonSequence(10, rates.Count).ToArray(), true);
+        var lengths1 = Spikes22(prices, lengths, _priceAvg, _priceAvg)
+          .OrderByDescending(t => t.Item2)
+          .Select(t => t.Item1)
+          .Take(rates.Count / 20)
+          .ToArray()
+          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
+          .Take(3)
+          .Select(g => g.Select(g1 => g1))
+          .SelectMany(l => l)
+          .SelectMany(length => {
+            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
+            return Enumerable.Range(length - ns, ns * 2);
+          })
+          .Distinct()
+          .Where(l => l <= rates.Count)
+          .ToArray();
+        return Spikes(rates, Partitioner.Create(lengths1.DefaultIfEmpty(rates.Count).ToArray(), true), _priceAvg, _priceAvg)
+          .OrderByDescending(t => t.Item2)
+          .First().Item1;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorBySpike21(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var prices = rates;
@@ -54,7 +71,7 @@ namespace HedgeHog.Alice.Store {
           .Distinct()
           .Where(l => l <= rates.Count)
           .ToArray();
-        return Spikes(rates, Partitioner.Create(lengths1, true), _priceAvg, _priceAvg)
+        return Spikes(rates, Partitioner.Create(lengths1.DefaultIfEmpty(rates.Count).ToArray(), true), _priceAvg, _priceAvg)
           .OrderByDescending(t => t.Item2)
           .First().Item1;
       };
@@ -90,7 +107,25 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
 
-    private static ParallelQuery<Tuple<int,double>> Spikes<T>(IList<T> prices, OrderablePartitioner<int> lengths,Func<T,double> priceUp,Func<T,double> priceDown) {
+    private static ParallelQuery<Tuple<int, double>> Spikes22<T>(IList<T> prices, OrderablePartitioner<int> lengths, Func<T, double> priceUp, Func<T, double> priceDown) {
+      return (
+        from length in lengths.AsParallel()
+        let rates2 = prices.CopyToArray(length)
+        let coeffs = rates2.Regress(1, v => priceDown(v).Avg(priceUp(v)))
+        let stDev = rates2.Select(v => priceDown(v).Avg(priceUp(v))).ToArray().StDev()//.HeightByRegressoin()
+        let leftPoint = coeffs.RegressionValue(length)
+        let leftPointUp = leftPoint + stDev * 2
+        let leftPointDown = leftPoint - stDev * 2
+        let leftPrice = prices[length]
+        let distances = new[] { 
+            priceUp(leftPrice) - leftPoint,
+            leftPoint - priceDown(leftPrice)
+        }
+        let distance = distances.Max()
+        select Tuple.Create(length, distance/*/stDev*/)
+      );
+    }
+    private static ParallelQuery<Tuple<int, double>> Spikes<T>(IList<T> prices, OrderablePartitioner<int> lengths, Func<T, double> priceUp, Func<T, double> priceDown) {
       return (
         from length in lengths.AsParallel()
         let rates2 = prices.CopyToArray(length)

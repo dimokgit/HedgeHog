@@ -22,7 +22,10 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByVolume() {
       RatesArray.AsEnumerable().Reverse().TakeWhile(r => GetVoltage(r).IsNaN())
         .ForEach(rate => { SetVoltage(rate, rate.Volume); });
-      return ShowVolts(RateLast.Volume, 3);
+      return ShowVolts(RateLast.Volume, 2);
+    }
+    CorridorStatistics ShowVoltsByRsd() {
+      return ShowVolts(RatesRsd, 2);
     }
     CorridorStatistics ShowVoltsByHarmonicMin() {
       RatesInternal.Select((r, i) => new { r, i })

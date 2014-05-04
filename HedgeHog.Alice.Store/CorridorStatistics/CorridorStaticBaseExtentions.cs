@@ -88,7 +88,7 @@ namespace HedgeHog.Alice.Store {
     public static CorridorStatistics ScanCorridorWithAngle(this IList<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       return rates.ScanCorridorWithAngle(r => r.PriceAvg, priceHigh, priceLow, barsInterval, pointSize, corridorMethod);
     }
-    public static CorridorStatistics ScanCorridorWithAngle<T>(this IList<T> rates,Func<T,double>price, Func<T, double> priceHigh, Func<T, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod)where T: Rate {
+    public static CorridorStatistics ScanCorridorWithAngle<T>(this IList<T> rates,Func<T,double>price, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod)where T: Rate {
       try {
         if (rates == null) throw new ArgumentNullException("Rates list must not be null.");
         if (rates.Count == 0) throw new ArgumentOutOfRangeException("Rates list must not be empty.");
@@ -146,7 +146,7 @@ namespace HedgeHog.Alice.Store {
         stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
 
         return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2) {
-          priceLine = linePrices, priceHigh = (Func<Rate, double>)priceHigh, priceLow = (Func<Rate, double>)priceLow,
+          priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow,
           StDevs = stDevDict, HeightByRegression = height.IfNaN(stDevDict[CorridorCalculationMethod.Height] * 4)
         };
       } catch (Exception exc) {

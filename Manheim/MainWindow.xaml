@@ -5,7 +5,7 @@
         xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
         xmlns:watin="clr-namespace:WatiN.Core;assembly=WatiN.Core"
         xmlns:lvm="clr-namespace:Manheim.ViewModel"
-        xmlns:cmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
+        xmlns:cmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF45"
         xmlns:ui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
         Title="Manheimer"
         Top="{state:UserSettings Default=100}" Left="{state:UserSettings Default=100}" Height="{state:UserSettings Default=300}" Width="{state:UserSettings Default=300}"

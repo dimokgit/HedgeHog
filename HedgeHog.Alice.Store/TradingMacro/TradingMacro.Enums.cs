@@ -7,6 +7,7 @@ namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
     Volume = 5,
+    Rsd = 6,
     FractalDensity = 7,
     HarmonicMin = 8,
     AboveBelowRatio = 10,
@@ -80,7 +81,7 @@ namespace HedgeHog.Alice.Store {
     BigGap21 = -22,
     TimeFrame2 = 5,
     Spike = 7,
-    SpikeLong = 8,
+    Spike2 = 8,
     ElliottWave = 6,
     LongCross = 80,
     LongLine = 160
@@ -189,7 +190,7 @@ namespace HedgeHog.Alice.Store {
     PriceCMA = 1,
     ChartAskBid = 2
   }
-  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, AskBidByMA = 5, PriceByMA = 6, BidAskByMA = 7, PriceMA = 8 }
+  public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, PriceMA = 8 }
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1,AskBidByMA = 2,Trima = 3 }
   public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4 }
 

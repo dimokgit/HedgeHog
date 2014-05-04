@@ -28,9 +28,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FrequencyTable", "FrequencyTable", "{C29763C9-371F-413E-B61A-D77D911932D6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{48EBA120-3BE8-4F93-89E3-DC564723D606}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\packages.config = .nuget\packages.config
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Obtics", "Obtics", "{DAD359E1-AB37-43A0-A8C2-09BF5FDE0918}"
 	ProjectSection(SolutionItems) = preProject
