@@ -428,7 +428,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("Calc Method")]
+    [DisplayName("Corridor StDev By")]
     [Category(categoryActiveFuncs)]
     public CorridorCalculationMethod CorridorCalcMethod {
       get { return (CorridorCalculationMethod)this.CorridorMethod; }
@@ -725,7 +725,8 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("High/Low Method")]
+    [DisplayName("Corridor H/L Method")]
+    [Description("Method for price above/below regression line")]
     [Category(categoryActiveFuncs)]
     public CorridorHighLowMethod CorridorHighLowMethod {
       get { return (CorridorHighLowMethod)CorridorHighLowMethodInt; }
@@ -1331,7 +1332,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Corridor Height By")]
+    [DisplayName("Corridor Lines By")]
     [Category(categoryActiveFuncs)]
     public CorridorHeightMethods CorridorHeightMethod {
       get { return (CorridorHeightMethods)CorridorIterationsOut; }
@@ -1403,6 +1404,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (CorridorBarMinutes != value) {
           CorridorBarMinutes = value;
+          BarsCountCalc = value;
           OnPropertyChanged(TradingMacroMetadata.BarsCount);
         }
       }

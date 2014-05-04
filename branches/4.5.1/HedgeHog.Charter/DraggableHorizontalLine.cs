@@ -20,6 +20,8 @@ namespace HedgeHog.Charter {
       var b = new Binding() { Path = new PropertyPath("Position.X"), Source = draggablePoint };
       line.SetBinding(VerticalLine.ValueProperty, b);
       line.SetBinding(VerticalLine.ToolTipProperty, b);
+      var b2 = new Binding() { Path = new PropertyPath(VerticalLine.VisibilityProperty), Source = line };
+      draggablePoint.SetBinding(DraggablePoint.VisibilityProperty, b2);
     }
   }
 }

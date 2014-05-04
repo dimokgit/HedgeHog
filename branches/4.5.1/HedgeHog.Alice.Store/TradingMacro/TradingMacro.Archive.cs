@@ -13,10 +13,9 @@ namespace HedgeHog.Alice.Store {
       switch (CorridorHighLowMethod) {
         case CorridorHighLowMethod.AskHighBidLow:
         case CorridorHighLowMethod.Average: return r => r.PriceAvg;
-        case CorridorHighLowMethod.PriceByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.PriceHigh : r.PriceLow;
         case CorridorHighLowMethod.PriceMA: return GetPriceMA();
       }
-      throw new NotSupportedException(new { CorridorHighLowMethod } + "");
+      throw new NotSupportedException(new { CorridorHighLowMethod } + "is not supported.");
     }
 
 
@@ -78,12 +77,9 @@ namespace HedgeHog.Alice.Store {
         case CorridorHighLowMethod.BidHighAskLow: return r => r.BidHigh;
         case CorridorHighLowMethod.BidLowAskHigh: return r => r.BidLow;
         case CorridorHighLowMethod.Average: return r => r.PriceAvg;
-        case CorridorHighLowMethod.AskBidByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.AskHigh : r.BidLow;
-        case CorridorHighLowMethod.BidAskByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.BidHigh : r.AskLow;
-        case CorridorHighLowMethod.PriceByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.PriceHigh : r.PriceLow;
         case CorridorHighLowMethod.PriceMA: return r => GetPriceMA(r);
       }
-      throw new NotSupportedException(new { corridorHighLowMethod } + "");
+      throw new NotSupportedException(new { corridorHighLowMethod } + " is not supported.");
     }
 
     public double CorridorCrossLowPrice(Rate rate, Func<Rate, double> getPrice = null) {
@@ -102,12 +98,9 @@ namespace HedgeHog.Alice.Store {
         case CorridorHighLowMethod.BidHighAskLow: return r => r.AskLow;
         case CorridorHighLowMethod.BidLowAskHigh: return r => r.AskHigh;
         case CorridorHighLowMethod.Average: return r => r.PriceAvg;
-        case CorridorHighLowMethod.AskBidByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.AskHigh : r.BidLow;
-        case CorridorHighLowMethod.BidAskByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.BidHigh : r.AskLow;
-        case CorridorHighLowMethod.PriceByMA: return r => r.PriceAvg > GetPriceMA()(r) ? r.PriceHigh : r.PriceLow;
         case CorridorHighLowMethod.PriceMA: return r => GetPriceMA(r);
       }
-      throw new NotSupportedException(new { corridorHighLowMethod } + "");
+      throw new NotSupportedException(new { corridorHighLowMethod } + "is not supported.");
     }
 
     private bool IsCorridorOk(CorridorStatistics cs) {

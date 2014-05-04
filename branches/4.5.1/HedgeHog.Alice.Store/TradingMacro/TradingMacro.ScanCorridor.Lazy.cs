@@ -14,13 +14,13 @@ namespace HedgeHog.Alice.Store {
           .Count())
           .Select(c => (c * 1.05).Min(RatesArray.Count).ToInt())
           .Select(c => ratesReversed.Take(c).ToArray());
-      return ScanCorridorLazy(ratesReversed
-        , new Lazy<int>(() => counter(ratesCount.DefaultIfEmpty(ratesReversed).First()))
-        , showVolts);
+      var rates = ratesCount.DefaultIfEmpty(ratesReversed).First();
+      return ScanCorridorLazy(rates, new Lazy<int>(() => counter(rates)), showVolts);
     }
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
 
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
+        if (ratesReversed.Count < RatesArray.Count) return ratesReversed.Count;
         var date = CorridorStats.Rates.Last().StartDate;
         return ratesReversed.TakeWhile(r => r.StartDate >= date).Count();
       });

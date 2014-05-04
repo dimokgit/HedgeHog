@@ -511,7 +511,7 @@ namespace HedgeHog {
         plotter.Dispatcher.BeginInvoke(new Action(() => {
           if (_lineTimeMiddle == null) {
             _lineTimeMiddle = new VerticalLine() { StrokeDashArray = new DoubleCollection(StrokeArrayForTrades), StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.Navy) };
-            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint() { Visibility = Visibility.Collapsed });
+            _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint() { Visibility = Visibility.Visible });
             _lineTimeMiddle.SetBinding(VerticalLine.StrokeThicknessProperty, new Binding("IsMouseOver") { Source = _lineTimeMiddle, Converter = BoolToSrtingConverter.Default, ConverterParameter = "1|1|3" });
             _lineTimeMiddle.MouseLeftButtonDown += (s, e) => {
               _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddleDraggablePoint.Visibility == Visibility.Visible 
@@ -525,7 +525,7 @@ namespace HedgeHog {
             _lineTimeMiddle.Visibility = System.Windows.Visibility.Collapsed;
           else {
             _lineTimeMiddle.Visibility = System.Windows.Visibility.Visible;
-            _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), CorridorStartPointX.Position.Y + 20 * PipSize);
+            _lineTimeMiddleDraggablePoint.Position = new Point(dateAxis.ConvertToDouble(value.StartDateContinuous), animatedPriceY.Max() + 2 * PipSize);
             _lineTimeMiddleDraggablePoint.ToolTip = value.StartDate + Environment.NewLine + "Dist:" + value.Distance;
           }
         }));

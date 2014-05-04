@@ -1935,7 +1935,6 @@ namespace HedgeHog.Alice.Store {
             SpreadForCorridor = RatesArray.Spread();
 
             SetMA();
-            var cp = CorridorPrice();
             GeneralPurposeSubject.OnNext(() => {
               var corridor = _rateArray.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
               RatesStDev = corridor.StDev;
@@ -2281,8 +2280,8 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    double RoundPrice(double price) {
-      return TradesManager == null ? double.NaN : TradesManager.Round(Pair, price);
+    double RoundPrice(double price, int digitOffset = 0) {
+      return TradesManager == null ? double.NaN : TradesManager.Round(Pair, price, digitOffset);
     }
 
     private bool _isPriceSpreadOk;
@@ -2769,7 +2768,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.BigGap: return ScanCorridorByBigGap;
         case ScanCorridorFunction.BigGap2: return ScanCorridorByBigGap2;
         case ScanCorridorFunction.Spike: return ScanCorridorBySpike;
-        case ScanCorridorFunction.Spike2: return ScanCorridorBySpike21;
+        case ScanCorridorFunction.Spike2: return ScanCorridorBySpike22;
       }
       throw new NotSupportedException(function + "");
     }
@@ -2778,6 +2777,7 @@ namespace HedgeHog.Alice.Store {
       switch (VoltageFunction_) {
         case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
         case HedgeHog.Alice.VoltageFunction.Volume: return ShowVoltsByVolume;
+        case HedgeHog.Alice.VoltageFunction.Rsd: return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.HarmonicMin: return ShowVoltsByHarmonicMin;
         case HedgeHog.Alice.VoltageFunction.FractalDensity: return ShowVoltsByFractalDensity;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
@@ -3268,7 +3268,7 @@ namespace HedgeHog.Alice.Store {
     public double? PriceSpreadAverage {
       get { return _priceSpreadAverage; }
       set {
-        var spread = RoundPrice(value.Value);
+        var spread = RoundPrice(value.Value, 1);
         if (_priceSpreadAverage == spread) return;
         _priceSpreadAverage = spread;
         OnPropertyChanged(() => PriceSpreadAverage);
