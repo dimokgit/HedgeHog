@@ -79,6 +79,12 @@ namespace HedgeHog {
     public static double[] Line(this IList<double> values) {
       return values.Regression(1);
     }
+    public delegate T RegressionResultProjector<T>(double[] coeffs, double[] line);
+    public static T Regression<T>(this IList<double> values, int polyOrder,RegressionResultProjector<T> project) {
+      double[] coeffs;
+      var line = values.Regression(polyOrder, out coeffs);
+      return project(coeffs, line);
+    }
     /// <summary>
     /// Get Line,Parabola etc.
     /// </summary>

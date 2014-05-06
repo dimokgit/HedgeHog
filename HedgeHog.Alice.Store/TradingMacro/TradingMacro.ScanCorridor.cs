@@ -25,6 +25,32 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    private CorridorStatistics ScanCorridorBySpike23(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.Select(_priceAvg).ToArray();
+        var lengths = Partitioner.Create(Lib.IteratonSequence(10, rates.Count).ToArray(), true);
+        var lengths1 = Spikes23(prices, lengths)
+          .OrderByDescending(t => t.Item2)
+          .Select(t => t.Item1)
+          .Take(rates.Count / 20)
+          .ToArray()
+          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
+          .Take(3)
+          .Select(g => g.Select(g1 => g1))
+          .SelectMany(l => l)
+          .SelectMany(length => {
+            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
+            return Enumerable.Range(length - ns, ns * 2);
+          })
+          .Distinct()
+          .Where(l => l <= rates.Count)
+          .ToArray();
+        return Spikes(rates, Partitioner.Create(lengths1.DefaultIfEmpty(rates.Count).ToArray(), true), _priceAvg, _priceAvg)
+          .OrderByDescending(t => t.Item2)
+          .First().Item1;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorBySpike22(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var prices = rates;
@@ -107,6 +133,26 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
 
+    private static ParallelQuery<Tuple<int, double>> Spikes23(IList<double> prices, OrderablePartitioner<int> lengths) {
+      return (
+        from length in lengths.AsParallel()
+        let rates2 = prices.CopyToArray(length)
+        let regRes = rates2.Regression(1, (coeffs, line) => new { coeffs, line })
+        let stDev = GetStDevUpDown(rates2, regRes.line, (up, down) => new { up, down })//.HeightByRegressoin()
+        from left in Enumerable.Range(length, 1).TakeWhile(l => l < prices.Count)
+        .Select(l => new { point = regRes.coeffs.RegressionValue(l), price = prices[l], length = l })
+        let leftPoint = left.point
+        let leftPointUp = leftPoint + stDev.up * 2
+        let leftPointDown = leftPoint - stDev.down * 2
+        let leftPrice = left.price
+        let distances = new[] { 
+            leftPrice - leftPoint,
+            leftPoint - leftPrice
+        }
+        let distance = distances.Max()
+        select Tuple.Create(left.length, distance/*/stDev*/)
+      );
+    }
     private static ParallelQuery<Tuple<int, double>> Spikes22<T>(IList<T> prices, OrderablePartitioner<int> lengths, Func<T, double> priceUp, Func<T, double> priceDown) {
       return (
         from length in lengths.AsParallel()
@@ -1926,6 +1972,11 @@ namespace HedgeHog.Alice.Store {
         .ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
+    private static T GetStDevUpDown<T>(double[] rates, double[] line, Func<double,double,T> stDevUpDownProjector) {
+      double stDevUp, stDevDown;
+      GetStDevUpDown(rates, line,  out stDevUp, out stDevDown);
+      return stDevUpDownProjector(stDevUp, stDevDown);
+    }
     private static void GetStDevUpDown(double[] rates, double[] line, out double stDevUp, out double stDevDown) {
       double[] ratesUp, ratesDown;
       GetStDevUpDown(rates, line, out ratesUp, out stDevUp, out ratesDown, out stDevDown);
