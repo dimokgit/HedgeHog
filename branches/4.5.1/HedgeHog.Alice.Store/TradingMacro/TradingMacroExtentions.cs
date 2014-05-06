@@ -2768,7 +2768,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.BigGap: return ScanCorridorByBigGap;
         case ScanCorridorFunction.BigGap2: return ScanCorridorByBigGap2;
         case ScanCorridorFunction.Spike: return ScanCorridorBySpike;
-        case ScanCorridorFunction.Spike2: return ScanCorridorBySpike22;
+        case ScanCorridorFunction.Spike2: return ScanCorridorBySpike23;
       }
       throw new NotSupportedException(function + "");
     }
