@@ -1811,7 +1811,7 @@ namespace HedgeHog.Alice.Store {
                         BuyLevel.RateEx = ud.u;
                         SellLevel.RateEx = ud.d;
                         setCanTrade(IsAutoStrategy, true);
-                      }, _ => setCanTrade(!volatilityOk.Any() && !Trades.Any() || !isTradingHourLocal(), false)
+                      }, _ => setCanTrade(!volatilityOk.Any() || !isTradingHourLocal(), false)
                       ).Any();
                       //setBSHeight();
                     });
