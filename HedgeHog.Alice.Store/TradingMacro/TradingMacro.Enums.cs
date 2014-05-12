@@ -33,6 +33,7 @@ namespace HedgeHog.Alice.Store {
     BigGap2 = 5,
     Spike = 6,
     Spike2 = 7,
+    Spike24 = 9,
     HorizontalProbe = 10,
     HorizontalProbe2 = 11,
     WaveDistance42 = 72,
@@ -82,7 +83,8 @@ namespace HedgeHog.Alice.Store {
     TimeFrame2 = 5,
     Spike = 7,
     Spike2 = 8,
-    ElliottWave = 6,
+    Spike3 = 9,
+    ElliottWave = 60,
     LongCross = 80,
     LongLine = 160
   }

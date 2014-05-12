@@ -1826,6 +1826,74 @@ namespace HedgeHog.Alice.Store {
               adjustExitLevels0();
               break;
             #endregion
+            #region Spike3
+            case TrailingWaveMethod.Spike3: {
+                #region firstTime
+                if (firstTime) {
+                  Log = new Exception(new { WaveStDevRatio, TradingAngleRange } + "");
+                  workFlowObservable.Subscribe();
+                  #region onCloseTradeLocal
+                  onCloseTradeLocal += t => {
+                    if (CurrentGrossInPipTotal > 0) {
+                      if (!IsInVitualTrading) IsTradingActive = false;
+                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                    }
+                  };
+                  #endregion
+                  //initTradeRangeShift();
+                }
+                #endregion
+                {
+                  #region Set locals
+                  var corridorRates = CorridorStats.Rates;
+                  var lastPrice = CurrentEnterPrice(null);
+                  var rateLast = corridorRates.Reverse().SkipWhile(r => r.PriceAvg1.IsZeroOrNaN()).Take(1).Memoize();
+                  var corridorOk = corridorRates.Count < CorridorDistance;
+                  var anglrOk = calcAngleOk();
+                  Action<bool, bool> setCanTrade = (condition, on) => { if (condition) _buySellLevelsForEach(sr => sr.CanTradeEx = on); };
+                  #endregion
+
+                  #region Trading workflow
+
+                  #region wfManual
+                  var offset = StDevByPriceAvg;
+                  var isUp = rateLast.Any(rl => rl.PriceAvg2.Avg(rl.PriceAvg3) > rl.PriceAvg1);
+                  var bsLevels = rateLast.Select(rl => new {
+                    u = CenterOfMassBuy = isUp ? rl.PriceAvg1 : rl.PriceAvg21,
+                    d = CenterOfMassSell = !isUp ? rl.PriceAvg1 : rl.PriceAvg31
+                  });
+                  Func<Rate, bool> calcVOK0 = rl => !rl.PriceAvg.Between(rl.PriceAvg3, rl.PriceAvg2);
+                  Func<Rate, bool> calcVOK = r => (r.PriceAvg2 - r.PriceAvg1).Ratio(r.PriceAvg1 - r.PriceAvg3) > WaveStDevRatio;
+                  var volatilityOk = rateLast.Where(calcVOK);
+                  Action setBSHeight = () => BuyLevel.RateEx.Avg(SellLevel.Rate)
+                    .Yield(mean => new { mean, offset = offset })
+                    .Do(a => {
+                      BuyLevel.RateEx = a.mean + a.offset;
+                      SellLevel.RateEx = a.mean - a.offset;
+                    }).Any();
+                  var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
+                    _ti =>{WorkflowStep = "1.Wait start";
+                    bsLevels.ForEach(ud => {
+                      var canTrade = new[] { corridorOk, anglrOk, lastPrice.Between(ud.d, ud.u), volatilityOk.Any() };
+                      canTrade.Where(b => !b).Take(1).IfEmpty(_ => {
+                        BuyLevel.RateEx = ud.u;
+                        SellLevel.RateEx = ud.d;
+                        setCanTrade(IsAutoStrategy, true);
+                      }, _ => setCanTrade(!volatilityOk.Any() || !isTradingHourLocal(), false)
+                      ).Any();
+                      //setBSHeight();
+                    });
+                      return tupleStay(_ti);
+                    }
+                  };
+                  #endregion
+                  #endregion
+                  workflowSubject.OnNext(wfManual);
+                }
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
 
             #region ElliottWave
             case TrailingWaveMethod.ElliottWave: {
