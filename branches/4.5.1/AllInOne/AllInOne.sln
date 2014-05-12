@@ -1780,9 +1780,6 @@ Global
 		{234F88F9-1C7F-41EA-9AE2-F6BAC92E95D2} = {C29763C9-371F-413E-B61A-D77D911932D6}
 		{FCB47B80-54A8-4CB7-9766-06B0C8E56B1B} = {FE22920D-51AF-45D3-AE48-5A95D1443973}
 	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = AllInOne1.vsmdi
 	EndGlobalSection

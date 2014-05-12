@@ -100,12 +100,13 @@ namespace HedgeHog.Alice.Store {
             var tpColse = InPoints((TakeProfitPips - CurrentGrossInPipTotal).Min(TakeProfitPips));// ClosingDistanceByCurrentGross(takeProfitLimitRatio);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
-            var ratesHeight = RatesArray.Take(RatesArray.Count * 9 / 10);
+            var ratesHeightInPips = InPips(RatesArray.Take(RatesArray.Count * 9 / 10).Height() / 2);
             var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0)
-              .Min(InPips(ratesHeight.Height() / 2));
+              .Min(ratesHeightInPips);
             var ratesShort = RatesArray.TakeLast(5).ToArray();
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
+            var takeProfitLocal = TakeProfitPips.Max(takeBackInPips).Min(ratesHeightInPips);
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {
@@ -114,7 +115,7 @@ namespace HedgeHog.Alice.Store {
             } else if (Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
               buyCloseLevel.RateEx = new[]{
-                Trades.IsBuy(true).NetOpen()+InPoints(TakeProfitPips.Max(takeBackInPips))
+                Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)
                 ,priceAvgMax
               }.MaxBy(l => l).Select(l => setBuyExit(l)).First();
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
@@ -130,7 +131,7 @@ namespace HedgeHog.Alice.Store {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var sellExit = ExitLevelByCurrentPrice(tpColse, false);
               sellCloseLevel.RateEx = new[] { 
-                Trades.IsBuy(false  ).NetOpen()-InPoints(TakeProfitPips.Max(takeBackInPips))
+                Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)
                 , priceAvgMin
               }.MinBy(l => l).Select(l => setSellExit(l)).First();
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
