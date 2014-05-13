@@ -3129,7 +3129,7 @@ namespace HedgeHog.Alice.Store {
                   Store.PriceHistory.AddTicks(TradesManager as Order2GoAddIn.FXCoreWrapper, BarPeriodInt, Pair, DateTime.MinValue, obj => { if (DoLogSaveRates) Log = new Exception(obj + ""); });
                 } catch (Exception exc) { Log = exc; }
               };
-              Scheduler.Default.Schedule(a);
+              //Scheduler.Default.Schedule(a);
             } finally {
               Monitor.Exit(_innerRateArrayLocker);
             }

@@ -25,13 +25,23 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    bool _spikeHeightAbs;
+    [Category(categoryActiveYesNo)]
+    public bool SpikeHeightAbs {
+      get { return _spikeHeightAbs; }
+      set {
+        _spikeHeightAbs = value;
+        OnPropertyChanged(() => SpikeHeightAbs);
+      }
+    }
     private CorridorStatistics ScanCorridorBySpike24(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<double, double, double> calcHeight = (p, l) => SpikeHeightAbs ? p.Abs(l) :  p - l;
       Func<IList<Rate>, int> scan = (rates) => {
         var prices = rates.Select(_priceAvg).ToArray();
         var spikeOut = new { length = 0, distance = 0.0 };
         var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
         var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
-          , (op) => Spikes24(prices, Partitioner.Create(op.ToArray(), true), spikeProjector));
+          , (op) => Spikes24(prices, Partitioner.Create(op.ToArray(), true), calcHeight, spikeProjector));
         var lengths1 = spike(Lib.IteratonSequence(10, rates.Count))
           .OrderByDescending(t => t.distance)
           .Select(t => t.length)
@@ -161,8 +171,8 @@ namespace HedgeHog.Alice.Store {
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
-    private static ParallelQuery<T> Spikes24<T>(IList<double> prices, OrderablePartitioner<int> lengths,Func<int,double,T> projector) {
-      Func<IEnumerable<double>, IEnumerable<double>, double> priceHeight = (price, line) => price.Zip(line, (p, l) => p - l).MaxBy(d => d.Abs()).First();
+    private static ParallelQuery<T> Spikes24<T>(IList<double> prices, OrderablePartitioner<int> lengths,Func<double,double,double> calcHeight,Func<int,double,T> projector) {
+      Func<IEnumerable<double>, IEnumerable<double>, double> priceHeight = (price, line) => price.Zip(line, calcHeight).MaxBy(d => d.Abs()).First();
       Func<IList<double>, IList<double>, int, double> priceHeightLast = (price, line, chunk) => priceHeight(price.TakeLast(chunk), line.TakeLast(chunk));
       Func<IList<double>, IList<double>, int, double> priceHeightFirst = (price, line, chunk) => priceHeight(price.Take(chunk), line.Take(chunk));
       Func<IList<double>, IList<double>, int, double[]> priceHeights = (price, line, chunk)
