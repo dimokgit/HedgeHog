@@ -37,7 +37,11 @@ namespace HedgeHog.Alice.Store {
             fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(dateStart);
-          dateStart = q.Max().Add(offset).DateTime;
+          dateStart = q.Max().DateTime;
+          if (dateStart == DateTime.MinValue) {
+            if (period == 0) throw new Exception("Either period or dateStart must be provided.");
+          } else
+            dateStart = dateStart.Add(offset);
         }
         fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
       } catch (Exception exc) {

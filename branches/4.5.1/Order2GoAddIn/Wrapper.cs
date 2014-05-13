@@ -577,6 +577,7 @@ namespace Order2GoAddIn {
         startDate = startDate.Round(period);
         if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = endDate.Round(period);
       }
+      if (startDate == DateTime.MinValue) startDate = TradesManagerStatic.FX_DATE_NOW;
       int timeoutCount = 1;
       Func<bool> doContinue = () => (endDate == TradesManagerStatic.FX_DATE_NOW || startDate != TradesManagerStatic.FX_DATE_NOW && startDate < endDate) || (periodsBack > 0 && ticks.Count() < periodsBack);
       while (doContinue()) {
