@@ -1830,7 +1830,6 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.Spike3: {
                 #region firstTime
                 if (firstTime) {
-                  Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
                   onCloseTradeLocal += t => {
@@ -1847,26 +1846,24 @@ namespace HedgeHog.Alice.Store {
                   #region Set locals
                   var corridorRates = CorridorStats.Rates;
                   var lastPrice = CurrentEnterPrice(null);
-                  var rateLast = corridorRates.Reverse().SkipWhile(r => r.PriceAvg1.IsZeroOrNaN()).Take(1).Memoize();
+                  var rateFirst = corridorRates.SkipWhile(r => r.PriceAvg1.IsZeroOrNaN()).Take(1).Memoize();
                   var corridorOk = corridorRates.Count < CorridorDistance;
-                  var anglrOk = calcAngleOk();
+                    //rateFirst.Any(rf => !rf.PriceAvg1.Between(CorridorStats.RatesMin, CorridorStats.RatesMax));
                   Action<bool, bool> setCanTrade = (condition, on) => { if (condition) _buySellLevelsForEach(sr => sr.CanTradeEx = on); };
                   #endregion
 
                   #region wfManual
-                  var bsLevels = rateLast.Select(rl => new {
-                    u = CorridorStats.RatesMax,
-                    d = CorridorStats.RatesMin
-                  })
-                  .Where(ud => ud.u.Abs(ud.d) < RatesHeight / WaveStDevRatio);
+                  var bsLevels = rateFirst.Select(rf => new {
+                    u = new { rate = rf.PriceAvg2, canTrade = CorridorStats.Slope < 0 },
+                    d = new { rate = rf.PriceAvg3, canTrade = CorridorStats.Slope > 0 }
+                  });
                   var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                     _ti =>{WorkflowStep = "1.Wait start";
                     bsLevels.ForEach(ud => {
-                      var canTrade = new[] { corridorOk, anglrOk, Trades.IsEmpty() || lastPrice.Between(ud.d, ud.u) };
+                      var canTrade = new[] { corridorOk, Trades.IsEmpty() || lastPrice.Between(ud.d.rate, ud.u.rate) };
                       canTrade.Where(b => !b).Take(1).IfEmpty(_ => {
-                        BuyLevel.RateEx = ud.u;
-                        SellLevel.RateEx = ud.d;
-                        setCanTrade(true, true);
+                        BuyLevel.RateEx = ud.u.rate; BuyLevel.CanTradeEx = ud.u.canTrade;
+                        SellLevel.RateEx = ud.d.rate; SellLevel.CanTradeEx = ud.d.canTrade;
                       }, _ => setCanTrade(!isTradingHourLocal(), false)
                       ).Any();
                     });

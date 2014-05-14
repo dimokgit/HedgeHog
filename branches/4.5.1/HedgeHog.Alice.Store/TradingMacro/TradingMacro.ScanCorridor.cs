@@ -34,6 +34,35 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => SpikeHeightAbs);
       }
     }
+    private CorridorStatistics ScanCorridorBySpike30(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.Select(_priceAvg).ToArray();
+        var spikeOut = new { length = 0, distance = 0.0 };
+        var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
+        var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
+          , (op) => Spikes30(prices, Partitioner.Create(op.ToArray(), true), spikeProjector));
+        var lengths1 = spike(Lib.IteratonSequence(10, rates.Count))
+          .OrderByDescending(t => t.distance)
+          .Select(t => t.length)
+          .Take(rates.Count / 20)
+          .ToArray()
+          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
+          .Take(3)
+          .Select(g => g.Select(g1 => g1))
+          .SelectMany(l => l)
+          .SelectMany(length => {
+            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
+            return Enumerable.Range(length - ns, ns * 2);
+          })
+          .Distinct()
+          .Where(l => l <= rates.Count)
+          .ToArray();
+        return spike(lengths1.DefaultIfEmpty(rates.Count))
+          .OrderByDescending(t => t.distance)
+          .First().length;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorBySpike24(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<double, double, double> calcHeight = (p, l) => SpikeHeightAbs ? p.Abs(l) :  p - l;
       Func<IList<Rate>, int> scan = (rates) => {
@@ -171,7 +200,17 @@ namespace HedgeHog.Alice.Store {
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
-    private static ParallelQuery<T> Spikes24<T>(IList<double> prices, OrderablePartitioner<int> lengths,Func<double,double,double> calcHeight,Func<int,double,T> projector) {
+    private static ParallelQuery<T> Spikes30<T>(IList<double> prices, OrderablePartitioner<int> lengths, Func<int, double, T> projector) {
+      return (
+        from length in lengths.AsParallel()
+        let rates2 = prices.CopyToArray(length)
+        let regRes = rates2.Regression(1, (coeffs, line) => new { coeffs, line })
+        let heights = GetStDevUpDown(rates2, regRes.line, (up, down) => new[] { up, down })//.HeightByRegressoin()
+        let distance = heights.Sum() / (heights.Max() / heights.Min())
+        select projector(length, distance)
+      );
+    }
+    private static ParallelQuery<T> Spikes24<T>(IList<double> prices, OrderablePartitioner<int> lengths, Func<double, double, double> calcHeight, Func<int, double, T> projector) {
       Func<IEnumerable<double>, IEnumerable<double>, double> priceHeight = (price, line) => price.Zip(line, calcHeight).MaxBy(d => d.Abs()).First();
       Func<IList<double>, IList<double>, int, double> priceHeightLast = (price, line, chunk) => priceHeight(price.TakeLast(chunk), line.TakeLast(chunk));
       Func<IList<double>, IList<double>, int, double> priceHeightFirst = (price, line, chunk) => priceHeight(price.Take(chunk), line.Take(chunk));
