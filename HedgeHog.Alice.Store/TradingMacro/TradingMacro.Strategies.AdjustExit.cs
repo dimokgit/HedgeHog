@@ -19,14 +19,11 @@ namespace HedgeHog.Alice.Store {
       return buyCloseLevel;
     }
 
-    delegate double SetExitDelegate(double currentPrice, double exitLevel,Func<double,double> calcExitLevel);
-    private Action<double, double> AdjustCloseLevels(
-      Func<double> takeProfitLimitRatio,
-      Func<bool, double> crossLevelDefault,
-      Func<bool?, double> exitPrice,
-      ObservableValue<double> ghostLevelOffset) {
+    double CrossLevelDefault (bool isBuy){return isBuy ? _RatesMax + RatesHeight : _RatesMin - RatesHeight;}
+    delegate double SetExitDelegate(double currentPrice, double exitLevel, Func<double, double> calcExitLevel);
+    private Action<double, double> AdjustCloseLevels() {
         SetExitDelegate setExit = (currentPrice, exitLevel, calcExitLevel) =>
-          BuyLevel.CanTrade && SellLevel.CanTrade && currentPrice.Between(SellLevel.Rate, BuyLevel.Rate)
+          new[] { BuyLevel, SellLevel }.All(sr => sr.CanTrade) && currentPrice.Between(SellLevel.Rate, BuyLevel.Rate)
             ? calcExitLevel(exitLevel)
             : exitLevel;
       Store.SuppRes buyCloseLevel = BuyCloseSupResLevel();
@@ -58,28 +55,12 @@ namespace HedgeHog.Alice.Store {
           Log = new Exception(new { buyLevel, sellLevel } + "");
           return;
         }
-        buyCloseLevel.SetPrice(exitPrice(false));
-        sellCloseLevel.SetPrice(exitPrice(true));
+        buyCloseLevel.SetPrice(CurrentExitPrice(false));
+        sellCloseLevel.SetPrice(CurrentExitPrice(true));
         #region setExitLevel
         Action<SuppRes> setExitLevel = sr => {
-          if (sr.IsGhost && sr.Rate.Between(SellLevel.Rate, BuyLevel.Rate)) {
-            if (ghostLevelOffset == null) throw new ArgumentException(new { ghostLevelOffset } + "");
-            var enterLevel = GetTradeEnterBy(sr.IsBuy)(RateLast);
-            var offset = PointSize / 10;
-            var rate = sr.Rate;
-            if (sr.IsBuy) {
-              if (sr.Rate - enterLevel > offset) {
-                ghostLevelOffset.Value = enterLevel + offset - rate;
-              }
-            } else {
-              if (enterLevel - sr.Rate > offset) {
-                ghostLevelOffset.Value = enterLevel - offset - rate;
-              }
-            }
-          } else {
-            sr.RateEx = crossLevelDefault(sr.IsSell);
+            sr.RateEx = CrossLevelDefault(sr.IsSell);
             sr.ResetPricePosition();
-          }
         };
         #endregion
         var tradesCount = Trades.Length;
@@ -117,10 +98,10 @@ namespace HedgeHog.Alice.Store {
               buyCloseLevel.RateEx = new[]{
                 Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)
                 ,priceAvgMax
-              }.MaxBy(l => l).Select(l => setBuyExit(l)).First();
+              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First();
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
-            } else buyCloseLevel.RateEx = crossLevelDefault(true);
+            } else buyCloseLevel.RateEx = CrossLevelDefault(true);
 
             if (sellCloseLevel.IsGhost)
               setExitLevel(sellCloseLevel);
@@ -133,10 +114,10 @@ namespace HedgeHog.Alice.Store {
               sellCloseLevel.RateEx = new[] { 
                 Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)
                 , priceAvgMin
-              }.MinBy(l => l).Select(l => setSellExit(l)).First();
+              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First();
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
-            } else sellCloseLevel.RateEx = crossLevelDefault(false);
+            } else sellCloseLevel.RateEx = CrossLevelDefault(false);
           }
         }
       };

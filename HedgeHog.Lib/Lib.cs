@@ -719,7 +719,13 @@ namespace HedgeHog {
       if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
       return Cma(MA, Periods, NewValue);
     }
-    public static Func<T> ToFunc<T>(this T value,Func<T> action) {
+    public static IEnumerable<T> OfType<T>(this IEnumerable e, T type) {
+      return e.OfType<T>();
+    }
+    public static Action<T> ToAction<T>(this T value, Action<T> action) {
+      return action;
+    }
+    public static Func<T> ToFunc<T>(this T value, Func<T> action) {
       return action;
     }
     public static Func<T> ToFunc<T>(this T value) {
