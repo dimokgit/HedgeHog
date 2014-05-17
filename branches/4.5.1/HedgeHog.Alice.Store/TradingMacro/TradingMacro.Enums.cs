@@ -85,6 +85,7 @@ namespace HedgeHog.Alice.Store {
     Spike = 7,
     Spike2 = 8,
     Spike3 = 9,
+    Spike4 = 10,
     ElliottWave = 60,
     LongCross = 80,
     LongLine = 160
