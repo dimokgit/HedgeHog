@@ -40,7 +40,7 @@ namespace HedgeHog.Alice.Store {
         var spikeOut = new { length = 0, distance = 0.0 };
         var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
         var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
-          , (op) => Spikes30(prices, Partitioner.Create(op.ToArray(), true), spikeProjector));
+          , (op) => Spikes31(prices, Partitioner.Create(op.ToArray(), true), spikeProjector));
         var lengths1 = spike(Lib.IteratonSequence(10, rates.Count))
           .OrderByDescending(t => t.distance)
           .Select(t => t.length)
@@ -90,6 +90,32 @@ namespace HedgeHog.Alice.Store {
         return spike(lengths1.DefaultIfEmpty(rates.Count))
           .OrderByDescending(t => t.distance)
           .First().length;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorBySpike231(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var prices = rates.Select(_priceAvg).ToArray();
+        var lengths = Partitioner.Create(Lib.IteratonSequence(10, rates.Count).ToArray(), true);
+        var lengths1 = Spikes23(prices, lengths)
+          .OrderByDescending(t => t.Item2)
+          .Select(t => t.Item1)
+          .Take(rates.Count / 20)
+          .ToArray()
+          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
+          .Take(3)
+          .Select(g => g.Select(g1 => g1))
+          .SelectMany(l => l)
+          .SelectMany(length => {
+            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
+            return Enumerable.Range(length - ns, ns * 2);
+          })
+          .Distinct()
+          .Where(l => l <= rates.Count)
+          .ToArray();
+        return Spikes23(prices, Partitioner.Create(lengths1.DefaultIfEmpty(rates.Count).ToArray(), true))
+          .OrderByDescending(t => t.Item2)
+          .First().Item1;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
@@ -199,6 +225,17 @@ namespace HedgeHog.Alice.Store {
         return counter;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
+    private static ParallelQuery<T> Spikes31<T>(IList<double> prices, OrderablePartitioner<int> lengths, Func<int, double, T> projector) {
+      return (
+        from length in lengths.AsParallel()
+        where length > 60
+        let rates2 = prices.CopyToArray(length)
+        let regRes = rates2.Regression(1, (coeffs, line) => new { coeffs, line })
+        let heights = GetStDevUpDown(rates2, regRes.line, (up, down) => new[] { up, down })//.HeightByRegressoin()
+        let distance = heights.Max() / heights.Min()
+        select projector(length, distance)
+      );
     }
     private static ParallelQuery<T> Spikes30<T>(IList<double> prices, OrderablePartitioner<int> lengths, Func<int, double, T> projector) {
       return (
