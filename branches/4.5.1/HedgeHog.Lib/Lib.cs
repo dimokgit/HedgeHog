@@ -105,10 +105,32 @@ namespace HedgeHog {
       return new ConcurrentQueue<T>(list);
     }
     #region Box
+    public static Box<T> ToBox<T>(this T value) {
+      return new Box<T>(value);
+    }
     public class Box<T> {
-      public T Value { get; set; }
-      public Box(T v) {
-        Value = v;
+      T _value;
+      public T Value {
+        get { return _value; }
+        set {
+          if (_value.Equals(value)) return;
+          _value = value;
+          if (PropertyChanged != null) PropertyChanged(this, Value);
+        }
+      }
+      public Box(T value, EventHandler<T> eventHandler)
+        : this(value) {
+        PropertyChanged += eventHandler;
+      }
+      public Box(T value) {
+        Value = value;
+      }
+      public Box() {
+
+      }
+      ~Box() {
+        if (PropertyChanged != null)
+          PropertyChanged.GetInvocationList().ForEach(d => PropertyChanged -= d as EventHandler<T>);
       }
       public override string ToString() {
         return Value.ToString();
@@ -116,6 +138,11 @@ namespace HedgeHog {
       public static implicit operator T(Box<T> m) {
         return m.Value;
       }
+      //public static implicit operator Box<T>(T m) {
+      //  return new Box<T>(m);
+      //}
+
+      public event EventHandler<T> PropertyChanged;
     }
     #endregion
     #region AreaInfo
