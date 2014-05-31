@@ -19,6 +19,18 @@ namespace HedgeHog.Alice.Store {
         .ForEach(r => SetVoltage(r,volts));
       return ShowVolts(volts, 2);
     }
+    CorridorStatistics ShowVoltsByFrameAngle() {
+      var frameLength = CorridorDistance;
+      RatesInternal.AsEnumerable().Reverse().Take(RatesArray.Count + CorridorDistance * 2)
+        .Integral(frameLength)
+        .AsParallel()
+        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs()) })
+        .ToArray()
+        .OrderByDescending(a=>a.rate.StartDate)
+        .Integral(frameLength * 2)
+        .ForEach(b => SetVoltage(b[0].rate, b.Average(a => a.angle)));
+      return ShowVolts(GetVoltage(RateLast), 2);
+    }
     CorridorStatistics ShowVoltsByVolume() {
       RatesArray.AsEnumerable().Reverse().TakeWhile(r => GetVoltage(r).IsNaN())
         .ForEach(rate => { SetVoltage(rate, rate.Volume); });

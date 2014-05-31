@@ -1019,7 +1019,7 @@ namespace HedgeHog.Alice.Client {
             /*6*/, tm.StDevByPriceAvgInPips
             /*7*/, tm.CorridorStats.StDevByHeightInPips
             /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
-            /*9*/, tm.DistanceIterations
+            /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
           charter.SetTrendLines(tm.SetTrendLines());
@@ -1043,12 +1043,13 @@ namespace HedgeHog.Alice.Client {
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;
           else if (tm.CorridorStartDate.HasValue)
             charter.LineTimeMiddle = tm.CorridorStats.Rates[0];
-          else
             charter.LineTimeMiddle = null;
           if (tm.WaveShortLeft.HasRates)
             charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
           else if (tm.LineTimeMin.HasValue)
             charter.LineTimeMin = tm.LineTimeMin.Value;
+          else
+            charter.LineTimeMin = tm.RatesArray.TakeLast((tm.CorridorDistance*tm.WaveStDevRatio).ToInt()).First().StartDateContinuous;
           if (tm.WaveShort.HasRates)
             charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistance).First().StartDateContinuous;

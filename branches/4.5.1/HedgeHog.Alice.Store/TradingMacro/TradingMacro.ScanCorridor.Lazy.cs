@@ -63,23 +63,23 @@ namespace HedgeHog.Alice.Store {
       RatesArray.Where(r => GetVoltage(r).IsNaN()).ToList().ForEach(r => SetVoltage(r, volt));
       //SetVoltage(RateLast, volt);
       var voltRates = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).ToArray();
-      var t1 = Task.Factory.StartNew(() => {
-        try {
-          var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).Average();
-          GetVoltageAverage = () => voltageAvgLow;
-        } catch (Exception exc) { Log = exc; }
-      });
-      var t2 = Task.Factory.StartNew(() => {
-        try {
-          var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).Average();
-          GetVoltageHigh = () => voltageAvgHigh;
-        } catch (Exception exc) { Log = exc; }
-      });
-      var t3 = Task.Factory.StartNew(() => {
-        CorridorCorrelation = AlgLib.correlation.spearmanrankcorrelation(RatesArray.Select(_priceAvg).ToArray(), RatesArray.Select(GetVoltage).ToArray(), RatesArray.Count);
-      });
+      var tasks = new List<Task>();
+      if (voltRates.Any()) {
+        tasks.Add(Task.Factory.StartNew(() => {
+          try {
+            var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).Average();
+            GetVoltageAverage = () => voltageAvgLow;
+          } catch (Exception exc) { Log = exc; }
+        }));
+        tasks.Add(Task.Factory.StartNew(() => {
+          try {
+            var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).Average();
+            GetVoltageHigh = () => voltageAvgHigh;
+          } catch (Exception exc) { Log = exc; }
+        }));
+      }
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-      Task.WaitAll(t1, t2, t3);
+      Task.WaitAll(tasks.ToArray());
       return corridor;
     }
   }

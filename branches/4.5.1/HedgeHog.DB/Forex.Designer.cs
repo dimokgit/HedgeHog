@@ -278,6 +278,22 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<EventLevel__News> _EventLevel__News;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<Blackout> Blackouts
+        {
+            get
+            {
+                if ((_Blackouts == null))
+                {
+                    _Blackouts = base.CreateObjectSet<Blackout>("Blackouts");
+                }
+                return _Blackouts;
+            }
+        }
+        private ObjectSet<Blackout> _Blackouts;
 
         #endregion
 
@@ -385,6 +401,14 @@ namespace HedgeHog.DB
         public void AddToEventLevel__News(EventLevel__News eventLevel__News)
         {
             base.AddObject("EventLevel__News", eventLevel__News);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the Blackouts EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddToBlackouts(Blackout blackout)
+        {
+            base.AddObject("Blackouts", blackout);
         }
 
         #endregion
@@ -669,6 +693,115 @@ namespace HedgeHog.DB
     #endregion
 
     #region Entities
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="Blackout")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class Blackout : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new Blackout object.
+        /// </summary>
+        /// <param name="id">Initial value of the ID property.</param>
+        /// <param name="timeFrom">Initial value of the TimeFrom property.</param>
+        /// <param name="timeTo">Initial value of the TimeTo property.</param>
+        public static Blackout CreateBlackout(global::System.Int32 id, global::System.DateTime timeFrom, global::System.DateTime timeTo)
+        {
+            Blackout blackout = new Blackout();
+            blackout.ID = id;
+            blackout.TimeFrom = timeFrom;
+            blackout.TimeTo = timeTo;
+            return blackout;
+        }
+
+        #endregion
+
+        #region Primitive Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 ID
+        {
+            get
+            {
+                return _ID;
+            }
+            set
+            {
+                if (_ID != value)
+                {
+                    OnIDChanging(value);
+                    ReportPropertyChanging("ID");
+                    _ID = StructuralObject.SetValidValue(value);
+                    ReportPropertyChanged("ID");
+                    OnIDChanged();
+                }
+            }
+        }
+        private global::System.Int32 _ID;
+        partial void OnIDChanging(global::System.Int32 value);
+        partial void OnIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime TimeFrom
+        {
+            get
+            {
+                return _TimeFrom;
+            }
+            set
+            {
+                OnTimeFromChanging(value);
+                ReportPropertyChanging("TimeFrom");
+                _TimeFrom = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeFrom");
+                OnTimeFromChanged();
+            }
+        }
+        private global::System.DateTime _TimeFrom;
+        partial void OnTimeFromChanging(global::System.DateTime value);
+        partial void OnTimeFromChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.DateTime TimeTo
+        {
+            get
+            {
+                return _TimeTo;
+            }
+            set
+            {
+                OnTimeToChanging(value);
+                ReportPropertyChanging("TimeTo");
+                _TimeTo = StructuralObject.SetValidValue(value);
+                ReportPropertyChanged("TimeTo");
+                OnTimeToChanged();
+            }
+        }
+        private global::System.DateTime _TimeTo;
+        partial void OnTimeToChanging(global::System.DateTime value);
+        partial void OnTimeToChanged();
+
+        #endregion
+
+    
+    }
     
     /// <summary>
     /// No Metadata Documentation available.

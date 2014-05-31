@@ -4,7 +4,15 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="ForexModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+    <Schema Namespace="ForexModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityType Name="Blackout">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="TimeFrom" Type="datetime" Nullable="false" />
+          <Property Name="TimeTo" Type="datetime" Nullable="false" />
+        </EntityType>
         <EntityType Name="t_Bar">
           <Key>
             <PropertyRef Name="ID" />
@@ -268,17 +276,18 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Parameter Name="Weeks" Type="int" Mode="In" />
         </Function>
         <EntityContainer Name="ForexModelStoreContainer">
-          <EntitySet Name="t_Bar" EntityType="Self.t_Bar" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_BarHeight" EntityType="Self.t_BarHeight" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Offer" EntityType="Self.t_Offer" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Report" EntityType="Self.t_Report" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Session" EntityType="Self.t_Session" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Stat" EntityType="Self.t_Stat" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Trade" EntityType="Self.t_Trade" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="Event" EntityType="Self.Event" Schema="news" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="EventLevel" EntityType="Self.EventLevel" Schema="news" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="MonthlyStats" EntityType="Self.MonthlyStats" Schema="stats" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="v_BlackoutTime" EntityType="Self.v_BlackoutTime" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="Blackout" EntityType="Self.Blackout" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Bar" EntityType="Self.t_Bar" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_BarHeight" EntityType="Self.t_BarHeight" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Offer" EntityType="Self.t_Offer" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Report" EntityType="Self.t_Report" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Session" EntityType="Self.t_Session" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Stat" EntityType="Self.t_Stat" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Trade" EntityType="Self.t_Trade" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Event" EntityType="Self.Event" Schema="news" store:Type="Tables" />
+          <EntitySet Name="EventLevel" EntityType="Self.EventLevel" Schema="news" store:Type="Tables" />
+          <EntitySet Name="MonthlyStats" EntityType="Self.MonthlyStats" Schema="stats" store:Type="Tables" />
+          <EntitySet Name="v_BlackoutTime" EntityType="Self.v_BlackoutTime" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_BlackoutTime].[Time] AS [Time], 
 [v_BlackoutTime].[EventType] AS [EventType], 
@@ -289,14 +298,14 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
 [v_BlackoutTime].[TimeStopLocal] AS [TimeStopLocal]
 FROM [dbo].[v_BlackoutTime] AS [v_BlackoutTime]</DefiningQuery>
           </EntitySet>
-          <EntitySet Name="v_Pair" EntityType="Self.v_Pair" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="v_Pair" EntityType="Self.v_Pair" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_Pair].[Pair] AS [Pair], 
 [v_Pair].[Weight1] AS [Weight1], 
 [v_Pair].[Weight2] AS [Weight2]
 FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
           </EntitySet>
-          <EntitySet Name="v_TradeSession" EntityType="Self.v_TradeSession" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="v_TradeSession" EntityType="Self.v_TradeSession" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_TradeSession].[Pair] AS [Pair], 
 [v_TradeSession].[SessionId] AS [SessionId], 
@@ -397,6 +406,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             <End Role="EventLevel" EntitySet="EventLevel__News" />
             <End Role="Event" EntitySet="Event__News" />
           </AssociationSet>
+          <EntitySet Name="Blackouts" EntityType="ForexModel.Blackout" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -667,6 +677,14 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <EntityType Name="Blackout">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TimeFrom" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="TimeTo" Type="DateTime" Nullable="false" Precision="3" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -946,6 +964,15 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="Blackouts">
+            <EntityTypeMapping TypeName="ForexModel.Blackout">
+              <MappingFragment StoreEntitySet="Blackout">
+                <ScalarProperty Name="TimeTo" ColumnName="TimeTo" />
+                <ScalarProperty Name="TimeFrom" ColumnName="TimeFrom" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -985,6 +1012,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <edmx:ConnectorPoint PointX="10.875" PointY="1.7689925130208337" />
           <edmx:ConnectorPoint PointX="11.625" PointY="1.7689925130208337" />
         </edmx:AssociationConnector>
+        <edmx:EntityTypeShape EntityType="ForexModel.Blackout" Width="1.5" PointX="9.375" PointY="3.75" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>
