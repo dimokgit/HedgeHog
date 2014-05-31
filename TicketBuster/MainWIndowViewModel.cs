@@ -18,30 +18,101 @@ using OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium.Remote;
 using System.Text.RegularExpressions;
 using HedgeHog;
+using System.IO;
 
 namespace TicketBuster {
+  public class PersistAttribute : Attribute { }
   public class MainWIndowViewModel:ReactiveObject {
     #region fields
+    string _modelKey;
     IDisposable _searchSubscribtion;
     string _messageBox2 = "Results:";
     FirefoxDriver _ie;
     #endregion
     #region Properties
+
+    #region AirportFrom
+    private string _AirportFrom = "EWR";
+    [Persist]
+    public string AirportFrom {
+      get { return _AirportFrom; }
+      set { this.RaiseAndSetIfChanged(ref _AirportFrom, value.ToUpper()); }      
+    }
+    #endregion
+    #region AirportTo
+    private string _AirportTo = "TLV";
+    [Persist]
+    public string AirportTo {
+      get { return _AirportTo; }
+      set { this.RaiseAndSetIfChanged(ref _AirportTo, value.ToUpper()); }
+    }
+    #endregion
+
+    #region MainWindowTop
+    private int _MainWindowTop;
+    [Persist]
+    public int MainWindowTop {
+      get { return _MainWindowTop; }
+      set { this.RaiseAndSetIfChanged(ref _MainWindowTop, value); }
+    }
+    #endregion
+    #region MainWindowLeft
+    private int _MainWindowLeft;
+    [Persist]
+    public int MainWindowLeft {
+      get { return _MainWindowLeft; }
+      set { this.RaiseAndSetIfChanged(ref _MainWindowLeft, value); }
+    }
+    #endregion
+    #region MainWindowWidth
+    private int _MainWindowWidth = 300;
+    [Persist]
+    public int MainWindowWidth {
+      get { return _MainWindowWidth; }
+      set { this.RaiseAndSetIfChanged(ref _MainWindowWidth, value); }
+    }
+    #endregion
+    #region MainWindowHeight
+    private int _MainWindowHeight = 400;
+    [Persist]
+    public int MainWindowHeight {
+      get { return _MainWindowHeight; }
+      set { this.RaiseAndSetIfChanged(ref _MainWindowHeight, value); }
+    }
+    #endregion
+
+    #region RetryCountdown
+    private double? _RetryCountdown;
+    public double? RetryCountdown {
+      get { return _RetryCountdown > 0 ? _RetryCountdown : null; }
+      set { this.RaiseAndSetIfChanged(ref _RetryCountdown, value); }
+    }
+    #endregion
+    #region RetryInterval
+    private double _RetryInterval;
+    [Persist]
+    public double RetryInterval {
+      get { return _RetryInterval; }
+      set { this.RaiseAndSetIfChanged(ref _RetryInterval, value); }
+    }
+    #endregion
     bool _isInSearch;
     public bool IsInSearch {
       get { return _isInSearch; }
       set { this.RaiseAndSetIfChanged(ref _isInSearch, value); }
     }
     int _daysRange = 2;
+    [Persist]
     public int DaysRange {
       get { return _daysRange; }
       set { this.RaiseAndSetIfChanged(ref _daysRange, value); }
     }
 
     string _flight;
+    [Persist]
     public string Flight {
       get { return _flight; }
-      set { this.RaiseAndSetIfChanged(ref  _flight, value); }
+      set { this.RaiseAndSetIfChanged(ref  _flight, value.ToUpper()); }
     }
     bool _mustStopSearch;
     public bool MustStopSearch {
@@ -53,12 +124,14 @@ namespace TicketBuster {
       get { return _isRoundTrip; }
       set { this.RaiseAndSetIfChanged(ref _isRoundTrip, value); }
     }
-    DateTime _dateDepart = DateTime.Parse("12/4/2014");
+    DateTime _dateDepart = DateTime.Now.AddDays(7);
+    [Persist]
     public DateTime DateDepart {
       get { return _dateDepart; }
       set { this.RaiseAndSetIfChanged(ref _dateDepart, value); }
     }
     DateTime? _dateReturn = null;
+    [Persist]
     public DateTime? DateReturn {
       get { return _dateReturn; }
       set { this.RaiseAndSetIfChanged(ref _dateReturn, value); }
@@ -74,16 +147,57 @@ namespace TicketBuster {
       get { return _messageBox2; }
       set { this.RaiseAndSetIfChanged(ref _messageBox2,value); }
     }
+    string _alert;
+    public string Alert {
+      get { return _alert; }
+      set { _alert = null; this.RaiseAndSetIfChanged(ref _alert, value); }
+    }
+    EventLoopScheduler _IEScheduler;
     EventLoopScheduler IESchedulerFactory() {
-      return new EventLoopScheduler(ts => {
+      return _IEScheduler ?? (_IEScheduler = new EventLoopScheduler(ts => {
         var t = new Thread(ts) { IsBackground = true };
         t.SetApartmentState(ApartmentState.STA);
         return t;
-      });
+      }));
     }
     #endregion
-    public MainWIndowViewModel() {
-      Search = new ReactiveCommand(this.ObservableForProperty(vm => vm.IsInSearch).Select(o => !o.Value));
+    #region Load/Save Properties
+    string ActiveSettingsPath() { return Lib.CurrentDirectory + "\\{0}_Last.txt".Formater(_modelKey); }
+    void LoadActiveSettings() { LoadActiveSettings(ActiveSettingsPath()); }
+    public void LoadActiveSettings(string path) {
+      try {
+        if (!File.Exists(path)) return;
+        var settings = Lib.ReadTestParameters(path);
+        settings.ForEach(tp => this.SetProperty(tp.Key, (object)tp.Value));
+      } catch (Exception exc) {
+        MessageBox2 = exc + "";
+      }
+    }
+    void SaveActiveSettings() {
+      try {
+        string path = ActiveSettingsPath();
+        SaveActiveSettings(path);
+      } catch (Exception exc) { MessageBox2 = exc + ""; }
+    }
+    public void SaveActiveSettings(string path) {
+      File.WriteAllLines(path, GetActiveSettings().ToArray());
+    }
+    IEnumerable<string> GetActiveSettings() {
+      return
+        from setting in this.GetPropertiesByAttibute<PersistAttribute>(a => true)
+        group setting by "Settings" into g
+        orderby g.Key
+        from g2 in new[] { "//{0}//".Formater(g.Key) }
+        .Concat(g.Select(p => "{0}={1}".Formater(p.Item2.Name, p.Item2.GetValue(this, null))).OrderBy(s => s))
+        .Concat(new[] { "\n" })
+        select g2;
+    }
+    #endregion
+    #region ctor
+    public MainWIndowViewModel(string modelKey) {
+      _modelKey = modelKey;
+      LoadActiveSettings();
+      Search = new ReactiveCommand(this.WhenAnyValue(vm => vm.IsInSearch, vm => vm.RetryCountdown, (b1, b2) => !b1 && b2.GetValueOrDefault() <= 0));
       _searchSubscribtion = Search
         .ObserveOn(IESchedulerFactory())
         .Subscribe(_ => SearchFlight());
@@ -92,28 +206,67 @@ namespace TicketBuster {
         .Where(b => b.Value && DateReturn.GetValueOrDefault() < DateDepart)
         .Subscribe(_ => DateReturn = _dateDepart.AddDays(3));
     }
+    ~MainWIndowViewModel() {
+      if (_searchSubscribtion != null) {
+        _searchSubscribtion.Dispose();
+        _searchSubscribtion = null;
+      }
+      DisposeBrowser();
+      SaveActiveSettings();
+    }
+    #endregion
+    void StartRetryCountdown() {
+      Observable.Generate(
+        RetryCountdown = RetryInterval,
+        ri => ri >= 0 && !MustStopSearch,
+        ri => RetryCountdown = TimeSpan.FromMinutes(ri.GetValueOrDefault()).Subtract(TimeSpan.FromSeconds(1)).TotalMinutes,
+        d => d,
+        d => TimeSpan.FromSeconds(1)
+        )
+        .Do(_=>MessageBox2 = "Idling ...")
+        .TakeLast(1)
+        .Where(d => d <= 0)
+        .Subscribe(
+        _ => {
+          IsInSearch = true;
+          Observable.Start(SearchFlight, IESchedulerFactory());
+        },
+        () => {
+          RetryCountdown = 0;
+          MustStopSearch = false;
+        });
+//      Observable.Range(0,RetryInterval*10).in
+    }
     void SearchFlight() {
       try {
         IsInSearch = true;
+        MessageBox2 = "Starting browser ...";
+        DisposeBrowser();
         if (!Enumerable.Range(0, 5).SkipWhile(_ => {
           ie.Navigate().GoToUrl("https://www.united.com/web/en-US/default.aspx?root=1");
           return !IsOnSearchPage(ie);
         }).Any()) throw new Exception("Couldn't navigate to search page.");
-        FillSearch();
-        while (!MustStopSearch && !Enumerable.Range(0, DaysRange)
-          .Select(d => DateDepart.AddDays(d))
+        Enumerable.Range(0, DaysRange)
           .Where(_ => !MustStopSearch)
-          .Select(d => new { d, l = FindAward(ie, Flight ?? "") })
-          .SkipWhile(d => {
-            if (d.l.Any()) return false;
-            FillResultSearch(ie, d.d);
-            return true;
+          .Select((d, i) => new { d = DateDepart.AddDays(d), i })
+          .Do(a => {
+            MessageBox2 = "Searching ...";
+            if (a.i == 0) FillSearch();
+            else FillResultSearch(ie, a.d);
           })
-          .Do(d => { MessageBox2 = "Found award @ " + d.d.ToShortDateString(); })
-          .Any()) { }
+          .Select(d => new { d.d, we = FindAward(ie, Flight ?? "") })
+          .SkipWhile(d =>
+            !(d.we.Any(we => string.IsNullOrWhiteSpace(Flight) || IsFlightOk(FindParentByTag(we, "tr").Text, Flight)))
+          )
+          .ForEach(d => {
+            Alert = MessageBox2 = "Found award @ " + d.d.ToShortDateString();
+            MustStopSearch = true;
+          });
       } catch (Exception exc) {
-        MessageBox2 = exc + "";
+        MessageBox2 = Alert = exc + "";
+        MustStopSearch = true;
       } finally {
+        if (!MustStopSearch) StartRetryCountdown();
         MustStopSearch = IsInSearch = false;
       }
     }
@@ -122,8 +275,12 @@ namespace TicketBuster {
     }
     private void FillSearch() {
       var searches = new WebDriverWait(ie, TimeSpan.FromSeconds(10)).Until(d => d.FindElements(By.ClassName("txtAirLoc")));
-      searches[0].SendKeys("EWR");
-      searches[1].SendKeys("TLV");
+      if (new[] { AirportFrom, AirportTo }.Any(a => string.IsNullOrWhiteSpace(a))) {
+        Alert = "Fill From and To airports.";
+        throw new Exception("Fill From and To airports.");
+      }
+      searches[0].SendKeys(AirportFrom);
+      searches[1].SendKeys(AirportTo);
       ie.FindElementsByTagName("label").SingleOrDefault(FindByLastNamePart("for", '_', "rdosearchby3")).Click();
       if (!IsRoundTrip)
         ie.FindElementsByTagName("label").SingleOrDefault(FindByLastNamePart("for", '_', "rdoSearchType2")).Click();
@@ -162,7 +319,7 @@ namespace TicketBuster {
       departTxt.SendKeys(string.Format("{0:M/d/yyyy}", dateDepart) + "\n");
       WaitForResultPage(ie);
     }
-    static IList<IWebElement> FindAward(RemoteWebDriver ie, string flight) {
+    static IList<FirefoxWebElement> FindAward(RemoteWebDriver ie, string flight) {
       if(!IsOnResultPage(ie))throw new Exception("Navigate to Result page first.");
       var awardButtons = new WebDriverWait(ie, TimeSpan.FromSeconds(2)).Until(d => FindAwardButton(ie).Cast<FirefoxWebElement>().ToArray());
       return awardButtons;
@@ -187,11 +344,7 @@ namespace TicketBuster {
     static bool IsOnResultPage(RemoteWebDriver ie) {
       return ie.Title.ToLower().StartsWith("United Airlines - Flight Search".ToLower());
     }
-    ~MainWIndowViewModel() {
-      if (_searchSubscribtion != null) {
-        _searchSubscribtion.Dispose();
-        _searchSubscribtion = null;
-      }
+    private void DisposeBrowser() {
       if (_ie != null) {
         _ie.Dispose();
         _ie = null;
