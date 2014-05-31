@@ -159,6 +159,10 @@
       <Project>{c8436d96-349c-4ea7-a58b-3d21ba93be22}</Project>
       <Name>HedgeHog.Lib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21c4a910-0c04-436d-b797-4d564db29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

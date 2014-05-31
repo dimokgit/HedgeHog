@@ -21,8 +21,8 @@ namespace TicketBuster {
   public partial class MainWindow : Window {
     public MainWindow() {
       InitializeComponent();
-      var vm = new MainWIndowViewModel();
-      vm.ObservableForProperty(_ => _.MessageBox2).ObserveOnDispatcher().Subscribe(o => MessageBox.Show(App.Current.MainWindow, o.Value));
+      var vm = new MainWIndowViewModel("Model1");
+      vm.ObservableForProperty(_ => _.Alert).ObserveOnDispatcher().Subscribe(o => MessageBox.Show(App.Current.MainWindow, o.Value));
       DataContext = vm;
     }
   }
