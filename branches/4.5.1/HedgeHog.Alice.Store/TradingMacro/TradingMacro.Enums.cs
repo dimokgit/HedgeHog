@@ -89,6 +89,7 @@ namespace HedgeHog.Alice.Store {
     FrameAngle = 81,
     FrameAngle2 = 82,
     FrameAngle3 = 83,
+    FrameAngle4 = 84,
     Spike3 = 9,
     Spike4 = 10,
     ManualRange = 1,
