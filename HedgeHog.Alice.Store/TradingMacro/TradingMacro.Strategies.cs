@@ -186,7 +186,8 @@ namespace HedgeHog.Alice.Store {
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
 
-    private void StrategyEnterUniversal() {
+    private void StrategyEnterUniversal()
+    {
       if (!RatesArray.Any()) return;
 
       #region ============ Local globals ============
@@ -652,6 +653,7 @@ namespace HedgeHog.Alice.Store {
 
         #endregion
 
+        
         #region Funcs
         Func<Func<Rate, double>, double> getRateLast = (f) => f(RateLast) > 0 ? f(RateLast) : f(RatePrev);
         #region medianFunc
@@ -745,6 +747,7 @@ namespace HedgeHog.Alice.Store {
         };
         #endregion
         #endregion
+        
 
         #region adjustEnterLevels
         Action adjustEnterLevels = () => {
@@ -1965,6 +1968,54 @@ namespace HedgeHog.Alice.Store {
               adjustExitLevels0();
               break;
             #endregion
+            #region FrameAngle4
+            case TrailingWaveMethod.FrameAngle4: {
+                #region firstTime
+                if (firstTime) {
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  workFlowObservable.Subscribe();
+                  #region onCloseTradeLocal
+                  onCloseTradeLocal += t => {
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (CurrentGrossInPipTotal > 0) {
+                      if (!IsInVitualTrading) IsTradingActive = false;
+                      BroadcastCloseAllTrades();
+                    }
+                  };
+                  #endregion
+                  //initTradeRangeShift();
+                }
+                #endregion
+                var point = InPoints(1);
+                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
+                var corridorOk2 = CorridorStats.Rates.Count > CorridorDistance;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
+                var isBlackout = new Lazy<bool>(() => IsBlackout(RateLast.StartDate));
+                if (isBlackout.Value) {
+                  if (Trades.Any()) BroadcastCloseAllTrades();
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                }
+                var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
+                    _ti =>{ WorkflowStep = "1 Wait start";
+                    var slopeCurrent = CorridorStats.Slope.Sign();
+                    var slope = _ti.OfType<int>().FirstOrDefault(slopeCurrent);
+                    var up = CorridorStats.RatesMax + point;
+                    var down = CorridorStats.RatesMin - point;
+                    if (corridorOk && (calcAngleOk() || slopeCurrent != slope)) {
+                        BuyLevel.RateEx = up;
+                        SellLevel.RateEx = down;
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                        return tupleNextEmpty();
+                    }else if (up.Abs(down) < BuyLevel.Rate.Abs(SellLevel.Rate)) {
+                        BuyLevel.RateEx = up;
+                        SellLevel.RateEx = down;
+                    }
+                    return tupleStaySingle(slopeCurrent);
+                    }};
+                workflowSubject.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
             #region Spike3
             case TrailingWaveMethod.Spike3: {
                 #region firstTime
@@ -2672,6 +2723,8 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #endregion
 
+        
+        
         #region On Trade Close
         _strategyExecuteOnTradeClose = t => {
           if (!Trades.Any() && isCurrentGrossOk()) {
@@ -2694,13 +2747,15 @@ namespace HedgeHog.Alice.Store {
           CloseAtZero = _trimAtZero = _trimToLotSize = exitCrossed = false;
         };
         #endregion
+        
 
         #region On Trade Open
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           if (onOpenTradeLocal != null) onOpenTradeLocal(trade);
         };
-        #endregion
+        #endregion 
+        
 
         #region _adjustEnterLevels
         _adjustEnterLevels += () => adjustEnterLevels();
@@ -2718,7 +2773,8 @@ namespace HedgeHog.Alice.Store {
           } catch (Exception exc) { Log = exc; }
         };
         _adjustEnterLevels += () => { if (runOnce != null && runOnce()) runOnce = null; };
-        #endregion
+        #endregion 
+        
       }
 
       #region if (!IsInVitualTrading) {
@@ -2727,6 +2783,7 @@ namespace HedgeHog.Alice.Store {
         this.TradesManager.TradeAdded += TradeAddedHandler;
       }
       #endregion
+      
       #endregion
 
       #region ============ Run =============
