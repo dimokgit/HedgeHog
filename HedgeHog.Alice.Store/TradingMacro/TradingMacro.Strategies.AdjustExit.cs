@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HedgeHog.Shared;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -18,7 +19,20 @@ namespace HedgeHog.Alice.Store {
       var buyCloseLevel = Support1(); buyCloseLevel.IsExitOnly = true;
       return buyCloseLevel;
     }
+    #region EllasticRange
+    private int _EllasticRange = 5;
+    [Category(categoryActive)]
+    public int EllasticRange {
+      get { return _EllasticRange; }
+      set {
+        if (_EllasticRange != value) {
+          _EllasticRange = value;
+          OnPropertyChanged(() => EllasticRange);
+        }
+      }
+    }
 
+    #endregion
     double CrossLevelDefault (bool isBuy){return isBuy ? _RatesMax + RatesHeight : _RatesMin - RatesHeight;}
     delegate double SetExitDelegate(double currentPrice, double exitLevel, Func<double, double> calcExitLevel);
     private Action<double, double> AdjustCloseLevels() {
@@ -81,7 +95,11 @@ namespace HedgeHog.Alice.Store {
             var tpColse = InPoints((TakeProfitPips - CurrentGrossInPipTotal).Min(TakeProfitPips));// ClosingDistanceByCurrentGross(takeProfitLimitRatio);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
-            var ratesHeightInPips = InPips(RatesArray.Take(RatesArray.Count * 9 / 10).Height() / 2);
+            var ellasic = RatesArray.TakeLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
+            var ratesHeightInPips = new[] { 
+              RatesArray.Take(RatesArray.Count * 9 / 10).Height() / 2,
+              LimitProfitByStDev?StDevByPriceAvg:double.MaxValue
+            }.Min(m => InPips(m));
             var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0)
               .Min(ratesHeightInPips);
             var ratesShort = RatesArray.TakeLast(5).ToArray();
@@ -98,7 +116,8 @@ namespace HedgeHog.Alice.Store {
               buyCloseLevel.RateEx = new[]{
                 Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)
                 ,priceAvgMax
-              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First();
+              }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
+              - ellasic;
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
             } else buyCloseLevel.RateEx = CrossLevelDefault(true);
@@ -114,7 +133,8 @@ namespace HedgeHog.Alice.Store {
               sellCloseLevel.RateEx = new[] { 
                 Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)
                 , priceAvgMin
-              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First();
+              }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
+              + ellasic;
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
             } else sellCloseLevel.RateEx = CrossLevelDefault(false);
@@ -123,7 +143,15 @@ namespace HedgeHog.Alice.Store {
       };
       return adjustExitLevels;
     }
-
+    bool _limitProfitByStDev;
+    [Category(categoryActiveYesNo)]
+    public bool LimitProfitByStDev {
+      get { return _limitProfitByStDev; }
+      set {
+        _limitProfitByStDev = value;
+        OnPropertyChanged(() => LimitProfitByStDev);
+      }
+    }
     private double ExitLevelByCurrentPrice(bool isBuy) {
       return ExitLevelByCurrentPrice(ClosingDistanceByCurrentGross(), isBuy);
     }

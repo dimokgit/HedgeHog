@@ -11,6 +11,7 @@ using System.Reflection;
 using HedgeHog.Alice.Store;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
+using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -24,6 +25,16 @@ namespace HedgeHog.Alice.Client {
       GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
       DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+      AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+      TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+    }
+
+    void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
+      MessageBox.Show(e.Exception.ToString());
+    }
+
+    void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
+      MessageBox.Show(((Exception)e.ExceptionObject).ToString());
     }
 
     public ResourceDictionary Resources

@@ -617,6 +617,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Tests\Test_USDJPY_Distance22.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev31_03.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev3_Original.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev3.txt" />

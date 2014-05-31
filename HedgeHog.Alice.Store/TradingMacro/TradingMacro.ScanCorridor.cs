@@ -25,6 +25,7 @@ namespace HedgeHog.Alice.Store {
 
     #region ScanCorridor Extentions
     #region New
+    #region SpikeHeightAbs
     bool _spikeHeightAbs;
     [Category(categoryActiveYesNo)]
     public bool SpikeHeightAbs {
@@ -33,6 +34,35 @@ namespace HedgeHog.Alice.Store {
         _spikeHeightAbs = value;
         OnPropertyChanged(() => SpikeHeightAbs);
       }
+    }
+    #endregion
+    private CorridorStatistics ScanCorridorByDistance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var revsCount = RatesArray.Count + CorridorDistance * 2;
+      var ratesReversed = RatesArray.ReverseIfNot().FillDistance().SafeArray();
+      var distanceMin = RatesArray[0].Distance/(RatesArray.Count / CorridorDistance);
+      Func<IList<Rate>,int> scan = rates => ratesReversed.TakeWhile(r => r.Distance <= distanceMin).Count();
+      return ScanCorridorLazy(ratesReversed, scan, GetShowVoltageFunction());
+    }
+    private CorridorStatistics ScanCorridorByFrameAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      Func<IList<Rate>, int> scan = (rates) => {
+        var rateStart = RatesArray
+          .SkipWhile(r => GetVoltage(r) < GetVoltageHigh())
+          .TakeWhile(r => GetVoltage(r) > GetVoltageHigh())
+          //.OrderByDescending(r => GetVoltage(r))
+          .LastOrDefault();
+        var rateStop = rates
+          .SkipWhile(r => GetVoltage(r).IfNaN(double.MaxValue) > GetVoltageAverage())
+          .TakeWhile(r => GetVoltage(r) < GetVoltageAverage())
+          //.OrderBy(r => GetVoltage(r))
+          .LastOrDefault();
+        if (rateStart == null || rateStop == null) {
+          SetCorridorStopDate(null);
+          return rates.Count - 1;
+        }
+        SetCorridorStopDate(rateStop > rateStart ? rateStop : null);
+        return (rates.TakeWhile(r => r >= rateStart).Count() - 1).Max(CorridorDistance);
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
     private CorridorStatistics ScanCorridorBySpike30(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
