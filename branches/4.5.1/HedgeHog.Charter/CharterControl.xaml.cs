@@ -1035,8 +1035,10 @@ namespace HedgeHog {
         vRanges.Add(new VerticalRange());
       while (vRanges.Count > timePairs.Count())
         vRanges.RemoveAt(vRanges.Count - 1);
-      timePairs.ForEach((timePair, i) =>
-        SetVerticalRange(vRanges[i], timePair.TakeLast(2).First(), timePair.Last()));
+      timePairs.ToObservable().ObserveOnDispatcher()
+        .Select((timePair, i) => new { timePair, i })
+        .Subscribe(a =>
+          SetVerticalRange(vRanges[a.i], a.timePair.TakeLast(2).First(), a.timePair.Last()));
     }
     private void InitSessionVerticalRange(VerticalRange vr, Color fillColor,double opacity) {
       vr.Fill = new SolidColorBrush(fillColor);
@@ -1811,8 +1813,10 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     public event EventHandler<CorridorPositionChangedEventArgs> CorridorStartPositionChanged;
     private void OnCorridorStartPositionChanged() {
-      var x = GetPriceStartDate(ConvertToDateTime(CorridorStartPointX.Position.X));
-      CorridorStartPositionChanged(this, new CorridorPositionChangedEventArgs(x, CorridorStartPositionOld));
+      Observable.Start(() => {
+        var x = GetPriceStartDate(ConvertToDateTime(CorridorStartPointX.Position.X));
+        CorridorStartPositionChanged(this, new CorridorPositionChangedEventArgs(x, CorridorStartPositionOld));
+      }, _plotterScheduler);
     }
 
     public event EventHandler<SupportResistanceChangedEventArgs> SupportResistanceChanged;
