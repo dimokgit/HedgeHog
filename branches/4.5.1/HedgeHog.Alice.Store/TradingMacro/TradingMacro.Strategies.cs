@@ -644,6 +644,7 @@ namespace HedgeHog.Alice.Store {
               i = new { i = 0, o = i.o, i.c };
             }
             var o = wf[i.i](i.o);// Side effect
+            o.Item2.OfType<WF.OnLoop>().ToList().ForEach(ol => ol(o.Item2));
             try {
               return new { i = (i.i + o.Item1).Max(0), o = o.Item2, i.c };
             } finally {
@@ -1972,11 +1973,12 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle4: {
                 #region firstTime
                 if (firstTime) {
-                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio, onCanTradeLocal } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   onCloseTradeLocal += t => {
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                     if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                     if (CurrentGrossInPipTotal > 0) {
                       if (!IsInVitualTrading) IsTradingActive = false;
@@ -2003,17 +2005,36 @@ namespace HedgeHog.Alice.Store {
                     SellLevel.RateEx = down;
                   }
                 };
+                Action<List<object>> adjustCloseLevel = list => {
+                  var closeLevelAnon = Lib.ToFunc(0.0, true, (r, b) => new { rate = r.ToBox(), isBuy = b, closeLevelAnon = "" });
+                  var closeLevel = list.OfType(closeLevelAnon(0.0,true)).SingleOrDefault();
+                  if (!Trades.Any()) {
+                    if (closeLevel != null) {
+                      list.Remove(closeLevel);
+                    }
+                  } else {
+                    var srLevel = Trades.HaveBuy()?BuyCloseLevel:SellCloseLevel;
+                    if (closeLevel == null) {
+                      list.Add(closeLevel = closeLevelAnon(srLevel.Rate,srLevel.IsBuy));
+                      srLevel.InManual = true;
+                    };
+                    var v = closeLevel.rate.Value;
+                    closeLevel.rate.Value = closeLevel.isBuy ? srLevel.Rate.Max(v) : srLevel.Rate.Min(v);
+                    srLevel.Rate = closeLevel.rate;
+                  }
+                };
                 var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                   _ti =>{ WorkflowStep = "1 Wait passive";
+                    if(!_ti.OfType<Lib.Box<int>>().Any())_ti.Add(CorridorStats.Slope.Sign().ToBox());
                     var slopeCurrent = CorridorStats.Slope.Sign();
-                    var slope = _ti.OfType<int>().FirstOrDefault(slopeCurrent);
+                    var slope = _ti.OfType<Lib.Box<int>>().Single().Value;
                     if (corridorOk && (calcAngleOk() || slopeCurrent != slope)) {
                         BuyLevel.RateEx = up;
                         SellLevel.RateEx = down;
-                        return tupleNextEmpty();
+                        return tupleNext(_ti);
                     }
                     adjustHeight();
-                    return tupleStaySingle(slopeCurrent);
+                    return tupleStaySingle(_ti);
                     },_ti =>{ WorkflowStep = "2 Wait active";
                     if (!corridorOk2){
                       _buySellLevelsForEach(sr => sr.CanTradeEx = true);
@@ -2815,6 +2836,7 @@ namespace HedgeHog.Alice.Store {
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
     }
     class WF {
+      public delegate void OnLoop(List<object> list);
       public delegate void OnExit();
       public delegate bool MustExit();
       public delegate DateTime StartDate();

@@ -513,7 +513,18 @@ namespace HedgeHog.Bars {
       if (distance.IsNaN()) throw new InvalidDataException("Distance calculation resulted in NaN.");
       return distance;
     }
+    public static IEnumerable<TResult> Pairwise<TSequence, TResult>(this IEnumerable<TSequence> seq, Func<TSequence, TSequence, TResult> resultSelector) {
+      TSequence prev = default(TSequence);
+      using (IEnumerator<TSequence> e = seq.GetEnumerator()) {
+        if (e.MoveNext()) prev = e.Current;
 
+        while (e.MoveNext()) yield return resultSelector(prev, prev = e.Current);
+      }
+    }
+
+    public static double CalcDistance<TBar>(this IEnumerable<TBar> rates, Func<TBar, double> getPrice) {
+      return rates.Pairwise((b1, b2) => getPrice(b1).Abs(getPrice(b2))).DefaultIfEmpty().Sum();
+    }
     public static double CalcDistance<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) {
       double distance = 0;
       if (rates.Count > 0)

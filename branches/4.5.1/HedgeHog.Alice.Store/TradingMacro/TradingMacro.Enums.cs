@@ -37,6 +37,7 @@ namespace HedgeHog.Alice.Store {
     Spike24 = 9,
     Spike30 = 10,
     Distance = 11,
+    Distance2 = 12,
     HorizontalProbe = 200,
     HorizontalProbe2 = 201,
     WaveDistance42 = 72,
