@@ -889,6 +889,7 @@ namespace HedgeHog.Alice.Client {
         if (TradingMacrosCopy.Length > 0) {
           if (IsInVirtualTrading) {
             var vt = (VirtualTradesManager)tradesManager;
+            vt.ServerTime = DateTime.MinValue;
             vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000));
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
@@ -1023,7 +1024,7 @@ namespace HedgeHog.Alice.Client {
             /*10*/, tm.WorkflowStep
           );
           charter.SetTrendLines(tm.SetTrendLines());
-          charter.CalculateLastPrice = tm.CalculateLastPrice;
+          charter.CalculateLastPrice = tm.IsInVitualTrading ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();

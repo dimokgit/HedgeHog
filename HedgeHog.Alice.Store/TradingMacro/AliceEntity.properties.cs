@@ -1769,8 +1769,8 @@ namespace HedgeHog.Alice.Store {
       set {
         _currentPrice = value;
         if (RateLast != null && !double.IsNaN(RateLast.PriceAvg1)) {
-          if(!IsInVitualTrading)
-            RateLast.AddTick(_currentPrice);
+          //if(!IsInVitualTrading)
+          //  RateLast.AddTick(_currentPrice);
           RateLast.SetPriceChart();
         }
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);

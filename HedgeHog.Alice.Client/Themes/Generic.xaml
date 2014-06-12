@@ -9,7 +9,7 @@
   >
 
   <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
-  <l:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
+  <hh:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
   <DataTemplate x:Key="CombinedBalanceCellTemplate">
     <WrapPanel>
       <TextBlock Text="{Binding Balance,StringFormat=c0}"/>

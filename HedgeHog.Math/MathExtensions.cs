@@ -913,7 +913,7 @@ namespace HedgeHog {
       return dt.AddMinutes(dt.Minute / minutes * minutes - dt.Minute);
     }
 
-    public static DateTime Round(this DateTime dt) { return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0); }
+    public static DateTime Round(this DateTime dt) { return DateTime.SpecifyKind(new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0), dt.Kind); }
     public static DateTime Round_(this DateTime dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
     public static DateTime Round(this DateTime dt, int period) {
       dt = dt.Round();

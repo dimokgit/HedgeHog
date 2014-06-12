@@ -36,6 +36,41 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    private CorridorStatistics ScanCorridorByDistance3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToArray());
+      var ratesPrev = from r0 in ratesAll.Take(CorridorDistance + 1)
+                      join r1 in ratesAll.Skip(CorridorDistance + 1) on r0.StartDate.TimeOfDay equals r1.StartDate.TimeOfDay into rg
+                      select rg;
+      var list2 = ratesPrev.Aggregate(new List<List<Rate>>(),
+        (list, grp) => {
+          grp.ForEach((r, i) => {
+            if (list.Count < i + 1) list.Add(new List<Rate>());
+            list[i].Add(r);
+          });
+          return list;
+        }
+        );
+      var list3 = list2.Select(list =>
+          (from da in new DateTime((long)list.Select(r => r.StartDate.Ticks / 1000).Average() * 1000).Yield()
+           from rate in list
+           where (rate.StartDate - da).Duration().TotalDays < .5
+           select rate).ToList()
+      );
+      var distances = list3
+        .Where(l => l.Count > CorridorDistance * 0.9)
+        .Select(l => new { distance = l.Distance(), rate = l[0], count = l.Count });
+      var distanceMin = distances.Select(d => d.distance).DefaultIfEmpty().Min();
+      //ratesPrev.Clump(1440)
+      //.Select(c => c.ToArray())
+      //.Where(c => c.Length == 1440)
+      //.Select(c => c.Take(CorridorDistance).ToArray().Distance().Abs())
+      //.Average();
+
+      Func<IList<Rate>, int> scan = rates => distanceMin == 0
+        ? CorridorDistance
+        : rates.TakeWhile(r => r.Distance <= distanceMin).Count();
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorByDistance2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance*2).Reverse().ToArray().FillDistance().ToArray());
       var ratesPrev = from r0 in ratesAll.Take(CorridorDistance+1)
