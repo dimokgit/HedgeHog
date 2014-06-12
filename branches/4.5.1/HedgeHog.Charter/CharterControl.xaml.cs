@@ -1941,7 +1941,9 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
                 SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
                 return rn;
               });
-              SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
+              if (CalculateLastPrice == null)
+                SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), lastRate);
+              //SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
             }
             if (voltsByTick != null) {
               ReAdjustXY(animatedVoltTimeX, animatedVoltValueY, voltsByTick.Length);

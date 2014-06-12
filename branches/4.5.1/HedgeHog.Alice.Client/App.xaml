@@ -3,13 +3,13 @@
   <Application.Resources>
     <ResourceDictionary>
       <!--Converters-->
-      <hh:BoolToColorConverter p7:Key="BoolToColorConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <l:ProfitToColorConverter p7:Key="ProfitToColorConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <hh:DateTimeConverter p7:Key="DateTimeConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <hh:BoolToSrtingConverter p7:Key="BoolToSrtingConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <hh:InvertBooleanConverter p7:Key="InvertBooleanConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <hh:PassThroughConverter p7:Key="PassThroughConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
-      <hh:TemplatedParentDataContextConverter p7:Key="TemplatedParentDataContextConverter" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml" />
+      <hh:BoolToColorConverter x:Key="BoolToColorConverter" />
+      <hh:ProfitToColorConverter x:Key="ProfitToColorConverter" />
+      <hh:DateTimeConverter x:Key="DateTimeConverter" />
+      <hh:BoolToSrtingConverter x:Key="BoolToSrtingConverter"/>
+      <hh:InvertBooleanConverter x:Key="InvertBooleanConverter" />
+      <hh:PassThroughConverter x:Key="PassThroughConverter" />
+      <hh:TemplatedParentDataContextConverter x:Key="TemplatedParentDataContextConverter" />
       <!---->
       <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -21,7 +21,7 @@
         <Setter Property="VerticalAlignment" Value="Center" />
       </Style>
       <!--DataGrid-->
-      <Style TargetType="DataGrid" p7:Key="ReadOnlyDataGridStyle" BasedOn="{StaticResource {x:Type DataGrid}}" xmlns:p7="http://schemas.microsoft.com/winfx/2006/xaml">
+      <Style TargetType="DataGrid" x:Key="ReadOnlyDataGridStyle" BasedOn="{StaticResource {x:Type DataGrid}}">
         <Setter Property="CanUserAddRows" Value="False" />
         <Setter Property="CanUserDeleteRows" Value="False" />
         <Setter Property="VerticalAlignment" Value="Top" />

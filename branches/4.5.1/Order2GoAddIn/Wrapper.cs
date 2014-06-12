@@ -664,7 +664,7 @@ namespace Order2GoAddIn {
           AskLow = Math.Round(r.AskLow, digits), AskOpen = Math.Round(r.AskOpen, digits),
           BidClose = Math.Round(r.BidClose, digits), BidHigh = Math.Round(r.BidHigh, digits),
           BidLow = Math.Round(r.BidLow, digits), BidOpen = Math.Round(r.BidOpen, digits),
-          StartDate2 = r.StartDate,
+          StartDate2 = DateTime.SpecifyKind(r.StartDate, DateTimeKind.Utc),
           Volume = r.Volume
         };
       }

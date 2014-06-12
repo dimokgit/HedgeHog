@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using HedgeHog.Bars;
 using System.Diagnostics;
 using HedgeHog.DB;
+using ReactiveUI;
 
 namespace HedgeHog.Shared {
   public class VirtualTradesManager : ITradesManager {
@@ -54,7 +55,7 @@ namespace HedgeHog.Shared {
       get { return barMinutes; }
       set { barMinutes = value; }
     }
-    public Func< Dictionary<string, List<Rate>>> RatesByPair;
+    public Func< Dictionary<string, ReactiveList<Rate>>> RatesByPair;
 
     Dictionary<string, double> _pipSizeDictionary = new Dictionary<string, double>();
     public double GetPipSize(string pair) { 
@@ -82,9 +83,13 @@ namespace HedgeHog.Shared {
     IList<Rate> _serverTimeRates;
     public DateTime ServerTime {
       get {
-        if(_serverTimeRates == null)
+        if(_serverTimeRates == null || !_serverTimeRates.Any())
           _serverTimeRates = RatesByPair().First().Value;
         return _serverTimeRates.GetVirtualServerTime(barMinutes);
+      }
+      set {
+        if (value == DateTime.MinValue)
+          _serverTimeRates = null;
       }
     }
 

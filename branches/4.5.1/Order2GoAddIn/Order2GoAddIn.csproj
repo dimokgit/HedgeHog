@@ -107,6 +107,7 @@
   <ItemGroup>
     <Compile Include="FXCore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Tick.cs" />
     <None Include="sample1.cs" />
