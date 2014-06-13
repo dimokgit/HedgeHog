@@ -1045,12 +1045,12 @@ namespace HedgeHog.Alice.Client {
           else if (tm.CorridorStartDate.HasValue)
             charter.LineTimeMiddle = tm.CorridorStats.Rates[0];
             charter.LineTimeMiddle = null;
-          if (tm.WaveShortLeft.HasRates)
-            charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
-          else if (tm.LineTimeMin.HasValue)
-            charter.LineTimeMin = tm.LineTimeMin.Value;
-          else
-            charter.LineTimeMin = tm.RatesArray.TakeLast((tm.CorridorDistance*tm.WaveStDevRatio).ToInt()).First().StartDateContinuous;
+            if (tm.WaveShortLeft.HasRates)
+              charter.LineTimeMin = tm.WaveShortLeft.Rates.LastBC().StartDateContinuous;
+            else if (tm.LineTimeMin.HasValue)
+              charter.LineTimeMin = tm.LineTimeMin.Value;
+            else if (tm.LineTimeMinFunc != null)
+              charter.LineTimeMin = tm.LineTimeMinFunc();
           if (tm.WaveShort.HasRates)
             charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
           charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistance).First().StartDateContinuous;
