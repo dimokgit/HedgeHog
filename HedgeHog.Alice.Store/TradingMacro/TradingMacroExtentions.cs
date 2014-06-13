@@ -1326,7 +1326,7 @@ namespace HedgeHog.Alice.Store {
         if (!IsInVitualTrading)
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
-        var framesBack = 3;
+        var framesBack = BarsCountCount;
         var barsCountTotal = BarsCount * framesBack;
         var actionBlock = new ActionBlock<Action>(a => a());
         Action<Order2GoAddIn.FXCoreWrapper.RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
@@ -1335,7 +1335,7 @@ namespace HedgeHog.Alice.Store {
           PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17 * 60 + 24 * 60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0);
-        var internalRateCount = BarsCount * 2;
+        var internalRateCount = barsCountTotal;
         _replayRates = GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt);
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
@@ -1384,6 +1384,7 @@ namespace HedgeHog.Alice.Store {
         LastTrade = new Trade();
         _timeFrameHeights.Clear();
         FractalTimes = FractalTimes.Take(0);
+        LineTimeMinFunc = null;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2780,6 +2781,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance: return ScanCorridorByDistance;
         case ScanCorridorFunction.Distance2: return ScanCorridorByDistance2;
         case ScanCorridorFunction.Distance3: return ScanCorridorByDistance3;
+        case ScanCorridorFunction.Distance5: return ScanCorridorByDistance5;
       }
       throw new NotSupportedException(function + "");
     }

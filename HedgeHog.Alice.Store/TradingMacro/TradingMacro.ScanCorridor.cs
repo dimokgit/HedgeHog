@@ -36,6 +36,29 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    private CorridorStatistics ScanCorridorByDistance5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToList());
+      var dateMax = ratesAll[0].StartDate.AddDays(-1);
+      var timeMax = dateMax.TimeOfDay;
+      var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
+      var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
+      var chunks = ratesAll2
+        .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
+        .DistinctUntilChanged(a => a.isIn)
+        .SkipWhile(a => !a.isIn)
+        .Buffer(2)
+        .Where(b => b.Count == 2)
+        .Select(b => ratesAll2.GetRange(b[0].i, b[1].i - b[0].i))
+        .Where(chunk => chunk.Count > CorridorDistance * 0.9)
+        .Select(chunk => chunk.Distance())
+        .ToArray();
+      var distanceMin = chunks.DefaultIfEmpty().Min();
+
+      Func<IList<Rate>, int> scan = rates => distanceMin == 0
+        ? CorridorDistance
+        : rates.TakeWhile(r => r.Distance <= distanceMin).Count();
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorByDistance3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToArray());
       var ratesPrev = from r0 in ratesAll.Take(CorridorDistance + 1)

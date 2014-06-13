@@ -1923,6 +1923,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle3: {
                 #region firstTime
                 if (firstTime) {
+                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2831,7 +2832,7 @@ namespace HedgeHog.Alice.Store {
         _adjustEnterLevels();
       #endregion
     }
-
+    public Func<DateTime> LineTimeMinFunc;
     private static void BroadcastCloseAllTrades() {
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
     }

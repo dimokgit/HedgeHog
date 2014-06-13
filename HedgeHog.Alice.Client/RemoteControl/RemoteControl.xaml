@@ -429,7 +429,7 @@
               <StackPanel VerticalAlignment="Center">
                 <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}"
                          Background="{Binding HasCorridor,Converter={StaticResource BoolToColorConverter},ConverterParameter=White|Pink|White}" >
-              <TextBlock Text="{Binding LastRatePullTime,StringFormat=HH:mm:ss ddd}">
+              <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd HH:mm ddd}">
                 <TextBlock.ToolTip>
                   <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd/yyyy HH:mm}"/>
                 </TextBlock.ToolTip>
