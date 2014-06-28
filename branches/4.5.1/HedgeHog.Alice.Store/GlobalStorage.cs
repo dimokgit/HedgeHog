@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Data.Objects;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,12 +10,12 @@ using HedgeHog.DB;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Data.Objects;
 using System.Windows.Data;
 using NotifyCollectionChangedWrapper;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Threading;
+using System.Data.Entity.Core.Objects;
 
 namespace HedgeHog.Alice.Store {
   public class GlobalStorage :Models.ModelBase{
@@ -153,7 +152,7 @@ namespace HedgeHog.Alice.Store {
           if (_context == null)
             if (!IsLocalDB) {
               _context = new AliceEntities();
-              _context.ObjectMaterialized += new System.Data.Objects.ObjectMaterializedEventHandler(_context_ObjectMaterialized);
+              _context.ObjectMaterialized += new System.Data.Entity.Core.Objects.ObjectMaterializedEventHandler(_context_ObjectMaterialized);
             } else
               if (false && GalaSoft.MvvmLight.ViewModelBase.IsInDesignModeStatic)
                 _context = new AliceEntities("metadata=res://*/Models.Alice.csdl|res://*/Models.Alice.ssdl|res://*/Models.Alice.msl;provider=System.Data.SqlServerCe.3.5;provider connection string=\"Data Source=Store\\Alice.sdf\"");
@@ -180,7 +179,7 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    static void _context_ObjectMaterialized(object sender, System.Data.Objects.ObjectMaterializedEventArgs e) {
+    static void _context_ObjectMaterialized(object sender, System.Data.Entity.Core.Objects.ObjectMaterializedEventArgs e) {
       OnAliceMaterializer(e);
     }
     public static AliceEntities AliceContext { get { return Context; } }
@@ -212,7 +211,7 @@ namespace HedgeHog.Alice.Store {
     private static AliceEntities InitAliceEntityContext() {
       var path = DatabasePath;
       var context = new AliceEntities();
-      var storeConn = ((System.Data.EntityClient.EntityConnection)(context.Connection)).StoreConnection;
+      var storeConn = ((System.Data.Entity.Core.EntityClient.EntityConnection)(context.Connection)).StoreConnection;
       storeConn.ConnectionString = "Data Source=" + path;// +"\\Store\\Alice.sdf";
       return context;
     }

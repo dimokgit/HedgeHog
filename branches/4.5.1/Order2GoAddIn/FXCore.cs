@@ -298,7 +298,6 @@ namespace Order2GoAddIn {
 
     public const string SessionStatusPropertyName = "SessionStatus";
     private TradingServerSessionStatus _sessionStatus =  TradingServerSessionStatus.Disconnected;
-    private IDisposable _isLoggedInSubscription;
     public TradingServerSessionStatus SessionStatus {
       get { return _sessionStatus; }
       set {

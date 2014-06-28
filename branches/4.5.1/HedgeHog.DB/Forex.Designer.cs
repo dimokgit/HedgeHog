@@ -9,9 +9,9 @@
 
 using System;
 using System.ComponentModel;
-using System.Data.EntityClient;
-using System.Data.Objects;
-using System.Data.Objects.DataClasses;
+using System.Data.Entity.Core.EntityClient;
+using System.Data.Entity.Core.Objects;
+using System.Data.Entity.Core.Objects.DataClasses;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Serialization;
@@ -19,7 +19,7 @@ using System.Xml.Serialization;
 [assembly: EdmSchemaAttribute()]
 #region EDM Relationship Metadata
 
-[assembly: EdmRelationshipAttribute("ForexModel", "FK_Event_EventLevel", "EventLevel", System.Data.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.DB.EventLevel__News), "Event", System.Data.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.DB.Event__News), true)]
+[assembly: EdmRelationshipAttribute("ForexModel", "FK_Event_EventLevel", "EventLevel", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.DB.EventLevel__News), "Event", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.DB.Event__News), true)]
 
 #endregion
 
@@ -721,7 +721,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -740,7 +740,7 @@ namespace HedgeHog.DB
                 {
                     OnIDChanging(value);
                     ReportPropertyChanging("ID");
-                    _ID = StructuralObject.SetValidValue(value);
+                    _ID = StructuralObject.SetValidValue(value, "ID");
                     ReportPropertyChanged("ID");
                     OnIDChanged();
                 }
@@ -765,7 +765,7 @@ namespace HedgeHog.DB
             {
                 OnTimeFromChanging(value);
                 ReportPropertyChanging("TimeFrom");
-                _TimeFrom = StructuralObject.SetValidValue(value);
+                _TimeFrom = StructuralObject.SetValidValue(value, "TimeFrom");
                 ReportPropertyChanged("TimeFrom");
                 OnTimeFromChanged();
             }
@@ -789,7 +789,7 @@ namespace HedgeHog.DB
             {
                 OnTimeToChanging(value);
                 ReportPropertyChanging("TimeTo");
-                _TimeTo = StructuralObject.SetValidValue(value);
+                _TimeTo = StructuralObject.SetValidValue(value, "TimeTo");
                 ReportPropertyChanged("TimeTo");
                 OnTimeToChanged();
             }
@@ -800,7 +800,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -832,7 +831,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -849,7 +848,7 @@ namespace HedgeHog.DB
             {
                 OnLevelChanging(value);
                 ReportPropertyChanging("Level");
-                _Level = StructuralObject.SetValidValue(value, false);
+                _Level = StructuralObject.SetValidValue(value, false, "Level");
                 ReportPropertyChanged("Level");
                 OnLevelChanged();
             }
@@ -875,7 +874,7 @@ namespace HedgeHog.DB
                 {
                     OnNameChanging(value);
                     ReportPropertyChanging("Name");
-                    _Name = StructuralObject.SetValidValue(value, false);
+                    _Name = StructuralObject.SetValidValue(value, false, "Name");
                     ReportPropertyChanged("Name");
                     OnNameChanged();
                 }
@@ -902,7 +901,7 @@ namespace HedgeHog.DB
                 {
                     OnTimeChanging(value);
                     ReportPropertyChanging("Time");
-                    _Time = StructuralObject.SetValidValue(value);
+                    _Time = StructuralObject.SetValidValue(value, "Time");
                     ReportPropertyChanged("Time");
                     OnTimeChanged();
                 }
@@ -929,7 +928,7 @@ namespace HedgeHog.DB
                 {
                     OnCountryChanging(value);
                     ReportPropertyChanging("Country");
-                    _Country = StructuralObject.SetValidValue(value, false);
+                    _Country = StructuralObject.SetValidValue(value, false, "Country");
                     ReportPropertyChanged("Country");
                     OnCountryChanged();
                 }
@@ -941,7 +940,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
         #region Navigation Properties
     
         /// <summary>
@@ -1013,7 +1011,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -1032,7 +1030,7 @@ namespace HedgeHog.DB
                 {
                     OnIdChanging(value);
                     ReportPropertyChanging("Id");
-                    _Id = StructuralObject.SetValidValue(value, false);
+                    _Id = StructuralObject.SetValidValue(value, false, "Id");
                     ReportPropertyChanged("Id");
                     OnIdChanged();
                 }
@@ -1057,7 +1055,7 @@ namespace HedgeHog.DB
             {
                 OnNameChanging(value);
                 ReportPropertyChanging("Name");
-                _Name = StructuralObject.SetValidValue(value, false);
+                _Name = StructuralObject.SetValidValue(value, false, "Name");
                 ReportPropertyChanged("Name");
                 OnNameChanged();
             }
@@ -1081,7 +1079,7 @@ namespace HedgeHog.DB
             {
                 OnLevelChanging(value);
                 ReportPropertyChanging("Level");
-                _Level = StructuralObject.SetValidValue(value);
+                _Level = StructuralObject.SetValidValue(value, "Level");
                 ReportPropertyChanged("Level");
                 OnLevelChanged();
             }
@@ -1092,7 +1090,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
         #region Navigation Properties
     
         /// <summary>
@@ -1156,7 +1153,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -1173,7 +1170,7 @@ namespace HedgeHog.DB
             {
                 OnMonthChanging(value);
                 ReportPropertyChanging("Month");
-                _Month = StructuralObject.SetValidValue(value);
+                _Month = StructuralObject.SetValidValue(value, "Month");
                 ReportPropertyChanged("Month");
                 OnMonthChanged();
             }
@@ -1199,7 +1196,7 @@ namespace HedgeHog.DB
                 {
                     OnPairChanging(value);
                     ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
+                    _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                     ReportPropertyChanged("Pair");
                     OnPairChanged();
                 }
@@ -1226,7 +1223,7 @@ namespace HedgeHog.DB
                 {
                     OnPeriodChanging(value);
                     ReportPropertyChanging("Period");
-                    _Period = StructuralObject.SetValidValue(value);
+                    _Period = StructuralObject.SetValidValue(value, "Period");
                     ReportPropertyChanged("Period");
                     OnPeriodChanged();
                 }
@@ -1251,7 +1248,7 @@ namespace HedgeHog.DB
             {
                 OnStDevAvgChanging(value);
                 ReportPropertyChanging("StDevAvg");
-                _StDevAvg = StructuralObject.SetValidValue(value);
+                _StDevAvg = StructuralObject.SetValidValue(value, "StDevAvg");
                 ReportPropertyChanged("StDevAvg");
                 OnStDevAvgChanged();
             }
@@ -1275,7 +1272,7 @@ namespace HedgeHog.DB
             {
                 OnStDevStDevChanging(value);
                 ReportPropertyChanging("StDevStDev");
-                _StDevStDev = StructuralObject.SetValidValue(value);
+                _StDevStDev = StructuralObject.SetValidValue(value, "StDevStDev");
                 ReportPropertyChanged("StDevStDev");
                 OnStDevStDevChanged();
             }
@@ -1299,7 +1296,7 @@ namespace HedgeHog.DB
             {
                 OnCountChanging(value);
                 ReportPropertyChanging("Count");
-                _Count = StructuralObject.SetValidValue(value);
+                _Count = StructuralObject.SetValidValue(value, "Count");
                 ReportPropertyChanged("Count");
                 OnCountChanged();
             }
@@ -1325,7 +1322,7 @@ namespace HedgeHog.DB
                 {
                     OnDateChanging(value);
                     ReportPropertyChanging("Date");
-                    _Date = StructuralObject.SetValidValue(value);
+                    _Date = StructuralObject.SetValidValue(value, "Date");
                     ReportPropertyChanged("Date");
                     OnDateChanged();
                 }
@@ -1337,7 +1334,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -1387,7 +1383,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -1404,7 +1400,7 @@ namespace HedgeHog.DB
             {
                 OnPairChanging(value);
                 ReportPropertyChanging("Pair");
-                _Pair = StructuralObject.SetValidValue(value, false);
+                _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                 ReportPropertyChanged("Pair");
                 OnPairChanged();
             }
@@ -1428,7 +1424,7 @@ namespace HedgeHog.DB
             {
                 OnPeriodChanging(value);
                 ReportPropertyChanging("Period");
-                _Period = StructuralObject.SetValidValue(value);
+                _Period = StructuralObject.SetValidValue(value, "Period");
                 ReportPropertyChanged("Period");
                 OnPeriodChanged();
             }
@@ -1452,7 +1448,7 @@ namespace HedgeHog.DB
             {
                 OnStartDateChanging(value);
                 ReportPropertyChanging("StartDate");
-                _StartDate = StructuralObject.SetValidValue(value);
+                _StartDate = StructuralObject.SetValidValue(value, "StartDate");
                 ReportPropertyChanged("StartDate");
                 OnStartDateChanged();
             }
@@ -1476,7 +1472,7 @@ namespace HedgeHog.DB
             {
                 OnAskHighChanging(value);
                 ReportPropertyChanging("AskHigh");
-                _AskHigh = StructuralObject.SetValidValue(value);
+                _AskHigh = StructuralObject.SetValidValue(value, "AskHigh");
                 ReportPropertyChanged("AskHigh");
                 OnAskHighChanged();
             }
@@ -1500,7 +1496,7 @@ namespace HedgeHog.DB
             {
                 OnAskLowChanging(value);
                 ReportPropertyChanging("AskLow");
-                _AskLow = StructuralObject.SetValidValue(value);
+                _AskLow = StructuralObject.SetValidValue(value, "AskLow");
                 ReportPropertyChanged("AskLow");
                 OnAskLowChanged();
             }
@@ -1524,7 +1520,7 @@ namespace HedgeHog.DB
             {
                 OnAskOpenChanging(value);
                 ReportPropertyChanging("AskOpen");
-                _AskOpen = StructuralObject.SetValidValue(value);
+                _AskOpen = StructuralObject.SetValidValue(value, "AskOpen");
                 ReportPropertyChanged("AskOpen");
                 OnAskOpenChanged();
             }
@@ -1548,7 +1544,7 @@ namespace HedgeHog.DB
             {
                 OnAskCloseChanging(value);
                 ReportPropertyChanging("AskClose");
-                _AskClose = StructuralObject.SetValidValue(value);
+                _AskClose = StructuralObject.SetValidValue(value, "AskClose");
                 ReportPropertyChanged("AskClose");
                 OnAskCloseChanged();
             }
@@ -1572,7 +1568,7 @@ namespace HedgeHog.DB
             {
                 OnBidHighChanging(value);
                 ReportPropertyChanging("BidHigh");
-                _BidHigh = StructuralObject.SetValidValue(value);
+                _BidHigh = StructuralObject.SetValidValue(value, "BidHigh");
                 ReportPropertyChanged("BidHigh");
                 OnBidHighChanged();
             }
@@ -1596,7 +1592,7 @@ namespace HedgeHog.DB
             {
                 OnBidLowChanging(value);
                 ReportPropertyChanging("BidLow");
-                _BidLow = StructuralObject.SetValidValue(value);
+                _BidLow = StructuralObject.SetValidValue(value, "BidLow");
                 ReportPropertyChanged("BidLow");
                 OnBidLowChanged();
             }
@@ -1620,7 +1616,7 @@ namespace HedgeHog.DB
             {
                 OnBidOpenChanging(value);
                 ReportPropertyChanging("BidOpen");
-                _BidOpen = StructuralObject.SetValidValue(value);
+                _BidOpen = StructuralObject.SetValidValue(value, "BidOpen");
                 ReportPropertyChanged("BidOpen");
                 OnBidOpenChanged();
             }
@@ -1644,7 +1640,7 @@ namespace HedgeHog.DB
             {
                 OnBidCloseChanging(value);
                 ReportPropertyChanging("BidClose");
-                _BidClose = StructuralObject.SetValidValue(value);
+                _BidClose = StructuralObject.SetValidValue(value, "BidClose");
                 ReportPropertyChanged("BidClose");
                 OnBidCloseChanged();
             }
@@ -1668,7 +1664,7 @@ namespace HedgeHog.DB
             {
                 OnVolumeChanging(value);
                 ReportPropertyChanging("Volume");
-                _Volume = StructuralObject.SetValidValue(value);
+                _Volume = StructuralObject.SetValidValue(value, "Volume");
                 ReportPropertyChanged("Volume");
                 OnVolumeChanged();
             }
@@ -1694,7 +1690,7 @@ namespace HedgeHog.DB
                 {
                     OnIDChanging(value);
                     ReportPropertyChanging("ID");
-                    _ID = StructuralObject.SetValidValue(value);
+                    _ID = StructuralObject.SetValidValue(value, "ID");
                     ReportPropertyChanged("ID");
                     OnIDChanged();
                 }
@@ -1719,7 +1715,7 @@ namespace HedgeHog.DB
             {
                 OnStartDateLocalChanging(value);
                 ReportPropertyChanging("StartDateLocal");
-                _StartDateLocal = StructuralObject.SetValidValue(value);
+                _StartDateLocal = StructuralObject.SetValidValue(value, "StartDateLocal");
                 ReportPropertyChanged("StartDateLocal");
                 OnStartDateLocalChanged();
             }
@@ -1743,7 +1739,7 @@ namespace HedgeHog.DB
             {
                 OnRowChanging(value);
                 ReportPropertyChanging("Row");
-                _Row = StructuralObject.SetValidValue(value);
+                _Row = StructuralObject.SetValidValue(value, "Row");
                 ReportPropertyChanged("Row");
                 OnRowChanged();
             }
@@ -1754,7 +1750,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -1790,7 +1785,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -1809,7 +1804,7 @@ namespace HedgeHog.DB
                 {
                     OnPairChanging(value);
                     ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
+                    _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                     ReportPropertyChanged("Pair");
                     OnPairChanged();
                 }
@@ -1836,7 +1831,7 @@ namespace HedgeHog.DB
                 {
                     OnPeriodChanging(value);
                     ReportPropertyChanging("Period");
-                    _Period = StructuralObject.SetValidValue(value);
+                    _Period = StructuralObject.SetValidValue(value, "Period");
                     ReportPropertyChanged("Period");
                     OnPeriodChanged();
                 }
@@ -1863,7 +1858,7 @@ namespace HedgeHog.DB
                 {
                     OnStartDateChanging(value);
                     ReportPropertyChanging("StartDate");
-                    _StartDate = StructuralObject.SetValidValue(value);
+                    _StartDate = StructuralObject.SetValidValue(value, "StartDate");
                     ReportPropertyChanged("StartDate");
                     OnStartDateChanged();
                 }
@@ -1888,7 +1883,7 @@ namespace HedgeHog.DB
             {
                 OnAvgHeightChanging(value);
                 ReportPropertyChanging("AvgHeight");
-                _AvgHeight = StructuralObject.SetValidValue(value);
+                _AvgHeight = StructuralObject.SetValidValue(value, "AvgHeight");
                 ReportPropertyChanged("AvgHeight");
                 OnAvgHeightChanged();
             }
@@ -1914,7 +1909,7 @@ namespace HedgeHog.DB
                 {
                     OnLengthChanging(value);
                     ReportPropertyChanging("Length");
-                    _Length = StructuralObject.SetValidValue(value);
+                    _Length = StructuralObject.SetValidValue(value, "Length");
                     ReportPropertyChanged("Length");
                     OnLengthChanged();
                 }
@@ -1939,7 +1934,7 @@ namespace HedgeHog.DB
             {
                 OnStDevHeightChanging(value);
                 ReportPropertyChanging("StDevHeight");
-                _StDevHeight = StructuralObject.SetValidValue(value);
+                _StDevHeight = StructuralObject.SetValidValue(value, "StDevHeight");
                 ReportPropertyChanged("StDevHeight");
                 OnStDevHeightChanged();
             }
@@ -1950,7 +1945,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -1986,7 +1980,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -2005,7 +1999,7 @@ namespace HedgeHog.DB
                 {
                     OnPairChanging(value);
                     ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
+                    _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                     ReportPropertyChanged("Pair");
                     OnPairChanged();
                 }
@@ -2030,7 +2024,7 @@ namespace HedgeHog.DB
             {
                 OnDigitsChanging(value);
                 ReportPropertyChanging("Digits");
-                _Digits = StructuralObject.SetValidValue(value);
+                _Digits = StructuralObject.SetValidValue(value, "Digits");
                 ReportPropertyChanged("Digits");
                 OnDigitsChanged();
             }
@@ -2054,7 +2048,7 @@ namespace HedgeHog.DB
             {
                 OnPipCostChanging(value);
                 ReportPropertyChanging("PipCost");
-                _PipCost = StructuralObject.SetValidValue(value);
+                _PipCost = StructuralObject.SetValidValue(value, "PipCost");
                 ReportPropertyChanged("PipCost");
                 OnPipCostChanged();
             }
@@ -2078,7 +2072,7 @@ namespace HedgeHog.DB
             {
                 OnMMRChanging(value);
                 ReportPropertyChanging("MMR");
-                _MMR = StructuralObject.SetValidValue(value);
+                _MMR = StructuralObject.SetValidValue(value, "MMR");
                 ReportPropertyChanged("MMR");
                 OnMMRChanged();
             }
@@ -2102,7 +2096,7 @@ namespace HedgeHog.DB
             {
                 OnPipSizeChanging(value);
                 ReportPropertyChanging("PipSize");
-                _PipSize = StructuralObject.SetValidValue(value);
+                _PipSize = StructuralObject.SetValidValue(value, "PipSize");
                 ReportPropertyChanged("PipSize");
                 OnPipSizeChanged();
             }
@@ -2126,7 +2120,7 @@ namespace HedgeHog.DB
             {
                 OnBaseUnitSizeChanging(value);
                 ReportPropertyChanging("BaseUnitSize");
-                _BaseUnitSize = StructuralObject.SetValidValue(value);
+                _BaseUnitSize = StructuralObject.SetValidValue(value, "BaseUnitSize");
                 ReportPropertyChanged("BaseUnitSize");
                 OnBaseUnitSizeChanged();
             }
@@ -2137,7 +2131,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -2165,7 +2158,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -2184,7 +2177,7 @@ namespace HedgeHog.DB
                 {
                     OnTimeChanging(value);
                     ReportPropertyChanging("Time");
-                    _Time = StructuralObject.SetValidValue(value);
+                    _Time = StructuralObject.SetValidValue(value, "Time");
                     ReportPropertyChanged("Time");
                     OnTimeChanged();
                 }
@@ -2209,7 +2202,7 @@ namespace HedgeHog.DB
             {
                 OnEventTypeChanging(value);
                 ReportPropertyChanging("EventType");
-                _EventType = StructuralObject.SetValidValue(value, false);
+                _EventType = StructuralObject.SetValidValue(value, false, "EventType");
                 ReportPropertyChanged("EventType");
                 OnEventTypeChanged();
             }
@@ -2233,7 +2226,7 @@ namespace HedgeHog.DB
             {
                 OnTimeLocalChanging(value);
                 ReportPropertyChanging("TimeLocal");
-                _TimeLocal = StructuralObject.SetValidValue(value);
+                _TimeLocal = StructuralObject.SetValidValue(value, "TimeLocal");
                 ReportPropertyChanged("TimeLocal");
                 OnTimeLocalChanged();
             }
@@ -2244,7 +2237,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -2276,7 +2268,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -2295,7 +2287,7 @@ namespace HedgeHog.DB
                 {
                     OnUidChanging(value);
                     ReportPropertyChanging("Uid");
-                    _Uid = StructuralObject.SetValidValue(value);
+                    _Uid = StructuralObject.SetValidValue(value, "Uid");
                     ReportPropertyChanged("Uid");
                     OnUidChanged();
                 }
@@ -2320,7 +2312,7 @@ namespace HedgeHog.DB
             {
                 OnMinimumGrossChanging(value);
                 ReportPropertyChanging("MinimumGross");
-                _MinimumGross = StructuralObject.SetValidValue(value);
+                _MinimumGross = StructuralObject.SetValidValue(value, "MinimumGross");
                 ReportPropertyChanged("MinimumGross");
                 OnMinimumGrossChanged();
             }
@@ -2344,7 +2336,7 @@ namespace HedgeHog.DB
             {
                 OnMaximumLotChanging(value);
                 ReportPropertyChanging("MaximumLot");
-                _MaximumLot = StructuralObject.SetValidValue(value);
+                _MaximumLot = StructuralObject.SetValidValue(value, "MaximumLot");
                 ReportPropertyChanged("MaximumLot");
                 OnMaximumLotChanged();
             }
@@ -2368,7 +2360,7 @@ namespace HedgeHog.DB
             {
                 OnProfitabilityChanging(value);
                 ReportPropertyChanging("Profitability");
-                _Profitability = StructuralObject.SetValidValue(value);
+                _Profitability = StructuralObject.SetValidValue(value, "Profitability");
                 ReportPropertyChanged("Profitability");
                 OnProfitabilityChanged();
             }
@@ -2392,7 +2384,7 @@ namespace HedgeHog.DB
             {
                 OnTimestampChanging(value);
                 ReportPropertyChanging("Timestamp");
-                _Timestamp = StructuralObject.SetValidValue(value);
+                _Timestamp = StructuralObject.SetValidValue(value, "Timestamp");
                 ReportPropertyChanged("Timestamp");
                 OnTimestampChanged();
             }
@@ -2416,7 +2408,7 @@ namespace HedgeHog.DB
             {
                 OnSuperUidChanging(value);
                 ReportPropertyChanging("SuperUid");
-                _SuperUid = StructuralObject.SetValidValue(value);
+                _SuperUid = StructuralObject.SetValidValue(value, "SuperUid");
                 ReportPropertyChanged("SuperUid");
                 OnSuperUidChanged();
             }
@@ -2440,7 +2432,7 @@ namespace HedgeHog.DB
             {
                 OnDateMinChanging(value);
                 ReportPropertyChanging("DateMin");
-                _DateMin = StructuralObject.SetValidValue(value);
+                _DateMin = StructuralObject.SetValidValue(value, "DateMin");
                 ReportPropertyChanged("DateMin");
                 OnDateMinChanged();
             }
@@ -2464,7 +2456,7 @@ namespace HedgeHog.DB
             {
                 OnDateMaxChanging(value);
                 ReportPropertyChanging("DateMax");
-                _DateMax = StructuralObject.SetValidValue(value);
+                _DateMax = StructuralObject.SetValidValue(value, "DateMax");
                 ReportPropertyChanged("DateMax");
                 OnDateMaxChanged();
             }
@@ -2488,7 +2480,7 @@ namespace HedgeHog.DB
             {
                 OnBallanceMaxChanging(value);
                 ReportPropertyChanging("BallanceMax");
-                _BallanceMax = StructuralObject.SetValidValue(value);
+                _BallanceMax = StructuralObject.SetValidValue(value, "BallanceMax");
                 ReportPropertyChanged("BallanceMax");
                 OnBallanceMaxChanged();
             }
@@ -2499,7 +2491,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -2537,7 +2528,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -2556,7 +2547,7 @@ namespace HedgeHog.DB
                 {
                     OnIdChanging(value);
                     ReportPropertyChanging("Id");
-                    _Id = StructuralObject.SetValidValue(value);
+                    _Id = StructuralObject.SetValidValue(value, "Id");
                     ReportPropertyChanged("Id");
                     OnIdChanged();
                 }
@@ -2581,7 +2572,7 @@ namespace HedgeHog.DB
             {
                 OnTimeChanging(value);
                 ReportPropertyChanging("Time");
-                _Time = StructuralObject.SetValidValue(value);
+                _Time = StructuralObject.SetValidValue(value, "Time");
                 ReportPropertyChanged("Time");
                 OnTimeChanged();
             }
@@ -2605,7 +2596,7 @@ namespace HedgeHog.DB
             {
                 OnPriceChanging(value);
                 ReportPropertyChanging("Price");
-                _Price = StructuralObject.SetValidValue(value);
+                _Price = StructuralObject.SetValidValue(value, "Price");
                 ReportPropertyChanged("Price");
                 OnPriceChanged();
             }
@@ -2629,7 +2620,7 @@ namespace HedgeHog.DB
             {
                 OnValue1Changing(value);
                 ReportPropertyChanging("Value1");
-                _Value1 = StructuralObject.SetValidValue(value);
+                _Value1 = StructuralObject.SetValidValue(value, "Value1");
                 ReportPropertyChanged("Value1");
                 OnValue1Changed();
             }
@@ -2653,7 +2644,7 @@ namespace HedgeHog.DB
             {
                 OnValue2Changing(value);
                 ReportPropertyChanging("Value2");
-                _Value2 = StructuralObject.SetValidValue(value);
+                _Value2 = StructuralObject.SetValidValue(value, "Value2");
                 ReportPropertyChanged("Value2");
                 OnValue2Changed();
             }
@@ -2677,7 +2668,7 @@ namespace HedgeHog.DB
             {
                 OnValue3Changing(value);
                 ReportPropertyChanging("Value3");
-                _Value3 = StructuralObject.SetValidValue(value);
+                _Value3 = StructuralObject.SetValidValue(value, "Value3");
                 ReportPropertyChanged("Value3");
                 OnValue3Changed();
             }
@@ -2701,7 +2692,7 @@ namespace HedgeHog.DB
             {
                 OnNameChanging(value);
                 ReportPropertyChanging("Name");
-                _Name = StructuralObject.SetValidValue(value, false);
+                _Name = StructuralObject.SetValidValue(value, false, "Name");
                 ReportPropertyChanged("Name");
                 OnNameChanged();
             }
@@ -2712,7 +2703,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -2768,7 +2758,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -2787,7 +2777,7 @@ namespace HedgeHog.DB
                 {
                     OnIdChanging(value);
                     ReportPropertyChanging("Id");
-                    _Id = StructuralObject.SetValidValue(value, false);
+                    _Id = StructuralObject.SetValidValue(value, false, "Id");
                     ReportPropertyChanged("Id");
                     OnIdChanged();
                 }
@@ -2812,7 +2802,7 @@ namespace HedgeHog.DB
             {
                 OnBuyChanging(value);
                 ReportPropertyChanging("Buy");
-                _Buy = StructuralObject.SetValidValue(value);
+                _Buy = StructuralObject.SetValidValue(value, "Buy");
                 ReportPropertyChanged("Buy");
                 OnBuyChanged();
             }
@@ -2836,7 +2826,7 @@ namespace HedgeHog.DB
             {
                 OnPLChanging(value);
                 ReportPropertyChanging("PL");
-                _PL = StructuralObject.SetValidValue(value);
+                _PL = StructuralObject.SetValidValue(value, "PL");
                 ReportPropertyChanged("PL");
                 OnPLChanged();
             }
@@ -2860,7 +2850,7 @@ namespace HedgeHog.DB
             {
                 OnGrossPLChanging(value);
                 ReportPropertyChanging("GrossPL");
-                _GrossPL = StructuralObject.SetValidValue(value);
+                _GrossPL = StructuralObject.SetValidValue(value, "GrossPL");
                 ReportPropertyChanged("GrossPL");
                 OnGrossPLChanged();
             }
@@ -2884,7 +2874,7 @@ namespace HedgeHog.DB
             {
                 OnLotChanging(value);
                 ReportPropertyChanging("Lot");
-                _Lot = StructuralObject.SetValidValue(value);
+                _Lot = StructuralObject.SetValidValue(value, "Lot");
                 ReportPropertyChanged("Lot");
                 OnLotChanged();
             }
@@ -2908,7 +2898,7 @@ namespace HedgeHog.DB
             {
                 OnPairChanging(value);
                 ReportPropertyChanging("Pair");
-                _Pair = StructuralObject.SetValidValue(value, false);
+                _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                 ReportPropertyChanged("Pair");
                 OnPairChanged();
             }
@@ -2932,7 +2922,7 @@ namespace HedgeHog.DB
             {
                 OnTimeOpenChanging(value);
                 ReportPropertyChanging("TimeOpen");
-                _TimeOpen = StructuralObject.SetValidValue(value);
+                _TimeOpen = StructuralObject.SetValidValue(value, "TimeOpen");
                 ReportPropertyChanged("TimeOpen");
                 OnTimeOpenChanged();
             }
@@ -2956,7 +2946,7 @@ namespace HedgeHog.DB
             {
                 OnTimeCloseChanging(value);
                 ReportPropertyChanging("TimeClose");
-                _TimeClose = StructuralObject.SetValidValue(value);
+                _TimeClose = StructuralObject.SetValidValue(value, "TimeClose");
                 ReportPropertyChanged("TimeClose");
                 OnTimeCloseChanged();
             }
@@ -2980,7 +2970,7 @@ namespace HedgeHog.DB
             {
                 OnAccountIdChanging(value);
                 ReportPropertyChanging("AccountId");
-                _AccountId = StructuralObject.SetValidValue(value, false);
+                _AccountId = StructuralObject.SetValidValue(value, false, "AccountId");
                 ReportPropertyChanged("AccountId");
                 OnAccountIdChanged();
             }
@@ -3004,7 +2994,7 @@ namespace HedgeHog.DB
             {
                 OnCommissionChanging(value);
                 ReportPropertyChanging("Commission");
-                _Commission = StructuralObject.SetValidValue(value);
+                _Commission = StructuralObject.SetValidValue(value, "Commission");
                 ReportPropertyChanged("Commission");
                 OnCommissionChanged();
             }
@@ -3028,7 +3018,7 @@ namespace HedgeHog.DB
             {
                 OnIsVirtualChanging(value);
                 ReportPropertyChanging("IsVirtual");
-                _IsVirtual = StructuralObject.SetValidValue(value);
+                _IsVirtual = StructuralObject.SetValidValue(value, "IsVirtual");
                 ReportPropertyChanged("IsVirtual");
                 OnIsVirtualChanged();
             }
@@ -3052,7 +3042,7 @@ namespace HedgeHog.DB
             {
                 OnTimeStampChanging(value);
                 ReportPropertyChanging("TimeStamp");
-                _TimeStamp = StructuralObject.SetValidValue(value);
+                _TimeStamp = StructuralObject.SetValidValue(value, "TimeStamp");
                 ReportPropertyChanged("TimeStamp");
                 OnTimeStampChanged();
             }
@@ -3076,7 +3066,7 @@ namespace HedgeHog.DB
             {
                 OnCorridorHeightInPipsChanging(value);
                 ReportPropertyChanging("CorridorHeightInPips");
-                _CorridorHeightInPips = StructuralObject.SetValidValue(value);
+                _CorridorHeightInPips = StructuralObject.SetValidValue(value, "CorridorHeightInPips");
                 ReportPropertyChanged("CorridorHeightInPips");
                 OnCorridorHeightInPipsChanged();
             }
@@ -3100,7 +3090,7 @@ namespace HedgeHog.DB
             {
                 OnCorridorMinutesBackChanging(value);
                 ReportPropertyChanging("CorridorMinutesBack");
-                _CorridorMinutesBack = StructuralObject.SetValidValue(value);
+                _CorridorMinutesBack = StructuralObject.SetValidValue(value, "CorridorMinutesBack");
                 ReportPropertyChanged("CorridorMinutesBack");
                 OnCorridorMinutesBackChanged();
             }
@@ -3124,7 +3114,7 @@ namespace HedgeHog.DB
             {
                 OnSessionIdChanging(value);
                 ReportPropertyChanging("SessionId");
-                _SessionId = StructuralObject.SetValidValue(value);
+                _SessionId = StructuralObject.SetValidValue(value, "SessionId");
                 ReportPropertyChanged("SessionId");
                 OnSessionIdChanged();
             }
@@ -3148,7 +3138,7 @@ namespace HedgeHog.DB
             {
                 OnPriceOpenChanging(value);
                 ReportPropertyChanging("PriceOpen");
-                _PriceOpen = StructuralObject.SetValidValue(value);
+                _PriceOpen = StructuralObject.SetValidValue(value, "PriceOpen");
                 ReportPropertyChanged("PriceOpen");
                 OnPriceOpenChanged();
             }
@@ -3172,7 +3162,7 @@ namespace HedgeHog.DB
             {
                 OnPriceCloseChanging(value);
                 ReportPropertyChanging("PriceClose");
-                _PriceClose = StructuralObject.SetValidValue(value);
+                _PriceClose = StructuralObject.SetValidValue(value, "PriceClose");
                 ReportPropertyChanged("PriceClose");
                 OnPriceCloseChanged();
             }
@@ -3196,7 +3186,7 @@ namespace HedgeHog.DB
             {
                 OnSessionInfoChanging(value);
                 ReportPropertyChanging("SessionInfo");
-                _SessionInfo = StructuralObject.SetValidValue(value, true);
+                _SessionInfo = StructuralObject.SetValidValue(value, true, "SessionInfo");
                 ReportPropertyChanged("SessionInfo");
                 OnSessionInfoChanged();
             }
@@ -3220,7 +3210,7 @@ namespace HedgeHog.DB
             {
                 OnRunningBalanceChanging(value);
                 ReportPropertyChanging("RunningBalance");
-                _RunningBalance = StructuralObject.SetValidValue(value);
+                _RunningBalance = StructuralObject.SetValidValue(value, "RunningBalance");
                 ReportPropertyChanged("RunningBalance");
                 OnRunningBalanceChanged();
             }
@@ -3244,7 +3234,7 @@ namespace HedgeHog.DB
             {
                 OnRunningBalanceTotalChanging(value);
                 ReportPropertyChanging("RunningBalanceTotal");
-                _RunningBalanceTotal = StructuralObject.SetValidValue(value);
+                _RunningBalanceTotal = StructuralObject.SetValidValue(value, "RunningBalanceTotal");
                 ReportPropertyChanged("RunningBalanceTotal");
                 OnRunningBalanceTotalChanged();
             }
@@ -3268,7 +3258,7 @@ namespace HedgeHog.DB
             {
                 OnSessionInfo2Changing(value);
                 ReportPropertyChanging("SessionInfo2");
-                _SessionInfo2 = StructuralObject.SetValidValue(value, true);
+                _SessionInfo2 = StructuralObject.SetValidValue(value, true, "SessionInfo2");
                 ReportPropertyChanged("SessionInfo2");
                 OnSessionInfo2Changed();
             }
@@ -3279,7 +3269,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -3309,7 +3298,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -3328,7 +3317,7 @@ namespace HedgeHog.DB
                 {
                     OnTimeChanging(value);
                     ReportPropertyChanging("Time");
-                    _Time = StructuralObject.SetValidValue(value);
+                    _Time = StructuralObject.SetValidValue(value, "Time");
                     ReportPropertyChanged("Time");
                     OnTimeChanged();
                 }
@@ -3355,7 +3344,7 @@ namespace HedgeHog.DB
                 {
                     OnEventTypeChanging(value);
                     ReportPropertyChanging("EventType");
-                    _EventType = StructuralObject.SetValidValue(value, false);
+                    _EventType = StructuralObject.SetValidValue(value, false, "EventType");
                     ReportPropertyChanged("EventType");
                     OnEventTypeChanged();
                 }
@@ -3380,7 +3369,7 @@ namespace HedgeHog.DB
             {
                 OnTimeLocalChanging(value);
                 ReportPropertyChanging("TimeLocal");
-                _TimeLocal = StructuralObject.SetValidValue(value);
+                _TimeLocal = StructuralObject.SetValidValue(value, "TimeLocal");
                 ReportPropertyChanged("TimeLocal");
                 OnTimeLocalChanged();
             }
@@ -3404,7 +3393,7 @@ namespace HedgeHog.DB
             {
                 OnTimeStartChanging(value);
                 ReportPropertyChanging("TimeStart");
-                _TimeStart = StructuralObject.SetValidValue(value);
+                _TimeStart = StructuralObject.SetValidValue(value, "TimeStart");
                 ReportPropertyChanged("TimeStart");
                 OnTimeStartChanged();
             }
@@ -3430,7 +3419,7 @@ namespace HedgeHog.DB
                 {
                     OnTimeStopChanging(value);
                     ReportPropertyChanging("TimeStop");
-                    _TimeStop = StructuralObject.SetValidValue(value);
+                    _TimeStop = StructuralObject.SetValidValue(value, "TimeStop");
                     ReportPropertyChanged("TimeStop");
                     OnTimeStopChanged();
                 }
@@ -3455,7 +3444,7 @@ namespace HedgeHog.DB
             {
                 OnTimeStartLocalChanging(value);
                 ReportPropertyChanging("TimeStartLocal");
-                _TimeStartLocal = StructuralObject.SetValidValue(value);
+                _TimeStartLocal = StructuralObject.SetValidValue(value, "TimeStartLocal");
                 ReportPropertyChanged("TimeStartLocal");
                 OnTimeStartLocalChanged();
             }
@@ -3479,7 +3468,7 @@ namespace HedgeHog.DB
             {
                 OnTimeStopLocalChanging(value);
                 ReportPropertyChanging("TimeStopLocal");
-                _TimeStopLocal = StructuralObject.SetValidValue(value);
+                _TimeStopLocal = StructuralObject.SetValidValue(value, "TimeStopLocal");
                 ReportPropertyChanged("TimeStopLocal");
                 OnTimeStopLocalChanged();
             }
@@ -3490,7 +3479,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -3520,7 +3508,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -3539,7 +3527,7 @@ namespace HedgeHog.DB
                 {
                     OnPairChanging(value);
                     ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
+                    _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                     ReportPropertyChanged("Pair");
                     OnPairChanged();
                 }
@@ -3566,7 +3554,7 @@ namespace HedgeHog.DB
                 {
                     OnWeight1Changing(value);
                     ReportPropertyChanging("Weight1");
-                    _Weight1 = StructuralObject.SetValidValue(value);
+                    _Weight1 = StructuralObject.SetValidValue(value, "Weight1");
                     ReportPropertyChanged("Weight1");
                     OnWeight1Changed();
                 }
@@ -3593,7 +3581,7 @@ namespace HedgeHog.DB
                 {
                     OnWeight2Changing(value);
                     ReportPropertyChanging("Weight2");
-                    _Weight2 = StructuralObject.SetValidValue(value);
+                    _Weight2 = StructuralObject.SetValidValue(value, "Weight2");
                     ReportPropertyChanged("Weight2");
                     OnWeight2Changed();
                 }
@@ -3605,7 +3593,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
     
     /// <summary>
@@ -3633,7 +3620,7 @@ namespace HedgeHog.DB
 
         #endregion
 
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -3652,7 +3639,7 @@ namespace HedgeHog.DB
                 {
                     OnPairChanging(value);
                     ReportPropertyChanging("Pair");
-                    _Pair = StructuralObject.SetValidValue(value, false);
+                    _Pair = StructuralObject.SetValidValue(value, false, "Pair");
                     ReportPropertyChanged("Pair");
                     OnPairChanged();
                 }
@@ -3679,7 +3666,7 @@ namespace HedgeHog.DB
                 {
                     OnSessionIdChanging(value);
                     ReportPropertyChanging("SessionId");
-                    _SessionId = StructuralObject.SetValidValue(value);
+                    _SessionId = StructuralObject.SetValidValue(value, "SessionId");
                     ReportPropertyChanged("SessionId");
                     OnSessionIdChanged();
                 }
@@ -3704,7 +3691,7 @@ namespace HedgeHog.DB
             {
                 OnTimeStampChanging(value);
                 ReportPropertyChanging("TimeStamp");
-                _TimeStamp = StructuralObject.SetValidValue(value);
+                _TimeStamp = StructuralObject.SetValidValue(value, "TimeStamp");
                 ReportPropertyChanged("TimeStamp");
                 OnTimeStampChanged();
             }
@@ -3728,7 +3715,7 @@ namespace HedgeHog.DB
             {
                 OnCountChanging(value);
                 ReportPropertyChanging("Count");
-                _Count = StructuralObject.SetValidValue(value);
+                _Count = StructuralObject.SetValidValue(value, "Count");
                 ReportPropertyChanged("Count");
                 OnCountChanged();
             }
@@ -3752,7 +3739,7 @@ namespace HedgeHog.DB
             {
                 OnGrossPLChanging(value);
                 ReportPropertyChanging("GrossPL");
-                _GrossPL = StructuralObject.SetValidValue(value);
+                _GrossPL = StructuralObject.SetValidValue(value, "GrossPL");
                 ReportPropertyChanged("GrossPL");
                 OnGrossPLChanged();
             }
@@ -3776,7 +3763,7 @@ namespace HedgeHog.DB
             {
                 OnDaysChanging(value);
                 ReportPropertyChanging("Days");
-                _Days = StructuralObject.SetValidValue(value);
+                _Days = StructuralObject.SetValidValue(value, "Days");
                 ReportPropertyChanged("Days");
                 OnDaysChanged();
             }
@@ -3800,7 +3787,7 @@ namespace HedgeHog.DB
             {
                 OnLotChanging(value);
                 ReportPropertyChanging("Lot");
-                _Lot = StructuralObject.SetValidValue(value);
+                _Lot = StructuralObject.SetValidValue(value, "Lot");
                 ReportPropertyChanged("Lot");
                 OnLotChanged();
             }
@@ -3824,7 +3811,7 @@ namespace HedgeHog.DB
             {
                 OnLotAChanging(value);
                 ReportPropertyChanging("LotA");
-                _LotA = StructuralObject.SetValidValue(value);
+                _LotA = StructuralObject.SetValidValue(value, "LotA");
                 ReportPropertyChanged("LotA");
                 OnLotAChanged();
             }
@@ -3848,7 +3835,7 @@ namespace HedgeHog.DB
             {
                 OnLotSDChanging(value);
                 ReportPropertyChanging("LotSD");
-                _LotSD = StructuralObject.SetValidValue(value);
+                _LotSD = StructuralObject.SetValidValue(value, "LotSD");
                 ReportPropertyChanged("LotSD");
                 OnLotSDChanged();
             }
@@ -3872,7 +3859,7 @@ namespace HedgeHog.DB
             {
                 OnDollarsPerMonthChanging(value);
                 ReportPropertyChanging("DollarsPerMonth");
-                _DollarsPerMonth = StructuralObject.SetValidValue(value);
+                _DollarsPerMonth = StructuralObject.SetValidValue(value, "DollarsPerMonth");
                 ReportPropertyChanged("DollarsPerMonth");
                 OnDollarsPerMonthChanged();
             }
@@ -3896,7 +3883,7 @@ namespace HedgeHog.DB
             {
                 OnPLChanging(value);
                 ReportPropertyChanging("PL");
-                _PL = StructuralObject.SetValidValue(value);
+                _PL = StructuralObject.SetValidValue(value, "PL");
                 ReportPropertyChanged("PL");
                 OnPLChanged();
             }
@@ -3920,7 +3907,7 @@ namespace HedgeHog.DB
             {
                 OnMinutesInTestChanging(value);
                 ReportPropertyChanging("MinutesInTest");
-                _MinutesInTest = StructuralObject.SetValidValue(value);
+                _MinutesInTest = StructuralObject.SetValidValue(value, "MinutesInTest");
                 ReportPropertyChanged("MinutesInTest");
                 OnMinutesInTestChanged();
             }
@@ -3944,7 +3931,7 @@ namespace HedgeHog.DB
             {
                 OnDaysPerMinuteChanging(value);
                 ReportPropertyChanging("DaysPerMinute");
-                _DaysPerMinute = StructuralObject.SetValidValue(value);
+                _DaysPerMinute = StructuralObject.SetValidValue(value, "DaysPerMinute");
                 ReportPropertyChanged("DaysPerMinute");
                 OnDaysPerMinuteChanged();
             }
@@ -3968,7 +3955,7 @@ namespace HedgeHog.DB
             {
                 OnDollarPerLotChanging(value);
                 ReportPropertyChanging("DollarPerLot");
-                _DollarPerLot = StructuralObject.SetValidValue(value);
+                _DollarPerLot = StructuralObject.SetValidValue(value, "DollarPerLot");
                 ReportPropertyChanged("DollarPerLot");
                 OnDollarPerLotChanged();
             }
@@ -3992,7 +3979,7 @@ namespace HedgeHog.DB
             {
                 OnSessionInfoChanging(value);
                 ReportPropertyChanging("SessionInfo");
-                _SessionInfo = StructuralObject.SetValidValue(value, true);
+                _SessionInfo = StructuralObject.SetValidValue(value, true, "SessionInfo");
                 ReportPropertyChanged("SessionInfo");
                 OnSessionInfoChanged();
             }
@@ -4016,7 +4003,7 @@ namespace HedgeHog.DB
             {
                 OnPriceCmaLevelsChanging(value);
                 ReportPropertyChanging("PriceCmaLevels");
-                _PriceCmaLevels = StructuralObject.SetValidValue(value, true);
+                _PriceCmaLevels = StructuralObject.SetValidValue(value, true, "PriceCmaLevels");
                 ReportPropertyChanged("PriceCmaLevels");
                 OnPriceCmaLevelsChanged();
             }
@@ -4040,7 +4027,7 @@ namespace HedgeHog.DB
             {
                 OnCorridorDistanceRatioChanging(value);
                 ReportPropertyChanging("CorridorDistanceRatio");
-                _CorridorDistanceRatio = StructuralObject.SetValidValue(value);
+                _CorridorDistanceRatio = StructuralObject.SetValidValue(value, "CorridorDistanceRatio");
                 ReportPropertyChanged("CorridorDistanceRatio");
                 OnCorridorDistanceRatioChanged();
             }
@@ -4064,7 +4051,7 @@ namespace HedgeHog.DB
             {
                 OnPLToCorridorExitRatioChanging(value);
                 ReportPropertyChanging("PLToCorridorExitRatio");
-                _PLToCorridorExitRatio = StructuralObject.SetValidValue(value, true);
+                _PLToCorridorExitRatio = StructuralObject.SetValidValue(value, true, "PLToCorridorExitRatio");
                 ReportPropertyChanged("PLToCorridorExitRatio");
                 OnPLToCorridorExitRatioChanged();
             }
@@ -4088,7 +4075,7 @@ namespace HedgeHog.DB
             {
                 OnProfitToLossExitRatioChanging(value);
                 ReportPropertyChanging("ProfitToLossExitRatio");
-                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value, true);
+                _ProfitToLossExitRatio = StructuralObject.SetValidValue(value, true, "ProfitToLossExitRatio");
                 ReportPropertyChanged("ProfitToLossExitRatio");
                 OnProfitToLossExitRatioChanged();
             }
@@ -4112,7 +4099,7 @@ namespace HedgeHog.DB
             {
                 OnBarsCountChanging(value);
                 ReportPropertyChanging("BarsCount");
-                _BarsCount = StructuralObject.SetValidValue(value, true);
+                _BarsCount = StructuralObject.SetValidValue(value, true, "BarsCount");
                 ReportPropertyChanged("BarsCount");
                 OnBarsCountChanged();
             }
@@ -4136,7 +4123,7 @@ namespace HedgeHog.DB
             {
                 OnMinimumGrossChanging(value);
                 ReportPropertyChanging("MinimumGross");
-                _MinimumGross = StructuralObject.SetValidValue(value);
+                _MinimumGross = StructuralObject.SetValidValue(value, "MinimumGross");
                 ReportPropertyChanged("MinimumGross");
                 OnMinimumGrossChanged();
             }
@@ -4160,7 +4147,7 @@ namespace HedgeHog.DB
             {
                 OnDateStartChanging(value);
                 ReportPropertyChanging("DateStart");
-                _DateStart = StructuralObject.SetValidValue(value);
+                _DateStart = StructuralObject.SetValidValue(value, "DateStart");
                 ReportPropertyChanged("DateStart");
                 OnDateStartChanged();
             }
@@ -4184,7 +4171,7 @@ namespace HedgeHog.DB
             {
                 OnLossToProfitChanging(value);
                 ReportPropertyChanging("LossToProfit");
-                _LossToProfit = StructuralObject.SetValidValue(value);
+                _LossToProfit = StructuralObject.SetValidValue(value, "LossToProfit");
                 ReportPropertyChanged("LossToProfit");
                 OnLossToProfitChanged();
             }
@@ -4208,7 +4195,7 @@ namespace HedgeHog.DB
             {
                 OnSuperSessionUidChanging(value);
                 ReportPropertyChanging("SuperSessionUid");
-                _SuperSessionUid = StructuralObject.SetValidValue(value);
+                _SuperSessionUid = StructuralObject.SetValidValue(value, "SuperSessionUid");
                 ReportPropertyChanged("SuperSessionUid");
                 OnSuperSessionUidChanged();
             }
@@ -4232,7 +4219,7 @@ namespace HedgeHog.DB
             {
                 OnDateStopChanging(value);
                 ReportPropertyChanging("DateStop");
-                _DateStop = StructuralObject.SetValidValue(value);
+                _DateStop = StructuralObject.SetValidValue(value, "DateStop");
                 ReportPropertyChanged("DateStop");
                 OnDateStopChanged();
             }
@@ -4256,7 +4243,7 @@ namespace HedgeHog.DB
             {
                 OnWaveStDevRatioChanging(value);
                 ReportPropertyChanging("WaveStDevRatio");
-                _WaveStDevRatio = StructuralObject.SetValidValue(value, true);
+                _WaveStDevRatio = StructuralObject.SetValidValue(value, true, "WaveStDevRatio");
                 ReportPropertyChanged("WaveStDevRatio");
                 OnWaveStDevRatioChanged();
             }
@@ -4280,7 +4267,7 @@ namespace HedgeHog.DB
             {
                 OnDistanceIterationsChanging(value);
                 ReportPropertyChanging("DistanceIterations");
-                _DistanceIterations = StructuralObject.SetValidValue(value, true);
+                _DistanceIterations = StructuralObject.SetValidValue(value, true, "DistanceIterations");
                 ReportPropertyChanged("DistanceIterations");
                 OnDistanceIterationsChanged();
             }
@@ -4304,7 +4291,7 @@ namespace HedgeHog.DB
             {
                 OnCorrelationMinimumChanging(value);
                 ReportPropertyChanging("CorrelationMinimum");
-                _CorrelationMinimum = StructuralObject.SetValidValue(value, true);
+                _CorrelationMinimum = StructuralObject.SetValidValue(value, true, "CorrelationMinimum");
                 ReportPropertyChanged("CorrelationMinimum");
                 OnCorrelationMinimumChanged();
             }
@@ -4328,7 +4315,7 @@ namespace HedgeHog.DB
             {
                 OnScanCorridorByChanging(value);
                 ReportPropertyChanging("ScanCorridorBy");
-                _ScanCorridorBy = StructuralObject.SetValidValue(value, true);
+                _ScanCorridorBy = StructuralObject.SetValidValue(value, true, "ScanCorridorBy");
                 ReportPropertyChanged("ScanCorridorBy");
                 OnScanCorridorByChanged();
             }
@@ -4352,7 +4339,7 @@ namespace HedgeHog.DB
             {
                 OnProfitabilityChanging(value);
                 ReportPropertyChanging("Profitability");
-                _Profitability = StructuralObject.SetValidValue(value);
+                _Profitability = StructuralObject.SetValidValue(value, "Profitability");
                 ReportPropertyChanged("Profitability");
                 OnProfitabilityChanged();
             }
@@ -4376,7 +4363,7 @@ namespace HedgeHog.DB
             {
                 OnTakeProfitLimitRatioChanging(value);
                 ReportPropertyChanging("TakeProfitLimitRatio");
-                _TakeProfitLimitRatio = StructuralObject.SetValidValue(value, true);
+                _TakeProfitLimitRatio = StructuralObject.SetValidValue(value, true, "TakeProfitLimitRatio");
                 ReportPropertyChanged("TakeProfitLimitRatio");
                 OnTakeProfitLimitRatioChanged();
             }
@@ -4400,7 +4387,7 @@ namespace HedgeHog.DB
             {
                 OnTradingAngleRangeChanging(value);
                 ReportPropertyChanging("TradingAngleRange");
-                _TradingAngleRange = StructuralObject.SetValidValue(value, true);
+                _TradingAngleRange = StructuralObject.SetValidValue(value, true, "TradingAngleRange");
                 ReportPropertyChanged("TradingAngleRange");
                 OnTradingAngleRangeChanged();
             }
@@ -4424,7 +4411,7 @@ namespace HedgeHog.DB
             {
                 OnPolyOrderChanging(value);
                 ReportPropertyChanging("PolyOrder");
-                _PolyOrder = StructuralObject.SetValidValue(value, true);
+                _PolyOrder = StructuralObject.SetValidValue(value, true, "PolyOrder");
                 ReportPropertyChanged("PolyOrder");
                 OnPolyOrderChanged();
             }
@@ -4448,7 +4435,7 @@ namespace HedgeHog.DB
             {
                 OnMovingAverageTypeChanging(value);
                 ReportPropertyChanging("MovingAverageType");
-                _MovingAverageType = StructuralObject.SetValidValue(value, true);
+                _MovingAverageType = StructuralObject.SetValidValue(value, true, "MovingAverageType");
                 ReportPropertyChanged("MovingAverageType");
                 OnMovingAverageTypeChanged();
             }
@@ -4472,7 +4459,7 @@ namespace HedgeHog.DB
             {
                 OnPriceCmaLevels_Changing(value);
                 ReportPropertyChanging("PriceCmaLevels_");
-                _PriceCmaLevels_ = StructuralObject.SetValidValue(value, true);
+                _PriceCmaLevels_ = StructuralObject.SetValidValue(value, true, "PriceCmaLevels_");
                 ReportPropertyChanged("PriceCmaLevels_");
                 OnPriceCmaLevels_Changed();
             }
@@ -4496,7 +4483,7 @@ namespace HedgeHog.DB
             {
                 OnTestFileNameChanging(value);
                 ReportPropertyChanging("TestFileName");
-                _TestFileName = StructuralObject.SetValidValue(value, true);
+                _TestFileName = StructuralObject.SetValidValue(value, true, "TestFileName");
                 ReportPropertyChanged("TestFileName");
                 OnTestFileNameChanged();
             }
@@ -4520,7 +4507,7 @@ namespace HedgeHog.DB
             {
                 OnProfitCountChanging(value);
                 ReportPropertyChanging("ProfitCount");
-                _ProfitCount = StructuralObject.SetValidValue(value);
+                _ProfitCount = StructuralObject.SetValidValue(value, "ProfitCount");
                 ReportPropertyChanged("ProfitCount");
                 OnProfitCountChanged();
             }
@@ -4544,7 +4531,7 @@ namespace HedgeHog.DB
             {
                 OnLossCountChanging(value);
                 ReportPropertyChanging("LossCount");
-                _LossCount = StructuralObject.SetValidValue(value);
+                _LossCount = StructuralObject.SetValidValue(value, "LossCount");
                 ReportPropertyChanged("LossCount");
                 OnLossCountChanged();
             }
@@ -4568,7 +4555,7 @@ namespace HedgeHog.DB
             {
                 OnPLRatioChanging(value);
                 ReportPropertyChanging("PLRatio");
-                _PLRatio = StructuralObject.SetValidValue(value);
+                _PLRatio = StructuralObject.SetValidValue(value, "PLRatio");
                 ReportPropertyChanged("PLRatio");
                 OnPLRatioChanged();
             }
@@ -4579,7 +4566,6 @@ namespace HedgeHog.DB
 
         #endregion
 
-    
     }
 
     #endregion
@@ -4594,7 +4580,7 @@ namespace HedgeHog.DB
     [Serializable()]
     public partial class BarsByMinutes_Result : ComplexObject
     {
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4611,7 +4597,7 @@ namespace HedgeHog.DB
             {
                 OnAskHighChanging(value);
                 ReportPropertyChanging("AskHigh");
-                _AskHigh = StructuralObject.SetValidValue(value);
+                _AskHigh = StructuralObject.SetValidValue(value, "AskHigh");
                 ReportPropertyChanged("AskHigh");
                 OnAskHighChanged();
             }
@@ -4635,7 +4621,7 @@ namespace HedgeHog.DB
             {
                 OnAskLowChanging(value);
                 ReportPropertyChanging("AskLow");
-                _AskLow = StructuralObject.SetValidValue(value);
+                _AskLow = StructuralObject.SetValidValue(value, "AskLow");
                 ReportPropertyChanged("AskLow");
                 OnAskLowChanged();
             }
@@ -4659,7 +4645,7 @@ namespace HedgeHog.DB
             {
                 OnBidHighChanging(value);
                 ReportPropertyChanging("BidHigh");
-                _BidHigh = StructuralObject.SetValidValue(value);
+                _BidHigh = StructuralObject.SetValidValue(value, "BidHigh");
                 ReportPropertyChanged("BidHigh");
                 OnBidHighChanged();
             }
@@ -4683,7 +4669,7 @@ namespace HedgeHog.DB
             {
                 OnBidLowChanging(value);
                 ReportPropertyChanging("BidLow");
-                _BidLow = StructuralObject.SetValidValue(value);
+                _BidLow = StructuralObject.SetValidValue(value, "BidLow");
                 ReportPropertyChanged("BidLow");
                 OnBidLowChanged();
             }
@@ -4707,7 +4693,7 @@ namespace HedgeHog.DB
             {
                 OnAskOpenChanging(value);
                 ReportPropertyChanging("AskOpen");
-                _AskOpen = StructuralObject.SetValidValue(value);
+                _AskOpen = StructuralObject.SetValidValue(value, "AskOpen");
                 ReportPropertyChanged("AskOpen");
                 OnAskOpenChanged();
             }
@@ -4731,7 +4717,7 @@ namespace HedgeHog.DB
             {
                 OnAskCloseChanging(value);
                 ReportPropertyChanging("AskClose");
-                _AskClose = StructuralObject.SetValidValue(value);
+                _AskClose = StructuralObject.SetValidValue(value, "AskClose");
                 ReportPropertyChanged("AskClose");
                 OnAskCloseChanged();
             }
@@ -4755,7 +4741,7 @@ namespace HedgeHog.DB
             {
                 OnBidOpenChanging(value);
                 ReportPropertyChanging("BidOpen");
-                _BidOpen = StructuralObject.SetValidValue(value);
+                _BidOpen = StructuralObject.SetValidValue(value, "BidOpen");
                 ReportPropertyChanged("BidOpen");
                 OnBidOpenChanged();
             }
@@ -4779,7 +4765,7 @@ namespace HedgeHog.DB
             {
                 OnBidCloseChanging(value);
                 ReportPropertyChanging("BidClose");
-                _BidClose = StructuralObject.SetValidValue(value);
+                _BidClose = StructuralObject.SetValidValue(value, "BidClose");
                 ReportPropertyChanged("BidClose");
                 OnBidCloseChanged();
             }
@@ -4803,7 +4789,7 @@ namespace HedgeHog.DB
             {
                 OnDateCloseChanging(value);
                 ReportPropertyChanging("DateClose");
-                _DateClose = StructuralObject.SetValidValue(value);
+                _DateClose = StructuralObject.SetValidValue(value, "DateClose");
                 ReportPropertyChanged("DateClose");
                 OnDateCloseChanged();
             }
@@ -4827,7 +4813,7 @@ namespace HedgeHog.DB
             {
                 OnDateOpenChanging(value);
                 ReportPropertyChanging("DateOpen");
-                _DateOpen = StructuralObject.SetValidValue(value);
+                _DateOpen = StructuralObject.SetValidValue(value, "DateOpen");
                 ReportPropertyChanged("DateOpen");
                 OnDateOpenChanged();
             }
@@ -4848,7 +4834,7 @@ namespace HedgeHog.DB
     [Serializable()]
     public partial class GetCorridorAverage_Result : ComplexObject
     {
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4865,7 +4851,7 @@ namespace HedgeHog.DB
             {
                 OnAvgChanging(value);
                 ReportPropertyChanging("Avg");
-                _Avg = StructuralObject.SetValidValue(value);
+                _Avg = StructuralObject.SetValidValue(value, "Avg");
                 ReportPropertyChanged("Avg");
                 OnAvgChanged();
             }
@@ -4889,7 +4875,7 @@ namespace HedgeHog.DB
             {
                 OnStDevChanging(value);
                 ReportPropertyChanging("StDev");
-                _StDev = StructuralObject.SetValidValue(value);
+                _StDev = StructuralObject.SetValidValue(value, "StDev");
                 ReportPropertyChanged("StDev");
                 OnStDevChanged();
             }
@@ -4910,7 +4896,7 @@ namespace HedgeHog.DB
     [Serializable()]
     public partial class s_GetBarStats_Result : ComplexObject
     {
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4927,7 +4913,7 @@ namespace HedgeHog.DB
             {
                 OnStopDateMonthChanging(value);
                 ReportPropertyChanging("StopDateMonth");
-                _StopDateMonth = StructuralObject.SetValidValue(value);
+                _StopDateMonth = StructuralObject.SetValidValue(value, "StopDateMonth");
                 ReportPropertyChanged("StopDateMonth");
                 OnStopDateMonthChanged();
             }
@@ -4951,7 +4937,7 @@ namespace HedgeHog.DB
             {
                 OnStopDateHourChanging(value);
                 ReportPropertyChanging("StopDateHour");
-                _StopDateHour = StructuralObject.SetValidValue(value);
+                _StopDateHour = StructuralObject.SetValidValue(value, "StopDateHour");
                 ReportPropertyChanged("StopDateHour");
                 OnStopDateHourChanged();
             }
@@ -4975,7 +4961,7 @@ namespace HedgeHog.DB
             {
                 OnBarsHeightAvgChanging(value);
                 ReportPropertyChanging("BarsHeightAvg");
-                _BarsHeightAvg = StructuralObject.SetValidValue(value);
+                _BarsHeightAvg = StructuralObject.SetValidValue(value, "BarsHeightAvg");
                 ReportPropertyChanged("BarsHeightAvg");
                 OnBarsHeightAvgChanged();
             }
@@ -4999,7 +4985,7 @@ namespace HedgeHog.DB
             {
                 OnBarsHeightStdChanging(value);
                 ReportPropertyChanging("BarsHeightStd");
-                _BarsHeightStd = StructuralObject.SetValidValue(value);
+                _BarsHeightStd = StructuralObject.SetValidValue(value, "BarsHeightStd");
                 ReportPropertyChanged("BarsHeightStd");
                 OnBarsHeightStdChanged();
             }
@@ -5023,7 +5009,7 @@ namespace HedgeHog.DB
             {
                 OnBarsHeight_NChanging(value);
                 ReportPropertyChanging("BarsHeight_N");
-                _BarsHeight_N = StructuralObject.SetValidValue(value);
+                _BarsHeight_N = StructuralObject.SetValidValue(value, "BarsHeight_N");
                 ReportPropertyChanged("BarsHeight_N");
                 OnBarsHeight_NChanged();
             }
@@ -5047,7 +5033,7 @@ namespace HedgeHog.DB
             {
                 OnDistanceChanging(value);
                 ReportPropertyChanging("Distance");
-                _Distance = StructuralObject.SetValidValue(value);
+                _Distance = StructuralObject.SetValidValue(value, "Distance");
                 ReportPropertyChanged("Distance");
                 OnDistanceChanged();
             }
@@ -5071,7 +5057,7 @@ namespace HedgeHog.DB
             {
                 OnDistToHeightAvgChanging(value);
                 ReportPropertyChanging("DistToHeightAvg");
-                _DistToHeightAvg = StructuralObject.SetValidValue(value);
+                _DistToHeightAvg = StructuralObject.SetValidValue(value, "DistToHeightAvg");
                 ReportPropertyChanged("DistToHeightAvg");
                 OnDistToHeightAvgChanged();
             }
@@ -5095,7 +5081,7 @@ namespace HedgeHog.DB
             {
                 OnDistToHeightStdChanging(value);
                 ReportPropertyChanging("DistToHeightStd");
-                _DistToHeightStd = StructuralObject.SetValidValue(value);
+                _DistToHeightStd = StructuralObject.SetValidValue(value, "DistToHeightStd");
                 ReportPropertyChanged("DistToHeightStd");
                 OnDistToHeightStdChanged();
             }
@@ -5119,7 +5105,7 @@ namespace HedgeHog.DB
             {
                 OnDistToHeightVolChanging(value);
                 ReportPropertyChanging("DistToHeightVol");
-                _DistToHeightVol = StructuralObject.SetValidValue(value);
+                _DistToHeightVol = StructuralObject.SetValidValue(value, "DistToHeightVol");
                 ReportPropertyChanged("DistToHeightVol");
                 OnDistToHeightVolChanged();
             }
@@ -5143,7 +5129,7 @@ namespace HedgeHog.DB
             {
                 OnDistToHeightMaxChanging(value);
                 ReportPropertyChanging("DistToHeightMax");
-                _DistToHeightMax = StructuralObject.SetValidValue(value);
+                _DistToHeightMax = StructuralObject.SetValidValue(value, "DistToHeightMax");
                 ReportPropertyChanged("DistToHeightMax");
                 OnDistToHeightMaxChanged();
             }
@@ -5167,7 +5153,7 @@ namespace HedgeHog.DB
             {
                 OnDistToHeightMinChanging(value);
                 ReportPropertyChanging("DistToHeightMin");
-                _DistToHeightMin = StructuralObject.SetValidValue(value);
+                _DistToHeightMin = StructuralObject.SetValidValue(value, "DistToHeightMin");
                 ReportPropertyChanged("DistToHeightMin");
                 OnDistToHeightMinChanged();
             }
@@ -5191,7 +5177,7 @@ namespace HedgeHog.DB
             {
                 OnHeightToStDevAvgChanging(value);
                 ReportPropertyChanging("HeightToStDevAvg");
-                _HeightToStDevAvg = StructuralObject.SetValidValue(value);
+                _HeightToStDevAvg = StructuralObject.SetValidValue(value, "HeightToStDevAvg");
                 ReportPropertyChanged("HeightToStDevAvg");
                 OnHeightToStDevAvgChanged();
             }
@@ -5215,7 +5201,7 @@ namespace HedgeHog.DB
             {
                 OnHeightToStDevStdChanging(value);
                 ReportPropertyChanging("HeightToStDevStd");
-                _HeightToStDevStd = StructuralObject.SetValidValue(value);
+                _HeightToStDevStd = StructuralObject.SetValidValue(value, "HeightToStDevStd");
                 ReportPropertyChanged("HeightToStDevStd");
                 OnHeightToStDevStdChanged();
             }
@@ -5239,7 +5225,7 @@ namespace HedgeHog.DB
             {
                 OnHeightToStDev_NChanging(value);
                 ReportPropertyChanging("HeightToStDev_N");
-                _HeightToStDev_N = StructuralObject.SetValidValue(value);
+                _HeightToStDev_N = StructuralObject.SetValidValue(value, "HeightToStDev_N");
                 ReportPropertyChanged("HeightToStDev_N");
                 OnHeightToStDev_NChanged();
             }
@@ -5263,7 +5249,7 @@ namespace HedgeHog.DB
             {
                 OnHeightToStDev_NStdChanging(value);
                 ReportPropertyChanging("HeightToStDev_NStd");
-                _HeightToStDev_NStd = StructuralObject.SetValidValue(value);
+                _HeightToStDev_NStd = StructuralObject.SetValidValue(value, "HeightToStDev_NStd");
                 ReportPropertyChanged("HeightToStDev_NStd");
                 OnHeightToStDev_NStdChanged();
             }
@@ -5287,7 +5273,7 @@ namespace HedgeHog.DB
             {
                 OnHeightToStDevVolChanging(value);
                 ReportPropertyChanging("HeightToStDevVol");
-                _HeightToStDevVol = StructuralObject.SetValidValue(value);
+                _HeightToStDevVol = StructuralObject.SetValidValue(value, "HeightToStDevVol");
                 ReportPropertyChanged("HeightToStDevVol");
                 OnHeightToStDevVolChanged();
             }
@@ -5308,7 +5294,7 @@ namespace HedgeHog.DB
     [Serializable()]
     public partial class sGetStats_Result : ComplexObject
     {
-        #region Primitive Properties
+        #region Simple Properties
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -5325,7 +5311,7 @@ namespace HedgeHog.DB
             {
                 OnWeekDayChanging(value);
                 ReportPropertyChanging("WeekDay");
-                _WeekDay = StructuralObject.SetValidValue(value);
+                _WeekDay = StructuralObject.SetValidValue(value, "WeekDay");
                 ReportPropertyChanged("WeekDay");
                 OnWeekDayChanged();
             }
@@ -5349,7 +5335,7 @@ namespace HedgeHog.DB
             {
                 OnDayNameChanging(value);
                 ReportPropertyChanging("DayName");
-                _DayName = StructuralObject.SetValidValue(value, true);
+                _DayName = StructuralObject.SetValidValue(value, true, "DayName");
                 ReportPropertyChanged("DayName");
                 OnDayNameChanged();
             }
@@ -5373,7 +5359,7 @@ namespace HedgeHog.DB
             {
                 OnMonthChanging(value);
                 ReportPropertyChanging("Month");
-                _Month = StructuralObject.SetValidValue(value);
+                _Month = StructuralObject.SetValidValue(value, "Month");
                 ReportPropertyChanged("Month");
                 OnMonthChanged();
             }
@@ -5397,7 +5383,7 @@ namespace HedgeHog.DB
             {
                 OnRangeChanging(value);
                 ReportPropertyChanging("Range");
-                _Range = StructuralObject.SetValidValue(value);
+                _Range = StructuralObject.SetValidValue(value, "Range");
                 ReportPropertyChanged("Range");
                 OnRangeChanged();
             }
@@ -5421,7 +5407,7 @@ namespace HedgeHog.DB
             {
                 OnRangeMinChanging(value);
                 ReportPropertyChanging("RangeMin");
-                _RangeMin = StructuralObject.SetValidValue(value);
+                _RangeMin = StructuralObject.SetValidValue(value, "RangeMin");
                 ReportPropertyChanged("RangeMin");
                 OnRangeMinChanged();
             }
@@ -5445,7 +5431,7 @@ namespace HedgeHog.DB
             {
                 OnRangeSDChanging(value);
                 ReportPropertyChanging("RangeSD");
-                _RangeSD = StructuralObject.SetValidValue(value);
+                _RangeSD = StructuralObject.SetValidValue(value, "RangeSD");
                 ReportPropertyChanged("RangeSD");
                 OnRangeSDChanged();
             }
@@ -5469,7 +5455,7 @@ namespace HedgeHog.DB
             {
                 OnCountChanging(value);
                 ReportPropertyChanging("Count");
-                _Count = StructuralObject.SetValidValue(value);
+                _Count = StructuralObject.SetValidValue(value, "Count");
                 ReportPropertyChanged("Count");
                 OnCountChanged();
             }
@@ -5493,7 +5479,7 @@ namespace HedgeHog.DB
             {
                 OnStartDateChanging(value);
                 ReportPropertyChanging("StartDate");
-                _StartDate = StructuralObject.SetValidValue(value);
+                _StartDate = StructuralObject.SetValidValue(value, "StartDate");
                 ReportPropertyChanged("StartDate");
                 OnStartDateChanged();
             }
@@ -5517,7 +5503,7 @@ namespace HedgeHog.DB
             {
                 OnRangeMinSDChanging(value);
                 ReportPropertyChanging("RangeMinSD");
-                _RangeMinSD = StructuralObject.SetValidValue(value);
+                _RangeMinSD = StructuralObject.SetValidValue(value, "RangeMinSD");
                 ReportPropertyChanged("RangeMinSD");
                 OnRangeMinSDChanged();
             }
@@ -5541,7 +5527,7 @@ namespace HedgeHog.DB
             {
                 OnMaxChanging(value);
                 ReportPropertyChanging("Max");
-                _Max = StructuralObject.SetValidValue(value);
+                _Max = StructuralObject.SetValidValue(value, "Max");
                 ReportPropertyChanged("Max");
                 OnMaxChanged();
             }
@@ -5565,7 +5551,7 @@ namespace HedgeHog.DB
             {
                 OnRangeForTradeChanging(value);
                 ReportPropertyChanging("RangeForTrade");
-                _RangeForTrade = StructuralObject.SetValidValue(value);
+                _RangeForTrade = StructuralObject.SetValidValue(value, "RangeForTrade");
                 ReportPropertyChanged("RangeForTrade");
                 OnRangeForTradeChanged();
             }
@@ -5589,7 +5575,7 @@ namespace HedgeHog.DB
             {
                 OnStartDateMinChanging(value);
                 ReportPropertyChanging("StartDateMin");
-                _StartDateMin = StructuralObject.SetValidValue(value);
+                _StartDateMin = StructuralObject.SetValidValue(value, "StartDateMin");
                 ReportPropertyChanged("StartDateMin");
                 OnStartDateMinChanged();
             }
@@ -5604,5 +5590,4 @@ namespace HedgeHog.DB
 
     #endregion
 
-    
 }

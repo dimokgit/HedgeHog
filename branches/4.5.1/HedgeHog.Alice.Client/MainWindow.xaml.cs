@@ -11,7 +11,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Data.Objects;
 using System.Windows.Controls.Primitives;
 using System.ComponentModel.Composition.Hosting;
 using System.ComponentModel.Composition;
@@ -30,10 +29,10 @@ namespace HedgeHog.Alice.Client {
     [Import("MainWindowModel")]
     public object ViewModel { get { return this.DataContext; } set { this.DataContext = value; } }
 
-    private System.Data.Objects.ObjectQuery<TradingAccount> GetTradingAccountsQuery(AliceEntities aliceEntities) {
+    private System.Data.Entity.Core.Objects.ObjectQuery<TradingAccount> GetTradingAccountsQuery(AliceEntities aliceEntities) {
       // Auto generated code
 
-      System.Data.Objects.ObjectQuery<TradingAccount> tradingAccountsQuery = aliceEntities.TradingAccounts;
+      System.Data.Entity.Core.Objects.ObjectQuery<TradingAccount> tradingAccountsQuery = aliceEntities.TradingAccounts;
       // Returns an ObjectQuery.
       return tradingAccountsQuery;
     }

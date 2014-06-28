@@ -16,10 +16,10 @@ using HedgeHog.Bars;
 using HedgeHog.Rsi;
 using HedgeHog.Alice.Store;
 using FXW = Order2GoAddIn.FXCoreWrapper;
-using System.Data.Objects.DataClasses;
 using System.Collections.ObjectModel;
 using HedgeHog.Shared;
 using HedgeHog.DB;
+using System.Data.Entity.Core.Objects.DataClasses;
 
 namespace Temp {
   /// <summary>

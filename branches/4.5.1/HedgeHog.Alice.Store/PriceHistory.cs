@@ -60,7 +60,7 @@ namespace HedgeHog.Alice.Store {
       }
       Action a = new Action(() => {
         try {
-          context.SaveChanges(System.Data.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          context.SaveChanges(System.Data.Entity.Core.Objects.SaveOptions.AcceptAllChangesAfterSave);
           context.Dispose();
         } catch (Exception exc) {
           if (progressCallback != null) progressCallback(exc);

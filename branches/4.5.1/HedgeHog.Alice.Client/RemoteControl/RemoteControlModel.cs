@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.Composition;
-using System.Data.Objects;
+using System.Data.Entity.Core.Objects;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -429,7 +429,7 @@ namespace HedgeHog.Alice.Client {
     }
     void DeleteTradingMacro(object tradingMacro) {
       var tm = tradingMacro as TradingMacro;
-      if (tm == null || tm.EntityState == System.Data.EntityState.Detached) return;
+      if (tm == null || tm.EntityState == System.Data.Entity.EntityState.Detached) return;
       tm.IsActive = false;
       GlobalStorage.UseAliceContext(c => c.TradingMacroes.DeleteObject(tm), true);
       TradingMacrosCopy_Delete(tm);
@@ -757,7 +757,7 @@ namespace HedgeHog.Alice.Client {
     void ObjectStateManager_ObjectStateManagerChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) {
       var tm = e.Element as TradingMacro;
       if (tm != null) {
-        if (tm.EntityState == System.Data.EntityState.Detached) {
+        if (tm.EntityState == System.Data.Entity.EntityState.Detached) {
           tm.PropertyChanged -= TradingMacro_PropertyChanged;
           tm.ShowChart -= TradingMacro_ShowChart;
         }
@@ -970,12 +970,12 @@ namespace HedgeHog.Alice.Client {
     void ShowChart(TradingMacro tm) {
       try {
         if (_isMinimized) return;
+        var charter = GetCharter(tm);
+        if (charter.IsParentHidden) return;
+        if (tm.IsCharterMinimized) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
-        var charter = GetCharter(tm);
-        if (!tm.Trades.Any() && charter.IsParentHidden) return;
         string pair = tm.Pair;
-        if (tm.IsCharterMinimized) return;
         if (tm == null) return;
         if (rates.Count() == 0) return;
           rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
@@ -1035,7 +1035,7 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
           PriceBar[] distances = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r).IfNaN(0) }).ToArray();
-          var volt2Dedault = volts2(rates[0]);
+          var volt2Dedault = rates.SkipWhile(r=>volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
           PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
           charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,

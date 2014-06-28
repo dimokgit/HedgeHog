@@ -392,7 +392,6 @@ namespace Order2GoAddIn {
 
     #region Properties
     public bool IsInTest { get; set; }
-    private DateTime _prevOfferDate;
     private string _pair = "";
     public string PriceFormat {
       get { return "{0:0."+"".PadRight(Digits(),'0')+"}"; }
@@ -2696,7 +2695,7 @@ namespace Order2GoAddIn {
       return _baseUnitSize.GetOrAdd(pair, foo(pair));
     }
 
-    private new Dictionary<string, int> _MMR = new Dictionary<string, int>();
+    private Dictionary<string, int> _MMR = new Dictionary<string, int>();
     public int GetMMR(string pair) {
       if (_MMR.Count == 0)
         foreach (var offer in GetOffers())
