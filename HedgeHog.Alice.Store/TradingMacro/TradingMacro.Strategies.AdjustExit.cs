@@ -33,6 +33,20 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    #region DistanceDaysBack
+    private int _DistanceDaysBack = 2;
+    [Category(categoryActive)]
+    public int DistanceDaysBack {
+      get { return _DistanceDaysBack; }
+      set {
+        if (_DistanceDaysBack != value) {
+          _DistanceDaysBack = value;
+          OnPropertyChanged("DistanceDaysBack");
+        }
+      }
+    }
+
+    #endregion
     double CrossLevelDefault (bool isBuy){return isBuy ? _RatesMax + RatesHeight : _RatesMin - RatesHeight;}
     delegate double SetExitDelegate(double currentPrice, double exitLevel, Func<double, double> calcExitLevel);
     private Action<double, double> AdjustCloseLevels() {

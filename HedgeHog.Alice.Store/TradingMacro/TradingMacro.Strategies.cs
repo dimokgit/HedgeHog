@@ -1929,10 +1929,10 @@ namespace HedgeHog.Alice.Store {
                   #region onCloseTradeLocal
                   onCloseTradeLocal += t => {
                     if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    if (CurrentGrossInPipTotal > 0) {
-                      if (!IsInVitualTrading) IsTradingActive = false;
+                    if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0)) 
+                       IsTradingActive = false;
+                    if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
-                    }
                   };
                   #endregion
                   //initTradeRangeShift();
@@ -1946,6 +1946,14 @@ namespace HedgeHog.Alice.Store {
                   if (Trades.Any()) BroadcastCloseAllTrades();
                   _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                 }
+                var rl = RatesArray.Reverse<Rate>().SkipWhile(r => r.PriceAvg1.IfNaN(0) == 0).Take(1).Memoize();
+                var getUpDown = rl.Select(r => new { up = r.PriceAvg2, down = r.PriceAvg3 });
+                Action setUpDown = () => {
+                  getUpDown.ForEach(ud => {
+                    BuyLevel.RateEx = ud.up;
+                    SellLevel.RateEx = ud.down;
+                  });
+                };
                 var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                     _ti =>{ WorkflowStep = "1 Wait start";
                     var slopeCurrent = CorridorStats.Slope.Sign();
@@ -2052,6 +2060,57 @@ namespace HedgeHog.Alice.Store {
                     return tupleStay(_ti);
                     }
                 };
+                workflowSubject.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region FrameAngleMax
+            case TrailingWaveMethod.FrameAngleMax: {
+                #region firstTime
+                if (firstTime) {
+                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  workFlowObservable.Subscribe();
+                  #region onCloseTradeLocal
+                  onCloseTradeLocal += t => {
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (CurrentGrossInPipTotal > 0) {
+                      if (!IsInVitualTrading) IsTradingActive = false;
+                      BroadcastCloseAllTrades();
+                    }
+                  };
+                  #endregion
+                  //initTradeRangeShift();
+                }
+                #endregion
+                var point = InPoints(1);
+                var corridorOk = CorridorStats.Rates.Count < CorridorDistance * WaveStDevRatio;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
+                var corridorOk2 = CorridorStats.Rates.Count < CorridorDistance;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
+                var isBlackout = new Lazy<bool>(() => IsBlackout(RateLast.StartDate));
+                if (isBlackout.Value) {
+                  if (Trades.Any()) BroadcastCloseAllTrades();
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                }
+                var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
+                    _ti =>{ WorkflowStep = "1 Wait start";
+                    var slopeCurrent = CorridorStats.Slope.Sign();
+                    var slope = _ti.OfType<int>().FirstOrDefault(slopeCurrent);
+                    if (corridorOk && (calcAngleOk() || slopeCurrent != slope)) {
+                        BuyLevel.RateEx = CorridorStats.RatesMax + point;
+                        SellLevel.RateEx = CorridorStats.RatesMin - point;
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                        return tupleNextEmpty();
+                    }
+                    return tupleStaySingle(slopeCurrent);
+                    },_ti =>{ WorkflowStep = "2 Wait Finish";
+                    if (!corridorOk2) return tupleNext(_ti);
+                    if (CorridorStats.RatesHeight + point * 2 < BuyLevel.Rate.Abs(SellLevel.Rate)) {
+                        BuyLevel.RateEx = CorridorStats.RatesMax + point;
+                        SellLevel.RateEx = CorridorStats.RatesMin - point;
+                    }
+                        return tupleStay(_ti);
+                    }};
                 workflowSubject.OnNext(wfManual);
               }
               adjustExitLevels0();
@@ -2854,37 +2913,6 @@ namespace HedgeHog.Alice.Store {
         if (_WorkflowStep != value) {
           _WorkflowStep = value;
           OnPropertyChanged("WorkflowStep");
-        }
-      }
-    }
-
-    #endregion
-    #region HarmonicMinuteMin
-    private int _HarmonicMinuteMin;
-    [Category(categoryActive)]
-    [DisplayName("HarmonicMinuteMin")]
-    public int HarmonicMinuteMin {
-      get { return _HarmonicMinuteMin; }
-      set {
-        if (_HarmonicMinuteMin != value) {
-          _HarmonicMinuteMin = value;
-          OnPropertyChanged("HarmonicMinuteMin");
-        }
-      }
-    }
-
-    #endregion
-    #region Timeframe2CorridorLengthRatio
-    private int _Timeframe2CorridorLengthRatio = 2;
-    [Category(categoryActive)]
-    [DisplayName("TF Ratio")]
-    [Description("OK = CorridorRatesCount > CorridorDistance * Timeframe2CorridorLengthRatio")]
-    public int Timeframe2CorridorLengthRatio {
-      get { return _Timeframe2CorridorLengthRatio; }
-      set {
-        if (_Timeframe2CorridorLengthRatio != value) {
-          _Timeframe2CorridorLengthRatio = value;
-          OnPropertyChanged("Timeframe2CorridorLengthRatio");
         }
       }
     }

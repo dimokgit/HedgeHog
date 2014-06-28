@@ -122,48 +122,6 @@ namespace HedgeHog.Alice.Store {
     bool CanTradeByHarmonics() {
       return HarmonicsAverage * 2 < _harmonics[0].Height;
     }
-
-    private CorridorStatistics ScanCorridorByHorizontalLineCrosses3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-
-      var binRates = ratesForCorridor;
-      System.Collections.Concurrent.ConcurrentQueue<Harmonic> harmonicsQueue;
-      System.Collections.Concurrent.ConcurrentDictionary<int, double[]> iffts;
-      CalcHurmonics(binRates, out harmonicsQueue, out iffts);
-      var harmonics = harmonicsQueue.OrderByDescending(w => w.Height).ToList();
-      var xxx1 = harmonics.AverageByIterations(w => w.Height, (w, v) => w >= v, PolyOrder).ToArray();
-      xxx1.ForEach(w => { w.InRange = true; });
-      var harmonicMain = harmonics.Single(h => h.Hours == DistanceIterations);
-      //.AverageByIterations(w => w.Hei2ght, (w, v) => w >= v, 2)
-      //.OrderBy(w => w.Hours).First();
-      harmonicMain.IsAggregate = true;
-      ParallelEnumerable.Range(0, binRates.Count).ForAll(i => SetVoltage(binRates[i], InPips(iffts[harmonicMain.Hours.ToInt()][i])));
-      var avgHour = harmonics.Sum(h => h.Hours * h.Height) / harmonics.Sum(h => h.Height);
-      var avgHeight = harmonics.Sum(h => h.Hours * h.Height) / harmonics.Sum(h => h.Hours);
-      var harmonicAvg = harmonics.OrderBy(h => (h.Hours - avgHour).Abs()).First();
-      CorridorStDevRatioMax = avgHour * 60.0;
-      _harmonics = harmonics.ToArray();
-      var averageHour = avgHour;// harmonics.TakeWhile(w => w.InRange).Average(w => w.Hours);
-      HarmonicsAverage = avgHeight;// harmonicAvg.Height;// harmonics.TakeWhile(w => w.InRange).Average(w => w.Height);
-      harmonics.Add(new Harmonic(averageHour.Round(1), HarmonicsAverage.Round(1)));
-      GlobalStorage.Instance.ResetGenericList(_harmonics = harmonics);
-
-      double level = double.NaN;
-      var rates = !CanTradeByHarmonics() ? null
-        : CorridorByVerticalLineCrosses2(ratesForCorridor.ReverseIfNot(), _priceAvg, CorridorDistanceRatio.ToInt(), out level);
-      var corridorOk = rates != null && rates.Any() && (!IsCorridorForwardOnly || rates.LastBC().StartDate >= CorridorStats.StartDate)
-        && (IsCorridorForwardOnly || MagnetPrice.IfNaN(0).Abs(level) > TradingDistance);
-      if (corridorOk) {
-        MagnetPrice = level;
-        WaveShort.ResetRates(rates);
-      } else if (CorridorStats.Rates != null && CorridorStats.Rates.Any()) {
-        var dateStop = CorridorStats.Rates.LastBC().StartDate;
-        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot().TakeWhile(r => r.StartDate >= dateStop).ToArray());
-      } else
-        WaveShort.ResetRates(ratesForCorridor.ReverseIfNot());
-
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-    }
-
     private ConcurrentQueue<Harmonic> CalcHurmonics(IList<Rate> binRates,int minutesPerHour) {
       ConcurrentDictionary<int, double[]> invFfts;
       ConcurrentQueue<Harmonic> harmonicsQueue;
@@ -208,27 +166,6 @@ namespace HedgeHog.Alice.Store {
         iffts.TryAdd(hour, ifft);
       });
       return hq.ToArray();
-    }
-
-    private alglib.complex[] CalcFftStats(IList<Rate> corridorRates, int ifftSkpip) {
-      alglib.complex[] bins;
-      corridorRates.Select(_priceAvg).FftFrequency(false, out bins);
-      return bins;
-      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
-      //alglib.fftr1dinv(bins.Take(ifftSkpip).Concat(Enumerable.Repeat(new alglib.complex(0), bins.Length - ifftSkpip)).ToArray(), out ifft);
-      //var bins1 = new[] { bins.Take(1), NewMethod(ifftSkpip - 1), new[] { bins[ifftSkpip] }, NewMethod(bins.Length - ifftSkpip - 1) }
-      //  .SelectMany(b => b).ToArray();
-      var bins1 = new[] { bins.Take(1), repeat(ifftSkpip - 1), bins.Skip(ifftSkpip) }.SelectMany(b => b).ToArray();
-      double[] ifft;
-      alglib.fftr1dinv(bins1, out ifft);
-      //Enumerable.Range(0, corridorRates.Count).ForEach(i => SetVoltage(corridorRates[i], InPips(ifft[i])));
-      SetVoltage(RateLast, InPips(ifft.Select(v => v.Abs()).ToArray().AverageByIterations(-1).Average()));
-      var voltsAvg = 0.0;
-      var voltsStDev = RatesArray.Select(GetVoltage).SkipWhile(v => v.IsNaN()).Where(v => !v.IsNaN()).ToArray().StDev(out voltsAvg);
-      GetVoltageAverage = () => voltsAvg;
-      GetVoltageHigh = () => voltsAvg - voltsStDev * 2;
-      return bins;
-    }
-    
+    }    
   }
 }

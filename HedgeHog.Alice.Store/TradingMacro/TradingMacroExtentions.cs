@@ -280,13 +280,8 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
-      RatesInternal.CollectionChanging += RatesInternal_CollectionChanging;
     }
 
-    void RatesInternal_CollectionChanging(object sender, NotifyCollectionChangedEventArgs e) {
-      //if (e.Action != NotifyCollectionChangedAction.Add)
-      //  OnPropertyChanged(Metadata.TradingMacroMetadata.RatesInternal);
-    }
     ~TradingMacro() {
       var fw = TradesManager as Order2GoAddIn.FXCoreWrapper;
       if (fw != null && fw.IsLoggedIn)
@@ -1151,7 +1146,7 @@ namespace HedgeHog.Alice.Store {
         , PriceChangedEventArgs>(h => h, h => _TradesManager().PriceChanged += h, h => _TradesManager().PriceChanged -= h)
         .Where(pce => pce.EventArgs.Pair == Pair)
         //.Sample((0.1).FromSeconds())
-        .DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
+        //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
         .Do(pce => {
           try {
             CurrentPrice = pce.EventArgs.Price;
@@ -1163,7 +1158,7 @@ namespace HedgeHog.Alice.Store {
         });
       if (!IsInVitualTrading)
         PriceChangedSubscribsion = a.SubscribeToLatestOnBGThread(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
-      else PriceChangedSubscribsion = a.SubscribeOn(DispatcherScheduler.Current).Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
+      else PriceChangedSubscribsion = a.Subscribe(pce => RunPriceChanged(pce.EventArgs, null), exc => MessageBox.Show(exc + ""), () => Log = new Exception(Pair + " got terminated."));
 
       if (fw != null && !IsInPlayback) {
         fw.CoreFX.LoggingOff += CoreFX_LoggingOffEvent;
@@ -1293,6 +1288,16 @@ namespace HedgeHog.Alice.Store {
     }
     List<Rate> _replayRates;
     object _replayLocker = new object();
+    public DateTime AddWorkingDays(DateTime start, int workingDates) {
+      var sign = Math.Sign(workingDates);
+      return Enumerable
+          .Range(1, int.MaxValue)
+          .Select(x => start.AddDays(x * sign))
+          .Where(date => date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+          .Select((date, i) => new { date, i })
+          .SkipWhile(a => a.i <= workingDates.Abs())
+          .First().date;
+    }
     public void Replay(ReplayArguments args) {
       if (!args.DateStart.HasValue) {
         Log = new ApplicationException("Start Date error.");
@@ -1326,8 +1331,8 @@ namespace HedgeHog.Alice.Store {
         if (!IsInVitualTrading)
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
-        var framesBack = BarsCountCount;
-        var barsCountTotal = BarsCount * framesBack;
+        var barsCountTotal = BarsCountCount();
+        var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(barsCountTotal / 1440.0).Ceiling());
         var actionBlock = new ActionBlock<Action>(a => a());
         Action<Order2GoAddIn.FXCoreWrapper.RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
         var fw = GetFXWraper();
@@ -1336,7 +1341,7 @@ namespace HedgeHog.Alice.Store {
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17 * 60 + 24 * 60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0);
         var internalRateCount = barsCountTotal;
-        _replayRates = GlobalStorage.GetRateFromDB(Pair, args.DateStart.Value.AddMinutes(-internalRateCount * BarPeriodInt), int.MaxValue, BarPeriodInt);
+        _replayRates = GlobalStorage.GetRateFromDB(Pair, dateStartDownload, int.MaxValue, BarPeriodInt);
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
         //var rateStartIndex = rates.IndexOf(rateStart);
         //var rateIndexStart = (rateStartIndex - BarsCount).Max(0);
@@ -1443,7 +1448,7 @@ namespace HedgeHog.Alice.Store {
                   else if (args.StepBack) {
                     Debugger.Break();
                   }
-                while (ri.Count > (BarsCountCalc * BarsCountCount)
+                while (ri.Count > barsCountTotal
                     && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
                   ri.RemoveAt(0);
               });
@@ -1609,7 +1614,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     const double suppResDefault = double.NaN;
-    private const short BarsCountCount = 3;
+    private int BarsCountCount() { return BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax; }
 
     public void SuppResResetAllTradeCounts(int tradesCount = 0) { SuppResResetTradeCounts(SuppRes, tradesCount); }
     public static void SuppResResetTradeCounts(IEnumerable<SuppRes> suppReses, double tradesCount = 0) {
@@ -2736,40 +2741,24 @@ namespace HedgeHog.Alice.Store {
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch (function) {
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
-        case ScanCorridorFunction.WaveDistance42: return ScanCorridorByDistance42;
-        case ScanCorridorFunction.WaveDistance43: return ScanCorridorByDistance43;
-        case ScanCorridorFunction.DayDistance: return ScanCorridorByDayDistance;
-        case ScanCorridorFunction.Regression: return ScanCorridorByRegression;
-        case ScanCorridorFunction.Regression2: return ScanCorridorByRegression2;
-        case ScanCorridorFunction.Parabola: return ScanCorridorByParabola;
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
-        case ScanCorridorFunction.Simple: return ScanCorridorSimple;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
-        case ScanCorridorFunction.Time: return ScanCorridorByTimeMinAndAngleMax;
         case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
-        case ScanCorridorFunction.Rsd: return ScanCorridorByRsdMax;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
         case ScanCorridorFunction.TimeFrame2: return ScanCorridorByTimeFrameAndAngle2;
-        case ScanCorridorFunction.StDevSimple1Cross: return ScanCorridorSimpleWithOneCross;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
         case ScanCorridorFunction.RangeDistance: return ScanCorridorByDistanceHeightRatio;
         case ScanCorridorFunction.RangeDistanceMax: return ScanCorridorByDistanceHeightRatioMax;
         case ScanCorridorFunction.RangeDistanceMin: return ScanCorridorByDistanceHeightRatioMin;
         case ScanCorridorFunction.StDevMinInRange: return ScanCorridorByMinStDevInRange;
-        case ScanCorridorFunction.StDevUDCross: return ScanCorridorStDevUpDown;
         case ScanCorridorFunction.StDevSplits: return ScanCorridorBySplitHeights;
-        case ScanCorridorFunction.StDevSplits2: return ScanCorridorBySplitHeights2;
         case ScanCorridorFunction.StDevSplits3: return ScanCorridorBySplitHeights3;
-        case ScanCorridorFunction.Balance: return ScanCorridorByBalance;
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
-        case ScanCorridorFunction.HorizontalProbe2: return ScanCorridorByHorizontalLineCrosses3;
-        case ScanCorridorFunction.Void: return ScanCorridorVoid;
         case ScanCorridorFunction.Fixed: return ScanCorridorFixed;
-        case ScanCorridorFunction.TillFlat: return ScanCorridorTillFlat;
         case ScanCorridorFunction.TillFlat2: return ScanCorridorTillFlat2;
         case ScanCorridorFunction.BigGap: return ScanCorridorByBigGap;
         case ScanCorridorFunction.BigGap2: return ScanCorridorByBigGap2;
@@ -2781,7 +2770,8 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance: return ScanCorridorByDistance;
         case ScanCorridorFunction.Distance2: return ScanCorridorByDistance2;
         case ScanCorridorFunction.Distance3: return ScanCorridorByDistance3;
-        case ScanCorridorFunction.Distance5: return ScanCorridorByDistance5;
+        case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
+        //case ScanCorridorFunction.Distance6: return ScanCorridorByDistance6;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3095,7 +3085,7 @@ namespace HedgeHog.Alice.Store {
             Debug.WriteLine("LoadRates[{0}:{2}] @ {1:HH:mm:ss}", Pair, ServerTime, (BarsPeriodType)BarPeriod);
             var sw = Stopwatch.StartNew();
             var serverTime = ServerTime;
-            var periodsBack = BarsCount * BarsCountCount;
+            var periodsBack = BarsCountCount();
             var useDefaultInterval = /*!DoStreatchRates || dontStreachRates ||*/  CorridorStats == null || CorridorStats.StartDate == DateTime.MinValue;
             var startDate = TradesManagerStatic.FX_DATE_NOW;
             if (!useDefaultInterval) {

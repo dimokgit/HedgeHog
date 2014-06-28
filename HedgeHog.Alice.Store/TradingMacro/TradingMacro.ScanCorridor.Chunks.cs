@@ -25,9 +25,6 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorBySplitHeights(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorBySplitHeights, GetShowVoltageFunction());
     }
-    private CorridorStatistics ScanCorridorBySplitHeights2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorBySplitHeights2, GetShowVoltageFunction());
-    }
     private CorridorStatistics ScanCorridorBySplitHeights3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), CalcCorridorBySplitHeights3, GetShowVoltageFunction());
     }
@@ -70,33 +67,6 @@ namespace HedgeHog.Alice.Store {
           return i;
       return ratesReversedOriginal.Length;
     }
-    private int CalcCorridorBySplitHeights2(IList<Rate> ratesOriginal) {
-      var rates = ratesOriginal.ReverseIfNot().SafeArray();
-      var stDev = StDevByPriceAvg.Max(StDevByHeight);
-      var hopsCount = PolyOrder;
-      var lengthMin = 0;
-      Task.Factory.StartNew(() => {
-        for (var i = hopsCount; i < rates.Length; i += hopsCount)
-          if (Chunk(rates, i, hopsCount - 1).Min() > stDev) {
-            lengthMin = i;
-            WaveShortLeft.ResetRates(rates.Take(lengthMin).ToArray());
-            break;
-          };
-      });
-      var hops = new List<int>();
-      for (var i = hopsCount; i < rates.Length; i += hopsCount) hops.Add(i);
-      var lengthMax = double.NaN;
-      Parallel.ForEach(Partitioner.Create(hops.ToArray(), true), new ParallelOptions() { MaxDegreeOfParallelism = IsInVitualTrading ? -1 : 1 }
-        , (i, pls) => {
-        if (Chunk(rates, i, hopsCount).Min() > stDev) {
-          lengthMax = lengthMax.Min(i);
-          pls.Stop();
-        }
-      });
-      if (lengthMin == 0) WaveShortLeft.ResetRates(rates);
-      return lengthMax.IfNaN(rates.Length).ToInt();
-    }
-
     private static double[] Chunk(Rate[] rates, int chunksLength, int chunksCount) {
       var hops = Enumerable.Range(0, chunksCount).ToArray();
       var chunk = chunksLength / chunksCount;

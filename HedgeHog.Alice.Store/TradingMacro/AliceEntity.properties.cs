@@ -873,6 +873,7 @@ namespace HedgeHog.Alice.Store {
       switch (TradingDaysRange) {
         case WeekDays.Full: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
         case WeekDays.MoTh: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
+        case WeekDays.MoTuFr: return new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
         case WeekDays.TuFr: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
         case WeekDays.TuTh: return new[] { DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday };
         case WeekDays.SuFr: return new[] { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday };
@@ -884,6 +885,7 @@ namespace HedgeHog.Alice.Store {
     public enum WeekDays {
       Full = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
       MoTh = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday,
+      MoTuFr = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Friday,
       TuFr = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday,
       TuTh = DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday,
       SuFr = DayOfWeek.Monday + DayOfWeek.Tuesday + DayOfWeek.Wednesday + DayOfWeek.Thursday + DayOfWeek.Friday + DayOfWeek.Saturday,
@@ -1162,17 +1164,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => TakeProfitLimitRatio);
       }
     }
-    [Category(categoryActive)]
-    [DisplayName("Eval")]
-    [Description("Ex:a.upPeak+a.downValley>0")]
-    public string Eval {
-      get { return FibMax; }
-      set {
-        if (FibMax == value) return;
-        FibMax = value;
-        OnPropertyChanged(() => Eval);
-      }
-    }
 
     [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
@@ -1410,6 +1401,21 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region BarsCountMax
+    private int _BarsCountMax;
+    [Category(categoryActive)]
+    [Description("BarsCountCount = BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax;")]
+    public int BarsCountMax {
+      get { return _BarsCountMax; }
+      set {
+        if (_BarsCountMax != value) {
+          _BarsCountMax = value;
+          OnPropertyChanged("BarsCountMax");
+        }
+      }
+    }
+
+    #endregion
     [DisplayName("Spearman Volatility")]
     [Category(categoryActiveYesNo)]
     public bool UseSpearmanVolatility {
@@ -1522,36 +1528,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #endregion
-    #region StDevTresholdIterations
-    [DisplayName("Distance Iterations")]
-    [Description("Math.Pow(height,N)")]
-    [Category(categoryActive)]
-    public double DistanceIterations {
-      get { return CorrelationTreshold; }
-      set {
-        if (CorrelationTreshold != value) {
-          CorrelationTreshold = value;
-          OnPropertyChanged("DistanceIterations");
-        }
-      }
-    }
-    #endregion
-
-    #region PolyOrder 
-    [Category(categoryActive)]
-    public int PolyOrder {
-      get { return StDevTresholdIterations; }
-      set {
-        if (StDevTresholdIterations != value) {
-          StDevTresholdIterations = value;
-          OnPropertyChanged(() => PolyOrder);
-        }
-      }
-    }
-    partial void OnStDevTresholdIterationsChanged() {
-      OnPropertyChanged(() => PolyOrder);
-    }
     #endregion
 
     private double _TradeDistanceInPips;
