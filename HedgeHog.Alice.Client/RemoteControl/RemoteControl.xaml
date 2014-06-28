@@ -5,7 +5,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
              xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
              xmlns:hhShared="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
@@ -13,7 +12,8 @@
              xmlns:hhBars="clr-namespace:HedgeHog.Bars;assembly=HedgeHog.Shared"
              xmlns:wpg="clr-namespace:WPG;assembly=WPG"
              xmlns:gala="clr-namespace:GalaSoft.MvvmLight;assembly=GalaSoft.MvvmLight.WPF45" 
-             xmlns:galaCmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF45" 
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        xmlns:galaCmd="http://www.galasoft.ch/mvvmlight"
              mc:Ignorable="d" 
 >
   <UserControl.Resources>

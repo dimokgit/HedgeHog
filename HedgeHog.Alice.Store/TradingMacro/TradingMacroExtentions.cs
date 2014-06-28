@@ -14,7 +14,6 @@ using HedgeHog.Alice.Store.Metadata;
 using System.Linq.Expressions;
 using System.Windows.Input;
 using Gala = GalaSoft.MvvmLight.Command;
-using System.Data.Objects.DataClasses;
 using System.Reactive.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Subjects;
@@ -34,6 +33,7 @@ using HedgeHog.UI;
 using System.ComponentModel.Composition;
 using ReactiveUI;
 using HedgeHog.NewsCaster;
+using System.Data.Entity.Core.Objects.DataClasses;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -1610,7 +1610,7 @@ namespace HedgeHog.Alice.Store {
 
     private bool IsEntityStateOk {
       get {
-        return EntityState != System.Data.EntityState.Detached && EntityState != System.Data.EntityState.Deleted;
+        return EntityState != System.Data.Entity.EntityState.Detached && EntityState != System.Data.Entity.EntityState.Deleted;
       }
     }
     const double suppResDefault = double.NaN;
@@ -3194,7 +3194,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void OnPropertyChangedCore(string property) {
-      if (EntityState == System.Data.EntityState.Detached) return;
+      if (EntityState == System.Data.Entity.EntityState.Detached) return;
       //_propertyChangedTaskDispencer.RunOrEnqueue(property, () => {
       switch (property) {
         case TradingMacroMetadata.IsTradingActive:

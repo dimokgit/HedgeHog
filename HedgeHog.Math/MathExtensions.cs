@@ -13,18 +13,6 @@ using System.Reflection;
 
 namespace HedgeHog {
   public static class RelativeStDevStore {
-    public class Rsd {
-      public double RSD { get; set; }
-      public int Height { get; set; }
-      public int Count { get; set; }
-      public override string ToString() {
-        return new { Height, Count, RSD }.ToString();
-      }
-      public override bool Equals(object obj) {
-        var o = (Rsd)obj;
-        return obj == null || this == null ? false : o.Height == Height && o.Count == Count && o.RSD == RSD;
-      }
-    }
     public static readonly ConcurrentDictionary<int, ConcurrentDictionary<int, double>> RSDs = new ConcurrentDictionary<int, ConcurrentDictionary<int, double>>();
     public static double Get(int height, int count) {
       return RSDs.GetOrAdd(height, (h) => {

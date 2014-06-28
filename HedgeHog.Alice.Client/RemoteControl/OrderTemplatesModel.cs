@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel.Composition;
 using HedgeHog.Alice;
-using System.Data.Objects;
 using Gala = GalaSoft.MvvmLight.Command;
 using System.Windows.Input;
 using System.Windows;
 using System.Diagnostics;
 using HedgeHog.Alice.Store;
+using System.Data.Entity.Core.Objects;
 
 namespace HedgeHog.Alice.Client {
   [Export]

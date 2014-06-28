@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data.Entity.Core;
 using System.Linq;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -6,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public override int SaveChanges(System.Data.Objects.SaveOptions options) {
+    public override int SaveChanges(System.Data.Entity.Core.Objects.SaveOptions options) {
         try {
           InitGuidField<TradingAccount>(ta => ta.Id, (ta, g) => ta.Id = g);
           InitGuidField<TradingMacro>(ta => ta.UID, (ta, g) => ta.UID = g);
@@ -14,9 +15,9 @@ namespace HedgeHog.Alice.Store {
           Debug.Fail(exc + "");
         }
         try {
-          var a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).Count();
-          a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Deleted).Count().Max(a);
-          a = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Modified).Count().Max(a);
+          var a = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Added).Count();
+          a = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Deleted).Count().Max(a);
+          a = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Modified).Count().Max(a);
           if (a > 0)
             return base.SaveChanges(options);
           else
@@ -28,11 +29,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void InitGuidField<TEntity>(Func<TEntity, Guid> getField, Action<TEntity, Guid> setField) {
-      var d = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Added).ToArray();
+      var d = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Added).ToArray();
       var f = d.Select(o => o.Entity).ToArray();
       var g = f.OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
       g.ForEach(e => setField(e, Guid.NewGuid()));
-      var h = ObjectStateManager.GetObjectStateEntries(System.Data.EntityState.Modified).ToArray();
+      var h = ObjectStateManager.GetObjectStateEntries(System.Data.Entity.EntityState.Modified).ToArray();
       var i = d.Select(o => o.Entity).ToArray();
       var j = f.OfType<TEntity>().Where(e => getField(e) == new Guid()).ToList();
       j.ForEach(e => { });
