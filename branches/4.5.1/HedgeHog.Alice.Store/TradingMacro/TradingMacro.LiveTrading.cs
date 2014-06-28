@@ -108,11 +108,11 @@ namespace HedgeHog.Alice.Store {
           if (_DeleteOrderSubject == null) {
             _DeleteOrderSubject = new Subject<string>();
             _DeleteOrderSubject
-              .SubscribeToLatestOnBGThread(s => {
+              .Subscribe(s => {
                 try {
                   GetFXWraper().DeleteOrder(s, false);
                 } catch (Exception exc) { Log = exc; }
-              },TradesManagerStatic.TradingScheduler, exc => Log = exc);
+              }, exc => Log = exc);
           }
         return _DeleteOrderSubject;
       }
@@ -329,7 +329,8 @@ namespace HedgeHog.Alice.Store {
         , tm => tm.CanDoNetLimitOrders
         , tm => tm.MustStopTrading
         , (s, t, eo, no, ta, bl, sl) =>
-          Strategy == Strategies.Universal && BuyLevel != null && SellLevel != null && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading)
+          Strategy == Strategies.Universal && BuyLevel != null && SellLevel != null && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading
+          )
           .DistinctUntilChanged()
           .Throttle(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live entry orders
