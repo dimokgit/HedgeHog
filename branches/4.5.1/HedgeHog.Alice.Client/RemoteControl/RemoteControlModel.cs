@@ -973,7 +973,7 @@ namespace HedgeHog.Alice.Client {
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         var charter = GetCharter(tm);
-        if (charter.IsParentHidden) return;
+        if (!tm.Trades.Any() && charter.IsParentHidden) return;
         string pair = tm.Pair;
         if (tm.IsCharterMinimized) return;
         if (tm == null) return;
@@ -1035,9 +1035,10 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
           PriceBar[] distances = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r).IfNaN(0) }).ToArray();
-          PriceBar[] distances1 = rates.Take(0).Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(0) }).ToArray();
+          var volt2Dedault = volts2(rates[0]);
+          PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
+          charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,
             tm.GetVoltageHigh(), tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
