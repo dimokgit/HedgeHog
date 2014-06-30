@@ -1950,10 +1950,12 @@ namespace HedgeHog.Alice.Store {
                   .Memoize()
                   .Yield(rates => new[] { rates.First(), rates.Last() });
                 var getUpDown = rl.Select(r => new { up = r.Max(rate => rate.PriceAvg2), down = r.Min(rates => rates.PriceAvg3) });
-                Action setUpDown0 = () => {
-                  BuyLevel.RateEx = CorridorStats.RatesMax + point;
-                  SellLevel.RateEx = CorridorStats.RatesMin - point;
-
+                var getUpDown0 = new { up = CorridorStats.RatesMax + point, down = CorridorStats.RatesMin - point };
+                Action<bool> setUpDown0 = reset => {
+                  if (reset || getUpDown0.up.Abs(getUpDown0.down) < BuyLevel.Rate.Abs(SellLevel.Rate)) {
+                    BuyLevel.RateEx = getUpDown0.up;
+                    SellLevel.RateEx = getUpDown0.down;
+                  }
                 };
                 Action<bool> setUpDown = reset => {
                   getUpDown
@@ -1968,16 +1970,16 @@ namespace HedgeHog.Alice.Store {
                     var slopeCurrent = CorridorStats.Slope.Sign();
                     var slope = _ti.OfType<int>().FirstOrDefault(slopeCurrent);
                     if (corridorOk && (calcAngleOk() || slopeCurrent != slope)) {
-                      setUpDown(true);
+                      setUpDown0(true);
                       _buySellLevelsForEach(sr => sr.CanTradeEx = true);
                       return tupleNextEmpty();
                     }
-                    setUpDown(false);
+                    setUpDown0(false);
                     return tupleStaySingle(slopeCurrent);
                     },_ti =>{ WorkflowStep = "2 Wait Finish";
                     if (!corridorOk2) return tupleNext(_ti);
                     if (CorridorStats.RatesHeight + point * 2 < BuyLevel.Rate.Abs(SellLevel.Rate))
-                      setUpDown(false);
+                      setUpDown0(false);
                       return tupleStay(_ti);
                     }};
                 workflowSubject.OnNext(wfManual);
