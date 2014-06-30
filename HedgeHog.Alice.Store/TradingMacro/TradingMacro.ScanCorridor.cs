@@ -102,6 +102,7 @@ namespace HedgeHog.Alice.Store {
       var va = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
       GetVoltageAverage = () => va;
       SetVoltage2(ratesAll[0], GetVoltageHigh() / GetVoltageAverage() - 1);
+      GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch / CorridorDistance).Round(2) }));
       return chunks.Skip(1).ToArray();
     }
     public int GetWorkingDays(DateTime from, DateTime to) {
