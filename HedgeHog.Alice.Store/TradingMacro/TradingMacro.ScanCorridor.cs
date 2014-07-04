@@ -68,7 +68,10 @@ namespace HedgeHog.Alice.Store {
         }
       });
       Action<IList<Rate>, double> setVoltsLocal = (rates, volts) => rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volts));
-      var distanceMin = DistancesFromInternalRates(0,setVoltsLocal).DefaultIfEmpty().Min();
+      var distances = DistancesFromInternalRates(0, setVoltsLocal).DefaultIfEmpty().Memoize();
+      var distanceMin = distances.Min();
+      var distanceMax = new Lazy<double>(() => distances.Max());
+      Func<IList<Rate>, int, int> getCount = (rates,count) => count > CorridorDistance ? count : rates.TakeWhile(r => r.Distance <= distanceMax.Value).Count();
       Func<IList<Rate>, int> scan = rates => distanceMin == 0
         ? CorridorDistance
         : rates.TakeWhile(r => r.Distance <= distanceMin).Count();
