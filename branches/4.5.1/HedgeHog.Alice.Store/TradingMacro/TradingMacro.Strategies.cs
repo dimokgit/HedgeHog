@@ -1939,8 +1939,8 @@ namespace HedgeHog.Alice.Store {
                 }
                 #endregion
                 var point = InPoints(1);
-                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
-                var corridorOk2 = CorridorStats.Rates.Count > CorridorDistance;// && CorridorStats.Rates.Count > CorridorDistance * 2 && GetVoltageAverage() < WaveStDevRatio;
+                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;
+                var corridorOk2 = CorridorStats.Rates.Count > CorridorDistance;
                 var isBlackout = new Lazy<bool>(() => IsBlackout(RateLast.StartDate));
                 if (isBlackout.Value) {
                   if (Trades.Any()) BroadcastCloseAllTrades();
