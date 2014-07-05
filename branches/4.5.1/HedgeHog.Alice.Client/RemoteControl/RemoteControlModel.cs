@@ -967,10 +967,19 @@ namespace HedgeHog.Alice.Client {
       if (!_isMinimized)
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
+    bool? _isParentHidden;
     void ShowChart(TradingMacro tm) {
       try {
         if (_isMinimized) return;
         var charter = GetCharter(tm);
+        if (_isParentHidden.HasValue && !tm.Trades.Any()) {
+          charter.IsParentHidden = _isParentHidden.Value;
+          _isParentHidden = null;
+        }
+        if (charter.IsParentHidden && tm.Trades.Any()) {
+          _isParentHidden = true;
+          charter.IsParentHidden = false;
+        }
         if (charter.IsParentHidden) return;
         if (tm.IsCharterMinimized) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();

@@ -1545,7 +1545,7 @@ namespace HedgeHog.Alice.Store {
     }
     public TradeStatistics SetTradeStatistics(Trade trade) {
       if (!TradeStatisticsDictionary.ContainsKey(trade.Id))
-        TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics());
+        TradeStatisticsDictionary.Add(trade.Id, new TradeStatistics() { CorridorStDev = GetVoltageHigh().IfNaN(0), CorridorStDevCma = GetVoltageAverage().IfNaN(0) });
       var ts = TradeStatisticsDictionary[trade.Id];
       if (false) {
         if (!trade.Buy && ts.Resistanse == 0 && HasCorridor)

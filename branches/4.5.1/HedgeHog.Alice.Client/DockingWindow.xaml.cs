@@ -434,7 +434,7 @@ namespace HedgeHog.Alice.Client {
       }
       pane.IsHidden = false;
       pane.Content = charter;
-      var b = new Binding() { Path = new PropertyPath("IsHidden"), Source = pane };
+      var b = new Binding() { Path = new PropertyPath("IsHidden"), Source = pane, Mode = BindingMode.TwoWay };
       charter.SetBinding(CharterControl.IsParentHiddenProperty, b);
       SetCharterPaneBindings(pane);
       var ht = FindResource("CharterHeaderTemplate") as DataTemplate;

@@ -16,5 +16,8 @@ namespace HedgeHog {
       RecursiveAction<A> rec = r => a => f(r(r))(a);
       return rec(rec);
     }
+    public static void UnSubscribe<T>(this Action<T> delegatus, Action<T> handler, Action<Action<T>> unSubcriber) {
+      delegatus.GetInvocationList().Where(d => d.Method == handler.Method).ToList().ForEach(d => unSubcriber(d as Action<T>));
+    }
   }
 }
