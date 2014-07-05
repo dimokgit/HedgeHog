@@ -1,4 +1,0 @@
-﻿CREATE USER [DIMONFX\Traders] FOR LOGIN [DIMONFX\Traders];
-
-
-

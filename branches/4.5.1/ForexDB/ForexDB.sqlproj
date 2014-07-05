@@ -449,7 +449,6 @@
     <Build Include="Security\DimonFX_dimon.sql" />
     <Build Include="Security\BUILTIN_Users.sql" />
     <Build Include="Security\SQLCLRTestLogin.sql" />
-    <Build Include="Security\DIMONFX_Traders.sql" />
     <Build Include="Security\DHOME_User.sql" />
     <Build Include="Security\DHOME_lesha.sql" />
     <Build Include="Security\DHOME_ForexTrader.sql" />
@@ -499,6 +498,10 @@
     <Build Include="dbo\Functions\SqlFunction1.sql" />
     <Build Include="dbo\Functions\clrSplitTwo.sql" />
     <Build Include="Security\DIMONFX_TradersCM.sql" />
+    <Build Include="dbo\Tables\Blackout.sql" />
+    <Build Include="dbo\Stored Procedures\sVolatility.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTradesBySuperSession.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTrades.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
@@ -543,6 +546,10 @@
     <None Include="Assemblies\TA-Lib-Core_8.dll" />
     <None Include="Assemblies\SQLCLR_8.dll" />
     <None Include="Assemblies\LightLib_8.dll" />
+    <None Include="Assemblies\TA-Lib-Core_9.dll" />
+    <None Include="Assemblies\SQLCLR_9.dll" />
+    <None Include="Assemblies\SQL_DateFuncs_3.dll" />
+    <None Include="Assemblies\LightLib_9.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
@@ -574,6 +581,14 @@
       <SqlAssemblyName>TA-Lib-Core</SqlAssemblyName>
       <SqlOwnerName>dbo</SqlOwnerName>
       <SqlPermissionSet>UNSAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="SQL_DateFuncs">
+      <HintPath>Assemblies\SQL_DateFuncs_3.dll</HintPath>
+      <SqlAssemblyName>SQL_DateFuncs</SqlAssemblyName>
+      <IsModelAware>True</IsModelAware>
+      <GenerateSqlClrDdl>False</GenerateSqlClrDdl>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
     </Reference>
   </ItemGroup>
   <ItemGroup>
