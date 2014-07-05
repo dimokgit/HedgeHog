@@ -1934,12 +1934,16 @@ namespace HedgeHog.Alice.Store {
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
                   };
+                  onOpenTradeLocal += WorkflowMixin.YAction<Trade>(h => t => {
+                    onOpenTradeLocal.UnSubscribe(h, d => onOpenTradeLocal -= d);
+                  });
                   #endregion
                   //initTradeRangeShift();
                 }
                 #endregion
                 var point = InPoints(1);
-                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;
+                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance &&
+                  GetVoltage(CorridorStats.Rates[0]) < GetVoltageAverage();
                 var corridorOk2 = CorridorStats.Rates.Count > CorridorDistance;
                 var isBlackout = new Lazy<bool>(() => IsBlackout(RateLast.StartDate));
                 if (isBlackout.Value) {
@@ -1979,6 +1983,77 @@ namespace HedgeHog.Alice.Store {
                     },_ti =>{ WorkflowStep = "2 Wait Finish";
                     if (!corridorOk2) return tupleNext(_ti);
                     if (CorridorStats.RatesHeight + point * 2 < BuyLevel.Rate.Abs(SellLevel.Rate))
+                      setUpDown0(false);
+                      return tupleStay(_ti);
+                    }};
+                workflowSubject.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region FrameAngle31
+            case TrailingWaveMethod.FrameAngle31: {
+                #region firstTime
+                if (firstTime) {
+                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  workFlowObservable.Subscribe();
+                  #region onCloseTradeLocal
+                  onCloseTradeLocal += t => {
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                      IsTradingActive = false;
+                    if (CurrentGrossInPipTotal > 0)
+                      BroadcastCloseAllTrades();
+                  };
+                  #endregion
+                  //initTradeRangeShift();
+                }
+                #endregion
+                var point = InPoints(1);
+                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance &&
+                  GetVoltage(CorridorStats.Rates[0]) < GetVoltageAverage();
+                var corridorOk2 = CorridorStats.Rates.Count > CorridorDistance;
+                var isBlackout = new Lazy<bool>(() => IsBlackout(RateLast.StartDate));
+                if (isBlackout.Value) {
+                  if (Trades.Any()) BroadcastCloseAllTrades();
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                }
+                var rl = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IfNaN(0) == 0)
+                  .Memoize()
+                  .Yield(rates => new[] { rates.First(), rates.Last() });
+                var getUpDown = rl.Select(r => new { up = r.Max(rate => rate.PriceAvg2), down = r.Min(rates => rates.PriceAvg3) });
+                var getUpDown0 = new { up = CorridorStats.Rates.Max(r => r.AskHigh), down = CorridorStats.Rates.Min(r => r.BidLow) };
+                Action<bool> setUpDown0 = reset => {
+                  if (reset || getUpDown0.up.Abs(getUpDown0.down) < BuyLevel.Rate.Abs(SellLevel.Rate)) {
+                    BuyLevel.RateEx = getUpDown0.up;
+                    SellLevel.RateEx = getUpDown0.down;
+                  }
+                };
+                Action<bool> setUpDown = reset => {
+                  getUpDown
+                    .Where(ud => reset || ud.up.Abs(ud.down) < BuyLevel.Rate.Abs(SellLevel.Rate))
+                    .ForEach(ud => {
+                      BuyLevel.RateEx = ud.up;
+                      SellLevel.RateEx = ud.down;
+                    });
+                };
+                var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
+                    _ti =>{ WorkflowStep = "1 Wait start";
+                    var slopeCurrent = CorridorStats.Slope.Sign();
+                    var slope = _ti.OfType<int>().FirstOrDefault(slopeCurrent);
+                    if (corridorOk && (calcAngleOk() || slopeCurrent != slope)) {
+                      setUpDown0(true);
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                      return tupleNextEmpty();
+                    }
+                    setUpDown0(false);
+                    return tupleStaySingle(slopeCurrent);
+                    },_ti =>{ WorkflowStep = "2 Wait Finish";
+                      if (!corridorOk2){
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                        return tupleNext(_ti);
+                      }
                       setUpDown0(false);
                       return tupleStay(_ti);
                     }};
@@ -2900,6 +2975,7 @@ namespace HedgeHog.Alice.Store {
         _adjustEnterLevels();
       #endregion
     }
+
     public Func<DateTime> LineTimeMinFunc;
     private static void BroadcastCloseAllTrades() {
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);

@@ -163,15 +163,17 @@ namespace HedgeHog {
 
 
     public bool IsParentHidden {
-      get;
-      set;
+      get { return (bool)GetValue(IsParentHiddenProperty); }
+      set { SetValue(IsParentHiddenProperty, value); }
     }
 
     // Using a DependencyProperty as the backing store for IsParentHidden.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsParentHiddenProperty =
-        DependencyProperty.Register("IsParentHidden", typeof(bool), typeof(CharterControl), new UIPropertyMetadata((d, p) => {
-          ((CharterControl)d).IsParentHidden = (bool)p.NewValue;
-        }));
+        DependencyProperty.Register("IsParentHidden",
+        typeof(bool),
+        typeof(CharterControl), null
+        //new UIPropertyMetadata((d, p) => ((CharterControl)d).IsParentHidden = (bool)p.NewValue)
+        );
 
     private int _barsPeriod;
     public int BarsPeriod {
