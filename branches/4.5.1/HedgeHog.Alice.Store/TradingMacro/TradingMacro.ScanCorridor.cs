@@ -96,16 +96,20 @@ namespace HedgeHog.Alice.Store {
         .Select(date => RangeEdgeRight(date, timeMin, timeMax))
         .First();
       //var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
-      var chunks = DistancesByTimeframe(timeMax, timeMin, ratesAll).Take(DistanceDaysBack).ToArray();
+      var chunks = DistancesByTimeframe(timeMax, timeMin, ratesAll).Take(DistanceDaysBack+1).ToArray();
+      //if (chunks.Length != DistanceDaysBack + 1) Log = new Exception("chunks.Length!=DistanceDaysBack+1");
       var volts = InPips(chunks.Average() / CorridorDistance);
       setVolts(ratesAll, volts);
       var voltsAll = ratesAll.Select(GetVoltage).Take(BarsCountCalc).ToArray();
-      var vh = voltsAll.AverageByIterations(1).DefaultIfEmpty().Average();
-      GetVoltageHigh = () => vh;
-      var va = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
-      GetVoltageAverage = () => va;
-      SetVoltage2(ratesAll[0], GetVoltageHigh() / GetVoltageAverage() - 1);
-      GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch / CorridorDistance).Round(2) }));
+      Task.Factory.StartNew(() => {
+        var vh = voltsAll.AverageByIterations(1).DefaultIfEmpty().Average();
+        GetVoltageHigh = () => vh;
+        var va = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
+        GetVoltageAverage = () => va;
+      });
+      //SetVoltage2(ratesAll[0], GetVoltageHigh() / GetVoltageAverage() - 1);
+      if(!IsInVitualTrading)
+        GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch / CorridorDistance).Round(2) }));
       return chunks.Skip(1).ToArray();
     }
     public int GetWorkingDays(DateTime from, DateTime to) {
