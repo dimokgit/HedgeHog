@@ -550,6 +550,7 @@
     <None Include="Assemblies\SQLCLR_9.dll" />
     <None Include="Assemblies\SQL_DateFuncs_3.dll" />
     <None Include="Assemblies\LightLib_9.dll" />
+    <None Include="SqlSchemaCompare.scmp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">

@@ -309,6 +309,13 @@ Privet:2.3 3.4
       var ld = DateTimeOffset.Parse("11/1/2013").InLondon();
       TestContext.WriteLine(ld + ""+tzs.Count());
     }
+    [TestMethod]
+    public void Unsubscribe() {
+      Action<int> onOpenTradeLocal = null;
+      onOpenTradeLocal += WorkflowMixin.YAction<int>(h => t => {
+        onOpenTradeLocal.UnSubscribe(h, d => onOpenTradeLocal -= d);
+      });
+    }
 
   }
 }

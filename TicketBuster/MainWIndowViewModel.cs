@@ -342,7 +342,7 @@ namespace TicketBuster {
       return ie.Title.StartsWith("United Airlines - Airline Tickets, Travel Deals and Flights");
     }
     static bool IsOnResultPage(RemoteWebDriver ie) {
-      return ie.Title.ToLower().StartsWith("United Airlines - Flight Search".ToLower());
+      return Regex.IsMatch(ie.Title,@"Flight\s+Search", RegexOptions.IgnoreCase);
     }
     private void DisposeBrowser() {
       if (_ie != null) {

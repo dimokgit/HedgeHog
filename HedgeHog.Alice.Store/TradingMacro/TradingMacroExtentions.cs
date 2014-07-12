@@ -1390,6 +1390,7 @@ namespace HedgeHog.Alice.Store {
         _timeFrameHeights.Clear();
         FractalTimes = FractalTimes.Take(0);
         LineTimeMinFunc = null;
+        TakeProfitBSRatio = 1;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2691,6 +2692,20 @@ namespace HedgeHog.Alice.Store {
       return dontAdjust ? tp : tp.Max((PriceSpreadAverage.GetValueOrDefault(double.NaN) + InPoints(CommissionByTrade(null))) * 2);
     }
 
+    #region TakeProfitBSRatio
+    private double _TakeProfitBSRatio = 1;
+    ///"TakeProfit = (BuyLevel-SellLevel)*X"
+    public double TakeProfitBSRatio {
+      get { return _TakeProfitBSRatio; }
+      set {
+        if (_TakeProfitBSRatio != value) {
+          _TakeProfitBSRatio = value;
+          OnPropertyChanged("TakeProfitBSRatio");
+        }
+      }
+    }
+
+    #endregion
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
       var tp = double.NaN;
       switch (function) {
@@ -2715,7 +2730,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.Harmonic:
           if (_harmonics == null || !_harmonics.Any()) throw new InvalidOperationException("Function " + function + " is using _harmonics that is empty.");
           return InPoints(_harmonics.Select(h => h.Height).OrderByDescending(h => h).Take(2).Average());
-        case TradingMacroTakeProfitFunction.BuySellLevels_3:
+        case TradingMacroTakeProfitFunction.BuySellLevels_X:
         case TradingMacroTakeProfitFunction.BuySellLevels_2:
         case TradingMacroTakeProfitFunction.BuySellLevels2:
         case TradingMacroTakeProfitFunction.BuySellLevels:
@@ -2727,8 +2742,8 @@ namespace HedgeHog.Alice.Store {
           tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * (function == TradingMacroTakeProfitFunction.BuySellLevels2 ? 2 : 1);
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_2)
             tp /= 2;
-          if (function == TradingMacroTakeProfitFunction.BuySellLevels_3)
-            tp /= 3;
+          if (function == TradingMacroTakeProfitFunction.BuySellLevels_X)
+            tp *= TakeProfitBSRatio;
           break;
         case TradingMacroTakeProfitFunction.RegressionLevels:
           throw new NotImplementedException("RegressionLevels must be implemented locally.");

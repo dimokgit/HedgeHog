@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
     BuySellLevels = 6,
     BuySellLevels2 = 7,
     BuySellLevels_2 = 8,
-    BuySellLevels_3 = 9,
+    BuySellLevels_X = 9,
     RatesHeight = 10,
     RatesStDevMax = 11,
     RatesHeight_2 = 12,
