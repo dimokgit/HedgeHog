@@ -109,7 +109,7 @@ namespace HedgeHog.Alice.Store {
             var tpColse = InPoints((TakeProfitPips - CurrentGrossInPipTotal).Min(TakeProfitPips));// ClosingDistanceByCurrentGross(takeProfitLimitRatio);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
-            var ellasic = RatesArray.TakeLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
+            var ellasic = IsTakeBack ? 0 : RatesArray.TakeLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
             var ratesHeightInPips = new[] { 
               RatesArray.Take(RatesArray.Count * 9 / 10).Height() / 2,
               LimitProfitByStDev?StDevByPriceAvg:double.MaxValue
@@ -128,10 +128,10 @@ namespace HedgeHog.Alice.Store {
             } else if (Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
               buyCloseLevel.RateEx = new[]{
-                Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)
+                Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic
                 ,priceAvgMax
               }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
-              - ellasic;
+              ;
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
             } else buyCloseLevel.RateEx = CrossLevelDefault(true);
@@ -145,10 +145,10 @@ namespace HedgeHog.Alice.Store {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var sellExit = ExitLevelByCurrentPrice(tpColse, false);
               sellCloseLevel.RateEx = new[] { 
-                Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)
+                Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic
                 , priceAvgMin
               }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
-              + ellasic;
+              ;
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
             } else sellCloseLevel.RateEx = CrossLevelDefault(false);
