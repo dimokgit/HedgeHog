@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Reactive.Linq;
 using ReactiveUI;
+using System.Diagnostics;
 namespace TicketBuster {
   /// <summary>
   /// Interaction logic for MainWindow.xaml
@@ -22,7 +23,20 @@ namespace TicketBuster {
     public MainWindow() {
       InitializeComponent();
       var vm = new MainWIndowViewModel("Model1");
-      vm.ObservableForProperty(_ => _.Alert).ObserveOnDispatcher().Subscribe(o => MessageBox.Show(App.Current.MainWindow, o.Value));
+      vm.ObservableForProperty(_ => _.Alert)
+        .Where(m => m.Value != null)
+        .ObserveOnDispatcher()
+        .Subscribe(o => {
+          try {
+            MessageBox.Show(App.Current.MainWindow, o.Value);
+          } catch (Exception exc) {
+            if (Debugger.IsAttached)
+              Debug.Fail(exc + "");
+          }
+        }, exc => {
+          if (Debugger.IsAttached)
+            Debug.Fail(exc + "");
+        });
       DataContext = vm;
     }
   }

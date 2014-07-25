@@ -55,18 +55,27 @@
           <Label Grid.Row="2">Flight:</Label>
           <TextBox Text="{Binding Flight}" MinWidth="50" VerticalAlignment="Center" Grid.Column="1" Grid.Row="2"/>
         </Grid>
-        <Border CornerRadius="4" BorderThickness="1" BorderBrush="#FF508FC4" Padding="3,0,2,0">
           <StackPanel>
-            <CheckBox IsChecked="{Binding IsRoundTrip,Mode=TwoWay}">Round Trip</CheckBox>
+            <CheckBox IsChecked="{Binding IsRoundTrip,Mode=TwoWay}" Visibility="Collapsed">Round Trip</CheckBox>
             <CheckBox IsChecked="{Binding IsNonstop,Mode=TwoWay}">Nonstop</CheckBox>
           </StackPanel>
-        </Border>
         <Label>Depart:</Label>
         <DatePicker SelectedDate="{Binding DateDepart,Mode=TwoWay}" />
         <WrapPanel Visibility="{Binding IsRoundTrip,Converter={StaticResource BoolToVis}}" Margin="0" VerticalAlignment="Center">
           <Label>Return:</Label>
           <DatePicker SelectedDate="{Binding DateReturn,Mode=TwoWay}" />
         </WrapPanel>
+        <Expander IsExpanded="False" Header="Email Settings">
+          <StackPanel>
+            <Label>Email Address</Label>
+            <TextBox Text="{Binding EmailFrom}" MinWidth="20" ToolTip="Email Address"></TextBox>
+            <Label>Email Password</Label>
+            <PasswordBox MinWidth="20" ToolTip="Your Email Address" Name="txtEmailPassword"></PasswordBox>
+            <Label>Email Test</Label>
+            <TextBox Text="{Binding EmailTo}" MinWidth="20" ToolTip="Email Address to send test to"></TextBox>
+            <Button Command="{Binding Email}" CommandParameter="{Binding ElementName=txtEmailPassword}" Margin="5,0,7,0" Padding="0">Save</Button>
+          </StackPanel>
+        </Expander>
       </WrapPanel>
     </Border>
     <StackPanel Grid.Column="1">

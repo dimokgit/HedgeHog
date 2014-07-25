@@ -1474,9 +1474,9 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVolt1DataSource = new EnumerableDataSource<double>(animatedVolt1ValueY);
         animatedVolt1DataSource.SetYMapping(y => y);
-        var lg = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVolt1DataSource), Colors.LimeGreen, 1, "");
+        var lg = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVolt1DataSource), new Color() {A=255, R = 140, G = 170, B = 210 }, 1, "");
         lg.Description.LegendItem.Visibility = Visibility.Collapsed;
-        lg.Opacity = .25;
+        //lg.Opacity = .25;
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
         verticalAxis.Placement = AxisPlacement.Right;
         var innerVA = innerPlotter.Children.OfType<VerticalAxis>().First();

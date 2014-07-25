@@ -19,6 +19,7 @@ using OpenQA.Selenium.Remote;
 using System.Text.RegularExpressions;
 using HedgeHog;
 using System.IO;
+using System.Windows.Controls;
 
 namespace TicketBuster {
   public class PersistAttribute : Attribute { }
@@ -142,6 +143,7 @@ namespace TicketBuster {
       set { this.RaiseAndSetIfChanged(ref _isNonstop, value); }
     }
     public ReactiveCommand Search { get; set; }
+    public ReactiveCommand Email { get; set; }
     FirefoxDriver ie { get { return _ie ?? (_ie = new FirefoxDriver()); } }
     public string MessageBox2 {
       get { return _messageBox2; }
@@ -150,8 +152,34 @@ namespace TicketBuster {
     string _alert;
     public string Alert {
       get { return _alert; }
-      set { _alert = null; this.RaiseAndSetIfChanged(ref _alert, value); }
+      set { this.RaiseAndSetIfChanged(ref _alert, value); if (_alert != null) Alert = null; }
     }
+    #region EmailFrom
+    private string _emailFrom;
+    [Persist]
+    public string EmailFrom {
+      get { return _emailFrom; }
+      set { this.RaiseAndSetIfChanged(ref _emailFrom, value); }
+    }
+    #endregion
+    #region EmailTo
+    private string _emailTo;
+    [Persist]
+    public string EmailTo {
+      get { return _emailTo; }
+      set { this.RaiseAndSetIfChanged(ref _emailTo, value); }
+    }
+
+    #endregion
+    #region EmailPassword
+    private string _emailPassword;
+    [Persist]
+    public string EmailPassword {
+      get { return _emailPassword; }
+      set { this.RaiseAndSetIfChanged(ref _emailPassword, value); }
+    }
+    
+    #endregion
     EventLoopScheduler _IEScheduler;
     EventLoopScheduler IESchedulerFactory() {
       return _IEScheduler ?? (_IEScheduler = new EventLoopScheduler(ts => {
@@ -201,6 +229,17 @@ namespace TicketBuster {
       _searchSubscribtion = Search
         .ObserveOn(IESchedulerFactory())
         .Subscribe(_ => SearchFlight());
+      Email = new ReactiveCommand();
+      Email.Subscribe(pwdBox => {
+        try {
+          var pwd = ((PasswordBox)pwdBox).Password;
+          if (!string.IsNullOrWhiteSpace(pwd)) EmailPassword = pwd;
+          SendNotification("Subject from " + EmailFrom, "Body from " + EmailFrom);
+          Alert = "Test email sent.";
+        } catch (Exception exc) {
+          Alert = exc.ToString();
+        }
+      });
       this.ObservableForProperty(a => a.IsRoundTrip)
         .DistinctUntilChanged(b => b.Value)
         .Where(b => b.Value && DateReturn.GetValueOrDefault() < DateDepart)
@@ -215,6 +254,14 @@ namespace TicketBuster {
       SaveActiveSettings();
     }
     #endregion
+    void SendNotification(string subject, string body) {
+      try {
+        Emailer.Send(EmailFrom, EmailTo, EmailPassword, subject, body);
+      } catch (Exception exc) {
+        Alert = exc.ToString();
+      }
+
+    }
     void StartRetryCountdown() {
       Observable.Generate(
         RetryCountdown = RetryInterval,
@@ -259,7 +306,10 @@ namespace TicketBuster {
             !(d.we.Any(we => string.IsNullOrWhiteSpace(Flight) || IsFlightOk(FindParentByTag(we, "tr").Text, Flight)))
           )
           .ForEach(d => {
-            Alert = MessageBox2 = "Found award @ " + d.d.ToShortDateString();
+            var subject = "Found award @ " + d.d.ToShortDateString();
+            var body = new { AirportFrom, AirportTo } + "";
+            MessageBox2 = subject;
+            SendNotification(subject, body);
             MustStopSearch = true;
           });
       } catch (Exception exc) {

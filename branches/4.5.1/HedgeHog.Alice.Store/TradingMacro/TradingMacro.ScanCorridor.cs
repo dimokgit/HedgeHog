@@ -67,7 +67,16 @@ namespace HedgeHog.Alice.Store {
             DistancesFromInternalRates(offset, (rates, volts) => SetVoltage(rates[0], volts)));
         }
       });
-      Action<IList<Rate>, double> setVoltsLocal = (rates, volts) => rates.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volts));
+      Action<IList<Rate>, double> setVoltsLocal = (rates, volts) => rates
+        .TakeWhile(r => GetVoltage(r).IsNaN())
+        .ForEach(r => {
+          SetVoltage(r, volts);
+          var date = r.StartDate.AddDays(-1).TimeOfDay;
+          var bar = BarPeriodInt.FromMinutes();
+          rates.Skip(1400).SkipWhile(rp => rp.StartDate.TimeOfDay > date)
+            .SkipWhile(rp => GetVoltage(rp).IfNaN(0) == 0).Take(1)
+            .ForEach(rp => SetVoltage2(r, GetVoltage(rp)));
+        });
       var distances = DistancesFromInternalRates(0, setVoltsLocal).DefaultIfEmpty().Memoize();
       var distanceMin = distances.Min();
       var distanceMax = new Lazy<double>(() => distances.Max());
@@ -96,21 +105,22 @@ namespace HedgeHog.Alice.Store {
         .Select(date => RangeEdgeRight(date, timeMin, timeMax))
         .First();
       //var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
-      var chunks = DistancesByTimeframe(timeMax, timeMin, ratesAll).Take(DistanceDaysBack+1).ToArray();
+      var chunks = DistancesByTimeframe(timeMax, timeMin, ratesAll, (dist, date) => new { dist, date }).Take(DistanceDaysBack + 1).ToArray();
       //if (chunks.Length != DistanceDaysBack + 1) Log = new Exception("chunks.Length!=DistanceDaysBack+1");
-      var volts = InPips(chunks.Average() / CorridorDistance);
+      var volts = InPips(chunks.Select(a=>a.dist).Average() / CorridorDistance);
       setVolts(ratesAll, volts);
       var voltsAll = ratesAll.Select(GetVoltage).Take(BarsCountCalc).ToArray();
       Task.Factory.StartNew(() => {
-        var vh = voltsAll.AverageByIterations(1).DefaultIfEmpty().Average();
+        var vh = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
         GetVoltageHigh = () => vh;
-        var va = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
+        var va = voltsAll.AverageByIterations(-3).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
+
       });
       //SetVoltage2(ratesAll[0], GetVoltageHigh() / GetVoltageAverage() - 1);
-      if(!IsInVitualTrading)
-        GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch / CorridorDistance).Round(2) }));
-      return chunks.Skip(1).ToArray();
+      //if (!IsInVitualTrading)
+        GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch.dist / CorridorDistance).Round(2), Date = ch.date }));
+      return chunks.Select(a=>a.dist).Skip(1).ToArray();
     }
     public int GetWorkingDays(DateTime from, DateTime to) {
       var dayDifference = (int)to.Subtract(from).TotalDays;
@@ -125,7 +135,7 @@ namespace HedgeHog.Alice.Store {
       var timeMax = dateMax.TimeOfDay;
       var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
       var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
-      var chunks = DistancesByTimeframe( timeMax,  timeMin, ratesAll2).ToArray();
+      var chunks = DistancesByTimeframe(timeMax, timeMin, ratesAll2, (dist, date) => new { dist, date }).Select(a => a.dist).ToArray();
       var distanceMin = chunks.DefaultIfEmpty().Min();
       var volts = InPips(chunks.Average() / CorridorDistance);
       ratesAll.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volts));
@@ -136,7 +146,7 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
 
-    private IEnumerable<double> DistancesByTimeframe( TimeSpan timeMax, TimeSpan timeMin, List<Rate> ratesAll2) {
+    private IEnumerable<T> DistancesByTimeframe<T>( TimeSpan timeMax, TimeSpan timeMin, List<Rate> ratesAll2,Func<double,DateTime,T> selector) {
       return ratesAll2
         .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
         .DistinctUntilChanged(a => a.isIn)
@@ -145,7 +155,7 @@ namespace HedgeHog.Alice.Store {
         .Where(b => b.Count == 2)
         .Select(b => ratesAll2.GetRange(b[0].i, b[1].i - b[0].i))
         .Where(chunk => chunk.Count > CorridorDistance * 0.9)
-        .Select(chunk => chunk.Distance());
+        .Select(chunk => selector(chunk.Distance(), chunk[0].StartDate));
     }
     private CorridorStatistics ScanCorridorByDistance3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToArray());
