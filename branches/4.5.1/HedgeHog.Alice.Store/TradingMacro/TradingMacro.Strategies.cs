@@ -1995,7 +1995,7 @@ namespace HedgeHog.Alice.Store {
                   .Take(funcQueue.Length)
                   .Buffer(funcQueue.Length)
                   .Where(b => b.Count == funcQueue.Length && b[0].ud)
-                  .Select(b => new { left = b[3].r, right = b[0].r })
+                  .Select(b => new { left = b[3].r, right = b[2].r })
                   .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
                   .Where(corridor => corridor.Length > 60 * BarPeriodInt)
                   .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
