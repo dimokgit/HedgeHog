@@ -111,9 +111,9 @@ namespace HedgeHog.Alice.Store {
       setVolts(ratesAll, volts);
       var voltsAll = ratesAll.Select(GetVoltage).Take(BarsCountCalc).ToArray();
       Task.Factory.StartNew(() => {
-        var vh = voltsAll.AverageByIterations(-1).DefaultIfEmpty().Average();
+        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
         GetVoltageHigh = () => vh;
-        var va = voltsAll.AverageByIterations(-3).DefaultIfEmpty().Average();
+        var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
 
       });
@@ -122,6 +122,33 @@ namespace HedgeHog.Alice.Store {
         GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch.dist / CorridorDistance).Round(2), Date = ch.date }));
       return chunks.Select(a=>a.dist).Skip(1).ToArray();
     }
+    #region VoltsHighIterations
+    private int _VoltsHighIterations;
+    [Category(categoryActive)]
+    public int VoltsHighIterations {
+      get { return _VoltsHighIterations; }
+      set {
+        if (_VoltsHighIterations != value) {
+          _VoltsHighIterations = value;
+          OnPropertyChanged("VoltsHighIterations");
+        }
+      }
+    }
+    #endregion
+    #region VoltsAvgIterations
+    private int _VoltsAvgIterations;
+    [Category(categoryActive)]
+    public int VoltsAvgIterations {
+      get { return _VoltsAvgIterations; }
+      set {
+        if (_VoltsAvgIterations != value) {
+          _VoltsAvgIterations = value;
+          OnPropertyChanged("VoltsAvgIterations");
+        }
+      }
+    }
+
+    #endregion
     public int GetWorkingDays(DateTime from, DateTime to) {
       var dayDifference = (int)to.Subtract(from).TotalDays;
       return Enumerable

@@ -1263,6 +1263,7 @@ namespace HedgeHog.Alice.Store {
     Func<Rate, double> _getTradeBy(TradeCrossMethod method, bool? isBuy = null) {
       switch (method) {
         case TradeCrossMethod.PriceAvg: return r => r.PriceAvg;
+        case TradeCrossMethod.PriceAvg1: return r => r.PriceAvg1;
         case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
         case TradeCrossMethod.ChartAskBid:
           if (!isBuy.HasValue) throw new NotSupportedException(new { method, isBuy } + " is not supported.");

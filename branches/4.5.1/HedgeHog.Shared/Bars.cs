@@ -193,7 +193,7 @@ namespace HedgeHog.Bars {
       }
 
     }
-    double _PriceAvg1;
+    double _PriceAvg1 = double.NaN;
     [DataMember]
     public double PriceAvg1 {
       get { return _PriceAvg1; }

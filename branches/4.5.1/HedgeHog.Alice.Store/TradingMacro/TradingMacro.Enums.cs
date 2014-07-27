@@ -85,7 +85,8 @@ namespace HedgeHog.Alice.Store {
     ManualRange = 1,
     ElliottWave = 60,
     LongCross = 80,
-    LongLine = 160
+    LongLine = 160,
+    Recorder = 1000
   }
   public enum TradingMacroTakeProfitFunction {
     CorridorStDevMin = 3,
@@ -101,6 +102,7 @@ namespace HedgeHog.Alice.Store {
     WaveShort = 13,
     WaveTradeStart = 14,
     RatesStDevMin = 15,
+    RatesStDevAvg = 16,
     Spread = 20,
     Zero = 25,
     PriceSpread = 26,
@@ -189,7 +191,8 @@ namespace HedgeHog.Alice.Store {
     PriceCurr = -1,
     PriceAvg = 0,
     PriceCMA = 1,
-    ChartAskBid = 2
+    ChartAskBid = 2,
+    PriceAvg1 = 10,
   }
   public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, PriceMA = 8 }
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1,AskBidByMA = 2,Trima = 3 }
