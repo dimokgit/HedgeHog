@@ -2930,7 +2930,7 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) { throw new SetLotSizeException("", exc); }
     }
 
-    public int MaxPipsToPMC() { return (TradingDistanceInPips).ToInt(); }
+    public int MaxPipsToPMC() { return (RatesHeightInPips).ToInt(); }
 
     public int CalcLotSizeByPMC(Account account) {
       var tms = TradingStatistics.TradingMacros;
