@@ -85,6 +85,7 @@ namespace HedgeHog.Alice.Store {
             _GenericListSubject
               .Sample(0.5.FromSeconds())
               //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
+              .SubscribeOnDispatcher()
               .Subscribe(s => s(), exc => { });
           }
         return _GenericListSubject;

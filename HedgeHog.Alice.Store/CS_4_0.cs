@@ -3989,10 +3989,10 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.AdjustCloseLevels"/></summary>
         public const string AdjustCloseLevels = "AdjustCloseLevels";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._limitProfitByStDev"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._limitProfitByRatesHeight"/></summary>
         public const string _limitProfitByStDev = "_limitProfitByStDev";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitProfitByStDev"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitProfitByRatesHeight"/></summary>
         public const string LimitProfitByStDev = "LimitProfitByStDev";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ExitLevelByCurrentPrice"/></summary>
@@ -6822,7 +6822,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.DistanceDaysBack"/></summary>
         public static PropertyPath DistanceDaysBackPath { get { return new PropertyPath("DistanceDaysBack"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitProfitByStDev"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LimitProfitByRatesHeight"/></summary>
         public static PropertyPath LimitProfitByStDevPath { get { return new PropertyPath("LimitProfitByStDev"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TradingTimeState"/></summary>

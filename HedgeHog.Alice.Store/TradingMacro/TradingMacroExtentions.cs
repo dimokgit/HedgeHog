@@ -1280,12 +1280,6 @@ namespace HedgeHog.Alice.Store {
     }
     bool HasShutdownStarted { get { return ((bool)GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(new Func<bool>(() => GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.HasShutdownStarted), new object[0])); } }
 
-    DB.Blackout[] _blackouts;
-    bool IsBlackout(DateTime now) {
-      return
-      (_blackouts ?? (_blackouts = GlobalStorage.UseForexContext(c => c.Blackouts.ToArray())))
-      .Any(bo => now.Between(bo.TimeFrom, bo.TimeTo));
-    }
     List<Rate> _replayRates;
     object _replayLocker = new object();
     public DateTime AddWorkingDays(DateTime start, int workingDates) {
@@ -2725,6 +2719,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.RatesHeight_5: tp = RatesHeight / 5; break;
         case TradingMacroTakeProfitFunction.RatesStDevMax: tp = StDevByHeight.Max(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
+        case TradingMacroTakeProfitFunction.RatesStDevAvg: tp = StDevByHeight.Avg(StDevByPriceAvg); break;
         case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
         case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
         case TradingMacroTakeProfitFunction.Harmonic:

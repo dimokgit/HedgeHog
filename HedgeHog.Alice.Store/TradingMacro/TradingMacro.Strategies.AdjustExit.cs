@@ -75,8 +75,8 @@ namespace HedgeHog.Alice.Store {
               .Where(Lib.IsNotNaN)
               .Take(1)
             );
-          buyLevel = getLevels(buyLevel, BuyLevel).Min();
-          sellLevel = getLevels(sellLevel, SellLevel).Max();
+          //buyLevel = getLevels(buyLevel, BuyLevel).Min();
+          //sellLevel = getLevels(sellLevel, SellLevel).Max();
         }
         #endregion
         if (buyLevel.Min(sellLevel) < .5) {
@@ -111,11 +111,9 @@ namespace HedgeHog.Alice.Store {
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
             var ellasic = IsTakeBack ? 0 : RatesArray.TakeLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
             var ratesHeightInPips = new[] { 
-              RatesArray.Take(RatesArray.Count * 9 / 10).Height() / 2,
-              LimitProfitByStDev?StDevByPriceAvg:double.MaxValue
+              LimitProfitByRatesHeight? RatesArray.Take(RatesArray.Count * 9 / 10).Height() :double.NaN
             }.Min(m => InPips(m));
-            var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0)
-              .Min(ratesHeightInPips);
+            var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0);
             var ratesShort = RatesArray.TakeLast(5).ToArray();
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
@@ -157,13 +155,13 @@ namespace HedgeHog.Alice.Store {
       };
       return adjustExitLevels;
     }
-    bool _limitProfitByStDev;
+    bool _limitProfitByRatesHeight;
     [Category(categoryActiveYesNo)]
-    public bool LimitProfitByStDev {
-      get { return _limitProfitByStDev; }
+    public bool LimitProfitByRatesHeight {
+      get { return _limitProfitByRatesHeight; }
       set {
-        _limitProfitByStDev = value;
-        OnPropertyChanged(() => LimitProfitByStDev);
+        _limitProfitByRatesHeight = value;
+        OnPropertyChanged(() => LimitProfitByRatesHeight);
       }
     }
     private double ExitLevelByCurrentPrice(bool isBuy) {
