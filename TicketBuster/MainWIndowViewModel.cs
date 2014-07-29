@@ -15,6 +15,8 @@ using System.Windows;
 using System.Reactive.Concurrency;
 using System.Threading;
 using OpenQA.Selenium.Support.UI;
+using S = OpenQA.Selenium;
+using SUI = OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium.Remote;
 using System.Text.RegularExpressions;
 using HedgeHog;
@@ -370,9 +372,15 @@ namespace TicketBuster {
       WaitForResultPage(ie);
     }
     static IList<FirefoxWebElement> FindAward(RemoteWebDriver ie, string flight) {
-      if(!IsOnResultPage(ie))throw new Exception("Navigate to Result page first.");
+      var cabinCount= GetCabinCount(ie);
+      if (!IsOnResultPage(ie)) throw new Exception("Navigate to Result page first.");
       var awardButtons = new WebDriverWait(ie, TimeSpan.FromSeconds(2)).Until(d => FindAwardButton(ie).Cast<FirefoxWebElement>().ToArray());
       return awardButtons;
+    }
+
+    private static int GetCabinCount(RemoteWebDriver ie) {
+      var cabinHeader = ie.FindElementByClassName("trRewardPriceHdg");
+      return cabinHeader.FindElements(By.TagName("td")).Count;
     }
 
     private static FirefoxWebElement FindParentByTag(FirefoxWebElement we, string tag) {
