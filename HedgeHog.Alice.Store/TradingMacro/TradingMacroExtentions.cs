@@ -3106,7 +3106,7 @@ namespace HedgeHog.Alice.Store {
                 startDate = TradesManagerStatic.FX_DATE_NOW;
               else {
                 startDate = CorridorStats.StartDate;//.AddMinutes(-(int)BarPeriod * intervalToAdd);
-                var periodsByStartDate = _Rates.Count(r => r.StartDate >= startDate) + intervalToAdd;
+                var periodsByStartDate = UseRatesInternal(ri => ri.Count(r => r.StartDate >= startDate) + intervalToAdd);
                 periodsBack = periodsBack.Max(periodsByStartDate);
               }
             }
@@ -3119,7 +3119,7 @@ namespace HedgeHog.Alice.Store {
               }
             });
             {
-              var ratesList = _Rates.TakeLast(10).TakeWhile(r=>r.IsHistory).TakeLast(2).Take(1).ToList();
+              var ratesList = UseRatesInternal(ri => ri.TakeLast(10).TakeWhile(r => r.IsHistory).TakeLast(2).Take(1).ToList());
               startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).Single();
               if (startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
                 periodsBack = 0;
@@ -3229,6 +3229,9 @@ namespace HedgeHog.Alice.Store {
           if (!IsInVitualTrading) {
             UseRatesInternal(ri => ri.Clear());
             OnLoadRates();
+          } else {
+            var func = new[] { SetVoltage, SetVoltage2 };
+            UseRatesInternal(ri => ri.ForEach(r => { func.ForEach(f => { f(r, double.NaN); }); }));
           }
           break;
         case TradingMacroMetadata.RatesInternal:

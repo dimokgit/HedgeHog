@@ -2110,10 +2110,12 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     private void _SetLastPoint(double high,double low, double ma, Rate rateLast) {
       try {
-        SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);
-        animatedDataSourceBid.RaiseDataChanged();
-        animatedDataSource.RaiseDataChanged();
-        animatedDataSource1.RaiseDataChanged();
+        if (animatedPriceY.Any()) {
+          SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);
+          animatedDataSourceBid.RaiseDataChanged();
+          animatedDataSource.RaiseDataChanged();
+          animatedDataSource1.RaiseDataChanged();
+        }
       } catch (Exception exc) {
         LogMessage.Send(exc);
       }

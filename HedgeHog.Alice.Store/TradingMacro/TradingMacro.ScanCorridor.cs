@@ -60,13 +60,11 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
     private CorridorStatistics ScanCorridorByDistance51(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      UseRatesInternal(ri => {
-        if (ri.TakeLast(10).First().Distance.IsNaN()) {
-          Log = new Exception("Loading distance volts ...");
-          Enumerable.Range(1, BarsCountCalc).ForEach(offset =>
-            DistancesFromInternalRates(offset, (rates, volts) => SetVoltage(rates[0], volts)));
-        }
-      });
+      if (UseRatesInternal(ri => ri.TakeLast(10)).First().Distance.IsNaN()) {
+        Log = new Exception("Loading distance volts ...");
+        Enumerable.Range(1, BarsCountCalc).ForEach(offset =>
+          DistancesFromInternalRates(offset, (rates, volts) => SetVoltage(rates[0], volts)));
+      };
       Action<IList<Rate>, double> setVoltsLocal = (rates, volts) => rates
         .TakeWhile(r => GetVoltage(r).IsNaN())
         .ForEach(r => {
@@ -80,7 +78,7 @@ namespace HedgeHog.Alice.Store {
       var distances = DistancesFromInternalRates(0, setVoltsLocal).DefaultIfEmpty().Memoize();
       var distanceMin = distances.Min();
       var distanceMax = new Lazy<double>(() => distances.Max());
-      Func<IList<Rate>, int, int> getCount = (rates,count) => count > CorridorDistance ? count : rates.TakeWhile(r => r.Distance <= distanceMax.Value).Count();
+      Func<IList<Rate>, int, int> getCount = (rates, count) => count > CorridorDistance ? count : rates.TakeWhile(r => r.Distance <= distanceMax.Value).Count();
       Func<IList<Rate>, int> scan = rates => distanceMin == 0
         ? CorridorDistance
         : rates.TakeWhile(r => r.Distance <= distanceMin).Count();
@@ -118,7 +116,7 @@ namespace HedgeHog.Alice.Store {
 
       });
       //SetVoltage2(ratesAll[0], GetVoltageHigh() / GetVoltageAverage() - 1);
-      //if (!IsInVitualTrading)
+      if (!IsInVitualTrading)
         GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch.dist / CorridorDistance).Round(2), Date = ch.date }));
       return chunks.Select(a=>a.dist).Skip(1).ToArray();
     }
