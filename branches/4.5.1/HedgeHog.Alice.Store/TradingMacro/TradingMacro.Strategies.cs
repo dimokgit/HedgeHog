@@ -2033,6 +2033,86 @@ namespace HedgeHog.Alice.Store {
               adjustExitLevels0();
               break;
             #endregion
+            #region FrameAngle32
+            case TrailingWaveMethod.FrameAngle32: {
+                #region firstTime
+                if (firstTime) {
+                  CenterOfMassBuy = CenterOfMassSell = double.NaN;
+                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  workFlowObservable.Subscribe();
+                  #region onCloseTradeLocal
+                  onCloseTradeLocal += t => {
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
+                      IsTradingActive = false;
+                    if (CurrentGrossInPipTotal > 0)
+                      BroadcastCloseAllTrades();
+                  };
+                  onOpenTradeLocal += WorkflowMixin.YAction<Trade>(h => t => {
+                    onOpenTradeLocal.UnSubscribe(h, d => onOpenTradeLocal -= d);
+                  });
+                  #endregion
+                  //initTradeRangeShift();
+                }
+                #endregion
+                var point = InPoints(1);
+                var voltLine = GetVoltageHigh();
+                Func<Rate, bool> isLowFunc = r => GetVoltage(r) < GetVoltageAverage();
+                Func<Rate, bool> isHighFunc = r => GetVoltage(r) < GetVoltageHigh();
+                var funcQueue = new[] { isLowFunc, isLowFunc, isHighFunc, isHighFunc };
+                var funcQueuePointer = 0;
+                #region Find Corridor
+                GeneralPurposeSubject.OnNext(() =>
+                  UseRatesInternal(ri =>
+                    ri.Reverse<Rate>()
+                    .Skip(BarPeriodInt * (1440 - 60 * 4))
+                    .SkipWhile(r => !funcQueue[0](r))
+                    .Select(r => new { r, ud = funcQueue[funcQueuePointer](r) })
+                    .DistinctUntilChanged(a => a.ud)
+                    .Do(_ => funcQueuePointer++)
+                    .Take(funcQueue.Length)
+                    .Buffer(funcQueue.Length)
+                    .Where(b => b.Count == funcQueue.Length && b[0].ud)
+                    .Select(b => new { left = b[3].r, right = b[2].r })
+                    .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
+                    .Where(corridor => corridor.Length > 60 * BarPeriodInt)
+                    .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
+                    .ForEach(a => {
+                      CenterOfMassBuy = a.max;
+                      CenterOfMassSell = a.min;
+                    })));
+                #endregion
+                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;
+                var isVoltHigh = new Func<bool>(() => GetVoltage(RateLast) > GetVoltageHigh()).Yield()
+                  .Select(f => f())
+                  .Do(b => {
+                    //if (b) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  }).Memoize();
+                var isVoltLow = new Func<bool>(() => GetVoltage(RateLast) < GetVoltageAverage()).Yield()
+                  .Select(f => f());
+                var getUpDown = new { up = CenterOfMassBuy, down = CenterOfMassSell };
+                Action setUpDown = () => {
+                  BuyLevel.RateEx = getUpDown.up;
+                  SellLevel.RateEx = getUpDown.down;
+                };
+                setUpDown();
+                var currentPriceOk = this.CurrentEnterPrice(null).Between(SellLevel.Rate, BuyLevel.Rate);
+                var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
+                    _ti =>{ WorkflowStep = "1 Wait Start";
+                    if (corridorOk && isVoltHigh.Single() && currentPriceOk) {
+                        _buySellLevelsForEach(sr => { sr.TradesCountEx = 0; sr.CanTradeEx = true; });
+                      }
+                    if (isVoltLow.Single()) {
+                      _buySellLevelsForEach(sr => { sr.TradesCountEx = 0; sr.CanTradeEx = false; });
+                    }
+                      return tupleStayEmpty();
+                    }};
+                workflowSubject.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
             #region FrameAngle4
             case TrailingWaveMethod.FrameAngle4: {
                 #region firstTime

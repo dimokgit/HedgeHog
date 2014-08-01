@@ -25,7 +25,7 @@ namespace HedgeHog.Alice.Store {
     }
     public double CalculateLastPrice(Rate rate, Func<Rate, double> price) {
       try {
-        if (TradesManager.IsInTest || IsInPlayback) return price(rate);
+        if (TradesManager.IsInTest || IsInPlayback || TradeEnterBy == TradeCrossMethod.PriceAvg1 ) return price(rate);
         var secondsPerBar = BarPeriodInt * 60;
         var secondsCurrent = (ServerTime - rate.StartDate).TotalSeconds;
         var ratio = secondsCurrent / secondsPerBar;

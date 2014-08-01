@@ -304,11 +304,15 @@ namespace TicketBuster {
             else FillResultSearch(ie, a.d);
           })
           .Select(d => new { d.d, we = FindAward(ie, Flight ?? "") })
-          .SkipWhile(d =>
-            !(d.we.Any(we => string.IsNullOrWhiteSpace(Flight) || IsFlightOk(FindParentByTag(we, "tr").Text, Flight)))
-          )
+          .SelectMany(d => d.we.Select(we => {
+            var td = FindParentByTag(we, "td");
+            var tr = FindParentByTag(we, "tr");
+            var tdIndex = tr.FindElementsByXPath("td").TakeWhile(a => a.Text != td.Text).Count();
+            return new { d, isOk = IsFlightOk(tr.Text, Flight) };
+          }))
+          .Where(d => d.isOk)
           .ForEach(d => {
-            var subject = "Found award @ " + d.d.ToShortDateString();
+            var subject = "Found award @ " + d.d.d.ToShortDateString();
             var body = new { AirportFrom, AirportTo } + "";
             MessageBox2 = subject;
             SendNotification(subject, body);
@@ -323,7 +327,7 @@ namespace TicketBuster {
       }
     }
     static bool IsFlightOk(string result, string flight) {
-      return Regex.IsMatch(result, @"flight:\s+" + flight, RegexOptions.IgnoreCase);
+      return string.IsNullOrWhiteSpace(flight) || Regex.IsMatch(result, @"flight:\s+" + flight, RegexOptions.IgnoreCase);
     }
     private void FillSearch() {
       var searches = new WebDriverWait(ie, TimeSpan.FromSeconds(10)).Until(d => d.FindElements(By.ClassName("txtAirLoc")));
@@ -374,7 +378,8 @@ namespace TicketBuster {
     static IList<FirefoxWebElement> FindAward(RemoteWebDriver ie, string flight) {
       var cabinCount= GetCabinCount(ie);
       if (!IsOnResultPage(ie)) throw new Exception("Navigate to Result page first.");
-      var awardButtons = new WebDriverWait(ie, TimeSpan.FromSeconds(2)).Until(d => FindAwardButton(ie).Cast<FirefoxWebElement>().ToArray());
+      var awardButtons = new WebDriverWait(ie, TimeSpan.FromSeconds(2))
+        .Until(d => FindAwardButton(ie).Cast<FirefoxWebElement>().ToArray());
       return awardButtons;
     }
 
