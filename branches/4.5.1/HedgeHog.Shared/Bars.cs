@@ -633,6 +633,14 @@ namespace HedgeHog.Bars {
       get { return _CrossesDensityAverage; }
       set { _CrossesDensityAverage = value; }
     }
+    #region VoltageLocal
+    private double _VoltageLocal = double.NaN;
+    public double VoltageLocal {
+      get { return _VoltageLocal; }
+      set { _VoltageLocal = value; }
+    }
+
+    #endregion
   }
   public class Tick : Rate {
     public int Row { get; set; }

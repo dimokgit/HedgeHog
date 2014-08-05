@@ -633,12 +633,13 @@ namespace HedgeHog {
     /// <param name="rates"></param>
     /// <param name="chunksLength"></param>
     /// <returns></returns>
-    public static IEnumerable<T[]> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
+    public static IEnumerable<IList<T>> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
+      return ratesOriginal.Buffer(chunksLength, 1).TakeWhile(b => b.Count == chunksLength);
       var rates = ratesOriginal.SafeArray();
       return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1))
         .Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
     }
-    public static IEnumerable<U> Integral<T,U>(this IEnumerable<T> ratesOriginal, int chunksLength, Func<T[], U> func) {
+    public static IEnumerable<U> Integral<T,U>(this IEnumerable<T> ratesOriginal, int chunksLength, Func<IList<T>, U> func) {
       return ratesOriginal.Integral(chunksLength).Select(func);
     }
     /// <summary>
@@ -665,7 +666,7 @@ namespace HedgeHog {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
-      var diffs = line.Zip(values, (l, v) => l - v).ToArray();
+      var diffs = line.Zip(values, (l, v) => v - l).ToArray();
       if (callCC != null) callCC(diffs);
       return diffs.StDev();
     }

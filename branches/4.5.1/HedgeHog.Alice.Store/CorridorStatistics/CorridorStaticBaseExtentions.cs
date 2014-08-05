@@ -123,16 +123,7 @@ namespace HedgeHog.Alice.Store {
             case CorridorCalculationMethod.Maximum:
               stDevDict.Add(CorridorCalculationMethod.Maximum, stDev = stDevDict.Values.Max()); break;
             case CorridorCalculationMethod.Height:
-              double max = double.MinValue, min = double.MaxValue;
-              var heights = rates.Select((r, i) => {
-                var hh = heightHigh(r, i);
-                var hl = heightLow(r, i);
-                max = max.Max(hh);
-                min = min.Min(hl);
-                return  hh.Abs() + hl.Abs();
-              }).ToList();
-              height = max + min.Abs();
-              var sd = rates.Select(price).ToArray().StDevByRegressoin(coeffs);
+              var sd = rates.Select(price).ToArray().StDevByRegressoin(coeffs, diffs => height = diffs.Max() - diffs.Min());
               stDevDict.Add(CorridorCalculationMethod.Height, stDev = sd/* heights.StDevP()*/);
               break;
             case CorridorCalculationMethod.HeightUD:
