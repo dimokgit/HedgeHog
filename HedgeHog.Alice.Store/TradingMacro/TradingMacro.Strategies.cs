@@ -2061,27 +2061,31 @@ namespace HedgeHog.Alice.Store {
                 Func<Rate, bool> isLowFunc = r => GetVoltage(r) < GetVoltageAverage();
                 Func<Rate, bool> isHighFunc = r => GetVoltage(r) < GetVoltageHigh();
                 var funcQueue = new[] { isLowFunc, isLowFunc, isHighFunc, isHighFunc };
-                var funcQueuePointer = 0;
                 #region Find Corridor
-                GeneralPurposeSubject.OnNext(() =>
-                  UseRatesInternal(ri =>
-                    ri.Reverse<Rate>()
-                    .Skip(BarPeriodInt * (1440 - 60 * 4))
-                    .SkipWhile(r => !funcQueue[0](r))
-                    .Select(r => new { r, ud = funcQueue[funcQueuePointer](r) })
-                    .DistinctUntilChanged(a => a.ud)
-                    .Do(_ => funcQueuePointer++)
-                    .Take(funcQueue.Length)
-                    .Buffer(funcQueue.Length)
-                    .Where(b => b.Count == funcQueue.Length && b[0].ud)
-                    .Select(b => new { left = b[3].r, right = b[2].r })
-                    .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
-                    .Where(corridor => corridor.Length > 60 * BarPeriodInt)
-                    .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
+                var corrInfoAnonFunc = Lib.ToFunc(new Rate[0].AsEnumerable(), (rates) => {
+                  var funcQueuePointer = 0;
+                  return rates.SkipWhile(r => !funcQueue[0](r))
+                  .Select(r => new { r, ud = funcQueue[funcQueuePointer](r) })
+                  .DistinctUntilChanged(a => a.ud)
+                  .Do(_ => funcQueuePointer++)
+                  .Take(funcQueue.Length)
+                  .Buffer(funcQueue.Length)
+                  .Where(b => b.Count == funcQueue.Length && b[0].ud)
+                  .Select(b => new { left = b[3].r, right = b[2].r })
+                  .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
+                  .Where(corridor => corridor.Length > 60 * BarPeriodInt)
+                  .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
+                  .Select(corridor => new { corridor.max, corridor.min, avg = corridor.max.Avg(corridor.min) });
+                });
+                var ratesReversed = RatesArray.Reverse<Rate>().ToArray();
+                corrInfoAnonFunc(ratesReversed.Skip(BarPeriodInt * (1440 - 60 * 4)))
+                  .Select(a => a.avg)
+                  .ForEach(avgPrev => corrInfoAnonFunc(ratesReversed)
+                    .Where(now => now.avg.Abs(avgPrev) > StDevByPriceAvg)
                     .ForEach(a => {
                       CenterOfMassBuy = a.max;
                       CenterOfMassSell = a.min;
-                    })));
+                    }));
                 #endregion
                 var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;
                 var isVoltHigh = new Func<bool>(() => GetVoltage(RateLast) > GetVoltageHigh()).Yield()
@@ -2091,11 +2095,11 @@ namespace HedgeHog.Alice.Store {
                   }).Memoize();
                 var isVoltLow = new Func<bool>(() => GetVoltage(RateLast) < GetVoltageAverage()).Yield()
                   .Select(f => f());
-                var getUpDown = new { up = CenterOfMassBuy, down = CenterOfMassSell };
-                Action setUpDown = () => {
-                  BuyLevel.RateEx = getUpDown.up;
-                  SellLevel.RateEx = getUpDown.down;
-                };
+                var getUpDown = new { up = CenterOfMassBuy, down = CenterOfMassSell }.Yield();
+                Action setUpDown = () => getUpDown.ForEach(ud => {
+                    BuyLevel.RateEx = ud.up;
+                    SellLevel.RateEx = ud.down;
+                  });
                 setUpDown();
                 var currentPriceOk = this.CurrentEnterPrice(null).Between(SellLevel.Rate, BuyLevel.Rate);
                 var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {

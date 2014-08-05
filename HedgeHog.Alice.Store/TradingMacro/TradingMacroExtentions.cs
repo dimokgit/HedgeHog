@@ -1928,11 +1928,16 @@ namespace HedgeHog.Alice.Store {
             SetMA();
             GeneralPurposeSubject.OnNext(() => {
               try {
-                var corridor = _rateArray.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
-                RatesStDev = corridor.StDev;
-                StDevByPriceAvg = corridor.StDevs[CorridorCalculationMethod.PriceAverage];
-                StDevByHeight = corridor.StDevs.ContainsKey(CorridorCalculationMethod.Height) ? corridor.StDevs[CorridorCalculationMethod.Height] : double.NaN;
-                Angle = corridor.Slope.Angle(BarPeriodInt, PointSize);
+                var prices = RatesArray.ToArray(_priceAvg);
+                var coeffs = prices.Regress(1);
+                StDevByPriceAvg = prices.StDev();
+                StDevByHeight = prices.StDevByRegressoin(coeffs);
+                switch (CorridorCalcMethod) {
+                  case CorridorCalculationMethod.Height: RatesStDev = StDevByHeight; break;
+                  case CorridorCalculationMethod.PriceAverage: RatesStDev = StDevByPriceAvg; break;
+                  default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
+                }
+                Angle = coeffs.LineSlope().Angle(BarPeriodInt, PointSize);
                 OnPropertyChanged(() => RatesRsd);
               } catch (Exception exc) {
                 Log = exc;
@@ -2781,6 +2786,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance2: return ScanCorridorByDistance2;
         case ScanCorridorFunction.Distance3: return ScanCorridorByDistance3;
         case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
+        case ScanCorridorFunction.Distance6: return ScanCorridorByDistance52;
         //case ScanCorridorFunction.Distance6: return ScanCorridorByDistance6;
       }
       throw new NotSupportedException(function + "");
@@ -3223,6 +3229,7 @@ namespace HedgeHog.Alice.Store {
           goto case TradingMacroMetadata.BarsCount;
         case TradingMacroMetadata.BarsCount:
         case TradingMacroMetadata.LimitBar:
+        case TradingMacroMetadata.CorridorDistanceRatio:
           CorridorStats = null;
           CorridorStartDate = null;
           //Strategy = Strategies.None;
@@ -3230,7 +3237,7 @@ namespace HedgeHog.Alice.Store {
             UseRatesInternal(ri => ri.Clear());
             OnLoadRates();
           } else {
-            var func = new[] { SetVoltage, SetVoltage2 };
+            var func = new[] { SetVoltage, SetVoltage2, (r, v) => r.VoltageLocal = v, (r, v) => r.Distance = v };
             UseRatesInternal(ri => ri.ForEach(r => { func.ForEach(f => { f(r, double.NaN); }); }));
           }
           break;
