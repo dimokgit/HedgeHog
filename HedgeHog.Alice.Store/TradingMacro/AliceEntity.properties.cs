@@ -548,8 +548,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    public bool _UseTestFile;
     [Category(categoryTestControl)]
-    public bool UseTestFile { get; set; }
+    public bool UseTestFile {
+      get { return _UseTestFile; }
+      set {
+        _UseTestFile = value;
+        OnPropertyChanged("UseTestFile");
+      }
+    }
     [Category(categoryTestControl)]
     [DisplayName("Use Super Session")]
     public bool TestUseSuperSession { get; set; }

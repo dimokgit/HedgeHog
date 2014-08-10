@@ -1237,7 +1237,6 @@ namespace HedgeHog.Alice.Client {
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
         CoreFX.LoggedIn += (s, e) => {
-          new Action(() => App.Current.MainWindow.WindowState = WindowState.Maximized).ScheduleOnUI();
           IsInLogin = false;
           TradesManager.Error += fwMaster_Error;
           TradesManager.TradeAdded += fwMaster_TradeAdded;
