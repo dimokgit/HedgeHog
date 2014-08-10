@@ -115,9 +115,6 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\..\..\AppData\Local\Temp\AnkhSVN\027f\MainViewModel.cs">
-      <Link>MainViewModel.cs</Link>
-    </Compile>
     <Compile Include="Report.xaml.cs">
       <DependentUpon>Report.xaml</DependentUpon>
     </Compile>

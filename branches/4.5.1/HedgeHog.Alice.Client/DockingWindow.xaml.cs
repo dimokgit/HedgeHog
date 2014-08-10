@@ -172,7 +172,6 @@ namespace HedgeHog.Alice.Client {
       RootVisual.PaneStateChange += RootVisual_PaneStateChange;
       RootVisual.ElementCleaning += RootVisual_ElementCleaning;
       RootVisual.ElementLoaded += RootVisual_ElementLoaded;
-      DispatcherScheduler.Current.Schedule(1.FromSeconds(), NoTelerik);
       #endregion
     }
 
@@ -185,7 +184,7 @@ namespace HedgeHog.Alice.Client {
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, uint dwExtraInfo);
 
     void NoTelerik() {
-      keybd_event((byte)0x1B, 0, 0, 0);
+      DispatcherScheduler.Current.Schedule(0.FromSeconds(), () => keybd_event((byte)0x1B, 0, 0, 0));
     }
 
     #region RootVisual Event Handlers
@@ -425,7 +424,7 @@ namespace HedgeHog.Alice.Client {
       }));
     }
     public void AddCharter(CharterControl charter) {
-
+      NoTelerik();
       var pane = FindChartPaneByName(charter.Name);
       var createPane = pane == null;
       if (pane == null) {

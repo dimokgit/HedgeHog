@@ -2787,7 +2787,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance3: return ScanCorridorByDistance3;
         case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
         case ScanCorridorFunction.Distance6: return ScanCorridorByDistance52;
-        //case ScanCorridorFunction.Distance6: return ScanCorridorByDistance6;
+        case ScanCorridorFunction.Distance7: return ScanCorridorByDistance7;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3229,6 +3229,7 @@ namespace HedgeHog.Alice.Store {
           goto case TradingMacroMetadata.BarsCount;
         case TradingMacroMetadata.BarsCount:
         case TradingMacroMetadata.LimitBar:
+        case TradingMacroMetadata.VoltsFrameLength:
         case TradingMacroMetadata.CorridorDistanceRatio:
           CorridorStats = null;
           CorridorStartDate = null;
