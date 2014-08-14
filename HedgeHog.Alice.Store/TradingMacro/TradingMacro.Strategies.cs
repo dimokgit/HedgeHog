@@ -1985,6 +1985,9 @@ namespace HedgeHog.Alice.Store {
                 var voltLine = GetVoltageHigh();
                 Func<Rate, bool> isLowFunc = r => GetVoltage(r) < GetVoltageAverage();
                 Func<Rate, bool> isHighFunc = r => GetVoltage(r) < GetVoltageHigh();
+                Func<IList<Rate>, bool> calcVoltsBAOk = corridor => VoltsBelowAboveLengthMin >= 0
+                  ? corridor.Count > VoltsBelowAboveLengthMinCalc * BarPeriodInt
+                  : corridor.Count < -VoltsBelowAboveLengthMinCalc * BarPeriodInt;
                 var funcQueue = new[] { isLowFunc, isLowFunc, isHighFunc, isHighFunc };
                 var funcQueuePointer = 0;
                 RatesArray.Reverse<Rate>()
@@ -1997,7 +2000,7 @@ namespace HedgeHog.Alice.Store {
                   .Where(b => b.Count == funcQueue.Length && b[0].ud)
                   .Select(b => new { left = b[3].r, right = b[2].r })
                   .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
-                  .Where(corridor => corridor.Length > 60 * BarPeriodInt)
+                  .Where(calcVoltsBAOk)
                   .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
                   .ForEach(a => {
                     CenterOfMassBuy = a.max;
@@ -3414,6 +3417,21 @@ namespace HedgeHog.Alice.Store {
     }
 
     IEnumerable<DateTime> _fractalTimes = new DateTime[0];
+    double VoltsBelowAboveLengthMinCalc {
+      get {
+        return VoltsBelowAboveLengthMin.Abs() > 10 ? VoltsBelowAboveLengthMin : VoltsFrameLength * VoltsBelowAboveLengthMin;
+      }
+    }
+
+    private double _VoltsBelowAboveLengthMin = 60;
+    [Category(categoryActive)]
+    public double VoltsBelowAboveLengthMin {
+      get { return _VoltsBelowAboveLengthMin; }
+      set { 
+        _VoltsBelowAboveLengthMin = value;
+        OnPropertyChanged("VoltsBelowAboveLengthMin");
+      }
+    }
     public IEnumerable<DateTime> FractalTimes {
       get { return _fractalTimes; }
       set { _fractalTimes = value; }

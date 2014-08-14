@@ -6,6 +6,7 @@ using System.Text;
 namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
+    Sdi = 4,
     Volume = 5,
     Rsd = 6,
     FractalDensity = 7,
@@ -40,6 +41,7 @@ namespace HedgeHog.Alice.Store {
     Distance5 = 14,
     Distance6 = 15,
     Distance7 = 16,
+    StDevIntegral = 17,
     HorizontalProbe = 200,
     WaveStDevHeight = 80,
     StDevMinInRange = 81,

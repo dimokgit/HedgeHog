@@ -42,7 +42,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>\\dimonfx\bin\Debug_RealMicro 3\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -619,6 +619,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Tests\Test_USDJPY_SDI_VBA60.txt" />
     <Resource Include="Tests\Test_USDJPY_Distance22.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev31_03.txt" />
     <Resource Include="Tests\Test_EURJPY_StDev3_Original.txt" />

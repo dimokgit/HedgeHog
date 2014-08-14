@@ -82,6 +82,38 @@ namespace HedgeHog.Alice.Store {
       var chunks = VoltsByTimeframe(frameLength, timeMax, timeMin, ratesAll, (dist, date) => new { dist, date }).Take(DistanceDaysBack + 1).ToArray();
       return chunks.Select(a => a.dist).Skip(1).ToArray();
     }
+
+    private void SetVoltsByStDevDblIntegral(IList<Rate> ratesReversed, int frameLength) {
+      ratesReversed
+        .Integral(frameLength)
+        .TakeWhile(chunk => chunk[0].VoltageLocal.IsNaN())
+        .ForEach(chunk => chunk[0].VoltageLocal = InPips(chunk.StDev(_priceAvg)));
+      ratesReversed
+        .Integral(frameLength)
+        .TakeWhile(chunk => GetVoltage(chunk[0]).IsNaN() && chunk.Last().VoltageLocal.IsNotNaN())
+        .ForEach(chunk => SetVoltage(chunk[0], chunk.Average(r => r.VoltageLocal)));
+    }
+
+    private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
+      SetVoltsByStDevDblIntegral(ratesReversed, VoltsFrameLength);
+      var voltsAll = ratesForCorridor.Select(GetVoltage).ToArray();
+      OnGeneralPurpose(() => {
+        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
+        GetVoltageHigh = () => vh;
+        var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
+        GetVoltageAverage = () => va;
+      });
+      var distanceMin = ratesForCorridor.Average(GetVoltage)*CorridorDistance;
+      var distanceSum = 0.0;
+      var count = ratesReversed.Select(r => (distanceSum += GetVoltage(r))).TakeWhile(d => d < distanceMin).Count();
+      //var rateChunks = ratesReversed.Select((r, i) => new ArraySegment<Rate>(ratesReversed, 0, i + 1));
+      Func<IList<Rate>, int> scan = rates => distanceMin == 0
+        ? CorridorDistance
+        : count;// rateChunks.SkipWhile(chunk => chunk.Sum(GetVoltage) < distanceMin).First().Count;
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+    }
+
     private CorridorStatistics ScanCorridorByDistance7(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Stopwatch sw = Stopwatch.StartNew();
       var swDict = new Dictionary<string, double>();

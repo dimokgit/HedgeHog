@@ -634,7 +634,7 @@ namespace HedgeHog {
     /// <param name="chunksLength"></param>
     /// <returns></returns>
     public static IEnumerable<IList<T>> Integral<T>(this IEnumerable<T> ratesOriginal, int chunksLength) {
-      return ratesOriginal.Buffer(chunksLength, 1).TakeWhile(b => b.Count == chunksLength);
+      //return ratesOriginal.Buffer(chunksLength, 1).TakeWhile(b => b.Count == chunksLength);
       var rates = ratesOriginal.SafeArray();
       return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1))
         .Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
