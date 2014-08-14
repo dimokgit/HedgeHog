@@ -1259,7 +1259,7 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged("PipsPerPosition");
       RaiseShowChart();
     }
-    string[] sessionInfoCategories = new[] { categoryActive, categorySession, categoryActiveFuncs };
+    string[] sessionInfoCategories = new[] { categoryActive,categoryActiveYesNo, categorySession, categoryActiveFuncs };
     string _sessionInfo = "";
     public string SessionInfo {
       get {
@@ -2788,6 +2788,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
         case ScanCorridorFunction.Distance6: return ScanCorridorByDistance52;
         case ScanCorridorFunction.Distance7: return ScanCorridorByDistance7;
+        case ScanCorridorFunction.StDevIntegral: return ScanCorridorByStDevIntegral;
       }
       throw new NotSupportedException(function + "");
     }
@@ -2795,6 +2796,7 @@ namespace HedgeHog.Alice.Store {
     Func<CorridorStatistics> GetShowVoltageFunction() {
       switch (VoltageFunction_) {
         case HedgeHog.Alice.VoltageFunction.None: return ShowVoltsNone;
+        case HedgeHog.Alice.VoltageFunction.Sdi: return ShowVoltsByStDevIntegral;
         case HedgeHog.Alice.VoltageFunction.Volume: return ShowVoltsByFrameAngle;
         case HedgeHog.Alice.VoltageFunction.Rsd: return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.HarmonicMin: return ShowVoltsByHarmonicMin;

@@ -120,12 +120,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Compile Include="..\..\..\..\..\AppData\Local\Temp\AnkhSVN\7c7a\MainViewModel.cs">
-      <Link>ViewModel\MainViewModel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\..\..\..\AppData\Local\Temp\AnkhSVN\7c7a\ViewModelLocator.cs">
-      <Link>ViewModel\ViewModelLocator.cs</Link>
-    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>

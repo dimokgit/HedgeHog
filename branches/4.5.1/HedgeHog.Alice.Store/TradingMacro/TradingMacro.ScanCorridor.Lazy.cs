@@ -41,6 +41,18 @@ namespace HedgeHog.Alice.Store {
       if (postProcess != null) postProcess();
       return (showVolts ?? ShowVoltsNone)();
     }
+    private CorridorStatistics ShowVoltsByStDevIntegral() {
+      SetVoltsByStDevDblIntegral(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);
+      var voltsAll = RatesArray.Select(GetVoltage).ToArray();
+      OnGeneralPurpose(() => {
+        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
+        GetVoltageHigh = () => vh;
+        var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
+        GetVoltageAverage = () => va;
+      });
+
+      return ShowVoltsNone();
+    }
     private CorridorStatistics ShowVoltsNone() {
       if (!WaveShort.HasRates)
         WaveShort.Rates = RatesArray.TakeLast(CorridorDistance).Reverse().ToArray();
