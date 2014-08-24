@@ -2040,9 +2040,8 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle32: {
                 #region firstTime
                 if (firstTime) {
-                  CenterOfMassBuy = CenterOfMassSell = double.NaN;
                   LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
-                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  Log = new Exception(new { VoltsFrameLength } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
                   onCloseTradeLocal += t => {
@@ -2062,52 +2061,47 @@ namespace HedgeHog.Alice.Store {
                 var point = InPoints(1);
                 var voltLine = GetVoltageHigh();
                 Func<Rate, bool> isLowFunc = r => GetVoltage(r) < GetVoltageAverage();
-                Func<Rate, bool> isHighFunc = r => GetVoltage(r) < GetVoltageHigh();
-                var funcQueue = new[] { isLowFunc, isLowFunc, isHighFunc, isHighFunc };
-                #region Find Corridor
-                var corrInfoAnonFunc = Lib.ToFunc(new Rate[0].AsEnumerable(), (rates) => {
+                {
+                  Func<Rate, bool> isHighFunc = r => GetVoltage(r) < GetVoltageHigh();
+                  Func<IList<Rate>, bool> calcVoltsBAOk = corridor => VoltsBelowAboveLengthMin >= 0
+                    ? corridor.Count > VoltsBelowAboveLengthMinCalc * BarPeriodInt
+                    : corridor.Count < -VoltsBelowAboveLengthMinCalc * BarPeriodInt;
+                  var funcQueue = new[] { isLowFunc, isLowFunc, isHighFunc, isHighFunc };
                   var funcQueuePointer = 0;
-                  return rates.SkipWhile(r => !funcQueue[0](r))
-                  .Select(r => new { r, ud = funcQueue[funcQueuePointer](r) })
-                  .DistinctUntilChanged(a => a.ud)
-                  .Do(_ => funcQueuePointer++)
-                  .Take(funcQueue.Length)
-                  .Buffer(funcQueue.Length)
-                  .Where(b => b.Count == funcQueue.Length && b[0].ud)
-                  .Select(b => new { left = b[3].r, right = b[2].r })
-                  .Select(a => RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray())
-                  .Where(corridor => corridor.Length > 60 * BarPeriodInt)
-                  .Select(corridor => new { max = corridor.Max(r => r.AskHigh), min = corridor.Min(r => r.BidLow) })
-                  .Select(corridor => new { corridor.max, corridor.min, avg = corridor.max.Avg(corridor.min) });
-                });
-                var ratesReversed = RatesArray.Reverse<Rate>().ToArray();
-                corrInfoAnonFunc(ratesReversed.Skip(BarPeriodInt * (1440 - 60 * 4)))
-                  .Select(a => a.avg)
-                  .ForEach(avgPrev => corrInfoAnonFunc(ratesReversed)
-                    .Where(now => now.avg.Abs(avgPrev) > StDevByPriceAvg)
+                  RatesArray.Reverse<Rate>()
+                    .SkipWhile(r => !funcQueue[0](r))
+                    .Select(r => new { r, ud = funcQueue[funcQueuePointer](r) })
+                    .DistinctUntilChanged(a => a.ud)
+                    .Do(_ => funcQueuePointer++)
+                    .Take(funcQueue.Length)
+                    .Buffer(funcQueue.Length)
+                    .Where(b => b.Count == funcQueue.Length && b[0].ud)
+                    .Select(b => new { left = b[3].r, right = b[2].r })
+                    .Select(a => new { leftRight = a, rates = RatesArray.SkipWhile(r => r < a.left).TakeWhile(r => r <= a.right).ToArray() })
+                    .Where(a => calcVoltsBAOk(a.rates))
+                    .Select(a => new { a.leftRight, max = a.rates.Max(r => r.AskHigh), min = a.rates.Min(r => r.BidLow) })
                     .ForEach(a => {
                       CenterOfMassBuy = a.max;
                       CenterOfMassSell = a.min;
-                    }));
-                #endregion
-                var corridorOk = CorridorStats.Rates.Count / WaveStDevRatio > CorridorDistance;
-                var isVoltHigh = new Func<bool>(() => GetVoltage(RateLast) > GetVoltageHigh()).Yield()
-                  .Select(f => f())
-                  .Do(b => {
-                    //if (b) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                  }).Memoize();
+                      BuyLevel.RateEx = a.max;
+                      SellLevel.RateEx = a.min;
+                      this.CorridorStartDate = a.leftRight.left.StartDate;
+                    });
+                }
+              var isVoltHigh = new Func<bool>(() => GetVoltage(RateLast) > GetVoltageHigh()).Yield()
+                .Select(f => f()).Memoize();
                 var isVoltLow = new Func<bool>(() => GetVoltage(RateLast) < GetVoltageAverage()).Yield()
                   .Select(f => f());
-                var getUpDown = new { up = CenterOfMassBuy, down = CenterOfMassSell }.Yield();
-                Action setUpDown = () => getUpDown.ForEach(ud => {
-                    BuyLevel.RateEx = ud.up;
-                    SellLevel.RateEx = ud.down;
-                  });
-                setUpDown();
+                var getUpDown = Lib.ToFunc(() => new { up = CenterOfMassBuy, down = CenterOfMassSell }).Return();
+                Action setUpDown = () => getUpDown.Select(f=>f()).Do(ud => {
+                  BuyLevel.RateEx = ud.up;
+                  SellLevel.RateEx = ud.down;
+                });
+                //setUpDown();
                 var currentPriceOk = this.CurrentEnterPrice(null).Between(SellLevel.Rate, BuyLevel.Rate);
                 var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                     _ti =>{ WorkflowStep = "1 Wait Start";
-                    if (corridorOk && isVoltHigh.Single() && currentPriceOk) {
+                    if (isVoltHigh.Single() && currentPriceOk) {
                         _buySellLevelsForEach(sr => { sr.TradesCountEx = 0; sr.CanTradeEx = true; });
                       }
                     if (isVoltLow.Single()) {

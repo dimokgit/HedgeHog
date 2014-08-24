@@ -22,6 +22,7 @@ using System.Text.RegularExpressions;
 using HedgeHog;
 using System.IO;
 using System.Windows.Controls;
+using System.Deployment.Application;
 
 namespace TicketBuster {
   public class PersistAttribute : Attribute { }
@@ -32,7 +33,44 @@ namespace TicketBuster {
     string _messageBox2 = "Results:";
     FirefoxDriver _ie;
     #endregion
+
     #region Properties
+    #region WindowTitle
+    Version CurrentVersion { get {
+        return ApplicationDeployment.IsNetworkDeployed
+          ? ApplicationDeployment.CurrentDeployment.CurrentVersion :
+          System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+      }
+    }
+    public string WindowTitle     {
+      get { return "Ticket Buster - " +  CurrentVersion; }
+    }
+
+    #endregion
+
+    #region DoEconomy
+    private bool _DoEconomy;
+    public bool DoEconomy {
+      get { return _DoEconomy; }
+      set { this.RaiseAndSetIfChanged(ref _DoEconomy, value); }
+    }
+    #endregion
+    #region DoBusiness
+    private bool _DoBusiness;
+    public bool DoBusiness {
+      get { return _DoBusiness; }
+      set { this.RaiseAndSetIfChanged(ref _DoBusiness, value); }
+
+    }
+    #endregion
+    #region DoFirst
+    private bool _DoFirst;
+    public bool DoFirst {
+      get { return _DoFirst; }
+      set { this.RaiseAndSetIfChanged(ref _DoFirst, value); }
+    }
+    #endregion
+    bool[] DoCabins { get { return new bool[] { DoEconomy, DoBusiness, DoFirst }; } }
 
     #region AirportFrom
     private string _AirportFrom = "EWR";
@@ -191,6 +229,7 @@ namespace TicketBuster {
       }));
     }
     #endregion
+    
     #region Load/Save Properties
     string ActiveSettingsPath() { return Lib.CurrentDirectory + "\\{0}_Last.txt".Formater(_modelKey); }
     void LoadActiveSettings() { LoadActiveSettings(ActiveSettingsPath()); }
@@ -223,6 +262,7 @@ namespace TicketBuster {
         select g2;
     }
     #endregion
+
     #region ctor
     public MainWIndowViewModel(string modelKey) {
       _modelKey = modelKey;
@@ -256,6 +296,7 @@ namespace TicketBuster {
       SaveActiveSettings();
     }
     #endregion
+    
     void SendNotification(string subject, string body) {
       try {
         Emailer.Send(EmailFrom, EmailTo, EmailPassword, subject, body);
@@ -289,6 +330,11 @@ namespace TicketBuster {
     void SearchFlight() {
       try {
         IsInSearch = true;
+        if (!DoCabins.Any(c => c)) {
+          MustStopSearch = true;
+          Alert = "Select some cabins first.";
+          return;
+        }
         MessageBox2 = "Starting browser ...";
         DisposeBrowser();
         if (!Enumerable.Range(0, 5).SkipWhile(_ => {
@@ -299,23 +345,31 @@ namespace TicketBuster {
           .Where(_ => !MustStopSearch)
           .Select((d, i) => new { d = DateDepart.AddDays(d), i })
           .Do(a => {
+            if (!DoCabins.Any(c=>c)) Alert = "Select some cabins first.";
             MessageBox2 = "Searching ...";
             if (a.i == 0) FillSearch();
             else FillResultSearch(ie, a.d);
           })
+          .Where(_ => DoCabins.Any(c=>c))
           .Select(d => new { d.d, we = FindAward(ie, Flight ?? "") })
           .SelectMany(d => d.we.Select(we => {
-            var td = FindParentByTag(we, "td");
-            var tr = FindParentByTag(we, "tr");
-            var tdIndex = tr.FindElementsByXPath("td").TakeWhile(a => a.Text != td.Text).Count();
-            return new { d, isOk = IsFlightOk(tr.Text, Flight) };
+            var td = we.FindParentByTag("td");
+            var tr = we.FindParentByTag("tr");
+            var cabinCount = GetCabinCount(ie);
+            var cabinIndex = tr.FindElementsByXPath("td").TakeWhile(a => a.Text != td.Text).Count() / 2;
+            return new {
+              d,
+              isOk = IsFlightOk(tr.Text, Flight),
+              isCabinOk = DoCabins[cabinIndex],
+              cabin = GetCabinName(cabinCount, cabinIndex),
+              flight = GetFlightNumber(tr.Text)
+            };
           }))
-          .Where(d => d.isOk)
+          .Where(d => d.isOk && d.isCabinOk)
+          .Select(d => new { subject = "Found award @ " + d.d.d.ToShortDateString(), body = new { from = AirportFrom, to = AirportTo, date = d.d.d.ToShortDateString(), d.flight, d.cabin } + "" })
           .ForEach(d => {
-            var subject = "Found award @ " + d.d.d.ToShortDateString();
-            var body = new { AirportFrom, AirportTo } + "";
-            MessageBox2 = subject;
-            SendNotification(subject, body);
+            MessageBox2 = d.subject + d.body;
+            SendNotification(d.subject, d.body);
             MustStopSearch = true;
           });
       } catch (Exception exc) {
@@ -326,8 +380,17 @@ namespace TicketBuster {
         MustStopSearch = IsInSearch = false;
       }
     }
-    static bool IsFlightOk(string result, string flight) {
-      return string.IsNullOrWhiteSpace(flight) || Regex.IsMatch(result, @"flight:\s+" + flight, RegexOptions.IgnoreCase);
+    string GetCabinName(int cabinCount, int cabinIndex) {
+      var cabins = new Dictionary<int, string[]> { 
+      { 2, new[] { "Economy", "Business/First" } }, 
+      { 3, new[] { "Economy", "Business","First" } } };
+      return cabins[cabinCount][cabinIndex];
+    }
+    static string GetFlightNumber(string result) {
+      return Regex.Match(result, @"flight:\s+(?<flight>\S+)", RegexOptions.IgnoreCase).Groups["flight"] + "";
+    }
+    static bool IsFlightOk(string result, string flights) {
+      return string.IsNullOrWhiteSpace(flights) || flights.Split(',', ';').Any(flight => Regex.IsMatch(result, @"flight:\s+" + flight, RegexOptions.IgnoreCase));
     }
     private void FillSearch() {
       var searches = new WebDriverWait(ie, TimeSpan.FromSeconds(10)).Until(d => d.FindElements(By.ClassName("txtAirLoc")));
@@ -376,7 +439,6 @@ namespace TicketBuster {
       WaitForResultPage(ie);
     }
     static IList<FirefoxWebElement> FindAward(RemoteWebDriver ie, string flight) {
-      var cabinCount= GetCabinCount(ie);
       if (!IsOnResultPage(ie)) throw new Exception("Navigate to Result page first.");
       var awardButtons = new WebDriverWait(ie, TimeSpan.FromSeconds(2))
         .Until(d => FindAwardButton(ie).Cast<FirefoxWebElement>().ToArray());
@@ -388,9 +450,6 @@ namespace TicketBuster {
       return cabinHeader.FindElements(By.TagName("td")).Count;
     }
 
-    private static FirefoxWebElement FindParentByTag(FirefoxWebElement we, string tag) {
-      return WorkflowMixin.Y<FirefoxWebElement, FirefoxWebElement>(p => e => e.TagName == tag ? e : p(e.FindElementByXPath("..") as FirefoxWebElement))(we);
-    }
     static IEnumerable<IWebElement> FindAwardButton(RemoteWebDriver ie) {
       return ie.FindElementsByXPath("//tr//input[contains(@class,'btnBlue')]");
     }
@@ -415,7 +474,10 @@ namespace TicketBuster {
     }
   }
   static class IWebDriverEx {
-    private static Func<IWebElement, bool> FindByLastNamePart(string attr,  string part) {
+    public static FirefoxWebElement FindParentByTag(this FirefoxWebElement we, string tag) {
+      return WorkflowMixin.Y<FirefoxWebElement, FirefoxWebElement>(p => e => e.TagName == tag ? e : p(e.FindElementByXPath("..") as FirefoxWebElement))(we);
+    }
+    private static Func<IWebElement, bool> FindByLastNamePart(string attr, string part) {
       return e => (e.GetAttribute(attr) ?? "").ToLower().EndsWith( part.ToLower());
     }
     private static Func<IWebElement, bool> FindByLastNamePart(string attr, char separator, string part) {
