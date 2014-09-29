@@ -1,0 +1,7 @@
+﻿The WeakEventProxy class was taken from Paul Stovell's Bindable Linq project:
+http://www.codeplex.com/bindablelinq
+
+The WeakEvent was published by Daniel Grunwald on CodeProject:
+http://www.codeproject.com/KB/cs/WeakEvents.aspx
+
+

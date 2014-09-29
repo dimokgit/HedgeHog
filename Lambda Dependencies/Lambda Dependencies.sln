@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lambda Dependencies", "Dependency Monitor\Lambda Dependencies.csproj", "{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

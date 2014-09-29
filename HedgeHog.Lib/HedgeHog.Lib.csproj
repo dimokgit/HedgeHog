@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{C8436D96-349C-4EA7-A58B-3D21BA93BE22}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HedgeHog.Lib</RootNamespace>
+    <AssemblyName>HedgeHog.Lib</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\AllInOne\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="GalaSoft.MvvmLight, Version=4.4.32.39728, Culture=neutral, PublicKeyToken=eabbf6a5f5af5004, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.4.4.32.1\lib\net45\GalaSoft.MvvmLight.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaSoft.MvvmLight.Extras, Version=4.4.32.39728, Culture=neutral, PublicKeyToken=0e27b6f8be9b2ef7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.4.4.32.1\lib\net45\GalaSoft.MvvmLight.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\CommonServiceLocator.1.3\lib\portable-net4+sl5+netcore45+wpa81+wp8\Microsoft.Practices.ServiceLocation.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\NLog.3.1.0.0\lib\net45\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="ReactiveUI, Version=6.0.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\reactiveui-core.6.0.6\lib\Net45\ReactiveUI.dll</HintPath>
+    </Reference>
+    <Reference Include="Splat, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\Splat.1.5.0\lib\Net45\Splat.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Interactive">
+      <HintPath>..\AllInOne\packages\Ix-Main.1.2.2\lib\net45\System.Interactive.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Core">
+      <HintPath>..\AllInOne\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\AllInOne\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq">
+      <HintPath>..\AllInOne\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.PlatformServices">
+      <HintPath>..\AllInOne\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Windows.Threading">
+      <HintPath>..\AllInOne\packages\Rx-Xaml.2.2.5\lib\net45\System.Reactive.Windows.Threading.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Dataflow, Version=4.5.23.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AllInOne\packages\Microsoft.Tpl.Dataflow.4.5.23\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\AllInOne\packages\MvvmLightLibs.4.4.32.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ap.cs" />
+    <Compile Include="ArrayExtensions.cs" />
+    <Compile Include="BlockingConsumerBase.cs" />
+    <Compile Include="Chunk.cs" />
+    <Compile Include="ChunkIt.cs" />
+    <Compile Include="Class1.cs" />
+    <Compile Include="Converters.cs" />
+    <Compile Include="DateTimeZone.cs" />
+    <Compile Include="Dynamic.cs" />
+    <Compile Include="EnumExtensions.cs" />
+    <Compile Include="ExceptionEventArgs.cs" />
+    <Compile Include="Expression.cs" />
+    <Compile Include="Expressions.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="Fibonacci.cs" />
+    <Compile Include="FileLogger.cs" />
+    <Compile Include="GroupAdjacent.cs" />
+    <Compile Include="KeyEqualityComparer.cs" />
+    <Compile Include="LambdaComparer.cs" />
+    <Compile Include="Maybe.cs" />
+    <Compile Include="MEF.cs" />
+    <Compile Include="NameValueParser.cs" />
+    <Compile Include="NTP.cs" />
+    <Compile Include="ObservableCollectionEx.cs" />
+    <Compile Include="correlation.cs" />
+    <Compile Include="DataPoint.cs" />
+    <Compile Include="DateTimeExtender.cs" />
+    <Compile Include="Lib.cs" />
+    <Compile Include="ObservableExtensions.cs" />
+    <Compile Include="OrderableListPartitioner.cs" />
+    <Compile Include="ParserCombinators.cs" />
+    <Compile Include="PropertyObserver.cs" />
+    <Compile Include="Range.cs" />
+    <Compile Include="RingQueue.cs" />
+    <Compile Include="Schedulers\TaskScheduler.cs" />
+    <Compile Include="SimpleCommand.cs" />
+    <Compile Include="SmartObservableCollection.cs" />
+    <Compile Include="StaticRangePartitioer.cs" />
+    <Compile Include="TBar.cs" />
+    <Compile Include="UI\GroupFilter.cs" />
+    <Compile Include="MarkupExtemssions.cs" />
+    <Compile Include="ValueTrigger.cs" />
+    <Compile Include="ViewModelLocator.cs" />
+    <Compile Include="WindowModel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PropertyChangedExtenssion.cs" />
+    <Compile Include="RSI.cs" />
+    <Compile Include="Schedulers\Schedulers.cs" />
+    <Compile Include="Volt.cs" />
+    <Compile Include="Workflow.cs" />
+    <Compile Include="YieldingProcessor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Bars.Extensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EnumerableHH\HedgeHog.EnumerableHH.csproj">
+      <Project>{8b110eee-4d1a-4b1a-b7d9-b5880af2b737}</Project>
+      <Name>HedgeHog.EnumerableHH</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
+      <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
+      <Name>HedgeHog.Math</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Shared\HedgeHog.Shared.csproj">
+      <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
+      <Name>HedgeHog.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Dynamic Expressions.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

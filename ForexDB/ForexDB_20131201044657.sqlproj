@@ -1,0 +1,595 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Name>ForexDB</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.0</ProjectVersion>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql100DatabaseSchemaProvider</DSP>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <ShowWizard>True</ShowWizard>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <IncludeSchemaNameInFileName>False</IncludeSchemaNameInFileName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabaseAddToServerExplorer>True</DeployToDatabaseAddToServerExplorer>
+    <LoadSqlClrTypes>True</LoadSqlClrTypes>
+    <RootNamespace>ForexDB</RootNamespace>
+    <DefaultSchema>dbo</DefaultSchema>
+    <PreviousProjectVersion>4.0</PreviousProjectVersion>
+    <ValidateCasingOnIdentifiers>False</ValidateCasingOnIdentifiers>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9e8ac411-ec42-4d25-ae7a-34a011e871a3}</ProjectGuid>
+    <GenerateDatabaseFile>False</GenerateDatabaseFile>
+    <GenerateCreateScript>False</GenerateCreateScript>
+    <SqlServerVerification>False</SqlServerVerification>
+    <TargetLanguage>CS</TargetLanguage>
+    <AllowSnapshotIsolation>False</AllowSnapshotIsolation>
+    <AnsiNullDefault>True</AnsiNullDefault>
+    <AnsiNulls>True</AnsiNulls>
+    <AnsiPadding>True</AnsiPadding>
+    <AnsiWarnings>True</AnsiWarnings>
+    <ArithAbort>True</ArithAbort>
+    <AutoClose>True</AutoClose>
+    <AutoCreateStatistics>True</AutoCreateStatistics>
+    <AutoShrink>True</AutoShrink>
+    <AutoUpdateStatistics>True</AutoUpdateStatistics>
+    <AutoUpdateStatisticsAsynchronously>True</AutoUpdateStatisticsAsynchronously>
+    <ChangeTrackingRetentionPeriod>2</ChangeTrackingRetentionPeriod>
+    <ChangeTrackingRetentionUnit>Days</ChangeTrackingRetentionUnit>
+    <CloseCursorOnCommitEnabled>False</CloseCursorOnCommitEnabled>
+    <ConcatNullYieldsNull>True</ConcatNullYieldsNull>
+    <DatabaseAccess>MULTI_USER</DatabaseAccess>
+    <DatabaseChaining>False</DatabaseChaining>
+    <DatabaseState>ONLINE</DatabaseState>
+    <DateCorrelationOptimizationOn>False</DateCorrelationOptimizationOn>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <DefaultCursor>LOCAL</DefaultCursor>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+    <EnableFullTextSearch>True</EnableFullTextSearch>
+    <IsBrokerPriorityHonored>False</IsBrokerPriorityHonored>
+    <IsChangeTrackingAutoCleanupOn>True</IsChangeTrackingAutoCleanupOn>
+    <IsChangeTrackingOn>False</IsChangeTrackingOn>
+    <IsEncryptionOn>False</IsEncryptionOn>
+    <NumericRoundAbort>False</NumericRoundAbort>
+    <PageVerify>NONE</PageVerify>
+    <Parameterization>SIMPLE</Parameterization>
+    <QuotedIdentifier>True</QuotedIdentifier>
+    <ReadCommittedSnapshot>False</ReadCommittedSnapshot>
+    <Recovery>SIMPLE</Recovery>
+    <RecursiveTriggersEnabled>False</RecursiveTriggersEnabled>
+    <ServiceBrokerOption>DisableBroker</ServiceBrokerOption>
+    <SupplementalLoggingOn>False</SupplementalLoggingOn>
+    <TornPageDetection>False</TornPageDetection>
+    <Trustworthy>False</Trustworthy>
+    <UpdateOptions>READ_WRITE</UpdateOptions>
+    <VardecimalStorageFormatOn>True</VardecimalStorageFormatOn>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <PostConversionRemoveFromScc>;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqldeployment;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\Properties\Database.sqlsettings;Properties\Database.sqlsettings;Properties\Database.sqldeployment;Properties\Database.sqlcmdvars;Properties\Database.sqlpermissions;Schema Objects\Storage\Files\Forex_log.sqlfile.sql;Schema Objects\Storage\Files\PRIMARY.Forex.sqlfile.sql;C:\Users\dimon\Projects\Forex_Old\Projects\HedgeHog\ForexDB\ForexDB.dbproj</PostConversionRemoveFromScc>
+    <PostConversionAddToScc>
+    </PostConversionAddToScc>
+    <CompatibilityMode>110</CompatibilityMode>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>.\sql\release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TargetDatabase>Forex</TargetDatabase>
+    <TreatTSqlWarningsAsErrors>False</TreatTSqlWarningsAsErrors>
+    <SuppressTSqlWarnings />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>.\sql\debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TargetDatabase>ForexDB</TargetDatabase>
+    <TreatTSqlWarningsAsErrors>False</TreatTSqlWarningsAsErrors>
+    <SuppressTSqlWarnings />
+  </PropertyGroup>
+  <!--Import the settings-->
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Scripts" />
+    <Folder Include="Scripts\Pre-Deployment" />
+    <Folder Include="Scripts\Post-Deployment" />
+    <Folder Include="Data Generation Plans" />
+    <Folder Include="Schema Comparisons" />
+    <Folder Include="Properties\" />
+    <Folder Include="Schema Objects\" />
+    <Folder Include="Schema Objects\Programmability\" />
+    <Folder Include="Schema Objects\Programmability\Database Triggers\" />
+    <Folder Include="Schema Objects\Programmability\Defaults\" />
+    <Folder Include="Schema Objects\Programmability\Functions\" />
+    <Folder Include="Schema Objects\Programmability\Rules\" />
+    <Folder Include="Schema Objects\Programmability\Stored Procedures\" />
+    <Folder Include="Schema Objects\Programmability\Types\" />
+    <Folder Include="Schema Objects\Programmability\Types\User Defined Data Types\" />
+    <Folder Include="Schema Objects\Programmability\Types\User Defined Types CLR\" />
+    <Folder Include="Schema Objects\Programmability\Types\User Defined Table Types\" />
+    <Folder Include="Schema Objects\Programmability\Types\XML Schema Collections\" />
+    <Folder Include="Schema Objects\Assemblies\" />
+    <Folder Include="Schema Objects\Security\" />
+    <Folder Include="Schema Objects\Security\Schemas\" />
+    <Folder Include="Schema Objects\Security\Users\" />
+    <Folder Include="Schema Objects\Security\Certificates\" />
+    <Folder Include="Schema Objects\Security\Asymmetric Keys\" />
+    <Folder Include="Schema Objects\Security\Master Keys\" />
+    <Folder Include="Schema Objects\Security\Signatures\" />
+    <Folder Include="Schema Objects\Security\Symmetric Keys\" />
+    <Folder Include="Schema Objects\Security\Database Encryption Keys\" />
+    <Folder Include="Schema Objects\Security\Database Audit Specification\" />
+    <Folder Include="Schema Objects\Security\Roles\" />
+    <Folder Include="Schema Objects\Security\Roles\Application Roles\" />
+    <Folder Include="Schema Objects\Security\Roles\Database Roles\" />
+    <Folder Include="Schema Objects\Service Broker\" />
+    <Folder Include="Schema Objects\Service Broker\Broker Priorities\" />
+    <Folder Include="Schema Objects\Service Broker\Contracts\" />
+    <Folder Include="Schema Objects\Service Broker\Event Notifications\" />
+    <Folder Include="Schema Objects\Service Broker\Message Types\" />
+    <Folder Include="Schema Objects\Service Broker\Queues\" />
+    <Folder Include="Schema Objects\Service Broker\Remote Service Binding\" />
+    <Folder Include="Schema Objects\Service Broker\Routes\" />
+    <Folder Include="Schema Objects\Service Broker\Services\" />
+    <Folder Include="Schema Objects\Storage\" />
+    <Folder Include="Schema Objects\Storage\Full Text Stoplists\" />
+    <Folder Include="Schema Objects\Storage\Filegroups\" />
+    <Folder Include="Schema Objects\Storage\Files\" />
+    <Folder Include="Schema Objects\Storage\Full Text Catalogs\" />
+    <Folder Include="Schema Objects\Storage\Partition Functions\" />
+    <Folder Include="Schema Objects\Storage\Partition Schemes\" />
+    <Folder Include="Schema Objects\Synonyms\" />
+    <Folder Include="Schema Objects\Tables\" />
+    <Folder Include="Schema Objects\Tables\Constraints\" />
+    <Folder Include="Schema Objects\Tables\Indexes\" />
+    <Folder Include="Schema Objects\Tables\Keys\" />
+    <Folder Include="Schema Objects\Tables\Triggers\" />
+    <Folder Include="Schema Objects\Tables\Statistics\" />
+    <Folder Include="Schema Objects\Views\" />
+    <Folder Include="Schema Objects\Views\Indexes\" />
+    <Folder Include="Schema Objects\Views\Triggers\" />
+    <Folder Include="Schema Objects\Views\Statistics\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Functions\" />
+    <Folder Include="dbo\Stored Procedures\" />
+    <Folder Include="Assemblies\" />
+    <Folder Include="Server Objects\" />
+    <Folder Include="dbo\Tables\" />
+    <Folder Include="stats\" />
+    <Folder Include="stats\Tables\" />
+    <Folder Include="news\" />
+    <Folder Include="news\Tables\" />
+    <Folder Include="dbo\Views\" />
+    <Folder Include="stats\Functions\" />
+    <Folder Include="news\Views\" />
+  </ItemGroup>
+  <ItemGroup>
+    <BuildContributorArgument Include="OutDir=$(OutDir)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Permissions.sql" />
+    <Build Include="Schema Objects\Tables\Constraints\dbo.t_Price.DF_t_Price_IsBuySell.defconst.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Constraints\dbo.t_Currency.DF_t_Currency_Weight.defconst.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Constraints\dbo.t_Currency.DF_t_Currency_IsOn.defconst.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Constraints\dbo.t_Currency.DF_t_Currency_IsPrime.defconst.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Tick.IX_t_Tick_StartDate.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Tick.IX_t_Tick_Pair.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Tick.IX_t_Tick_ID.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Trade.IX_t_Trade_SessionId.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Tick_Volts.IX_t_Tick_Volts_Volts.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Bar.IX_t_Bar.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Indexes\dbo.t_Bar.IX_t_Bar_PairPeriod.index.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.BarList.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Bar.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.CorridorAverage.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.FindMaximas.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Voltages.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.GetMaximas.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Bars.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Stat.PK_t_Stat.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Price.PK_t_Price.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Volts.PK_t_Volts.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Tick.PK_t_Tick_1.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Tick_Volts.PK_t_Tick_Volts.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Tick_Mew.PK_t_Tick_Mew.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\Keys\dbo.t_Currency.PK_t_Currency.pkey.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_PrepTicks.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.GetCorridor.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.GetCorridorAverage.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.BarsByMinutes.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_Bars.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_Bar_Fix.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_Currency_Manage.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\ForexDB.rolememberships.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.MA_H1.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Corridor.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Regression.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.clr_RegEx_Replace.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Time.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Function2.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.RoundToMinute.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.Date.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Functions\dbo.MA.function.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Security\Users\DHOME_User.user.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Security\Users\DHOME_ForexTrader.user.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Security\Users\DHOME_lesha.user.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Security\Users\SQLCLRTestLogin.user.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TcksPerMinute.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_BarSpreadMA.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Trade.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_10.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_20.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_30.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_40.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_Volts.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TradeSession.view.sql">
+      <SubType>Code</SubType>
+      <AnsiNulls>On</AnsiNulls>
+      <QuotedIdentifier>On</QuotedIdentifier>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_BarsSummary.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Tick_VoltsPerSecons.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TickMaxima_10.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TickMaxima.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Bars_01.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_BarTest.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Bars_Error.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_Pair.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Stat.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Price.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_ClosedTrades.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Volts.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick1.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Trade.table.sql">
+      <SubType>Code</SubType>
+      <AnsiNulls>On</AnsiNulls>
+      <QuotedIdentifier>On</QuotedIdentifier>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick_20.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick_Volts.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick_VoltsPerSecond.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_TickMaxima.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Tick_Mew.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Currency.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Offer.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Tables\dbo.t_Bar.table.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Service Broker\Routes\AutoCreatedLocal.route.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Types\User Defined Table Types\dbo.dt_VoltsTable.udtt.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Programmability\Stored Procedures\dbo.s_CleanTrades.proc.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_TradeSession_10.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Schema Objects\Views\dbo.v_BarStats_1.view.sql">
+      <SubType>Code</SubType>
+    </Build>
+    <Build Include="Security\RoleMemberships.sql" />
+    <Build Include="dbo\Functions\ISOweek.sql" />
+    <Build Include="dbo\Functions\RunningBalanceStats.sql" />
+    <Build Include="dbo\Functions\RunningBalanceMinimumAverage.sql" />
+    <Build Include="dbo\Stored Procedures\ProcessTrades.sql" />
+    <Build Include="Security\Permissions.sql" />
+    <Build Include="ExtendedProperties.sql" />
+    <Build Include="Security\sa.sql" />
+    <Build Include="Security\NT SERVICE_Winmgmt.sql" />
+    <Build Include="Security\NT SERVICE_SQLWriter.sql" />
+    <Build Include="Security\NT Service_MSSQLSERVER.sql" />
+    <Build Include="Security\NT AUTHORITY_SYSTEM.sql" />
+    <Build Include="Security\DimonFX_dimon.sql" />
+    <Build Include="Security\BUILTIN_Users.sql" />
+    <Build Include="Security\SQLCLRTestLogin.sql" />
+    <Build Include="Security\DIMONFX_Traders.sql" />
+    <Build Include="Security\DHOME_User.sql" />
+    <Build Include="Security\DHOME_lesha.sql" />
+    <Build Include="Security\DHOME_ForexTrader.sql" />
+    <Build Include="Server Objects\AlwaysOn_health.sql" />
+    <Build Include="dbo\Tables\TradingMacro.sql" />
+    <Build Include="dbo\Tables\TradingAccount.sql" />
+    <Build Include="dbo\Tables\t_Session.sql" />
+    <Build Include="dbo\Tables\t_Report1.sql" />
+    <Build Include="dbo\Tables\t_Report.sql" />
+    <Build Include="dbo\Tables\t_BarStats.sql" />
+    <Build Include="dbo\Tables\t_BarHeight.sql" />
+    <Build Include="dbo\Tables\SuppRes.sql" />
+    <Build Include="dbo\Tables\OrderTemplate.sql" />
+    <Build Include="stats\Tables\MonthlyStats.sql" />
+    <Build Include="news\Tables\Event.sql" />
+    <Build Include="news\Tables\EventLevel.sql" />
+    <Build Include="dbo\Views\vStats.sql" />
+    <Build Include="dbo\Views\v_TradeSession_05.sql" />
+    <Build Include="dbo\Views\v_TradesBySession.sql" />
+    <Build Include="dbo\Views\v_BlackoutTime.sql" />
+    <Build Include="dbo\Views\v_Bar.sql" />
+    <Build Include="Security\DIMONFX_Traders_1.sql" />
+    <Build Include="dbo\Functions\ToDateTimeOffset.sql" />
+    <Build Include="dbo\Functions\GetSessionValue.sql" />
+    <Build Include="dbo\Functions\GetBarsHeight.sql" />
+    <Build Include="dbo\Functions\EOWEEK.sql" />
+    <Build Include="dbo\Functions\Split.sql" />
+    <Build Include="dbo\Functions\Stats.sql" />
+    <Build Include="dbo\Functions\MaxNum.sql" />
+    <Build Include="dbo\Functions\GetBarStats.sql" />
+    <Build Include="dbo\Functions\fGetSessionValue.sql" />
+    <Build Include="dbo\Functions\ComposeDate.sql" />
+    <Build Include="stats\Functions\fHourly.sql" />
+    <Build Include="stats\Functions\fMonthsBack.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarStats_Start.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarStats.sql" />
+    <Build Include="dbo\Stored Procedures\sSetBarHeights.sql" />
+    <Build Include="dbo\Stored Procedures\sGetStats.sql" />
+    <Build Include="dbo\Stored Procedures\s_SetBarRows.sql" />
+    <Build Include="dbo\Stored Procedures\s_Session_Delete.sql" />
+    <Build Include="dbo\Stored Procedures\s_GetBarStats.sql" />
+    <Build Include="Security\stats.sql" />
+    <Build Include="Security\news.sql" />
+    <Build Include="news\Views\vEvent.sql" />
+    <Build Include="dbo\Functions\clrSplit.sql" />
+    <Build Include="dbo\Tables\t_Trade_Bak.sql" />
+    <Build Include="dbo\Functions\SqlFunction1.sql" />
+    <Build Include="dbo\Functions\clrSplitTwo.sql" />
+    <Build Include="Security\DIMONFX_TradersCM.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Schema Objects\Assemblies\LightLib.dll">
+      <SubType>NotInBuild</SubType>
+    </None>
+    <None Include="Schema Objects\Assemblies\SQLCLR.dll">
+      <SubType>NotInBuild</SubType>
+    </None>
+    <None Include="Schema Objects\Assemblies\TA-Lib-Core.dll">
+      <SubType>NotInBuild</SubType>
+    </None>
+    <None Include="Schema Comparisons\SchemaComparison1.scmp">
+      <SubType>NotInBuild</SubType>
+    </None>
+    <None Include="Assemblies\TA-Lib-Core.dll" />
+    <None Include="Assemblies\SQLCLR.dll" />
+    <None Include="Assemblies\LightLib.dll" />
+    <None Include="Assemblies\TA-Lib-Core_1.dll" />
+    <None Include="Assemblies\SQLCLR_1.dll" />
+    <None Include="Assemblies\LightLib_1.dll" />
+    <None Include="Assemblies\TA-Lib-Core_2.dll" />
+    <None Include="Assemblies\SQLCLR_2.dll" />
+    <None Include="Assemblies\LightLib_2.dll" />
+    <None Include="Assemblies\TA-Lib-Core_3.dll" />
+    <None Include="Assemblies\SQLCLR_3.dll" />
+    <None Include="Assemblies\SQL_DateFuncs.dll" />
+    <None Include="Assemblies\LightLib_3.dll" />
+    <None Include="Assemblies\SQL_DateFuncs_1.dll" />
+    <None Include="Assemblies\TA-Lib-Core_4.dll" />
+    <None Include="Assemblies\SQLCLR_4.dll" />
+    <None Include="Assemblies\LightLib_4.dll" />
+    <None Include="Assemblies\TA-Lib-Core_5.dll" />
+    <None Include="Assemblies\SQLCLR_5.dll" />
+    <None Include="Assemblies\LightLib_5.dll" />
+    <None Include="Assemblies\TA-Lib-Core_6.dll" />
+    <None Include="Assemblies\SQLCLR_6.dll" />
+    <None Include="Assemblies\SQL_DateFuncs_2.dll" />
+    <None Include="Assemblies\LightLib_6.dll" />
+    <None Include="Assemblies\TA-Lib-Core_7.dll" />
+    <None Include="Assemblies\SQLCLR_7.dll" />
+    <None Include="Assemblies\LightLib_7.dll" />
+    <None Include="Assemblies\TA-Lib-Core_8.dll" />
+    <None Include="Assemblies\SQLCLR_8.dll" />
+    <None Include="Assemblies\LightLib_8.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
+      <Name>LightLib</Name>
+      <AssemblyName>LightLib.dll</AssemblyName>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Schema Objects\Assemblies\LightLib.dll</HintPath>
+      <Private>True</Private>
+      <SqlAssemblyName>LightLib</SqlAssemblyName>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="SQLCLR, Version=1.0.3987.33184, Culture=neutral, PublicKeyToken=null">
+      <Name>SQLCLR</Name>
+      <AssemblyName>SQLCLR.dll</AssemblyName>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Schema Objects\Assemblies\SQLCLR.dll</HintPath>
+      <Private>True</Private>
+      <SqlAssemblyName>SQLCLR</SqlAssemblyName>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>SAFE</SqlPermissionSet>
+    </Reference>
+    <Reference Include="TA-Lib-Core, Version=1.0.2813.38947, Culture=neutral, PublicKeyToken=fdb2a6b268f56aa5">
+      <Name>TA-Lib-Core</Name>
+      <AssemblyName>TA-Lib-Core.dll</AssemblyName>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Schema Objects\Assemblies\TA-Lib-Core.dll</HintPath>
+      <Private>True</Private>
+      <SqlAssemblyName>TA-Lib-Core</SqlAssemblyName>
+      <SqlOwnerName>dbo</SqlOwnerName>
+      <SqlPermissionSet>UNSAFE</SqlPermissionSet>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <SqlCmdVariable Include="Path1">
+      <DefaultValue>
+      </DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+    <SqlCmdVariable Include="Path2">
+      <DefaultValue>
+      </DefaultValue>
+      <Value>$(SqlCmdVar__2)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Debug.publish.xml" />
+    <None Include="Release.publish.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PreDeploy Include="Scripts\Pre-Deployment\Script.PreDeployment.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PostDeploy Include="Scripts\Post-Deployment\Script.PostDeployment.sql" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Class Name="Hardcodet.Util.Dependencies.DependencyNode&lt;T&gt;">
+    <Position X="0.75" Y="1" Width="3.25" />
+    <Members>
+      <Method Name="~DependencyNode" Hidden="true" />
+      <Method Name="NotifyNodeChange" Hidden="true" />
+      <Method Name="OnCollectionChanged" Hidden="true" />
+      <Method Name="OnPropertyChanged" Hidden="true" />
+      <Method Name="RefreshChildNodeValue" Hidden="true" />
+      <Method Name="RegisterListener" Hidden="true" />
+      <Method Name="ResetNodeValue" Hidden="true" />
+      <Method Name="ResolvePropertyValueChangeReason" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AEAQAAQBWCTWgABUIAACAgAgAAACAJIAQCACAEAQAgA=</HashCode>
+      <FileName>DependencyNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Hardcodet.Util.Dependencies.DependencyChangeEventArgs&lt;T&gt;">
+    <Position X="10.25" Y="3.25" Width="2.5" />
+    <Members>
+      <Method Name="DependencyChangeEventArgs" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAEBAAAgAACAA=</HashCode>
+      <FileName>DependencyChangeEventArgs.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Hardcodet.Util.Dependencies.DependencyBuilder">
+    <Position X="7" Y="4" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAA=</HashCode>
+      <FileName>DependencyBuilder.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Hardcodet.Util.Dependencies.LambdaBinding&lt;TSource, TTarget&gt;">
+    <Position X="1.25" Y="7" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAACAQAAAAAAAgAAAAAABAAAEBAAAEgUBAAAA=</HashCode>
+      <FileName>LambdaBinding.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Hardcodet.Util.Dependencies.LambdaBinding">
+    <Position X="6.5" Y="7" Width="3.5" />
+    <Members>
+      <Method Name="Dispose" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAoAAAACABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>LambdaBinding.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Hardcodet.Util.Dependencies.DependencyNode">
+    <Position X="4.5" Y="1" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAA=</HashCode>
+      <FileName>DependencyNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Enum Name="Hardcodet.Util.Dependencies.DependencyChangeSource">
+    <Position X="10.5" Y="1" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAAAABQAAAAAAAACAABAAAAAAAAAAAA=</HashCode>
+      <FileName>DependencyChangeSource.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

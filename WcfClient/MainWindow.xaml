@@ -1,0 +1,12 @@
+﻿<Window x:Class="WcfClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+    <TextBlock>
+      <Button Click="Button_Click">Go Wcf</Button>
+      <Label Content="{Binding TextFromWcf}" BorderBrush="Black" BorderThickness="1"/>
+    </TextBlock>
+  </Grid>
+</Window>

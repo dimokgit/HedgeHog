@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/HedgeHog.Alice.Server" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/HedgeHog.Alice.Server" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="PriceStatistics">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="BidHighAskLowSpread" type="xs:double" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="PriceStatistics" nillable="true" type="tns:PriceStatistics" />
+</xs:schema>

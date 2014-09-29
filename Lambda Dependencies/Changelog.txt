@@ -1,0 +1,15 @@
+1.0.3
+-----
+ADD   Introduced LambaBinding class.
+CHG   Extracted abstract DependencyNode class from DependencyNode<T> and provided Create builder methods.
+
+1.0.2
+-----
+FIX   Invoking the Dispose method of a dependency twice caused a NullReference exception in the WeakEventProxy class.
+
+
+
+1.0.1
+-----
+FIX   Fixed a bug that caused weak event listener references to get lost.
+CHG   Optimized event subscriptions: Proxies only get created when infact used.

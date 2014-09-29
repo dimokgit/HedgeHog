@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:ser="http://schemas.microsoft.com/2003/10/Serialization/" xmlns:tns="http://schemas.datacontract.org/2004/07/HedgeHog" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/HedgeHog" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/" />
+  <xs:import namespace="http://schemas.datacontract.org/2004/07/Order2GoAddIn" />
+  <xs:import namespace="http://schemas.microsoft.com/2003/10/Serialization/Arrays" />
+  <xs:complexType name="TradeRequest">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="BuyAvgOpen" type="xs:double" />
+      <xs:element minOccurs="0" name="BuyNetPLPip" type="xs:double" />
+      <xs:element minOccurs="0" name="BuyPositions" type="xs:int" />
+      <xs:element minOccurs="0" name="DecisionFoo" type="xs:int" />
+      <xs:element minOccurs="0" name="SellAvgOpen" type="xs:double" />
+      <xs:element minOccurs="0" name="SellNetPLPip" type="xs:double" />
+      <xs:element minOccurs="0" name="SellPositions" type="xs:int" />
+      <xs:element minOccurs="0" name="closeAllOnTrade" type="xs:boolean" />
+      <xs:element minOccurs="0" name="closeIfProfitTradesMoreThen" type="xs:int" />
+      <xs:element minOccurs="0" name="closeOnCorridorBorder" nillable="true" type="xs:boolean" />
+      <xs:element minOccurs="0" name="closeOnNet" type="xs:boolean" />
+      <xs:element minOccurs="0" name="closeOnProfitOnly" type="xs:boolean" />
+      <xs:element minOccurs="0" name="closeOppositeOffset" type="xs:int" />
+      <xs:element minOccurs="0" name="closeProfitTradesMaximum" type="xs:int" />
+      <xs:element minOccurs="0" name="closeTradeFibRatio" type="xs:double" />
+      <xs:element minOccurs="0" name="corridorMinites" type="xs:int" />
+      <xs:element minOccurs="0" name="corridorSmoothSeconds" type="xs:int" />
+      <xs:element minOccurs="0" name="densityFoo" type="xs:int" />
+      <xs:element minOccurs="0" name="doTrend" type="xs:boolean" />
+      <xs:element minOccurs="0" name="goTradeFooBuy" type="xs:int" />
+      <xs:element minOccurs="0" name="goTradeFooSell" type="xs:int" />
+      <xs:element minOccurs="0" name="guid" type="ser:guid" />
+      <xs:element minOccurs="0" name="highBarMinutes" type="xs:int" />
+      <xs:element minOccurs="0" name="lotsToTradeFooBuy" type="xs:int" />
+      <xs:element minOccurs="0" name="lotsToTradeFooSell" type="xs:int" />
+      <xs:element minOccurs="0" name="pair" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="profitMin" type="xs:double" />
+      <xs:element minOccurs="0" name="rsiBar" type="xs:int" />
+      <xs:element minOccurs="0" name="rsiPeriod" type="xs:int" />
+      <xs:element minOccurs="0" name="rsiProfit" type="xs:int" />
+      <xs:element minOccurs="0" name="rsiTresholdBuy" type="xs:int" />
+      <xs:element minOccurs="0" name="rsiTresholdSell" type="xs:int" />
+      <xs:element minOccurs="0" name="sellOnProfitLast" type="xs:boolean" />
+      <xs:element minOccurs="0" name="serverTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="setLimitOrder" type="xs:boolean" />
+      <xs:element minOccurs="0" name="shortStack" type="xs:int" />
+      <xs:element minOccurs="0" name="shortStackTruncateOffset" type="xs:int" />
+      <xs:element xmlns:q1="http://schemas.datacontract.org/2004/07/Order2GoAddIn" minOccurs="0" name="tradeAdded" nillable="true" type="q1:Trade" />
+      <xs:element minOccurs="0" name="tradeAngleMax" type="xs:double" />
+      <xs:element minOccurs="0" name="tradeAngleMin" type="xs:double" />
+      <xs:element minOccurs="0" name="tradeByDirection" type="xs:boolean" />
+      <xs:element minOccurs="0" name="tradeByFractalCoeff" type="xs:double" />
+      <xs:element minOccurs="0" name="tradeByRsi" type="xs:boolean" />
+      <xs:element minOccurs="0" name="tradeByVolatilityMaximum" nillable="true" type="xs:boolean" />
+      <xs:element minOccurs="0" name="tradeOnProfitAfter" type="xs:int" />
+      <xs:element xmlns:q2="http://schemas.datacontract.org/2004/07/Order2GoAddIn" minOccurs="0" name="tradesBuy" nillable="true" type="q2:ArrayOfTrade" />
+      <xs:element xmlns:q3="http://schemas.datacontract.org/2004/07/Order2GoAddIn" minOccurs="0" name="tradesSell" nillable="true" type="q3:ArrayOfTrade" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="TradeRequest" nillable="true" type="tns:TradeRequest" />
+  <xs:complexType name="TradeResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="CanTrade" type="xs:boolean" />
+      <xs:element minOccurs="0" name="CloseBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="CloseLastBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="CloseLastSell" type="xs:boolean" />
+      <xs:element minOccurs="0" name="CloseSell" type="xs:boolean" />
+      <xs:element xmlns:q4="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="CloseTradeIDs" nillable="true" type="q4:ArrayOfstring" />
+      <xs:element minOccurs="0" name="CorridorOK" type="xs:boolean" />
+      <xs:element minOccurs="0" name="DencityRatio" type="xs:double" />
+      <xs:element minOccurs="0" name="DencityRatioBuy" type="xs:double" />
+      <xs:element minOccurs="0" name="DencityRatioSell" type="xs:double" />
+      <xs:element minOccurs="0" name="DoTakeProfitBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="DoTakeProfitSell" type="xs:boolean" />
+      <xs:element minOccurs="0" name="GoBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="GoBuyTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="GoSell" type="xs:boolean" />
+      <xs:element minOccurs="0" name="GoSellTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="IsReady" type="xs:boolean" />
+      <xs:element minOccurs="0" name="LotsToTradeBuy" type="xs:double" />
+      <xs:element minOccurs="0" name="LotsToTradeSell" type="xs:double" />
+      <xs:element minOccurs="0" name="Pair" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="RsiHigh" type="xs:int" />
+      <xs:element minOccurs="0" name="RsiLow" type="xs:int" />
+      <xs:element minOccurs="0" name="RsiRegressionAverage" type="xs:double" />
+      <xs:element minOccurs="0" name="RsiRegressionOffsetBuy" type="xs:int" />
+      <xs:element minOccurs="0" name="RsiRegressionOffsetSell" type="xs:int" />
+      <xs:element minOccurs="0" name="ServerTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="TradeSignalDelay" type="xs:int" />
+      <xs:element minOccurs="0" name="TradeStats" nillable="true" type="tns:TradeStatistics" />
+      <xs:element minOccurs="0" name="TradeWaveInMinutes" type="xs:int" />
+      <xs:element minOccurs="0" name="TrancateBuy" type="xs:boolean" />
+      <xs:element minOccurs="0" name="TrancateSell" type="xs:boolean" />
+      <xs:element minOccurs="0" name="_canTrade" type="xs:boolean" />
+      <xs:element xmlns:q5="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="_fractalDatesBuy" nillable="true" type="q5:ArrayOfdateTime" />
+      <xs:element xmlns:q6="http://schemas.microsoft.com/2003/10/Serialization/Arrays" minOccurs="0" name="_fractalDatesSell" nillable="true" type="q6:ArrayOfdateTime" />
+      <xs:element minOccurs="0" name="_goBuyTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="_goSellTime" type="xs:dateTime" />
+      <xs:element minOccurs="0" name="_tradeStats" nillable="true" type="tns:TradeStatistics" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="TradeResponse" nillable="true" type="tns:TradeResponse" />
+  <xs:complexType name="TradeStatistics">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Angle" type="xs:double" />
+      <xs:element minOccurs="0" name="corridorMinimum" type="xs:double" />
+      <xs:element minOccurs="0" name="corridorSpread" type="xs:double" />
+      <xs:element minOccurs="0" name="legDownInPips" type="xs:double" />
+      <xs:element minOccurs="0" name="legUpInPips" type="xs:double" />
+      <xs:element minOccurs="0" name="peakPriceHigh" type="xs:double" />
+      <xs:element minOccurs="0" name="peakPriceHighAvg" type="xs:double" />
+      <xs:element minOccurs="0" name="peakVolts" type="xs:double" />
+      <xs:element minOccurs="0" name="positionBuy" type="xs:double" />
+      <xs:element minOccurs="0" name="positionSell" type="xs:double" />
+      <xs:element minOccurs="0" name="spreadAverage" type="xs:double" />
+      <xs:element minOccurs="0" name="spreadAverage10Min" type="xs:double" />
+      <xs:element minOccurs="0" name="spreadAverage15Min" type="xs:double" />
+      <xs:element minOccurs="0" name="spreadAverage5Min" type="xs:double" />
+      <xs:element minOccurs="0" name="spreadAverageHighMin" type="xs:double" />
+      <xs:element minOccurs="0" name="ticksPerMinuteCurr" type="xs:double" />
+      <xs:element minOccurs="0" name="ticksPerMinuteLong" type="xs:double" />
+      <xs:element minOccurs="0" name="ticksPerMinutePrev" type="xs:double" />
+      <xs:element minOccurs="0" name="timeFrame" type="xs:int" />
+      <xs:element minOccurs="0" name="valleyPriceLow" type="xs:double" />
+      <xs:element minOccurs="0" name="valleyPriceLowAvg" type="xs:double" />
+      <xs:element minOccurs="0" name="valleyVolts" type="xs:double" />
+      <xs:element minOccurs="0" name="voltPriceMax" type="xs:double" />
+      <xs:element minOccurs="0" name="voltPriceMin" type="xs:double" />
+      <xs:element minOccurs="0" name="voltsAverage" type="xs:double" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="TradeStatistics" nillable="true" type="tns:TradeStatistics" />
+</xs:schema>

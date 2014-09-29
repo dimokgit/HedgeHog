@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{A7CAB844-34E4-4412-9034-B0FAB1BBAF66}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Hardcodet.Util.Dependencies.Testing</RootNamespace>
+    <AssemblyName>Hardcodet.Util.Dependencies.Testing</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework, Version=2.4.8.0, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\_Libs\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Dependency Creation Tests\Given_Dependency_Node.cs" />
+    <Compile Include="Event Publishing Tests\Givent_Target_Item_Provides_Sub_Properties.cs" />
+    <Compile Include="Event Publishing Tests\Given_Dependency_Changes_When_Leaf_Type_Is_Not_Important.cs" />
+    <Compile Include="Event Publishing Tests\Given_Dependency_Graph_Contains_Fields.cs" />
+    <Compile Include="Event Publishing Tests\Given_Node_Value_When_Is_Changed.cs" />
+    <Compile Include="Event Publishing Tests\Given_Node_When_Maintaining_Circular_Dependencies.cs" />
+    <Compile Include="Event Publishing Tests\Given_Target_Is_Value_Type.cs" />
+    <Compile Include="Event Publishing Tests\Given_Target_Item_Is_Collection.cs" />
+    <Compile Include="Event Publishing Tests\Given_Target_Value_Is_Nullable_Type.cs" />
+    <Compile Include="Garbage Collection Tests\Given_Observed_Object_When_Being_Removed_From_Dependency_Chain.cs" />
+    <Compile Include="Lambda Binding Tests\BindingTestBase.cs" />
+    <Compile Include="Lambda Binding Tests\Given_One_Way_Binding.cs" />
+    <Compile Include="Lambda Binding Tests\Given_Two_Way_Binding.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StudentTestBase.cs" />
+    <Compile Include="TestModel\Address.cs" />
+    <Compile Include="TestModel\Course.cs" />
+    <Compile Include="TestModel\MyApplication.cs" />
+    <Compile Include="TestModel\ParentChildItem.cs" />
+    <Compile Include="TestModel\School.cs" />
+    <Compile Include="TestModel\Student.cs" />
+    <Compile Include="TestModel\TestStruct.cs" />
+    <Compile Include="TestUtil.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestModel\ClassDiagram1.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dependency Monitor\Lambda Dependencies.csproj">
+      <Project>{C7D8D111-B848-4D00-92DB-7CA49F1D8EC2}</Project>
+      <Name>Lambda Dependencies</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

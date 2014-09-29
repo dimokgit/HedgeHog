@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="HedgeHog.UI.AccountLoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             xmlns:hhlib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+             xmlns:l="clr-namespace:HedgeHog.UI"
+             xmlns:hhui="clr-namespace:HedgeHog.UI"
+             xmlns:state="clr-namespace:WpfPersist;assembly=Persistance"
+             DataContext="{x:Static Member=l:AccountLoginModel.Default}"
+             d:DesignHeight="20" d:DesignWidth="300">
+  <UserControl.Resources>
+    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Resources>
+    <Grid x:Name="LayoutRoot">
+    <WrapPanel>
+      <TextBlock>Account:</TextBlock>
+      <hhui:TextBox2 MinWidth="50" Text2="{Binding Account,Mode=TwoWay}" Text="{state:UserSettings}" hhui:UseEnterKey.EnterKeyDirection="Right" />
+      <TextBlock>Pwd:</TextBlock>
+      <hhui:TextBox2 Width="25" Text2="{ Binding Password,Mode=TwoWay}" Text="{state:UserSettings}" Foreground="White" hhui:UseEnterKey.EnterKeyDirection="Right" />
+      <hhui:CheckBox2 Content="Demo" IsChecked2="{Binding IsDemo,Mode=TwoWay}" IsChecked="{state:UserSettings}" VerticalAlignment="Center"/>
+      <Button Margin="10 0" IsDefault="True"
+              Command="{Binding LoginCommand}" CommandParameter="{Binding AccountLoginCommand,RelativeSource={RelativeSource AncestorType=UserControl}}"
+              >Login</Button>
+      <Button Click="NewAccount_Click" ToolTip="Open new demo account" IsEnabled="False">Re-New</Button>
+    </WrapPanel>
+  </Grid>
+</UserControl>

@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <SnippetTypes>
+        <SnippetType>Expansion</SnippetType>
+      </SnippetTypes>
+      <Title>dimokYieldingBroadcast</Title>
+      <Author>dimon</Author>
+      <Description>
+      </Description>
+      <HelpUrl>
+      </HelpUrl>
+      <Shortcut>dimokYieldingBroadcast</Shortcut>
+    </Header>
+    <Snippet>
+      <Declarations>
+        <Literal Editable="true">
+          <ID>type</ID>
+          <ToolTip>Type</ToolTip>
+          <Default>Unit</Default>
+          <Function>
+          </Function>
+        </Literal>
+        <Literal Editable="true">
+          <ID>Name</ID>
+          <ToolTip>Name</ToolTip>
+          <Default>Name</Default>
+          <Function>
+          </Function>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp"><![CDATA[    BroadcastBlock<Action<$type$>> _broadcast$Name$;
+    BroadcastBlock<Action<$type$>> broadcast$Name$ {
+      get {
+        if (_broadcast$Name$ == null) {
+          _broadcast$Name$ = DataFlowProcessors.SubscribeToBroadcastBlock(() => unit);
+        }
+        return _broadcast$Name$;
+      }
+    }]]></Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>

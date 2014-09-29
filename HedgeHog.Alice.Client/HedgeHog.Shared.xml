@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HedgeHog.Shared</name>
+    </assembly>
+    <members>
+        <member name="F:HedgeHog.Bars.BarBase._gannPrices">
+            <summary>
+            Index of 1x1 angle in <see cref="!:GannAngles"/>
+            </summary>
+        </member>
+        <member name="P:HedgeHog.Bars.BarBase.Spread">
+            <summary>
+            Spread between Ask and Bid
+            </summary>
+        </member>
+        <member name="P:HedgeHog.Bars.BarBase.PriceSpread">
+            <summary>
+            Bar height
+            </summary>
+        </member>
+        <member name="P:HedgeHog.Bars.BarBase.TrendInfo.Volume">
+            <summary>
+            Ticks per minute
+            </summary>
+        </member>
+        <member name="P:HedgeHog.Shared.Trade.PipValue">
+            <summary>
+            100,10000
+            </summary>
+        </member>
+        <member name="P:HedgeHog.Shared.Trade.PointSize">
+            <summary>
+            2,4
+            </summary>
+        </member>
+    </members>
+</doc>

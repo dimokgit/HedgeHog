@@ -1,0 +1,319 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="ForexModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012.Azure" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="nvarchar" MaxLength="8" Nullable="false" />
+          <Property Name="TradingRatio" Type="float" Nullable="false" />
+          <Property Name="UID" Type="uniqueidentifier" Nullable="false" />
+          <Property Name="LimitBar" Type="int" Nullable="false" />
+          <Property Name="CurrentLoss" Type="float" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="FreezLimit" Type="int" Nullable="false" />
+          <Property Name="CorridorMethod" Type="int" Nullable="false" />
+          <Property Name="FreezeStop" Type="int" Nullable="false" />
+          <Property Name="FibMax" Type="nvarchar" MaxLength="256" Nullable="false" />
+          <Property Name="FibMin" Type="float" Nullable="false" />
+          <Property Name="CorridornessMin" Type="float" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="int" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="int" Nullable="false" />
+          <Property Name="CorridorIterations" Type="nvarchar" MaxLength="16" Nullable="false" />
+          <Property Name="CorridorBarMinutes" Type="int" Nullable="false" />
+          <Property Name="PairIndex" Type="int" Nullable="false" />
+          <Property Name="TradingGroup" Type="int" Nullable="false" />
+          <Property Name="MaximumPositions" Type="int" Nullable="false" />
+          <Property Name="IsActive" Type="bit" Nullable="false" />
+          <Property Name="TradingMacroName" Type="nvarchar" MaxLength="64" Nullable="false" />
+          <Property Name="LimitCorridorByBarHeight" Type="bit" Nullable="false" />
+          <Property Name="MaxLotByTakeProfitRatio" Type="float" Nullable="false" />
+          <Property Name="BarPeriodsLow" Type="int" Nullable="false" />
+          <Property Name="BarPeriodsHigh" Type="int" Nullable="false" />
+          <Property Name="StrictTradeClose" Type="bit" Nullable="false" />
+          <Property Name="BarPeriodsLowHighRatio" Type="float" Nullable="false" />
+          <Property Name="LongMAPeriod" Type="int" Nullable="false" />
+          <Property Name="CorridorAverageDaysBack" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsStart" Type="int" Nullable="false" />
+          <Property Name="CorridorPeriodsLength" Type="int" Nullable="false" />
+          <Property Name="CorridorStartDate" Type="datetime" />
+          <Property Name="CorridorRatioForRange" Type="float" Nullable="false" />
+          <Property Name="CorridorRatioForBreakout" Type="float" Nullable="false" />
+          <Property Name="RangeRatioForTradeLimit" Type="float" Nullable="false" />
+          <Property Name="TradeByAngle" Type="bit" Nullable="false" />
+          <Property Name="ProfitToLossExitRatio" Type="float" Nullable="false" />
+          <Property Name="TradeByFirstWave" Type="bit" />
+          <Property Name="PowerRowOffset" Type="int" Nullable="false" />
+          <Property Name="RangeRatioForTradeStop" Type="float" Nullable="false" />
+          <Property Name="ReversePower" Type="bit" Nullable="false" />
+          <Property Name="CorrelationTreshold" Type="float" Nullable="false" />
+          <Property Name="CloseOnProfitOnly" Type="bit" Nullable="false" />
+          <Property Name="CloseOnProfit" Type="bit" Nullable="false" />
+          <Property Name="CloseOnOpen" Type="bit" Nullable="false" />
+          <Property Name="StreachTradingDistance" Type="bit" Nullable="false" />
+          <Property Name="CloseAllOnProfit" Type="bit" Nullable="false" />
+          <Property Name="ReverseStrategy" Type="bit" Nullable="false" />
+          <Property Name="TradeAndAngleSynced" Type="bit" Nullable="false" />
+          <Property Name="TradingAngleRange" Type="float" Nullable="false" />
+          <Property Name="CloseByMomentum" Type="bit" Nullable="false" />
+          <Property Name="TradeByRateDirection" Type="bit" Nullable="false" />
+          <Property Name="SupportDate" Type="datetime" />
+          <Property Name="ResistanceDate" Type="datetime" />
+          <Property Name="GannAnglesOffset" Type="float" />
+          <Property Name="GannAngles" Type="nvarchar" MaxLength="1024" Nullable="false" />
+          <Property Name="IsGannAnglesManual" Type="bit" Nullable="false" />
+          <Property Name="GannAnglesAnchorDate" Type="datetime" />
+          <Property Name="SpreadShortToLongTreshold" Type="float" Nullable="false" />
+          <Property Name="SupportPriceStore" Type="float" />
+          <Property Name="ResistancePriceStore" Type="float" />
+          <Property Name="SuppResLevelsCount" Type="int" Nullable="false" />
+          <Property Name="DoStreatchRates" Type="bit" Nullable="false" />
+          <Property Name="IsSuppResManual" Type="bit" Nullable="false" />
+          <Property Name="TradeOnCrossOnly" Type="bit" Nullable="false" />
+          <Property Name="TakeProfitFunctionInt" Type="int" Nullable="false" />
+          <Property Name="DoAdjustTimeframeByAllowedLot" Type="bit" Nullable="false" />
+          <Property Name="IsColdOnTrades" Type="bit" Nullable="false" />
+          <Property Name="CorridorCrossesCountMinimum" Type="int" Nullable="false" />
+          <Property Name="StDevToSpreadRatio" Type="float" Nullable="false" />
+          <Property Name="LoadRatesSecondsWarning" Type="int" Nullable="false" />
+          <Property Name="CorridorHighLowMethodInt" Type="int" Nullable="false" />
+          <Property Name="CorridorStDevRatioMax" Type="float" Nullable="false" />
+          <Property Name="CorridorLengthMinimum" Type="float" Nullable="false" />
+          <Property Name="CorridorCrossHighLowMethodInt" Type="int" Nullable="false" />
+          <Property Name="MovingAverageTypeInt" Type="int" />
+          <Property Name="PriceCmaLevels" Type="int" Nullable="false" />
+          <Property Name="VolumeTresholdIterations" Type="int" Nullable="false" />
+          <Property Name="StDevTresholdIterations" Type="int" Nullable="false" />
+          <Property Name="StDevAverageLeewayRatio" Type="float" Nullable="false" />
+          <Property Name="ExtreamCloseOffset" Type="int" Nullable="false" />
+          <Property Name="CurrentLossInPipsCloseAdjustment" Type="float" Nullable="false" />
+          <Property Name="CorridorBigToSmallRatio" Type="float" Nullable="false" />
+          <Property Name="ResetOnBalance" Type="float" />
+          <Property Name="VoltageFunction" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityContainer Name="ForexModelStoreContainer">
+          <EntitySet Name="TradingMacro" EntityType="Self.TradingMacro" Schema="dbo" store:Type="Tables" />
+        </EntityContainer>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="ForexModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="TradingMacro">
+          <Key>
+            <PropertyRef Name="UID" />
+          </Key>
+          <Property Name="Pair" Type="String" MaxLength="8" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="TradingRatio" Type="Double" Nullable="false" />
+          <Property Name="UID" Type="Guid" Nullable="false" />
+          <Property Name="LimitBar" Type="Int32" Nullable="false" />
+          <Property Name="CurrentLoss" Type="Double" Nullable="false" />
+          <Property Name="ReverseOnProfit" Type="Boolean" Nullable="false" />
+          <Property Name="FreezLimit" Type="Int32" Nullable="false" />
+          <Property Name="CorridorMethod" Type="Int32" Nullable="false" />
+          <Property Name="FreezeStop" Type="Int32" Nullable="false" />
+          <Property Name="FibMax" Type="String" MaxLength="256" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="FibMin" Type="Double" Nullable="false" />
+          <Property Name="CorridornessMin" Type="Double" Nullable="false" />
+          <Property Name="CorridorIterationsIn" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterationsOut" Type="Int32" Nullable="false" />
+          <Property Name="CorridorIterations" Type="String" MaxLength="16" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CorridorBarMinutes" Type="Int32" Nullable="false" />
+          <Property Name="PairIndex" Type="Int32" Nullable="false" />
+          <Property Name="TradingGroup" Type="Int32" Nullable="false" />
+          <Property Name="MaximumPositions" Type="Int32" Nullable="false" />
+          <Property Name="IsActive" Type="Boolean" Nullable="false" />
+          <Property Name="TradingMacroName" Type="String" MaxLength="64" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="LimitCorridorByBarHeight" Type="Boolean" Nullable="false" />
+          <Property Name="MaxLotByTakeProfitRatio" Type="Double" Nullable="false" />
+          <Property Name="BarPeriodsLow" Type="Int32" Nullable="false" />
+          <Property Name="BarPeriodsHigh" Type="Int32" Nullable="false" />
+          <Property Name="StrictTradeClose" Type="Boolean" Nullable="false" />
+          <Property Name="BarPeriodsLowHighRatio" Type="Double" Nullable="false" />
+          <Property Name="LongMAPeriod" Type="Int32" Nullable="false" />
+          <Property Name="CorridorAverageDaysBack" Type="Int32" Nullable="false" />
+          <Property Name="CorridorPeriodsStart" Type="Int32" Nullable="false" />
+          <Property Name="CorridorPeriodsLength" Type="Int32" Nullable="false" />
+          <Property Name="CorridorStartDate" Type="DateTime" Precision="3" />
+          <Property Name="CorridorRatioForRange" Type="Double" Nullable="false" />
+          <Property Name="CorridorRatioForBreakout" Type="Double" Nullable="false" />
+          <Property Name="RangeRatioForTradeLimit" Type="Double" Nullable="false" />
+          <Property Name="TradeByAngle" Type="Boolean" Nullable="false" />
+          <Property Name="ProfitToLossExitRatio" Type="Double" Nullable="false" />
+          <Property Name="TradeByFirstWave" Type="Boolean" />
+          <Property Name="PowerRowOffset" Type="Int32" Nullable="false" />
+          <Property Name="RangeRatioForTradeStop" Type="Double" Nullable="false" />
+          <Property Name="ReversePower" Type="Boolean" Nullable="false" />
+          <Property Name="CorrelationTreshold" Type="Double" Nullable="false" />
+          <Property Name="CloseOnProfitOnly" Type="Boolean" Nullable="false" />
+          <Property Name="CloseOnProfit" Type="Boolean" Nullable="false" />
+          <Property Name="CloseOnOpen" Type="Boolean" Nullable="false" />
+          <Property Name="StreachTradingDistance" Type="Boolean" Nullable="false" />
+          <Property Name="CloseAllOnProfit" Type="Boolean" Nullable="false" />
+          <Property Name="ReverseStrategy" Type="Boolean" Nullable="false" />
+          <Property Name="TradeAndAngleSynced" Type="Boolean" Nullable="false" />
+          <Property Name="TradingAngleRange" Type="Double" Nullable="false" />
+          <Property Name="CloseByMomentum" Type="Boolean" Nullable="false" />
+          <Property Name="TradeByRateDirection" Type="Boolean" Nullable="false" />
+          <Property Name="SupportDate" Type="DateTime" Precision="3" />
+          <Property Name="ResistanceDate" Type="DateTime" Precision="3" />
+          <Property Name="GannAnglesOffset" Type="Double" />
+          <Property Name="GannAngles" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="IsGannAnglesManual" Type="Boolean" Nullable="false" />
+          <Property Name="GannAnglesAnchorDate" Type="DateTime" Precision="3" />
+          <Property Name="SpreadShortToLongTreshold" Type="Double" Nullable="false" />
+          <Property Name="SupportPriceStore" Type="Double" />
+          <Property Name="ResistancePriceStore" Type="Double" />
+          <Property Name="SuppResLevelsCount" Type="Int32" Nullable="false" />
+          <Property Name="DoStreatchRates" Type="Boolean" Nullable="false" />
+          <Property Name="IsSuppResManual" Type="Boolean" Nullable="false" />
+          <Property Name="TradeOnCrossOnly" Type="Boolean" Nullable="false" />
+          <Property Name="TakeProfitFunctionInt" Type="Int32" Nullable="false" />
+          <Property Name="DoAdjustTimeframeByAllowedLot" Type="Boolean" Nullable="false" />
+          <Property Name="IsColdOnTrades" Type="Boolean" Nullable="false" />
+          <Property Name="CorridorCrossesCountMinimum" Type="Int32" Nullable="false" />
+          <Property Name="StDevToSpreadRatio" Type="Double" Nullable="false" />
+          <Property Name="LoadRatesSecondsWarning" Type="Int32" Nullable="false" />
+          <Property Name="CorridorHighLowMethodInt" Type="Int32" Nullable="false" />
+          <Property Name="CorridorStDevRatioMax" Type="Double" Nullable="false" />
+          <Property Name="CorridorLengthMinimum" Type="Double" Nullable="false" />
+          <Property Name="CorridorCrossHighLowMethodInt" Type="Int32" Nullable="false" />
+          <Property Name="MovingAverageTypeInt" Type="Int32" />
+          <Property Name="PriceCmaLevels" Type="Int32" Nullable="false" />
+          <Property Name="VolumeTresholdIterations" Type="Int32" Nullable="false" />
+          <Property Name="StDevTresholdIterations" Type="Int32" Nullable="false" />
+          <Property Name="StDevAverageLeewayRatio" Type="Double" Nullable="false" />
+          <Property Name="ExtreamCloseOffset" Type="Int32" Nullable="false" />
+          <Property Name="CurrentLossInPipsCloseAdjustment" Type="Double" Nullable="false" />
+          <Property Name="CorridorBigToSmallRatio" Type="Double" Nullable="false" />
+          <Property Name="ResetOnBalance" Type="Double" />
+          <Property Name="VoltageFunction" Type="Int32" Nullable="false" />
+        </EntityType>
+        <EntityContainer Name="ForexEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="TradingMacroes" EntityType="Self.TradingMacro" />
+        </EntityContainer>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="ForexModelStoreContainer" CdmEntityContainer="ForexEntities">
+          <EntitySetMapping Name="TradingMacroes">
+            <EntityTypeMapping TypeName="ForexModel.TradingMacro">
+              <MappingFragment StoreEntitySet="TradingMacro">
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+                <ScalarProperty Name="TradingRatio" ColumnName="TradingRatio" />
+                <ScalarProperty Name="UID" ColumnName="UID" />
+                <ScalarProperty Name="LimitBar" ColumnName="LimitBar" />
+                <ScalarProperty Name="CurrentLoss" ColumnName="CurrentLoss" />
+                <ScalarProperty Name="ReverseOnProfit" ColumnName="ReverseOnProfit" />
+                <ScalarProperty Name="FreezLimit" ColumnName="FreezLimit" />
+                <ScalarProperty Name="CorridorMethod" ColumnName="CorridorMethod" />
+                <ScalarProperty Name="FreezeStop" ColumnName="FreezeStop" />
+                <ScalarProperty Name="FibMax" ColumnName="FibMax" />
+                <ScalarProperty Name="FibMin" ColumnName="FibMin" />
+                <ScalarProperty Name="CorridornessMin" ColumnName="CorridornessMin" />
+                <ScalarProperty Name="CorridorIterationsIn" ColumnName="CorridorIterationsIn" />
+                <ScalarProperty Name="CorridorIterationsOut" ColumnName="CorridorIterationsOut" />
+                <ScalarProperty Name="CorridorIterations" ColumnName="CorridorIterations" />
+                <ScalarProperty Name="CorridorBarMinutes" ColumnName="CorridorBarMinutes" />
+                <ScalarProperty Name="PairIndex" ColumnName="PairIndex" />
+                <ScalarProperty Name="TradingGroup" ColumnName="TradingGroup" />
+                <ScalarProperty Name="MaximumPositions" ColumnName="MaximumPositions" />
+                <ScalarProperty Name="IsActive" ColumnName="IsActive" />
+                <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
+                <ScalarProperty Name="LimitCorridorByBarHeight" ColumnName="LimitCorridorByBarHeight" />
+                <ScalarProperty Name="MaxLotByTakeProfitRatio" ColumnName="MaxLotByTakeProfitRatio" />
+                <ScalarProperty Name="BarPeriodsLow" ColumnName="BarPeriodsLow" />
+                <ScalarProperty Name="BarPeriodsHigh" ColumnName="BarPeriodsHigh" />
+                <ScalarProperty Name="StrictTradeClose" ColumnName="StrictTradeClose" />
+                <ScalarProperty Name="BarPeriodsLowHighRatio" ColumnName="BarPeriodsLowHighRatio" />
+                <ScalarProperty Name="LongMAPeriod" ColumnName="LongMAPeriod" />
+                <ScalarProperty Name="CorridorAverageDaysBack" ColumnName="CorridorAverageDaysBack" />
+                <ScalarProperty Name="CorridorPeriodsStart" ColumnName="CorridorPeriodsStart" />
+                <ScalarProperty Name="CorridorPeriodsLength" ColumnName="CorridorPeriodsLength" />
+                <ScalarProperty Name="CorridorStartDate" ColumnName="CorridorStartDate" />
+                <ScalarProperty Name="CorridorRatioForRange" ColumnName="CorridorRatioForRange" />
+                <ScalarProperty Name="CorridorRatioForBreakout" ColumnName="CorridorRatioForBreakout" />
+                <ScalarProperty Name="RangeRatioForTradeLimit" ColumnName="RangeRatioForTradeLimit" />
+                <ScalarProperty Name="TradeByAngle" ColumnName="TradeByAngle" />
+                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
+                <ScalarProperty Name="TradeByFirstWave" ColumnName="TradeByFirstWave" />
+                <ScalarProperty Name="PowerRowOffset" ColumnName="PowerRowOffset" />
+                <ScalarProperty Name="RangeRatioForTradeStop" ColumnName="RangeRatioForTradeStop" />
+                <ScalarProperty Name="ReversePower" ColumnName="ReversePower" />
+                <ScalarProperty Name="CorrelationTreshold" ColumnName="CorrelationTreshold" />
+                <ScalarProperty Name="CloseOnProfitOnly" ColumnName="CloseOnProfitOnly" />
+                <ScalarProperty Name="CloseOnProfit" ColumnName="CloseOnProfit" />
+                <ScalarProperty Name="CloseOnOpen" ColumnName="CloseOnOpen" />
+                <ScalarProperty Name="StreachTradingDistance" ColumnName="StreachTradingDistance" />
+                <ScalarProperty Name="CloseAllOnProfit" ColumnName="CloseAllOnProfit" />
+                <ScalarProperty Name="ReverseStrategy" ColumnName="ReverseStrategy" />
+                <ScalarProperty Name="TradeAndAngleSynced" ColumnName="TradeAndAngleSynced" />
+                <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
+                <ScalarProperty Name="CloseByMomentum" ColumnName="CloseByMomentum" />
+                <ScalarProperty Name="TradeByRateDirection" ColumnName="TradeByRateDirection" />
+                <ScalarProperty Name="SupportDate" ColumnName="SupportDate" />
+                <ScalarProperty Name="ResistanceDate" ColumnName="ResistanceDate" />
+                <ScalarProperty Name="GannAnglesOffset" ColumnName="GannAnglesOffset" />
+                <ScalarProperty Name="GannAngles" ColumnName="GannAngles" />
+                <ScalarProperty Name="IsGannAnglesManual" ColumnName="IsGannAnglesManual" />
+                <ScalarProperty Name="GannAnglesAnchorDate" ColumnName="GannAnglesAnchorDate" />
+                <ScalarProperty Name="SpreadShortToLongTreshold" ColumnName="SpreadShortToLongTreshold" />
+                <ScalarProperty Name="SupportPriceStore" ColumnName="SupportPriceStore" />
+                <ScalarProperty Name="ResistancePriceStore" ColumnName="ResistancePriceStore" />
+                <ScalarProperty Name="SuppResLevelsCount" ColumnName="SuppResLevelsCount" />
+                <ScalarProperty Name="DoStreatchRates" ColumnName="DoStreatchRates" />
+                <ScalarProperty Name="IsSuppResManual" ColumnName="IsSuppResManual" />
+                <ScalarProperty Name="TradeOnCrossOnly" ColumnName="TradeOnCrossOnly" />
+                <ScalarProperty Name="TakeProfitFunctionInt" ColumnName="TakeProfitFunctionInt" />
+                <ScalarProperty Name="DoAdjustTimeframeByAllowedLot" ColumnName="DoAdjustTimeframeByAllowedLot" />
+                <ScalarProperty Name="IsColdOnTrades" ColumnName="IsColdOnTrades" />
+                <ScalarProperty Name="CorridorCrossesCountMinimum" ColumnName="CorridorCrossesCountMinimum" />
+                <ScalarProperty Name="StDevToSpreadRatio" ColumnName="StDevToSpreadRatio" />
+                <ScalarProperty Name="LoadRatesSecondsWarning" ColumnName="LoadRatesSecondsWarning" />
+                <ScalarProperty Name="CorridorHighLowMethodInt" ColumnName="CorridorHighLowMethodInt" />
+                <ScalarProperty Name="CorridorStDevRatioMax" ColumnName="CorridorStDevRatioMax" />
+                <ScalarProperty Name="CorridorLengthMinimum" ColumnName="CorridorLengthMinimum" />
+                <ScalarProperty Name="CorridorCrossHighLowMethodInt" ColumnName="CorridorCrossHighLowMethodInt" />
+                <ScalarProperty Name="MovingAverageTypeInt" ColumnName="MovingAverageTypeInt" />
+                <ScalarProperty Name="PriceCmaLevels" ColumnName="PriceCmaLevels" />
+                <ScalarProperty Name="VolumeTresholdIterations" ColumnName="VolumeTresholdIterations" />
+                <ScalarProperty Name="StDevTresholdIterations" ColumnName="StDevTresholdIterations" />
+                <ScalarProperty Name="StDevAverageLeewayRatio" ColumnName="StDevAverageLeewayRatio" />
+                <ScalarProperty Name="ExtreamCloseOffset" ColumnName="ExtreamCloseOffset" />
+                <ScalarProperty Name="CurrentLossInPipsCloseAdjustment" ColumnName="CurrentLossInPipsCloseAdjustment" />
+                <ScalarProperty Name="CorridorBigToSmallRatio" ColumnName="CorridorBigToSmallRatio" />
+                <ScalarProperty Name="ResetOnBalance" ColumnName="ResetOnBalance" />
+                <ScalarProperty Name="VoltageFunction" ColumnName="VoltageFunction" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

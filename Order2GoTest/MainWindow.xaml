@@ -1,0 +1,23 @@
+﻿<models:WindowModel x:Class="Order2GoTest.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+				xmlns:models="clr-namespace:HedgeHog.Models;assembly=HedgeHog.Lib"
+				DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+      <WrapPanel VerticalAlignment="Top">
+      <Button Content="Login" Name="btnLogin" Click="btnLogin_Click" />
+      <TextBox Text="{Binding LotsToBuy}"  Width="40" />
+      <Button Content="Buy" Name="btnBuy" Click="btnBuy_Click" />
+      <TextBox Text="{Binding LotsToSell}" Width="40" />
+      <Button Content="Sell" Name="btnSell" Click="btnSell_Click" />
+    </WrapPanel>
+    <Border Grid.Row="1"  BorderBrush="Red" BorderThickness="1" CornerRadius="3" >
+      <TextBox Text="{Binding Log}"></TextBox>
+    </Border>
+  </Grid>
+</models:WindowModel>
