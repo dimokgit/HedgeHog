@@ -1033,6 +1033,7 @@ namespace HedgeHog.Alice.Client {
             /*10*/, tm.WorkflowStep
           );
           charter.SetTrendLines(tm.SetTrendLines());
+          charter.SetMATrendLines(tm.LineMA);
           charter.CalculateLastPrice = tm.IsInVitualTrading ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
@@ -1043,7 +1044,9 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
-          PriceBar[] distances = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r).IfNaN(0) }).ToArray();
+          PriceBar[] distances = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r) }).ToArray();
+          var lastDist = distances.TakeWhile(d => d.Speed.IsNotNaN()).Select(d=>d.Speed).LastOrDefault();
+          distances.Where(d => d.Speed.IsNaN()).ForEach(d => d.Speed = lastDist);
           var volt2Dedault = rates.SkipWhile(r=>volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
           PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();

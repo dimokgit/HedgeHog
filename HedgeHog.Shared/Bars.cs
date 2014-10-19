@@ -656,7 +656,7 @@ namespace HedgeHog.Bars {
     #region VoltageLocal0
     private double[] _VoltageLocal0;
     public double[] VoltageLocal0 {
-      get { return _VoltageLocal0; }
+      get { return _VoltageLocal0 ?? (_VoltageLocal0 = new double[0]); }
       set { _VoltageLocal0 = value; }
     }
 

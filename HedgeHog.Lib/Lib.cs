@@ -19,6 +19,7 @@ using System.Reactive.Linq;
 using System.Xml.Linq;
 using System.IO;
 using System.Collections.Concurrent;
+using HedgeHog;
 
 namespace ControlExtentions {
   public static class AAA {
@@ -215,42 +216,6 @@ namespace HedgeHog {
     }
     public static TOut FirstOrDefault<TIn, TOut>(this IEnumerable<TIn> v, Func<TIn, TOut> projector, TOut defaultValue) {
       return v.Take(1).Select(projector).DefaultIfEmpty(defaultValue).Single();
-    }
-    public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
-          Action emptyAction) {
-
-      var isEmpty = true;
-      foreach (var e in enumerable) {
-        isEmpty = false;
-        yield return e;
-      }
-      if (isEmpty)
-        emptyAction();
-    }
-    public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
-          Func<IEnumerable<T>> emptySelector) {
-
-      var isEmpty = true;
-      foreach (var e in enumerable) {
-        isEmpty = false;
-        yield return e;
-      }
-      if (isEmpty)
-        foreach (var e in emptySelector())
-          yield return e;
-    }
-    public static T IfEmpty<T>(this T enumerable,
-          Action<T> thenSelector,
-          Action<T> elseSelector) where T : IEnumerable {
-
-      if (!enumerable.GetEnumerator().MoveNext()) thenSelector(enumerable); else elseSelector(enumerable);
-      return enumerable;
-    }
-    public static TResult IfEmpty<T, TResult>(this IEnumerable<T> enumerable,
-          Func<TResult> thenSelector,
-          Func<TResult> elseSelector) {
-
-      return (!enumerable.Any()) ? thenSelector() : elseSelector();
     }
     public static string Formater(this string format, params object[] args) {
       return string.Format(format, args);
@@ -749,20 +714,11 @@ namespace HedgeHog {
     public static IEnumerable<T> OfType<T>(this IEnumerable e, T type) {
       return e.OfType<T>();
     }
+    public static IEnumerable<T> OfType<T>(this IEnumerable e, Func<T> type) {
+      return e.OfType<T>();
+    }
     public static Action<T> ToAction<T>(this T value, Action<T> action) {
       return action;
-    }
-    public static Func<T> ToFunc<T>(this T value, Func<T> action) {
-      return action;
-    }
-    public static Func<T> ToFunc<T>(this T value) {
-      return () => value;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2) {
-      return (u1, u2) => value;
-    }
-    public static Func<U1, T> ToFunc<T, U1>(this T value, U1 input, Func<U1, T> projector) {
-      return projector;
     }
     public static Action Do<T>(this Lazy<T> l, Action<T> selector) {
       return () => selector(l.Value);
@@ -772,27 +728,6 @@ namespace HedgeHog {
     }
     public static Lazy<U> Bind<T, U>(this Lazy<T> l, Func<T, Lazy<U>> selector) {
       return new Lazy<U>(() => selector(l.Value).Value);
-    }
-    public static Lazy<T> ToLazy<T>(Func<T> projector) {
-      return new Lazy<T>(projector);
-    }
-    public static Func<T> ToFunc<T>(Func<T> projector) {
-      return projector;
-    }
-    public static Func<U1, T> ToFunc<T, U1>(U1 input, Func<U1, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(U1 input, U2 input2, Func<U1, U2, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2, Func<U1, U2, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3, Func<U1, U2, U3, T> projector) {
-      return projector;
-    }
-    public static Func<U1, U2, U3, T> ToFunc<T, U1, U2, U3>(this T value, U1 input, U2 input2, U3 input3) {
-      return (u1, u2, u3) => value;
     }
     public static bool IsZeroOrNaN(this double d) {
       return d == 0 || double.IsNaN(d);
@@ -817,27 +752,6 @@ namespace HedgeHog {
     }
     public static decimal Min3(decimal n1, decimal n2, decimal n3) {
       return Math.Min(Math.Min(n1, n2), n3);
-    }
-    public static DateTime Max(this DateTime d1, DateTime d2) {
-      return d1 >= d2 ? d1 : d2;
-    }
-    public static DateTime Min(this DateTime d1, DateTime d2) {
-      return d1 <= d2 ? d1 : d2;
-    }
-    public static bool IsMin(this DateTime d) {
-      return d == DateTime.MinValue;
-    }
-    public static bool IsMax(this DateTime d) {
-      return d == DateTime.MaxValue;
-    }
-    public static DateTimeOffset IfMin(this DateTimeOffset d, DateTimeOffset d1) {
-      return d == DateTimeOffset.MinValue ? d1 : d;
-    }
-    public static DateTime IfMin(this DateTime d, DateTime d1) {
-      return d == DateTime.MinValue ? d1 : d;
-    }
-    public static DateTime IfMax(this DateTime d, DateTime d1) {
-      return d == DateTime.MaxValue ? d1 : d;
     }
 
     public static double Div(this int v, int other) {

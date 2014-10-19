@@ -519,6 +519,10 @@
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>
       <Name>HedgeHog.DB</Name>

@@ -13,16 +13,6 @@ using ReactiveUI;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    private double _CorridorLength;
-    public double CorridorLength {
-      get { return _CorridorLength; }
-      set {
-        if (_CorridorLength == value) return;
-        _CorridorLength = value;
-        OnPropertyChanged(() => CorridorLength);
-      }
-    }
-
     #region ScanCorridor Extentions
     #region New
     #region SpikeHeightAbs
@@ -36,29 +26,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
-    private CorridorStatistics ScanCorridorByDistanceMax(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToList());
-      var dateMax = ratesAll[0].StartDate.AddDays(-1);
-      var timeMax = dateMax.TimeOfDay;
-      var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
-      var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
-      var chunks = ratesAll2
-        .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
-        .DistinctUntilChanged(a => a.isIn)
-        .SkipWhile(a => !a.isIn)
-        .Buffer(2)
-        .Where(b => b.Count == 2)
-        .Select(b => ratesAll2.GetRange(b[0].i, b[1].i - b[0].i))
-        .Where(chunk => chunk.Count > CorridorDistance * 0.9)
-        .Select(chunk => chunk.Distance())
-        .ToArray();
-      var distanceMax = chunks.DefaultIfEmpty().Max();
-
-      Func<IList<Rate>, int> scan = rates => distanceMax == 0
-        ? CorridorDistance
-        : rates.TakeWhile(r => r.Distance <= distanceMax).Count();
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
-    }
     private IEnumerable<T> VoltsByTimeframe<T>(int frameLength, TimeSpan timeMax, TimeSpan timeMin, List<Rate> ratesAll2, Func<double, DateTime, T> selector) {
       return ratesAll2
         .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
@@ -83,16 +50,6 @@ namespace HedgeHog.Alice.Store {
       return chunks.Select(a => a.dist).Skip(1).ToArray();
     }
 
-    private void SetVoltsByStDevDblIntegral(IList<Rate> ratesReversed, int frameLength) {
-      ratesReversed
-        .Buffer(frameLength, 1)
-        .TakeWhile(chunk => chunk[0].VoltageLocal.IsNaN())
-        .ForEach(chunk => chunk[0].VoltageLocal = InPips(chunk.StDev(_priceAvg)));
-      ratesReversed
-        .Buffer(frameLength, 1)
-        .TakeWhile(chunk => GetVoltage(chunk[0]).IsNaN() && chunk.Last().VoltageLocal.IsNotNaN())
-        .ForEach(chunk => SetVoltage(chunk[0], chunk.Average(r => r.VoltageLocal)));
-    }
     private void SetVoltsByStDevDblIntegral3(IList<Rate> ratesReversed, int frameLength) {
       ratesReversed
         .Buffer(frameLength, 1)
@@ -111,12 +68,74 @@ namespace HedgeHog.Alice.Store {
         .TakeWhile(chunk => GetVoltage2(chunk[0]).IsNaN() && GetVoltage(chunk.Last()).IsNotNaN())
         .ForEach(chunk => {
           var volts = chunk.ToArray(GetVoltage);
-          var regRes = volts.Regression(1, (coeffs, line) => new { angle = coeffs.LineSlope().Abs().Angle(BarPeriodInt), line });
+          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -coeffs.LineSlope().Angle(BarPeriodInt), line });
           var corr = AlgLib.correlation.pearsoncorrelation(volts, regRes.line);
           chunk[0].VoltageLocal0 = new[] { regRes.angle, corr };
-          SetVoltage2(chunk[0], regRes.angle);
+          SetVoltage2(chunk[0], regRes.angle.Abs());
         });
     }
+    private void SetVoltsByStDevDblIntegral4(IList<Rate> ratesReversed, int frameLength,Func<Rate,double> getPrice) {
+      ratesReversed
+        .Buffer(frameLength, 1)
+        .TakeWhile(chunk => chunk[0].VoltageLocal.IsNaN())
+        .ForEach(chunk => chunk[0].VoltageLocal = InPips(chunk.StDev(getPrice)));
+      ratesReversed
+        .Buffer(frameLength, 1)
+        .TakeWhile(chunk => chunk[0].VoltageLocal2.IsNaN() && chunk.Last().VoltageLocal.IsNotNaN())
+        .ForEach(chunk => chunk[0].VoltageLocal2 = chunk.Average(r => r.VoltageLocal));
+      Func<Rate, double> gv3 = r => r.VoltageLocal3;
+      Action<Rate, double> sv3 = (r, v) => r.VoltageLocal3 = v;
+      ratesReversed
+        .Buffer(frameLength, 1)
+        .TakeWhile(chunk => gv3(chunk[0]).IsNaN() && chunk.Last().VoltageLocal2.IsNotNaN())
+        .ForEach(chunk => sv3(chunk[0], chunk.StDev(r => r.VoltageLocal2)));
+      ratesReversed
+        .Buffer(VoltsBelowAboveLengthMin.ToInt(), 1)
+        .TakeWhile(chunk => GetVoltage2(chunk[0]).IsNaN() && gv3(chunk.Last()).IsNotNaN())
+        .ForEach(chunk => {
+          var volts = chunk.ToArray(gv3);
+          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -coeffs.LineSlope().Angle(BarPeriodInt), line });
+          chunk[0].VoltageLocal0 = new[] { regRes.angle };
+          SetVoltage2(chunk[0], regRes.angle);
+        });
+      OnGeneralPurpose(() =>
+      ratesReversed
+        .Buffer(BarsCountCalc, 1)
+        .TakeWhile(chunk => GetVoltage(chunk[0]).IsNaN() && GetVoltage2(chunk.Last()).IsNotNaN())
+        .ForEach(chunk => {
+          double[] waves = chunk.WavesByAngle(r => r.VoltageLocal0[0], frameLength).ToArray();
+          var c = waves.AverageByIterations(-2).Average();
+          int wavesCount = BarsCountCalc / frameLength / 2;
+          SetVoltage(chunk[0], waves.Where(v => v >= c).Take(wavesCount).Average() / frameLength - 1);
+        }));
+    }
+
+    private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
+      SetVoltsByStDevDblIntegral4(ratesReversed, VoltsFrameLength,GetPriceMA);
+      var voltsAll = ratesForCorridor.Select(GetVoltage).Where(Lib.IsNotNaN).ToArray();
+      var voltsAll2 = ratesForCorridor.Select(GetVoltage2).ToArray();
+      OnGeneralPurpose(() => {
+        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
+        GetVoltageHigh = () => vh;
+        var va = voltsAll2.Average();
+        GetVoltageAverage = () => va;
+      });
+      Func<Rate, double> distanceFunc = r => GetVoltage2(r).Abs();
+      var distanceMin = UseRatesInternal(ri =>
+        ri.TakeLast((VoltsAverageLength * 60).ToInt())
+        .Select(distanceFunc)
+        .Where(Lib.IsNotNaN)
+        .Average() * CorridorDistance);
+      var distanceSum = 0.0;
+      var count = ratesReversed.Select(r => (distanceSum += distanceFunc(r))).TakeWhile(d => d < distanceMin).Count();
+      Func<IList<Rate>, int> scan = rates => distanceMin == 0
+        ? CorridorDistance
+        : count;// rateChunks.SkipWhile(chunk => chunk.Sum(GetVoltage) < distanceMin).First().Count;
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+    }
+
+    #region ScanCorridorByStDevTripleIntegral
     private void SetVoltsByStDevTripleIntegral(IList<Rate> ratesReversed, int frameLength) {
       Func<double, double, bool> takeWhile = (d1, d2) => d1.IsNaN() && d2.IsNotNaN();
       ratesReversed
@@ -135,38 +154,13 @@ namespace HedgeHog.Alice.Store {
         .Buffer(VoltsBelowAboveLengthMin.ToInt(), 1)
         .TakeWhile(chunk => takeWhile(GetVoltage(chunk[0]), chunk.Last().VoltageLocal3))
         .ForEach(chunk => {
-          var volts = chunk.ToArray(r=>r.VoltageLocal3);
+          var volts = chunk.ToArray(r => r.VoltageLocal3);
           var regRes = volts.Regression(1, (coeffs, line) => new { angle = coeffs.LineSlope().Abs().Angle(BarPeriodInt), line });
           var corr = AlgLib.correlation.pearsoncorrelation(volts, regRes.line);
           chunk[0].VoltageLocal0 = new[] { regRes.angle, corr };
           SetVoltage(chunk[0], regRes.angle);
           SetVoltage2(chunk[0], corr);
         });
-    }
-
-    private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
-      SetVoltsByStDevDblIntegral3(ratesReversed, VoltsFrameLength);
-      var voltsAll = ratesForCorridor.Select(GetVoltage).ToArray();
-      var voltsAll2 = ratesForCorridor.Select(GetVoltage2);
-      //RatesArray.Reverse<Rate>()
-      //  .Buffer(VoltsFrameLength, 1)
-      //  .TakeWhile(b => GetVoltage2(b[0]).IsNaN())
-      //  .ForEach(b => SetVoltage2(b[0],b.StDev(GetVoltage)));
-      OnGeneralPurpose(() => {
-        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
-        GetVoltageHigh = () => vh;
-        var va = voltsAll.ToArray().AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
-        GetVoltageAverage = () => va;
-      });
-      var distanceMin = UseRatesInternal(ri => ri.TakeLast((VoltsAverageLength * 60).ToInt()).Average(GetVoltage) * CorridorDistance);
-      var distanceSum = 0.0;
-      var count = ratesReversed.Select(r => (distanceSum += GetVoltage(r))).TakeWhile(d => d < distanceMin).Count();
-      //var rateChunks = ratesReversed.Select((r, i) => new ArraySegment<Rate>(ratesReversed, 0, i + 1));
-      Func<IList<Rate>, int> scan = rates => distanceMin == 0
-        ? CorridorDistance
-        : count;// rateChunks.SkipWhile(chunk => chunk.Sum(GetVoltage) < distanceMin).First().Count;
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
     private CorridorStatistics ScanCorridorByStDevTripleIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
@@ -185,7 +179,31 @@ namespace HedgeHog.Alice.Store {
       Func<IList<Rate>, int> scan = rates => distanceMin == 0 ? CorridorDistance : count;
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+    #endregion
+    #region ScanCorridorByDistance
+    private CorridorStatistics ScanCorridorByDistanceMax(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToList());
+      var dateMax = ratesAll[0].StartDate.AddDays(-1);
+      var timeMax = dateMax.TimeOfDay;
+      var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
+      var ratesAll2 = ratesAll.SkipWhile(rate => rate.StartDate > dateMax).ToList();
+      var chunks = ratesAll2
+        .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
+        .DistinctUntilChanged(a => a.isIn)
+        .SkipWhile(a => !a.isIn)
+        .Buffer(2)
+        .Where(b => b.Count == 2)
+        .Select(b => ratesAll2.GetRange(b[0].i, b[1].i - b[0].i))
+        .Where(chunk => chunk.Count > CorridorDistance * 0.9)
+        .Select(chunk => chunk.Distance())
+        .ToArray();
+      var distanceMax = chunks.DefaultIfEmpty().Max();
 
+      Func<IList<Rate>, int> scan = rates => distanceMax == 0
+        ? CorridorDistance
+        : rates.TakeWhile(r => r.Distance <= distanceMax).Count();
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
+    }
     private CorridorStatistics ScanCorridorByDistance7(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Stopwatch sw = Stopwatch.StartNew();
       var swDict = new Dictionary<string, double>();
@@ -286,6 +304,7 @@ namespace HedgeHog.Alice.Store {
         : rates.TakeWhile(r => r.Distance <= distanceMin).Count();
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+    #endregion
 
     DateTime RangeEdgeRight(DateTime date, TimeSpan from, TimeSpan to) {
       if (to > from) {

@@ -469,6 +469,16 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    double _testMinimumBalancePerc = .7;
+    [Category(categoryTestControl)]
+    public double TestMinimumBalancePerc {
+      get { return _testMinimumBalancePerc; }
+      set {
+        _testMinimumBalancePerc = value;
+        OnPropertyChanged("TestMinimumBalancePerc");
+      }
+    }
+
     public string _TestFileName = "";
     [DisplayName("Test File Name")]
     [Category(categoryTestControl)]

@@ -921,6 +921,16 @@ namespace HedgeHog.Bars {
       return new RsiStatistics(RsiAverageLow, RsiStdLow, rsiBuyLow, RsiAverageHigh, RsiStdHigh, rsiSellHigh);
     }
 
+    public static IEnumerable<double> WavesByAngle(this IList<Rate> chunk,Func<Rate,double>getAngle, int frameLength) {
+      var volts0 = chunk.Select((r, i) => new { r, i, u = getAngle(r) > 0 }).Memoize();
+      var bl = 3;
+      return volts0.Zip(volts0.Skip(1), (prev, next) => new { prev, next })
+        .Where(a => a.prev.u != a.next.u)
+        //.SkipWhile(a => !a.prev.u)
+        .Buffer(bl, bl - 1)
+        .Where(b => b.Count == bl)
+        .Select(b => (double)b[bl - 1].next.i - b[0].next.i);
+    }
     public static TBar[] FindWaves<TBar>(
       this ICollection<TBar> bars, Func<TBar, int> Sign, Func<TBar, double?> Sort) where TBar : BarBase {
       bars = bars.Where(b => Sort(b).GetValueOrDefault(50) != 50).OrderBars().ToArray();

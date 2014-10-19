@@ -1472,9 +1472,17 @@ namespace HedgeHog.Alice.Store {
 
                 //RunPriceChanged(new PriceChangedEventArgs(Pair, price, TradesManager.GetAccount(), new Trade[0]), null);
                 ReplayEvents();
-                if (TradesManager.GetAccount().PipsToMC < 0) {
-                  Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
-                  CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
+                {
+                  var a = TradesManager.GetAccount();
+                  if (a.PipsToMC < 0) {
+                    Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
+                    CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
+                  }
+                  if (MinimumOriginalProfit < TestMinimumBalancePerc) {
+                    Log = new Exception("Minimum Balance Alert: " + MinimumOriginalProfit);
+                    CloseTrades("Minimum Balance Alert: " + MinimumOriginalProfit);
+                    args.MustStop = true;
+                  }
                 }
                 if (RateLast != null)
                   Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
@@ -1939,6 +1947,7 @@ namespace HedgeHog.Alice.Store {
                   default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }
                 Angle = coeffs.LineSlope().Angle(BarPeriodInt, PointSize);
+                RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
                 OnPropertyChanged(() => RatesRsd);
               } catch (Exception exc) {
                 Log = exc;
@@ -2552,7 +2561,7 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
           var rates = RatesArray;
-          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, BarsCountCalc / PriceCmaLevels);
+          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels);
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
@@ -3242,7 +3251,10 @@ namespace HedgeHog.Alice.Store {
             UseRatesInternal(ri => ri.Clear());
             OnLoadRates();
           } else {
-            var func = new[] { SetVoltage, SetVoltage2, (r, v) => r.VoltageLocal = v, (r, v) => r.Distance = v };
+            var func = new[] { 
+              SetVoltage, SetVoltage2, 
+              (r, v) => r.VoltageLocal = v, (r, v) => r.VoltageLocal0 = new double[0], (r, v) => r.VoltageLocal2 = v, (r, v) => r.VoltageLocal3 = v, 
+              (r, v) => r.Distance = v };
             UseRatesInternal(ri => ri.ForEach(r => { func.ForEach(f => { f(r, double.NaN); }); }));
           }
           break;
@@ -4086,6 +4098,11 @@ namespace HedgeHog.Alice.Store {
 
     #region RatesHeightMin
     private double _RatesHeightMin;
+    private double[] _lineMA;
+    public double[] LineMA {
+      get { return _lineMA; }
+      set { _lineMA = value; }
+    }
     public double RatesHeightMin {
       get { return _RatesHeightMin; }
       set {

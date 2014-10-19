@@ -151,6 +151,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacro\Exceptions.cs" />
+    <Compile Include="TradingMacro\ScanCorridor\TradingMacro.cs" />
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
     <Compile Include="TradingMacro\TradingMacro.Enums.cs" />
     <Compile Include="TradingMacro\TradingMacro.LiveTrading.cs" />
@@ -213,6 +214,10 @@
     <ProjectReference Include="..\FrequencyTable_VS2005_Project\VTClasses\VTClasses.csproj">
       <Project>{7A8203A2-9BFC-4711-9836-9DFF55D9D1D0}</Project>
       <Name>VTClasses</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\HedgeHog.DB\HedgeHog.DB.csproj">
       <Project>{CCA024B7-4A9B-451E-BFE0-126DC9F33BB2}</Project>

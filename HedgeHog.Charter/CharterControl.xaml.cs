@@ -19,12 +19,12 @@ using HedgeHog.DateTimeZone;
 using System.Collections.ObjectModel;
 using HedgeHog.Models;
 using HedgeHog.Shared;
-using HedgeHog.Charter.Metadata;
+//using HedgeHog.Charter.Metadata;
 using Microsoft.Research.DynamicDataDisplay.DataSources;
 using Microsoft.Research.DynamicDataDisplay.ViewportRestrictions;
 using System.Windows.Threading;
 using HedgeHog.Charter;
-using HedgeHog.Metadata;
+//using HedgeHog.Metadata;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Diagnostics;
@@ -41,6 +41,7 @@ using System.Globalization;
 using System.Threading;
 using System.Windows.Interactivity;
 using Microsoft.Expression.Interactivity.Layout;
+using HedgeHog.Metadata;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -617,11 +618,13 @@ namespace HedgeHog {
 
     double _trendLinesH;
     double _trendLinesY;
+    public void SetMATrendLines(double[] mas) {
+      TrendLineMA = mas;
+    }
     public void SetTrendLines(Rate[] rates) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 =  rates;
-
         var rateLast = rates.LastBC();
         var timeHigh = rateLast.StartDateContinuous;
         var corridorTime = rateLast.StartDate;
@@ -635,6 +638,22 @@ namespace HedgeHog {
     }
 
     #region Trend Lines
+    Segment _trendLineMA;
+    Segment trendLineMA {
+      get {
+        if (_trendLineMA == null) {
+          _trendLineMA = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
+          plotter.Children.Add(_trendLineMA);
+        }
+        return _trendLineMA;
+      }
+    }
+    double[] TrendLineMA {
+      set {
+        trendLineMA.StartPoint = new Point(ConvertToDouble(animatedTimeX[0]), value[0]);
+        trendLineMA.EndPoint= new Point(ConvertToDouble(animatedTimeX.Last()), value.Last());
+      }
+    }
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
     Rate[] TrendLine {
       set {

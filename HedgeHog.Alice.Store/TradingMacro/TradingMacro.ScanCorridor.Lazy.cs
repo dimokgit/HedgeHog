@@ -42,7 +42,7 @@ namespace HedgeHog.Alice.Store {
       return (showVolts ?? ShowVoltsNone)();
     }
     private CorridorStatistics ShowVoltsByStDevIntegral() {
-      SetVoltsByStDevDblIntegral(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);
+      SetVoltsByStDevDblIntegral3(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);
       var voltsAll = RatesArray.Select(GetVoltage).ToArray();
       OnGeneralPurpose(() => {
         var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();

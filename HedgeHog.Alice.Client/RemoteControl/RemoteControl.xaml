@@ -6,6 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:lib="clr-namespace:HedgeHog;assembly=HedgeHog.Lib"
+             xmlns:core="clr-namespace:HedgeHog;assembly=HedgeHog.Core"
              xmlns:localModels="clr-namespace:HedgeHog.Alice.Store;assembly=HedgeHog.Alice.Store"
              xmlns:hhShared="clr-namespace:HedgeHog.Shared;assembly=HedgeHog.Shared"
              xmlns:hhui="clr-namespace:HedgeHog.UI;assembly=HedgeHog.UI"
@@ -93,7 +94,7 @@
             <DataTemplate>
               <TextBlock Margin="0,-4" Padding="0"
                          Text="{Binding LotSizeByLossSell,StringFormat=S:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}"
-                         ToolTip="{Binding LotSizePercent,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"
+                         ToolTip="{Binding LotSizePercent,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"
                          />
             </DataTemplate>
           </Button.ContentTemplate>
@@ -106,8 +107,8 @@
                          Text="{Binding LotSizeByLossBuy,StringFormat=B:{0:c0},Converter={x:Static lib:PerMilleConverter.Default}}" Margin="0,-4" Padding="0">
                 <TextBlock.ToolTip>
                   <StackPanel>
-                    <TextBlock Text="{Binding LotSizePercent,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"/>
-                    <TextBlock Text="{Binding PipAmount,Converter={x:Static lib:StringFormatConverter.Default},ConverterParameter={}{0:c0}}"/>
+                    <TextBlock Text="{Binding LotSizePercent,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:p0}}"/>
+                    <TextBlock Text="{Binding PipAmount,Converter={x:Static core:StringFormatConverter.Default},ConverterParameter={}{0:c0}}"/>
                   </StackPanel>
                 </TextBlock.ToolTip>
               </TextBlock>
