@@ -42,8 +42,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Box.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="IEnumerable.cs" />
+    <Compile Include="LazyMonad.cs" />
     <Compile Include="Math.cs" />
     <Compile Include="Monoids.cs" />
     <Compile Include="Persistance.cs" />

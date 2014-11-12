@@ -567,6 +567,9 @@ namespace HedgeHog {
       Array.Copy(values, start, array, 0, array.Length);
       return array;
     }
+    public static double Offset(double slope, double pointSize) {
+      return Math.Sin(Math.PI / 2 - slope / pointSize);
+    }
     private static double Abs(this double d) { return Math.Abs(d); }
     private static int Sign(this double d) { return Math.Sign(d); }
     private static bool IsNaN(this double d) { return double.IsNaN(d); }

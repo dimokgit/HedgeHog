@@ -619,7 +619,8 @@ namespace HedgeHog {
     double _trendLinesH;
     double _trendLinesY;
     public void SetMATrendLines(double[] mas) {
-      TrendLineMA = mas;
+      if ((mas ?? new double[0]).Any())
+        TrendLineMA = mas;
     }
     public void SetTrendLines(Rate[] rates) {
       if (!rates.Any()) return;
@@ -642,7 +643,7 @@ namespace HedgeHog {
     Segment trendLineMA {
       get {
         if (_trendLineMA == null) {
-          _trendLineMA = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
+          _trendLineMA = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.MediumSlateBlue) };
           plotter.Children.Add(_trendLineMA);
         }
         return _trendLineMA;
@@ -650,8 +651,8 @@ namespace HedgeHog {
     }
     double[] TrendLineMA {
       set {
-        trendLineMA.StartPoint = new Point(ConvertToDouble(animatedTimeX[0]), value[0]);
-        trendLineMA.EndPoint= new Point(ConvertToDouble(animatedTimeX.Last()), value.Last());
+        trendLineMA.StartPoint = new Point(ConvertToDouble(animatedTimeX.FirstOrDefault()), value[0]);
+        trendLineMA.EndPoint= new Point(ConvertToDouble(animatedTimeX.LastOrDefault()), value.Last());
       }
     }
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
@@ -1445,7 +1446,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
         animatedDataSource1 = new EnumerableDataSource<double>(animatedPrice1Y);
         animatedDataSource1.SetYMapping(y => y);
-        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.DarkGray, 1, "")
+        plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource1), Colors.Black, 1, "")
           .Description.LegendItem.Visibility = Visibility.Collapsed;
 
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
@@ -1486,7 +1487,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVoltDataSource = new EnumerableDataSource<double>(animatedVoltValueY);
         animatedVoltDataSource.SetYMapping(y => y);
-        _voltGraph = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.Tan, 1, "");
+        _voltGraph = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVoltDataSource), Colors.Goldenrod, 1, "");
         _voltGraph.Description.LegendItem.Visibility = Visibility.Collapsed;
 
         xSrc = new EnumerableDataSource<DateTime>(animatedVolt1TimeX);

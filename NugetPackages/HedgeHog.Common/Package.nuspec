@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>HedgeHog.Common</id>
-    <version>1.0.4</version>
+    <version>1.1.1</version>
     <title>HedgeHog.Common</title>
     <authors>dimon</authors>
     <owners></owners>
@@ -16,7 +16,7 @@
     </summary>
     <language>en-US</language>
     <projectUrl>https://nuget.org/packages/HedgeHog.Common</projectUrl>
-    <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
+    <iconUrl>http://www.imagesup.net/?di=15141369573511</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright  2014</copyright>

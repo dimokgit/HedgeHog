@@ -104,8 +104,12 @@ namespace HedgeHog {
     /// <returns>Regression result values example:Line,Parabola</returns>
     public static double[] Regression(this IList<double> values, int polyOrder, out double[] coeffs) {
       coeffs = values.Regress(polyOrder);
-      var parabola = new double[values.Count];
-      coeffs.SetRegressionPrice(0, values.Count, (i, v) => parabola[i] = v);
+      return coeffs.RegressionLine(values.Count);
+    }
+
+    public static double[] RegressionLine(this double[] coeffs,int lineLength) {
+      var parabola = new double[lineLength];
+      coeffs.SetRegressionPrice(0, lineLength, (i, v) => parabola[i] = v);
       return parabola;
     }
 

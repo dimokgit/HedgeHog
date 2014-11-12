@@ -1616,6 +1616,18 @@ namespace HedgeHog.Bars {
       for (; outBegIdx < up; outBegIdx++)
         ticks[outBegIdx].PriceTrima = outTrima[outBegIdx + 1 - period];
     }
+    public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
+      int outBegIdx;
+      return ticks.GetTrima(period, out outBegIdx);
+    }
+    public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period, out int outBegIdx) where TBars : BarBase {
+      int  outNBElement;
+      var outTrima = ticks.Select(t => t.PriceAvg).ToArray().Trima(period, out outBegIdx, out outNBElement);
+      var up = ticks.Count;
+      return Enumerable.Range(outBegIdx, ticks.Count - outBegIdx)
+        .Select(i => outTrima[i + 1 - period])
+        .ToArray();
+    }
     public static DataPoint[] GetCurve(IEnumerable<BarBase> ticks, int cmaPeriod) {
       double? cma1 = null;
       double? cma2 = null;

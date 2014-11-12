@@ -5,7 +5,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{0451BAEF-DF2E-4B98-8644-94EE9415E389}</ProjectGuid>
+    <ProjectGuid>{42E0767B-AAF0-4229-98DC-925A8508E4D1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HedgeHog.Common</RootNamespace>
@@ -47,6 +47,9 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>HedgeHog.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -67,6 +70,7 @@
     <Folder Include="src\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="HedgeHog.ico" />
     <Content Include="lib\Net45\HedgeHog.Core.dll" />
     <Content Include="lib\Net45\HedgeHog.Core.pdb" />
   </ItemGroup>

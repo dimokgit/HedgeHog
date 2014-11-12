@@ -18,6 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Forex-Azure.scmp = Forex-Azure.scmp
 		HedgeHog.ico = HedgeHog.ico
 		Local.testsettings = Local.testsettings
+		Performance1.psess = Performance1.psess
+		Performance5.psess = Performance5.psess
 		..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll = ..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
@@ -180,6 +182,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{54E9B5FC
 		..\..\..\..\..\OneDrive\Public\Forex\Builds\Tests\Test_USDJPY_SDF3_Angle.txt = ..\..\..\..\..\OneDrive\Public\Forex\Builds\Tests\Test_USDJPY_SDF3_Angle.txt
 		..\..\..\..\..\OneDrive\Public\Forex\Builds\Tests\Test_USDJPY_SDI_VBA60_6_3.txt = ..\..\..\..\..\OneDrive\Public\Forex\Builds\Tests\Test_USDJPY_SDI_VBA60_6_3.txt
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HedgeHog.Common", "..\NugetPackages\HedgeHog.Common\HedgeHog.Common.csproj", "{42E0767B-AAF0-4229-98DC-925A8508E4D1}"
 EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
@@ -1769,6 +1773,36 @@ Global
 		{0FF063E1-E910-4D16-976B-15BC31D11159}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{0FF063E1-E910-4D16-976B-15BC31D11159}.Release|Win32.ActiveCfg = Release|Any CPU
 		{0FF063E1-E910-4D16-976B-15BC31D11159}.Release|x86.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|Any CPU.Build.0 = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|Mixed Platforms.Build.0 = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|Win32.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug SubArray|x86.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|Any CPU.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|Any CPU.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|Mixed Platforms.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|Win32.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Part1|x86.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|Any CPU.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|Any CPU.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|Mixed Platforms.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|Win32.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release SubArray|x86.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|Win32.ActiveCfg = Release|Any CPU
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1809,6 +1843,7 @@ Global
 		{430D6919-915C-470D-848F-4D078A0F2F39} = {42E6F0E8-6AC1-4BE1-940C-51AC266ECEA0}
 		{0FF063E1-E910-4D16-976B-15BC31D11159} = {8F8326E2-C11B-41B5-B475-88587710F21D}
 		{54E9B5FC-4CFE-424B-93D0-C13D15F5449F} = {97A50C77-C8C6-46CC-BEBA-8792E3538BFC}
+		{42E0767B-AAF0-4229-98DC-925A8508E4D1} = {364F4718-C4CB-457A-A797-19F742B12DEC}
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = AllInOne1.vsmdi

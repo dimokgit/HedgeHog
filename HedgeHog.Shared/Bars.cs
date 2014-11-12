@@ -6,6 +6,8 @@ using HedgeHog.Shared;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
+using HedgeHog.DB;
+using System.Data.Entity.Core.Objects.DataClasses;
 [assembly: CLSCompliant(true)]
 namespace HedgeHog.Bars {
   public enum FractalType { None = 0, Buy = -1, Sell = 1 };
@@ -598,7 +600,8 @@ namespace HedgeHog.Bars {
     public Rate(Price price, bool isHistory) : this(price.Time, price.Ask, price.Bid, isHistory) { }
     public Rate(double AskHigh, double AskLow, double AskOpen, double AskClose,
                     double BidHigh, double BidLow, double BidOpen, double BidClose,
-                    DateTime StartDate) {
+                    DateTime StartDate
+      ) {
       if (StartDate.Kind != DateTimeKind.Utc) throw new ArgumentException("StartDate must be of Utc kind");
       this.AskHigh = AskHigh;
       this.AskLow = AskLow;

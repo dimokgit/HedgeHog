@@ -20,6 +20,7 @@ using System.Xml.Serialization;
 #region EDM Relationship Metadata
 
 [assembly: EdmRelationshipAttribute("ForexModel", "FK_Event_EventLevel", "EventLevel", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.DB.EventLevel__News), "Event", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.DB.Event__News), true)]
+[assembly: EdmRelationshipAttribute("ForexModel", "FK_t_BarExtender_t_Bar", "t_Bar", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.DB.t_Bar), "t_BarExtender", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.DB.t_BarExtender), true)]
 
 #endregion
 
@@ -218,22 +219,6 @@ namespace HedgeHog.DB
         /// <summary>
         /// No Metadata Documentation available.
         /// </summary>
-        public ObjectSet<v_TradeSession> v_TradeSession
-        {
-            get
-            {
-                if ((_v_TradeSession == null))
-                {
-                    _v_TradeSession = base.CreateObjectSet<v_TradeSession>("v_TradeSession");
-                }
-                return _v_TradeSession;
-            }
-        }
-        private ObjectSet<v_TradeSession> _v_TradeSession;
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
         public ObjectSet<MonthlyStat__Stats> MonthlyStat__Stats
         {
             get
@@ -278,6 +263,38 @@ namespace HedgeHog.DB
             }
         }
         private ObjectSet<EventLevel__News> _EventLevel__News;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<t_BarExtender> t_BarExtender
+        {
+            get
+            {
+                if ((_t_BarExtender == null))
+                {
+                    _t_BarExtender = base.CreateObjectSet<t_BarExtender>("t_BarExtender");
+                }
+                return _t_BarExtender;
+            }
+        }
+        private ObjectSet<t_BarExtender> _t_BarExtender;
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        public ObjectSet<v_TradeSession> v_TradeSession
+        {
+            get
+            {
+                if ((_v_TradeSession == null))
+                {
+                    _v_TradeSession = base.CreateObjectSet<v_TradeSession>("v_TradeSession");
+                }
+                return _v_TradeSession;
+            }
+        }
+        private ObjectSet<v_TradeSession> _v_TradeSession;
 
         #endregion
 
@@ -356,14 +373,6 @@ namespace HedgeHog.DB
         }
     
         /// <summary>
-        /// Deprecated Method for adding a new object to the v_TradeSession EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
-        /// </summary>
-        public void AddTov_TradeSession(v_TradeSession v_TradeSession)
-        {
-            base.AddObject("v_TradeSession", v_TradeSession);
-        }
-    
-        /// <summary>
         /// Deprecated Method for adding a new object to the MonthlyStat__Stats EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
         /// </summary>
         public void AddToMonthlyStat__Stats(MonthlyStat__Stats monthlyStat__Stats)
@@ -385,6 +394,22 @@ namespace HedgeHog.DB
         public void AddToEventLevel__News(EventLevel__News eventLevel__News)
         {
             base.AddObject("EventLevel__News", eventLevel__News);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the t_BarExtender EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTot_BarExtender(t_BarExtender t_BarExtender)
+        {
+            base.AddObject("t_BarExtender", t_BarExtender);
+        }
+    
+        /// <summary>
+        /// Deprecated Method for adding a new object to the v_TradeSession EntitySet. Consider using the .Add method of the associated ObjectSet&lt;T&gt; property instead.
+        /// </summary>
+        public void AddTov_TradeSession(v_TradeSession v_TradeSession)
+        {
+            base.AddObject("v_TradeSession", v_TradeSession);
         }
 
         #endregion
@@ -1615,6 +1640,208 @@ namespace HedgeHog.DB
         private Nullable<global::System.Int32> _Row;
         partial void OnRowChanging(Nullable<global::System.Int32> value);
         partial void OnRowChanged();
+
+        #endregion
+
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("ForexModel", "FK_t_BarExtender_t_Bar", "t_BarExtender")]
+        public EntityCollection<t_BarExtender> t_BarExtender
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedCollection<t_BarExtender>("ForexModel.FK_t_BarExtender_t_Bar", "t_BarExtender");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedCollection<t_BarExtender>("ForexModel.FK_t_BarExtender_t_Bar", "t_BarExtender", value);
+                }
+            }
+        }
+
+        #endregion
+
+    }
+    
+    /// <summary>
+    /// No Metadata Documentation available.
+    /// </summary>
+    [EdmEntityTypeAttribute(NamespaceName="ForexModel", Name="t_BarExtender")]
+    [Serializable()]
+    [DataContractAttribute(IsReference=true)]
+    public partial class t_BarExtender : EntityObject
+    {
+        #region Factory Method
+    
+        /// <summary>
+        /// Create a new t_BarExtender object.
+        /// </summary>
+        /// <param name="id">Initial value of the ID property.</param>
+        /// <param name="barID">Initial value of the BarID property.</param>
+        /// <param name="key">Initial value of the Key property.</param>
+        /// <param name="value">Initial value of the Value property.</param>
+        public static t_BarExtender Createt_BarExtender(global::System.Int32 id, global::System.Int32 barID, global::System.String key, global::System.Double value)
+        {
+            t_BarExtender t_BarExtender = new t_BarExtender();
+            t_BarExtender.ID = id;
+            t_BarExtender.BarID = barID;
+            t_BarExtender.Key = key;
+            t_BarExtender.Value = value;
+            return t_BarExtender;
+        }
+
+        #endregion
+
+        #region Simple Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=true, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 ID
+        {
+            get
+            {
+                return _ID;
+            }
+            set
+            {
+                if (_ID != value)
+                {
+                    OnIDChanging(value);
+                    ReportPropertyChanging("ID");
+                    _ID = StructuralObject.SetValidValue(value, "ID");
+                    ReportPropertyChanged("ID");
+                    OnIDChanged();
+                }
+            }
+        }
+        private global::System.Int32 _ID;
+        partial void OnIDChanging(global::System.Int32 value);
+        partial void OnIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Int32 BarID
+        {
+            get
+            {
+                return _BarID;
+            }
+            set
+            {
+                OnBarIDChanging(value);
+                ReportPropertyChanging("BarID");
+                _BarID = StructuralObject.SetValidValue(value, "BarID");
+                ReportPropertyChanged("BarID");
+                OnBarIDChanged();
+            }
+        }
+        private global::System.Int32 _BarID;
+        partial void OnBarIDChanging(global::System.Int32 value);
+        partial void OnBarIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Key
+        {
+            get
+            {
+                return _Key;
+            }
+            set
+            {
+                OnKeyChanging(value);
+                ReportPropertyChanging("Key");
+                _Key = StructuralObject.SetValidValue(value, false, "Key");
+                ReportPropertyChanged("Key");
+                OnKeyChanged();
+            }
+        }
+        private global::System.String _Key;
+        partial void OnKeyChanging(global::System.String value);
+        partial void OnKeyChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.Double Value
+        {
+            get
+            {
+                return _Value;
+            }
+            set
+            {
+                OnValueChanging(value);
+                ReportPropertyChanging("Value");
+                _Value = StructuralObject.SetValidValue(value, "Value");
+                ReportPropertyChanged("Value");
+                OnValueChanged();
+            }
+        }
+        private global::System.Double _Value;
+        partial void OnValueChanging(global::System.Double value);
+        partial void OnValueChanged();
+
+        #endregion
+
+        #region Navigation Properties
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [XmlIgnoreAttribute()]
+        [SoapIgnoreAttribute()]
+        [DataMemberAttribute()]
+        [EdmRelationshipNavigationPropertyAttribute("ForexModel", "FK_t_BarExtender_t_Bar", "t_Bar")]
+        public t_Bar t_Bar
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<t_Bar>("ForexModel.FK_t_BarExtender_t_Bar", "t_Bar").Value;
+            }
+            set
+            {
+                ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<t_Bar>("ForexModel.FK_t_BarExtender_t_Bar", "t_Bar").Value = value;
+            }
+        }
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [BrowsableAttribute(false)]
+        [DataMemberAttribute()]
+        public EntityReference<t_Bar> t_BarReference
+        {
+            get
+            {
+                return ((IEntityWithRelationships)this).RelationshipManager.GetRelatedReference<t_Bar>("ForexModel.FK_t_BarExtender_t_Bar", "t_Bar");
+            }
+            set
+            {
+                if ((value != null))
+                {
+                    ((IEntityWithRelationships)this).RelationshipManager.InitializeRelatedReference<t_Bar>("ForexModel.FK_t_BarExtender_t_Bar", "t_Bar", value);
+                }
+            }
+        }
 
         #endregion
 
@@ -3549,6 +3776,30 @@ namespace HedgeHog.DB
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
         [DataMemberAttribute()]
+        public Nullable<global::System.Guid> SuperSessionUid
+        {
+            get
+            {
+                return _SuperSessionUid;
+            }
+            set
+            {
+                OnSuperSessionUidChanging(value);
+                ReportPropertyChanging("SuperSessionUid");
+                _SuperSessionUid = StructuralObject.SetValidValue(value, "SuperSessionUid");
+                ReportPropertyChanged("SuperSessionUid");
+                OnSuperSessionUidChanged();
+            }
+        }
+        private Nullable<global::System.Guid> _SuperSessionUid;
+        partial void OnSuperSessionUidChanging(Nullable<global::System.Guid> value);
+        partial void OnSuperSessionUidChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
         public Nullable<global::System.DateTime> TimeStamp
         {
             get
@@ -3639,6 +3890,30 @@ namespace HedgeHog.DB
         private Nullable<global::System.Int32> _Days;
         partial void OnDaysChanging(Nullable<global::System.Int32> value);
         partial void OnDaysChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> Profitability
+        {
+            get
+            {
+                return _Profitability;
+            }
+            set
+            {
+                OnProfitabilityChanging(value);
+                ReportPropertyChanging("Profitability");
+                _Profitability = StructuralObject.SetValidValue(value, "Profitability");
+                ReportPropertyChanged("Profitability");
+                OnProfitabilityChanged();
+            }
+        }
+        private Nullable<global::System.Double> _Profitability;
+        partial void OnProfitabilityChanging(Nullable<global::System.Double> value);
+        partial void OnProfitabilityChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -3909,24 +4184,24 @@ namespace HedgeHog.DB
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
         [DataMemberAttribute()]
-        public global::System.String PLToCorridorExitRatio
+        public global::System.String DistanceDaysBack
         {
             get
             {
-                return _PLToCorridorExitRatio;
+                return _DistanceDaysBack;
             }
             set
             {
-                OnPLToCorridorExitRatioChanging(value);
-                ReportPropertyChanging("PLToCorridorExitRatio");
-                _PLToCorridorExitRatio = StructuralObject.SetValidValue(value, true, "PLToCorridorExitRatio");
-                ReportPropertyChanged("PLToCorridorExitRatio");
-                OnPLToCorridorExitRatioChanged();
+                OnDistanceDaysBackChanging(value);
+                ReportPropertyChanging("DistanceDaysBack");
+                _DistanceDaysBack = StructuralObject.SetValidValue(value, true, "DistanceDaysBack");
+                ReportPropertyChanged("DistanceDaysBack");
+                OnDistanceDaysBackChanged();
             }
         }
-        private global::System.String _PLToCorridorExitRatio;
-        partial void OnPLToCorridorExitRatioChanging(global::System.String value);
-        partial void OnPLToCorridorExitRatioChanged();
+        private global::System.String _DistanceDaysBack;
+        partial void OnDistanceDaysBackChanging(global::System.String value);
+        partial void OnDistanceDaysBackChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4029,54 +4304,6 @@ namespace HedgeHog.DB
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
         [DataMemberAttribute()]
-        public Nullable<global::System.Double> LossToProfit
-        {
-            get
-            {
-                return _LossToProfit;
-            }
-            set
-            {
-                OnLossToProfitChanging(value);
-                ReportPropertyChanging("LossToProfit");
-                _LossToProfit = StructuralObject.SetValidValue(value, "LossToProfit");
-                ReportPropertyChanged("LossToProfit");
-                OnLossToProfitChanged();
-            }
-        }
-        private Nullable<global::System.Double> _LossToProfit;
-        partial void OnLossToProfitChanging(Nullable<global::System.Double> value);
-        partial void OnLossToProfitChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
-        [DataMemberAttribute()]
-        public Nullable<global::System.Guid> SuperSessionUid
-        {
-            get
-            {
-                return _SuperSessionUid;
-            }
-            set
-            {
-                OnSuperSessionUidChanging(value);
-                ReportPropertyChanging("SuperSessionUid");
-                _SuperSessionUid = StructuralObject.SetValidValue(value, "SuperSessionUid");
-                ReportPropertyChanged("SuperSessionUid");
-                OnSuperSessionUidChanged();
-            }
-        }
-        private Nullable<global::System.Guid> _SuperSessionUid;
-        partial void OnSuperSessionUidChanging(Nullable<global::System.Guid> value);
-        partial void OnSuperSessionUidChanged();
-    
-        /// <summary>
-        /// No Metadata Documentation available.
-        /// </summary>
-        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
-        [DataMemberAttribute()]
         public Nullable<global::System.DateTime> DateStop
         {
             get
@@ -4095,6 +4322,30 @@ namespace HedgeHog.DB
         private Nullable<global::System.DateTime> _DateStop;
         partial void OnDateStopChanging(Nullable<global::System.DateTime> value);
         partial void OnDateStopChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Double> LossToProfit
+        {
+            get
+            {
+                return _LossToProfit;
+            }
+            set
+            {
+                OnLossToProfitChanging(value);
+                ReportPropertyChanging("LossToProfit");
+                _LossToProfit = StructuralObject.SetValidValue(value, "LossToProfit");
+                ReportPropertyChanged("LossToProfit");
+                OnLossToProfitChanged();
+            }
+        }
+        private Nullable<global::System.Double> _LossToProfit;
+        partial void OnLossToProfitChanging(Nullable<global::System.Double> value);
+        partial void OnLossToProfitChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4197,24 +4448,24 @@ namespace HedgeHog.DB
         /// </summary>
         [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
         [DataMemberAttribute()]
-        public Nullable<global::System.Double> Profitability
+        public global::System.String TrailingDistanceFunction
         {
             get
             {
-                return _Profitability;
+                return _TrailingDistanceFunction;
             }
             set
             {
-                OnProfitabilityChanging(value);
-                ReportPropertyChanging("Profitability");
-                _Profitability = StructuralObject.SetValidValue(value, "Profitability");
-                ReportPropertyChanged("Profitability");
-                OnProfitabilityChanged();
+                OnTrailingDistanceFunctionChanging(value);
+                ReportPropertyChanging("TrailingDistanceFunction");
+                _TrailingDistanceFunction = StructuralObject.SetValidValue(value, true, "TrailingDistanceFunction");
+                ReportPropertyChanged("TrailingDistanceFunction");
+                OnTrailingDistanceFunctionChanged();
             }
         }
-        private Nullable<global::System.Double> _Profitability;
-        partial void OnProfitabilityChanging(Nullable<global::System.Double> value);
-        partial void OnProfitabilityChanged();
+        private global::System.String _TrailingDistanceFunction;
+        partial void OnTrailingDistanceFunctionChanging(global::System.String value);
+        partial void OnTrailingDistanceFunctionChanged();
     
         /// <summary>
         /// No Metadata Documentation available.
@@ -4431,6 +4682,78 @@ namespace HedgeHog.DB
         private Nullable<global::System.Double> _PLRatio;
         partial void OnPLRatioChanging(Nullable<global::System.Double> value);
         partial void OnPLRatioChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String VoltsFrameLength
+        {
+            get
+            {
+                return _VoltsFrameLength;
+            }
+            set
+            {
+                OnVoltsFrameLengthChanging(value);
+                ReportPropertyChanging("VoltsFrameLength");
+                _VoltsFrameLength = StructuralObject.SetValidValue(value, true, "VoltsFrameLength");
+                ReportPropertyChanged("VoltsFrameLength");
+                OnVoltsFrameLengthChanged();
+            }
+        }
+        private global::System.String _VoltsFrameLength;
+        partial void OnVoltsFrameLengthChanging(global::System.String value);
+        partial void OnVoltsFrameLengthChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String IsTakeBack
+        {
+            get
+            {
+                return _IsTakeBack;
+            }
+            set
+            {
+                OnIsTakeBackChanging(value);
+                ReportPropertyChanging("IsTakeBack");
+                _IsTakeBack = StructuralObject.SetValidValue(value, true, "IsTakeBack");
+                ReportPropertyChanged("IsTakeBack");
+                OnIsTakeBackChanged();
+            }
+        }
+        private global::System.String _IsTakeBack;
+        partial void OnIsTakeBackChanging(global::System.String value);
+        partial void OnIsTakeBackChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public global::System.String LimitProfitByRatesHeight
+        {
+            get
+            {
+                return _LimitProfitByRatesHeight;
+            }
+            set
+            {
+                OnLimitProfitByRatesHeightChanging(value);
+                ReportPropertyChanging("LimitProfitByRatesHeight");
+                _LimitProfitByRatesHeight = StructuralObject.SetValidValue(value, true, "LimitProfitByRatesHeight");
+                ReportPropertyChanged("LimitProfitByRatesHeight");
+                OnLimitProfitByRatesHeightChanged();
+            }
+        }
+        private global::System.String _LimitProfitByRatesHeight;
+        partial void OnLimitProfitByRatesHeightChanging(global::System.String value);
+        partial void OnLimitProfitByRatesHeightChanged();
 
         #endregion
 

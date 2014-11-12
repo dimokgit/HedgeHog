@@ -109,10 +109,7 @@ namespace HedgeHog.Alice.Store {
 
     double _Slope = double.NaN;
     public double Slope {
-      get {
-        if (double.IsNaN(_Slope)) throw new NullReferenceException();
-        return _Slope;
-      }
+      get { return _Slope; }
       set { _Slope = value; }
     }
 

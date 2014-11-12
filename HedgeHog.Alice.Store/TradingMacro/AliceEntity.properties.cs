@@ -469,7 +469,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    double _testMinimumBalancePerc = .7;
+    double _testMinimumBalancePerc = -.7;
     [Category(categoryTestControl)]
     public double TestMinimumBalancePerc {
       get { return _testMinimumBalancePerc; }
@@ -674,6 +674,50 @@ namespace HedgeHog.Alice.Store {
         if (_MovingAverageTypeInt.GetValueOrDefault(_movingAverageTypeDefault) != (int)value) {
           MovingAverageTypeInt = (int)value;
           OnPropertyChanged(TradingMacroMetadata.MovingAverageType);
+        }
+      }
+    }
+
+    #endregion
+
+    #region BuyLevelBy
+    private TradeLevelBy _LevelBuyBy;
+    [Category(categoryActiveFuncs)]
+    public TradeLevelBy LevelBuyBy {
+      get { return _LevelBuyBy; }
+      set {
+        if (_LevelBuyBy != value) {
+          _LevelBuyBy = value;
+          OnPropertyChanged("LevelBuyBy");
+        }
+      }
+    }
+    #endregion
+
+    #region LevelSellBy
+    private TradeLevelBy _LevelSellBy;
+    [Category(categoryActiveFuncs)]
+    public TradeLevelBy LevelSellBy {
+      get { return _LevelSellBy; }
+      set {
+        if (_LevelSellBy != value) {
+          _LevelSellBy = value;
+          OnPropertyChanged("LevelSellBy");
+        }
+      }
+    }
+    #endregion
+
+    #region UseVoltage
+    private bool _UseVoltage;
+    [Description("Use Volts in SmartMove")]
+    [Category(categoryActiveFuncs)]
+    public bool UseVoltage {
+      get { return _UseVoltage; }
+      set {
+        if (_UseVoltage != value) {
+          _UseVoltage = value;
+          OnPropertyChanged("UseVoltage");
         }
       }
     }
@@ -1424,8 +1468,12 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActive)]
     [Description("BarsCountCount = BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax;")]
     public int BarsCountMax {
-      get { return _BarsCountMax; }
+      get { return _BarsCountMax < 1 ? BarsCountMax = 0 : _BarsCountMax; }
       set {
+        if (value < 1) {
+          Log = new Exception("BarsCountMax reset from " + _BarsCountMax + " to 10");
+          value = 10;
+        }
         if (_BarsCountMax != value) {
           _BarsCountMax = value;
           OnPropertyChanged("BarsCountMax");

@@ -59,6 +59,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.4.32.1\lib\net45\GalaSoft.MvvmLight.Extras.dll</HintPath>
     </Reference>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>..\AllInOne\packages\MathNet.Numerics.3.2.3\lib\net40\MathNet.Numerics.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Practices.ServiceLocation, Version=1.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\CommonServiceLocator.1.3\lib\portable-net4+sl5+netcore45+wpa81+wp8\Microsoft.Practices.ServiceLocation.dll</HintPath>
@@ -89,6 +92,7 @@
     <Reference Include="System.Interactive">
       <HintPath>..\AllInOne\packages\Ix-Main.1.2.2\lib\net45\System.Interactive.dll</HintPath>
     </Reference>
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Reactive.Core, Version=2.2.5.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AllInOne\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
@@ -119,6 +123,7 @@
     </Reference>
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.4.4.32.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
@@ -151,7 +156,7 @@
       <DependentUpon>Reference.svcmap</DependentUpon>
     </Compile>
     <Compile Include="TradingMacro\Exceptions.cs" />
-    <Compile Include="TradingMacro\ScanCorridor\TradingMacro.cs" />
+    <Compile Include="TradingMacro\ScanCorridor\ScanCorridorByFftMA.cs" />
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
     <Compile Include="TradingMacro\TradingMacro.Enums.cs" />
     <Compile Include="TradingMacro\TradingMacro.LiveTrading.cs" />

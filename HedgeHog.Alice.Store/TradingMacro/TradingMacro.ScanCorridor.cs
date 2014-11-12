@@ -74,7 +74,7 @@ namespace HedgeHog.Alice.Store {
           SetVoltage2(chunk[0], regRes.angle.Abs());
         });
     }
-    private void SetVoltsByStDevDblIntegral4(IList<Rate> ratesReversed, int frameLength,Func<Rate,double> getPrice) {
+    private void SetVoltsByStDevDblIntegral4(IList<Rate> ratesReversed, int frameLength, Func<Rate, double> getPrice) {
       ratesReversed
         .Buffer(frameLength, 1)
         .TakeWhile(chunk => chunk[0].VoltageLocal.IsNaN())
@@ -112,7 +112,7 @@ namespace HedgeHog.Alice.Store {
 
     private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
-      SetVoltsByStDevDblIntegral4(ratesReversed, VoltsFrameLength,GetPriceMA);
+      SetVoltsByStDevDblIntegral4(ratesReversed, VoltsFrameLength, GetPriceMA);
       var voltsAll = ratesForCorridor.Select(GetVoltage).Where(Lib.IsNotNaN).ToArray();
       var voltsAll2 = ratesForCorridor.Select(GetVoltage2).ToArray();
       OnGeneralPurpose(() => {
@@ -934,7 +934,19 @@ namespace HedgeHog.Alice.Store {
     }
 
     private CorridorStatistics ScanCorridorFixed(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), r => CorridorDistance, GetShowVoltageFunction());
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      Func<Rate, double> distanceFunc = r => GetVoltage(r).Abs();
+      var rates = MonoidsCore.ToLazy(() => ratesReversed
+        .Select(distanceFunc)
+        .Where(Lib.IsNotNaN)
+        .DefaultIfEmpty().ToArray());
+      var distanceSum = 0.0;
+      var scan =
+         (from r in rates
+          let distanceMin = r.Average() * CorridorDistance
+          select distanceMin >= 0 ? CorridorDistance : r.Select(d => distanceSum += d).TakeWhile(d => d < distanceMin).Count()
+           );
+      return ScanCorridorLazy(ratesReversed, scan, GetShowVoltageFunction());
     }
 
     private CorridorStatistics ScanCorridorByStDevBalance(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1810,6 +1822,7 @@ namespace HedgeHog.Alice.Store {
     public Func<Rate, double[]> GetVoltages = r => r.VoltageLocal0;
     double VoltageCurrent { get { return GetVoltage(RateLast); } }
     public Action<Rate, double> SetVoltage = (r, v) => r.DistanceHistory = v;
+    public Action<Rate, string, double> SetVoltageKey = (r, k, v) => r.DistanceHistory = v;
     public Func<Rate, double> GetVoltage2 = r => r.Distance1;
     public Action<Rate, double> SetVoltage2 = (r, v) => r.Distance1 = v;
 
@@ -1924,11 +1937,39 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region PriceFftLevelsFast
+    private int _PriceFftLevelsFast = 1;
+    [Category(categoryActive)]
+    public int PriceFftLevelsFast {
+      get { return _PriceFftLevelsFast; }
+      set {
+        if (_PriceFftLevelsFast != value) {
+          _PriceFftLevelsFast = value;
+          OnPropertyChanged("PriceFftLevelsFast");
+        }
+      }
+    }
+    #endregion
+
+    #region PriceFftLevelsSlow
+    private int _PriceFftLevelsSlow = 1;
+    [Category(categoryActive)]
+    public int PriceFftLevelsSlow {
+      get { return _PriceFftLevelsSlow; }
+      set {
+        if (_PriceFftLevelsSlow != value) {
+          _PriceFftLevelsSlow = value;
+          OnPropertyChanged("PriceFftLevelsSlow");
+        }
+      }
+    }
+
+    #endregion
     #region VoltsFrameLength
     private int _VoltsFrameLength;
     [Category(categoryActive)]
     public int VoltsFrameLength {
-      get { return _VoltsFrameLength == 0 ? CorridorDistance : _VoltsFrameLength; }
+      get { return _VoltsFrameLength; }
       set {
         if (_VoltsFrameLength != value) {
           _VoltsFrameLength = value;

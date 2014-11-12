@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="ForexModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="ForexModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="t_Bar">
           <Key>
             <PropertyRef Name="ID" />
@@ -24,6 +24,15 @@
           <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="StartDateLocal" Type="datetime" StoreGeneratedPattern="Computed" />
           <Property Name="Row" Type="int" />
+        </EntityType>
+        <EntityType Name="t_BarExtender">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="BarID" Type="int" Nullable="false" />
+          <Property Name="Key" Type="varchar" MaxLength="64" Nullable="false" />
+          <Property Name="Value" Type="float" Nullable="false" />
         </EntityType>
         <EntityType Name="t_BarHeight">
           <Key>
@@ -197,7 +206,7 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Property Name="SessionInfo" Type="nvarchar" MaxLength="4000" />
           <Property Name="PriceCmaLevels" Type="nvarchar" MaxLength="2000" />
           <Property Name="CorridorDistanceRatio" Type="float" />
-          <Property Name="PLToCorridorExitRatio" Type="nvarchar" MaxLength="2000" />
+          <Property Name="DistanceDaysBack" Type="nvarchar" MaxLength="2000" />
           <Property Name="ProfitToLossExitRatio" Type="nvarchar" MaxLength="2000" />
           <Property Name="BarsCount" Type="nvarchar" MaxLength="2000" />
           <Property Name="MinimumGross" Type="float" />
@@ -208,6 +217,7 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Property Name="DistanceIterations" Type="nvarchar" MaxLength="2000" />
           <Property Name="CorrelationMinimum" Type="nvarchar" MaxLength="2000" />
           <Property Name="ScanCorridorBy" Type="nvarchar" MaxLength="2000" />
+          <Property Name="TrailingDistanceFunction" Type="nvarchar" MaxLength="2000" />
           <Property Name="TakeProfitLimitRatio" Type="nvarchar" MaxLength="2000" />
           <Property Name="TradingAngleRange" Type="nvarchar" MaxLength="2000" />
           <Property Name="PolyOrder" Type="nvarchar" MaxLength="2000" />
@@ -217,6 +227,9 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Property Name="ProfitCount" Type="int" />
           <Property Name="LossCount" Type="int" />
           <Property Name="PLRatio" Type="float" />
+          <Property Name="VoltsFrameLength" Type="nvarchar" MaxLength="2000" />
+          <Property Name="IsTakeBack" Type="nvarchar" MaxLength="2000" />
+          <Property Name="LimitProfitByRatesHeight" Type="nvarchar" MaxLength="2000" />
         </EntityType>
         <Association Name="FK_Event_EventLevel">
           <End Role="EventLevel" Type="Self.EventLevel" Multiplicity="1" />
@@ -227,6 +240,20 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
             </Principal>
             <Dependent Role="Event">
               <PropertyRef Name="Level" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_t_BarExtender_t_Bar">
+          <End Role="t_Bar" Type="Self.t_Bar" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="t_BarExtender" Type="Self.t_BarExtender" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Bar">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="t_BarExtender">
+              <PropertyRef Name="BarID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -268,17 +295,18 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
           <Parameter Name="Weeks" Type="int" Mode="In" />
         </Function>
         <EntityContainer Name="ForexModelStoreContainer">
-          <EntitySet Name="t_Bar" EntityType="Self.t_Bar" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_BarHeight" EntityType="Self.t_BarHeight" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Offer" EntityType="Self.t_Offer" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Report" EntityType="Self.t_Report" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Session" EntityType="Self.t_Session" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Stat" EntityType="Self.t_Stat" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="t_Trade" EntityType="Self.t_Trade" Schema="dbo" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="Event" EntityType="Self.Event" Schema="news" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="EventLevel" EntityType="Self.EventLevel" Schema="news" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="MonthlyStats" EntityType="Self.MonthlyStats" Schema="stats" store:Type="Tables" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="v_BlackoutTime" EntityType="Self.v_BlackoutTime" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="t_Bar" EntityType="Self.t_Bar" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_BarExtender" EntityType="Self.t_BarExtender" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_BarHeight" EntityType="Self.t_BarHeight" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Offer" EntityType="Self.t_Offer" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Report" EntityType="Self.t_Report" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Session" EntityType="Self.t_Session" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Stat" EntityType="Self.t_Stat" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="t_Trade" EntityType="Self.t_Trade" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Event" EntityType="Self.Event" Schema="news" store:Type="Tables" />
+          <EntitySet Name="EventLevel" EntityType="Self.EventLevel" Schema="news" store:Type="Tables" />
+          <EntitySet Name="MonthlyStats" EntityType="Self.MonthlyStats" Schema="stats" store:Type="Tables" />
+          <EntitySet Name="v_BlackoutTime" EntityType="Self.v_BlackoutTime" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_BlackoutTime].[Time] AS [Time], 
 [v_BlackoutTime].[EventType] AS [EventType], 
@@ -289,14 +317,14 @@ warning 6002: The table/view 'FOREX.dbo.v_TradeSession' does not have a primary 
 [v_BlackoutTime].[TimeStopLocal] AS [TimeStopLocal]
 FROM [dbo].[v_BlackoutTime] AS [v_BlackoutTime]</DefiningQuery>
           </EntitySet>
-          <EntitySet Name="v_Pair" EntityType="Self.v_Pair" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="v_Pair" EntityType="Self.v_Pair" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_Pair].[Pair] AS [Pair], 
 [v_Pair].[Weight1] AS [Weight1], 
 [v_Pair].[Weight2] AS [Weight2]
 FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
           </EntitySet>
-          <EntitySet Name="v_TradeSession" EntityType="Self.v_TradeSession" store:Type="Views" store:Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator">
+          <EntitySet Name="v_TradeSession" EntityType="Self.v_TradeSession" store:Type="Views" store:Schema="dbo">
             <DefiningQuery>SELECT 
 [v_TradeSession].[Pair] AS [Pair], 
 [v_TradeSession].[SessionId] AS [SessionId], 
@@ -317,7 +345,7 @@ FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
 [v_TradeSession].[SessionInfo] AS [SessionInfo], 
 [v_TradeSession].[PriceCmaLevels] AS [PriceCmaLevels], 
 [v_TradeSession].[CorridorDistanceRatio] AS [CorridorDistanceRatio], 
-[v_TradeSession].[PLToCorridorExitRatio] AS [PLToCorridorExitRatio], 
+[v_TradeSession].[DistanceDaysBack] AS [DistanceDaysBack], 
 [v_TradeSession].[ProfitToLossExitRatio] AS [ProfitToLossExitRatio], 
 [v_TradeSession].[BarsCount] AS [BarsCount], 
 [v_TradeSession].[MinimumGross] AS [MinimumGross], 
@@ -328,6 +356,7 @@ FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
 [v_TradeSession].[DistanceIterations] AS [DistanceIterations], 
 [v_TradeSession].[CorrelationMinimum] AS [CorrelationMinimum], 
 [v_TradeSession].[ScanCorridorBy] AS [ScanCorridorBy], 
+[v_TradeSession].[TrailingDistanceFunction] AS [TrailingDistanceFunction], 
 [v_TradeSession].[TakeProfitLimitRatio] AS [TakeProfitLimitRatio], 
 [v_TradeSession].[TradingAngleRange] AS [TradingAngleRange], 
 [v_TradeSession].[PolyOrder] AS [PolyOrder], 
@@ -336,12 +365,19 @@ FROM [dbo].[v_Pair] AS [v_Pair]</DefiningQuery>
 [v_TradeSession].[TestFileName] AS [TestFileName], 
 [v_TradeSession].[ProfitCount] AS [ProfitCount], 
 [v_TradeSession].[LossCount] AS [LossCount], 
-[v_TradeSession].[PLRatio] AS [PLRatio]
+[v_TradeSession].[PLRatio] AS [PLRatio], 
+[v_TradeSession].[VoltsFrameLength] AS [VoltsFrameLength], 
+[v_TradeSession].[IsTakeBack] AS [IsTakeBack], 
+[v_TradeSession].[LimitProfitByRatesHeight] AS [LimitProfitByRatesHeight]
 FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           </EntitySet>
           <AssociationSet Name="FK_Event_EventLevel" Association="Self.FK_Event_EventLevel">
             <End Role="EventLevel" EntitySet="EventLevel" />
             <End Role="Event" EntitySet="Event" />
+          </AssociationSet>
+          <AssociationSet Name="FK_t_BarExtender_t_Bar" Association="Self.FK_t_BarExtender_t_Bar">
+            <End Role="t_Bar" EntitySet="t_Bar" />
+            <End Role="t_BarExtender" EntitySet="t_BarExtender" />
           </AssociationSet>
         </EntityContainer>
       </Schema></edmx:StorageModels>
@@ -384,7 +420,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             <Parameter Name="StartDate" Mode="In" Type="DateTime" />
           </FunctionImport>
           <EntitySet Name="t_Session" EntityType="ForexModel.t_Session" />
-          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
           <EntitySet Name="MonthlyStat__Stats" EntityType="ForexModel.MonthlyStat__Stats" />
           <FunctionImport Name="sGetStats" ReturnType="Collection(ForexModel.sGetStats_Result)">
             <Parameter Name="DateStart" Mode="In" Type="DateTime" />
@@ -397,6 +432,12 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             <End Role="EventLevel" EntitySet="EventLevel__News" />
             <End Role="Event" EntitySet="Event__News" />
           </AssociationSet>
+          <EntitySet Name="t_BarExtender" EntityType="ForexModel.t_BarExtender" />
+          <AssociationSet Name="FK_t_BarExtender_t_Bar" Association="ForexModel.FK_t_BarExtender_t_Bar">
+            <End Role="t_Bar" EntitySet="t_Bar" />
+            <End Role="t_BarExtender" EntitySet="t_BarExtender" />
+          </AssociationSet>
+          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -466,6 +507,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
           <Property Type="DateTime" Name="StartDateLocal" annotation:StoreGeneratedPattern="Computed" Precision="3" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
           <Property Type="Int32" Name="Row" />
+          <NavigationProperty Name="t_BarExtender" Relationship="ForexModel.FK_t_BarExtender_t_Bar" FromRole="t_Bar" ToRole="t_BarExtender" />
         </EntityType>
         <EntityType Name="t_Trade">
           <Key>
@@ -561,51 +603,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Type="DateTime" Name="DateMax" Precision="3" />
           <Property Type="Double" Name="BallanceMax" />
         </EntityType>
-        <EntityType Name="v_TradeSession">
-          <Key>
-            <PropertyRef Name="Pair" />
-            <PropertyRef Name="SessionId" />
-          </Key>
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
-          <Property Type="Guid" Name="SessionId" Nullable="false" />
-          <Property Type="DateTime" Name="TimeStamp" Precision="3" />
-          <Property Type="Int32" Name="Count" />
-          <Property Type="Double" Name="GrossPL" />
-          <Property Type="Int32" Name="Days" />
-          <Property Type="Int32" Name="Lot" />
-          <Property Type="Double" Name="LotA" />
-          <Property Type="Double" Name="LotSD" />
-          <Property Type="Double" Name="DollarsPerMonth" />
-          <Property Type="Decimal" Name="PL" Precision="10" Scale="2" />
-          <Property Type="Int32" Name="MinutesInTest" />
-          <Property Type="Double" Name="DaysPerMinute" />
-          <Property Type="Double" Name="DollarPerLot" />
-          <Property Type="String" Name="SessionInfo" MaxLength="4000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="PriceCmaLevels" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="CorridorDistanceRatio" />
-          <Property Type="String" Name="PLToCorridorExitRatio" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="ProfitToLossExitRatio" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="BarsCount" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="MinimumGross" />
-          <Property Type="DateTime" Name="DateStart" Precision="0" />
-          <Property Type="Double" Name="LossToProfit" />
-          <Property Type="Guid" Name="SuperSessionUid" />
-          <Property Type="DateTime" Name="DateStop" Precision="0" />
-          <Property Type="String" Name="WaveStDevRatio" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="DistanceIterations" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="CorrelationMinimum" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="String" Name="ScanCorridorBy" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Type="Double" Name="Profitability" />
-          <Property Type="String" Name="TakeProfitLimitRatio" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="TradingAngleRange" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="PolyOrder" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="MovingAverageType" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="PriceCmaLevels_" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="TestFileName" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
-          <Property Name="ProfitCount" Type="Int32" />
-          <Property Name="LossCount" Type="Int32" />
-          <Property Name="PLRatio" Type="Double" />
-        </EntityType>
         <EntityType Name="MonthlyStat__Stats">
           <Key>
             <PropertyRef Name="Pair" />
@@ -667,6 +664,79 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <EntityType Name="t_BarExtender">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="BarID" Type="Int32" Nullable="false" />
+          <Property Name="Key" Type="String" Nullable="false" MaxLength="64" FixedLength="false" Unicode="false" />
+          <Property Name="Value" Type="Double" Nullable="false" />
+          <NavigationProperty Name="t_Bar" Relationship="ForexModel.FK_t_BarExtender_t_Bar" FromRole="t_BarExtender" ToRole="t_Bar" />
+        </EntityType>
+        <Association Name="FK_t_BarExtender_t_Bar">
+          <End Type="ForexModel.t_Bar" Role="t_Bar" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="ForexModel.t_BarExtender" Role="t_BarExtender" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Bar">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="t_BarExtender">
+              <PropertyRef Name="BarID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="v_TradeSession">
+          <Key>
+            <PropertyRef Name="Pair" />
+            <PropertyRef Name="SessionId" />
+          </Key>
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="8" FixedLength="false" Unicode="true" />
+          <Property Name="SessionId" Type="Guid" Nullable="false" />
+          <Property Name="SuperSessionUid" Type="Guid" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+          <Property Name="Count" Type="Int32" />
+          <Property Name="GrossPL" Type="Double" />
+          <Property Name="Days" Type="Int32" />
+          <Property Name="Profitability" Type="Double" />
+          <Property Name="Lot" Type="Int32" />
+          <Property Name="LotA" Type="Double" />
+          <Property Name="LotSD" Type="Double" />
+          <Property Name="DollarsPerMonth" Type="Double" />
+          <Property Name="PL" Type="Decimal" Precision="10" Scale="2" />
+          <Property Name="MinutesInTest" Type="Int32" />
+          <Property Name="DaysPerMinute" Type="Double" />
+          <Property Name="DollarPerLot" Type="Double" />
+          <Property Name="SessionInfo" Type="String" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Name="PriceCmaLevels" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="CorridorDistanceRatio" Type="Double" />
+          <Property Name="DistanceDaysBack" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="ProfitToLossExitRatio" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="BarsCount" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="MinimumGross" Type="Double" />
+          <Property Name="DateStart" Type="DateTime" Precision="0" />
+          <Property Name="DateStop" Type="DateTime" Precision="0" />
+          <Property Name="LossToProfit" Type="Double" />
+          <Property Name="WaveStDevRatio" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="DistanceIterations" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="CorrelationMinimum" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="ScanCorridorBy" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="TrailingDistanceFunction" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="TakeProfitLimitRatio" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="TradingAngleRange" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="PolyOrder" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="MovingAverageType" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="PriceCmaLevels_" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="TestFileName" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="ProfitCount" Type="Int32" />
+          <Property Name="LossCount" Type="Int32" />
+          <Property Name="PLRatio" Type="Double" />
+          <Property Name="VoltsFrameLength" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="IsTakeBack" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+          <Property Name="LimitProfitByRatesHeight" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -851,51 +921,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="v_TradeSession">
-            <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
-              <MappingFragment StoreEntitySet="v_TradeSession">
-                <ScalarProperty Name="PLRatio" ColumnName="PLRatio" />
-                <ScalarProperty Name="LossCount" ColumnName="LossCount" />
-                <ScalarProperty Name="ProfitCount" ColumnName="ProfitCount" />
-                <ScalarProperty Name="TestFileName" ColumnName="TestFileName" />
-                <ScalarProperty Name="PriceCmaLevels_" ColumnName="PriceCmaLevels_" />
-                <ScalarProperty Name="MovingAverageType" ColumnName="MovingAverageType" />
-                <ScalarProperty Name="PolyOrder" ColumnName="PolyOrder" />
-                <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
-                <ScalarProperty Name="TakeProfitLimitRatio" ColumnName="TakeProfitLimitRatio" />
-                <ScalarProperty Name="Profitability" ColumnName="Profitability" />
-                <ScalarProperty Name="ScanCorridorBy" ColumnName="ScanCorridorBy" />
-                <ScalarProperty Name="CorrelationMinimum" ColumnName="CorrelationMinimum" />
-                <ScalarProperty Name="DistanceIterations" ColumnName="DistanceIterations" />
-                <ScalarProperty Name="WaveStDevRatio" ColumnName="WaveStDevRatio" />
-                <ScalarProperty Name="DateStop" ColumnName="DateStop" />
-                <ScalarProperty Name="SuperSessionUid" ColumnName="SuperSessionUid" />
-                <ScalarProperty Name="LossToProfit" ColumnName="LossToProfit" />
-                <ScalarProperty Name="DateStart" ColumnName="DateStart" />
-                <ScalarProperty Name="MinimumGross" ColumnName="MinimumGross" />
-                <ScalarProperty Name="BarsCount" ColumnName="BarsCount" />
-                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
-                <ScalarProperty Name="PLToCorridorExitRatio" ColumnName="PLToCorridorExitRatio" />
-                <ScalarProperty Name="CorridorDistanceRatio" ColumnName="CorridorDistanceRatio" />
-                <ScalarProperty Name="PriceCmaLevels" ColumnName="PriceCmaLevels" />
-                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
-                <ScalarProperty Name="DollarPerLot" ColumnName="DollarPerLot" />
-                <ScalarProperty Name="DaysPerMinute" ColumnName="DaysPerMinute" />
-                <ScalarProperty Name="MinutesInTest" ColumnName="MinutesInTest" />
-                <ScalarProperty Name="PL" ColumnName="PL" />
-                <ScalarProperty Name="DollarsPerMonth" ColumnName="DollarsPerMonth" />
-                <ScalarProperty Name="LotSD" ColumnName="LotSD" />
-                <ScalarProperty Name="LotA" ColumnName="LotA" />
-                <ScalarProperty Name="Lot" ColumnName="Lot" />
-                <ScalarProperty Name="Days" ColumnName="Days" />
-                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
-                <ScalarProperty Name="Count" ColumnName="Count" />
-                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
-                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="MonthlyStat__Stats">
             <EntityTypeMapping TypeName="ForexModel.MonthlyStat__Stats">
               <MappingFragment StoreEntitySet="MonthlyStats">
@@ -946,6 +971,65 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_BarExtender">
+            <EntityTypeMapping TypeName="ForexModel.t_BarExtender">
+              <MappingFragment StoreEntitySet="t_BarExtender">
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Key" ColumnName="Key" />
+                <ScalarProperty Name="BarID" ColumnName="BarID" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="v_TradeSession">
+            <EntityTypeMapping TypeName="ForexModel.v_TradeSession">
+              <MappingFragment StoreEntitySet="v_TradeSession">
+                <ScalarProperty Name="LimitProfitByRatesHeight" ColumnName="LimitProfitByRatesHeight" />
+                <ScalarProperty Name="IsTakeBack" ColumnName="IsTakeBack" />
+                <ScalarProperty Name="VoltsFrameLength" ColumnName="VoltsFrameLength" />
+                <ScalarProperty Name="PLRatio" ColumnName="PLRatio" />
+                <ScalarProperty Name="LossCount" ColumnName="LossCount" />
+                <ScalarProperty Name="ProfitCount" ColumnName="ProfitCount" />
+                <ScalarProperty Name="TestFileName" ColumnName="TestFileName" />
+                <ScalarProperty Name="PriceCmaLevels_" ColumnName="PriceCmaLevels_" />
+                <ScalarProperty Name="MovingAverageType" ColumnName="MovingAverageType" />
+                <ScalarProperty Name="PolyOrder" ColumnName="PolyOrder" />
+                <ScalarProperty Name="TradingAngleRange" ColumnName="TradingAngleRange" />
+                <ScalarProperty Name="TakeProfitLimitRatio" ColumnName="TakeProfitLimitRatio" />
+                <ScalarProperty Name="TrailingDistanceFunction" ColumnName="TrailingDistanceFunction" />
+                <ScalarProperty Name="ScanCorridorBy" ColumnName="ScanCorridorBy" />
+                <ScalarProperty Name="CorrelationMinimum" ColumnName="CorrelationMinimum" />
+                <ScalarProperty Name="DistanceIterations" ColumnName="DistanceIterations" />
+                <ScalarProperty Name="WaveStDevRatio" ColumnName="WaveStDevRatio" />
+                <ScalarProperty Name="LossToProfit" ColumnName="LossToProfit" />
+                <ScalarProperty Name="DateStop" ColumnName="DateStop" />
+                <ScalarProperty Name="DateStart" ColumnName="DateStart" />
+                <ScalarProperty Name="MinimumGross" ColumnName="MinimumGross" />
+                <ScalarProperty Name="BarsCount" ColumnName="BarsCount" />
+                <ScalarProperty Name="ProfitToLossExitRatio" ColumnName="ProfitToLossExitRatio" />
+                <ScalarProperty Name="DistanceDaysBack" ColumnName="DistanceDaysBack" />
+                <ScalarProperty Name="CorridorDistanceRatio" ColumnName="CorridorDistanceRatio" />
+                <ScalarProperty Name="PriceCmaLevels" ColumnName="PriceCmaLevels" />
+                <ScalarProperty Name="SessionInfo" ColumnName="SessionInfo" />
+                <ScalarProperty Name="DollarPerLot" ColumnName="DollarPerLot" />
+                <ScalarProperty Name="DaysPerMinute" ColumnName="DaysPerMinute" />
+                <ScalarProperty Name="MinutesInTest" ColumnName="MinutesInTest" />
+                <ScalarProperty Name="PL" ColumnName="PL" />
+                <ScalarProperty Name="DollarsPerMonth" ColumnName="DollarsPerMonth" />
+                <ScalarProperty Name="LotSD" ColumnName="LotSD" />
+                <ScalarProperty Name="LotA" ColumnName="LotA" />
+                <ScalarProperty Name="Lot" ColumnName="Lot" />
+                <ScalarProperty Name="Profitability" ColumnName="Profitability" />
+                <ScalarProperty Name="Days" ColumnName="Days" />
+                <ScalarProperty Name="GrossPL" ColumnName="GrossPL" />
+                <ScalarProperty Name="Count" ColumnName="Count" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="SuperSessionUid" ColumnName="SuperSessionUid" />
+                <ScalarProperty Name="SessionId" ColumnName="SessionId" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -967,24 +1051,26 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <edmx:Diagram Name="Forex">
-        <edmx:EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="5.375" PointY="0.75" Height="1.4279589843749996" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.375" PointY="3.75" Height="1.7566536458333317" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="0.75" PointY="4.75" Height="2.0853483072916674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.5" PointY="0.5" Height="3.5186979166666674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="2.75" PointY="0.875" Height="4.6725065104166674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="3.375" PointY="6.75" Height="1.7879850260416674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="5.375" PointY="6.75" Height="1.5956835937499996" />
-        <edmx:EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="7.375" PointY="0.75" Height="2.3648893229166674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="7.375" PointY="4.75" Height="2.1725878906249996" />
-        <edmx:EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="7.375" PointY="7.75" Height="5.4417122395833317" />
-        <edmx:EntityTypeShape EntityType="ForexModel.MonthlyStat__Stats" Width="1.5" PointX="0.75" PointY="8.75" Height="2.3648893229166674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.Event__News" Width="1.5" PointX="11.625" PointY="0.875" Height="1.7879850260416745" />
-        <edmx:EntityTypeShape EntityType="ForexModel.EventLevel__News" Width="1.5" PointX="9.375" PointY="0.875" Height="1.7879850260416674" />
+      <edmx:Diagram Name="Forex" ZoomLevel="70">
+        <edmx:EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="2.75" PointY="5.75" Height="1.4279589843749996" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.75" PointY="3.75" Height="1.7566536458333317" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="4.75" PointY="6.75" Height="2.0853483072916674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="1" Height="3.5186979166666674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="6.75" PointY="6.75" Height="4.6725065104166674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="7.75" PointY="3.75" Height="1.7879850260416674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="0.75" PointY="8.75" Height="1.5956835937499996" />
+        <edmx:EntityTypeShape EntityType="ForexModel.v_BlackoutTime" Width="1.5" PointX="8.75" PointY="6.75" Height="2.3648893229166674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Session" Width="1.5" PointX="10.75" PointY="0.75" Height="2.1725878906249996" />
+        <edmx:EntityTypeShape EntityType="ForexModel.MonthlyStat__Stats" Width="1.5" PointX="10.75" PointY="4.75" Height="2.3648893229166674" />
+        <edmx:EntityTypeShape EntityType="ForexModel.Event__News" Width="1.5" PointX="8" PointY="0.875" Height="1.7879850260416745" />
+        <edmx:EntityTypeShape EntityType="ForexModel.EventLevel__News" Width="1.5" PointX="5.75" PointY="1" Height="1.7879850260416674" />
         <edmx:AssociationConnector Association="ForexModel.FK_Event_EventLevel">
           <edmx:ConnectorPoint PointX="10.875" PointY="1.7689925130208337" />
           <edmx:ConnectorPoint PointX="11.625" PointY="1.7689925130208337" />
         </edmx:AssociationConnector>
+        <edmx:EntityTypeShape EntityType="ForexModel.t_BarExtender" Width="1.5" PointX="3" PointY="2.125" />
+        <edmx:AssociationConnector Association="ForexModel.FK_t_BarExtender_t_Bar" />
+        <edmx:EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="3.375" PointY="10.75" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

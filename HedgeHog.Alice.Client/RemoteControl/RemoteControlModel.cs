@@ -1048,9 +1048,9 @@ namespace HedgeHog.Alice.Client {
           var lastDist = distances.TakeWhile(d => d.Speed.IsNotNaN()).Select(d=>d.Speed).LastOrDefault();
           distances.Where(d => d.Speed.IsNaN()).ForEach(d => d.Speed = lastDist);
           var volt2Dedault = rates.SkipWhile(r=>volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
-          PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
+          //PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
-          charter.AddTicks(price, rates, true ? new PriceBar[2][] { distances, distances1} : new PriceBar[0][], info, null,
+          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             tm.GetVoltageHigh(), tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)

@@ -60,9 +60,15 @@ namespace HedgeHog.Alice.Store {
     Height = 60,
     TimeFrame = 62,
     TimeFrame2 = 65,
-    Ftt = 64
+    Ftt = 64,
+    FttMACorr = 66
   }
   public enum TrailingWaveMethod {
+    ManualRange = 1,
+    SmartMove = 2,
+    LongFlat = 3,
+    Spike = 7,
+    Spike2 = 8,
     DistAvgMin = -11,
     DistAvgMax = -12,
     DistAvgMinMax = -13,
@@ -71,12 +77,7 @@ namespace HedgeHog.Alice.Store {
     DistAvgLT2 = -16,
     DistAvgLT3 = -17,
     DistAvgLT31 = -18,
-    TillFlat = -19,
     BigGap = -20,
-    BigGap2 = -21,
-    BigGap21 = -22,
-    Spike = 7,
-    Spike2 = 8,
     FrameAngle = 81,
     FrameAngle2 = 82,
     FrameAngle3 = 83,
@@ -87,9 +88,6 @@ namespace HedgeHog.Alice.Store {
     StDevFlat2 = 88,
     StDevFlat3 = 89,
     StDevFlat4 = 90,
-    Spike3 = 9,
-    Spike4 = 10,
-    ManualRange = 1,
     ElliottWave = 60,
     LongCross = 80,
     LongLine = 160,
@@ -115,7 +113,7 @@ namespace HedgeHog.Alice.Store {
     PriceSpread = 26,
     WaveShortStDev = 27,
     WaveTradeStartStDev = 28,
-    CorridorHeight_BS = 29, 
+    CorridorHeight_BS = 29,
     RegressionLevels = 30,
     RatesHeight_3 = 103,
     RatesHeight_4 = 104,
@@ -202,7 +200,9 @@ namespace HedgeHog.Alice.Store {
     PriceAvg1 = 10,
   }
   public enum CorridorHighLowMethod { AskHighBidLow = 0, Average = 1, BidHighAskLow = 2, BidLowAskHigh = 3, AskLowBidHigh = 4, PriceMA = 8 }
-  public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1,AskBidByMA = 2,Trima = 3 }
+  public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3 }
   public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4 }
+
+  public enum TradeLevelBy { None = 0, PriceAvg1 = 1, PriceAvg2 = 2, PriceAvg21 = 21, PriceAvg3 = 3, PriceAvg31 = 31, PriceAvg, AskHigh, BidLow }
 
 }
