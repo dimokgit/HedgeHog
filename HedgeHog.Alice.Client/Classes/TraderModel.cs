@@ -28,6 +28,7 @@ using NotifyCollectionChangedWrapper;
 using HedgeHog.Alice.Store.Metadata;
 using System.Threading.Tasks.Dataflow;
 using HedgeHog.Shared.Messages;
+using ReactiveUI;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -591,11 +592,12 @@ namespace HedgeHog.Alice.Client {
 
     #region LoginCommand
 
-    ICommand _LoginCommand;
-    public ICommand LoginCommand {
+    ReactiveCommand<object> _LoginCommand;
+    public ReactiveCommand<object> LoginCommand {
       get {
         if (_LoginCommand == null) {
-          _LoginCommand = new Gala.RelayCommand<object>(Login, (o) => o is TradingAccount);
+          _LoginCommand = ReactiveCommand.Create();
+          _LoginCommand.Subscribe(Login);
         }
 
         return _LoginCommand;

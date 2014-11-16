@@ -23,6 +23,7 @@ using WC = WatiN.Core;
 using System.IO;
 using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Core.Objects.DataClasses;
+using ReactiveUI;
 namespace Manheim.ViewModel {
   public class ToSelectedStateConverter : IValueConverter {
     private static readonly ToSelectedStateConverter defaultInstance = new ToSelectedStateConverter();
@@ -644,12 +645,13 @@ namespace Manheim.ViewModel {
       }
     }
     #region LoginCommand
-    ICommand _LoginCommand;
+    ReactiveCommand<object> _LoginCommand;
     private bool _mustShutDown;
-    public ICommand LoginCommand {
+    public ReactiveCommand<object> LoginCommand {
       get {
         if (_LoginCommand == null) {
-          _LoginCommand = new RelayCommand(Login, () => true);
+          _LoginCommand = ReactiveCommand.Create();
+          _LoginCommand.Subscribe(o => Login());
         }
         return _LoginCommand;
       }

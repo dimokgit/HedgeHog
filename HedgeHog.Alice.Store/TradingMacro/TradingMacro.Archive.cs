@@ -23,8 +23,10 @@ namespace HedgeHog.Alice.Store {
     public double CalculateLastPrice(Func<Rate, double> price) {
       return CalculateLastPrice(RateLast, price);
     }
+    Lazy<double> _isNaNException = new Lazy<double>(() => { throw new Exception(new { price = double.NaN } + ""); });
     public double CalculateLastPrice(Rate rate, Func<Rate, double> price) {
       try {
+        if (BarPeriod == BarsPeriodType.t1) return price(rate);
         if (TradesManager.IsInTest || IsInPlayback || TradeEnterBy == TradeCrossMethod.PriceAvg1 ) return price(rate);
         var secondsPerBar = BarPeriodInt * 60;
         var secondsCurrent = (ServerTime - rate.StartDate).TotalSeconds;
@@ -32,7 +34,7 @@ namespace HedgeHog.Alice.Store {
         var ratePrev = RatesArray.Reverse<Rate>().SkipWhile(r => r >= rate).First();
         var priceCurrent = price(rate);
         var pricePrev = price(ratePrev);
-        return pricePrev * (1 - ratio).Max(0) + priceCurrent * ratio.Min(1);
+        return (pricePrev * (1 - ratio).Max(0) + priceCurrent * ratio.Min(1)).IfNaN(_isNaNException);
       } catch (Exception exc) {
         Log = exc;
         return double.NaN;

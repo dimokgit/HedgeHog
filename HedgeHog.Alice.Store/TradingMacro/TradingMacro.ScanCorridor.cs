@@ -936,15 +936,17 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorFixed(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var ratesReversed = ratesForCorridor.ReverseIfNot();
       Func<Rate, double> distanceFunc = r => GetVoltage(r).Abs();
-      var rates = MonoidsCore.ToLazy(() => ratesReversed
-        .Select(distanceFunc)
-        .Where(Lib.IsNotNaN)
-        .DefaultIfEmpty().ToArray());
+      var rates = MonoidsCore.ToLazy(() =>
+        ratesReversed
+        .Zip(ratesReversed.Skip(1), (r1, r2) => new { d = r1.PriceAvg.Abs(r2.PriceAvg), v = GetVoltage(r1) }));
+      var distanceMin = from rs in rates
+                        select rs
+                        .Where(a => a.v.Between(GetVoltageAverage(), GetVoltageHigh()))
+                        .Select(a => a.d).DefaultIfEmpty(double.NaN).Sum();
       var distanceSum = 0.0;
       var scan =
          (from r in rates
-          let distanceMin = r.Average() * CorridorDistance
-          select distanceMin >= 0 ? CorridorDistance : r.Select(d => distanceSum += d).TakeWhile(d => d < distanceMin).Count()
+          select distanceMin.Value > 0 ? r.Select(a => distanceSum += a.d).TakeWhile(d => d < distanceMin.Value).Count() : CorridorDistance
            );
       return ScanCorridorLazy(ratesReversed, scan, GetShowVoltageFunction());
     }

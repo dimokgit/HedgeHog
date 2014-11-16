@@ -15,6 +15,7 @@ using ReactiveUI;
 using System.ComponentModel;
 using System.Reactive.Disposables;
 using HedgeHog.Shared.Messages;
+using System.Dynamic;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
 
@@ -653,6 +654,8 @@ namespace HedgeHog.Alice.Store {
             }
           });
 
+        var workflowSubjectDynamic = new Subject<IList<Func<ExpandoObject, Tuple<int, ExpandoObject>>>>();
+        var workFlowObservableDynamic = workflowSubjectDynamic.WFFactory(cancelWorkflow);
         #endregion
 
         #region Funcs
@@ -1867,8 +1870,8 @@ namespace HedgeHog.Alice.Store {
               break;
             #endregion
 
-            #region SmartMove
-            case TrailingWaveMethod.SmartMove: {
+            #region SmartMove2
+            case TrailingWaveMethod.SmartMove2: {
                 #region firstTime
                 if (firstTime) {
                   Log = new Exception(new { CorridorDistance, UseVoltage, onCanTradeLocal } + "");
@@ -1926,6 +1929,80 @@ namespace HedgeHog.Alice.Store {
                   }
                 };
                 workflowSubject.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+
+            #region SmartMove
+            case TrailingWaveMethod.SmartMove: {
+                #region firstTime
+                if (firstTime) {
+                  Log = new Exception(new { CorridorDistance, UseVoltage, onCanTradeLocal } + "");
+                  workFlowObservableDynamic.Subscribe();
+                  #region onCloseTradeLocal
+                  onCanTradeLocal = canTrade => canTrade || Trades.Any();
+                  onCloseTradeLocal += t => {
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (CurrentGrossInPipTotal > 0) {
+                      if (!IsInVitualTrading) IsTradingActive = false;
+                      BroadcastCloseAllTrades();
+                    }
+                  };
+                  #endregion
+                }
+                #endregion
+                //TODO: Move trade lines only if closer to Rates(High/Low)
+                //TODO: Skewness
+                //TODO: [Corridor by Volts Summ]
+                var voltLast = CorridorStats.Rates.Select(GetVoltage).SkipWhile(Lib.IsNaN).DefaultIfEmpty(double.NaN).First();
+                var voltUpOk = voltLast >= GetVoltageHigh();
+                var voltDownOk = voltLast <= GetVoltageAverage();
+                reverseStrategy.SetValue(ReverseStrategy);
+                var slopeSignCurr = CorridorStats.Slope.Sign();
+                var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                  _ti =>{ WorkflowStep = "1 Wait corridorOk";
+                    if(ReverseStrategy)
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if( voltDownOk){
+                      _ti.D().slopeSign = slopeSignCurr;
+                      _ti.D().corridorSet = false;
+                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                      Action<Action<Trade>> us = hh => onOpenTradeLocal.UnSubscribe(hh, d => onOpenTradeLocal -= d);
+                      var ol = WorkflowMixin.YAction<Trade>(h => {
+                        return t => {
+                          us(h);
+;                          _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                        };
+                      });
+                      onOpenTradeLocal += ol;
+                      _ti.D().onExit = new WFD.OnExit(() => us(ol));
+
+                      return WFD.tupleNext(_ti);
+                    }else return WFD.tupleStay(_ti);
+                  },_ti =>{ WorkflowStep = "2 Wait !corridorOk";
+                    if (voltUpOk){
+                      if(_ti.D().corridorSet)
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = true);
+                      return WFD.tupleCancel(_ti);
+                    }
+                    if (_ti.D().slopeSign != slopeSignCurr) {
+                      _ti.D().slopeSign = slopeSignCurr;
+                      BuyLevel.RateEx = tradeLevelFuncs[LevelBuyBy](RateLast);
+                      SellLevel.RateEx = tradeLevelFuncs[LevelSellBy](RateLast);
+                    }
+                    return WFD.tupleStay(_ti);
+                  },_ti =>{ WorkflowStep = "3 Set CanTrade";
+                  if (_ti.D().corridorSet) { 
+                    var canTrade = TradingAngleRange == 0 || !ReverseStrategy;
+                    BuyLevel.CanTradeEx = CorridorStats.Slope > 0 || canTrade;
+                    SellLevel.CanTradeEx = CorridorStats.Slope < 0 || canTrade;
+                  }
+                    return WFD.tupleNext(_ti);
+                  }
+                };
+                workflowSubjectDynamic.OnNext(wfManual);
               }
               adjustExitLevels0();
               break;

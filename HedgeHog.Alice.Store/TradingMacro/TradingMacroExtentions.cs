@@ -3133,24 +3133,26 @@ namespace HedgeHog.Alice.Store {
                 periodsBack = periodsBack.Max(periodsByStartDate);
               }
             }
-            UseRatesInternal(rl => {
-              if (rl.Count != rl.Distinct().Count()) {
-                var ri = rl.Distinct().ToList();
-                rl.Clear();
-                rl.AddRange(ri);
-                Log = new Exception("[{0}]:Distinct count check point. New count:{1}".Formater(Pair, rl.Count));
-              }
-            });
+            if (BarPeriod != BarsPeriodType.t1)
+              UseRatesInternal(rl => {
+                if (rl.Count != rl.Distinct().Count()) {
+                  var ri = rl.Distinct().ToList();
+                  rl.Clear();
+                  rl.AddRange(ri);
+                  Log = new Exception("[{0}]:Distinct count check point. New count:{1}".Formater(Pair, rl.Count));
+                }
+              });
             {
-              var ratesList = UseRatesInternal(ri => ri.TakeLast(10).TakeWhile(r => r.IsHistory).TakeLast(2).Take(1).ToList());
+              var ratesList = UseRatesInternal(ri => ri.TakeWhile(r => r.IsHistory).TakeLast(2).Take(1).ToList());
               startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).Single();
               if (startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
                 periodsBack = 0;
               RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, startDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
               var rateLastDate = ratesList.Last().StartDate;
               var delay = ServerTime.Subtract(rateLastDate).Duration();
-              if (delay > BarPeriodInt.FromMinutes()) {
-                if (delay > (BarPeriodInt * 2).FromMinutes())
+              var delayMax = 0.1.Max(BarPeriodInt).FromMinutes();
+              if (delay > delayMax) {
+                if (delay > (delayMax + delayMax))
                   Log = new Exception("[{2}]Last rate time:{0} is far from ServerTime:{1}".Formater(rateLastDate, ServerTime, Pair));
                 ratesList.RemoveAt(ratesList.Count - 1);
                 RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
@@ -3160,6 +3162,7 @@ namespace HedgeHog.Alice.Store {
                 rl.RemoveAll(r => r.StartDate >= sd);
                 rl.AddRange(ratesList);
               });
+              UseRatesInternal(rl => new[] { rl.Count - BarsCountCount() }.Where(rc => rc > 0).ForEach(rc => rl.RemoveRange(0, rc)));
             }
             if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
               Debug.WriteLine("LoadRates[" + Pair + ":{1}] - {0:n1} sec", sw.Elapsed.TotalSeconds, (BarsPeriodType)BarPeriod);
@@ -3260,6 +3263,7 @@ namespace HedgeHog.Alice.Store {
               (r, v) => r.VoltageLocal = v, (r, v) => r.VoltageLocal0 = new double[0], (r, v) => r.VoltageLocal2 = v, (r, v) => r.VoltageLocal3 = v, 
               (r, v) => r.Distance = v };
             UseRatesInternal(ri => ri.ForEach(r => { func.ForEach(f => { f(r, double.NaN); }); }));
+            new[] { _setVoltsSubscriber }.Where(a => a != null).ForEach(a => a.Dispose());
           }
           break;
         case TradingMacroMetadata.RatesInternal:

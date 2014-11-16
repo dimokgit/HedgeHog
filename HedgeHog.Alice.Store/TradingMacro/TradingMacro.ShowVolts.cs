@@ -78,7 +78,7 @@ namespace HedgeHog.Alice.Store {
       line = line ?? values.Regression(1, (c, l) => l);
       var threes = line.Buffer(3, 1).Where(b => b.Count == 3).ToArray();
       return values.Skip(1).SkipLast(1)
-        .Zip(line.Skip(1).SkipLast(1), (z1, z2) => z1-z2)
+        .Zip(line.Skip(1).SkipLast(1), (z1, z2) => z1 - z2)
         .Zip(threes, (abs, b3) => (abs * MathExtensions.Offset(b3.Regress(1).LineSlope(), 0.01)).Abs())
         .ToArray()
         .AverageByIterations(-1)
@@ -88,6 +88,8 @@ namespace HedgeHog.Alice.Store {
     EventLoopScheduler _setVoltsScheduler = new EventLoopScheduler();
     CompositeDisposable _setVoltsSubscriber = null;
     private CorridorStatistics ShowVoltsByVolatility() {
+      if (WaveShort.HasRates == false)
+        WaveShort.Rates = RatesArray.TakeLast(CorridorDistance).Reverse().ToArray();
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       var line = corridor.Coeffs.RegressionLine(corridor.Rates.Count);
       Func<Rate, double> priceFunc = r => r.VoltageLocal;
@@ -107,33 +109,40 @@ namespace HedgeHog.Alice.Store {
       //SetMAByFtt(corridorRates, _priceAvg, priceActionSlow, cmaLevelsSlow);
       //SetVoltage(corridorRates[0], InPips(CalcVolatility(corridorRates, priceFuncFast, priceFuncSlow)));
       {
-        var corridorRates = RatesArray.TakeLast(frameLength).ToArray();
-        var trimaFast = corridorRates.GetTrima(PriceFftLevelsFast);
-        var trimaSlow = corridorRates.GetTrima(PriceFftLevelsSlow);
+        var corridorRates = RatesArray.TakeLast(frameLength + PriceFftLevelsFast.Max(PriceFftLevelsSlow)).ToArray();
+        var trimaFast = corridorRates.GetTrima(PriceFftLevelsFast).Reverse().Take(frameLength).ToArray();
+        var trimaSlow = corridorRates.GetTrima(PriceFftLevelsSlow).Reverse().Take(frameLength).ToArray();
         SetVoltage(corridorRates.Last(), InPips(CalcVolatility(trimaFast, trimaSlow)));
       }
-      if (_setVoltsSubscriber == null || _setVoltsSubscriber.IsDisposed)
-        _setVoltsSubscriber = UseRatesInternal(ri => ri.Reverse<Rate>().Take(BarsCount * 2).ToArray())
-          .SkipWhile(r => GetVoltage(r).IsNotNaN())
+      if (_setVoltsSubscriber == null || _setVoltsSubscriber.IsDisposed) {
+        var voltRates0 = UseRatesInternal(ri => ri.TakeLast(BarsCount * 2).ToArray());
+        var voltRates = voltRates0
+          .Reverse()
+          .Zip(voltRates0.GetTrima(PriceFftLevelsFast).Reverse(), (r, f) => new { r, f })
+          .Zip(voltRates0.GetTrima(PriceFftLevelsSlow).Reverse(), (a, s) => new { a.r, a.f, s });
+        _setVoltsSubscriber = voltRates
+          .SkipWhile(a => GetVoltage(a.r).IsNotNaN())
           .Buffer(frameLength, 1)
           .TakeWhile(b => b.Count == frameLength)
-          .Where(b => GetVoltage(b[0]).IsNaN())
+          .Where(b => GetVoltage(b[0].r).IsNaN())
           .ToObservable(_setVoltsScheduler)
           .Do(b => {
             //SetMAByFtt(b, _priceAvg, priceAction, cmaLevelsFast);
             //SetMAByFtt(b, _priceAvg, priceAction2, cmaLevelsSlow);
             //var v = CalcVolatility(b, priceFunc, priceFunc2);
-            var c = b.Reverse().ToArray();
-            var trimaFast = c.GetTrima(PriceFftLevelsFast);
-            var trimaSlow = c.GetTrima(PriceFftLevelsSlow);
+            var trimaFast = b.Select(a => a.f).ToArray();
+            var trimaSlow = b.Select(a => a.s).ToArray();
             var v = CalcVolatility(trimaFast, trimaSlow);
-            SetVoltage(b[0], InPips(v));
+            SetVoltage(b[0].r, InPips(v));
           })
           .DefaultIfEmpty()
           .SubscribeOn(TaskPoolScheduler.Default)
           .LastAsync().Subscribe(_ => {
             SetVoltFuncs();
+            CenterOfMassBuy = RatesArray.Average(_priceAvg);
+            CenterOfMassSell = corridor.Rates.Average(_priceAvg);
           }) as CompositeDisposable;
+      }
       return corridor;
 
       var ratesInternalReversed = UseRatesInternal(ri => ri.AsEnumerable().Reverse().ToArray());

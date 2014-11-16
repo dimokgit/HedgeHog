@@ -702,6 +702,9 @@ namespace HedgeHog {
     public static double IfNaN(this double d, double defaultValue) {
       return double.IsNaN(d) ? defaultValue : d;
     }
+    public static double IfNaN(this double d, Lazy<double> defaultValue) {
+      return double.IsNaN(d) ? defaultValue.Value : d;
+    }
     public static double Max3(double n1, double n2, double n3) {
       return Math.Max(Math.Max(n1, n2), n3);
     }
@@ -773,9 +776,6 @@ namespace HedgeHog {
     }
     public static double Max(this double v, params double[] other) {
       return other.Aggregate(v, (p, n) => p.Max(n));
-    }
-    public static int Max(this int v, int other) {
-      return Math.Max(v, other);
     }
     public static int Max(this int v, params int[] other) {
       return other.Aggregate(v, (p, n) => p.Max(n));

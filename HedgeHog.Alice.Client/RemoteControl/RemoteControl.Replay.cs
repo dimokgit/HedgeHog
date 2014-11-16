@@ -1,25 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Input;
-using Gala = GalaSoft.MvvmLight.Command;
+﻿using HedgeHog.Alice.Store;
 using HedgeHog.Shared;
-using HedgeHog.Alice.Store;
+using ReactiveUI;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Concurrency;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Threading;
-using System.Diagnostics;
-using System.ComponentModel;
+using System.Windows.Input;
+using Gala = GalaSoft.MvvmLight.Command;
 
 namespace HedgeHog.Alice.Client {
   public partial class RemoteControlModel {
     #region StartReplayCommand
-    ICommand _StartReplayCommand;
-    public ICommand StartReplayCommand {
+    ReactiveCommand<object> _StartReplayCommand;
+    public ReactiveCommand<object> StartReplayCommand {
       get {
         if (_StartReplayCommand == null) {
-          _StartReplayCommand = new Gala.RelayCommand<TradingMacro>(StartReplay, tm => !_replayTasks.Any(t => t.Status == TaskStatus.Running));
+          var o = this.WhenAnyObservable(x => x._replayTasks.CountChanged)
+            .StartWith(0)
+            .Select(c => c == 0);
+          //var o2 = this.ObservableForProperty(vm => true, false, false).Select(x => x.Value).ObserveOn(RxApp.MainThreadScheduler);
+          _StartReplayCommand = ReactiveCommand.Create(o,RxApp.MainThreadScheduler);
+          _StartReplayCommand.Subscribe(StartReplay);
         }
         return _StartReplayCommand;
       }
@@ -29,8 +38,9 @@ namespace HedgeHog.Alice.Client {
       get { return _replayArguments; }
     }
 
-    List<Task> _replayTasks = new List<Task>();
-    void StartReplay(TradingMacro tmOriginal) {
+    public ReactiveList<Task> _replayTasks = new ReactiveList<Task>();
+    void StartReplay(object _) {
+      TradingMacro tmOriginal = (TradingMacro)_;
       try {
         if (_replayTasks.Any(t => t.Status == TaskStatus.Running)) {
           MessageBox.Show("Replay is running.");
@@ -168,7 +178,10 @@ namespace HedgeHog.Alice.Client {
         var tmToRun = tm;
         tmToRun.ReplayCancelationToken = (_replayTaskCancellationToken = new CancellationTokenSource()).Token;
         var task = Task.Factory.StartNew(() => tmToRun.Replay(ReplayArguments), tmToRun.ReplayCancelationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        task.ContinueWith(continueWith);
+        task.ContinueWith(t => {
+          RxApp.MainThreadScheduler.Schedule(() => _replayTasks.Remove(t));
+          continueWith(t);
+        });
         _replayTasks.Add(task);
       }
     }

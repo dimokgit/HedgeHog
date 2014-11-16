@@ -262,11 +262,11 @@ namespace HedgeHog.Alice.Store {
           ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
         else ratesList.AddRange(fw.GetTicks(pair, periodsBack).Except(ratesList));
       }
-      if (periodMinutes == 0) {
-        var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)
-          .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
-        ratesList.RemoveAll(r => r.StartDate >= d);
-      }
+      //if (periodMinutes == 0) {
+      //  var d = ratesList.OrderBarsDescending().TakeWhile(t => t.StartDate.Millisecond == 0)
+      //    .Select(r => r.StartDate).DefaultIfEmpty(TradesManagerStatic.FX_DATE_NOW).Min();
+      //  ratesList.RemoveAll(r => r.StartDate >= d);
+      //}
       fw.GetBars(pair, periodMinutes, periodsBack, startDate, endDate, ratesList,true);
     }
   }

@@ -1,10 +1,63 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog {
+  public static class WFD {
+    public static dynamic D(this ExpandoObject e) { var d = e; return d; }
+    public static T Get<T>(this ExpandoObject e,string key, T defaultValue) {
+      dynamic d = e;
+      if (((IDictionary<string, object>)d).ContainsKey(key)) return (T)d[key];
+      else ((IDictionary<string, object>)d).Add(key,defaultValue);
+      return defaultValue;
+    }
+    public delegate void OnLoop(ExpandoObject list);
+    public delegate void OnExit();
+    public static Func<ExpandoObject> emptyWFContext = () => new ExpandoObject();
+    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleNext = e => Tuple.Create(1, e ?? new ExpandoObject());
+    public static Func<Tuple<int, ExpandoObject>> tupleNextEmpty = () => tupleNext(emptyWFContext());
+    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleStay = e => Tuple.Create(0, e ?? new ExpandoObject());
+    public static Func<Tuple<int, ExpandoObject>> tupleStayEmpty = () => tupleStay(emptyWFContext());
+    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tuplePrev = e => Tuple.Create(-1, e ?? new ExpandoObject());
+    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleCancel = e => Tuple.Create(int.MaxValue / 2, e ?? new ExpandoObject());
+    public static Func<Tuple<int, ExpandoObject>> tupleCancelEmpty = () => tupleCancel(emptyWFContext());
+    public struct scan {
+      public int i;
+      public ExpandoObject o;
+      public Func<bool> c;
+      public scan(int i, ExpandoObject o, Func<bool> c) {
+        this.i = i;
+        this.o = o;
+        this.c = c;
+      }
+    }
+    public static IObservable<scan> WFFactory(this Subject<IList<Func<ExpandoObject, Tuple<int, ExpandoObject>>>> workflowSubject, Func<bool> cancelWorkflow) {
+      #region Workflow tuple factories
+      #endregion
+      return workflowSubject
+        .Scan(new scan( 0, emptyWFContext(), cancelWorkflow ), (i, wf) => {
+          if (i.i >= wf.Count || i.c() || i.o.OfType<WF.MustExit>().Any(me => me())) {
+            i.o.Select(kv => kv.Value).OfType<WFD.OnExit>().ForEach(a => a());
+            dynamic d = i.o;
+            ((IDictionary<string, object>)d).Clear();
+            i = new scan(0, i.o, i.c);
+          }
+          var o = wf[i.i](i.o);// Side effect
+          o.Item2.OfType<WFD.OnLoop>().ToList().ForEach(ol => ol(o.Item2));
+          try {
+            var d = new scan((i.i + o.Item1).Max(0), o.Item2, i.c);
+            return d;
+          } finally {
+            if (o.Item1 != 0) workflowSubject.Repeat(1);
+          }
+        });
+    }
+  }
   public static class WF {
     public delegate void OnLoop(List<object> list);
     public delegate void OnExit();
@@ -63,7 +116,9 @@ namespace HedgeHog {
       return rec(rec);
     }
     public static void UnSubscribe<T>(this Action<T> delegatus, Action<T> handler, Action<Action<T>> unSubcriber) {
-      delegatus.GetInvocationList().Where(d => d.Method == handler.Method).ToList().ForEach(d => unSubcriber(d as Action<T>));
+      new[] { delegatus }
+        .Where(dlg => dlg != null)
+        .ForEach(dlg => dlg.GetInvocationList().Where(d => d.Method == handler.Method).ToList().ForEach(d => unSubcriber(d as Action<T>)));
     }
   }
 }

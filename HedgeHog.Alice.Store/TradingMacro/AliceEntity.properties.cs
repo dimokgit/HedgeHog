@@ -394,7 +394,7 @@ namespace HedgeHog.Alice.Store {
     double _pricePrev = double.NaN;
     public void SetPrice(double price) {
       if (double.IsNaN(price))
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("price is NaN."));
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception(new { type = GetType().Name, PricePosition = "is NaN." } + ""));
       else {
         if (Rate.Between(price, _pricePrev)) {
           _pricePosition = _pricePrev - Rate;

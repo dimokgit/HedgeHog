@@ -66,6 +66,7 @@ namespace HedgeHog.Alice.Store {
   public enum TrailingWaveMethod {
     ManualRange = 1,
     SmartMove = 2,
+    SmartMove2 = 102,
     LongFlat = 3,
     Spike = 7,
     Spike2 = 8,

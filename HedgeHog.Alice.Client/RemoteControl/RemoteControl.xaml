@@ -178,9 +178,9 @@
         <Button Content="Close" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
                 Command="{Binding DataContext.ClosePairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
                 ContentTemplate="{StaticResource SmallButtonTemplate}"/>
-        <Button Content="Trim" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
+        <!--<Button Content="Trim" CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
                 Command="{Binding DataContext.TrimPairCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                ContentTemplate="{StaticResource SmallButtonTemplate}"/>
+                ContentTemplate="{StaticResource SmallButtonTemplate}"/>-->
       </StackPanel>
     </DataTemplate>
     <DataTemplate x:Key="ReverseCellTemplate">

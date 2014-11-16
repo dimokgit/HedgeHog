@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class MathCore {
+    public static int Max(this int d1, int d2) {
+      return Math.Max(d1, d2);
+    }
     public static DateTime Max(this DateTime d1, DateTime d2) {
       return d1 >= d2 ? d1 : d2;
     }
