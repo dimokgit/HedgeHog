@@ -187,12 +187,17 @@ namespace HedgeHog.Alice.Store {
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
     Dictionary<TradeLevelBy, Func<Rate, CorridorStatistics, double>> TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<Rate, CorridorStatistics, double>>
         { {TradeLevelBy.PriceAvg1,(r,cs)=>r.PriceAvg1},
+          
           {TradeLevelBy.PriceAvg02,(r,cs)=>r.PriceAvg1+cs.StDevByHeight},
           {TradeLevelBy.PriceAvg2,(r,cs)=>r.PriceAvg2},
           {TradeLevelBy.PriceAvg21,(r,cs)=>r.PriceAvg21},
-          {TradeLevelBy.PriceAvg03,(r,cs)=>r.PriceAvg3+cs.StDevByHeight},
+          {TradeLevelBy.PriceAvg22,(r,cs)=>r.PriceAvg21+cs.StDevByHeight},
+
+          {TradeLevelBy.PriceAvg03,(r,cs)=>r.PriceAvg1-cs.StDevByHeight},
           {TradeLevelBy.PriceAvg3,(r,cs)=>r.PriceAvg3},
           {TradeLevelBy.PriceAvg31,(r,cs)=>r.PriceAvg31},
+          {TradeLevelBy.PriceAvg32,(r,cs)=>r.PriceAvg31-cs.StDevByHeight},
+        
           {TradeLevelBy.AskHigh,(r,cs)=>r.AskHigh},
           {TradeLevelBy.BidLow,(r,cs)=>r.BidLow},
           {TradeLevelBy.PriceAvg,(r,cs)=>r.PriceAvg},
@@ -768,6 +773,54 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustEnterLevels
+        Action<bool> tradeByLevelsBy = moveAlways => {
+          Action<bool> setTradingLevels = canTrade => {
+            BuyLevel.RateEx = getTradeLevel(RateLast, true, BuyLevel.Rate);
+            SellLevel.RateEx = getTradeLevel(RateLast, false, SellLevel.Rate);
+            BuyCloseLevel.RateEx = GetTradeCloseLevel(RateLast, true, BuyCloseLevel.Rate);
+            SellCloseLevel.RateEx = GetTradeCloseLevel(RateLast, false, SellCloseLevel.Rate);
+
+            // Only turn on
+            (canTrade && calcAngleOk() && calcCorrOk(WaveStDevRatio)).YieldIf(a => a)
+              .ForEach(_ => _buySellLevels.Where(sr =>
+                sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
+                sr.IsSell && LevelSellBy != TradeLevelBy.None)
+                .ForEach(sr => sr.CanTradeEx = true));
+          };
+          var slopeSignCurr = RateLast.PriceAvg.Sign(RateLast.PriceAvg1);
+          var slopeSign = WFD.Make<int>("slopeSign");
+          var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                  _ti =>{ WorkflowStep = "1 Wait corridorOk";
+                  var slopeShanged = slopeSign(_ti, null, () => slopeSignCurr) != slopeSignCurr;
+                  new[] { slopeShanged, moveAlways }
+                  .Where(b => b)
+                  .Take(1)
+                  .ForEach(_ => {
+                     slopeSign(_ti, () => slopeSignCurr);
+                     setTradingLevels(slopeShanged);
+                   });
+                    return WFD.tupleStay(_ti);
+                  }
+                };
+          workflowSubjectDynamic.OnNext(wfManual);
+        };
+        Action firstTimeAction = () => {
+          if (firstTime) {
+            Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+            workFlowObservableDynamic.Subscribe();
+            #region onCloseTradeLocal
+            onCanTradeLocal = canTrade => canTrade || Trades.Any();
+            onCloseTradeLocal += t => {
+              BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+              if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+              if (CurrentGrossInPipTotal > 0) {
+                if (!IsInVitualTrading) IsTradingActive = false;
+                BroadcastCloseAllTrades();
+              }
+            };
+            #endregion
+          }
+        };
         Action adjustEnterLevels = () => {
           if (!WaveShort.HasRates) return;
           switch (TrailingDistanceFunction) {
@@ -2017,60 +2070,16 @@ namespace HedgeHog.Alice.Store {
             #endregion
 
             #region TradeLevels
-            case TrailingWaveMethod.TradeLevels: {
-                #region firstTime
-                if (firstTime) {
-                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
-                  workFlowObservableDynamic.Subscribe();
-                  #region onCloseTradeLocal
-                  onCanTradeLocal = canTrade => canTrade || Trades.Any();
-                  onCloseTradeLocal += t => {
-                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    if (CurrentGrossInPipTotal > 0) {
-                      if (!IsInVitualTrading) IsTradingActive = false;
-                      BroadcastCloseAllTrades();
-                    }
-                  };
-                  #endregion
-                }
-                #endregion
-              }
-              {
-                Action<bool> setTradingLevels = canTrade => {
-                  BuyLevel.RateEx = getTradeLevel(RateLast, true, BuyLevel.Rate);
-                  SellLevel.RateEx = getTradeLevel(RateLast, false, SellLevel.Rate);
-
-                  var ct = canTrade || calcAngleOk() && calcCorrOk(WaveStDevRatio);
-                  _buySellLevels.Where(sr => 
-                    sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
-                    sr.IsSell && LevelSellBy != TradeLevelBy.None)
-                    .ForEach(sr => sr.CanTradeEx = ct);
-                };
-                var slopeSignCurr = RateLast.PriceAvg.Sign(RateLast.PriceAvg1);
-                var slopeSign = WFD.Make<int>("slopeSign");
-                var canTradeByCurrPrice = new[]{
-                  Lazy.Create( ()=> RateLast.PriceAvg > GetTradeCloseLevel(RateLast, true)),
-                  Lazy.Create( ()=> RateLast.PriceAvg < GetTradeCloseLevel(RateLast, false))};
-                var canSetTrade = new[]{
-                  Lazy.Create( ()=>Trades.HaveBuy() && LevelBuyCloseBy == TradeLevelBy.PriceAvg2),
-                  Lazy.Create( ()=>Trades.HaveSell() && LevelSellCloseBy == TradeLevelBy.PriceAvg3)};
-                var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                  _ti =>{ WorkflowStep = "1 Wait corridorOk";
-                    if (
-                      (slopeSign(_ti,null,()=>slopeSignCurr) != slopeSignCurr).Yield()
-                      .Concat(canTradeByCurrPrice.Select(f => f.Value))
-                      .Concat(canSetTrade.Select(f => f.Value))
-                      .Any(b=>b)
-                      ) {
-                      slopeSign(_ti, () => slopeSignCurr);
-                      setTradingLevels(canTradeByCurrPrice.Any(l => l.Value));
-                    }
-                    return WFD.tupleStay(_ti);
-                  }
-                };
-                workflowSubjectDynamic.OnNext(wfManual);
-              }
+            case TrailingWaveMethod.TradeLevels: 
+              firstTimeAction();
+              tradeByLevelsBy(false);
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region TradeLevelsA
+            case TrailingWaveMethod.TradeLevelsA:
+              firstTimeAction();
+              tradeByLevelsBy(true);
               adjustExitLevels0();
               break;
             #endregion

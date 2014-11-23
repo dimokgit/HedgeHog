@@ -65,7 +65,8 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TrailingWaveMethod {
     TradeLevels = 1,
-    SmartMove = 2,
+    TradeLevelsA = 2,
+    SmartMove = 4,
     SmartMove2 = 102,
     LongFlat = 3,
     Spike = 7,
@@ -211,9 +212,11 @@ namespace HedgeHog.Alice.Store {
     PriceAvg02,
     PriceAvg2,
     PriceAvg21,
+    PriceAvg22,
     PriceAvg03,
     PriceAvg3,
     PriceAvg31,
+    PriceAvg32,
     PriceAvg,
     AskHigh,
     BidLow

@@ -173,14 +173,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     private void SetVoltFuncs() {
-      var voltsAvg = RatesArray.ToArray().Select(r => GetVoltage(r)).Where(Lib.IsNotNaN).DefaultIfEmpty().ToArray();
-      var va = MonoidsCore.ToLazy(() => voltsAvg.AverageByIterations(VoltsAvgIterations).Average());
-      GetVoltageAverage = () => va.Value;
-      var vh = MonoidsCore.ToLazy(() => voltsAvg.AverageByIterations(VoltsHighIterations).Average());
-      GetVoltageHigh = () => vh.Value;
-      //SetVoltage2(RatesArray.Last(), MathNet.Numerics.Statistics.Statistics.Skewness(voltsAvg));
-      //var vh = MonoidsCore.ToLazy(() => RatesArray.Select(r => GetVoltage2(r)).SkipWhile(Lib.IsNaN).ToArray().AverageByIterations(VoltsHighIterations).Average());
-      //GetVoltageHigh = () => vh.Value;
+      if (GetVoltage(RatesArray[0]).IsNotNaN()) {
+        var volts = RatesArray.Select(r => GetVoltage(r)).Where(Lib.IsNotNaN).DefaultIfEmpty().ToArray();
+        var voltsAvg = 0.0;
+        var voltsStDev = volts.StDev(out voltsAvg);
+        GetVoltageAverage = () => voltsAvg - voltsStDev;
+        GetVoltageHigh = () => voltsAvg + voltsStDev;
+      }
     }
 
     private CorridorStatistics ShowVoltsByHourlyStDevAvg() {

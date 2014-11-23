@@ -3428,7 +3428,7 @@ namespace HedgeHog.Alice.Store {
       set { _waveRates = value; }
     }
     private double CorridorAngleFromTangent() {
-      return AngleFromTangent(-CorridorStats.Coeffs.LineSlope());
+      return CorridorStats.Coeffs == null ? double.NaN : AngleFromTangent(-CorridorStats.Coeffs.LineSlope());
     }
 
     private double AngleFromTangent(double tangent) {
