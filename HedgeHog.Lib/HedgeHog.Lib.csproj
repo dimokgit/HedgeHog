@@ -180,6 +180,10 @@
       <Project>{8b110eee-4d1a-4b1a-b7d9-b5880af2b737}</Project>
       <Name>HedgeHog.EnumerableHH</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HedgeHog.Core\HedgeHog.Core.csproj">
+      <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
+      <Name>HedgeHog.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\HedgeHog.Math\HedgeHog.Math.csproj">
       <Project>{21C4A910-0C04-436D-B797-4D564DB29627}</Project>
       <Name>HedgeHog.Math</Name>

@@ -147,6 +147,7 @@
     <Compile Include="t_TradeTest.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="EnumerableEx.cs" />
+    <Compile Include="WFDTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\DynamicDataDisplay\DynamicDataDisplay.csproj">

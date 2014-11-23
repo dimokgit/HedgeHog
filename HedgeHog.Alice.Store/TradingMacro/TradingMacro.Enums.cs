@@ -64,12 +64,13 @@ namespace HedgeHog.Alice.Store {
     FttMACorr = 66
   }
   public enum TrailingWaveMethod {
-    ManualRange = 1,
+    TradeLevels = 1,
     SmartMove = 2,
     SmartMove2 = 102,
     LongFlat = 3,
     Spike = 7,
     Spike2 = 8,
+    ManualRange = 10,
     DistAvgMin = -11,
     DistAvgMax = -12,
     DistAvgMinMax = -13,
@@ -204,6 +205,18 @@ namespace HedgeHog.Alice.Store {
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3 }
   public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4 }
 
-  public enum TradeLevelBy { None = 0, PriceAvg1 = 1, PriceAvg2 = 2, PriceAvg21 = 21, PriceAvg3 = 3, PriceAvg31 = 31, PriceAvg, AskHigh, BidLow }
+  public enum TradeLevelBy {
+    None = 0,
+    PriceAvg1,
+    PriceAvg02,
+    PriceAvg2,
+    PriceAvg21,
+    PriceAvg03,
+    PriceAvg3,
+    PriceAvg31,
+    PriceAvg,
+    AskHigh,
+    BidLow
+  }
 
 }

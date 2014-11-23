@@ -946,7 +946,7 @@ namespace HedgeHog.Alice.Store {
       var distanceSum = 0.0;
       var scan =
          (from r in rates
-          select distanceMin.Value > 0 ? r.Select(a => distanceSum += a.d).TakeWhile(d => d < distanceMin.Value).Count() : CorridorDistance
+          select GetVoltage(RatesArray[0]).IsNotNaN() && distanceMin.Value > 0 ? r.Select(a => distanceSum += a.d).TakeWhile(d => d < distanceMin.Value).Count() : CorridorDistance
            );
       return ScanCorridorLazy(ratesReversed, scan, GetShowVoltageFunction());
     }
@@ -1192,7 +1192,7 @@ namespace HedgeHog.Alice.Store {
           .AsParallel()
           .Select(d => new { d.i, slope = d.rates.Regress(1).LineSlope() })
           .OrderBy(d => d.i).ToArray();
-        var extreams = new { i = 0, slope = 0.0 }.Return(0).ToList();
+        var extreams = new { i = 0, slope = 0.0 }.YieldBreak().ToList();
         datas
           .SkipWhile(d => d.slope.IsNaN())
           .TakeWhile(d => !d.slope.IsNaN())
@@ -1703,7 +1703,7 @@ namespace HedgeHog.Alice.Store {
         if (max - min > stDev) break;
         countMin++;
       }
-      var correlations = new { corr = 0.0, length = 0, parabola = new double[0], angle = 0.0 }.IEnumerable().ToList();
+      var correlations = new { corr = 0.0, length = 0, parabola = new double[0], angle = 0.0 }.Yield().ToList();
       var locker = new object();
       var corr = double.NaN;
       Enumerable.Range(countMin, (ratesShrunken.Length - countMin).Max(0)).AsParallel().ForAll(rates => {
@@ -1759,7 +1759,7 @@ namespace HedgeHog.Alice.Store {
         if (max - min > stDev) break;
         countMin++;
       }
-      var correlations = new { corr = 0.0, length = 0, parabola = new double[0] }.IEnumerable().ToList();
+      var correlations = new { corr = 0.0, length = 0, parabola = new double[0] }.Yield().ToList();
       var corr = double.NaN;
       var locker = new object();
       Enumerable.Range(countMin, (ratesShrunken.Length - countMin).Max(0)).AsParallel().ForAll(rates => {
@@ -2003,5 +2003,20 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    #region CloseTradesBeforeNews
+    private bool _CloseTradesBeforeNews = true;
+    [Category(categoryActiveYesNo)]
+    public bool CloseTradesBeforeNews {
+      get { return _CloseTradesBeforeNews; }
+      set {
+        if (_CloseTradesBeforeNews != value) {
+          _CloseTradesBeforeNews = value;
+          OnPropertyChanged("CloseTradesBeforeNews");
+        }
+      }
+    }
+
+    #endregion
+
   }
 }

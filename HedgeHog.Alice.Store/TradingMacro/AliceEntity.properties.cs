@@ -694,6 +694,34 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    #region LevelBuyCloseBy
+    private TradeLevelBy _LevelBuyCloseBy;
+    [Category(categoryActiveFuncs)]
+    public TradeLevelBy LevelBuyCloseBy {
+      get { return _LevelBuyCloseBy; }
+      set {
+        if (_LevelBuyCloseBy != value) {
+          _LevelBuyCloseBy = value;
+          OnPropertyChanged("LevelBuyCloseBy");
+        }
+      }
+    }
+    #endregion
+    #region LevelSellCloseBy
+    private TradeLevelBy _LevelSellCloseBy;
+    [Category(categoryActiveFuncs)]
+    public TradeLevelBy LevelSellCloseBy {
+      get { return _LevelSellCloseBy; }
+      set {
+        if (_LevelSellCloseBy != value) {
+          _LevelSellCloseBy = value;
+          OnPropertyChanged("LevelSellCloseBy");
+        }
+      }
+    }
+
+    #endregion
+
     #region LevelSellBy
     private TradeLevelBy _LevelSellBy;
     [Category(categoryActiveFuncs)]

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>HedgeHog.Common</id>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
     <title>HedgeHog.Common</title>
     <authors>dimon</authors>
     <owners></owners>
@@ -21,7 +21,13 @@
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright  2014</copyright>
     <dependencies>
-        <group targetFramework="net40">
+        <group targetFramework="net451">
+          <dependency id="Ix-Main" version="1.2.2" />
+          <dependency id="Rx-Core" version="2.2.5" />
+          <dependency id="Rx-Interfaces" version="2.2.5" />
+          <dependency id="Rx-Linq" version="2.2.5" />
+          <dependency id="Rx-Main" version="2.2.5" />
+          <dependency id="Rx-PlatformServices" version="2.2.5" />
         </group>
     </dependencies>
     <references></references>

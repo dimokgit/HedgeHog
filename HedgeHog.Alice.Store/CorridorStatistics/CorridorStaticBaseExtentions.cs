@@ -128,7 +128,7 @@ namespace HedgeHog.Alice.Store {
               stDevDict.Add(CorridorCalculationMethod.Height, stDev = sd/* heights.StDevP()*/);
               break;
             case CorridorCalculationMethod.HeightUD:
-              stDevDict.Add(CorridorCalculationMethod.HeightUD, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
+              stDevDict.Add(CorridorCalculationMethod.Height, stDev = rates.Select(heightHigh).Union(rates.Select(heightLow)).ToList().StDevP());
               break;
             case CorridorCalculationMethod.Price:
               stDevDict.Add(CorridorCalculationMethod.Price, stDev = rates.GetPriceForStats(price, priceLine, priceHigh, priceLow).ToList().StDevP()); break;

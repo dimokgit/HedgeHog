@@ -1432,12 +1432,14 @@ namespace HedgeHog.Alice.Store {
               }
               rate = _replayRates[indexCurrent++];
               UseRatesInternal(ri => {
-                var mi = _replayRates.Count - 1;
-                var ratesNext = Enumerable.Range(indexCurrent, 3).Where(i => i <= mi).Select(i => _replayRates[i]);
-                if (InPips(ratesNext.Select(r => r.AskHigh - r.BidLow).DefaultIfEmpty(0).Max()) > 40) {
-                  if (Trades.Any()) BroadcastCloseAllTrades();
-                  SuppRes.ForEach(sr => sr.CanTrade = false);
-                  CloseTrades("Blackout");
+                if (CloseTradesBeforeNews) {
+                  var mi = _replayRates.Count - 1;
+                  var ratesNext = Enumerable.Range(indexCurrent, 3).Where(i => i <= mi).Select(i => _replayRates[i]);
+                  if (InPips(ratesNext.Select(r => r.AskHigh - r.BidLow).DefaultIfEmpty(0).Max()) > 40) {
+                    if (Trades.Any()) BroadcastCloseAllTrades();
+                    SuppRes.ForEach(sr => sr.CanTrade = false);
+                    CloseTrades("Blackout");
+                  }
                 }
                 if (rate != null)
                   if (ri.Count == 0 || rate > ri.LastBC())
@@ -1945,7 +1947,8 @@ namespace HedgeHog.Alice.Store {
                 StDevByPriceAvg = prices.StDev();
                 StDevByHeight = prices.StDevByRegressoin(coeffs);
                 switch (CorridorCalcMethod) {
-                  case CorridorCalculationMethod.Height: RatesStDev = StDevByHeight; break;
+                  case CorridorCalculationMethod.Height: 
+                  case CorridorCalculationMethod.HeightUD: RatesStDev = StDevByHeight; break;
                   case CorridorCalculationMethod.PriceAverage: RatesStDev = StDevByPriceAvg; break;
                   default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
                 }

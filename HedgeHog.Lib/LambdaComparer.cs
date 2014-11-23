@@ -29,7 +29,7 @@ namespace HedgeHog {
       return list.GroupBy(t => t, new LambdaComparer<T>(groupBy));
     }
     public static IDictionary<T,IList<T>> RunningGroup<T>(this IEnumerable<T> values, Func<T, T, bool> same) {
-      return values.Aggregate(new { key = default(T), values = new List<T>() }.IEnumerable().ToList(),
+      return values.Aggregate(new[] { new { key = default(T), values = new List<T>() } }.ToList(),
         (g, v) => {
           if (g.Count == 0 || !same(v, g.Last().values.Last()))
             g.Add(new { key = v, values = new List<T>() { v } });

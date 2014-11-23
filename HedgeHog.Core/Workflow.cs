@@ -9,23 +9,49 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class WFD {
+    public delegate T GetSetter<T>(ExpandoObject expando,params Func<T>[] setter);
+    #region Extensions
     public static dynamic D(this ExpandoObject e) { var d = e; return d; }
-    public static T Get<T>(this ExpandoObject e,string key, T defaultValue) {
+    static T Get2<T>(this ExpandoObject e, string key, T defaultValue) {
       dynamic d = e;
       if (((IDictionary<string, object>)d).ContainsKey(key)) return (T)d[key];
-      else ((IDictionary<string, object>)d).Add(key,defaultValue);
+      else ((IDictionary<string, object>)d).Add(key, defaultValue);
       return defaultValue;
     }
+    static T Get3<T>(this ExpandoObject e, string key, params Func<T>[] defaultLazy) {
+      dynamic d = e;
+      if (!((IDictionary<string, object>)d).ContainsKey(key)) 
+        ((IDictionary<string, object>)d).Add(key, defaultLazy.Select(f => f()).DefaultIfEmpty().Single());
+      return (T)((IDictionary<string, object>)d)[key];
+    }
+    static T GetSet<T>(this ExpandoObject e, string key, params Func<T>[] setter) {
+      var d = (IDictionary<string, object>)e;
+      setter.Take(1).Where(f => f != null).ForEach(f => d[key] = f());
+      if (!d.ContainsKey(key))
+        setter.Skip(1).Take(1).ForEach(f => d[key] = f());
+      return (T)d[key];
+    }
+    public static GetSetter<T> Make<T>(string key,params T[] def) {
+      GetSetter<T> ret = (e, f) => e.GetSet(key, f);
+      //def.ForEach(d=>ret())
+      return ret;
+    }
+    #endregion
+    #region Delegates
     public delegate void OnLoop(ExpandoObject list);
     public delegate void OnExit();
+    #endregion
+    #region Context Helpers
     public static Func<ExpandoObject> emptyWFContext = () => new ExpandoObject();
     public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleNext = e => Tuple.Create(1, e ?? new ExpandoObject());
     public static Func<Tuple<int, ExpandoObject>> tupleNextEmpty = () => tupleNext(emptyWFContext());
     public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleStay = e => Tuple.Create(0, e ?? new ExpandoObject());
     public static Func<Tuple<int, ExpandoObject>> tupleStayEmpty = () => tupleStay(emptyWFContext());
     public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tuplePrev = e => Tuple.Create(-1, e ?? new ExpandoObject());
-    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleCancel = e => Tuple.Create(int.MaxValue / 2, e ?? new ExpandoObject());
-    public static Func<Tuple<int, ExpandoObject>> tupleCancelEmpty = () => tupleCancel(emptyWFContext());
+    public static Func<ExpandoObject, Tuple<int, ExpandoObject>> tupleBreak = e => Tuple.Create(int.MaxValue / 2, e ?? new ExpandoObject());
+    public static Func<Tuple<int, ExpandoObject>> tupleBreakEmpty = () => tupleBreak(emptyWFContext());
+    #endregion
+    #region Factory
     public struct scan {
       public int i;
       public ExpandoObject o;
@@ -57,6 +83,7 @@ namespace HedgeHog {
           }
         });
     }
+    #endregion
   }
   public static class WF {
     public delegate void OnLoop(List<object> list);

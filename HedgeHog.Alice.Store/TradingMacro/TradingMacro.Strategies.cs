@@ -185,6 +185,20 @@ namespace HedgeHog.Alice.Store {
     }
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
+    Dictionary<TradeLevelBy, Func<Rate, CorridorStatistics, double>> TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<Rate, CorridorStatistics, double>>
+        { {TradeLevelBy.PriceAvg1,(r,cs)=>r.PriceAvg1},
+          {TradeLevelBy.PriceAvg02,(r,cs)=>r.PriceAvg1+cs.StDevByHeight},
+          {TradeLevelBy.PriceAvg2,(r,cs)=>r.PriceAvg2},
+          {TradeLevelBy.PriceAvg21,(r,cs)=>r.PriceAvg21},
+          {TradeLevelBy.PriceAvg03,(r,cs)=>r.PriceAvg3+cs.StDevByHeight},
+          {TradeLevelBy.PriceAvg3,(r,cs)=>r.PriceAvg3},
+          {TradeLevelBy.PriceAvg31,(r,cs)=>r.PriceAvg31},
+          {TradeLevelBy.AskHigh,(r,cs)=>r.AskHigh},
+          {TradeLevelBy.BidLow,(r,cs)=>r.BidLow},
+          {TradeLevelBy.PriceAvg,(r,cs)=>r.PriceAvg},
+          {TradeLevelBy.None,(r,cs)=>double.NaN}
+        };
+    double GetTradeCloseLevel(Rate rate, bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy](rate, CorridorStats).IfNaN(def); }
 
     private void StrategyEnterUniversal() {
       if (!RatesArray.Any()) return;
@@ -204,6 +218,9 @@ namespace HedgeHog.Alice.Store {
       Func<SuppRes, bool> isSellR = sr => reverseStrategy.Value ? !sr.IsSell : sr.IsSell;
       Func<bool> calcAngleOk = () => TradingAngleRange >= 0
         ? CorridorAngleFromTangent().Abs() >= TradingAngleRange : CorridorAngleFromTangent().Abs() < TradingAngleRange.Abs();
+      Func<double, bool> calcCorrOk = ratio => ratio >= 0
+        ? CorridorStats.Rates.Count > CorridorDistance * ratio
+        : CorridorStats.Rates.Count < CorridorDistance * -ratio;
       Action resetCloseAndTrim = () => CloseAtZero = _trimAtZero = _trimToLotSize = false;
       Func<bool, double> enter = isBuy => CalculateLastPrice(RateLast, GetTradeEnterBy(isBuy));
       #endregion
@@ -452,7 +469,7 @@ namespace HedgeHog.Alice.Store {
         Action<Trade> onOpenTradeLocal = null;
 
         #region Levels
-        if (SuppResLevelsCount != 2) SuppResLevelsCount = 2;
+        if (SuppResLevelsCount < 2) SuppResLevelsCount = 2;
         SuppRes.ForEach(sr => sr.IsExitOnly = false);
         BuyCloseLevel = BuyCloseSupResLevel();
         SellCloseLevel = SellCloseSupResLevel();
@@ -606,11 +623,9 @@ namespace HedgeHog.Alice.Store {
         var watcherCanTrade2 = new ObservableValue<bool>(true, true);
         var triggerRsd = new ValueTrigger<Unit>(false);
         var rsdStartDate = DateTime.MinValue;
-        double corridorLevel = double.NaN;
         DateTime corridorDate = ServerTime;
         var corridorHeightPrev = DateTime.MinValue;
         var interpreter = new Interpreter();
-        bool? isPriceUp = null;
         Func<bool> isReverseStrategy = () => _buyLevel.Rate < _sellLevel.Rate;
         IList<MathExtensions.Extream<Rate>> extreamsSaved = null;
 
@@ -709,17 +724,7 @@ namespace HedgeHog.Alice.Store {
         };
         #endregion
         Func<bool> runOnce = null;
-        var tradeLevelFuncs = new Dictionary<TradeLevelBy, Func<Rate, double>>
-        { {TradeLevelBy.PriceAvg1,r=>r.PriceAvg1},
-          {TradeLevelBy.PriceAvg2,r=>r.PriceAvg2},
-          {TradeLevelBy.PriceAvg21,r=>r.PriceAvg21},
-          {TradeLevelBy.PriceAvg3,r=>r.PriceAvg3},
-          {TradeLevelBy.PriceAvg31,r=>r.PriceAvg31},
-          {TradeLevelBy.AskHigh,r=>r.AskHigh},
-          {TradeLevelBy.BidLow,r=>r.BidLow},
-          {TradeLevelBy.PriceAvg,r=>r.PriceAvg}
-        };
-
+        Func<Rate, bool, double, double> getTradeLevel = (rate, buy, def) => TradeLevelFuncs[buy ? LevelBuyBy : LevelSellBy](rate, CorridorStats).IfNaN(def);
         #region SetTrendlines
         Func<double, double, Func<Rate[]>> setTrendLinesByParams = (h, l) => {
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return () => new[] { new Rate(), new Rate() };
@@ -1726,7 +1731,7 @@ namespace HedgeHog.Alice.Store {
                   .Select(f => f()).Memoize();
                 var isVoltLow = new Func<bool>(() => GetVoltage(RateLast) < GetVoltageAverage()).Yield()
                   .Select(f => f());
-                var getUpDown = MonoidsCore.ToFunc(() => new { up = CenterOfMassBuy, down = CenterOfMassSell }).Return();
+                var getUpDown = MonoidsCore.ToFunc(() => new { up = CenterOfMassBuy, down = CenterOfMassSell }).Yield();
                 var currentPriceOk = this.CurrentEnterPrice(null).Between(SellLevel.Rate, BuyLevel.Rate);
                 var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
                     _ti =>{ WorkflowStep = "1 Wait Start";
@@ -1918,8 +1923,8 @@ namespace HedgeHog.Alice.Store {
                     if (voltDownOk) return exit();
                     if (slopeSign(_ti, null) != slopeSignCurr()) {
                       slopeSign(_ti, slopeSignCurr);
-                      BuyLevel.RateEx = tradeLevelFuncs[LevelBuyBy](RateLast);
-                      SellLevel.RateEx = tradeLevelFuncs[LevelSellBy](RateLast);
+                      BuyLevel.RateEx = TradeLevelFuncs[LevelBuyBy](RateLast, CorridorStats);
+                      SellLevel.RateEx = TradeLevelFuncs[LevelSellBy](RateLast, CorridorStats);
                       if(!tradeSet(_ti, null).Between(SellLevel.Rate, BuyLevel.Rate)){
                         BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
                         return exit();
@@ -1938,7 +1943,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.SmartMove: {
                 #region firstTime
                 if (firstTime) {
-                  Log = new Exception(new { CorridorDistance, UseVoltage, onCanTradeLocal } + "");
+                  Log = new Exception(new { CorridorDistance, CorridorCrossesMaximum } + "");
                   workFlowObservableDynamic.Subscribe();
                   #region onCloseTradeLocal
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
@@ -1956,24 +1961,32 @@ namespace HedgeHog.Alice.Store {
                 //TODO: Move trade lines only if closer to Rates(High/Low)
                 //TODO: Skewness
                 //TODO: [Corridor by Volts Summ]
-                var voltLast = CorridorStats.Rates.Select(GetVoltage).SkipWhile(Lib.IsNaN).DefaultIfEmpty(double.NaN).First();
-                var voltUpOk = voltLast >= GetVoltageHigh();
-                var voltDownOk = voltLast <= GetVoltageAverage();
-                reverseStrategy.SetValue(ReverseStrategy);
-                var slopeSignCurr = CorridorStats.Slope.Sign();
-                var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                {
+                  var voltLast = CorridorStats.Rates.Select(GetVoltage).SkipWhile(Lib.IsNaN).DefaultIfEmpty(double.NaN).First();
+                  var voltUpOk = !UseVoltage || voltLast >= GetVoltageHigh();
+                  var voltDownOk = !UseVoltage || voltLast <= GetVoltageAverage();
+                  var corridorOk = CorridorStats.Rates.Count > CorridorDistance;
+                  var canStartCorridor = voltDownOk && corridorOk;
+                  var canStartTrade = voltUpOk && !corridorOk;
+                  reverseStrategy.SetValue(ReverseStrategy);
+                  var slopeSignCurr = CorridorStats.Slope.Sign();
+                  Func<bool> tooFar = () => CurrentEnterPrice(null).Abs(_buySellLevels.Average(sr => sr.Rate)) > BuyLevel.Rate.Abs(SellLevel.Rate) * 2;
+                  var slopeSign = WFD.Make<int>("slopeSign");
+                  var corridorSet = WFD.Make<bool>("corridorSet");
+                  var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   _ti =>{ WorkflowStep = "1 Wait corridorOk";
-                    if(ReverseStrategy)
+                    if(tooFar())
                       _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    if( voltDownOk){
-                      _ti.D().slopeSign = slopeSignCurr;
-                      _ti.D().corridorSet = false;
-                      _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if( canStartCorridor){
+                      slopeSign(_ti, () => slopeSignCurr);
+                      corridorSet(_ti, () => false);
+                      if (!CurrentEnterPrice(null).Between(SellLevel.Rate, BuyLevel.Rate))
+                        _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                       Action<Action<Trade>> us = hh => onOpenTradeLocal.UnSubscribe(hh, d => onOpenTradeLocal -= d);
                       var ol = WorkflowMixin.YAction<Trade>(h => {
                         return t => {
                           us(h);
-;                          _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                          Log = new Exception("Trade opened");
                         };
                       });
                       onOpenTradeLocal += ol;
@@ -1982,24 +1995,78 @@ namespace HedgeHog.Alice.Store {
                       return WFD.tupleNext(_ti);
                     }else return WFD.tupleStay(_ti);
                   },_ti =>{ WorkflowStep = "2 Wait !corridorOk";
-                    if (voltUpOk){
-                      if(_ti.D().corridorSet)
+                    if (canStartTrade){
+                      if(corridorSet(_ti))
                         _buySellLevelsForEach(sr => sr.CanTradeEx = true);
-                      return WFD.tupleCancel(_ti);
+                      return WFD.tupleBreak(_ti);
                     }
-                    if (_ti.D().slopeSign != slopeSignCurr) {
-                      _ti.D().slopeSign = slopeSignCurr;
-                      BuyLevel.RateEx = tradeLevelFuncs[LevelBuyBy](RateLast);
-                      SellLevel.RateEx = tradeLevelFuncs[LevelSellBy](RateLast);
+                    if (slopeSign(_ti) != slopeSignCurr) {
+                      slopeSign(_ti, () => slopeSignCurr);
+                      corridorSet(_ti, () => true);
+                      BuyLevel.RateEx = TradeLevelFuncs[LevelBuyBy](RateLast, CorridorStats);
+                      SellLevel.RateEx = TradeLevelFuncs[LevelSellBy](RateLast, CorridorStats);
                     }
                     return WFD.tupleStay(_ti);
-                  },_ti =>{ WorkflowStep = "3 Set CanTrade";
-                  if (_ti.D().corridorSet) { 
-                    var canTrade = TradingAngleRange == 0 || !ReverseStrategy;
-                    BuyLevel.CanTradeEx = CorridorStats.Slope > 0 || canTrade;
-                    SellLevel.CanTradeEx = CorridorStats.Slope < 0 || canTrade;
                   }
-                    return WFD.tupleNext(_ti);
+                };
+                  workflowSubjectDynamic.OnNext(wfManual);
+                }
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+
+            #region TradeLevels
+            case TrailingWaveMethod.TradeLevels: {
+                #region firstTime
+                if (firstTime) {
+                  Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
+                  workFlowObservableDynamic.Subscribe();
+                  #region onCloseTradeLocal
+                  onCanTradeLocal = canTrade => canTrade || Trades.Any();
+                  onCloseTradeLocal += t => {
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                    if (CurrentGrossInPipTotal > 0) {
+                      if (!IsInVitualTrading) IsTradingActive = false;
+                      BroadcastCloseAllTrades();
+                    }
+                  };
+                  #endregion
+                }
+                #endregion
+              }
+              {
+                Action<bool> setTradingLevels = canTrade => {
+                  BuyLevel.RateEx = getTradeLevel(RateLast, true, BuyLevel.Rate);
+                  SellLevel.RateEx = getTradeLevel(RateLast, false, SellLevel.Rate);
+
+                  var ct = canTrade || calcAngleOk() && calcCorrOk(WaveStDevRatio);
+                  _buySellLevels.Where(sr => 
+                    sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
+                    sr.IsSell && LevelSellBy != TradeLevelBy.None)
+                    .ForEach(sr => sr.CanTradeEx = ct);
+                };
+                var slopeSignCurr = RateLast.PriceAvg.Sign(RateLast.PriceAvg1);
+                var slopeSign = WFD.Make<int>("slopeSign");
+                var canTradeByCurrPrice = new[]{
+                  Lazy.Create( ()=> RateLast.PriceAvg > GetTradeCloseLevel(RateLast, true)),
+                  Lazy.Create( ()=> RateLast.PriceAvg < GetTradeCloseLevel(RateLast, false))};
+                var canSetTrade = new[]{
+                  Lazy.Create( ()=>Trades.HaveBuy() && LevelBuyCloseBy == TradeLevelBy.PriceAvg2),
+                  Lazy.Create( ()=>Trades.HaveSell() && LevelSellCloseBy == TradeLevelBy.PriceAvg3)};
+                var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                  _ti =>{ WorkflowStep = "1 Wait corridorOk";
+                    if (
+                      (slopeSign(_ti,null,()=>slopeSignCurr) != slopeSignCurr).Yield()
+                      .Concat(canTradeByCurrPrice.Select(f => f.Value))
+                      .Concat(canSetTrade.Select(f => f.Value))
+                      .Any(b=>b)
+                      ) {
+                      slopeSign(_ti, () => slopeSignCurr);
+                      setTradingLevels(canTradeByCurrPrice.Any(l => l.Value));
+                    }
+                    return WFD.tupleStay(_ti);
                   }
                 };
                 workflowSubjectDynamic.OnNext(wfManual);
@@ -2039,7 +2106,7 @@ namespace HedgeHog.Alice.Store {
                 var slopeSign = WF.DictValue<int>("slopeSign");
                 var tradeSet = WF.DictValue<double>("tradeSet");
                 Action setTradeLevels = () => {
-                  Func<TradeLevelBy, IEnumerable<double>> getLevel = tlb => CorridorStats.Rates.Select(r => tradeLevelFuncs[tlb](r)).Where(Lib.IsNotNaN);
+                  Func<TradeLevelBy, IEnumerable<double>> getLevel = tlb => CorridorStats.Rates.Select(r => TradeLevelFuncs[tlb](r, CorridorStats)).Where(Lib.IsNotNaN);
                   BuyLevel.RateEx = getLevel(LevelBuyBy).Max();
                   SellLevel.RateEx = getLevel(LevelSellBy).Min();
                 };
@@ -2062,8 +2129,8 @@ namespace HedgeHog.Alice.Store {
                     if (voltDownOk) return exit();
                     if (slopeSign(_ti, null) != slopeSignCurr()) {
                       slopeSign(_ti, slopeSignCurr);
-                      BuyLevel.RateEx = tradeLevelFuncs[LevelBuyBy](RateLast);
-                      SellLevel.RateEx = tradeLevelFuncs[LevelSellBy](RateLast);
+                      BuyLevel.RateEx = TradeLevelFuncs[LevelBuyBy](RateLast, CorridorStats);
+                      SellLevel.RateEx = TradeLevelFuncs[LevelSellBy](RateLast, CorridorStats);
                       if(!tradeSet(_ti, null).Between(SellLevel.Rate, BuyLevel.Rate)){
                         BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
                         return exit();
@@ -2799,7 +2866,7 @@ namespace HedgeHog.Alice.Store {
     IList<Rate> CorridorByVerticalLineCrosses(IList<Rate> rates, int lengthMin, out double levelOut) {
       Func<double, Tuple<Rate, Rate>, bool> isOk = (l, t) => l.Between(t.Item1.PriceAvg, t.Item2.PriceAvg);
       IList<Tuple<Rate, Rate>> ratesFused = rates.Zip(rates.Skip(1), (f, s) => new Tuple<Rate, Rate>(f, s)).ToArray();
-      var maxIntervals = new { span = TimeSpan.Zero, level = double.NaN }.IEnumerable().ToList();
+      var maxIntervals = new { span = TimeSpan.Zero, level = double.NaN }.Yield().ToList();
       var height = rates.Take(lengthMin).Height();
       var levelMIn = rates.Take(lengthMin).Min(t => t.PriceAvg);
       var levels = Enumerable.Range(1, InPips(height).ToInt() - 1).Select(i => levelMIn + InPoints(i)).ToArray();
@@ -2845,7 +2912,7 @@ namespace HedgeHog.Alice.Store {
       var rates = ratesOriginal.Select((rate, index) => new { index, rate }).ToArray();
       Func<double, Rate, Rate, bool> isOk = (l, Item1, Item2) => l.Between(price(Item1), price(Item2));
       var ratesFused = rates.Zip(rates.Skip(1), (f, s) => new { f.index, Item1 = f.rate, Item2 = s.rate }).ToArray();
-      var maxIntervals = new { length = 0, level = double.NaN }.IEnumerable().ToList();
+      var maxIntervals = new { length = 0, level = double.NaN }.Yield().ToList();
       var height = rates.Take(lengthMin).Height(a => price(a.rate));
       var levelMIn = rates.Take(lengthMin).Min(t => price(t.rate));
       var levels = Enumerable.Range(1, InPips(height).ToInt() - 1).Select(i => levelMIn + InPoints(i)).ToArray();

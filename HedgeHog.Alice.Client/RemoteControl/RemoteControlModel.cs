@@ -1093,8 +1093,9 @@ namespace HedgeHog.Alice.Client {
             .Concat(tm.FractalTimes.Where(_ => !tm.CanShowNews));
           charter.DrawNewsTimes(times.ToArray());
           var tradeTime = tm.DoShowTradeOnChart ? tm.Trades.Select(t => t.Time).DefaultIfEmpty(tm.LastTrade.TimeClose).Where(d => !d.IsMin()) : new DateTime[0];
-          charter.DrawTradeTimes(tradeTime);
 
+          charter.DrawLevelUpLines(tm.ChartLevelsUp);
+          charter.DrawTradeTimes(tradeTime);
           charter.DrawLevels(tm.CenterOfMassLevels);
         } catch (Exception exc) {
           Log = exc;

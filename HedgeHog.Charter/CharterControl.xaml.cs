@@ -45,12 +45,15 @@ using HedgeHog.Metadata;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
+  static class extensions {
+  }
   /// <summary>
   /// Interaction logic for CharterControl.xaml
   /// </summary>
-  public partial class CharterControl : Models.UserControlModel{
+  public partial class CharterControl : Models.UserControlModel {
     public enum MessageType { Add, Remove }
-    public CharterControl():this("",null) {
+    public CharterControl()
+      : this("", null) {
     }
     public class ColorPalette {
       public string BackgroundDefault { get; set; }
@@ -61,14 +64,14 @@ namespace HedgeHog {
       public string LevelSell { get; set; }
       public string BackgroundComposite { get { return BackgroundNotActive + "|" + BackgroundNotActive + "|" + BackgroundDefault; } }
     }
-    static ColorPalette ColorPaletteDefault =       new ColorPalette(){
-        BackgroundDefault="#FFF7F3F7",
-        BackgroundNotActive = "#44F75D59",
-        GraphBuy  = "DarkGreen",
-        GraphSell = "DarkRed",
-        LevelBuy = "DarkRed",
-        LevelSell = "Navy"
-      };
+    static ColorPalette ColorPaletteDefault = new ColorPalette() {
+      BackgroundDefault = "#FFF7F3F7",
+      BackgroundNotActive = "#44F75D59",
+      GraphBuy = "DarkGreen",
+      GraphSell = "DarkRed",
+      LevelBuy = "DarkRed",
+      LevelSell = "Navy"
+    };
 
     List<ColorPalette> ColorPaletteList = new List<ColorPalette>() { ColorPaletteDefault };
 
@@ -108,7 +111,7 @@ namespace HedgeHog {
         }
       }
     }
-    
+
     #endregion
 
     #region Attached Properties
@@ -173,7 +176,7 @@ namespace HedgeHog {
         DependencyProperty.Register("IsParentHidden",
         typeof(bool),
         typeof(CharterControl), null
-        //new UIPropertyMetadata((d, p) => ((CharterControl)d).IsParentHidden = (bool)p.NewValue)
+      //new UIPropertyMetadata((d, p) => ((CharterControl)d).IsParentHidden = (bool)p.NewValue)
         );
 
     private int _barsPeriod;
@@ -216,7 +219,7 @@ namespace HedgeHog {
 
     public bool IsActive {
       get { return (bool)GetValue(IsActiveProperty); }
-      set { 
+      set {
         SetValue(IsActiveProperty, value);
       }
     }
@@ -318,7 +321,7 @@ namespace HedgeHog {
     static Color priceLineGraphColorSell = Colors.DarkRed;
     bool? isBuyOrSell;
     public void SetPriceLineColor(bool? isBuyOrSell) {
-      if (PriceLineGraph!=null && this.isBuyOrSell != isBuyOrSell) {
+      if (PriceLineGraph != null && this.isBuyOrSell != isBuyOrSell) {
         GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
           PriceLineGraph.LinePen.Brush = new SolidColorBrush(isBuyOrSell.HasValue ? isBuyOrSell.Value ? priceLineGraphColorBuy : priceLineGraphColorSell : priceLineGraphColorAsk);
           if (PriceLineGraphBid != null)
@@ -340,10 +343,12 @@ namespace HedgeHog {
         return _voltageHigh;
       }
     }
-    public double VoltageHigh { set { 
-      voltageHigh.Value = value;
-      voltageHigh.ToolTip = value;
-    } }
+    public double VoltageHigh {
+      set {
+        voltageHigh.Value = value;
+        voltageHigh.ToolTip = value;
+      }
+    }
 
     HorizontalLine _voltageAverage;
     HorizontalLine voltageAverage {
@@ -362,7 +367,7 @@ namespace HedgeHog {
         voltageAverage.ToolTip = value;
       }
     }
-    
+
     HorizontalLine lineMax = new HorizontalLine() { Stroke = new SolidColorBrush(Colors.DarkOrange), StrokeThickness = 1 };
     public double LineMax { set { lineMax.Value = value; } }
 
@@ -387,7 +392,7 @@ namespace HedgeHog {
 
     private bool _DoShowCenterOfMass;
     public bool DoShowCenterOfMass {
-      get { return true|| _DoShowCenterOfMass; }
+      get { return true || _DoShowCenterOfMass; }
       set {
         if (_DoShowCenterOfMass != value) {
           _DoShowCenterOfMass = value;
@@ -517,7 +522,7 @@ namespace HedgeHog {
             _lineTimeMiddle.SetAnchor(_lineTimeMiddleDraggablePoint = new DraggablePoint() { Visibility = Visibility.Visible });
             _lineTimeMiddle.SetBinding(VerticalLine.StrokeThicknessProperty, new Binding("IsMouseOver") { Source = _lineTimeMiddle, Converter = BoolToSrtingConverter.Default, ConverterParameter = "1|1|3" });
             _lineTimeMiddle.MouseLeftButtonDown += (s, e) => {
-              _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddleDraggablePoint.Visibility == Visibility.Visible 
+              _lineTimeMiddleDraggablePoint.Visibility = _lineTimeMiddleDraggablePoint.Visibility == Visibility.Visible
                 ? Visibility.Collapsed : Visibility.Visible;
             };
             _lineTimeMiddleDraggablePoint.PositionChanged += _lineTimeMiddleDraggablePoint_PositionChanged;
@@ -595,11 +600,11 @@ namespace HedgeHog {
     public DateTime LineTimeTakeProfit1 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit1.Value = dateAxis.ConvertToDouble(value)); }
     }
-    VerticalLine lineTimeTakeProfit2 = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    VerticalLine lineTimeTakeProfit2 = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
     public DateTime LineTimeTakeProfit2 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit2.Value = dateAxis.ConvertToDouble(value)); }
     }
-    VerticalLine lineTimeTakeProfit3 = new VerticalLine() {  StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
+    VerticalLine lineTimeTakeProfit3 = new VerticalLine() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.LimeGreen) };
     public DateTime LineTimeTakeProfit3 {
       set { GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => lineTimeTakeProfit3.Value = dateAxis.ConvertToDouble(value)); }
     }
@@ -625,13 +630,13 @@ namespace HedgeHog {
     public void SetTrendLines(Rate[] rates) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 =  rates;
+        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = rates;
         var rateLast = rates.LastBC();
         var timeHigh = rateLast.StartDateContinuous;
         var corridorTime = rateLast.StartDate;
         lineTimeMax.ToolTip = corridorTime;
         if (!CorridorStartPointX.IsMouseCaptured) {
-          CorridorStartPointX.Position = 
+          CorridorStartPointX.Position =
             new Point(dateAxis.ConvertToDouble(timeHigh), _trendLinesY = rates.Min(r => r.PriceAvg) + (_trendLinesH = rates.Height()) / 2);
           CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");
         }
@@ -652,7 +657,7 @@ namespace HedgeHog {
     double[] TrendLineMA {
       set {
         trendLineMA.StartPoint = new Point(ConvertToDouble(animatedTimeX.FirstOrDefault()), value[0]);
-        trendLineMA.EndPoint= new Point(ConvertToDouble(animatedTimeX.LastOrDefault()), value.Last());
+        trendLineMA.EndPoint = new Point(ConvertToDouble(animatedTimeX.LastOrDefault()), value.Last());
       }
     }
     Segment trendLine = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
@@ -872,14 +877,80 @@ namespace HedgeHog {
     }
 
     #region Reactive Lines
-    void InitVLines<TLine>(ReactiveList<DateTime> times, ReactiveList<TLine> lines, Color color, Func<DateTime, string> tooltip, double[] strokeArray = null, double strokeThickness = double.NaN,double opacity=double.NaN) where TLine : SimpleLine, new() {
-      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt => 
-        OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip,opacity));
+    #region Horizontal
+    void InitHLines<TLine>(ReactiveList<double> levels
+      , ReactiveList<TLine> lines
+      , Color color
+      , Func<double, string> tooltip
+      , double[] strokeArray = null
+      , double strokeThickness = double.NaN
+      , double opacity = double.NaN) where TLine : SimpleLine, new() {
+      levels.ItemsAdded.ObserveOnDispatcher().Subscribe(dt =>
+        OnOtherLevelAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip, opacity));
+      levels.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherLevelRemoved(dt, lines));
+
+      lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
+      lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
+    }
+    void OnOtherLevelAdded<TLine>(double level, ReactiveList<TLine> otherHLines, Color color, double[] strokeArray, double strokeThickness, Func<double, string> tooltip, double opacity = double.NaN) where TLine : SimpleLine, new() {
+      try {
+        var vl = new TLine() {
+          Value = level,
+          Stroke = new SolidColorBrush(color),
+          StrokeThickness = 2,
+          ToolTip = tooltip(level),
+          Opacity = opacity.IfNaN(strokeThickness > 1 ? .75 : 1)
+        };
+        otherHLines.Add(vl);
+      } catch (Exception exc) {
+        LogMessage.Send(exc);
+      }
+    }
+    static void OnOtherLevelRemoved<TLine>(double level, ReactiveList<TLine> otherHLines) where TLine : SimpleLine, new() {
+      try {
+        var vl = otherHLines.SingleOrDefault(l => l.Value == level);
+        if (vl != null) otherHLines.Remove(vl);
+      } catch (Exception exc) {
+        LogMessage.Send(exc);
+      }
+    }
+    private static DateTime NewMethod(VerticalLine l) {
+      return GetTime(l);
+    }
+    void DrawHorizontalLines(IEnumerable<double> levels, ReactiveList<double> otherTimes, ReactiveList<HorizontalLine> hLines) {
+      levels = levels.Distinct().Where(IsLevelInChartRange).ToArray();
+      otherTimes.RemoveAll(ot => !levels.Contains(ot));
+      otherTimes.AddRange(levels.Except(otherTimes).Take(4));
+      otherTimes.ToList().ForEach(level => {
+        var line = hLines.SingleOrDefault(l => l.Value == level);
+        if (line != null) {
+          var value = level;
+          if (line.Value != value) line.Value = value;
+        }
+      });
+    }
+    private bool IsLevelInChartRange(double level) {
+      if (animatedPriceY == null || !animatedPriceY.Any()) return false;
+      var dateStart = animatedPriceY.Max();
+      var dateEnd = animatedPriceY.Min();
+      return level.Between(dateStart, dateEnd);
+    }
+    #endregion
+    #region Vertical
+    void InitVLines<TLine>(ReactiveList<DateTime> times
+      , ReactiveList<TLine> lines
+      , Color color
+      , Func<DateTime, string> tooltip
+      , double[] strokeArray = null
+      , double strokeThickness = double.NaN
+      , double opacity = double.NaN) where TLine : SimpleLine, new() {
+      times.ItemsAdded.ObserveOnDispatcher().Subscribe(dt =>
+        OnOtherTimeAdded(dt, lines, color, strokeArray ?? new[] { 2.0, 3, 4, 3 }, strokeThickness.IfNaN(2), tooltip, opacity));
       times.ItemsRemoved.ObserveOnDispatcher().Subscribe(dt => OnOtherTimeRemoved(dt, lines));
       lines.ItemsRemoved.ObserveOnDispatcher().Subscribe(item => plotter.Children.Remove(item));
       lines.ItemsAdded.ObserveOnDispatcher().Subscribe(item => plotter.Children.Add(item));
     }
-    void OnOtherTimeAdded<TLine>(DateTime date,ReactiveList<TLine> otherVLines,Color color,double[] strokeArray,double strokeThickness , Func<DateTime,string> tooltip,double opacity = double.NaN)where TLine:SimpleLine,new() {
+    void OnOtherTimeAdded<TLine>(DateTime date, ReactiveList<TLine> otherVLines, Color color, double[] strokeArray, double strokeThickness, Func<DateTime, string> tooltip, double opacity = double.NaN) where TLine : SimpleLine, new() {
       try {
         var vl = new TLine() {
           Value = dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)), StrokeDashArray = new DoubleCollection(strokeArray),
@@ -908,18 +979,6 @@ namespace HedgeHog {
         LogMessage.Send(exc);
       }
     }
-    void DrawVertivalLines(IEnumerable<DateTime> times, ReactiveList<DateTime> otherTimes, ReactiveList<VerticalLine> timesVLines) {
-      times = times.Distinct().Where(IsDateInChartRange).ToArray();
-      otherTimes.RemoveAll(ot => !times.Contains(ot));
-      otherTimes.AddRange(times.Except(otherTimes).Take(4));
-      otherTimes.ToList().ForEach(time => {
-        var line = timesVLines.SingleOrDefault(l => GetTime(l) == time);
-        if (line != null) {
-          var value = ConvertStartDateToContiniousDouble(time);
-          if (line.Value != value) line.Value = value;
-        }
-      });
-    }
     private bool IsDateInChartRange(DateTime date) {
       if (animatedTime0X == null || !animatedTime0X.Any()) return false;
       var dateStart = animatedTime0X[0];
@@ -927,6 +986,42 @@ namespace HedgeHog {
       return date.Between(dateStart, dateEnd);
     }
     #endregion
+    #endregion
+
+    #region LevelsUp
+    ReactiveList<HorizontalLine> LevelUpHLines = new ReactiveList<HorizontalLine>();
+    private ReactiveList<double> _LevelsUp;
+    public ReactiveList<double> LevelsUp {
+      get {
+        if (_LevelsUp == null) {
+          _LevelsUp = new ReactiveList<double>();
+          InitHLines(LevelsUp, LevelUpHLines, Colors.MediumPurple, d => "LevelUp @ {0:g}".Formater(d), new[] { 2.0, 6, 2, 6 }, 1);
+        }
+        return _LevelsUp;
+      }
+    }
+    public void DrawLevelUpLines(IList<double> levels) { DrawHorizontalLines(levels, LevelsUp, LevelUpHLines); }
+    #endregion
+    Action<IEnumerable<DateTime>> DrawDateLinesFunctor(ReactiveList<DateTime> values, ReactiveList<VerticalLine> lines) {
+      return times => DrawLines(times, IsDateInChartRange, GetTime, ConvertStartDateToContiniousDouble, values, lines);
+    }
+    void DrawLines(IEnumerable<DateTime> times
+  , Func<DateTime, bool> isInRange
+  , Func<DependencyObject, DateTime> getValue
+  , Func<DateTime, double> converter
+  , ReactiveList<DateTime> otherTimes
+  , ReactiveList<VerticalLine> timesVLines) {
+      times = times.Distinct().Where(isInRange).ToArray();
+      otherTimes.RemoveAll(ot => !times.Contains(ot));
+      otherTimes.AddRange(times.Except(otherTimes).Take(4));
+      otherTimes.ForEach(time => {
+        var line = timesVLines.SingleOrDefault(l => getValue(l) == time);
+        if (line != null) {
+          var value = converter(time);
+          if (line.Value != value) line.Value = value;
+        }
+      });
+    }
 
     #region NewsTimes
     ReactiveList<DateTime> _NewsTimes;
@@ -940,7 +1035,9 @@ namespace HedgeHog {
       }
     }
     ReactiveList<VerticalLine> NewsTimesVLines = new ReactiveList<VerticalLine>();
-    public void DrawNewsTimes(IList<DateTime> times) { DrawVertivalLines(times, NewsTimes, NewsTimesVLines); }
+    public Action<IEnumerable<DateTime>> DrawNewsTimes {
+      get { return DrawDateLinesFunctor(NewsTimes, NewsTimesVLines); }
+    }
     #endregion
 
     #region Trade Times
@@ -955,9 +1052,11 @@ namespace HedgeHog {
       }
     }
     ReactiveList<VerticalLine> TradeTimesVLines = new ReactiveList<VerticalLine>();
-    public void DrawTradeTimes(IEnumerable<DateTime> times) { DrawVertivalLines(times, TradeTimes, TradeTimesVLines); }
+    public Action<IEnumerable<DateTime>> DrawTradeTimes {
+      get { return DrawDateLinesFunctor(TradeTimes, TradeTimesVLines); }
+    }
     #endregion
-  
+
     #region NYTimes
     ReactiveList<VerticalRange> _NYSessions;
     public ReactiveList<VerticalRange> NYSessions {
@@ -965,7 +1064,7 @@ namespace HedgeHog {
         if (_NYSessions == null) {
           _NYSessions = new ReactiveList<VerticalRange>();
           _NYSessions.ItemsAdded.ObserveOnDispatcher().Subscribe(vr => {
-            InitSessionVerticalRange(vr, Colors.RoyalBlue,0.075);
+            InitSessionVerticalRange(vr, Colors.RoyalBlue, 0.075);
           });
           _NYSessions.ItemsRemoved.ObserveOnDispatcher().Subscribe(vr => plotter.Children.Remove(vr));
         }
@@ -984,7 +1083,7 @@ namespace HedgeHog {
     }
     ReactiveList<VerticalLine> NYTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawNYTimes(IList<DateTime> times) {
-      DrawVertivalLines(times, NYTimes, NYTimesVLines);
+      DrawDateLinesFunctor(NYTimes, NYTimesVLines)(times);
       SetVerticalRanges(times, NYSessions);
     }
     #endregion
@@ -1008,14 +1107,14 @@ namespace HedgeHog {
       get {
         if (_LondonTimes == null) {
           _LondonTimes = new ReactiveList<DateTime>();
-          InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d),null,double.NaN,0.04);
+          InitVLines(LondonTimes, LondonTimesVLines, Colors.MediumVioletRed, d => "London Forex @ {0:g}".Formater(d), null, double.NaN, 0.04);
         }
         return _LondonTimes;
       }
     }
     ReactiveList<VerticalLine> LondonTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawLindonTimes(IList<DateTime> times) {
-      DrawVertivalLines(times, LondonTimes, LondonTimesVLines);
+      DrawDateLinesFunctor(LondonTimes, LondonTimesVLines)(times);
       SetVerticalRanges(times, LondonSessions);
     }
 
@@ -1047,10 +1146,10 @@ namespace HedgeHog {
     }
     ReactiveList<VerticalLine> TokyoTimesVLines = new ReactiveList<VerticalLine>();
     public void DrawTokyoTimes(IList<DateTime> times) {
-      DrawVertivalLines(times, TokyoTimes, TokyoTimesVLines);
+      DrawDateLinesFunctor(TokyoTimes, TokyoTimesVLines)(times);
       SetVerticalRanges(times, tokyoSessions);
     }
-    #endregion  
+    #endregion
     private void SetVerticalRanges(IList<DateTime> times, ReactiveList<VerticalRange> vRanges) {
       var timePairs = times.Clump(2);
       while (vRanges.Count < timePairs.Count())
@@ -1062,7 +1161,7 @@ namespace HedgeHog {
         .Subscribe(a =>
           SetVerticalRange(vRanges[a.i], a.timePair.TakeLast(2).First(), a.timePair.Last()));
     }
-    private void InitSessionVerticalRange(VerticalRange vr, Color fillColor,double opacity) {
+    private void InitSessionVerticalRange(VerticalRange vr, Color fillColor, double opacity) {
       vr.Fill = new SolidColorBrush(fillColor);
       vr.StrokeThickness = 0;
       vr.Opacity = opacity;
@@ -1096,7 +1195,7 @@ namespace HedgeHog {
       public DraggablePoint DraggablePoint { get; set; }
       public IDisposable MouseClickObserver { get; set; }
       //public ObservableValue<double> TradesCount { get; set; }
-      public DraggablePointInfo(DraggablePoint dp,object dataContext) {
+      public DraggablePointInfo(DraggablePoint dp, object dataContext) {
         this.DraggablePoint = dp;
         this.DataContext = dataContext;
       }
@@ -1188,7 +1287,7 @@ namespace HedgeHog {
         var uid = suppRes.Key;
         var rate = suppRes.Value.Rate;
         SetTradingRange(suppRes.Value.DataContext, rate);
-        
+
         Dictionary<Guid, DraggablePointInfo> rates = isBuy ? BuyRates : SellRates;
         if (!rates.ContainsKey(uid)) {
           string anchorTemplateName = "DraggArrow" + (isBuy ? "Up" : "Down");
@@ -1418,7 +1517,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       dateAxis.LabelProvider.SetCustomFormatter(info => {
         DifferenceIn differenceIn = (DifferenceIn)info.Info;
         if (differenceIn == DifferenceIn.Hour) {
-            return info.Tick.ToString("H:");
+          return info.Tick.ToString("H:");
         }
         return null;
       });
@@ -1454,7 +1553,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         animatedDataSource.SetYMapping(y => y);
         this.PriceLineGraph = plotter.AddLineGraph(new CompositeDataSource(xSrc, animatedDataSource), priceLineGraphColorAsk, 1, "");
         this.PriceLineGraph.Description.LegendItem.Visibility = System.Windows.Visibility.Collapsed;
-        
+
         if (true) {
           animatedDataSourceBid = new EnumerableDataSource<double>(animatedPriceBidY);
           animatedDataSourceBid.SetYMapping(y => y);
@@ -1494,7 +1593,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVolt1DataSource = new EnumerableDataSource<double>(animatedVolt1ValueY);
         animatedVolt1DataSource.SetYMapping(y => y);
-        var lg = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVolt1DataSource), new Color() {A=255, R = 140, G = 170, B = 210 }, 1, "");
+        var lg = innerPlotter.AddLineGraph(new CompositeDataSource(xSrc, animatedVolt1DataSource), new Color() { A = 255, R = 140, G = 170, B = 210 }, 1, "");
         lg.Description.LegendItem.Visibility = Visibility.Collapsed;
         //lg.Opacity = .25;
         //innerPlotter.Children.Remove(plotter.Children.OfType<HorizontalAxis>().Single());
@@ -1545,7 +1644,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       plotter.Children.Add(lineTimeMax);
       plotter.Children.Add(CorridorStartPointX);
       LineToPoint.Add(lineTimeMax, CorridorStartPointX);
-      
+
       plotter.Children.Add(lineTimeAvg);
       plotter.Children.Add(CorridorStopPointX);
       LineToPoint.Add(lineTimeAvg, CorridorStopPointX);
@@ -1607,7 +1706,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         }
       }
     }
-    
+
     #endregion
     class SegmentEx : Segment {
       protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e) {
@@ -1637,8 +1736,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         TradeLineChangedEvent -= value;
       }
     }
-    protected void RaiseTradeLineChanged(double xNow,double xPrevious) {
-      if (TradeLineChangedEvent != null) TradeLineChangedEvent(this, new PositionChangedBaseEventArgs<double>(xNow,xPrevious));
+    protected void RaiseTradeLineChanged(double xNow, double xPrevious) {
+      if (TradeLineChangedEvent != null) TradeLineChangedEvent(this, new PositionChangedBaseEventArgs<double>(xNow, xPrevious));
     }
     #endregion
 
@@ -1733,7 +1832,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       }
     }
     protected void RaisePlotterKeyDown(Key key) {
-      if (PlotterKeyDownEvent != null) PlotterKeyDownEvent(this,new PlotterKeyDownEventArgs(key));
+      if (PlotterKeyDownEvent != null) PlotterKeyDownEvent(this, new PlotterKeyDownEventArgs(key));
     }
     #endregion
 
@@ -1745,9 +1844,9 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         switch (e.Key) {
           case Key.H:
             try { FitToView(); } catch { }
-            break; 
+            break;
           default:
-            if(e.Key == Key.C)
+            if (e.Key == Key.C)
               ResetTradeLinePosition();
             RaisePlotterKeyDown(e.Key); break;
         }
@@ -1767,8 +1866,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       var x = animatedTime0X.OrderBy(d => (d - startDate).Duration()).First();
       return animatedTimeX[animatedTime0X.IndexOf(x)];
     }
-    double ConvertStartDateToContiniousDouble(DateTime date){
-      return dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date)) ;
+    double ConvertStartDateToContiniousDouble(DateTime date) {
+      return dateAxis.ConvertToDouble(GetPriceStartDateContinuous(date));
     }
     Schedulers.ThreadScheduler corridorStartDateScheduler;
     void CorridorStopPointX_IsMouseCapturedChanged(object sender, DependencyPropertyChangedEventArgs e) {
@@ -2030,7 +2129,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         } finally {
           try {
             //GannLine = ratesforTrend;
-            if ( false && viewPortContainer.Visibility == Visibility.Visible) {
+            if (false && viewPortContainer.Visibility == Visibility.Visible) {
               double[] doubles = new double[animatedPriceY.Count];
               animatedPriceY.CopyTo(doubles);
               var animatedPriceYMax = animatedPriceY.Max();
@@ -2128,7 +2227,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     #endregion
 
 
-    private void _SetLastPoint(double high,double low, double ma, Rate rateLast) {
+    private void _SetLastPoint(double high, double low, double ma, Rate rateLast) {
       try {
         if (animatedPriceY.Any()) {
           SetPoint(animatedPriceY.Count - 1, high, low, ma, rateLast);

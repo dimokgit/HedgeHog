@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog {
+  public static class Lazy {
+    public static Lazy<T> Create<T>(Func<T> func) { return new Lazy<T>(func); }
+  }
   public static class LazyExtensions {
     public static Lazy<TResult> Select<T, TResult>(this Lazy<T> lazy, Func<T, TResult> selector) {
       return new Lazy<TResult>(() => selector(lazy.Value));

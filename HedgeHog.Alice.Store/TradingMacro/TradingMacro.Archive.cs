@@ -176,5 +176,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    List<double> _ChartLevelsUp = new List<double>();
+    public IList<double> ChartLevelsUp { get { return _ChartLevelsUp; } }
   }
 }

@@ -37,7 +37,7 @@ namespace HedgeHog.Bars {
 
   public static class Extensions {
 
-    public static IList<TBar> FindWave<TBar>(this IList<IList<TBar>> waves, IList<TBar> wave) where TBar: BarBase {
+    public static IList<TBar> FindWave<TBar>(this IList<IList<TBar>> waves, IList<TBar> wave) where TBar : BarBase {
       if (wave == null || wave.Count == 0) return null;
       var start = waves.SkipWhile(w => w[0] > wave[0]).ToArray();
       return start.TakeWhile(w => w.LastBC() <= wave.LastBC()).DefaultIfEmpty(start.FirstOrDefault() ?? waves[0]).OrderByDescending(w => w.MaxStDev()).First();
@@ -60,7 +60,7 @@ namespace HedgeHog.Bars {
     /// <param name="bars"></param>
     /// <returns></returns>
     public static IList<TBar> ReverseIfNot<TBar>(this IList<TBar> bars) where TBar : BarBaseDate {
-      return bars[bars.Count()-1].StartDate > bars[0].StartDate? bars.Reverse().ToArray():bars;
+      return bars[bars.Count() - 1].StartDate > bars[0].StartDate ? bars.Reverse().ToArray() : bars;
     }
     public static IList<TBar> UnReverseIfIs<TBar>(this IList<TBar> bars) where TBar : BarBaseDate {
       return bars[bars.Count() - 1].StartDate < bars[0].StartDate ? bars.Reverse().ToArray() : bars;
@@ -105,7 +105,7 @@ namespace HedgeHog.Bars {
       return rates[index - 1];
     }
 
-    public static void SavePairCsv<TBar>(this ICollection<TBar> bars,string pair) where TBar : Bars.BarBase {
+    public static void SavePairCsv<TBar>(this ICollection<TBar> bars, string pair) where TBar : Bars.BarBase {
       var path = AppDomain.CurrentDomain.BaseDirectory + "\\CSV";
       Directory.CreateDirectory(path);
       File.WriteAllText(path + "\\" + pair.Replace("/", "") + ".csv", bars.Csv());
@@ -113,13 +113,13 @@ namespace HedgeHog.Bars {
     public static void SavePairCsv<TBar>(this ICollection<TBar> bars, string pair, string format, params Func<TBar, object>[] foos) where TBar : Bars.BarBase {
       var path = AppDomain.CurrentDomain.BaseDirectory + "\\CSV";
       Directory.CreateDirectory(path);
-      File.WriteAllText(path + "\\" + pair.Replace("/", "") + ".csv", bars.Csv(format,foos));
+      File.WriteAllText(path + "\\" + pair.Replace("/", "") + ".csv", bars.Csv(format, foos));
     }
     public static string Csv<TBar>(this ICollection<TBar> bars) where TBar : BarBase {
       return string.Join(Environment.NewLine, bars.Select(b => string.Format("{0},{1},{2}", b.StartDate, b.PriceHigh, b.PriceLow)));
     }
-    public static string Csv<TBar>(this ICollection<TBar> bars,string format,params Func<TBar,object>[] foos ) where TBar : BarBase {
-      Func<TBar,object[]> parms = bar=> foos.Select(foo=>foo(bar)).ToArray();
+    public static string Csv<TBar>(this ICollection<TBar> bars, string format, params Func<TBar, object>[] foos) where TBar : BarBase {
+      Func<TBar, object[]> parms = bar => foos.Select(foo => foo(bar)).ToArray();
       return string.Join(Environment.NewLine, bars.Select(b => string.Format(format, parms(b))));
     }
     public static bool IsReversed(this IEnumerable<BarBase> bars) {
@@ -129,7 +129,7 @@ namespace HedgeHog.Bars {
     public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
       bars.SetStartDateForChart(bars.GetPeriod());
     }
-    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars,TimeSpan period) where TBar : BarBaseDate {
+    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars, TimeSpan period) where TBar : BarBaseDate {
       if (period > TimeSpan.Zero) {
         bars = bars.OrderBarsDescending();
         var rateLast = bars.First();
@@ -144,7 +144,7 @@ namespace HedgeHog.Bars {
     public static void SetBidHighToAskLowRatioMA<TBar>(this IList<TBar> bars, int period) where TBar : BarBase {
       bars.SetMA(period, r => r.BidHighAskLowDiference, (r, d) => r.BidHighAskLowDifferenceMA = d);
     }
-    public static void SetMA<TBar>(this IList<TBar> bars, int period,Func<TBar,double> getValue,Action<TBar,double> setValue) where TBar : BarBase {
+    public static void SetMA<TBar>(this IList<TBar> bars, int period, Func<TBar, double> getValue, Action<TBar, double> setValue) where TBar : BarBase {
       for (int i = 0; i < bars.Count; i++) {
         if (i >= period - 1) {
           double total = 0;
@@ -177,15 +177,15 @@ namespace HedgeHog.Bars {
                          group p by p into pg
                          select new { Period = pg.Key, Count = pg.Count() };
       return TimeSpan.FromMinutes(periodGroups.OrderBy(pg => pg.Count).Last().Period);
-                         
+
       //var period = TimeSpan.FromMinutes(periods.ToArray().AverageByIterations((d, a) => d <= a, 3).Average().ToInt());
       //return period;
     }
 
-    public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<TBar, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow)where TBar:BarBase {
+    public static IEnumerable<double> GetPriceForStats<TBar>(this ICollection<TBar> rates, Func<TBar, double> lineGet, Func<TBar, double> priceHigh, Func<TBar, double> priceLow) where TBar : BarBase {
       return rates.Select(r => r.PriceAvg > lineGet(r) ? priceHigh(r) : priceLow(r));
     }
-    public static IEnumerable<double> GetPriceForStats<T>(this ICollection<T> rates,Func<T,double>price, Func<int, double> lineGet, Func<T, double> priceHigh, Func<T, double> priceLow) {
+    public static IEnumerable<double> GetPriceForStats<T>(this ICollection<T> rates, Func<T, double> price, Func<int, double> lineGet, Func<T, double> priceHigh, Func<T, double> priceLow) {
       return rates.Select((r, i) => price(r) > lineGet(i) ? priceHigh(r) : priceLow(r));
     }
 
@@ -203,7 +203,7 @@ namespace HedgeHog.Bars {
       }
     }
     public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<int, double> writeTo) {
-      var coeffs = ticks.Select(readFrom).ToArray().Regress( polyOrder);
+      var coeffs = ticks.Select(readFrom).ToArray().Regress(polyOrder);
       coeffs.SetRegressionPrice(0, ticks.Count(), writeTo);
       return coeffs;
     }
@@ -235,9 +235,9 @@ namespace HedgeHog.Bars {
     }
 
     public static IList<Tuple<TBar, double>> GetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
-      var list = new Tuple<TBar, double>[rates.Count-1];
+      var list = new Tuple<TBar, double>[rates.Count - 1];
       Enumerable.Range(1, rates.Count() - 1).AsParallel()
-        .ForAll(i => list[i-1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
+        .ForAll(i => list[i - 1] = new Tuple<TBar, double>(rates[i], rates.Take(i + 1).Select(r1 => getPrice(r1)).ToArray().StDevP()));
       return list;
     }
     public class ValueHolder<T> {
@@ -306,11 +306,11 @@ namespace HedgeHog.Bars {
       list.SetStDevPrice(getPrice);
       var stDevLast = list.LastBC().PriceStdDev;
       int counter = 0;
-      Func<int, int, List<Tuple<TBar,ValueHolder<double>>>> getWave = (start, count) => {
-        var rates1 = rates.Skip(start).Take(count).Select(r => new Tuple<TBar,ValueHolder<double>>( r,  new ValueHolder<double>(0.0) )).ToArray();
+      Func<int, int, List<Tuple<TBar, ValueHolder<double>>>> getWave = (start, count) => {
+        var rates1 = rates.Skip(start).Take(count).Select(r => new Tuple<TBar, ValueHolder<double>>(r, new ValueHolder<double>(0.0))).ToArray();
         rates1.SetStDevPrice_4(t => getPrice(t.Item1), (t, d) => t.Item2.Value = d);
         var node = rates1.ToLinkedList().First;
-        var rates2 = new List<Tuple<TBar,ValueHolder<double>>> { node.Value };
+        var rates2 = new List<Tuple<TBar, ValueHolder<double>>> { node.Value };
         for (; node.Next != null && node.Value.Item2.Value < node.Next.Value.Item2.Value; node = node.Next)
           rates2.Add(node.Next.Value);
         return rates2;
@@ -350,7 +350,7 @@ namespace HedgeHog.Bars {
       return rates;
     }
 
-    public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice)where TBar:BarBase {
+    public static IList<TBar> SetStDevPrice<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       return rates.Count < 2000 ? rates.SetStDevPrice_4(getPrice) : rates.SetStDevPrice_(getPrice);
       /*
       rates[0].PriceStdDev = 0;
@@ -369,10 +369,10 @@ namespace HedgeHog.Bars {
     public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       return rates.SetStDevPrice_4(getPrice, (r, d) => r.PriceStdDev = d);
     }
-    public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice,Action<TBar,double> setPrice)  {
+    public static IList<TBar> SetStDevPrice_4<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice, Action<TBar, double> setPrice) {
       setPrice(rates[0], 0);
       var list = rates.Select(getPrice).ToArray();
-      var dp = new StaticRangePartitioner(Enumerable.Range(0, list.Length+1).ToArray(), 0.5);
+      var dp = new StaticRangePartitioner(Enumerable.Range(0, list.Length + 1).ToArray(), 0.5);
       dp.AsParallel().ForAll(range => {
         for (int i = range.Item1.Max(2); i < range.Item2 && i <= list.Length; i++) {
           var l = new double[i];
@@ -402,7 +402,7 @@ namespace HedgeHog.Bars {
     public static IList<TBar> SetStDevPrice_2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       rates[0].PriceStdDev = 0;
       var list = rates.Select(getPrice).ToArray();
-      var dp = Partitioner.Create(2, list.Length+1, Environment.ProcessorCount);
+      var dp = Partitioner.Create(2, list.Length + 1, Environment.ProcessorCount);
       Parallel.ForEach(dp, range => {
         for (int i = range.Item1; i < range.Item2; i++) {
           var l = new double[i];
@@ -416,7 +416,7 @@ namespace HedgeHog.Bars {
     public static IList<TBar> SetStDevPrice_1<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       rates[0].PriceStdDev = 0;
       var list = rates.Select(getPrice).ToArray();
-      var dp = Partitioner.Create(Enumerable.Range(2, list.Length - 1).ToList(),true);
+      var dp = Partitioner.Create(Enumerable.Range(2, list.Length - 1).ToList(), true);
       Parallel.ForEach(dp, i => {
         var l = new double[i];
         Array.Copy(list, l, i);
@@ -431,7 +431,7 @@ namespace HedgeHog.Bars {
       var dp = new OrderableListPartitioner<int>(Enumerable.Range(2, list.Length - 1).ToArray());
       Parallel.ForEach(dp, i => {
         var l = new double[i];
-        Array.Copy(list,l,i);
+        Array.Copy(list, l, i);
         var stDev = rates[i - 1].PriceStdDev = l.StDevP();
         rates[i - 1].Corridorness = i / stDev;
       });
@@ -461,7 +461,7 @@ namespace HedgeHog.Bars {
       return overlaps.OrderBy(rm => rm.Length).Last();
     }
 
-    public static Rate[][] Overlaps(this ICollection<Rate> rates,int iterationsForSpread = 0) {
+    public static Rate[][] Overlaps(this ICollection<Rate> rates, int iterationsForSpread = 0) {
       if (iterationsForSpread > 0) {
         var spreadAverage = rates.Select(r => r.Spread).ToArray()
           .AverageByIterations(iterationsForSpread, true)
@@ -477,15 +477,27 @@ namespace HedgeHog.Bars {
     }
 
     #region Level
-    public static double Level<TBar>(this ICollection<TBar> rates, bool up, int iterations)where TBar:BarBase {
-      var ratesForLevel = rates.DistanceAverage(up, iterations);
-      return up ? ratesForLevel.Average(r => r.PriceHigh) : ratesForLevel.Average(r => r.PriceLow);
+    public static double Level<TBar>(this IList<TBar> rates, Func<TBar, double> getPriceHigh, Func<TBar, double> getPriceLow, bool up, int iterations) where TBar : BarBase {
+      var ratesForLevel = rates.DistanceAverage(getPriceHigh, getPriceLow, up, iterations);
+      return up ? ratesForLevel.Average(getPriceHigh) : ratesForLevel.Average(getPriceLow);
     }
-    static TBar[] DistanceAverage<TBar>(this ICollection<TBar> rates, bool up, int iterations) where TBar:BarBase{
+    public static IList<T> Levels<TBar,T>(this IList<TBar> rates
+      , Func<TBar, double> getPriceHigh
+      , Func<TBar, double> getPriceLow
+      , bool up, int iterations
+      , Func<double,int,T> map
+      ) where TBar : BarBase {
+      var ratesForLevels = rates.DistanceAverages(getPriceHigh, getPriceLow, up, iterations);
+      return ratesForLevels.ToArray(rl => map(up ? rl.Average(getPriceHigh) : rl.Average(getPriceLow), rl.Length));
+    }
+    static TBar[] DistanceAverage<TBar>(this IList<TBar> rates, Func<TBar, double> getPriceHigh, Func<TBar, double> getPriceLow, bool up, int iterations) where TBar : BarBase {
+      return rates.DistanceAverages(getPriceHigh, getPriceLow, up, iterations).First();
+    }
+    static IList<TBar[]> DistanceAverages<TBar>(this IList<TBar> rates, Func<TBar, double> getPriceHigh, Func<TBar, double> getPriceLow, bool up, int iterations) where TBar : BarBase {
       TBar[] ratesToReturn = rates.ToArray();
       var clusters = new List<TBar[]>(new TBar[][] { rates.ToArray() });
       do {
-        var cs = clusters.Flatten().DistanceAverage(up).ToList();
+        var cs = clusters.Flatten().DistanceAverage(getPriceHigh, getPriceLow, up).ToList();
         if (cs.Count == 0) break;
         clusters = cs;
         var ll = clusters.Select(c => (double)c.Length).Distinct().ToArray();
@@ -493,10 +505,10 @@ namespace HedgeHog.Bars {
         var stDev = ll.StDev();
         clusters = clusters.Where(c => c.Length.Between(avg - stDev, avg + stDev)).ToList();
       } while (--iterations > 0 && clusters.Count > 2);
-      return clusters.OrderBy(c=>c.Length).Last();
+      return clusters.OrderByDescending(c=>c.Length).ToArray();
     }
 
-    static T[] Flatten<T>(this ICollection<T[]> clusters) {
+    static T[] Flatten<T>(this IList<T[]> clusters) {
       if (clusters.Count == 0) return new T[0];
       if (clusters.Count == 1) return clusters.First();
       var list = new List<T>(clusters.First());
@@ -506,7 +518,7 @@ namespace HedgeHog.Bars {
     public static double Distance<TBar>(this IList<TBar> rates) where TBar : BarBase {
       return rates.Distance(r => r.PriceAvg);
     }
-    public static double Distance<TBar>(this IList<TBar> rates,Func<TBar,double> getPrice ) where TBar : BarBase {
+    public static double Distance<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       double distance = (rates.LastBC().Distance - rates[0].Distance).Abs();
       if (distance == 0)
         rates.Aggregate((p, n) => { distance += (getPrice(p) - getPrice(n)).Abs(); return n; });
@@ -532,7 +544,7 @@ namespace HedgeHog.Bars {
       return distance;
     }
 
-    public static double Distance2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice,IList<double> distances = null) where TBar : BarBase {
+    public static double Distance2<TBar>(this IList<TBar> rates, Func<TBar, double> getPrice, IList<double> distances = null) where TBar : BarBase {
       var prices = rates.Select(getPrice).ToArray();
       return rates.Zip(rates.Skip(1), (p, n) => {
         var dist = getPrice(p).Abs(getPrice(n));
@@ -551,7 +563,7 @@ namespace HedgeHog.Bars {
       });
       return wa / s;
     }
-    public static IEnumerable<TBar> TouchDowns<TBar>(this IList<TBar> rates, double high, double low,Func<TBar,double> getPrice = null)where TBar:BarBase {
+    public static IEnumerable<TBar> TouchDowns<TBar>(this IList<TBar> rates, double high, double low, Func<TBar, double> getPrice = null) where TBar : BarBase {
       if (getPrice == null) getPrice = (r) => r.PriceAvg;
       int tochType = 0;//1-high,-1 low
       foreach (var rate in rates) {
@@ -590,7 +602,7 @@ namespace HedgeHog.Bars {
       return new[] { h, l };
     }
 
-    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue,double initialValue = 0) where TBar : BarBase {
+    public static void FillRunningValue<TBar>(this IEnumerable<TBar> bars, Action<TBar, double> setRunningValue, Func<TBar, double> getRunningValue, Func<TBar, TBar, double> getValue, double initialValue = 0) where TBar : BarBase {
       setRunningValue(bars.First(), initialValue);
       bars.Aggregate((p, n) => {
         setRunningValue(n, getRunningValue(p) + getValue(p, n));
@@ -627,8 +639,8 @@ namespace HedgeHog.Bars {
         return n;
       });
     }
-    static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, bool up) where TBar : BarBase {
-      return rates.DistanceAverage(up ? (Func<TBar, double>)(r => r.PriceHigh) : r => r.PriceLow);
+    static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, Func<TBar, double> getPriceHigh, Func<TBar, double> getPriceLow, bool up) where TBar : BarBase {
+      return rates.DistanceAverage(up ? getPriceHigh : getPriceLow);
     }
     static IEnumerable<TBar[]> DistanceAverage<TBar>(this ICollection<TBar> rates, Func<TBar, double> getPrice) where TBar : BarBase {
       Func<LinkedListNode<TBar>, double> getDistance = node =>
@@ -664,7 +676,7 @@ namespace HedgeHog.Bars {
           .Select(r3 => new {
             price = (r1.PriceHigh + r3.PriceLow) / 2,
             height = new[] { (r1.PriceLow - r3.PriceLow).Abs(), (r1.PriceHigh - r3.PriceHigh).Abs(), (r1.PriceHigh - r3.PriceLow).Abs(), (r1.PriceLow - r3.PriceHigh).Abs() }.Min()
-          }).OrderBy(m=>m.price).ToArray()).ToList();
+          }).OrderBy(m => m.price).ToArray()).ToList();
       ms.ForEach(m => priceHeights.AddRange(m));
       priceHeights.Sort((ph1, ph2) => ph1.price.CompareTo(ph2.price));
       var heightIterations = 6;
@@ -678,7 +690,7 @@ namespace HedgeHog.Bars {
           .Select(p3 => new {
             price1 = p1, price2 = p3, distance = (p1 - p3).Abs()
           }).ToList()).ToList();
-      pds.ForEach(pd => priceDistances.AddRange(pd.Select(a=>a.distance)));
+      pds.ForEach(pd => priceDistances.AddRange(pd.Select(a => a.distance)));
       var distanceIterations = 5;
       var minimumDistance = priceDistances.AverageByIterations(distanceIterations, true).Average();
       var distanceCount = priceDistances.Count(pd => pd < minimumDistance);
@@ -687,7 +699,7 @@ namespace HedgeHog.Bars {
       return pds[0][0].price1;
     }
 
-    public static double Slope(Rate rate1, Rate rate2,TimeSpan interval) {
+    public static double Slope(Rate rate1, Rate rate2, TimeSpan interval) {
       return (rate2.PriceAvg - rate1.PriceAvg) / (rate2.StartDate - rate1.StartDate).Divide(interval).TotalMinutes;
     }
 
@@ -769,8 +781,8 @@ namespace HedgeHog.Bars {
     public static TBar[] AverageByIterations<TBar>(this IList<TBar> values, Func<TBar, double> getPrice, double iterations) where TBar : BarBaseDate {
       return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations);
     }
-    public static TBar[] AverageByIterations<TBar>(this IList<TBar> values, Func<TBar, double> getPrice, double iterations,out double average) where TBar : BarBaseDate {
-      return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations,out average);
+    public static TBar[] AverageByIterations<TBar>(this IList<TBar> values, Func<TBar, double> getPrice, double iterations, out double average) where TBar : BarBaseDate {
+      return values.AverageByIterations(getPrice, (v, a) => v >= a, iterations, out average);
     }
     public static TBar[] AverageByIterations<TBar>(this IList<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations) where TBar : BarBaseDate {
       double average;
@@ -840,7 +852,7 @@ namespace HedgeHog.Bars {
       while (count-- > 0 && bars.Count() >= startIndex)
         bars.Remove(bars[startIndex]);
     }
-    public static void RemoveAll<T>(this IList<T> bars, Func<T,bool> filter) {
+    public static void RemoveAll<T>(this IList<T> bars, Func<T, bool> filter) {
       bars.Where(filter).ToList().ForEach(b => bars.Remove(b));
     }
 
@@ -855,14 +867,14 @@ namespace HedgeHog.Bars {
       var height = bars.Height(out min, out max);
       return min + height / 2;
     }
-    public static double Height<TBar>(this IEnumerable<TBar> rates,out double min,out double max) where TBar : BarBase {
+    public static double Height<TBar>(this IEnumerable<TBar> rates, out double min, out double max) where TBar : BarBase {
       return rates.Height(r => r.PriceAvg, out min, out max);
     }
     public static double Height<TBar>(this IEnumerable<TBar> rates) where TBar : BarBase {
       return rates.Height(r => r.PriceAvg);
     }
     public static double Density(this ICollection<Rate> rates) {
-      return rates.Average(r => r.BidHigh- r.AskLow);
+      return rates.Average(r => r.BidHigh - r.AskLow);
     }
 
     public static TimeSpan Duration(this ICollection<Rate> rates) {
@@ -921,7 +933,7 @@ namespace HedgeHog.Bars {
       return new RsiStatistics(RsiAverageLow, RsiStdLow, rsiBuyLow, RsiAverageHigh, RsiStdHigh, rsiSellHigh);
     }
 
-    public static IEnumerable<double> WavesByAngle(this IList<Rate> chunk,Func<Rate,double>getAngle, int frameLength) {
+    public static IEnumerable<double> WavesByAngle(this IList<Rate> chunk, Func<Rate, double> getAngle, int frameLength) {
       var volts0 = chunk.Select((r, i) => new { r, i, u = getAngle(r) > 0 }).Memoize();
       var bl = 3;
       return volts0.Zip(volts0.Skip(1), (prev, next) => new { prev, next })
@@ -1091,12 +1103,12 @@ namespace HedgeHog.Bars {
     private static void FillSpeed<TBar>(this IEnumerable<TBar> bars, TBar bar, Func<TBar, double> price) where TBar : BarBase {
       bar.PriceSpeed = bars.Select(price).ToArray().Regress(1)[1];
     }
-/// <summary>
-/// Max StDev for bars
-/// </summary>
-/// <param name="wave"></param>
-/// <returns></returns>
-    public static double MaxStDev<TBar>(this IList<TBar> wave)where TBar:BarBase {
+    /// <summary>
+    /// Max StDev for bars
+    /// </summary>
+    /// <param name="wave"></param>
+    /// <returns></returns>
+    public static double MaxStDev<TBar>(this IList<TBar> wave) where TBar : BarBase {
       return wave.Max(r => r.PriceStdDev);// .TakeEx(-2).First().PriceStdDev;
     }
 
@@ -1553,7 +1565,7 @@ namespace HedgeHog.Bars {
         t.PriceCMA.Add(cma3.Value);
       }
     }
-    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue,Func<TBar,List<double>>getCmaHolder, double cmaPeriod, int cmaLevels = 3) where TBar : BarBase {
+    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, Func<TBar, List<double>> getCmaHolder, double cmaPeriod, int cmaLevels = 3) where TBar : BarBase {
       var cmas = new List<double>(cmaLevels);
       var first = ticks.First();
       var firstAvg = ticks.Take(cmaPeriod.ToInt()).Zip(ticks.Skip(1).Take(cmaPeriod.ToInt()), (f, s) => getValue(s, f)).Average();
@@ -1565,7 +1577,7 @@ namespace HedgeHog.Bars {
 
       ticks.Aggregate((p, t) => {
         var cmaHolder = getCmaHolder(t);
-          cmaHolder.Clear();
+        cmaHolder.Clear();
         cmaHolder.Add(cmas[0] = cmas[0].Cma(cmaPeriod, getValue(p, t)));
         for (var i = 1; i < cmaLevels; i++)
           cmaHolder.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
@@ -1574,7 +1586,7 @@ namespace HedgeHog.Bars {
     }
     public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, double cmaPeriod, int cmaLevels) where TBar : BarBase {
       if (cmaPeriod == 0)
-        ticks.ToList().ForEach(t => t.PriceCMALast = getValue(t,t));
+        ticks.ToList().ForEach(t => t.PriceCMALast = getValue(t, t));
       else {
         var cmas = new List<double>(cmaLevels);
         var first = ticks.First();
@@ -1601,7 +1613,7 @@ namespace HedgeHog.Bars {
         cmas.Add(double.NaN);
       foreach (var t in ticks) {
         if (t.PriceCMA != null) t.PriceCMA.Clear();
-        else  t.PriceCMA = new List<double>(cmaLevels);
+        else t.PriceCMA = new List<double>(cmaLevels);
         t.PriceCMA.Add(cmas[0] = cmas[0].Cma(cmaPeriod, t.PriceAvg));
         for (var i = 1; i < cmaLevels; i++) {
           t.PriceCMA.Add(cmas[i] = cmas[i].Cma(cmaPeriod, cmas[i - 1]));
@@ -1621,7 +1633,7 @@ namespace HedgeHog.Bars {
       return ticks.GetTrima(period, out outBegIdx);
     }
     public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period, out int outBegIdx) where TBars : BarBase {
-      int  outNBElement;
+      int outNBElement;
       var outTrima = ticks.Select(t => t.PriceAvg).ToArray().Trima(period, out outBegIdx, out outNBElement);
       var up = ticks.Count;
       return Enumerable.Range(outBegIdx, ticks.Count - outBegIdx)
@@ -1728,7 +1740,7 @@ namespace HedgeHog.Bars {
       DateTimeOffset firstBarDate = DateTimeOffset.MaxValue;
       int digits = 4;
       Func<int, double> calcRowOffest = i => Math.Pow(rowCountOffset, 1 / Math.Pow(i, 1 / 4.0));
-      var rates_01 = Rates.Select(((r, i) =>{
+      var rates_01 = Rates.Select(((r, i) => {
         return
 new {
   AskHigh = askMax = Math.Max(askMax, r.AskHigh).Round(digits),
@@ -1736,19 +1748,21 @@ new {
   BidLow = bidMin = Math.Round(Math.Min(bidMin, r.BidLow), digits),
   BidHigh = bidMax = Math.Round(Math.Max(bidMax, r.BidHigh), digits),
   SpreadAsk = spreadAsk = Math.Max(r.AskHigh - askMin/* Rates.Take((i + 1)).Min((al => al.AskLow))*/,
-               /*Rates.Take(i + 1).Max((al => al.AskHigh))*/askMax - r.AskLow),
+    /*Rates.Take(i + 1).Max((al => al.AskHigh))*/askMax - r.AskLow),
   SpreadBid = spreadBid = Math.Max(r.BidHigh - bidMin/*Rates.Take(i + 1).Min(al => al.BidLow)*/,
-               /*Rates.Take(i + 1).Max(((al => al.BidHigh)))*/bidMax - r.BidLow),
+    /*Rates.Take(i + 1).Max(((al => al.BidHigh)))*/bidMax - r.BidLow),
   StartDate2 = (i == 0) ? (firstBarDate = r.StartDate2) : r.StartDate2,
   Row = rowCurr = Math.Min(/*(serverTime - firstBarDate).TotalMinutes / (periodMin)*/0, 0.0) + i,
   SpeedAsk = spreadAsk / ((rowCurr + calcRowOffest(i + 1)) * periodMin),
   SpeedBid = spreadBid / ((rowCurr + calcRowOffest(i + 1)) * periodMin)
 };
-})).ToArray();
+      })).ToArray();
       return rates_01
-        .Select(((r, i) => new PriceBar { AskHigh = r.AskHigh, AskLow = r.AskLow, BidLow = r.BidLow, BidHigh = r.BidHigh, 
-          Spread = ((r.SpreadAsk + r.SpreadBid) / 2.0) / PointSize, 
-          Speed = ((r.SpeedAsk + r.SpeedBid) / 2.0) / PointSize, Row = r.Row, StartDate2 = r.StartDate2 })).ToArray();
+        .Select(((r, i) => new PriceBar {
+          AskHigh = r.AskHigh, AskLow = r.AskLow, BidLow = r.BidLow, BidHigh = r.BidHigh,
+          Spread = ((r.SpreadAsk + r.SpreadBid) / 2.0) / PointSize,
+          Speed = ((r.SpeedAsk + r.SpeedBid) / 2.0) / PointSize, Row = r.Row, StartDate2 = r.StartDate2
+        })).ToArray();
     }
 
   }

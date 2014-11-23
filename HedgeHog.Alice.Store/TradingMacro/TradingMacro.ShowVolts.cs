@@ -139,8 +139,6 @@ namespace HedgeHog.Alice.Store {
           .SubscribeOn(TaskPoolScheduler.Default)
           .LastAsync().Subscribe(_ => {
             SetVoltFuncs();
-            CenterOfMassBuy = RatesArray.Average(_priceAvg);
-            CenterOfMassSell = corridor.Rates.Average(_priceAvg);
           }) as CompositeDisposable;
       }
       return corridor;
