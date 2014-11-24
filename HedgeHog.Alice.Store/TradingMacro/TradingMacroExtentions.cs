@@ -2567,7 +2567,7 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
           var rates = RatesArray;
-          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, GetFftHarmonicsByRatesCountAndRatio(BarsCount, PriceCmaLevels));
+          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, GetFftHarmonicsByRatesCountAndRatio(BarsCount, 0.5.Max(PriceCmaLevels)));
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);

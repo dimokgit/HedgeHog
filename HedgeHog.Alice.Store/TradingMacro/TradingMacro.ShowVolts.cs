@@ -168,8 +168,8 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
-    private static int GetFftHarmonicsByRatesCountAndRatio(int frameLength, int fftHarmsRatio) {
-      return (frameLength * fftHarmsRatio.Div(100)).ToInt();
+    private static int GetFftHarmonicsByRatesCountAndRatio(int frameLength, double fftHarmsRatio) {
+      return (frameLength * fftHarmsRatio/100).ToInt();
     }
 
     private void SetVoltFuncs() {
