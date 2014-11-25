@@ -126,7 +126,7 @@ namespace HedgeHog.Alice.Store {
                 buyCloseLevel.Rate = priceAvgMax;
             } else if (Trades.HaveBuy()) {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
-              var levelBy = LevelBuyBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
+              var levelBy = LevelBuyCloseBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
               buyCloseLevel.RateEx = new[]{
                 levelBy.IfNaN(Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
                 ,priceAvgMax
@@ -134,7 +134,7 @@ namespace HedgeHog.Alice.Store {
               ;
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
                 buyCloseLevel.ResetPricePosition();
-            } else buyCloseLevel.RateEx = CrossLevelDefault(true);
+            } else if (LevelBuyCloseBy == TradeLevelBy.None) buyCloseLevel.RateEx = CrossLevelDefault(true);
 
             if (sellCloseLevel.IsGhost)
               setExitLevel(sellCloseLevel);
@@ -143,7 +143,7 @@ namespace HedgeHog.Alice.Store {
                 sellCloseLevel.Rate = priceAvgMin;
             } else if (Trades.HaveSell()) {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
-              var levelBy = LevelSellBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
+              var levelBy = LevelSellCloseBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
               sellCloseLevel.RateEx = new[] { 
                 levelBy.IfNaN(Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
                 , priceAvgMin
@@ -151,7 +151,7 @@ namespace HedgeHog.Alice.Store {
               ;
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
                 sellCloseLevel.ResetPricePosition();
-            } else sellCloseLevel.RateEx = CrossLevelDefault(false);
+            } else if (LevelSellCloseBy == TradeLevelBy.None) sellCloseLevel.RateEx = CrossLevelDefault(false);
           }
         }
       };

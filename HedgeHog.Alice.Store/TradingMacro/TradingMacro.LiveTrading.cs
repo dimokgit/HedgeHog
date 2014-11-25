@@ -211,21 +211,21 @@ namespace HedgeHog.Alice.Store {
       Action<Trade, double, double> SetTradeNet = (trade, limit, stop) => {
         //fxWraper.OnNext(() => {
         var fw = GetFXWraper();
-          if (!limit.IsNaN())
-            try {
-              if (fw.GetNetOrderRate(Pair, false).Abs(limit) > InPoints(1)) {
-                Log = new Exception("FixOrderSetLimit:" + new { trade.Pair,  limit=limit.Round(Digits()) });
-                fw.FixOrderSetLimit(trade.Id, limit, "");
-              }
-            } catch (Exception exc) { Log = exc; }
-          if (!stop.IsNaN())
-            try {
-              if (fw.GetNetOrderRate(Pair, true).Abs(stop) > InPoints(1)) {
-                Log = new Exception("FixOrderSetStop:" + new { trade.Pair, stop =stop.Round(Digits()) }) ;
-                GetFXWraper().FixOrderSetStop(trade.Id, stop, "");
-              }
-            } catch (Exception exc) { Log = exc; }
-          TradeLastChangeDate = DateTime.Now;
+        if (!limit.IsNaN())
+          try {
+            if (fw.GetNetOrderRate(Pair, false).Abs(limit) > InPoints(1)) {
+              Log = new Exception("FixOrderSetLimit:" + new { trade.Pair, limit = limit.Round(Digits()) });
+              fw.FixOrderSetLimit(trade.Id, limit, "");
+            }
+          } catch (Exception exc) { Log = exc; }
+        if (!stop.IsNaN())
+          try {
+            if (fw.GetNetOrderRate(Pair, true).Abs(stop) > InPoints(1)) {
+              Log = new Exception("FixOrderSetStop:" + new { trade.Pair, stop = stop.Round(Digits()) });
+              GetFXWraper().FixOrderSetStop(trade.Id, stop, "");
+            }
+          } catch (Exception exc) { Log = exc; }
+        TradeLastChangeDate = DateTime.Now;
         //});
       };
       Action<Trade, double> SetTradeNetLimit = (trade, limit) => SetTradeNet(trade, limit, double.NaN);
@@ -289,16 +289,28 @@ namespace HedgeHog.Alice.Store {
       #endregion
       #region startBuySellCloseLevelsTracking
       #region Net Update Implementations
+      var bsCloseLevels = MonoidsCore.ToFunc(() => new[] { BuyCloseLevel, SellCloseLevel }.Where(sr => sr != null));
       Action updateTradeLimitOrders = () => {
-        var bsLevels = new[] { BuyCloseLevel, SellCloseLevel };
-        Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
-        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Limit.Abs(levelRate(trade)) > PointSize)
-          .ForEach(fw => SetTradeNetLimit(trade, levelRate(trade)));
+        Func<Trade, double[]> levelRate = trade => bsCloseLevels().Where(sr => sr.IsBuy == !trade.IsBuy).Select(sr=>sr.Rate).Take(1).ToArray();
+        Action<Trade> changeRate = trade => levelRate(trade)
+          .Where(_=> GetFXWraper()!=null)
+          .Where(lr=>trade.Limit.Abs(lr) > PointSize)
+          .ForEach(lr => SetTradeNetLimit(trade, lr));
         Trades.Take(1).ForEach(changeRate);
       };
+      Func<Trade, double[]> getDefaultStop = trade =>
+        bsCloseLevels()
+        .Where(_ => SellLevel.Rate > BuyLevel.Rate)
+        .Where(bs => bs.IsBuy != trade.IsBuy)
+        .Select(bs => trade.Open.Abs(bs.Rate) * 2)
+        .Select(stop => trade.IsBuy ? -stop : stop)
+        .Select(stop => trade.Open + stop)
+        .ToArray();
       Action updateTradeStopOrders = () => {
-        var bsLevels = new[] { BuyLevel, SellLevel };
-        Func<Trade, double> levelRate = trade => bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).First().Rate;
+        var bsLevels = new[] { BuyLevel, SellLevel }.Where(sr => sr != null);
+        Func<Trade, double> levelRate = trade => getDefaultStop(trade)
+        .Concat(bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).Select(t => t.Rate).Take(1))
+        .First();
         Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Stop.Abs(levelRate(trade)) > PointSize)
           .ForEach(fw => SetTradeNetStop(trade, levelRate(trade)));
         Trades.Take(1).ForEach(changeRate);
@@ -316,7 +328,7 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
           .Subscribe(_ => {
             if (CanDoNetLimitOrders) updateTradeLimitOrders();
-            if(CanDoNetStopOrders) updateTradeStopOrders();
+            if (CanDoNetStopOrders) updateTradeStopOrders();
           });
       };
       #endregion

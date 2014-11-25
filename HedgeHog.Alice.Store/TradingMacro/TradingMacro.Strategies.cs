@@ -812,7 +812,10 @@ namespace HedgeHog.Alice.Store {
             onCanTradeLocal = canTrade => canTrade || Trades.Any();
             onCloseTradeLocal += t => {
               BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-              if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+              if (t.PL > 0) {
+                _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                if (!IsInVitualTrading && !this.IsAutoStrategy) IsTradingActive = false;
+              }
               if (CurrentGrossInPipTotal > 0) {
                 if (!IsInVitualTrading) IsTradingActive = false;
                 BroadcastCloseAllTrades();
