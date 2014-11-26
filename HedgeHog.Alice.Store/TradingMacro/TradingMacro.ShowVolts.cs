@@ -169,7 +169,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     private static int GetFftHarmonicsByRatesCountAndRatio(int frameLength, double fftHarmsRatio) {
-      return (frameLength * fftHarmsRatio/100).ToInt();
+      return (frameLength * fftHarmsRatio / 100).ToInt();
     }
 
     private void SetVoltFuncs() {
@@ -179,7 +179,23 @@ namespace HedgeHog.Alice.Store {
         var voltsStDev = volts.StDev(out voltsAvg);
         GetVoltageAverage = () => voltsAvg - voltsStDev;
         GetVoltageHigh = () => voltsAvg + voltsStDev;
+        GetVoltageLow = () => voltsAvg - voltsStDev * 2;
       }
+      var height = StDevByPriceAvg;
+      var bottom = RatesArray.Min(_priceAvg);
+      var top = RatesArray.Max(_priceAvg) - height;
+      Enumerable.Range(0, InPips(top - bottom).ToInt())
+        .AsParallel()
+        .Select(i => {
+          var b = bottom + InPoints(i);
+          var t = b + height;
+          return new { b, t, c = RatesArray.Where(r => r.PriceAvg.Between(b, t)).Count() };
+        }).OrderByDescending(a => a.c)
+        .Take(1)
+        .ForEach(a => {
+          CenterOfMassBuy = a.t;
+          CenterOfMassSell = a.b;
+        });
     }
 
     private CorridorStatistics ShowVoltsByHourlyStDevAvg() {

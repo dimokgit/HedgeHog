@@ -349,6 +349,23 @@ namespace HedgeHog {
         voltageHigh.ToolTip = value;
       }
     }
+    HorizontalLine _voltageLow;
+    HorizontalLine voltageLow {
+      get {
+        if (_voltageLow == null) {
+          _voltageLow = new HorizontalLine { Stroke = new SolidColorBrush(Colors.OrangeRed), StrokeThickness = 1 };
+          if (innerPlotter != null)
+            innerPlotter.Children.Add(_voltageLow);
+        }
+        return _voltageLow;
+      }
+    }
+    public double VoltageLow {
+      set {
+        voltageLow.Value = value;
+        voltageLow.ToolTip = value;
+      }
+    }
 
     HorizontalLine _voltageAverage;
     HorizontalLine voltageAverage {
@@ -1351,6 +1368,9 @@ namespace HedgeHog {
                 plotter.Children.Remove(dragPoint);
                 rates.Remove(uid);
                 break;
+              case Key.L:
+                dragPoint.DataContext.Invoke("OnSetLevelBy", null);
+                break;
               case Key.S:
                 dragPoint.DataContext.Invoke("OnScan", null);
                 break;
@@ -1991,13 +2011,13 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     bool inRendering;
     private bool IsPlotterInitialised;
     public void AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
-  double voltageHigh, double voltageCurr, double priceMaxAvg, double priceMinAvg,
+  double[] voltageHighLow, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
-      AddTicks(lastPrice, ticks.ToArray(), null, new string[0], null, voltageHigh, voltageCurr, priceMaxAvg, priceMinAvg,
+      AddTicks(lastPrice, ticks.ToArray(), null, new string[0], null, voltageHighLow, voltageCurr, priceMaxAvg, priceMinAvg,
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
     public void AddTicks(Price lastPrice, Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
-                          double voltageHigh, double voltageAverage, double priceMaxAvg, double priceMinAvg,
+                          double[] voltageHighLow, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
       PriceBar[] voltsByTick = voltsByTicks.FirstOrDefault();
@@ -2119,7 +2139,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           //animatedDataSourceBid.RaiseDataChanged();
           //animatedDataSource1.RaiseDataChanged();
           if (doVolts) {
-            VoltageHigh = voltageHigh;
+            VoltageHigh = voltageHighLow[0];
+            VoltageLow = voltageHighLow[1];
             VoltageAverage = voltageAverage;
           }
           //animatedVoltDataSource.RaiseDataChanged();

@@ -246,10 +246,10 @@ namespace HedgeHog.Alice.Store {
           Debugger.Break();
           a.Pairs.Add(new Tuple<string, int>(this.Pair, this.BarPeriodInt));
         });
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CloseAllTradesMessage>(this, a => {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CloseAllTradesMessage<TradingMacro>>(this, a => {
         if (IsActive && TradesManager != null && Trades.Any())
-          //CloseAtZero = true;
           CloseTrading("CloseAllTradesMessage");
+        a.OnClose(this);
       });
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<TradeLineChangedMessage>(this, a => {
         if (a.Target == this && _strategyOnTradeLineChanged != null)
@@ -339,6 +339,7 @@ namespace HedgeHog.Alice.Store {
             .ForEach(sr => {
               sr.RateChanged += SuppRes_RateChanged;
               sr.Scan += SuppRes_Scan;
+              sr.SetLevelBy += SuppRes_SetLevelBy;
               sr.IsActiveChanged += SuppRes_IsActiveChanged;
               sr.EntryOrderIdChanged += SuppRes_EntryOrderIdChanged;
             });
@@ -346,11 +347,15 @@ namespace HedgeHog.Alice.Store {
         case CollectionChangeAction.Remove:
           ((Store.SuppRes)e.Element).RateChanged -= SuppRes_RateChanged;
           ((Store.SuppRes)e.Element).Scan -= SuppRes_Scan;
+          ((Store.SuppRes)e.Element).SetLevelBy -= SuppRes_SetLevelBy;
           ((Store.SuppRes)e.Element).IsActiveChanged -= SuppRes_IsActiveChanged;
           ((Store.SuppRes)e.Element).EntryOrderIdChanged -= SuppRes_EntryOrderIdChanged;
           break;
       }
-      SetEntryOrdersBySuppResLevels();
+    }
+
+    void SuppRes_SetLevelBy(object sender, EventArgs e) {
+      SetLevelsBy(sender as SuppRes);
     }
 
     void SuppRes_Scan(object sender, EventArgs e) {
@@ -396,7 +401,6 @@ namespace HedgeHog.Alice.Store {
         var suppRes = (SuppRes)sender;
         var fw = GetFXWraper();
         if (fw != null && !suppRes.IsActive) {
-          SetEntryOrdersBySuppResLevels();
           fw.GetEntryOrders(Pair, true).IsBuy(suppRes.IsBuy).ToList()
             .ForEach(o => fw.DeleteOrder(o.OrderID));
         }
@@ -407,8 +411,6 @@ namespace HedgeHog.Alice.Store {
 
     void SuppRes_RateChanged(object sender, EventArgs e) {
       if (!IsInVitualTrading) RaiseShowChart();
-      return;
-      SetEntryOrdersBySuppResLevels();
     }
     #endregion
 
@@ -1205,7 +1207,6 @@ namespace HedgeHog.Alice.Store {
             .Concat(orders.IsBuy(false).OrderBy(o => o.OrderID).Skip(1))
             .ToList().ForEach(o => OnDeletingOrder(o.OrderID));
         }
-        SetEntryOrdersBySuppResLevels();
       } catch (Exception exc) {
         Log = exc;
       }
@@ -1215,14 +1216,12 @@ namespace HedgeHog.Alice.Store {
       if (!IsMyOrder(order)) return;
       EnsureActiveSuppReses();
       SuppRes.Where(sr => sr.EntryOrderId == order.OrderID).ToList().ForEach(sr => sr.EntryOrderId = Store.SuppRes.RemovedOrderTag);
-      SetEntryOrdersBySuppResLevels();
     }
 
     void TradesManager_TradeAddedGlobal(object sender, TradeEventArgs e) {
       if (!IsMyTrade(e.Trade)) return;
       ReleasePendingAction("OT");
       EnsureActiveSuppReses();
-      SetEntryOrdersBySuppResLevels();
       RaisePositionsChanged();
       if (_strategyExecuteOnTradeOpen != null) _strategyExecuteOnTradeOpen(e.Trade);
     }
@@ -1246,7 +1245,6 @@ namespace HedgeHog.Alice.Store {
       CurrentLot = Trades.Sum(t => t.Lots);
       CloseAtZero = false;
       EnsureActiveSuppReses();
-      SetEntryOrdersBySuppResLevels();
       RaisePositionsChanged();
       ReleasePendingAction("OT");
       ReleasePendingAction("CT");
@@ -1728,8 +1726,6 @@ namespace HedgeHog.Alice.Store {
       } catch (Exception exc) {
         Log = exc;
         return null;
-      } finally {
-        SetEntryOrdersBySuppResLevels();
       }
     }
     #endregion
@@ -1755,8 +1751,6 @@ namespace HedgeHog.Alice.Store {
         RemoveSuppRes(suppRes);
       } catch (Exception exc) {
         Log = exc;
-      } finally {
-        SetEntryOrdersBySuppResLevels();
       }
     }
 
@@ -2329,17 +2323,6 @@ namespace HedgeHog.Alice.Store {
         if (dups.Any())
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new Exception(string.Join(Environment.NewLine, dups)));
       });
-    }
-
-    void SetEntryOrdersBySuppResLevels() {
-      if (TradesManager == null) return;
-      if (!isLoggedIn) return;
-      try {
-        if (!CanDoEntryOrders)
-          GetEntryOrders().ToList().ForEach(o => OnDeletingOrder(o.OrderID));
-      } catch (Exception exc) {
-        Log = exc;
-      }
     }
 
     private Order2GoAddIn.FXCoreWrapper GetFXWraper(bool failTradesManager = true) {
@@ -3274,21 +3257,14 @@ namespace HedgeHog.Alice.Store {
           OnPropertyChanged(TradingMacroMetadata.TradingDistanceInPips);
           break;
         case TradingMacroMetadata.Strategy:
+        case TradingMacroMetadata.TrailingDistanceFunction:
+        case TradingMacroMetadata.TakeProfitFunction:
           _strategyExecuteOnTradeClose = null;
           _strategyExecuteOnTradeOpen = null;
           CloseAtZero = false;
           _tradingDistanceMax = 0;
-          goto case TradingMacroMetadata.IsSuppResManual;
-        case TradingMacroMetadata.TakeProfitFunction:
           OnScanCorridor(RatesArray);
           RaiseShowChart();
-          goto case TradingMacroMetadata.IsPriceSpreadOk;
-        case TradingMacroMetadata.IsSuppResManual:
-        case TradingMacroMetadata.RangeRatioForTradeLimit:
-        case TradingMacroMetadata.RangeRatioForTradeStop:
-        case TradingMacroMetadata.IsColdOnTrades:
-        case TradingMacroMetadata.IsPriceSpreadOk:
-          SetEntryOrdersBySuppResLevels();
           break;
         case TradingMacroMetadata.CorridorCalcMethod:
         case TradingMacroMetadata.CorridorCrossHighLowMethod:

@@ -143,6 +143,9 @@ namespace HedgeHog.Alice.Client {
         case Key.G:
           tm.MakeGhosts();
           break;
+        case Key.L:
+          tm.SetLevelsBy();
+          break;
         case Key.M:
           tm.ResetSuppResesInManual();
           break;
@@ -1065,7 +1068,7 @@ namespace HedgeHog.Alice.Client {
           //PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
           var distancesAverage = tm.GetVoltageAverage();// distances.Take(distances.Length - tm.CorridorDistanceRatio.ToInt()).Select(charter.PriceBarValue).ToArray().AverageByIterations(1).Average();
           charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
-            tm.GetVoltageHigh(), tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
+            new[]{ tm.GetVoltageHigh(),tm.GetVoltageLow()}, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
             charter.LineTimeMiddle = tm.CorridorStats.StopRate;

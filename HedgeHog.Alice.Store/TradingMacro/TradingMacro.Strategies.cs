@@ -198,9 +198,6 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceAvg31,(r,cs)=>r.PriceAvg31},
           {TradeLevelBy.PriceAvg32,(r,cs)=>r.PriceAvg31-cs.StDevByHeight},
         
-          {TradeLevelBy.AskHigh,(r,cs)=>r.AskHigh},
-          {TradeLevelBy.BidLow,(r,cs)=>r.BidLow},
-          {TradeLevelBy.PriceAvg,(r,cs)=>r.PriceAvg},
           {TradeLevelBy.None,(r,cs)=>double.NaN}
         };
     double GetTradeCloseLevel(Rate rate, bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy](rate, CorridorStats).IfNaN(def); }
@@ -811,15 +808,7 @@ namespace HedgeHog.Alice.Store {
             #region onCloseTradeLocal
             onCanTradeLocal = canTrade => canTrade || Trades.Any();
             onCloseTradeLocal += t => {
-              BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-              if (t.PL > 0) {
-                _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                if (!IsInVitualTrading && !this.IsAutoStrategy) IsTradingActive = false;
-              }
-              if (CurrentGrossInPipTotal > 0) {
-                if (!IsInVitualTrading) IsTradingActive = false;
-                BroadcastCloseAllTrades();
-              }
+              BroadcastCloseAllTrades(tm => OnCloseTradeLocal(new[] { t }, tm));
             };
             #endregion
           }
@@ -1429,7 +1418,7 @@ namespace HedgeHog.Alice.Store {
                   onCloseTradeLocal += t => {
                     if (CurrentGrossInPipTotal > 0) {
                       if (!IsInVitualTrading) IsTradingActive = false;
-                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                      BroadcastCloseAllTrades();
                     }
                   };
                   #endregion
@@ -1504,7 +1493,7 @@ namespace HedgeHog.Alice.Store {
                     if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
                     if (CurrentGrossInPipTotal > 0) {
                       if (!IsInVitualTrading) IsTradingActive = false;
-                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                      BroadcastCloseAllTrades();
                     }
                   };
                   #endregion
@@ -2483,7 +2472,7 @@ namespace HedgeHog.Alice.Store {
                       }
                     if (CurrentGrossInPipTotal > -PriceSpreadAverage) {
                       _buySellLevelsForEach(sr => sr.TradesCountEx = this.CorridorCrossesMaximum);
-                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                      BroadcastCloseAllTrades();
                     }
                   };
                   #endregion
@@ -2573,7 +2562,7 @@ namespace HedgeHog.Alice.Store {
                   onCloseTradeLocal += t => {
                     if (!IsAutoStrategy && CurrentGrossInPipTotal > -PriceSpreadAverageInPips) {
                       IsTradingActive = false;
-                      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+                      BroadcastCloseAllTrades();
                     }
                   };
                   initTradeRangeShift();
@@ -2836,9 +2825,24 @@ namespace HedgeHog.Alice.Store {
       #endregion
     }
 
+    private static void OnCloseTradeLocal(IList<Trade> trades, TradingMacro tm ) {
+      tm.BuyCloseLevel.InManual = tm.SellCloseLevel.InManual = false;
+      if (trades.Any(t=>t.Pair == tm.Pair) && trades.Select(t=>t.PL).DefaultIfEmpty().Sum() >= -tm.PriceSpreadAverage) {
+        tm.BuyLevel.CanTradeEx = tm.SellLevel.CanTradeEx = false;
+        if (!tm.IsInVitualTrading && !tm.IsAutoStrategy) tm.IsTradingActive = false;
+      }
+      if (tm.CurrentGrossInPipTotal > 0) {
+        tm.BuyLevel.CanTrade = tm.SellLevel.CanTrade = false;
+        if (!tm.IsInVitualTrading) tm.IsTradingActive = false;
+      }
+    }
+
     public Func<DateTime> LineTimeMinFunc;
     private static void BroadcastCloseAllTrades() {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+      BroadcastCloseAllTrades(tm => { });
+    }
+    private static void BroadcastCloseAllTrades(Action<TradingMacro> onClose) {
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage<TradingMacro>>(new CloseAllTradesMessage<TradingMacro>(onClose));
     }
     #region WorkflowStep
     private string _WorkflowStep;

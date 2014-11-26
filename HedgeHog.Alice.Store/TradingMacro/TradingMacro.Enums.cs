@@ -217,9 +217,6 @@ namespace HedgeHog.Alice.Store {
     PriceAvg3,
     PriceAvg31,
     PriceAvg32,
-    PriceAvg,
-    AskHigh,
-    BidLow
   }
 
 }

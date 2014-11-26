@@ -438,7 +438,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void AccountModel_CloseAllTrades(object sender, EventArgs e) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage>(null);
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage<TradingMacro>>(new CloseAllTradesMessage<TradingMacro>(tm => tm.CloseTrades("AccountModel_CloseAllTrades")));
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }

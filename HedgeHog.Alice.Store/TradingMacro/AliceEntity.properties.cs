@@ -12,10 +12,10 @@ using ReactiveUI;
 using System.Reactive.Linq;
 using System.Linq.Expressions;
 using ReactiveUI;
- 
+
 namespace HedgeHog.Alice.Store {
   public static class SuppResExtentions {
-    public static SuppRes[] Active(this ICollection<SuppRes> supReses,bool isBuy) {
+    public static SuppRes[] Active(this ICollection<SuppRes> supReses, bool isBuy) {
       return supReses.Active().IsBuy(isBuy);
     }
     static SuppRes[] Active(this ICollection<SuppRes> supReses) {
@@ -29,9 +29,9 @@ namespace HedgeHog.Alice.Store {
     public class EntryOrderIdEventArgs : EventArgs {
       public string NewId { get; set; }
       public string OldId { get; set; }
-      public EntryOrderIdEventArgs(string newId,string oldId) {
+      public EntryOrderIdEventArgs(string newId, string oldId) {
         this.NewId = newId;
-        this.OldId= oldId;
+        this.OldId = oldId;
       }
     }
     public static readonly double TradesCountMinimum = 1;
@@ -61,10 +61,10 @@ namespace HedgeHog.Alice.Store {
             , x => x.TradesCount
             );
         }
-        return InManual 
-          && IsExitOnly 
-          && CanTrade 
-          && TradesCount <= 0; 
+        return InManual
+          && IsExitOnly
+          && CanTrade
+          && TradesCount <= 0;
       }
       set {
         if (!IsExitOnly) throw new Exception("Not an exit Level.");
@@ -124,7 +124,7 @@ namespace HedgeHog.Alice.Store {
           _rateExErrorCounter = 0;
         } catch (Exception exc) {
           if (_rateExErrorCounter > 100) throw;
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: "+new { Prev = valuePrev, Curr = Rate } + ""));
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(new Exception("Rate: " + new { Prev = valuePrev, Curr = Rate } + ""));
         }
       }
     }
@@ -189,6 +189,22 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    #region SetLevelBy Event
+    event EventHandler<EventArgs> SetLevelByEvent;
+    public event EventHandler<EventArgs> SetLevelBy {
+      add {
+        if (SetLevelByEvent == null || !SetLevelByEvent.GetInvocationList().Contains(value))
+          SetLevelByEvent += value;
+      }
+      remove {
+        SetLevelByEvent -= value;
+      }
+    }
+    public void OnSetLevelBy() {
+      if (SetLevelByEvent != null) SetLevelByEvent(this, new EventArgs());
+    }
+    #endregion
+
 
     #region CorridorDate
     private DateTime _CorridorDate;
@@ -211,7 +227,7 @@ namespace HedgeHog.Alice.Store {
         if (_EntryOrderId != value) {
           var oldId = value != RemovedOrderTag ? "" : _EntryOrderId;
           _EntryOrderId = value == RemovedOrderTag ? "" : value;
-           OnEntryOrderIdChanged(_EntryOrderId, oldId);
+          OnEntryOrderIdChanged(_EntryOrderId, oldId);
         }
       }
     }
@@ -276,8 +292,8 @@ namespace HedgeHog.Alice.Store {
         EntryOrderIdChangedEvent -= value;
       }
     }
-    void OnEntryOrderIdChanged(string newId,string oldId) {
-      if (EntryOrderIdChangedEvent != null) EntryOrderIdChangedEvent(this,new EntryOrderIdEventArgs(newId,oldId));
+    void OnEntryOrderIdChanged(string newId, string oldId) {
+      if (EntryOrderIdChangedEvent != null) EntryOrderIdChangedEvent(this, new EntryOrderIdEventArgs(newId, oldId));
     }
 
     EventHandler _IsActiveChanged;
@@ -297,7 +313,7 @@ namespace HedgeHog.Alice.Store {
     EventHandler _rateChangedDelegate;
     public event EventHandler RateChanged {
       add {
-        if ( _rateChangedDelegate == null || !_rateChangedDelegate.GetInvocationList().Contains(value))
+        if (_rateChangedDelegate == null || !_rateChangedDelegate.GetInvocationList().Contains(value))
           _rateChangedDelegate += value;
       }
       remove {
@@ -756,11 +772,11 @@ namespace HedgeHog.Alice.Store {
     bool _logTrades = true;
     [DisplayName("Log Trades")]
     [Category(categoryTrading)]
-    public bool LogTrades{
+    public bool LogTrades {
       get { return _logTrades; }
       set {
-          _logTrades = value;
-          OnPropertyChanged(()=>LogTrades);
+        _logTrades = value;
+        OnPropertyChanged(() => LogTrades);
       }
     }
 
@@ -894,7 +910,7 @@ namespace HedgeHog.Alice.Store {
     [Description("TakeProfitFunction")]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
       get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
-      set { 
+      set {
         TakeProfitFunctionInt = (int)value;
         OnPropertyChanged(TradingMacroMetadata.TakeProfitFunction);
       }
@@ -921,7 +937,7 @@ namespace HedgeHog.Alice.Store {
             GannAngles = o.ToString();
           };
         }
-        return _GannAnglesList; 
+        return _GannAnglesList;
       }
     }
 
@@ -1111,7 +1127,7 @@ namespace HedgeHog.Alice.Store {
     [Description("Ex: ExitLevel = tradeLevel + TakeProfit")]
     public bool StreatchTakeProfit {
       get { return StreachTradingDistance; }
-      set { 
+      set {
         StreachTradingDistance = value;
         OnPropertyChanged(TradingMacroMetadata.StreatchTakeProfit);
       }
@@ -1122,7 +1138,7 @@ namespace HedgeHog.Alice.Store {
     [Description("Close position only when opposite opens.")]
     public bool CloseOnOpen_ {
       get { return CloseOnOpen; }
-      set { 
+      set {
         CloseOnOpen = value;
         OnPropertyChanged(TradingMacroMetadata.CloseOnOpen_);
       }
@@ -1145,7 +1161,7 @@ namespace HedgeHog.Alice.Store {
     public bool CloseOnProfitOnly_ {
       get { return CloseOnProfitOnly; }
       set {
-        if(CloseOnProfitOnly == value)return;
+        if (CloseOnProfitOnly == value) return;
         CloseOnProfitOnly = value;
         OnPropertyChanged(Metadata.TradingMacroMetadata.CloseOnProfitOnly_);
       }
@@ -1168,7 +1184,7 @@ namespace HedgeHog.Alice.Store {
     [Description("Adjust exit level according to price movements since Trade started.")]
     public bool DoAdjustExitLevelByTradeTime {
       get { return CloseAllOnProfit; }
-      set { 
+      set {
         CloseAllOnProfit = value;
         OnPropertyChanged("DoAdjustExitLevelByTradeTime");
       }
@@ -1206,7 +1222,7 @@ namespace HedgeHog.Alice.Store {
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
     public int CorridorCrossesMaximum {
       get { return CorridorRatioForBreakout.ToInt(); }
-      set { 
+      set {
         CorridorRatioForBreakout = value;
         OnPropertyChanged(Metadata.TradingMacroMetadata.CorridorCrossesMaximum);
       }
@@ -1363,7 +1379,7 @@ namespace HedgeHog.Alice.Store {
       }
       throw new NotSupportedException(method.GetType().Name + "." + method + " is not supported");
     }
-    TradeCrossMethod[] _tradeEnterByCalc =  new TradeCrossMethod[0];
+    TradeCrossMethod[] _tradeEnterByCalc = new TradeCrossMethod[0];
     [DisplayName("Trade Enter By")]
     [Category(categoryActiveFuncs)]
     public TradeCrossMethod TradeEnterBy {
@@ -1580,7 +1596,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    
+
     #endregion
 
     [DisplayName("LoadRates Seconds Warning")]
@@ -1817,8 +1833,8 @@ namespace HedgeHog.Alice.Store {
         return IsInVitualTrading
           ? _Rates.Count > 0
           ? _Rates.LastBC().StartDate.AddMinutes(BarPeriodInt)
-          : DateTime.MinValue 
-          : TradesManager == null || !TradesManager.IsLoggedIn ? DateTime.MinValue 
+          : DateTime.MinValue
+          : TradesManager == null || !TradesManager.IsLoggedIn ? DateTime.MinValue
           : TradesManager.ServerTime;
       }
     }
@@ -1898,5 +1914,32 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    IEnumerable<TradeLevelBy> GetLevelByByProximity(SuppRes suppRes, Rate rate) {
+      return (from tl in TradeLevelFuncs.Where(tl => tl.Key != TradeLevelBy.None)
+              where suppRes.InManual
+              let b = new { level = tl.Key, dist = suppRes.Rate.Abs(tl.Value(rate, CorridorStats)) }
+              orderby b.dist
+              select b.level
+              )
+              .DefaultIfEmpty(TradeLevelBy.None)
+              .Take(1);
+    }
+    public void SetLevelsBy(SuppRes suppRes = null) {
+      var rate = RateLast;
+      if ((suppRes ?? BuyLevel) == BuyLevel)
+        SetLevelBy(BuyLevel, rate, tl => LevelBuyBy = tl);
+      if ((suppRes ?? BuyCloseLevel) == BuyCloseLevel)
+        SetLevelBy(BuyCloseLevel, rate, tl => LevelBuyCloseBy = tl);
+      if ((suppRes ?? SellLevel) == SellLevel)
+        SetLevelBy(SellLevel, rate, tl => LevelSellBy = tl);
+      if ((suppRes ?? SellCloseLevel) == SellCloseLevel)
+        SetLevelBy(SellCloseLevel, rate, tl => LevelSellCloseBy = tl);
+    }
+    private void SetLevelBy(SuppRes suppRes, Rate rate, Action<TradeLevelBy> setLevel) {
+      GetLevelByByProximity(suppRes, rate)
+        .Do(setLevel)
+        .ForEach(_ => suppRes.InManual = false);
+    }
   }
 }

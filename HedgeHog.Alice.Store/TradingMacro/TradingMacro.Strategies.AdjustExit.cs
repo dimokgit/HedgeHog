@@ -93,8 +93,8 @@ namespace HedgeHog.Alice.Store {
         #endregion
         var tradesCount = Trades.Length;
         if (tradesCount == 0) {
-          if(LevelBuyCloseBy == TradeLevelBy.None) setExitLevel(buyCloseLevel);
-          if(LevelSellCloseBy == TradeLevelBy.None) setExitLevel(sellCloseLevel);
+          if (LevelBuyCloseBy == TradeLevelBy.None) setExitLevel(buyCloseLevel);
+          if (LevelSellCloseBy == TradeLevelBy.None) setExitLevel(sellCloseLevel);
         } else {
           if (!Trades.Any()) {
             throw new Exception("Should have some trades here.");
@@ -118,7 +118,7 @@ namespace HedgeHog.Alice.Store {
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
             var takeProfitLocal = TakeProfitPips.Max(takeBackInPips).Min(ratesHeightInPips);
-
+            var isReversedCorridor = SellLevel.Rate > BuyLevel.Rate;
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {
@@ -129,7 +129,7 @@ namespace HedgeHog.Alice.Store {
               var levelBy = LevelBuyCloseBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
               buyCloseLevel.RateEx = new[]{
                 levelBy.IfNaN(Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
-                ,priceAvgMax
+                ,isReversedCorridor?double.MinValue: priceAvgMax
               }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
               ;
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
@@ -146,7 +146,7 @@ namespace HedgeHog.Alice.Store {
               var levelBy = LevelSellCloseBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
               sellCloseLevel.RateEx = new[] { 
                 levelBy.IfNaN(Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
-                , priceAvgMin
+                , isReversedCorridor? double.MaxValue: priceAvgMin
               }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
               ;
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())

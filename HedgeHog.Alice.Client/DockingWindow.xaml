@@ -45,11 +45,13 @@
 										 >
             <TextBlock.ToolTip>
               <TextBlock FontFamily="Courier New">
+                <Run>0,1 - Corridor Cross Count</Run><LineBreak/>
+                <Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
+                <Run>C   - Clear Custom Corridor</Run><LineBreak/>
+                <Run>H   - Fit chart to view</Run><LineBreak/>
+                <Run>L   - Set LevelsBy Corridor</Run><LineBreak/>
                 <Run>M   - Manual Mode (On/Off)</Run><LineBreak/>
                 <Run>T   - Buy/Sell (On/Off)</Run><LineBreak/>
-                <Run>0,1 - Corridor Cross Count</Run><LineBreak/>
-                <Run>H   - Fit chart to view</Run><LineBreak/>
-                <Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
                 <Run>/?p - Pause Virtual Trading(On/Off)</Run><LineBreak/>
                 <Run>> - Advance on bar</Run>
               </TextBlock>
