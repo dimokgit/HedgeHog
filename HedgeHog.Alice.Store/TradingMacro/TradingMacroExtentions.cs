@@ -34,6 +34,7 @@ using System.ComponentModel.Composition;
 using ReactiveUI;
 using HedgeHog.NewsCaster;
 using System.Data.Entity.Core.Objects.DataClasses;
+using HedgeHog;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
@@ -247,9 +248,10 @@ namespace HedgeHog.Alice.Store {
           a.Pairs.Add(new Tuple<string, int>(this.Pair, this.BarPeriodInt));
         });
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<CloseAllTradesMessage<TradingMacro>>(this, a => {
-        if (IsActive && TradesManager != null && Trades.Any())
-          CloseTrading("CloseAllTradesMessage");
-        a.OnClose(this);
+        if (IsActive && TradesManager != null) {
+          if (Trades.Any()) CloseTrading("CloseAllTradesMessage");
+          a.OnClose(this);
+        }
       });
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<TradeLineChangedMessage>(this, a => {
         if (a.Target == this && _strategyOnTradeLineChanged != null)
@@ -1804,6 +1806,7 @@ namespace HedgeHog.Alice.Store {
     public double[] ResistancePrices { get { return Resistances.Select(sr => sr.Rate).ToArray(); } }
     #endregion
 
+    #region CenterOfMass
     double _CenterOfMassSell = double.NaN;
     public double CenterOfMassSell {
       get { return _CenterOfMassSell; }
@@ -1814,7 +1817,18 @@ namespace HedgeHog.Alice.Store {
       get { return _CenterOfMassBuy; }
       private set { _CenterOfMassBuy = value; }
     }
+    double _CenterOfMassSell2 = double.NaN;
+    public double CenterOfMassSell2 {
+      get { return _CenterOfMassSell2; }
+      private set { _CenterOfMassSell2 = value; }
+    }
+    double _CenterOfMassBuy2 = double.NaN;
+    public double CenterOfMassBuy2 {
+      get { return _CenterOfMassBuy2; }
+      private set { _CenterOfMassBuy2 = value; }
+    }
 
+    #endregion
     public double SuppResMinimumDistance { get { return CurrentPrice.Spread * 2; } }
 
     #region MagnetPrice
@@ -2749,7 +2763,7 @@ namespace HedgeHog.Alice.Store {
         default:
           throw new NotImplementedException(new { function } + "");
       }
-      return tp;
+      return TakeProfitManual.IfNaN(tp);
     }
 
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
@@ -3258,11 +3272,12 @@ namespace HedgeHog.Alice.Store {
           break;
         case TradingMacroMetadata.Strategy:
         case TradingMacroMetadata.TrailingDistanceFunction:
-        case TradingMacroMetadata.TakeProfitFunction:
           _strategyExecuteOnTradeClose = null;
           _strategyExecuteOnTradeOpen = null;
           CloseAtZero = false;
           _tradingDistanceMax = 0;
+          goto case TradingMacroMetadata.TakeProfitFunction;
+        case TradingMacroMetadata.TakeProfitFunction:
           OnScanCorridor(RatesArray);
           RaiseShowChart();
           break;

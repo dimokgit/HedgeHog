@@ -1831,17 +1831,28 @@ namespace HedgeHog.Alice.Store {
 
     private CorridorStatistics ScanCorridorByStDevAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg ?? CorridorPrice();
-      var ratesReversed = ratesForCorridor.ReverseIfNot().Select(cp).ToArray();
-      var rateLastIndex = 1;
-      ratesReversed.TakeWhile(r => ratesReversed.Take(++rateLastIndex).ToArray().Height() < StDevByPriceAvg + StDevByHeight).Count();
-      for (; rateLastIndex < ratesReversed.Length - 1; rateLastIndex += (rateLastIndex / 100) + 1) {
-        var coeffs = ratesReversed.Take(rateLastIndex).ToArray().Regress(1);
-        if (coeffs[1].Angle(BarPeriodInt, PointSize).Abs() < 1)
-          break;
-      }
-      WaveShort.Rates = null;
-      WaveShort.Rates = ratesForCorridor.ReverseIfNot().Take(rateLastIndex).ToArray();
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
+      Func<IList<Rate>, int> scan = rates => {
+        var prices = rates.Select(cp).ToArray();
+        var min = double.MaxValue;
+        var max = double.MinValue;
+        var heightMin = /*StDevByPriceAvg;*/ StDevByHeight * Math.E;
+        var rateLastIndex = prices
+          .Do(d => { min = min.Min(d); max = max.Max(d); })
+          .TakeWhile(_ => max - min < heightMin)
+          .Count();
+        int? slope = null;
+        for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
+          var coeffs = prices.Take(rli).ToArray().Regress(1);
+          var currSlope = coeffs.LineSlope().Sign();
+          if (!slope.HasValue) slope = currSlope;
+          if (currSlope != slope.Value) {
+            rateLastIndex = rli;
+            break;
+          }
+        }
+        return rateLastIndex;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
 
     #endregion

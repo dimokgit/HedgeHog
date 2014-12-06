@@ -11,6 +11,7 @@ using System.Reactive.Concurrency;
 using System.Threading;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
+using System.Reactive.Subjects;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -181,20 +182,43 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => voltsAvg + voltsStDev;
         GetVoltageLow = () => voltsAvg - voltsStDev * 2;
       }
+    }
+    #region SetCentersOfMass Subject
+    object _SetCentersOfMassSubjectLocker = new object();
+    ISubject<Action> _SetCentersOfMassSubject;
+    ISubject<Action> SetCentersOfMassSubject {
+      get {
+        lock (_SetCentersOfMassSubjectLocker)
+          if (_SetCentersOfMassSubject == null) {
+            _SetCentersOfMassSubject = new Subject<Action>();
+            _SetCentersOfMassSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
+            //.Latest().ToObservable(new EventLoopScheduler(ts => { return new Thread(ts) { IsBackground = true }; }))
+            //.Subscribe(s => s(), exc => Log = exc);
+          }
+        return _SetCentersOfMassSubject;
+      }
+    }
+    void OnSetCentersOfMass(Action p) {
+      SetCentersOfMassSubject.OnNext(p);
+    }
+    #endregion
+    private void SetCentersOfMass() {
       var height = StDevByPriceAvg;
-      var bottom = RatesArray.Min(_priceAvg);
-      var top = RatesArray.Max(_priceAvg) - height;
-      Enumerable.Range(0, InPips(top - bottom).ToInt())
-        .AsParallel()
-        .Select(i => {
-          var b = bottom + InPoints(i);
-          var t = b + height;
-          return new { b, t, c = RatesArray.Where(r => r.PriceAvg.Between(b, t)).Count() };
-        }).OrderByDescending(a => a.c)
+      var ranges = RatesArray.BufferVertical2(_priceAvg, height, (rate, i, b, t) => new { b, t, rate })
+        .Select(a => new { a, s = a.StDev(b => b.rate.PriceAvg),c = a.Count })
+        .ToArray();
+      ranges
+        .OrderByDescending(a=>a.c)
+        .Take(1)
+      .ForEach(a => {
+        CenterOfMassBuy = a.a[0].t;
+        CenterOfMassSell = a.a[0].b;
+      });
+      ranges.OrderBy(a=>a.s)
         .Take(1)
         .ForEach(a => {
-          CenterOfMassBuy = a.t;
-          CenterOfMassSell = a.b;
+          CenterOfMassBuy2 = a.a[0].t;
+          CenterOfMassSell2 = a.a[0].b;
         });
     }
 

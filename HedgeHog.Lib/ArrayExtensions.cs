@@ -11,7 +11,7 @@ namespace HedgeHog {
     public static IEnumerable<U> Reverse<T, U>(this IEnumerable<T> source, Func<T, U> projector) {
       return source.Reverse().Select(projector);
     }
-    public static IEnumerable<U> Reverse<T, U>(this IEnumerable<T> source, Func<T,int, U> projector) {
+    public static IEnumerable<U> Reverse<T, U>(this IEnumerable<T> source, Func<T, int, U> projector) {
       return source.Reverse().Select(projector);
     }
     public class EdgeInfo {
@@ -115,15 +115,15 @@ namespace HedgeHog {
         heights.Add(min += step);
       var levelsWithCrosses = heights.Where(h => !h.Between(-heightMin, heightMin))
         .Aggregate(new { line = new double[0], height = 0.0, indexes = new int[0], distAvg = 0.0 }.YieldBreakAsList(), (list, height) => {
-        var line = middleLine.Select(ml => ml + height).ToArray();
-        var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
-        if (indexes.Length >= 4) {
-          var distanses = indexes.Zip(indexes.Skip(1), (p, n) => (double)n - p).ToArray();
-          var distAvg = distanses.AverageByIterations(3).Average();
-          list.Add(new { line, height, indexes, distAvg });
-        }
-        return list;
-      }, list => list.ToArray());
+          var line = middleLine.Select(ml => ml + height).ToArray();
+          var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
+          if (indexes.Length >= 4) {
+            var distanses = indexes.Zip(indexes.Skip(1), (p, n) => (double)n - p).ToArray();
+            var distAvg = distanses.AverageByIterations(3).Average();
+            list.Add(new { line, height, indexes, distAvg });
+          }
+          return list;
+        }, list => list.ToArray());
       //levelsWithCrosses = levelsWithCrosses.OrderByDescending(l => l.distAvg).ToArray();
       //levelsWithCrosses = levelsWithCrosses.AverageByIterations(l => l.distAvg, (v, a) => v >= a, 3).ToArray();
       return levelsWithCrosses.Aggregate(new { height = 0.0, sumAvg = 0.0, indexes = new int[0] }.YieldBreakAsList(), (list, levelWithCrosses) => {
@@ -159,17 +159,17 @@ namespace HedgeHog {
         }
         return list;
       }, list => //!list.Any() ? crossesCount > 1 ? values.Edge(step, crossesCount - 1) : new EdgeInfo[0]:
-         list.GroupBy(l => l.height.Sign()).Select(l => l.OrderBy(a=>a.sumAvg).First().height).ToArray());
+         list.GroupBy(l => l.height.Sign()).Select(l => l.OrderBy(a => a.sumAvg).First().height).ToArray());
     }
 
-    public static IList<Tuple<double,int>> CrossedLevelsWithGap(this double[] values, double step) {
+    public static IList<Tuple<double, int>> CrossedLevelsWithGap(this double[] values, double step) {
       if (values.Length < 3) return new[] { new Tuple<double, int>(double.NaN, 0) };
       Func<double, double, double> calcRatio = (d1, d2) => d1 < d2 ? d1 / d2 : d2 / d1;
       var min = values.Min();
       var max = values.Max();
       var steps = max.Sub(min).Div(step).ToInt();
       var heights = Enumerable.Range(1, steps - 1).Select(s => min + s * step).ToArray();
-      return Partitioner.Create(heights,true).AsParallel()
+      return Partitioner.Create(heights, true).AsParallel()
         .Aggregate(new Tuple<double, int>(double.NaN, 0).YieldBreakAsList(), (list, height) => {
           var line = Enumerable.Repeat(height, values.Length).ToArray();
           var indexes = line.Crosses3(values).Select(t => t.Item2).ToArray();
@@ -199,7 +199,7 @@ namespace HedgeHog {
     public static IEnumerable<double> Mirror(this double[] prices, double linePrice) {
       return prices.Select(p => linePrice * 2 - p);
     }
-    public static IEnumerable<IGrouping<int,T>> Gaps<T>(this IEnumerable<T> values,double level,Func<T,double> valueFunc) {
+    public static IEnumerable<IGrouping<int, T>> Gaps<T>(this IEnumerable<T> values, double level, Func<T, double> valueFunc) {
       return values.ChunkBy(value => valueFunc(value).SignUp(level)).Skip(1).SkipLast(1);
     }
     public static IEnumerable<IEnumerable<IGrouping<int, T>>> PriceRangeGaps<T>(this IList<T> rates
@@ -207,6 +207,7 @@ namespace HedgeHog {
       , Func<T, double> getPrice
       , Func<double?, double> toSteps) {
       return from revs in rates.Yield()
+             where rates.Count > 0
              let min = getPrice(rates.MinBy(getPrice).First())
              let max = getPrice(rates.MaxBy(getPrice).First())
              let range = toSteps(max - min).ToInt()

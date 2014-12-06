@@ -525,6 +525,9 @@ namespace HedgeHog.Bars {
       if (distance.IsNaN()) throw new InvalidDataException("Distance calculation resulted in NaN.");
       return distance;
     }
+    public static IEnumerable<U> Distance<T,U>(this IList<T> rates, Func<T, double> getPrice,Func<T,T,double,U> map) {
+      return rates.Zip(rates.Skip(1), (r1, r2) => map(r1,r2,getPrice(r1).Abs(getPrice(r2))));
+    }
     public static IEnumerable<TResult> Pairwise<TSequence, TResult>(this IEnumerable<TSequence> seq, Func<TSequence, TSequence, TResult> resultSelector) {
       TSequence prev = default(TSequence);
       using (IEnumerator<TSequence> e = seq.GetEnumerator()) {

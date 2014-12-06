@@ -18,6 +18,7 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(rates, new Lazy<int>(() => counter(rates)), showVolts);
     }
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
+      OnSetCentersOfMass(SetCentersOfMass);
 
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
         if (ratesReversed.Count < RatesArray.Count) return ratesReversed.Count;

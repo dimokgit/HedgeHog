@@ -112,6 +112,19 @@ namespace HedgeHog {
     public static List<T> SafeList<T>(this IEnumerable<T> values) {
       return values as List<T> ?? values.ToList();
     }
+    /// <summary>
+    /// Calculate overlapped area for two areas
+    /// </summary>
+    /// <param name="low1"></param>
+    /// <param name="high1"></param>
+    /// <param name="low2"></param>
+    /// <param name="high2"></param>
+    /// <returns>Persentage of overlapped area relative to average height of both areas</returns>
+    public static double OverlapRatio(double low1,double high1,double low2,double high2){
+      var heightAvg = (high1-low1).Avg(high2-low2);
+      var overlap = high2.Min(high1)- low1.Max(low2);
+      return overlap / heightAvg;
+    }
 
     /// <summary>
     /// Ratio between Max(a,b)/Min(a,b)
@@ -505,7 +518,7 @@ namespace HedgeHog {
     }
 
     public static double Angle(this double tangent, int barMinutes, double divideBy = 1) {
-      return Math.Atan(tangent / divideBy) * (180 / Math.PI) / barMinutes;
+      return Math.Atan(tangent / divideBy) * (180 / Math.PI) / barMinutes.Max(1);
     }
     public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
 
@@ -571,7 +584,6 @@ namespace HedgeHog {
       return Math.Sin(Math.PI / 2 - slope / pointSize);
     }
     private static double Abs(this double d) { return Math.Abs(d); }
-    private static int Sign(this double d) { return Math.Sign(d); }
     private static bool IsNaN(this double d) { return double.IsNaN(d); }
     public class Extream<T> {
       public T Element { get; set; }
@@ -844,14 +856,6 @@ namespace HedgeHog {
       return values.Count() == 0 ? defaultValue() : values.Average();
     }
 
-    public static int Floor(this double d) { return (int)Math.Floor(d); }
-    public static int Floor(this double d, double other) { return (int)Math.Floor(d / other); }
-    public static int Floor(this int d, double other) { return (int)Math.Floor(d / other); }
-    public static int Ceiling(this double d) { return (int)Math.Ceiling(d); }
-    public static int ToInt(this double d, bool useCeiling) {
-      return (int)(useCeiling ? Math.Ceiling(d) : Math.Floor(d));
-    }
-    public static int ToInt(this double d) { return (int)Math.Round(d, 0); }
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
     public enum RoundTo { Second, Minute, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
@@ -906,28 +910,5 @@ namespace HedgeHog {
       return dt.AddMinutes(dt.Minute / period * period - dt.Minute);
     }
 
-    #region Between
-    public static bool Between(this int value, double d1, double d2) {
-      return Math.Min(d1, d2) <= value && value <= Math.Max(d1, d2);
-    }
-    public static bool Between(this double value, double[] dd) {
-      return value.Between(dd[0], dd[1]);
-    }
-    public static bool Between(this double value, double d1, double d2) {
-      return d1 < d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
-    }
-    public static bool Between(this DateTime value, DateTime d1, DateTime d2) {
-      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
-    }
-    public static bool Between(this DateTime value, DateTimeOffset d1, DateTimeOffset d2) {
-      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
-    }
-    public static bool Between(this DateTimeOffset value, DateTimeOffset d1, DateTimeOffset d2) {
-      return d1 <= d2 ? d1 <= value && value <= d2 : d2 <= value && value <= d1;
-    }
-    public static bool Between(this TimeSpan value, TimeSpan d1, TimeSpan d2) {
-      return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
-    }
-    #endregion
   }
 }

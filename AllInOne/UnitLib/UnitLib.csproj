@@ -170,6 +170,10 @@
       <Project>{29F0B895-BF08-4747-A454-D44C7E43C7B1}</Project>
       <Name>HedgeHog.Charter</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\HedgeHog.Core.Reactive\HedgeHog.Core.Reactive.csproj">
+      <Project>{edc8fa19-6e01-4997-84ba-ee5881fb3a52}</Project>
+      <Name>HedgeHog.Core.Reactive</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.Core\HedgeHog.Core.csproj">
       <Project>{0ff063e1-e910-4d16-976b-15bc31d11159}</Project>
       <Name>HedgeHog.Core</Name>

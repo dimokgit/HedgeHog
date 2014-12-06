@@ -310,6 +310,8 @@ namespace HedgeHog {
 
     public double CenterOfMassBuy { get; set; }
     public double CenterOfMassSell { get; set; }
+    public double CenterOfMassBuy2 { get; set; }
+    public double CenterOfMassSell2 { get; set; }
 
 
     #region Lines
@@ -418,6 +420,7 @@ namespace HedgeHog {
       }
     }
 
+    #region CenterOfMass
     static Brush centerOfMassBrush = new SolidColorBrush(Colors.SteelBlue);
     static int centerOfMassStrokeThickness = 0;
     static DoubleCollection centerOfMassStrokeDashArray = new DoubleCollection(new double[] { 5, 2, 2, 2 });
@@ -459,6 +462,51 @@ namespace HedgeHog {
         centerOfMassHLineLow.ToolTip = value;
       }
     }
+    #endregion
+    #region CenterOfMass2
+    static Brush centerOfMassBrush2 = new SolidColorBrush(Colors.SteelBlue);
+    static int centerOfMassStrokeThickness2 = 0;
+    static DoubleCollection centerOfMassStrokeDashArray2 = new DoubleCollection(new double[] { 5, 2, 2, 2 });
+    HorizontalLine CenterOfMassFactory2(double value = 0.0) {
+      return new HorizontalLine() {
+        StrokeThickness = centerOfMassStrokeThickness2, StrokeDashArray = centerOfMassStrokeDashArray2, Stroke = centerOfMassBrush2
+      };
+
+    }
+    HorizontalLine _centerOfMassHLineHigh2;
+    HorizontalLine centerOfMassHLineHigh2 {
+      get {
+        if (_centerOfMassHLineHigh2 == null) {
+          _centerOfMassHLineHigh2 = CenterOfMassFactory2();
+          _centerOfMassHLineHigh2.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
+        }
+        return _centerOfMassHLineHigh2;
+      }
+    }
+    double CenterOfMassHLineHigh2 {
+      set {
+        centerOfMassHLineHigh2.Value = value;
+        centerOfMassHLineHigh2.ToolTip = value;
+      }
+    }
+    HorizontalLine _centerOfMassHLineLow2;
+    HorizontalLine centerOfMassHLineLow2 {
+      get {
+        if (_centerOfMassHLineLow2 == null) {
+          _centerOfMassHLineLow2 = CenterOfMassFactory2();
+          _centerOfMassHLineLow2.SetBinding(HorizontalLine.VisibilityProperty, new Binding("DoShowCenterOfMass") { Converter = new BooleanToVisibilityConverter() });
+        }
+        return _centerOfMassHLineLow2;
+      }
+    }
+    double CenterOfMassHLineLow2 {
+      set {
+        centerOfMassHLineLow2.Value = value;
+        centerOfMassHLineLow2.ToolTip = value;
+      }
+    }
+    #endregion
+
 
     HorizontalLine magnetPrice;
     public double MagnetPrice {
@@ -1459,6 +1507,7 @@ namespace HedgeHog {
     }
     RectangleHighlight _shortWaveVerticalRange = null;
     HorizontalRange _tradingHorisontalRange = null;
+    HorizontalRange _tradingHorisontalRange2 = null;
     VerticalRange _londonSessionHorisontalRange = null;
 
     // Minor ticks
@@ -1630,9 +1679,11 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #region Add Lines
 
       _tradingHorisontalRange = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 0 };
+      _tradingHorisontalRange2 = new HorizontalRange() { Fill = new SolidColorBrush(Colors.LightGreen), StrokeThickness = 0 };
       _londonSessionHorisontalRange = new VerticalRange() { Fill = new SolidColorBrush(Colors.MediumVioletRed), StrokeThickness = 0, Opacity = .04 };
 
       plotter.Children.Add(_tradingHorisontalRange);
+      plotter.Children.Add(_tradingHorisontalRange2);
       plotter.Children.Add(_londonSessionHorisontalRange);
 
       _shortWaveVerticalRange = new RectangleHighlight() { Fill = new SolidColorBrush(Colors.LightBlue), StrokeThickness = 1, Opacity = _tradingHorisontalRange.Opacity };
@@ -1987,6 +2038,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     private void SetTradingRange(object suppRes, double position) {
       _tradingHorisontalRange.Value1 = centerOfMassHLineHigh.Value;
       _tradingHorisontalRange.Value2 = centerOfMassHLineLow.Value;
+      _tradingHorisontalRange2.Value1 = centerOfMassHLineHigh2.Value;
+      _tradingHorisontalRange2.Value2 = centerOfMassHLineLow2.Value;
       //if (!suppRes.GetProperty<bool>("IsExitOnly"))
       //  if (suppRes.GetProperty<bool>("IsBuy")) _tradingHorisontalRange.Value1 = position;
       //  else _tradingHorisontalRange.Value2 = position;
@@ -2184,6 +2237,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
           //LineAvgBid = lastPrice.Bid;
           CenterOfMassHLineHigh = CenterOfMassBuy;
           CenterOfMassHLineLow = CenterOfMassSell;
+          CenterOfMassHLineHigh2 = CenterOfMassBuy2;
+          CenterOfMassHLineLow2 = CenterOfMassSell2;
 
           //SetFibLevels(priceMaxAvg, priceMinAvg);
 

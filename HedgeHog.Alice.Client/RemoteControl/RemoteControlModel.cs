@@ -14,6 +14,7 @@ using System.Data.Entity.Core.Objects;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -216,7 +217,9 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro((CharterControl)sender);
       tm.IsTradingActive = false;
       if (tm.CorridorStartDate == e.NewPosition) return;
-      var index = tm.RatesArray.IndexOf(new Rate() { StartDate2 = e.NewPosition.ToUniversalTime() });
+      var startDate2 = e.NewPosition.ToUniversalTime();
+      var index = tm.RatesArray.TakeWhile(r => r.StartDate2 < startDate2).Count();
+      //var index = tm.RatesArray.IndexOf(new Rate() { StartDate2 = e.NewPosition.ToUniversalTime() });
       var rate = tm.RatesArray.GetRange(index - 5, 10).OrderByDescending(r => r.PriceHigh - r.PriceLow).First();
       tm.CorridorStartDate = rate.StartDate;
     }
@@ -449,33 +452,24 @@ namespace HedgeHog.Alice.Client {
     }
 
     Task loadHistoryTast;
-    bool isLoadHistoryTaskRunning { get { return loadHistoryTast != null && loadHistoryTast.Status == TaskStatus.Running; } }
+    bool isLoadHistoryTaskRunning;
     ReactiveCommand<object> _PriceHistoryCommand;
     public ReactiveCommand<object> PriceHistoryCommand {
       get {
         if (_PriceHistoryCommand == null) {
-          _PriceHistoryCommand = ReactiveCommand.Create(this.WhenAnyValue(x => !x.isLoadHistoryTaskRunning));
-          _PriceHistoryCommand.Subscribe(PriceHistory);
+          _PriceHistoryCommand = ReactiveCommand.CreateAsyncTask<object>(PriceHistory);
+          _PriceHistoryCommand.ThrownExceptions.Subscribe(exc => MessageBox.Show(exc + ""));
         }
 
         return _PriceHistoryCommand;
       }
     }
-    void PriceHistory(object o) {
+    async Task<object> PriceHistory(object o) {
       var tm = o as TradingMacro;
-      if (tm.MonthsOfHistory <= 0) {
-        Log = new ArgumentException(new { tm.MonthsOfHistory } + " must be more than zero.");
-      } else {
-        if (isLoadHistoryTaskRunning)
-          MessageBox.Show("LoadHistoryTask is in " + loadHistoryTast.Status + " status.");
-        else {
-          Action a = () => { Store.PriceHistory.AddTicks(fwMaster, (int)tm.BarPeriod, tm.Pair, fwMaster.ServerTime.AddMonths(-tm.MonthsOfHistory), obj => Log = new Exception(obj + "")); };
-          if (loadHistoryTast != null && !loadHistoryTast.Wait(0))
-            Log = new Exception("Task is running.");
-          else
-            loadHistoryTast = Task.Factory.StartNew(a);
-        }
-      }
+      await Task.Factory.StartNew(() => {
+        Store.PriceHistory.AddTicks(fwMaster, (int)tm.BarPeriod, tm.Pair, fwMaster.ServerTime.AddMonths(-tm.MonthsOfHistory.Max(1)), obj => Log = new Exception(obj + ""));
+      });
+      return null;
     }
 
 
@@ -1026,9 +1020,11 @@ namespace HedgeHog.Alice.Client {
           charter.GetPriceHigh = tm.ChartHighPrice();
           charter.GetPriceLow = tm.ChartLowPrice();
           charter.GetPriceMA = tm.GetPriceMA();
-          
+
           charter.CenterOfMassBuy = tm.CenterOfMassBuy;
           charter.CenterOfMassSell = tm.CenterOfMassSell;
+          charter.CenterOfMassBuy2 = tm.CenterOfMassBuy2;
+          charter.CenterOfMassSell2 = tm.CenterOfMassSell2;
           charter.MagnetPrice = tm.MagnetPrice;
           
           charter.SelectedGannAngleIndex = tm.GannAngleActive;

@@ -12,10 +12,13 @@ namespace HedgeHog.Alice.Store {
     private Func<Rate, double> CorridorPrice() {
       switch (CorridorHighLowMethod) {
         case CorridorHighLowMethod.AskHighBidLow:
+        case CorridorHighLowMethod.AskLowBidHigh:
+        case CorridorHighLowMethod.BidHighAskLow:
+        case CorridorHighLowMethod.BidLowAskHigh:
         case CorridorHighLowMethod.Average: return r => r.PriceAvg;
         case CorridorHighLowMethod.PriceMA: return GetPriceMA();
       }
-      throw new NotSupportedException(new { CorridorHighLowMethod } + "is not supported.");
+      throw new NotSupportedException(new { Method="CorridorPrice", CorridorHighLowMethod } + "is not supported.");
     }
 
 

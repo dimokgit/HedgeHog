@@ -44,8 +44,20 @@ namespace HedgeHog {
 
       return (!enumerable.Any()) ? thenSelector() : elseSelector();
     }
+    public static IEnumerable<TSource> IfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
+      using (var enumerator = source.GetEnumerator()) {
+        if (enumerator.MoveNext()) {
+          do {
+            yield return enumerator.Current;
+          }
+          while (enumerator.MoveNext());
+        } else
+          yield return getDefaultValue();
+      }
+    }
     #endregion
 
+    #region Yield
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
@@ -69,17 +81,6 @@ namespace HedgeHog {
         yield return yielder();
       else yield break;
     }
-    public static IEnumerable<TSource> IfEmpty<TSource>(this IEnumerable<TSource> source, Func<TSource> getDefaultValue) {
-      using (var enumerator = source.GetEnumerator()) {
-        if (enumerator.MoveNext()) {
-          do {
-            yield return enumerator.Current;
-          }
-          while (enumerator.MoveNext());
-        } else
-          yield return getDefaultValue();
-      }
-    }
     public static IEnumerable<T> YieldBreak<T>(this T v) { yield break; }
     public static Queue<T> ToQueue<T>(this IEnumerable<T> t) {
       return new Queue<T>(t);
@@ -87,8 +88,51 @@ namespace HedgeHog {
     public static List<T> YieldBreakAsList<T>(this T v) {
       return v.YieldBreak().ToList();
     }
+    #endregion
     public static T[] AsArray<T>(this T v, int size) {
       return new T[size];
+    }
+    public static IEnumerable<IList<V>> BufferVertical2<T, V>(
+      this IEnumerable<T> input
+      , Func<T, double> getValue
+      , double height
+      , Func<T, int, double, double, V> mapInputValue
+      ) {
+      var values = input.Select((v, i) => new { v, i }).OrderBy(d => getValue(d.v)).ToArray();
+      var valuesRange = values.Distinct(a => getValue(a.v)).ToArray();
+      var last = getValue(valuesRange.Last().v);
+      //var strips = values.BufferVertical(d => d, 0.05, (d => d * .009 * 3), (b, t, rates) => new { b, t, rates }).ToArray();
+      var ranges = (
+        from value in valuesRange
+        let bottom = getValue(value.v)
+        let top = bottom + height
+        where top <= last
+        select new { value.v, bottom, top }
+        )
+        .Select(value => {
+          var bottom = getValue(value.v);
+          var top = bottom + height;
+          return
+            values
+            .SkipWhile(d => getValue(d.v) < bottom)
+            .TakeWhile(d => getValue(d.v) <= top)
+            .Select(d => new { d.i, m = mapInputValue(d.v, d.i, bottom, top) })
+            .OrderBy(d => d.i)
+            .Select(d => d.m)
+            .ToArray();
+        });
+      return ranges;
+    }
+    public delegate U BufferVerticalDelegate<T, U>(double bottom, double top, IEnumerable<T> values);
+    public static IEnumerable<U> BufferVertical<T, U>(this IList<T> rates, Func<T, double> _priceAvg, double height, Func<double, double> toStep, BufferVerticalDelegate<T, U> map) {
+      var bottom = rates.Min(_priceAvg);
+      var top = rates.Max(_priceAvg) - height;
+      return Enumerable.Range(0, (top - bottom).Div(toStep(1)).ToInt())
+        .Select(i => {
+          var b = bottom + toStep(i);
+          var t = b + height;
+          return map(b, t, rates.Where(r => _priceAvg(r).Between(b, t)));
+        });
     }
 
   }
