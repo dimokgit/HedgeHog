@@ -61,9 +61,14 @@ namespace HedgeHog {
     public static IEnumerable<U> Yield<T, U>(this T v, Func<T, U> m) { yield return m(v); }
     public static IEnumerable<object> YieldObject(this object v) { yield return v; }
     public static IEnumerable<T> Yield<T>(this T v) { yield return v; }
+    public static IEnumerable<T> YieldNotNull<T>(this T v) { return v.YieldNotNull(true); }
     public static IEnumerable<T> YieldNotNull<T>(this T v, bool? condition) {
       if (v == null) yield break;
       if (!condition.HasValue || condition.Value) yield return v;
+      yield break;
+    }
+    public static IEnumerable<bool> YieldTrue(this bool v) {
+      if (v) yield return v;
       yield break;
     }
     public static IEnumerable<T> YieldIf<T>(this T v, bool condition) {
@@ -100,7 +105,7 @@ namespace HedgeHog {
       ) {
       var values = input.Select((v, i) => new { v, i }).OrderBy(d => getValue(d.v)).ToArray();
       var valuesRange = values.Distinct(a => getValue(a.v)).ToArray();
-      var last = getValue(valuesRange.Last().v);
+      var last = valuesRange.TakeLast(1).Select(a => getValue(a.v)).DefaultIfEmpty(double.NaN).Last();
       //var strips = values.BufferVertical(d => d, 0.05, (d => d * .009 * 3), (b, t, rates) => new { b, t, rates }).ToArray();
       var ranges = (
         from value in valuesRange

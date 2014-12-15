@@ -17,18 +17,14 @@ using System.Reactive.Subjects;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.IO;
-
-namespace UnitLib
-{
-    
-    
-    /// <summary>
-    ///This is a test class for LibTest and is intended
-    ///to contain all LibTest Unit Tests
-    ///</summary>
+namespace HedgeHog.Tests {
   [TestClass()]
   public class LibTest {
-
+    [TestMethod()]
+    public void OverlapRatioTest() {
+      var ol = MathExtensions.OverlapRatio(0, 10, 5, 15);
+      Assert.AreEqual(0.5, ol);
+    }
 
     private TestContext testContextInstance;
 
@@ -75,6 +71,11 @@ namespace UnitLib
     //
     #endregion
 
+    [TestMethod()]
+    public void PositionByMiddleTest() {
+      var pos = 3.0.PositionRatio(0, 10);
+      Assert.AreEqual(0.3, pos);
+    }
     [TestMethod]
     public void HourPlusMinus() {
       var i = (24 + 3) % 24;

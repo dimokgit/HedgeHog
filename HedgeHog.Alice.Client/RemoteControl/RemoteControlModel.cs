@@ -648,6 +648,7 @@ namespace HedgeHog.Alice.Client {
     CancellationTokenSource _threadCancelation = new CancellationTokenSource();
     public RemoteControlModel() {
       try {
+        _tradingStatistics.GetGrossInPips = () => CalculateCurrentGrossInPips();
         if (!IsInDesigh) {
           InitializeModel();
           App.container.SatisfyImportsOnce(this);
@@ -713,15 +714,8 @@ namespace HedgeHog.Alice.Client {
           var grosses = tms.Select(tm => tm.CurrentGross).Where(g => g != 0).DefaultIfEmpty().ToList();
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
-          var currentLoss = _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
           {
-            var totalGross = tradesManager.GetTrades().Gross() + currentLoss;
-            Func<TradingMacro, double> calcGrossInPips = tm => tradesManager.MoneyAndLotToPips(totalGross, tm.CurrentGrossLot, tm.Pair);
-            var currentGrossInPips = tms.Where(tm => tm.Trades.Any())
-              .IfEmpty(() => tms)
-              .Select(calcGrossInPips)
-              .Average();
-            _tradingStatistics.CurrentGrossInPips = currentGrossInPips;
+            _tradingStatistics.CurrentGrossInPips = _tradingStatistics.GetGrossInPips();
               //tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
               //.ToArray().Yield()
               //.Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
@@ -733,6 +727,23 @@ namespace HedgeHog.Alice.Client {
         Log = exc;
       }
     }
+
+    private double CalculateCurrentGrossInPips() {
+      TradingMacro[] tms = GetTradingMacrosForStatistics();
+      var currentLoss = _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
+      var totalGross = tradesManager.GetTrades().Gross() + currentLoss;
+      Func<TradingMacro, double> calcGrossInPips = tm => tradesManager.MoneyAndLotToPips(totalGross, tm.CurrentGrossLot, tm.Pair);
+      var currentGrossInPips = tms.Where(tm => tm.Trades.Any())
+        .IfEmpty(() => tms)
+        .Select(calcGrossInPips)
+        .Average();
+      return currentGrossInPips;
+    }
+
+    private TradingMacro[] GetTradingMacrosForStatistics() {
+      return GetTradingMacros().Where(tm => tm.Strategy != Strategies.None).ToArray();
+    }
+    //
     private void InitializeModel() {
       GlobalStorage.AliceMaterializerSubject
         .SubscribeOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
@@ -751,7 +762,7 @@ namespace HedgeHog.Alice.Client {
       }
       File.Move(fileName, fileName + ".old");
     }
-
+    // TODO Why TradingMacrosCopy.ToObservable()
     ~RemoteControlModel() {
       if (MasterModel != null) {
         MasterModel.CoreFX.LoggedIn -= CoreFX_LoggedInEvent;
@@ -960,7 +971,7 @@ namespace HedgeHog.Alice.Client {
         lock (_showChartQueueLocker) {
           if (_showChartQueue == null) {
             _showChartQueue = new Subject<Action>();
-            _showChartQueue.SubscribeToLatestOnBGThread(action => action.InvoceOnUI(), exc => Log = exc);
+            _showChartQueue.SubscribeToLatestOnBGThread(action => action.InvoceOnUI( DispatcherPriority.ContextIdle), exc => Log = exc);
           }
         }
         return _showChartQueue;
@@ -983,16 +994,18 @@ namespace HedgeHog.Alice.Client {
       try {
         if (_isMinimized) return;
         var charter = GetCharter(tm);
-        if (_isParentHidden.HasValue && !tm.Trades.Any()) {
-          charter.IsParentHidden = _isParentHidden.Value;
-          _isParentHidden = null;
+        if (tm.IsInVitualTrading) {
+          if (_isParentHidden.HasValue && !tm.Trades.Any()) {
+            charter.IsParentHidden = _isParentHidden.Value;
+            _isParentHidden = null;
+          }
+          if (charter.IsParentHidden && tm.Trades.Any()) {
+            _isParentHidden = true;
+            charter.IsParentHidden = false;
+          }
+          if (charter.IsParentHidden) return;
+          if (tm.IsCharterMinimized) return;
         }
-        if (charter.IsParentHidden && tm.Trades.Any()) {
-          _isParentHidden = true;
-          charter.IsParentHidden = false;
-        }
-        if (charter.IsParentHidden) return;
-        if (tm.IsCharterMinimized) return;
         Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
@@ -1032,7 +1045,7 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×[{1}]{2:n1}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{10}]"///↨↔
+            string.Format(":{0}×[{1}]{2:n2}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + (tm.RatesArray.Count == tm.BarsCountCalc ? "" : (',' + tm.BarsCountCalc.ToString()))
             /*2*/, tm.CorridorAngle

@@ -1371,8 +1371,11 @@ namespace HedgeHog.Alice.Store {
         case TradeCrossMethod.PriceAvg1: return r => r.PriceAvg1;
         case TradeCrossMethod.PriceCMA: return r => r.PriceCMALast;
         case TradeCrossMethod.ChartAskBid:
-          if (!isBuy.HasValue) throw new NotSupportedException(new { method, isBuy } + " is not supported.");
-          if (isBuy.Value) return r => r.PriceChartAsk; else return r => r.PriceChartBid;
+          return !isBuy.HasValue
+          ? r => r.PriceChartAsk.Avg(r.PriceChartBid)
+          : isBuy.Value
+          ? r => r.PriceChartAsk
+          : new Func<Rate,double>(r => r.PriceChartBid);
         case TradeCrossMethod.PriceCurr:
           if (!isBuy.HasValue) return _ => CurrentPrice.Average;
           if (isBuy.Value) return _ => CurrentPrice.Ask; else return _ => CurrentPrice.Bid;
@@ -1940,6 +1943,9 @@ namespace HedgeHog.Alice.Store {
       GetLevelByByProximity(suppRes, rate)
         .Do(setLevel)
         .ForEach(_ => suppRes.InManual = false);
+    }
+    private void ResetLevelBys() {
+      LevelBuyBy = LevelBuyCloseBy = LevelSellBy = LevelSellCloseBy = TradeLevelBy.None;
     }
   }
 }

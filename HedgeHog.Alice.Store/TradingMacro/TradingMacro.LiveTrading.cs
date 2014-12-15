@@ -189,6 +189,8 @@ namespace HedgeHog.Alice.Store {
     #region TakeProfitManual
     void ResetTakeProfitManual() { TakeProfitManual = double.NaN; }
     private double _TakeProfitManual = double.NaN;
+    [Category(categoryTrading)]
+    [Dnr]
     public double TakeProfitManual {
       get { return _TakeProfitManual; }
       set {

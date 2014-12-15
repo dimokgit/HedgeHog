@@ -5,8 +5,10 @@ using System.Text;
 
 namespace HedgeHog.Shared.Messages {
   public class CloseAllTradesMessage<T> {
-    public Action<T> OnClose { get; set; }
-    public CloseAllTradesMessage(Action<T> onClose) {
+    public T Sender { get; private set; }
+    public Action<T> OnClose { get; private set; }
+    public CloseAllTradesMessage(T sender, Action<T> onClose) {
+      this.Sender = sender;
       this.OnClose = onClose;
     }
   }

@@ -438,7 +438,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     void AccountModel_CloseAllTrades(object sender, EventArgs e) {
-      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage<TradingMacro>>(new CloseAllTradesMessage<TradingMacro>(tm => tm.CloseTrades("AccountModel_CloseAllTrades")));
+      GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CloseAllTradesMessage<TradingMacro>>(new CloseAllTradesMessage<TradingMacro>(null,tm => tm.CloseTrades("AccountModel_CloseAllTrades")));
     }
     public TradingAccountModel[] ServerAccountRow { get { return new[] { AccountModel }; } }
     public override double CurrentLoss { set { AccountModel.CurrentLoss = value; } }
@@ -1517,7 +1517,6 @@ namespace HedgeHog.Alice.Client {
         return new[] { AliceModes.Wonderland, AliceModes.Mirror }.Contains(AliceMode);
       }
     }
-
     private void UpdateTrades(Account account, List<Trade> tradesList, NotifyCollectionChangedWrapper<Trade> tradesCollection) {
       try {
         var oldIds = tradesCollection.Select(t => t.Id).ToArray();
@@ -1531,6 +1530,7 @@ namespace HedgeHog.Alice.Client {
         var addIds = newIds.Except(oldIds).ToList();
         addIds.ForEach(a => tradesCollection.Add(tradesList.Single(t => t.Id == a)));
         foreach (var trade in tradesList) {
+          // TODO ! Concurrency Problem (tradesCollection.SingleOrDefault)
           var trd = tradesCollection.SingleOrDefault(t => t.Id == trade.Id);
           if (trd != null) {
             var t = trade;

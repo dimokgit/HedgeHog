@@ -685,7 +685,10 @@ namespace HedgeHog {
       if (callCC != null) callCC(diffs);
       return diffs.StDev();
     }
-    public static double HeightByRegressoin(this IList<double> values, double[] coeffs = null) {
+    public static double HeightByRegressoin(this IList<double> values) {
+      return values.HeightByRegressoin(values.Regress(1));
+    }
+    public static double HeightByRegressoin(this IList<double> values, double[] coeffs) {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);

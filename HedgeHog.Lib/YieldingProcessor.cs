@@ -17,7 +17,7 @@ namespace HedgeHog {
     public static DispatcherScheduler UIDispatcherScheduler {
       get { return _UIDispatcherScheduler ?? DispatcherScheduler.Current; }
     }
-    public static void InvoceOnUI(this Action action) { GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(action,DispatcherPriority.Background); }
+    public static void InvoceOnUI(this Action action,DispatcherPriority dispatcherPriority = DispatcherPriority.Background) { GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(action,DispatcherPriority.Background); }
     public static IDisposable ScheduleOnUI(this Action action) { return UIDispatcherScheduler.Schedule(action); }
     public static IDisposable ScheduleOnUI(this Action action, TimeSpan delay) { return UIDispatcherScheduler.Schedule(delay, action); }
     #endregion

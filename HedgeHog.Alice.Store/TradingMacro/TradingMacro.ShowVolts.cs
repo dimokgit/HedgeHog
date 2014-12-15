@@ -204,7 +204,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     private void SetCentersOfMass() {
       var height = StDevByPriceAvg;
-      var ranges = RatesArray.BufferVertical2(_priceAvg, height, (rate, i, b, t) => new { b, t, rate })
+      var ranges = RatesArray.ToArray().BufferVertical2(_priceAvg, height, (rate, i, b, t) => new { b, t, rate })
         .Select(a => new { a, s = a.StDev(b => b.rate.PriceAvg),c = a.Count })
         .ToArray();
       ranges
@@ -214,12 +214,8 @@ namespace HedgeHog.Alice.Store {
         CenterOfMassBuy = a.a[0].t;
         CenterOfMassSell = a.a[0].b;
       });
-      ranges.OrderBy(a=>a.s)
-        .Take(1)
-        .ForEach(a => {
-          CenterOfMassBuy2 = a.a[0].t;
-          CenterOfMassSell2 = a.a[0].b;
-        });
+      var ratio = RatesHeight / StDevByPriceAvg;
+      RatesArray.Where(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, ratio));
     }
 
     private CorridorStatistics ShowVoltsByHourlyStDevAvg() {

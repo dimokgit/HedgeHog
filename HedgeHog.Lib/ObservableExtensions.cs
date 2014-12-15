@@ -11,6 +11,24 @@ using System.Reactive.Subjects;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
+    public static IDisposable SubscribeWithoutOverlap<T>(this IObservable<T> source, Action<T> action, IScheduler scheduler = null) {
+      var sampler = new Subject<Unit>();
+      scheduler = scheduler ?? Scheduler.Default;
+      var p = source.Publish();
+      var connection = p.Connect();
+
+      var subscription = sampler.Select(x => p.Take(1))
+          .Switch()
+          .ObserveOn(scheduler)
+          .Subscribe(l => {
+            action(l);
+            sampler.OnNext(Unit.Default);
+          });
+
+      sampler.OnNext(Unit.Default);
+
+      return new CompositeDisposable(connection, subscription);
+    }
     public static ISubject<T> SubjectFuctory<T>(this T v) {
       return new Subject<T>();
     }
@@ -49,9 +67,9 @@ namespace HedgeHog {
     }
     public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject
       , Action<TSource> onNext, EventLoopScheduler scheduler = null, Action<Exception> onError = null, Action onCompleted = null) {
-        return subject.Latest()
-          .ToObservable(scheduler ?? BGTreadSchedulerFactory())
-          .Subscribe(onNext, onError ?? (exc => { }), onCompleted ?? (() => { }));
+      return subject.Latest()
+        .ToObservable(scheduler ?? BGTreadSchedulerFactory())
+        .Subscribe(onNext, onError ?? (exc => { }), onCompleted ?? (() => { }));
     }
 
     public static IDisposable SubscribeToLatestOnBGThread<TSource>(this IObservable<TSource> subject

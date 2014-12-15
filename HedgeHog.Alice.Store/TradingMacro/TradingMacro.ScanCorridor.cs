@@ -1835,11 +1835,12 @@ namespace HedgeHog.Alice.Store {
         var prices = rates.Select(cp).ToArray();
         var min = double.MaxValue;
         var max = double.MinValue;
-        var heightMin = /*StDevByPriceAvg;*/ StDevByHeight * Math.E;
+        var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
         var rateLastIndex = prices
           .Do(d => { min = min.Min(d); max = max.Max(d); })
           .TakeWhile(_ => max - min < heightMin)
           .Count();
+        if (rateLastIndex < 3) return CorridorStats.Rates.Count;
         int? slope = null;
         for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
           var coeffs = prices.Take(rli).ToArray().Regress(1);
@@ -1853,6 +1854,41 @@ namespace HedgeHog.Alice.Store {
         return rateLastIndex;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+    }
+    private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var cp = _priceAvg ?? CorridorPrice();
+      Func<IList<Rate>, int> scan = rates => {
+        var prices = rates.Select(cp).ToList();
+        var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
+        var rateLastIndex = Enumerable.Range(10, prices.Count - 10)
+          .SkipWhile(i => {
+            return prices.GetRange(0, i).HeightByRegressoin() < heightMin;
+          })
+          .First();
+        if (rateLastIndex < 3) return CorridorStats.Rates.Count;
+        int? slope = null;
+        for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
+          var coeffs = prices.Take(rli).ToArray().Regress(1);
+          var currSlope = coeffs.LineSlope().Sign();
+          if (!slope.HasValue) slope = currSlope;
+          if (currSlope != slope.Value) {
+            rateLastIndex = rli;
+            break;
+          }
+        }
+        return rateLastIndex;
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+    }
+
+    Func<double> _ScanCorridorByStDevAndAngleHeightMin;
+    Func<double> ScanCorridorByStDevAndAngleHeightMin {
+      get {
+        return _ScanCorridorByStDevAndAngleHeightMin ?? (_ScanCorridorByStDevAndAngleHeightMin = () => StDevByPriceAvg.Avg(StDevByHeight));
+      }
+      set {
+        _ScanCorridorByStDevAndAngleHeightMin = value;
+      }
     }
 
     #endregion
