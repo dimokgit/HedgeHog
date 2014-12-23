@@ -69,6 +69,7 @@ namespace HedgeHog.Alice.Store {
     TradeLevelsA = 2,
     SmartMove = 4,
     SimpleMove = 102,
+    SimpleMoveR = 103,
     LongFlat = 3,
     Spike = 7,
     Spike2 = 8,

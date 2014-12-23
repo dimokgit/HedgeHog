@@ -2031,7 +2031,8 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.SimpleMove: {
                 #region FirstTime
                 if (firstTime) {
-                  Log = new Exception(new { TradingAngleRange } + "");
+                  ScanCorridorByStDevAndAngleHeightMin = () => StDevByHeight;
+                  Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
                   #region onCloseTradeLocal
@@ -2041,7 +2042,7 @@ namespace HedgeHog.Alice.Store {
                       var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
                       TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
                     }
-                    if (CurrentGross >= -PriceSpreadAverage) {
+                    if (t.GrossPL >= -PriceSpreadAverage) {
                       BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
                       if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
                     }
@@ -2051,6 +2052,8 @@ namespace HedgeHog.Alice.Store {
                   #endregion
                 }
                 #endregion
+                Func<Rate, bool> isInCOM = rate => rate.PriceAvg1.Between(CenterOfMassSell, CenterOfMassBuy);
+                Func<int> voltsAngle = () => -CorridorStats.Rates.Select(GetVoltage).SkipWhile(Lib.IsNaN).TakeWhile(Lib.IsNotNaN).ToArray().Regress(1).LineSlope().Sign();
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
                   .Select(rateLast => new Action<bool>(canTrade => {
                     BuyLevel.RateEx = getTradeLevel(rateLast, true, BuyLevel.Rate);
@@ -2058,19 +2061,80 @@ namespace HedgeHog.Alice.Store {
                     BuyCloseLevel.RateEx = GetTradeCloseLevel(rateLast, true, BuyCloseLevel.Rate);
                     SellCloseLevel.RateEx = GetTradeCloseLevel(rateLast, false, SellCloseLevel.Rate);
                     // Only turn on
-                    (canTrade).YieldTrue()
+                    (canTrade && isInCOM(rateLast) && voltsAngle() > 0).YieldTrue()
                       .ForEach(_ => _buySellLevels.Where(sr =>
                         sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
                         sr.IsSell && LevelSellBy != TradeLevelBy.None)
                         .ForEach(sr => sr.CanTradeEx = true));
                   }));
-                Func<double> angle = () => AngleFromTangent(CorridorStats.Slope).Abs().Round(2);
+
                 var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   _ti =>{ WorkflowStep = "1.Wait go below";
                   (from a in doRateLast
                    where calcAngleOk()
                    select a).ForEach(a => a(true));
                   return WFD.tupleStay(_ti);
+                  }
+                };
+                workflowSubjectDynamic.OnNext(wfManual);
+              }
+              adjustExitLevels0();
+              break;
+            #endregion
+            #region SimpleMoveR
+            case TrailingWaveMethod.SimpleMoveR: {
+                #region FirstTime
+                if (firstTime) {
+                  ScanCorridorByStDevAndAngleHeightMin = () => StDevByPriceAvg + StDevByHeight;
+                  Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
+                  workFlowObservableDynamic.Subscribe();
+                  ResetTakeProfitManual();
+                  #region onCloseTradeLocal
+                  onCanTradeLocal = canTrade => canTrade || Trades.Any();
+                  onCloseTradeLocal += t => {
+                    if (IsInVitualTrading) {
+                      var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+                      TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
+                    }
+                    if (t.GrossPL >= -PriceSpreadAverage) {
+                      BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
+                      if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
+                    }
+                    if (CurrentGrossInPipTotal > 0)
+                      BroadcastCloseAllTrades();
+                  };
+                  onOpenTradeLocal += t => _buySellLevelsForEach(sr => sr.CanTradeEx = false);
+                  #endregion
+                }
+                #endregion
+                var getLevels = MonoidsCore.ToFunc((Rate)null, rateLast => new {
+                  bl = getTradeLevel(rateLast, true, BuyLevel.Rate),
+                  sl = getTradeLevel(rateLast, false, SellLevel.Rate),
+                  bcl = GetTradeCloseLevel(rateLast, true, BuyCloseLevel.Rate),
+                  scl = GetTradeCloseLevel(rateLast, false, SellCloseLevel.Rate)
+                });
+                Func<double, double, bool> isComOk = (h, l) => MathExtensions.OverlapRatio(CenterOfMassSell, CenterOfMassBuy, h, l) < 0;
+                Func<bool> corridorOk = () => CorridorStats.Rates.Count > CorridorDistance;
+                var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
+                  .Select(rateLast => new Action(() => {
+                    var levels = getLevels(rateLast);
+                    if (new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(tl => tl.Between(levels.sl, levels.bl))) {
+                      BuyLevel.RateEx = levels.bl;
+                      SellLevel.RateEx = levels.sl;
+                      BuyCloseLevel.RateEx = levels.bcl;
+                      SellCloseLevel.RateEx = levels.scl;
+                      _buySellLevels.Where(sr =>
+                        sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
+                        sr.IsSell && LevelSellBy != TradeLevelBy.None)
+                        .ForEach(sr => sr.CanTradeEx = corridorOk() || isComOk(levels.bl, levels.sl));
+                    }
+                  }));
+                var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                  _ti =>{ WorkflowStep = "1.Wait flat";
+                    return calcAngleOk() ? WFD.tupleNextEmpty() : WFD.tupleStayEmpty();
+                  },ti=>{WorkflowStep = "2.Wait un-flat";
+                  (from a in doRateLast select a).ForEach(a => a());
+                    return calcAngleOk() ? WFD.tupleStayEmpty() : WFD.tupleNextEmpty();
                   }
                 };
                 workflowSubjectDynamic.OnNext(wfManual);

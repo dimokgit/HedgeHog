@@ -24,6 +24,9 @@ namespace HedgeHog.Tests {
     public void OverlapRatioTest() {
       var ol = MathExtensions.OverlapRatio(0, 10, 5, 15);
       Assert.AreEqual(0.5, ol);
+      Assert.AreEqual(MathExtensions.OverlapRatio(20, 10, 5, 9), MathExtensions.OverlapRatio(10, 20, 5, 9));
+      Assert.AreEqual(MathExtensions.OverlapRatio(20, 10, 5, 9), MathExtensions.OverlapRatio(10, 20, 9, 5));
+      Assert.AreEqual(MathExtensions.OverlapRatio(20, 10, 5, 9), MathExtensions.OverlapRatio(20, 10, 9, 5));
     }
 
     private TestContext testContextInstance;

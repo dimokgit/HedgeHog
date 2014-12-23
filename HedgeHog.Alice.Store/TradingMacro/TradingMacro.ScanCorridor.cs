@@ -1872,6 +1872,7 @@ namespace HedgeHog.Alice.Store {
           var currSlope = coeffs.LineSlope().Sign();
           if (!slope.HasValue) slope = currSlope;
           if (currSlope != slope.Value) {
+            // TODO Roll back with step of 1
             rateLastIndex = rli;
             break;
           }

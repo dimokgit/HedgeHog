@@ -1145,7 +1145,6 @@ namespace HedgeHog.Alice.Store {
         .Where(pce => pce.EventArgs.Pair == Pair)
         //.Sample((0.1).FromSeconds())
         //.DistinctUntilChanged(pce => pce.EventArgs.Price.Average.Round(digits))
-        .ObserveOn(Scheduler.Default)
         .Do(pce => {
           try {
             CurrentPrice = pce.EventArgs.Price;
@@ -2077,9 +2076,35 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public int LastLotSize {
-      get { return Math.Max(LotSize, LastTrade.Lots); }
+    #region LastTradeLossInPips
+    private double _LastTradeLossInPips;
+    [Category(categoryTrading)]
+    public double LastTradeLossInPips {
+      get { return _LastTradeLossInPips; }
+      set {
+        if (_LastTradeLossInPips != value) {
+          _LastTradeLossInPips = value;
+          OnPropertyChanged("LastTradeLossInPips");
+        }
+      }
     }
+
+    #endregion
+    #region UseLastLoss
+    private bool _UseLastLoss;
+    [Category(categoryActiveYesNo)]
+    public bool UseLastLoss {
+      get { return _UseLastLoss; }
+      set {
+        if (_UseLastLoss != value) {
+          if (value) IsTakeBack = false;
+          _UseLastLoss = value;
+          OnPropertyChanged("UseLastLoss");
+        }
+      }
+    }
+
+    #endregion
     public int MaxLotSize {
       get {
         return MaxLotByTakeProfitRatio.ToInt() * LotSize;
@@ -3186,15 +3211,19 @@ namespace HedgeHog.Alice.Store {
               ratesList.RemoveAt(ratesList.Count - 1);
               RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
             }
+            Func<Rate, bool> isHistory = r => r.IsHistory;
+            Func<Rate, bool> isNotHistory = r => !isHistory(r);
             UseRatesInternal(rl => {
               var sd = ratesList.Take(1).Select(r => r.StartDate).FirstOrDefault(DateTime.MaxValue);
               var sd1 = ratesList.Last().StartDate;
-              var ratesLocal = rl.SkipWhile(r => r.IsHistory).ToArray();
+              var ratesLocal = rl.Where(isNotHistory).ToArray();
 
               rl.RemoveAll(ratesLocal);
               rl.RemoveAll(r => r.StartDate >= sd);
               rl.AddRange(ratesList);
-              rl.AddRange(ratesLocal.SkipWhile(r => r.StartDate <= sd1));
+              var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
+              rl.AddRange(rateTail);
+              return;
             });
             //if (BarPeriod == BarsPeriodType.t1)
             //  UseRatesInternal(ri => { ri.Sort(LambdaComparisson.Factory<Rate>((r1, r2) => r1.StartDate > r2.StartDate)); });
@@ -3313,8 +3342,11 @@ namespace HedgeHog.Alice.Store {
           _tradingDistanceMax = 0;
           goto case TradingMacroMetadata.TakeProfitFunction;
         case TradingMacroMetadata.TakeProfitFunction:
-          OnScanCorridor(RatesArray, RunStrategy, true);
-          RaiseShowChart();
+          if (RatesArray.Count > 0)
+            OnScanCorridor(RatesArray, () => {
+              RaiseShowChart();
+              RunStrategy();
+            }, true);
           break;
         case TradingMacroMetadata.CorridorCalcMethod:
         case TradingMacroMetadata.CorridorCrossHighLowMethod:

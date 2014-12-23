@@ -265,6 +265,7 @@ namespace HedgeHog.Shared {
       return tradesClosed.Where(t => t.Pair == Pair).ToArray();
     }
     public Trade GetLastTrade(string pair) {
+      throw new NotImplementedException();
       var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
       if (trades.Length == 0)
         trades = GetClosedTrades(pair);

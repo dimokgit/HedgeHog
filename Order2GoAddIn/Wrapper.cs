@@ -514,21 +514,6 @@ namespace Order2GoAddIn {
     #region Get (Ticks/Bars)
     private static object lockHistory = new object();
 
-    public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate) {
-      return GetTicks(pair, startDate, endDate, maxTicks);
-    }
-    public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate, int barsMax) {
-      lock (lockHistory) {
-        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
-        startDate = ConvertDateToUTC(startDate);
-        var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
-         ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, "t1", startDate, endDate, barsMax, true, true))
-         .Cast<FXCore.MarketRateAut>().ToArray();
-        //);
-        return mr.Select((r, i) => new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true)).OrderBars().ToArray();
-      }
-    }
-
     public Tick[] GetTicks(string pair, int tickCount) {
       DateTime startDate = DateTime.MinValue;
       var endDate = ServerTime;
@@ -668,6 +653,20 @@ namespace Order2GoAddIn {
         };
       }
     }
+    public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate) {
+      return GetBarsFromHistory(pair, 0, startDate, endDate).Cast<Tick>().ToArray();
+    }
+    public Tick[] GetTicks(string pair, DateTime startDate, DateTime endDate, int barsMax) {
+      lock (lockHistory) {
+        if (endDate != TradesManagerStatic.FX_DATE_NOW) endDate = ConvertDateToUTC(endDate);
+        startDate = ConvertDateToUTC(startDate);
+        var mr = //RunWithTimeout.WaitFor<FXCore.MarketRateEnumAut>.Run(TimeSpan.FromSeconds(5), () =>
+         ((FXCore.MarketRateEnumAut)Desk.GetPriceHistoryUTC(pair, "t1", startDate, endDate, barsMax, true, true))
+         .Cast<FXCore.MarketRateAut>().ToArray();
+        //);
+        return mr.Select((r, i) => new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true)).OrderBars().ToArray();
+      }
+    }
     double? _historyTimeAverage;
     [MethodImpl(MethodImplOptions.Synchronized)]
     public IList<Rate> GetBarsFromHistory(string pair, int period, DateTime startDate, DateTime endDate) {
@@ -684,7 +683,7 @@ namespace Order2GoAddIn {
             //);
           var ms = (DateTime.Now - d).TotalMilliseconds;
           _historyTimeAverage = Lib.Cma(_historyTimeAverage, 10, ms);
-          var ret = mr.Select((r) => RateFromMarketRate(pair, r)).OrderBars().ToList();
+          var ret = mr.Select((r,i) => period == 0? new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true): RateFromMarketRate(pair, r)).ToList();
           return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToList();
         } catch (ThreadAbortException exc) {
           RaiseError(new Exception("Pair:" + pair + ",period:" + period + ",startDate:" + startDate, exc));
@@ -725,16 +724,16 @@ namespace Order2GoAddIn {
       } else {
         var minimumDate = Bars.Min(b => b.StartDate);
         if (StartDate < minimumDate)
-          GetBarsBase<Rate>(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
+          GetBarsBase(pair, Period, 0, StartDate, minimumDate, Bars, callBack);
         var maximumDate = Bars.Select(b => b.StartDate).DefaultIfEmpty(StartDate).Max();
         if (EndDate == TradesManagerStatic.FX_DATE_NOW || EndDate > maximumDate) {
-          GetBarsBase<Rate>(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
+          GetBarsBase(pair, Period, 0, maximumDate, EndDate, Bars, callBack);
         }
       }
       if (EndDate != TradesManagerStatic.FX_DATE_NOW)
           Bars.RemoveAll(b => b.StartDate > EndDate);
       if( Bars.Count < periodsBack)
-        GetBarsBase<Rate>(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Select(b => b.StartDate).DefaultIfEmpty(EndDate).Min(), Bars,callBack);
+        GetBarsBase(pair, Period, periodsBack, TradesManagerStatic.FX_DATE_NOW, Bars.Select(b => b.StartDate).DefaultIfEmpty(EndDate).Min(), Bars,callBack);
       Bars.Sort();
       if (doTrim) {
         var countMaximum = TradesManagerStatic.GetMaxBarCount(periodsBack, StartDate, Bars);
@@ -2651,10 +2650,8 @@ namespace Order2GoAddIn {
     }
     public Trade GetLastTrade(string pair) {
       try {
-        var trades = GetTrades(pair).OrderBy(t => t.Id).ToArray();
-        if (trades.Length == 0)
-          trades = GetClosedTrades(pair);
-        if (trades.Length == 0)
+        var trades = GetClosedTrades(pair);
+        if (trades.Length == -1)
           trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
         return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();
       } catch (Exception exc) {
@@ -2804,22 +2801,6 @@ namespace Order2GoAddIn {
     #endregion
 
     #region ITradesManager Members
-
-    public Rate[] GetBarsBase(string pair, int period, DateTime dateStart) {
-      throw new NotImplementedException();
-    }
-
-    public Rate[] GetBarsBase(string pair, int period, DateTime dateTime, DateTime dateStart) {
-      throw new NotImplementedException();
-    }
-
-    public Rate[] GetBarsBase(string pair, int period, DateTime dateTime, DateTime dateStart, Action<string> showProgress) {
-      throw new NotImplementedException();
-    }
-
-    public void GetBarsBase(string Pair, int BarPeriodInt, int barsCountTotal, DateTime dateTime, DateTime dateTime_2, List<Rate> list, Action<RateLoadingCallbackArgs<Rate>> action) {
-      throw new NotImplementedException();
-    }
     #endregion
   }
 

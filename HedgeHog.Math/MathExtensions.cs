@@ -43,7 +43,7 @@ namespace HedgeHog {
     }
     public static readonly double StDevRatioMax = 0.288675135;
 
-    public static IEnumerable<double[]> PrevNext(this IList<double> bars){
+    public static IEnumerable<double[]> PrevNext(this IList<double> bars) {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
 
@@ -120,9 +120,9 @@ namespace HedgeHog {
     /// <param name="low2"></param>
     /// <param name="high2"></param>
     /// <returns>Persentage of overlapped area relative to average height of both areas</returns>
-    public static double OverlapRatio(double low1,double high1,double low2,double high2){
-      var heightAvg = (high1-low1).Avg(high2-low2);
-      var overlap = high2.Min(high1)- low1.Max(low2);
+    public static double OverlapRatio(double low1, double high1, double low2, double high2) {
+      var heightAvg = high1.Abs(low1).Avg(high2.Abs(low2));
+      var overlap = high2.Max(low2).Min(high1.Max(low1)) - low1.Min(high1).Max(low2.Min(high2));
       return overlap / heightAvg;
     }
 
@@ -161,7 +161,7 @@ namespace HedgeHog {
     /// <param name="priceHigh"></param>
     /// <param name="priceLow"></param>
     /// <returns>Fractal Bars by Ups and Downs</returns>
-    public static ILookup<bool, TBar> Fractals<TBar>(this IList<TBar> rates1, int fractalLength, Func<TBar, double> priceHigh, Func<TBar, double> priceLow,bool includeTails = false) {
+    public static ILookup<bool, TBar> Fractals<TBar>(this IList<TBar> rates1, int fractalLength, Func<TBar, double> priceHigh, Func<TBar, double> priceLow, bool includeTails = false) {
       var rates = rates1.Select(r => new { r, h = priceHigh(r), l = priceLow(r) }).ToArray();
       var indexMiddle = fractalLength / 2;
       var zipped = rates.Zip(rates.Skip(1), (f, s) => new[] { f, s }.ToList());
@@ -190,7 +190,7 @@ namespace HedgeHog {
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> valuesIn, double value, out int index) {
       var values = valuesIn.Select(v1 => v1 - value);
-      return CrossesInMiddle(values,out index);
+      return CrossesInMiddle(values, out index);
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2) {
       int index;
@@ -198,16 +198,16 @@ namespace HedgeHog {
     }
     public static IList<double> CrossesInMiddle(this IEnumerable<double> values1, IEnumerable<double> values2, out int index) {
       var values = values1.Zip(values2, (v1, v2) => v1 - v2);
-      return CrossesInMiddle(values,out index);
+      return CrossesInMiddle(values, out index);
     }
 
     private static IList<double> CrossesInMiddle(IEnumerable<double> values) {
       int index;
       return values.CrossesInMiddle(out index);
     }
-    private static IList<double> CrossesInMiddle(this IEnumerable<double> values,out int index) {
+    private static IList<double> CrossesInMiddle(this IEnumerable<double> values, out int index) {
       var last = new Box<double>(values.First());
-      var counts = "".Select(s=> new {index = new Box<int>(0),last = new Box<double>(0)}).ToList();
+      var counts = "".Select(s => new { index = new Box<int>(0), last = new Box<double>(0) }).ToList();
       counts.Add(new { index = new Box<int>(0), last });
       Func<double, double, double>[] comp = new[] { Math.Min, (Func<double, double, double>)null, Math.Max };
       index = 0;
@@ -251,7 +251,7 @@ namespace HedgeHog {
     public static IEnumerable<Tuple<T, T>> Mash<T>(this IList<T> list) {
       return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T>(f, s));
     }
-    public static IEnumerable<Tuple<T, T,int>> MashWithIndex<T>(this IList<T> list) {
+    public static IEnumerable<Tuple<T, T, int>> MashWithIndex<T>(this IList<T> list) {
       var index = 0;
       return list.Zip(list.Skip(1), (f, s) => new Tuple<T, T, int>(f, s, index++));
     }
@@ -303,7 +303,7 @@ namespace HedgeHog {
         .Select(a => new Tuple<double, int>(a.first, a.index));
     }
 
-    public static double CrossesAverageRatio(this IList<double> rates, double step,int averageIterations) {
+    public static double CrossesAverageRatio(this IList<double> rates, double step, int averageIterations) {
       return rates.CrossesAverage(step, averageIterations) / (double)rates.Count;
     }
     public static double CrossesAverage(this IList<double> rates, double step, int averageIterations) {
@@ -339,7 +339,7 @@ namespace HedgeHog {
       }, list => list.AverageByIterations(averageIterations).Average());
     }
 
-    public static double[] Sin(int sinLength, int waveLength, double aplitude,double yOffset, int wavesCount) {
+    public static double[] Sin(int sinLength, int waveLength, double aplitude, double yOffset, int wavesCount) {
       var sin = new double[waveLength];
       var xOffset = (Math.PI / 180) * wavesCount * sinLength / waveLength;
       Enumerable.Range(0, waveLength).AsParallel().ForAll(i => sin[i] = Math.Sin(i * xOffset) * aplitude + yOffset);
@@ -518,7 +518,7 @@ namespace HedgeHog {
     }
 
     public static double Angle(this double tangent, int barMinutes, double divideBy = 1) {
-      return Math.Atan(tangent / divideBy) * (180 / Math.PI) / barMinutes.Max(1);
+      return Math.Atan(tangent / divideBy) * (180 / Math.PI) / divideBy.Max(barMinutes);
     }
     public static double Radians(this double angleInDegrees) { return angleInDegrees * Math.PI / 180; }
 
@@ -544,7 +544,7 @@ namespace HedgeHog {
       double max, min;
       return values.StDev(out avg, out max, out min);
     }
-    public static double StDev(this IList<double> values, out double max,out double min) {
+    public static double StDev(this IList<double> values, out double max, out double min) {
       double avg;
       return values.StDev(out avg, out max, out min);
     }
@@ -591,7 +591,7 @@ namespace HedgeHog {
       public double Slope { get; set; }
       public int Index { get; set; }
       internal Extream() { }
-      public Extream(T element,double slope,int index) {
+      public Extream(T element, double slope, int index) {
         Element = element;
         Slope = slope;
         Index = index;
@@ -654,7 +654,7 @@ namespace HedgeHog {
       return Enumerable.Range(0, Math.Max(rates.Length - chunksLength, 1))
         .Select(start => rates.CopyToArray(start, Math.Min(chunksLength, rates.Count())));
     }
-    public static IEnumerable<U> Integral<T,U>(this IEnumerable<T> ratesOriginal, int chunksLength, Func<IList<T>, U> func) {
+    public static IEnumerable<U> Integral<T, U>(this IEnumerable<T> ratesOriginal, int chunksLength, Func<IList<T>, U> func) {
       return ratesOriginal.Integral(chunksLength).Select(func);
     }
     /// <summary>
@@ -664,11 +664,11 @@ namespace HedgeHog {
     /// <param name="values"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    static IEnumerable<double> Normalize<T>(this IList<T> values, Func<T, double> value,out double level) {
+    static IEnumerable<double> Normalize<T>(this IList<T> values, Func<T, double> value, out double level) {
       var l = level = (values.Max(value) + values.Min(value)) / 2;
       return values.Select(v => value(v) - l);
     }
-    static IEnumerable<double> Normalize(this IList<double> values,  out double level) {
+    static IEnumerable<double> Normalize(this IList<double> values, out double level) {
       var l = level = (values.Max() + values.Min()) / 2;
       return values.Select(v => v - l);
     }
@@ -693,13 +693,13 @@ namespace HedgeHog {
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray();
-      return diffs.Max()-diffs.Min();
+      return diffs.Max() - diffs.Min();
     }
     public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
-      var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a=>a.Sign());
+      var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a => a.Sign());
       return diffs.Select(g => g.Select(v => v)).SelectMany(a => a).ToArray().StDev() * 4;
     }
     static IEnumerable<int> IteratonSequence(int start, int end) {
@@ -720,7 +720,7 @@ namespace HedgeHog {
     /// <param name="values"></param>
     /// <param name="startIndex"></param>
     /// <returns>One or two elements with slopes length</returns>
-    public static IEnumerable<Tuple<int,int,int>> ScanTillFlat(IList<double> values,int startIndex) {
+    public static IEnumerable<Tuple<int, int, int>> ScanTillFlat(IList<double> values, int startIndex) {
       return (
         from length in IteratonSequence(startIndex, values.Count)
         select new { length, slopeSign = values.CopyToArray(0, length).Regress(1).LineSlope().Sign() }
@@ -728,7 +728,7 @@ namespace HedgeHog {
       .Take(2)
       .Integral(2, a => Tuple.Create(a[0].length, a.Last().length, a.Last().slopeSign));
     }
-    public static IEnumerable<T> ScanTillFlat<T>(IList<double> values, int startIndex,Func<int,int,T> lengthAndSlope) {
+    public static IEnumerable<T> ScanTillFlat<T>(IList<double> values, int startIndex, Func<int, int, T> lengthAndSlope) {
       return (
         from length in IteratonSequence(startIndex, values.Count)
         select new { length, slopeSign = values.CopyToArray(0, length).Regress(1).LineSlope().Sign() }
@@ -755,7 +755,7 @@ namespace HedgeHog {
       return norm.Rsd();
     }
 
-    public static double RsdIntegral(this IList<double> values,int period) {
+    public static double RsdIntegral(this IList<double> values, int period) {
       return values.Integral(period).Select(i => i.Rsd()).Average();
     }
 
@@ -899,7 +899,7 @@ namespace HedgeHog {
       }
       return dtRounded;
     }
-    public static DateTimeOffset Round(this DateTimeOffset dt) { return new DateTimeOffset(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute,0, dt.Offset); }
+    public static DateTimeOffset Round(this DateTimeOffset dt) { return new DateTimeOffset(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0, dt.Offset); }
     public static DateTimeOffset Round_(this DateTimeOffset dt) { return dt.AddSeconds(-dt.Second).AddMilliseconds(-dt.Millisecond); }
     public static DateTimeOffset Round(this DateTimeOffset dt, int minutes) {
       dt = dt.Round();

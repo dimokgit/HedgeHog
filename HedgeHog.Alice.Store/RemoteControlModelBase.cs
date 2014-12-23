@@ -257,7 +257,7 @@ namespace HedgeHog.Alice.Store {
     [MethodImpl(MethodImplOptions.Synchronized)]
     public void LoadRates(ITradesManager fw, string pair, int periodMinutes, int periodsBack, DateTime startDate, DateTime endDate, List<Rate> ratesList) {
       var fetchRates = ratesList.Count() == 0;
-      if (ratesList.Count() == 0) {
+      if (ratesList.Count() == -1) {
         if (periodMinutes > 0)
           ratesList.AddRange(fw.GetBarsFromHistory(pair, periodMinutes, TradesManagerStatic.FX_DATE_NOW, endDate).Except(ratesList));
         else ratesList.AddRange(fw.GetTicks(pair, periodsBack).Except(ratesList));

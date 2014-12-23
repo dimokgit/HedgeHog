@@ -1102,6 +1102,7 @@ namespace HedgeHog.Alice.Store {
       get { return _IsTakeBack; }
       set {
         if (_IsTakeBack != value) {
+          if (value) UseLastLoss = false;
           _IsTakeBack = value;
           OnPropertyChanged("IsTakeBack");
         }
