@@ -686,10 +686,10 @@ namespace HedgeHog {
       return diffs.StDev();
     }
     public static double HeightByRegressoin(this IList<double> values) {
-      return values.HeightByRegressoin(values.Regress(1));
+      return values.HeightByRegressoin(values.Linear());
     }
     public static double HeightByRegressoin(this IList<double> values, double[] coeffs) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray();

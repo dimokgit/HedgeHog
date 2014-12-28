@@ -334,8 +334,10 @@ namespace HedgeHog.Shared {
       RaisePriceChanged(pair, -1, price);
     }
     public void RaisePriceChanged(string pair,int barPeriod, Price price) {
-      if (PriceChanged != null)
-        PriceChanged(this, new PriceChangedEventArgs(pair,barPeriod,price,GetAccount(), GetTrades()));
+      if (PriceChanged != null) {
+        var args = new PriceChangedEventArgs(pair, barPeriod, price, GetAccount(), GetTrades());
+        PriceChanged(this, args);
+      }
     }
 
     public event EventHandler<TradeEventArgs> TradeAdded;

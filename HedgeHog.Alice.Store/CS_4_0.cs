@@ -5618,7 +5618,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.ScanCoridorSubject"/></summary>
         public const string ScanCoridorSubject = "ScanCoridorSubject";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnScanCoridor"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnScanCorridor"/></summary>
         public const string OnScanCoridor = "OnScanCoridor";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.OnScanCorridor"/></summary>

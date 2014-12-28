@@ -6,6 +6,7 @@ using System.Text;
 namespace HedgeHog.Alice {
   public enum VoltageFunction {
     None = 0,
+    BounceCom = 1,
     Sdi = 4,
     Volume = 5,
     Rsd = 6,

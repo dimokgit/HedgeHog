@@ -3,15 +3,16 @@ using HedgeHog.Bars;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Diagnostics;
+using HedgeHog.Alice.Store;
+using System.Collections.Generic;
 
-namespace UnitLib
-{
-    
-    
-    /// <summary>
-    ///This is a test class for BarBaseTest and is intended
-    ///to contain all BarBaseTest Unit Tests
-    ///</summary>
+namespace UnitLib {
+
+
+  /// <summary>
+  ///This is a test class for BarBaseTest and is intended
+  ///to contain all BarBaseTest Unit Tests
+  ///</summary>
   [TestClass()]
   public class BarBaseTest {
 
@@ -61,6 +62,16 @@ namespace UnitLib
     //
     #endregion
 
+    [TestMethod()]
+    public void GetRateFromDBForwardTest() {
+      var rates = GlobalStorage.GetRateFromDBForwards<Rate>("USD/JPY", DateTime.Parse("2/15/2014"), 2880, 0);
+      Assert.AreEqual(2880, rates.Count);
+    }
+    [TestMethod()]
+    public void GetRateFromDBBackwardsTest() {
+      var rates = GlobalStorage.GetRateFromDBBackwards<Rate>("USD/JPY", DateTime.Parse("2/15/2014"), 2880, 1);
+      Assert.AreEqual(2880, rates.Count);
+    }
 
     internal virtual BarBase CreateBarBase() {
       return new Rate(10, 9, 4, 5, 2, 1, 3, 4, DateTime.Now);

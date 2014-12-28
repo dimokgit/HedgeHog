@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Text;
 
 namespace HedgeHog.DB {
   public static class ForexStorage {
-    static ForexEntities ForexEntitiesFactory() { return new ForexEntities() { CommandTimeout = 60 * 1 }; }
+    static void SetTimeout(IObjectContextAdapter oca,int timeOut) {
+      oca.ObjectContext.CommandTimeout = timeOut;
+    }
+    static ForexEntities ForexEntitiesFactory() { 
+      var fe = new ForexEntities();
+      SetTimeout(fe, 60 * 1);
+      return fe;
+    }
     public static void UseForexContext(Action<ForexEntities> action,  Action<ForexEntities> exit = null) {
       UseForexContext(action, null, exit);
     }
@@ -13,7 +21,7 @@ namespace HedgeHog.DB {
       using (var context = ForexEntitiesFactory())
         try {
           if (commandTimeout > 0)
-            context.CommandTimeout = commandTimeout;
+            SetTimeout(context, commandTimeout);
           action(context);
           if (exit != null) exit(context);
         } catch (Exception exc) {
@@ -28,7 +36,7 @@ namespace HedgeHog.DB {
       try {
         using (var context = ForexEntitiesFactory()) {
           try {
-            context.CommandTimeout = 60 * 1;
+            SetTimeout(context, 60 * 1);
             return action(context);
           } catch (Exception exc) {
             if (error != null) {

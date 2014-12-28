@@ -21,6 +21,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Performance1.psess = Performance1.psess
 		Performance5.psess = Performance5.psess
 		Performance6.psess = Performance6.psess
+		Performance7.psess = Performance7.psess
+		Performance8.psess = Performance8.psess
+		Performance9.psess = Performance9.psess
 		..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll = ..\ta-lib-0.4.0-msvc\TA-Lib-Core.dll
 		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
 	EndProjectSection
@@ -1871,6 +1874,9 @@ Global
 		{54E9B5FC-4CFE-424B-93D0-C13D15F5449F} = {97A50C77-C8C6-46CC-BEBA-8792E3538BFC}
 		{42E0767B-AAF0-4229-98DC-925A8508E4D1} = {364F4718-C4CB-457A-A797-19F742B12DEC}
 		{EDC8FA19-6E01-4997-84BA-EE5881FB3A52} = {8F8326E2-C11B-41B5-B475-88587710F21D}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = AllInOne1.vsmdi

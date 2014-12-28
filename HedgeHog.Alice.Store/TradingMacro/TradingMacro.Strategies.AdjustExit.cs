@@ -117,7 +117,7 @@ namespace HedgeHog.Alice.Store {
             var ratesShort = RatesArray.TakeLast(5).ToArray();
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
-            var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips : 0)).Max(takeBackInPips).Min(ratesHeightInPips);
+            var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips);
             var isReversedCorridor = SellLevel.Rate > BuyLevel.Rate;
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);

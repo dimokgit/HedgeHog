@@ -55,6 +55,7 @@ namespace HedgeHog {
       return Regress(Enumerable.Range(0,dY.Count).Select(i=>(double)i).ToArray(), dY.SafeArray(), polyOrder);
     }
     public static double[] Regress(this double[] dX, double[] dY, int polyOrder) {
+      if (polyOrder == 1) throw new InvalidCastException(new { polyOrder, error = "Use Linear instead" } + "");
       if (dY.Length == 0) return new[] { double.NaN, double.NaN };
       if (dY.Length == 1) return new[] { dY[1], 0 };
       int nPolyOrder = polyOrder;

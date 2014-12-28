@@ -86,7 +86,7 @@ namespace HedgeHog.UI {
         var dateLast = c.Event__News.Max(e => e.Time);
         newNews.Select(evt => evt.Event)
           .Where(evt => evt.Time > dateLast)
-          .ForEach(evt => c.Event__News.AddObject(new Event__News() {
+          .ForEach(evt => c.Event__News.Add(new Event__News() {
             Level = (evt.Level + "").Substring(0, 1),
             Country = evt.Country,
             Name = evt.Name,
@@ -243,7 +243,7 @@ namespace HedgeHog.UI {
             FetchNews(DateTime.Now.Date.AddDays(1));
           else UpdateNewsColor();
         }
-        a(1.FromMinutes());
+        a(10.FromMinutes());
       });
     }
     static NewsCasterModel() {

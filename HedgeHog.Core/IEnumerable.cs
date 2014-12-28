@@ -97,36 +97,40 @@ namespace HedgeHog {
     public static T[] AsArray<T>(this T v, int size) {
       return new T[size];
     }
-    public static IEnumerable<IList<V>> BufferVertical2<T, V>(
+    public static IList<V> BufferVertical2<T, V>(
       this IEnumerable<T> input
       , Func<T, double> getValue
       , double height
-      , Func<T, int, double, double, V> mapInputValue
+      , Func<double, double, int, V> mapInputValue
       ) {
-      var values = input.Select((v, i) => new { v, i }).OrderBy(d => getValue(d.v)).ToArray();
-      var valuesRange = values.Distinct(a => getValue(a.v)).ToArray();
-      var last = valuesRange.TakeLast(1).Select(a => getValue(a.v)).DefaultIfEmpty(double.NaN).Last();
+      var values = input
+        .Select((t, i) => new { v = getValue(t) })
+        .OrderBy(d => d.v)
+        .GroupBy(d=>d.v)
+        .Select(g => new { v=g.Key, c = g.Count()})
+        .ToArray();
+      var valuesRange = values.Distinct(a => a.v).ToArray();
+      var last = valuesRange.TakeLast(1).Select(a => a.v).DefaultIfEmpty(double.NaN).Last();
       //var strips = values.BufferVertical(d => d, 0.05, (d => d * .009 * 3), (b, t, rates) => new { b, t, rates }).ToArray();
       var ranges = (
         from value in valuesRange
-        let bottom = getValue(value.v)
+        let bottom = value.v
         let top = bottom + height
         where top <= last
         select new { value.v, bottom, top }
         )
+        .AsParallel()
         .Select(value => {
-          var bottom = getValue(value.v);
+          var bottom = value.v;
           var top = bottom + height;
           return
+            mapInputValue(bottom, top,
             values
-            .SkipWhile(d => getValue(d.v) < bottom)
-            .TakeWhile(d => getValue(d.v) <= top)
-            .Select(d => new { d.i, m = mapInputValue(d.v, d.i, bottom, top) })
-            .OrderBy(d => d.i)
-            .Select(d => d.m)
-            .ToArray();
+            .SkipWhile(d => d.v < bottom)
+            .TakeWhile(d => d.v <= top)
+            .Sum(d => d.c));
         });
-      return ranges;
+      return ranges.ToArray();
     }
     public delegate U BufferVerticalDelegate<T, U>(double bottom, double top, IEnumerable<T> values);
     public static IEnumerable<U> BufferVertical<T, U>(this IList<T> rates, Func<T, double> _priceAvg, double height, Func<double, double> toStep, BufferVerticalDelegate<T, U> map) {

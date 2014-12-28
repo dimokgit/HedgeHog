@@ -34,7 +34,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
       var priceMAs = RatesArray.ToArray(GetPriceMA);
       LineMA = priceMAs.Regression(1, (coefs, line) => line);
       SetVoltage(RatesArray.Last(), calcVolts(priceMAs, RatesArray.ToArray(_priceAvg)));

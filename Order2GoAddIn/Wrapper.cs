@@ -683,6 +683,9 @@ namespace Order2GoAddIn {
             //);
           var ms = (DateTime.Now - d).TotalMilliseconds;
           _historyTimeAverage = Lib.Cma(_historyTimeAverage, 10, ms);
+          if (period == 0)
+            return mr.GroupBy(r => r.StartDate)
+              .SelectMany(g => g.Select((r, i) => new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true))).ToArray();
           var ret = mr.Select((r,i) => period == 0? new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true): RateFromMarketRate(pair, r)).ToList();
           return period == periodToRun ? ret : ret.GetMinuteTicks(period).OrderBars().ToList();
         } catch (ThreadAbortException exc) {

@@ -16,15 +16,16 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Threading;
 using System.Data.Entity.Core.Objects;
+using System.Data.Entity.Infrastructure;
 
 namespace HedgeHog.Alice.Store {
-  public class GlobalStorage :Models.ModelBase{
+  public class GlobalStorage : Models.ModelBase {
     static GlobalStorage _Instance;
     public static GlobalStorage Instance {
       get { return GlobalStorage._Instance ?? (GlobalStorage._Instance = new GlobalStorage()); }
       set {
         if (GlobalStorage._Instance != null) throw new InvalidOperationException("GlobalStorage has already been instantiated.");
-        GlobalStorage._Instance = value; 
+        GlobalStorage._Instance = value;
       }
     }
     static GlobalStorage() {
@@ -40,7 +41,7 @@ namespace HedgeHog.Alice.Store {
           _databasePath = OpenDataBasePath();
           if (string.IsNullOrWhiteSpace(_databasePath)) throw new Exception("No database path ptovided for AliceEntities");
         }
-        return _databasePath; 
+        return _databasePath;
       }
       set { _databasePath = value; }
     }
@@ -121,7 +122,15 @@ namespace HedgeHog.Alice.Store {
         return _Instruments;
       }
     }
-    static ForexEntities ForexEntitiesFactory() { return new ForexEntities() { CommandTimeout = 60 * 1 }; }
+    static void SetTimeout(IObjectContextAdapter oca, int timeOut) {
+      oca.ObjectContext.CommandTimeout = timeOut;
+    }
+
+    static ForexEntities ForexEntitiesFactory() {
+      var fe = new ForexEntities();
+      SetTimeout(fe, 60 * 1);
+      return fe;
+    }
     public static void UseForexContext(Action<ForexEntities> action, Action<ForexEntities, Exception> error = null) {
       using (var context = ForexEntitiesFactory())
         try {
@@ -134,14 +143,14 @@ namespace HedgeHog.Alice.Store {
           }
         }
     }
-    public static T UseForexContext<T>(Func<ForexEntities,T> action) {
+    public static T UseForexContext<T>(Func<ForexEntities, T> action) {
       try {
         using (var context = ForexEntitiesFactory()) {
-          context.CommandTimeout = 60 * 1;
+          SetTimeout(context, 60 * 1);
           return action(context);
         }
       } catch (Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<Exception>(exc);
         throw;
       }
     }
@@ -255,6 +264,23 @@ namespace HedgeHog.Alice.Store {
         return GetRatesFromDBBars(bars);
       });
     }
+    public static List<TBar> GetRateFromDBBackwards<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod) where TBar : BarBase, new() {
+      return (minutesPerPriod == 0
+        ? GetRateFromDBBackwardsInternal<Tick>(pair, endDate, barsCount, minutesPerPriod).Cast<TBar>().ToList()
+        : GetRateFromDBBackwardsInternal<TBar>(pair, endDate, barsCount, minutesPerPriod));
+    }
+    static List<TBar> GetRateFromDBBackwardsInternal<TBar>(string pair, DateTime endDate, int barsCount, int minutesPerPriod) where TBar : BarBase, new() {
+      return GlobalStorage.UseForexContext(context => {
+        var bars = context.t_Bar
+            .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate <= endDate)
+            .OrderByDescending(b => b.StartDate)
+            .Take(barsCount)
+            .ToList()
+            .OrderBy(b=>b.StartDate)
+            .ThenBy(b => b.Row);
+        return GetRatesFromDbBars<TBar>(bars.ToList());
+      });
+    }
 
     static List<Rate> GetRatesFromDBBars(IQueryable<t_Bar> bars) {
       var ratesList = new List<Rate>();
@@ -262,6 +288,41 @@ namespace HedgeHog.Alice.Store {
         Volume = b.Volume
       }));
       return ratesList.OrderBars().ToList();
+    }
+    public static List<TBar> GetRateFromDBForwards<TBar>(string pair, DateTimeOffset startDate, int barsCount, int minutesPerPriod)where TBar:BarBase,new() {
+      return (minutesPerPriod == 0
+        ? GetRateFromDBForwardsInternal<Tick>(pair, startDate, barsCount, minutesPerPriod).Cast<TBar>().ToList()
+        : GetRateFromDBForwardsInternal<TBar>(pair, startDate, barsCount, minutesPerPriod));
+    }
+    static List<TBar> GetRateFromDBForwardsInternal<TBar>(string pair, DateTimeOffset startDate, int barsCount, int minutesPerPriod) where TBar : BarBase, new() {
+      return GlobalStorage.UseForexContext(context => {
+        var bars = context.t_Bar
+          .Where(b => b.Pair == pair && b.Period == minutesPerPriod && b.StartDate >= startDate)
+          .OrderBy(b => b.StartDate)
+          .ThenBy(b => b.Row)
+          .Take(barsCount);
+        return GetRatesFromDbBars<TBar>(bars.ToList());
+      });
+    }
+    static List<TBar> GetRatesFromDbBars<TBar>(IList<t_Bar> bars) where TBar : BarBase, new() {
+      var bs = bars.Select(b => {
+        var bar = new TBar() {
+          AskHigh = b.AskHigh,
+          AskLow = b.AskLow,
+          AskOpen = b.AskOpen, AskClose = b.AskClose, BidHigh = b.BidHigh,
+          BidLow = b.BidLow, BidOpen = b.BidOpen, BidClose = b.BidClose, StartDate2 = b.StartDate,
+          Volume = b.Volume,
+        };
+        new[] { bar }.OfType<Tick>().ForEach(t => t.Row = b.Row);
+        return bar;
+      }).ToList();
+      var ticks = Lazy.Create(()=>bs.Cast<Tick>().ToArray()) ;
+      if (typeof(TBar) == typeof(Tick) && ticks.Value.Select(t=>t.Row).DefaultIfEmpty(1).Max() == 0) {
+        ticks.Value
+          .GroupBy(t => t.StartDate2)
+          .ForEach(g => g.ForEach((t, i) => t.Row = i));
+      }
+      return bs;
     }
 
   }

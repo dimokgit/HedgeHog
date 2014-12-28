@@ -23,7 +23,7 @@
           <Property Name="Volume" Type="int" Nullable="false" />
           <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="StartDateLocal" Type="datetime" StoreGeneratedPattern="Computed" />
-          <Property Name="Row" Type="int" />
+          <Property Name="Row" Type="int" Nullable="false" />
         </EntityType>
         <EntityType Name="t_BarExtender">
           <Key>
@@ -408,7 +408,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <EntitySet Name="v_Pair" EntityType="ForexModel.v_Pair" />
           <EntitySet Name="t_Offer" EntityType="ForexModel.t_Offer" />
           <EntitySet Name="t_Stat" EntityType="ForexModel.t_Stat" />
-          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
           <EntitySet Name="t_Trade" EntityType="ForexModel.t_Trade" />
           <EntitySet Name="t_BarHeight" EntityType="ForexModel.t_BarHeight" />
           <EntitySet Name="t_Report" EntityType="ForexModel.t_Report" />
@@ -433,11 +432,12 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
             <End Role="Event" EntitySet="Event__News" />
           </AssociationSet>
           <EntitySet Name="t_BarExtender" EntityType="ForexModel.t_BarExtender" />
+          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
+          <EntitySet Name="t_Bar" EntityType="ForexModel.t_Bar" />
           <AssociationSet Name="FK_t_BarExtender_t_Bar" Association="ForexModel.FK_t_BarExtender_t_Bar">
             <End Role="t_Bar" EntitySet="t_Bar" />
             <End Role="t_BarExtender" EntitySet="t_BarExtender" />
           </AssociationSet>
-          <EntitySet Name="v_TradeSession" EntityType="ForexModel.v_TradeSession" />
         </EntityContainer>
         <ComplexType Name="GetCorridorAverage_Result">
           <Property Type="Double" Name="Avg" Nullable="true" />
@@ -487,27 +487,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Type="Double" Name="Value2" Nullable="false" />
           <Property Type="Double" Name="Value3" Nullable="false" />
           <Property Type="String" Name="Name" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
-        </EntityType>
-        <EntityType Name="t_Bar">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Type="String" Name="Pair" Nullable="false" MaxLength="10" FixedLength="true" Unicode="true" />
-          <Property Type="Int32" Name="Period" Nullable="false" />
-          <Property Type="DateTimeOffset" Name="StartDate" Nullable="false" Precision="7" />
-          <Property Type="Single" Name="AskHigh" Nullable="false" />
-          <Property Type="Single" Name="AskLow" Nullable="false" />
-          <Property Type="Single" Name="AskOpen" Nullable="false" />
-          <Property Type="Single" Name="AskClose" Nullable="false" />
-          <Property Type="Single" Name="BidHigh" Nullable="false" />
-          <Property Type="Single" Name="BidLow" Nullable="false" />
-          <Property Type="Single" Name="BidOpen" Nullable="false" />
-          <Property Type="Single" Name="BidClose" Nullable="false" />
-          <Property Type="Int32" Name="Volume" Nullable="false" />
-          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
-          <Property Type="DateTime" Name="StartDateLocal" annotation:StoreGeneratedPattern="Computed" Precision="3" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
-          <Property Type="Int32" Name="Row" />
-          <NavigationProperty Name="t_BarExtender" Relationship="ForexModel.FK_t_BarExtender_t_Bar" FromRole="t_Bar" ToRole="t_BarExtender" />
         </EntityType>
         <EntityType Name="t_Trade">
           <Key>
@@ -674,20 +653,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Name="Value" Type="Double" Nullable="false" />
           <NavigationProperty Name="t_Bar" Relationship="ForexModel.FK_t_BarExtender_t_Bar" FromRole="t_BarExtender" ToRole="t_Bar" />
         </EntityType>
-        <Association Name="FK_t_BarExtender_t_Bar">
-          <End Type="ForexModel.t_Bar" Role="t_Bar" Multiplicity="1">
-            <OnDelete Action="Cascade" />
-          </End>
-          <End Type="ForexModel.t_BarExtender" Role="t_BarExtender" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="t_Bar">
-              <PropertyRef Name="ID" />
-            </Principal>
-            <Dependent Role="t_BarExtender">
-              <PropertyRef Name="BarID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <EntityType Name="v_TradeSession">
           <Key>
             <PropertyRef Name="Pair" />
@@ -737,6 +702,41 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <Property Name="IsTakeBack" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
           <Property Name="LimitProfitByRatesHeight" Type="String" MaxLength="2000" FixedLength="false" Unicode="true" />
         </EntityType>
+        <EntityType Name="t_Bar">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="Pair" Type="String" Nullable="false" MaxLength="10" FixedLength="true" Unicode="true" />
+          <Property Name="Period" Type="Int32" Nullable="false" />
+          <Property Name="StartDate" Type="DateTimeOffset" Nullable="false" Precision="7" />
+          <Property Name="AskHigh" Type="Single" Nullable="false" />
+          <Property Name="AskLow" Type="Single" Nullable="false" />
+          <Property Name="AskOpen" Type="Single" Nullable="false" />
+          <Property Name="AskClose" Type="Single" Nullable="false" />
+          <Property Name="BidHigh" Type="Single" Nullable="false" />
+          <Property Name="BidLow" Type="Single" Nullable="false" />
+          <Property Name="BidOpen" Type="Single" Nullable="false" />
+          <Property Name="BidClose" Type="Single" Nullable="false" />
+          <Property Name="Volume" Type="Int32" Nullable="false" />
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="StartDateLocal" Type="DateTime" annotation:StoreGeneratedPattern="Computed" Precision="3" />
+          <Property Name="Row" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="t_BarExtender" Relationship="ForexModel.FK_t_BarExtender_t_Bar" FromRole="t_Bar" ToRole="t_BarExtender" />
+        </EntityType>
+        <Association Name="FK_t_BarExtender_t_Bar">
+          <End Type="ForexModel.t_Bar" Role="t_Bar" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="ForexModel.t_BarExtender" Role="t_BarExtender" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="t_Bar">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="t_BarExtender">
+              <PropertyRef Name="BarID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -799,27 +799,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
                 <ScalarProperty Name="Price" ColumnName="Price" />
                 <ScalarProperty Name="Time" ColumnName="Time" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="t_Bar">
-            <EntityTypeMapping TypeName="ForexModel.t_Bar">
-              <MappingFragment StoreEntitySet="t_Bar">
-                <ScalarProperty Name="Row" ColumnName="Row" />
-                <ScalarProperty Name="StartDateLocal" ColumnName="StartDateLocal" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="Volume" ColumnName="Volume" />
-                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
-                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
-                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
-                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
-                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
-                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
-                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
-                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
-                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
-                <ScalarProperty Name="Period" ColumnName="Period" />
-                <ScalarProperty Name="Pair" ColumnName="Pair" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1030,6 +1009,27 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
+          <EntitySetMapping Name="t_Bar">
+            <EntityTypeMapping TypeName="ForexModel.t_Bar">
+              <MappingFragment StoreEntitySet="t_Bar">
+                <ScalarProperty Name="Row" ColumnName="Row" />
+                <ScalarProperty Name="StartDateLocal" ColumnName="StartDateLocal" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Volume" ColumnName="Volume" />
+                <ScalarProperty Name="BidClose" ColumnName="BidClose" />
+                <ScalarProperty Name="BidOpen" ColumnName="BidOpen" />
+                <ScalarProperty Name="BidLow" ColumnName="BidLow" />
+                <ScalarProperty Name="BidHigh" ColumnName="BidHigh" />
+                <ScalarProperty Name="AskClose" ColumnName="AskClose" />
+                <ScalarProperty Name="AskOpen" ColumnName="AskOpen" />
+                <ScalarProperty Name="AskLow" ColumnName="AskLow" />
+                <ScalarProperty Name="AskHigh" ColumnName="AskHigh" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="Period" ColumnName="Period" />
+                <ScalarProperty Name="Pair" ColumnName="Pair" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>
@@ -1047,6 +1047,7 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
         <edmx:DesignerProperty Name="EnablePluralization" Value="True" />
         <edmx:DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
         <edmx:DesignerProperty Name="UseLegacyProvider" Value="True" />
+        <edmx:DesignerProperty Name="CodeGenerationStrategy" Value="None" />
       </edmx:DesignerInfoPropertySet>
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->
@@ -1055,7 +1056,6 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
         <edmx:EntityTypeShape EntityType="ForexModel.v_Pair" Width="1.5" PointX="2.75" PointY="5.75" Height="1.4279589843749996" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Offer" Width="1.5" PointX="5.75" PointY="3.75" Height="1.7566536458333317" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Stat" Width="1.5" PointX="4.75" PointY="6.75" Height="2.0853483072916674" />
-        <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="1" Height="3.5186979166666674" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Trade" Width="1.5" PointX="6.75" PointY="6.75" Height="4.6725065104166674" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_BarHeight" Width="1.5" PointX="7.75" PointY="3.75" Height="1.7879850260416674" />
         <edmx:EntityTypeShape EntityType="ForexModel.t_Report" Width="1.5" PointX="0.75" PointY="8.75" Height="1.5956835937499996" />
@@ -1069,8 +1069,9 @@ FROM [dbo].[v_TradeSession] AS [v_TradeSession]</DefiningQuery>
           <edmx:ConnectorPoint PointX="11.625" PointY="1.7689925130208337" />
         </edmx:AssociationConnector>
         <edmx:EntityTypeShape EntityType="ForexModel.t_BarExtender" Width="1.5" PointX="3" PointY="2.125" />
-        <edmx:AssociationConnector Association="ForexModel.FK_t_BarExtender_t_Bar" />
         <edmx:EntityTypeShape EntityType="ForexModel.v_TradeSession" Width="1.5" PointX="3.375" PointY="10.75" />
+        <edmx:EntityTypeShape EntityType="ForexModel.t_Bar" Width="1.5" PointX="0.75" PointY="0.75" />
+        <edmx:AssociationConnector Association="ForexModel.FK_t_BarExtender_t_Bar" />
       </edmx:Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

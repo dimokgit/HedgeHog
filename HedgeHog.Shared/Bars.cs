@@ -685,9 +685,11 @@ namespace HedgeHog.Bars {
     #region IEquatable<Tick> Members
 
     public override bool Equals(BarBase other) {
-      return (object)other != null && StartDate == other.StartDate && AskOpen == other.AskOpen && BidOpen == other.BidOpen;
+      //return (object)other != null && StartDate == other.StartDate && AskOpen == other.AskOpen && BidOpen == other.BidOpen;
+      return (object)other != null && StartDate == other.StartDate2 && Row == ((Tick)other).Row;
     }
-    public override int GetHashCode() { return StartDate.GetHashCode() ^ AskOpen.GetHashCode() ^ BidOpen.GetHashCode(); }
+    public override int GetHashCode() { return StartDate2.GetHashCode() ^ Row.GetHashCode(); }
+    //public override int GetHashCode() { return StartDate.GetHashCode() ^ AskOpen.GetHashCode() ^ BidOpen.GetHashCode(); }
 
     #endregion
   }

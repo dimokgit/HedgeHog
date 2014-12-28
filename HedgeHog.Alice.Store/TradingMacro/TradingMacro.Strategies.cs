@@ -78,6 +78,7 @@ namespace HedgeHog.Alice.Store {
     }
     int _SetCorridorDistanceByDistanceIsRunning = 0;
     private int SetCorridorDistanceByDistance(IList<Rate> rates, double ratio) {
+      if (ratio.IsNaN()) return RatesArray.Count;
       if (_SetCorridorDistanceByDistanceIsRunning > 0)
         Log = new Exception(new { _SetCorridorDistanceByDistanceIsRunning } + "");
       _SetCorridorDistanceByDistanceIsRunning++;
@@ -359,7 +360,7 @@ namespace HedgeHog.Alice.Store {
         };
         Func<double[]> getRegressionLeftRightRates = () => {
           var rateLeft = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
-          var rightIndex = RatesArray.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC());
+          var rightIndex = UseRates(rs => rs.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC()));
           var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
           return new[] { rateLeft, rateRight };
         };

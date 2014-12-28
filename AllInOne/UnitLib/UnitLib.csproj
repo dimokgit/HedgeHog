@@ -136,6 +136,7 @@
     <Compile Include="Enum.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="LibTest.cs" />
+    <Compile Include="LibTests.cs" />
     <Compile Include="MathExtensionsTest.cs" />
     <Compile Include="NewsHound_BloombergTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

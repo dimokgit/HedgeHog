@@ -54,13 +54,13 @@ namespace HedgeHog.Alice.Store {
       else Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
       foreach (var t in args.NewRates.Distinct()) {
-        var bar = context.CreateObject<t_Bar>();
+        var bar = context.t_Bar.Create();
         FillBar(period, pair, bar, t);
-        context.t_Bar.AddObject(bar);
+        context.t_Bar.Add(bar);
       }
       Action a = new Action(() => {
         try {
-          context.SaveChanges(System.Data.Entity.Core.Objects.SaveOptions.AcceptAllChangesAfterSave);
+          context.SaveChanges();
           context.Dispose();
         } catch (Exception exc) {
           if (progressCallback != null) progressCallback(exc);
@@ -71,7 +71,7 @@ namespace HedgeHog.Alice.Store {
     private static void FillBar(int period, string pair, t_Bar bar, Rate t) {
       bar.Pair = pair;
       bar.Period = period;
-      bar.StartDate = t.StartDate;
+      bar.StartDate = t.StartDate2;
       bar.AskHigh = (float)t.AskHigh;
       bar.AskLow = (float)t.AskLow;
       bar.AskOpen = (float)t.AskOpen;
@@ -81,6 +81,7 @@ namespace HedgeHog.Alice.Store {
       bar.BidOpen = (float)t.BidOpen;
       bar.BidClose = (float)t.BidClose;
       bar.Volume = t.Volume;
+      bar.Row = new[] { t }.OfType<Tick>().Select(tick => tick.Row).DefaultIfEmpty().Single();
     }
   }
 }

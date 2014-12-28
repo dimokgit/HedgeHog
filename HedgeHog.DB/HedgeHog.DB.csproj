@@ -38,11 +38,11 @@
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\AllInOne\packages\EntityFramework.6.1.1\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\AllInOne\packages\EntityFramework.6.1.2\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\AllInOne\packages\EntityFramework.6.1.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\AllInOne\packages\EntityFramework.6.1.2\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="GalaSoft.MvvmLight, Version=5.0.2.32240, Culture=neutral, PublicKeyToken=e7570ab207bcb616, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -89,14 +89,78 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Azure.edmx</DependentUpon>
     </Compile>
+    <Compile Include="BarsByMinutes_Result.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="EventLevel__News.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Event__News.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Forex.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Forex.edmx</DependentUpon>
     </Compile>
     <Compile Include="ForexEntityExtentions.cs" />
+    <Compile Include="ForexModel.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ForexModel.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="ForexModel.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="ForexStorage.cs" />
+    <Compile Include="GetCorridorAverage_Result.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MonthlyStat__Stats.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="sGetStats_Result.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="s_GetBarStats_Result.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Bar.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_BarExtender.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_BarHeight.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Offer.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Report.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Session.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Stat.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="t_Trade.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="v_BlackoutTime.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="v_Pair.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="v_TradeSession.cs">
+      <DependentUpon>ForexModel.tt</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EntityDeploy Include="Forex.edmx">
@@ -122,6 +186,16 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <DependentUpon>Azure.edmx</DependentUpon>
       <LastGenOutput>Azure.cs</LastGenOutput>
+    </None>
+    <None Include="ForexModel.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ForexModel.Context.cs</LastGenOutput>
+      <DependentUpon>Forex.edmx</DependentUpon>
+    </None>
+    <None Include="ForexModel.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ForexModel.cs</LastGenOutput>
+      <DependentUpon>Forex.edmx</DependentUpon>
     </None>
     <None Include="packages.config" />
     <None Include="Properties\DataSources\ForexEntities.datasource" />

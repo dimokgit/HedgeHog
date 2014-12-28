@@ -236,6 +236,13 @@ namespace HedgeHog {
       max = rates.Max(valueMax);
       return max - min;
     }
+    public static double Height(this IList<double> rates, out double min, out double max) {
+      if (rates.Count == 0)
+        return min = max = double.NaN;
+      min = rates.Min();
+      max = rates.Max();
+      return max - min;
+    }
 
     public static IEnumerable<double> Shrink(this IList<double> values, int groupLength) {
       return from r in values.Select((r, i) => new { r, i = i / groupLength })
@@ -549,6 +556,22 @@ namespace HedgeHog {
       return standardDeviationP;
     }
 
+    public static double[] LinearRegression(this double[] valuesY) {
+      double slope, value;
+      LinearRegression(valuesY, out slope, out value);
+      return new[] { value, slope };
+    }
+    public static T LinearRegression<T>(this double[] valuesY, Func<double, double, T> map) {
+      double slope, value;
+      LinearRegression(valuesY, out slope, out value);
+      return map(value, slope);
+    }
+    public static void LinearRegression(this double[] valuesY, out double a, out double b) {
+      var valuesX = new double[valuesY.Length];
+      for(var i=0; i<valuesY.Length;i++)
+        valuesX[i]=i;
+      LinearRegression_(valuesX,valuesY,out a,out b);
+    }
     public static void LinearRegression_(double[] valuesX, double[] valuesY, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
@@ -572,7 +595,7 @@ namespace HedgeHog {
 
     }
 
-    public static void LinearRegression_(double[] values, out double a, out double b) {
+    static void LinearRegression_(double[] values, out double a, out double b) {
       double xAvg = 0;
       double yAvg = 0;
       for (int x = 0; x < values.Length; x++) {

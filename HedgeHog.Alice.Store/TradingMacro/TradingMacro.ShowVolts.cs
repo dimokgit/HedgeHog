@@ -198,28 +198,30 @@ namespace HedgeHog.Alice.Store {
         return _SetCentersOfMassSubject;
       }
     }
-    void OnSetCentersOfMass(Action p) {
-      SetCentersOfMassSubject.OnNext(p);
+    CorridorStatistics OnSetCentersOfMass() {
+      SetCentersOfMassSubject.OnNext(SetCentersOfMass);
+      return ShowVoltsNone();
     }
     #endregion
     private void SetCentersOfMass() {
       var height = ScanCorridorByStDevAndAngleHeightMin();
-      var ranges = RatesArray.ToArray().BufferVertical2(_priceAvg, height, (rate, i, b, t) => new { b, t, rate })
-        .Select(a => new { a, s = a.StDev(b => b.rate.PriceAvg),c = a.Count })
-        .ToArray();
+      var rates = new Rate[RatesArray.Count];
+      RatesArray.CopyTo(rates);
+      var digits = Digits();
+      var ranges = rates.BufferVertical2(r => RoundPrice(r.PriceAvg), height, (b, t,c) => new { b, t,c }).ToArray();
       ranges
-        .OrderByDescending(a=>a.c)
+        .OrderByDescending(a => a.c)
         .Take(1)
       .ForEach(a => {
-        CenterOfMassBuy = a.a[0].t;
-        CenterOfMassSell = a.a[0].b;
+        CenterOfMassBuy = a.t;
+        CenterOfMassSell = a.b;
       });
       var frameLength = VoltsFrameLength;
-      double waveCount = RatesArray.ToArray()
+      double waveCount = rates
         .Select(_priceAvg)
         .Buffer(frameLength, 1)
-        .Where(b=>b.Count == frameLength)
-        .Select(b => b.Regress(1).LineSlope().Sign())
+        .Where(b => b.Count == frameLength)
+        .Select(b => b.LinearSlope().Sign())
         .DistinctUntilChanged()
         .Count();
       //var prices = RatesArray.Select(_priceAvg).Buffer(RatesArray.Count / 2).ToArray();

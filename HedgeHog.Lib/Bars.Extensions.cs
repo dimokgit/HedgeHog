@@ -202,8 +202,8 @@ namespace HedgeHog.Bars {
         a(tick, y1);// *poly2Wieght + y2 * (1 - poly2Wieght);
       }
     }
-    public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, int polyOrder, Func<T, double> readFrom, Action<int, double> writeTo) {
-      var coeffs = ticks.Select(readFrom).ToArray().Regress(polyOrder);
+    public static double[] SetRegressionPrice<T>(this IEnumerable<T> ticks, Func<T, double> readFrom, Action<int, double> writeTo) {
+      var coeffs = ticks.Select(readFrom).ToArray().Linear();
       coeffs.SetRegressionPrice(0, ticks.Count(), writeTo);
       return coeffs;
     }

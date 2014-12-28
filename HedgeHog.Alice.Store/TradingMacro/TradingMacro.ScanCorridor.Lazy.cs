@@ -1,7 +1,10 @@
 ﻿using HedgeHog.Bars;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,8 +21,8 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(rates, new Lazy<int>(() => counter(rates)), showVolts);
     }
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
-      OnSetCentersOfMass(SetCentersOfMass);
-
+      Stopwatch sw = Stopwatch.StartNew();
+      var swDict = new Dictionary<string, double>();
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
         if (ratesReversed.Count < RatesArray.Count) return ratesReversed.Count;
         var date = CorridorStats.Rates.Last().StartDate;
@@ -36,11 +39,19 @@ namespace HedgeHog.Alice.Store {
           .TakeWhile(r => r.StartDate > ratesReversed[lazyCount.Value].StartDate).ToArray()
         : ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax.Value).TakeWhile(r => r.StartDate >= startMin).ToArray();
+      swDict.Add("0", sw.ElapsedMilliseconds); sw.Restart();
       if (IsCorridorForwardOnly && _isCorridorStopDateManual && rates.Last().StartDate < CorridorStats.StartDate)
         WaveShort.ResetRates(CorridorStats.Rates);
       else WaveShort.ResetRates(rates);
       if (postProcess != null) postProcess();
-      return (showVolts ?? ShowVoltsNone)();
+      swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
+      try {
+        return (showVolts ?? GetShowVoltageFunction())();
+      } finally {
+        swDict.Add("SHowVolts", sw.ElapsedMilliseconds);sw.Restart();
+        //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
+
+      }
     }
     private CorridorStatistics ShowVoltsByStDevIntegral() {
       SetVoltsByStDevDblIntegral3(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);
@@ -50,7 +61,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
 
       return ShowVoltsNone();
     }

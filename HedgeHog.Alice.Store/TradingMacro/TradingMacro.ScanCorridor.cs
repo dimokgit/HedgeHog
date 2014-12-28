@@ -107,7 +107,7 @@ namespace HedgeHog.Alice.Store {
           var c = waves.AverageByIterations(-2).Average();
           int wavesCount = BarsCountCalc / frameLength / 2;
           SetVoltage(chunk[0], waves.Where(v => v >= c).Take(wavesCount).Average() / frameLength - 1);
-        }));
+        }), true);
     }
 
     private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -120,7 +120,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll2.Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
       Func<Rate, double> distanceFunc = r => GetVoltage2(r).Abs();
       var distanceMin = UseRatesInternal(ri =>
         ri.TakeLast((VoltsAverageLength * 60).ToInt())
@@ -172,7 +172,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll.ToArray().AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
       var distanceMin = UseRatesInternal(ri => ri.TakeLast((VoltsAverageLength * 60).ToInt()).Average(GetVoltage) * CorridorDistance);
       var distanceSum = 0.0;
       var count = ratesReversed.Select(r => (distanceSum += GetVoltage(r))).TakeWhile(d => d < distanceMin).Count();
@@ -230,7 +230,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
 
       var distances = VoltsFromInternalRates(CorridorDistance, 0).DefaultIfEmpty().ToArray();
       var distanceMin = distances.Average();
@@ -267,7 +267,7 @@ namespace HedgeHog.Alice.Store {
         GetVoltageHigh = () => vh;
         var va = voltsAll.AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
-      });
+      }, IsInVitualTrading);
 
       var distances = VoltsFromInternalRates(VoltsFrameLength, 0).DefaultIfEmpty().Memoize();
       var distanceMin = distances.Min();
@@ -1860,23 +1860,33 @@ namespace HedgeHog.Alice.Store {
       Func<IList<Rate>, int> scan = rates => {
         var prices = rates.Select(cp).ToList();
         var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
-        var rateLastIndex = Enumerable.Range(10, prices.Count - 10)
-          .SkipWhile(i => {
-            return prices.GetRange(0, i).HeightByRegressoin() < heightMin;
-          })
-          .First();
+        if (heightMin.IsNaN()) return CorridorDistance;
+        Func<int, bool> heightOk = i => prices.GetRange(0, i).HeightByRegressoin() < heightMin;
+        Func<int, bool> heightNotOk = i => !heightOk(i);
+        Func<IEnumerable<int>, Func<int, bool>, IEnumerable<int>> getIndex = (ints, heightFunc) => ints.SkipWhile(heightFunc).Take(1);
+
+        var rateLastIndex = getIndex(Lib.IteratonSequence(10, prices.Count - 10), heightOk).DefaultIfEmpty().IfEmpty(() =>
+            CorridorStats.Rates
+            .Select(r => r.StartDate).TakeLast(1)
+            .Select(d => RatesArray.SkipWhile(r => r.StartDate < d).Count())
+            )
+            .IfEmpty(() => CorridorDistance)
+            .Single();
         if (rateLastIndex < 3) return CorridorStats.Rates.Count;
-        int? slope = null;
-        for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
-          var coeffs = prices.Take(rli).ToArray().Regress(1);
-          var currSlope = coeffs.LineSlope().Sign();
-          if (!slope.HasValue) slope = currSlope;
-          if (currSlope != slope.Value) {
-            // TODO Roll back with step of 1
-            rateLastIndex = rli;
-            break;
-          }
-        }
+        var step = Lib.IteratonSequenceNextStep(rateLastIndex);
+        rateLastIndex = getIndex(Enumerable.Range(0, rateLastIndex - 1).Select(i => rateLastIndex - i), heightNotOk).Single();
+
+        //int? slope = null;
+        //for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
+        //  var coeffs = prices.GetRange(0,rli).Regress(1);
+        //  var currSlope = coeffs.LineSlope().Sign();
+        //  if (!slope.HasValue) slope = currSlope;
+        //  if (currSlope != slope.Value) {
+        //    // TODO Roll back with step of 1
+        //    rateLastIndex = rli;
+        //    break;
+        //  }
+        //}
         return rateLastIndex;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
