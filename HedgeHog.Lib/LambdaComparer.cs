@@ -19,7 +19,7 @@ namespace HedgeHog {
       list.Sort(lambda.AsComparison());
       return list;
     }
-    public static IEnumerable<IGrouping<T, T>> GroupByCloseness<T>(this IList<T> list, double delta, Func<T, T, double, bool> groupBy) {
+    public static IEnumerable<IGrouping<T, T>> GroupByCloseness<T>(this IEnumerable<T> list, double delta, Func<T, T, double, bool> groupBy) {
       return list.GroupBy(t => t, new ClosenessComparer<T>(delta, groupBy));
     }
     public static IEnumerable<T> Distinct<T>(this ParallelQuery<T> list, Func<T, T, bool> distinctBy) {

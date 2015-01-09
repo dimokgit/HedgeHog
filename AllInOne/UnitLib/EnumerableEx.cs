@@ -15,9 +15,8 @@ namespace HedgeHog.Tests {
       public void BufferVerticalTest() {
         var rand = new Random();
         var input = Enumerable.Range(0, 1440).Select(i => rand.Next(-100, 100) * 0.01).ToArray();
-        var values = input.BufferVertical2(d => d, 0.3, (d, i, b, t) => new { d, i, b, t }).ToArray();
-        var error = values.Zip(values.Skip(1), (vs1, vs2) => new { vs1, vs2 }).Any(t => t.vs1.Min(a => a.d) >= t.vs2.Min(a => a.d));
-        Assert.IsFalse(error);
+        var values = input.BufferVertical2(d => d, 0.3, (b, t,c) => new { b, t,c }).ToArray();
+        Assert.IsFalse(values.Min(a => a.c) == 0);
       }
       [TestMethod]
       public void TestFinaly() {

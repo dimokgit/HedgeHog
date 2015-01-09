@@ -686,7 +686,7 @@ namespace HedgeHog.Bars {
 
     public override bool Equals(BarBase other) {
       //return (object)other != null && StartDate == other.StartDate && AskOpen == other.AskOpen && BidOpen == other.BidOpen;
-      return (object)other != null && StartDate == other.StartDate2 && Row == ((Tick)other).Row;
+      return (object)other != null && StartDate == other.StartDate2 && Row == (other as Tick).Row;
     }
     public override int GetHashCode() { return StartDate2.GetHashCode() ^ Row.GetHashCode(); }
     //public override int GetHashCode() { return StartDate.GetHashCode() ^ AskOpen.GetHashCode() ^ BidOpen.GetHashCode(); }

@@ -1224,19 +1224,39 @@ namespace HedgeHog.Bars {
     }
     public static IEnumerable<Rate> GroupTicksToRates(this IEnumerable<Rate> ticks) {
       return from tick in ticks
-             group tick by tick.StartDate.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
-             select new Rate() {
-               StartDate2 = gt.Key,
-               AskOpen = gt.First().AskOpen,
-               AskClose = gt.Last().AskClose,
-               AskHigh = gt.Max(t => t.AskHigh),
-               AskLow = gt.Min(t => t.AskLow),
-               BidOpen = gt.First().BidOpen,
-               BidClose = gt.Last().BidClose,
-               BidHigh = gt.Max(t => t.BidHigh),
-               BidLow = gt.Min(t => t.BidLow),
-               Mass = gt.Sum(t => t.Mass)
-             };
+             group tick by tick.StartDate2.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
+             select GroupToRate(gt);
+    }
+
+    public static Rate GroupToRate(this IGrouping<DateTimeOffset, Rate> gt) {
+      return new Rate() {
+        StartDate2 = gt.Key,
+        AskOpen = gt.First().AskOpen,
+        AskClose = gt.Last().AskClose,
+        AskHigh = gt.Max(t => t.AskHigh),
+        AskLow = gt.Min(t => t.AskLow),
+        BidOpen = gt.First().BidOpen,
+        BidClose = gt.Last().BidClose,
+        BidHigh = gt.Max(t => t.BidHigh),
+        BidLow = gt.Min(t => t.BidLow),
+        PriceCMALast = gt.Average(r => r.PriceCMALast),
+        Mass = gt.Sum(t => t.Mass)
+      };
+    }
+    public static Rate GroupToRate(this IGrouping<Rate, Rate> gt) {
+      return new Rate() {
+        StartDate2 = gt.Key.StartDate2,
+        AskOpen = gt.First().AskOpen,
+        AskClose = gt.Last().AskClose,
+        AskHigh = gt.Max(t => t.AskHigh),
+        AskLow = gt.Min(t => t.AskLow),
+        BidOpen = gt.First().BidOpen,
+        BidClose = gt.Last().BidClose,
+        BidHigh = gt.Max(t => t.BidHigh),
+        BidLow = gt.Min(t => t.BidLow),
+        PriceCMALast = gt.Average(r => r.PriceCMALast),
+        Mass = gt.Sum(t => t.Mass)
+      };
     }
 
     static void FillPower<TBar>(this TBar[] barsSource, List<TBar> bars, double deleteRatio) where TBar : BarBase {

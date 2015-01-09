@@ -19,7 +19,7 @@ namespace HedgeHog.WCF {
     CompositeType GetDataUsingDataContract(CompositeType composite);
 
     [OperationContract]
-    TradeResponse GetPair(HedgeHog.TradeRequest request);
+    TradeResponse GetPair(TradeRequest request);
   }
 
 

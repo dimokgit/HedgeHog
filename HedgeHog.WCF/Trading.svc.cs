@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HedgeHog.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -33,5 +34,27 @@ namespace HedgeHog.WCF {
       else return null;
     }
 
+  }
+  public static class Wcf {
+    public static ITraderServer Trader;
+    public interface ITraderServer {
+      Account GetAccount();
+      void OpenNewAccount(string account, string password);
+      string CloseTrade(string tradeID);
+      string[] CloseTrades(string[] tradeID);
+      string[] CloseAllTrades();
+    }
+
+    public static List<IServer> Servers = new List<IServer>();
+    public static void RegisterServer(IServer server) {
+      Servers.Add(server);
+    }
+    public static IServer FindServer(string pair) {
+      return Servers.FirstOrDefault(s => s.Pair.ToLower() == pair.ToLower());
+    }
+  }
+  public interface IServer {
+    string Pair { get; }
+    TradeResponse Decisioner(TradeRequest tr);
   }
 }

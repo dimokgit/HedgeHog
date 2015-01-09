@@ -228,5 +228,10 @@ namespace HedgeHog.Alice.Store {
     PriceAvg31,
     PriceAvg32,
   }
-
+  public enum CorridorByStDevRatio {
+    HPAverage = 0,
+    Height,
+    Price,
+    HeightPrice
+  }
 }

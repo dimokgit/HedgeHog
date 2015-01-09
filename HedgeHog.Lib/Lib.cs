@@ -149,17 +149,16 @@ namespace HedgeHog {
         return n;
       });
     }
-
     public static IEnumerable<int> IteratonSequence(int start, int end) {
       return IteratonSequence(start, end, IteratonSequenceNextStep);
     }
-    private static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
-      for (var i = start; i < end; i += nextStep(i))
+    private static IEnumerable<int> IteratonSequence(int start, int end, Func<int, double, int> nextStep, double divider = 100.0) {
+      for (var i = start; i < end; i += nextStep(i, divider))
         yield return i;
     }
 
-    public static int IteratonSequenceNextStep(int rc) {
-      return (rc / 100.0).ToInt() + 1;
+    public static int IteratonSequenceNextStep(int rc, double divider = 100.0) {
+      return (rc / divider).ToInt() + 1;
     }
     public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {
       return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile();
@@ -568,9 +567,9 @@ namespace HedgeHog {
     }
     public static void LinearRegression(this double[] valuesY, out double a, out double b) {
       var valuesX = new double[valuesY.Length];
-      for(var i=0; i<valuesY.Length;i++)
-        valuesX[i]=i;
-      LinearRegression_(valuesX,valuesY,out a,out b);
+      for (var i = 0; i < valuesY.Length; i++)
+        valuesX[i] = i;
+      LinearRegression_(valuesX, valuesY, out a, out b);
     }
     public static void LinearRegression_(double[] valuesX, double[] valuesY, out double a, out double b) {
       double xAvg = 0;

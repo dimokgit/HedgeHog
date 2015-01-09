@@ -53,3 +53,25 @@ namespace HedgeHog {
     }
   }
 }
+/*
+public bool Regress(double[,] XY, int order)
+{
+int countXY = XY.GetLength(0);
+
+double[,] x = new double[order + 1, countXY];
+double[] y = new double[countXY];
+double[] w = new double[countXY];
+ 
+for (int i = 0; i < countXY; i++)
+{
+for (int j = 0; j <= order; j++)
+{
+x[j, i] = Math.Pow(XY[i, 0], j);
+}
+ 
+y[i] = XY[i, 1];
+w[i] = 1;
+}
+ 
+return Regress(y, x, w);
+}*/

@@ -7,11 +7,21 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 using System.IO;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Reflection;
 using HedgeHog.Alice.Store;
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.Threading.Tasks;
+using Owin;
+using Microsoft.Owin.Cors;
+using Microsoft.AspNet.SignalR;
+using Microsoft.Owin.Hosting;
+using System.Reactive.Subjects;
+using HedgeHog.Shared;
+using Microsoft.Owin.FileSystems;
+using Microsoft.Owin.StaticFiles;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -112,12 +122,139 @@ namespace HedgeHog.Alice.Client {
       //ApplicationController controller = container.GetExportedValue<ApplicationController>();
       //controller.Initialize();
       //controller.Run();
+
+        string url = "http://+:80/";
+        try {
+          _webApp = WebApp.Start<StartUp>(url);
+        } catch (Exception exc) {
+          MessageBox.Show(exc + "");
+        }
+
     }
+    IDisposable _webApp;
 
     protected override void OnExit(ExitEventArgs e) {
       container.Dispose();
 
       base.OnExit(e);
     }
+    #region SignalRSubject Subject
+    public static Action ResetSignalR = ()=> { };
+    public static int SignalRInterval = 5;
+    static object _SignalRSubjectSubjectLocker = new object();
+    static IDisposable _SignalRSubjectSubject;
+    public static IDisposable SetSignalRSubjectSubject(Action action) {
+      lock (_SignalRSubjectSubjectLocker)
+        if (_SignalRSubjectSubject == null) {
+          _SignalRSubjectSubject = 
+            new[] { action }.ToObservable()
+            .Select(a=>
+              Observable
+              .Interval(TimeSpan.FromSeconds(SignalRInterval))
+              .StartWith(0)
+              .Select(x=>a))
+              .Switch()
+              .Subscribe(a => action());
+          ResetSignalR = () => {
+            if (_SignalRSubjectSubject != null) {
+              _SignalRSubjectSubject.Dispose();
+              _SignalRSubjectSubject = null;
+            }
+            SetSignalRSubjectSubject(action);
+          };
+        }
+      return _SignalRSubjectSubject;
+    }
+    #endregion
+  }
+  public class StartUp {
+    public string Pair { get{return "usdjpy"; }}
+    public void Configuration(IAppBuilder app) {
+
+      // Static content
+      var fileSystem = new PhysicalFileSystem("./www");
+      var fsOptions = new FileServerOptions {
+        EnableDirectoryBrowsing = true,
+        FileSystem = fileSystem
+      };
+      app.UseFileServer(fsOptions);
+
+      // SignalR timer
+      var remoteControl = App.container.GetExport<RemoteControlModel>();
+      app.UseCors(CorsOptions.AllowAll);
+      app.Use((context, next) => {
+        try {
+          App.SetSignalRSubjectSubject(() => {
+            var trmc = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
+            if (trmc != null) {
+              var rl = trmc.RateLast;
+              if (rl != null) {
+                try {
+                  GlobalHost.ConnectionManager.GetHubContext<MyHub>()
+                    .Clients.All.addMessage(trmc.ServerTime + "", rl.PriceAvg + "");
+                } catch (Exception exc) {
+                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+                }
+              }
+            }
+          });
+
+          if (context.Request.Path.Value.ToLower() == "/hello") {
+            return context.Response.WriteAsync("privet:" + DateTimeOffset.Now);
+          }
+          var path = context.Request.Path.Value.ToLower().Substring(1);
+          var rc = remoteControl.Value;
+          var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == path);
+          if (tm != null) {
+            context.Response.ContentType = "image/png";
+            return context.Response.WriteAsync(rc.GetCharter(tm).GetPng());
+          }
+        } catch (Exception exc) {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        }
+        return next();
+      });
+      // SignalR
+      app.MapSignalR();
+    }
+  }
+  public class PairHub : Hub {
+
+  }
+  public class MyHub : Hub {
+    Lazy<RemoteControlModel> remoteControl;
+    public MyHub() {
+      remoteControl = App.container.GetExport<RemoteControlModel>();
+    }
+    public MyHub(TradingMacro tm) {
+      Clients.All.newInfo(tm.RateLast.PriceAvg + "");
+    }
+    public void Send(string pair, string newInyterval) {
+      try {
+        App.SignalRInterval = int.Parse(newInyterval);
+        App.ResetSignalR();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
+    public void ResetPlotter(string pair) {
+      var tm = GetTradingMacro(pair);
+      if (tm != null)
+        Clients.All.resetPlotter(tm.ServerTime + "", tm.RateLast.PriceAvg + "");
+    }
+    public void StopTrades(string pair) { SetCanTrade(pair, false); }
+    public void StartTrades(string pair) { SetCanTrade(pair, true); }
+    void SetCanTrade(string pair,bool canTrade) {
+      var tm = GetTradingMacro(pair);
+      if (tm != null)
+        tm.SetCanTrade(canTrade);
+    }
+
+    private TradingMacro GetTradingMacro(string pair) {
+      var rc = remoteControl.Value;
+      var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
+      return tm;
+    }
   }
 }
+

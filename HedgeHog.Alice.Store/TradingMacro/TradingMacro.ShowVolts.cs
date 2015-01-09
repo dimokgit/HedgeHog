@@ -29,7 +29,7 @@ namespace HedgeHog.Alice.Store {
       RatesInternal.AsEnumerable().Reverse().Take(RatesArray.Count + CorridorDistance * 2)
         .Integral(frameLength)
         .AsParallel()
-        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs()) })
+        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs(), CorridorStats.Rates) })
         .ToArray()
         .OrderByDescending(a => a.rate.StartDate)
         .Integral(frameLength * 2)
@@ -228,28 +228,6 @@ namespace HedgeHog.Alice.Store {
       //var ratio = prices[1].StDev() / prices[0].StDev();// RatesHeight / StDevByPriceAvg;
       RatesArray.Where(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, RatesArray.Count / waveCount / frameLength));
     }
-
-    private CorridorStatistics ShowVoltsByHourlyStDevAvg() {
-      if (false) {
-        var ratesInternalReversed = UseRatesInternal(ri => ri.AsEnumerable().Reverse().ToArray());
-        var ratesCount = 1440.Div(BarPeriodInt).ToInt();// BarsCountCalc.Value;
-        var count = ratesInternalReversed.Length - ratesCount;
-        if (GetVoltage(ratesInternalReversed[10]).IsNaN()) {
-          //Log = new Exception("Loading volts.");
-          Enumerable.Range(0, count).ToList().ForEach(index => {
-            var rates = new Rate[ratesCount];
-            Array.Copy(ratesInternalReversed, index, rates, 0, rates.Length);
-            rates.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
-            SetVoltage(rates[0], rates.Volatility(_priceAvg, GetPriceMA, UseSpearmanVolatility));
-          });
-          //Log = new Exception("Done Loading volts.");
-        }
-      }
-      var a = RatesArray.AsEnumerable().Reverse().ToArray();
-      CorridorCorrelation = InPips(a.Integral(60).Select(g => g.StDev(_priceAvg)).ToArray().AverageInRange(2, -2).Average());
-      return ShowVolts(CorridorCorrelation, 1);
-    }
-
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 
     private CorridorStatistics ShowVoltsByHourlyRsdAvg() {

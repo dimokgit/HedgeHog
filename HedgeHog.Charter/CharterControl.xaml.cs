@@ -42,6 +42,7 @@ using System.Threading;
 using System.Windows.Interactivity;
 using Microsoft.Expression.Interactivity.Layout;
 using HedgeHog.Metadata;
+using System.IO;
 
 namespace HedgeHog {
   public class CharterControlMessage : GalaSoft.MvvmLight.Messaging.Messenger { }
@@ -1572,6 +1573,20 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
                     }
                 }
      */
+    static object _getPingLocker = new object();
+    public byte[] GetPng() {
+      using (var ms = new MemoryStream()) {
+        GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => {
+          if (Monitor.TryEnter(_getPingLocker, 200))
+            try {
+              plotter.SaveScreenshotToStream(ms, "png");
+            } finally {
+              Monitor.Exit(_getPingLocker);
+            }
+        }, DispatcherPriority.Send);
+        return ms.GetBuffer();
+      }
+    }
     private void CreateCurrencyDataSource(bool doVolts) {
       if (IsPlotterInitialised) return;
 
@@ -1595,7 +1610,6 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         element.LayoutTransform = new RotateTransform(-90, 0, 0);
       });
       var a = FindName("PART_AdditionalLabelsCanvas");
-
       plotter.KeyUp += (s, e) => {
         if (e.Key == Key.RightShift || e.Key == Key.LeftShift)
           _isShiftDown = false;
@@ -2077,7 +2091,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       #region Conversion Functions
       _roundTo = lastPrice.Digits;
       #endregion
-      ticks = new List<Rate>(ticks).ToArray();
+      ticks = ticks.ToArray();
       #region Set DataSources
       if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {
         #region Set Trendlines
@@ -2095,7 +2109,6 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         //  ticks.Select(t => new FXW.Tick(t.StartDateContinuous, t.PriceAvg1, t.PriceAvg1, false)).Select(tickToTick);
         //UpdateTicks(TicksAvg1, avg);
       }
-      var aw = plotter.ActualWidth;
       #endregion
       #region Update Main Chart
       {
@@ -2275,6 +2288,12 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         } finally {
           inRendering = false;
         }
+      }
+    }
+
+    public double ChartAreaWidth {
+      get {
+        return plotter.ActualWidth;
       }
     }
 

@@ -128,7 +128,7 @@ namespace HedgeHog.Alice.Store {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
               var levelBy = LevelBuyCloseBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
               buyCloseLevel.RateEx = new[]{
-                levelBy.IfNaN(Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
+                GetTradeCloseLevel(true,Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
                 ,isReversedCorridor?double.MinValue: priceAvgMax
               }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
               ;
@@ -145,7 +145,7 @@ namespace HedgeHog.Alice.Store {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var levelBy = LevelSellCloseBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
               sellCloseLevel.RateEx = new[] { 
-                levelBy.IfNaN(Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
+                GetTradeCloseLevel(false,Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
                 , isReversedCorridor? double.MaxValue: priceAvgMin
               }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
               ;

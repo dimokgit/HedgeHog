@@ -67,6 +67,25 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region NeedChartSnaphot Event
+    byte[] _lastChartSnapshot = null;
+    public void SetChartSnapshot(byte[] image) { _lastChartSnapshot = image; }
+    event EventHandler<EventArgs> NeedChartSnaphotEvent;
+    public event EventHandler<EventArgs> NeedChartSnaphot {
+      add {
+        if (NeedChartSnaphotEvent == null || !NeedChartSnaphotEvent.GetInvocationList().Contains(value))
+          NeedChartSnaphotEvent += value;
+      }
+      remove {
+        NeedChartSnaphotEvent -= value;
+      }
+    }
+    protected void RaiseNeedChartSnaphot() {
+      if (NeedChartSnaphotEvent != null) NeedChartSnaphotEvent(this, new EventArgs());
+    }
+    #endregion
+
+
     #region Snapshot control
     SnapshotArguments _SnapshotArguments;
 
@@ -1417,9 +1436,11 @@ namespace HedgeHog.Alice.Store {
         ScanCorridorByStDevAndAngleHeightMin = null;
         StDevByHeight = double.NaN;
         StDevByPriceAvg = double.NaN;
+        LastTradeLossInPips = 0;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
+        Rate ratePrev = null;
         while (!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           var swDict = new Dictionary<string, double>();
           Stopwatch sw = Stopwatch.StartNew();
@@ -1502,29 +1523,32 @@ namespace HedgeHog.Alice.Store {
               LastRatePullTime = rateLast.StartDate;
               //TradesManager.RaisePriceChanged(Pair, RateLast);
               var d = Stopwatch.StartNew();
-              if (rate != null) {
-                args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCountCalc) / (_replayRates.Count - BarsCountCalc)).ToInt();
-                var price = new Price(Pair, rateLast, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
-                swDict.Add("Before RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
-                TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true));
-                swDict.Add("After RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
-                ReplayEvents();
-                {
-                  var a = TradesManager.GetAccount();
-                  if (a.PipsToMC < 0) {
-                    Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
-                    CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
+              if (rate != null ) {
+                if ((BarPeriod != BarsPeriodType.t1 || ratePrev == null || ratePrev.StartDate.Second != rate.StartDate.Second)) {
+                  ratePrev = rate;
+                  args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCountCalc) / (_replayRates.Count - BarsCountCalc)).ToInt();
+                  var price = new Price(Pair, rateLast, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
+                  swDict.Add("Before RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
+                  TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true));
+                  swDict.Add("After RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
+                  ReplayEvents();
+                  {
+                    var a = TradesManager.GetAccount();
+                    if (a.PipsToMC < 0) {
+                      Log = new Exception("Equity Alert: " + TradesManager.GetAccount().Equity);
+                      CloseTrades("Equity Alert: " + TradesManager.GetAccount().Equity);
+                    }
+                    if (MinimumOriginalProfit < TestMinimumBalancePerc) {
+                      Log = new Exception("Minimum Balance Alert: " + MinimumOriginalProfit);
+                      CloseTrades("Minimum Balance Alert: " + MinimumOriginalProfit);
+                      args.MustStop = true;
+                    }
                   }
-                  if (MinimumOriginalProfit < TestMinimumBalancePerc) {
-                    Log = new Exception("Minimum Balance Alert: " + MinimumOriginalProfit);
-                    CloseTrades("Minimum Balance Alert: " + MinimumOriginalProfit);
-                    args.MustStop = true;
-                  }
+                  if (RateLast != null)
+                    Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
+                  swDict.Add("Rest Of Loop", sw.ElapsedMilliseconds); sw.Restart();
+                  //if(DateTime.Now.Second % 5 == 0) Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
                 }
-                if (RateLast != null)
-                  Profitability = (args.GetOriginalBalance() - 50000) / (RateLast.StartDate - args.DateStart.Value).TotalDays * 30.5;
-                swDict.Add("Rest Of Loop", sw.ElapsedMilliseconds); sw.Restart();
-                //if(DateTime.Now.Second % 5 == 0) Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
               } else
                 Log = new Exception("Replay:End");
               ReplayCancelationToken.ThrowIfCancellationRequested();
@@ -1625,7 +1649,7 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorAngle; }
       set {
         if (PointSize != 0) {
-          var ca = CalculateAngle(value);
+          var ca = AngleFromTangent(value, CorridorStats.Rates);
           if (Math.Sign(ca) != Math.Sign(_CorridorAngle) && _corridorDirectionChanged != null)
             _corridorDirectionChanged(this, EventArgs.Empty);
           _CorridorAngle = ca;
@@ -1634,9 +1658,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
     event EventHandler _corridorDirectionChanged;
-    private double CalculateAngle(double value) {
-      return value.Angle(BarPeriodInt, PointSize);
-    }
 
     #region SuppReses
 
@@ -1999,7 +2020,7 @@ namespace HedgeHog.Alice.Store {
                 case CorridorCalculationMethod.PriceAverage: RatesStDev = StDevByPriceAvg; break;
                 default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
               }
-              Angle = coeffs.LineSlope().Angle(BarPeriodInt, PointSize);
+              Angle = AngleFromTangent(coeffs.LineSlope(),RatesArray);
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
             }, IsInVitualTrading);
@@ -2683,11 +2704,11 @@ namespace HedgeHog.Alice.Store {
         var crossedCorridor = GetScanCorridorFunction(ScanCorridorBy)(ratesForCorridor, priceHigh, priceLow);
         #endregion
         #region Update Corridor
-          var csOld = CorridorStats;
-          csOld.Init(crossedCorridor, PointSize);
-          csOld.Spread = double.NaN;
-          CorridorStats = csOld;
-          CorridorStats.IsCurrent = true;// ok;// crossedCorridor != null;
+        var csOld = CorridorStats;
+        csOld.Init(crossedCorridor, PointSize);
+        csOld.Spread = double.NaN;
+        CorridorStats = csOld;
+        CorridorStats.IsCurrent = true;// ok;// crossedCorridor != null;
         #endregion
         PopupText = "";
         if (showChart) RaiseShowChart();
@@ -2834,7 +2855,6 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
         case HedgeHog.Alice.VoltageFunction.Volatility: return ShowVoltsByVolatility;
-        case HedgeHog.Alice.VoltageFunction.HourlyStDevAvg: return ShowVoltsByHourlyStDevAvg;
         case HedgeHog.Alice.VoltageFunction.BounceCom: return OnSetCentersOfMass;
         case HedgeHog.Alice.VoltageFunction.HourlyRsdAvg: return ShowVoltsByHourlyRsdAvg;
         case HedgeHog.Alice.VoltageFunction.StDevByHeight: return ShowVoltsByStDevByHeight;
@@ -3164,7 +3184,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _rateArrayLocker = new object();
-    public T UseRates<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 1000) {
+    public T UseRates<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 2000) {
       if (!Monitor.TryEnter(_rateArrayLocker, timeoutInMilliseconds))
         throw new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then 1 second. RatesArray.Count:" + RatesArray.Count);
       try {
@@ -3174,7 +3194,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     object _innerRateArrayLocker = new object();
-    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 1000) {
+    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 2000) {
       if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
         throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then 1 second. RatesInternal.Count:" + RatesInternal.Count);
       try {
@@ -3511,11 +3531,21 @@ namespace HedgeHog.Alice.Store {
       set { _waveRates = value; }
     }
     private double CorridorAngleFromTangent() {
-      return CorridorStats.Coeffs == null ? double.NaN : AngleFromTangent(-CorridorStats.Coeffs.LineSlope());
+      return CorridorStats.Coeffs == null ? double.NaN : -AngleFromTangent(CorridorStats.Coeffs.LineSlope(), CorridorStats.Rates);
     }
 
-    private double AngleFromTangent(double tangent) {
-      return tangent.Angle(BarPeriodInt, PointSize);
+    private double AngleFromTangent(double tangent, IList<Rate> rates) {
+      if (rates.Count == 0) {
+        Log = new Exception(new { RatesCount = 0, Method = Lib.CallingMethod() } + "");
+        return double.NaN;
+      }
+      var tickCounts = from sd in rates.Select(r=>r.StartDate)
+                       group sd by sd.AddMilliseconds(-sd.Millisecond) into grates
+                       select grates.Count();
+      var barPeriod = BarPeriod != BarsPeriodType.t1
+        ? BarPeriodInt
+        : 1.0 / 60 * tickCounts.Average();
+      return tangent.Angle(barPeriod, PointSize);
     }
 
 

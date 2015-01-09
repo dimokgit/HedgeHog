@@ -4,7 +4,12 @@ using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Bars;
 using HedgeHog.Charter;
 using HedgeHog.Shared;
+using Microsoft.AspNet.SignalR;
+using Microsoft.Owin;
+using Microsoft.Owin.Cors;
+using Microsoft.Owin.Hosting;
 using Order2GoAddIn;
+using Owin;
 using ReactiveUI;
 using System;
 using System.Collections.Generic;
@@ -29,6 +34,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Gala = GalaSoft.MvvmLight.Command;
+
 namespace HedgeHog.Alice.Client {
   [Export]
   public partial class RemoteControlModel : RemoteControlModelBase {
@@ -58,7 +64,7 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<CharterControl>(charter, (object)CharterControl.MessageType.Add));
     }
     [MethodImpl(MethodImplOptions.Synchronized)]
-    CharterControl GetCharter(TradingMacro tradingMacro) {
+    public CharterControl GetCharter(TradingMacro tradingMacro) {
       if (!charters.ContainsKey(tradingMacro)) {
         var charterNew = new CharterControl(tradingMacro.CompositeId, App.container) { tm = tradingMacro };
         RequestAddCharterToUI(charterNew);
@@ -692,7 +698,7 @@ namespace HedgeHog.Alice.Client {
 
     void UpdateTradingStatistics() {
       try {
-        if (GetTradingMacros().Any(tm => !tm.UseRates(rs=>rs.Any()))) return;
+        if (GetTradingMacros().Any(tm => !tm.UseRates(rs => rs.Any()))) return;
         var tms = GetTradingMacros().Where(tm => tm.Trades.Length > 0 && tm.Strategy != Strategies.None).ToArray();
         if (tms.Any() && tms.All(tm => tm.UseRates(rs => rs.Any()))) {
           var tp = (tms.Sum(tm => (tm.CloseOnOpen ? tm.TakeProfitPips : tm.CalcTakeProfitDistance(inPips: true)) * tm.Trades.Lots()) / tms.Select(tm => tm.Trades.Lots()).Sum()) / tms.Length;
@@ -795,8 +801,14 @@ namespace HedgeHog.Alice.Client {
       if (tm == null) return;
       tm.PropertyChanged += TradingMacro_PropertyChanged;
       tm.ShowChart += TradingMacro_ShowChart;
+      tm.NeedChartSnaphot += tm_NeedChartSnaphot;
       //new Action(() => InitTradingMacro(tm)).ScheduleOnUI(2.FromSeconds());
       //InitTradingMacro(tm);
+    }
+
+    void tm_NeedChartSnaphot(object sender, EventArgs e) {
+      var tm = sender as TradingMacro;
+      tm.SetChartSnapshot(GetCharter(tm).GetPng());
     }
 
     internal IScheduler findDispatcherScheduler() {
@@ -1011,7 +1023,24 @@ namespace HedgeHog.Alice.Client {
         string pair = tm.Pair;
         if (tm == null) return;
         if (rates.Count() == 0) return;
+        if (tm.FitRatesToPlotter) {
+          var distanceInSeconds = rates.DistinctUntilChanged(r=>r.StartDate2.AddMilliseconds(-r.StartDate2.Millisecond)).Count()/ charter.ChartAreaWidth;
+          rates = Task.Factory.StartNew(() => rates
+            .Reverse()
+            .GroupByCloseness(distanceInSeconds, (r1, r2, d) => (r1.StartDate2 - r2.StartDate2).TotalSeconds.Abs() < d)
+            .Reverse()
+            .ToArray(g => {
+              var rate = g.GroupToRate();
+              tm.SetVoltage(rate, g.Average(r => tm.GetVoltage(r)));
+              return rate;
+            })).Result;
+          //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, tm.Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
+        }
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
+        var rateDateMin = rates.Min(r => r.StartDate2);
+        var rateDateMax = rates.Max(r => r.StartDate2);
+        if ((rateDateMax - rateDateMin).TotalMinutes > 300)
+          Log = new Exception(new { rateDateMin, rateDateMax } + "");
         var price = tm.CurrentPrice;
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
@@ -1060,7 +1089,7 @@ namespace HedgeHog.Alice.Client {
           );
           charter.SetTrendLines(tm.SetTrendLines());
           charter.SetMATrendLines(tm.LineMA);
-          charter.CalculateLastPrice = tm.IsInVitualTrading ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
+          charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
@@ -1219,7 +1248,7 @@ namespace HedgeHog.Alice.Client {
         tm.LastTrade = trade;
         var commission = MasterModel.CommissionByTrade(trade);
         var totalGross = trade.GrossPL - commission;
-        tm.LastTradeLossInPips = (trade.PL-tm.InPips(commission)) .Min(0);
+        tm.LastTradeLossInPips = (trade.PL - tm.InPips(commission)).Min(0);
         tm.RunningBalance += totalGross;
         tm.CurrentLoss = tm.CurrentLoss + totalGross;
         OnZeroPositiveLoss(tm);

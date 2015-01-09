@@ -324,6 +324,7 @@ namespace HedgeHog.Alice.Store {
       if (_rateChangedDelegate != null)
         _rateChangedDelegate(this, EventArgs.Empty);
     }
+
     private int _Index;
     public int Index {
       get { return _Index; }
@@ -750,6 +751,21 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
+    #endregion
+
+    #region CorridorByStDevRatioFunc
+    private CorridorByStDevRatio _CorridorByStDevRatioFunc;
+    [Category(categoryActiveFuncs)]
+    public CorridorByStDevRatio CorridorByStDevRatioFunc {
+      get { return _CorridorByStDevRatioFunc; }
+      set {
+        if (_CorridorByStDevRatioFunc != value) {
+          _CorridorByStDevRatioFunc = value;
+          OnPropertyChanged("CorridorByStDevRatioFunc");
+        }
+      }
+    }
+
     #endregion
 
     #region UseVoltage
@@ -1350,7 +1366,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trade By Rate Direction")]
-    [Category(categoryXXX_NU)]
+    [Category(categoryActiveYesNo)]
     public bool TradeByRateDirection_ {
       get { return TradeByRateDirection; }
       set { TradeByRateDirection = value; }
@@ -1530,17 +1546,20 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [DisplayName("Spearman Volatility")]
-    [Category(categoryActiveYesNo)]
-    public bool UseSpearmanVolatility {
-      get { return DoAdjustTimeframeByAllowedLot; }
+
+    #region CanTradeAlwaysOn
+    private bool _CanTradeAlwaysOn;
+    public bool CanTradeAlwaysOn {
+      get { return _CanTradeAlwaysOn; }
       set {
-        if (DoAdjustTimeframeByAllowedLot != value) {
-          DoAdjustTimeframeByAllowedLot = value;
-          OnPropertyChanged("UseSpearmanVolatility");
+        if (_CanTradeAlwaysOn != value) {
+          _CanTradeAlwaysOn = value;
+          OnPropertyChanged("CanTradeAlwaysOn");
         }
       }
     }
+    
+    #endregion
 
     [DisplayName("Current Loss")]
     [Category(categoryTrading)]
@@ -1947,6 +1966,18 @@ namespace HedgeHog.Alice.Store {
     }
     private void ResetLevelBys() {
       LevelBuyBy = LevelBuyCloseBy = LevelSellBy = LevelSellCloseBy = TradeLevelBy.None;
+    }
+
+    public string PairPlain { get { return Pair.ToLower().Replace("/",""); } }
+
+    bool _FitRatesToPlotter;
+    [Category(categoryCorridor)]
+    public bool FitRatesToPlotter {
+      get { return _FitRatesToPlotter; }
+      set { 
+        _FitRatesToPlotter = value;
+        OnPropertyChanged(() => FitRatesToPlotter);
+      }
     }
   }
 }

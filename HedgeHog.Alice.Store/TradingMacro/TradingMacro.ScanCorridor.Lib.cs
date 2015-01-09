@@ -36,24 +36,5 @@ namespace HedgeHog.Alice.Store {
 
       return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
-
-    int CalcCorridorLengthByMaxAngle2(double[] ratesReversed, int countStart, double angleDiffRatio) {
-      var bp = BarPeriodInt;
-      var ps = PointSize;
-      var angleMax = 0.0;
-      var countMax = 0;
-      Func<int, double> calcAngle = count => {
-        var rates = new double[count];
-        Array.Copy(ratesReversed, rates, count);
-        var coeffs = rates.Regress(1);
-        return coeffs[1].Angle(bp, ps).Abs();
-      };
-      var obs = Observable.Range(countStart, ratesReversed.Length - countStart)
-        .SelectMany(count => Observable.Start(() => new { angle = calcAngle(count), count }, TaskPoolScheduler.Default))
-        .Do(a => angleMax = a.angle.Max(angleMax))
-        .First(a => angleMax / a.angle > angleDiffRatio);
-      return obs.count;
-    }
-
   }
 }
