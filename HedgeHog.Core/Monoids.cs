@@ -37,6 +37,9 @@ namespace HedgeHog {
     public static Func<U1, U2, U3, U4, T> ToFunc<T, U1, U2, U3, U4>(U1 input, U2 input2, U3 input3, U4 input4, Func<U1, U2, U3, U4, T> projector) {
       return projector;
     }
+    public static Func<U1, U2, U3, U4, U5, T> ToFunc<T, U1, U2, U3, U4, U5>(U1 u1, U2 u2, U3 u3, U4 u4, U5 u5, Func<U1, U2, U3, U4, U5, T> projector) {
+      return projector;
+    }
     public static Func<U1, U2, T> ToFunc<T, U1, U2>(this T value, U1 input, U2 input2, Func<U1, U2, T> projector) {
       return projector;
     }

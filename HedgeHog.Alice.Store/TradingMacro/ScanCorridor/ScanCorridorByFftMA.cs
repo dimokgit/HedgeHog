@@ -18,11 +18,12 @@ namespace HedgeHog.Alice.Store {
         InPips(MathNet.Numerics.Statistics.Statistics.StandardDeviation(s1.Zip(s2, (d1, d2) => d1 - d2).ToArray()));
       if (!isInFlight) {
         isInFlight = true;
+        var barsCount = BarsCountCalc;
         TaskPoolScheduler.Default.Schedule(() => {
-          UseRatesInternal(ri => ri.TakeLast(BarsCount * 2).Reverse().Skip(1))
+          UseRatesInternal(ri => ri.TakeLast(barsCount * 2).Reverse().Skip(1))
             .SkipWhile(rate => GetVoltage(rate).IsNotNaN())
-            .Buffer(BarsCount, 1)
-            .TakeWhile(rates => rates.Count == BarsCount)
+            .Buffer(barsCount, 1)
+            .TakeWhile(rates => rates.Count == barsCount)
             .AsParallel()
             .ForEach(rates => NewMethod(rates, rs => rs[0], null, calcVolts));
           isInFlight = false;

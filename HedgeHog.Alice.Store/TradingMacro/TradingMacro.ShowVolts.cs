@@ -116,7 +116,7 @@ namespace HedgeHog.Alice.Store {
         SetVoltage(corridorRates.Last(), InPips(CalcVolatility(trimaFast, trimaSlow)));
       }
       if (_setVoltsSubscriber == null || _setVoltsSubscriber.IsDisposed) {
-        var voltRates0 = UseRatesInternal(ri => ri.TakeLast(BarsCount * 2).ToArray());
+        var voltRates0 = UseRatesInternal(ri => ri.TakeLast(BarsCountCalc * 2).ToArray());
         var voltRates = voltRates0
           .Reverse()
           .Zip(voltRates0.GetTrima(PriceFftLevelsFast).Reverse(), (r, f) => new { r, f })
@@ -203,30 +203,108 @@ namespace HedgeHog.Alice.Store {
       return ShowVoltsNone();
     }
     #endregion
-    private void SetCentersOfMass() {
-      var height = ScanCorridorByStDevAndAngleHeightMin();
-      var rates = new Rate[RatesArray.Count];
-      RatesArray.CopyTo(rates);
-      var digits = Digits();
-      var ranges = rates.BufferVertical2(r => RoundPrice(r.PriceAvg), height, (b, t,c) => new { b, t,c }).ToArray();
-      ranges
+    #region SetBarsCountCalc Subject
+    object _SetBarsCountCalcSubjectLocker = new object();
+    ISubject<Action> _SetBarsCountCalcSubject;
+    ISubject<Action> SetBarsCountCalcSubject {
+      get {
+        lock (_SetBarsCountCalcSubjectLocker)
+          if (_SetBarsCountCalcSubject == null) {
+            _SetBarsCountCalcSubject = new Subject<Action>();
+            _SetBarsCountCalcSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
+          }
+        return _SetBarsCountCalcSubject;
+      }
+    }
+    void OnSetBarsCountCalc(Action p) {
+      SetBarsCountCalcSubject.OnNext(p);
+    }
+    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByRelativeStDev); }
+    #endregion
+
+    double _stDevUniformRatio = Math.Sqrt(12);
+    void ScanRatesLengthByStDevAndMean() {
+      var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, mean) => new { ok, l, mean });
+      var last = func(false, 0, 0.0);
+      Range.Int32(BarsCount, RatesInternal.Count, 100)
+        .Select(i => {
+          var rates = UseRatesInternal(ri => ri.TakeLast(i).ToArray(_priceAvg));
+          var height = rates.StDev() * _stDevUniformRatio / 2;
+          double max = rates.Max(), min = rates.Min();
+          var mean = max.Avg(min);
+          var com = GetSenterOfMassStrip(rates, height, -1, (rs, t, b) => new { t, b });
+          return last = func(com.Any(a => !mean.Between(a.b, a.t)), rates.Length, mean);
+        })
+        .SkipWhile(a => !a.ok)
+        .DefaultIfEmpty(last)
+        .Take(1)
+        .ForEach(a => {
+          MagnetPrice = a.mean;
+          BarsCountCalc = a.l;
+        });
+    }
+    void ScanRatesLengthByRelativeStDev() {
+      var ratesInternal = UseRatesInternal(ri => ri.Reverse().ToArray(_priceAvg));
+      var start = BarsCount;
+      var end = RatesInternal.Count - 1;
+      var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, rsd) => new { ok, l, rsd });
+      var last = func(false, 0, 0.0);
+      var getCount = MonoidsCore.ToFunc(0, 0, (Func<bool, bool>)null, (Func<int, int>)null
+        , (_start, _end, _isOk, _nextStep) => {
+          var _last = func(false, 0, 0.0);
+          return Lib.IteratonSequence(_start, _end, _nextStep)
+          .Select(i => {
+            var rates = ratesInternal.Take(i).ToArray();
+            var rsd = rates.Height() / rates.StandardDeviation();
+            var x = func(rsd > WaveStDevRatio, rates.Length, rsd);
+            if (_last.rsd < rsd) _last = x;
+            return x;
+          })
+          .SkipWhile(a => _isOk(a.ok))
+          .Take(1)
+          .IfEmpty(() => _last);
+        });
+      Func<bool, bool> isOk = b => !b;
+      var divider = 100.0;
+      Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
+      while (true) {
+        var c = getCount(start, end, isOk, nextStep).Single().l;
+        if (nextStep(c).Abs() <= 1) {
+          BarsCountCalc = c;
+          break;
+        }
+        divider *= -2;
+        start = c; end = start + nextStep(c) * 3;
+        if (divider < 0) { isOk = b => b; } else { isOk = b => !b; }
+      }
+    }
+    IEnumerable<T> GetSenterOfMassStrip<T>(IList<double> rates, double height, int roundOffset, Func<double[], double, double, T> map) {
+      var rates2 = rates.SafeArray();
+      rates.CopyTo(rates2, 0);
+      return rates2.BufferVertical2(r => RoundPrice(r, roundOffset), height, (b, t, c) => new { b, t, c })
         .OrderByDescending(a => a.c)
         .Take(1)
-      .ForEach(a => {
-        CenterOfMassBuy = a.t;
-        CenterOfMassSell = a.b;
-      });
-      var frameLength = VoltsFrameLength;
-      double waveCount = rates
-        .Select(_priceAvg)
-        .Buffer(frameLength, 1)
-        .Where(b => b.Count == frameLength)
-        .Select(b => b.LinearSlope().Sign())
-        .DistinctUntilChanged()
-        .Count();
-      //var prices = RatesArray.Select(_priceAvg).Buffer(RatesArray.Count / 2).ToArray();
-      //var ratio = prices[1].StDev() / prices[0].StDev();// RatesHeight / StDevByPriceAvg;
-      RatesArray.Where(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, RatesArray.Count / waveCount / frameLength));
+        .Select(a => map(rates2, a.t, a.b));
+    }
+    private void SetCentersOfMass() {
+      var height = ScanCorridorByStDevAndAngleHeightMin();
+      GetSenterOfMassStrip(RatesArray.ToArray(_priceAvg), height, 0, (rates, t, b) => new { rates = UseVoltage ? rates : null, t, b })
+        .ForEach(a => {
+          CenterOfMassBuy = a.t;
+          CenterOfMassSell = a.b;
+          if (UseVoltage) {
+            var frameLength = VoltsFrameLength;
+            double waveCount = a.rates
+              .Buffer(frameLength, 1)
+              .Where(b => b.Count == frameLength)
+              .Select(b => b.LinearSlope().Sign())
+              .DistinctUntilChanged()
+              .Count();
+            //var prices = RatesArray.Select(_priceAvg).Buffer(RatesArray.Count / 2).ToArray();
+            //var ratio = prices[1].StDev() / prices[0].StDev();// RatesHeight / StDevByPriceAvg;
+            RatesArray.Where(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, RatesArray.Count / waveCount / frameLength));
+          }
+        });
     }
     int _integrationPeriod { get { return CorridorHeightMax.ToInt(); } }
 

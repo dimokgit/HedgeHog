@@ -77,6 +77,8 @@ namespace HedgeHog.Alice.Store {
           case CorridorByStDevRatio.Height: return () => StDevByHeight;
           case CorridorByStDevRatio.Price: return () => StDevByPriceAvg;
           case CorridorByStDevRatio.HeightPrice: return () => StDevByPriceAvg + StDevByHeight;
+          case CorridorByStDevRatio.Height2: return () => StDevByHeight * 2;
+          case CorridorByStDevRatio.Price12: return () => StDevByPriceAvg * _stDevUniformRatio / 2;
           default:
             throw new NotSupportedException(new { CorridorByStDevRatioFunc } + "");
         }
@@ -294,7 +296,8 @@ namespace HedgeHog.Alice.Store {
     double GetTradeCloseLevel(Rate rate, bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy](rate, CorridorStats).IfNaN(def); }
 
     void SendSms(string header, object message, bool sendScreenshot) {
-      if(sendScreenshot)RaiseNeedChartSnaphot() ;
+      return;
+      if (sendScreenshot) RaiseNeedChartSnaphot();
       SendSms(header, message, sendScreenshot ? _lastChartSnapshot : null);
       Log = new Exception(new { sms = message + "" } + "");
     }
@@ -415,8 +418,6 @@ namespace HedgeHog.Alice.Store {
           }
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
           var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
-          if (rates.Min(r => r.StartDate) < DateTime.Now.AddDays(-1))
-            Log = new Exception("Rates date error");
           var regRates = getRegressionLeftRightRates();
 
           rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
@@ -589,7 +590,7 @@ namespace HedgeHog.Alice.Store {
           .Select(e => e.Sender as SuppRes)
           .DistinctUntilChanged(sr => sr.CanTrade)
           .Where(sr => sr.CanTrade)
-          .Subscribe(sr => SendSms(Pair+"::", new { sr.CanTrade }, true));
+          .Subscribe(sr => SendSms(Pair + "::", new { sr.CanTrade }, true));
 
         if (BuyLevel.Rate.Min(SellLevel.Rate) == 0) BuyLevel.RateEx = SellLevel.RateEx = RatesArray.Middle();
         _buyLevel.CanTrade = _sellLevel.CanTrade = false;

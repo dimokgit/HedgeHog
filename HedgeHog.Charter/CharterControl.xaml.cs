@@ -1587,7 +1587,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
         return ms.GetBuffer();
       }
     }
-    private void CreateCurrencyDataSource(bool doVolts) {
+    private void InitPlotter(bool doVolts) {
       if (IsPlotterInitialised) return;
 
       CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = true };
@@ -1658,13 +1658,14 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       #region Add Volts Graph
       if (doVolts) {
-        innerPlotter.Viewport.Restrictions.Add(new InjectionDelegateRestriction(
+        var id = new InjectionDelegateRestriction(
           plotter.Viewport,
           rect => {
             rect.XMin = plotter.Viewport.Visible.XMin;
             rect.Width = plotter.Viewport.Visible.Width;
             return rect;
-          }));
+          });
+        innerPlotter.Viewport.Restrictions.Add(id);
         EnumerableDataSource<DateTime> xSrc = new EnumerableDataSource<DateTime>(animatedVoltTimeX);
         xSrc.SetXMapping(x => dateAxis.ConvertToDouble(x));
         animatedVoltDataSource = new EnumerableDataSource<double>(animatedVoltValueY);
@@ -2087,7 +2088,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
                           double[] voltageHighLow, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
-      PriceBar[] voltsByTick = voltsByTicks.FirstOrDefault();
+      PriceBar[] voltsByTick = voltsByTicks.Take(1).Where(pb => pb.Length > 0).FirstOrDefault();
       #region Conversion Functions
       _roundTo = lastPrice.Digits;
       #endregion
@@ -2198,7 +2199,8 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
       var errorMessage = "Period:" + (ticks[1].StartDate - ticks[0].StartDate).Duration().Minutes + " minutes.";
       Action a = () => {
         var doVolts = voltsByTick != null;
-        CreateCurrencyDataSource(doVolts);
+        InitPlotter(true);
+        innerPlotter.Children.OfType<VerticalAxis>().Single().Visibility = doVolts ? Visibility.Visible : Visibility.Collapsed;
         try {
           //SetGannAngles(ticks, SelectedGannAngleIndex);
           animatedDataSource.RaiseDataChanged();

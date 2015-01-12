@@ -120,24 +120,12 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private DateTime _VirtualDateStart = DateTime.Now;
-    public override DateTime VirtualDateStart {
-      get { return _VirtualDateStart; }
+    private int _IpPort = 0;
+    public override int IpPort {
+      get { return _IpPort; }
       set {
-        if (_VirtualDateStart != value) {
-          _VirtualDateStart = value;
-          RaisePropertyChangedCore();
-        }
-      }
-    }
-
-    private double _VirtualDelay = 0;
-    public double VirtualDelay {
-      get { return _VirtualDelay; }
-      set {
-        if (_VirtualDelay != value) {
-          _VirtualDelay = value;
-          this.BackTestEventArgs.Delay = value;
+        if (_IpPort != value) {
+          _IpPort = value;
           RaisePropertyChangedCore();
         }
       }
@@ -165,19 +153,6 @@ namespace HedgeHog.Alice.Client {
         }
       }
     }
-
-    private int _VirtualMonthsToTest = 12;
-    public int VirtualMonthsToTest {
-      get { return _VirtualMonthsToTest; }
-      set {
-        if (_VirtualMonthsToTest != value) {
-          _VirtualMonthsToTest = value;
-          RaisePropertyChangedCore();
-        }
-      }
-    }
-
-
     public TradingAccount MasterAccount { get { return TradingMaster; } }
     #endregion
 

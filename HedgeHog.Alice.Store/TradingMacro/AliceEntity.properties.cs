@@ -770,8 +770,7 @@ namespace HedgeHog.Alice.Store {
 
     #region UseVoltage
     private bool _UseVoltage;
-    [Description("Use Volts in SmartMove")]
-    [Category(categoryActiveFuncs)]
+    [Category(categoryActiveYesNo)]
     public bool UseVoltage {
       get { return _UseVoltage; }
       set {
@@ -781,7 +780,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
     #endregion
 
     #region LogTrades

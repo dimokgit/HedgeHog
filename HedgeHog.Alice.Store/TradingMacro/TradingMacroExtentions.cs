@@ -2001,6 +2001,7 @@ namespace HedgeHog.Alice.Store {
               RatePrev1 = ri[ri.Count - 3];
               UseRates(_ => _rateArray = GetRatesSafe(ri).ToList());
             });
+            OnSetBarsCountCalc();
             var prices = RatesArray.ToArray(_priceAvg);
             RatesHeight = prices.Height(out _RatesMin, out _RatesMax);//CorridorStats.priceHigh, CorridorStats.priceLow);
             if (IsInVitualTrading)
@@ -2064,9 +2065,10 @@ namespace HedgeHog.Alice.Store {
     private IEnumerable<Rate> GetRatesSafe() { return UseRatesInternal(ri => GetRatesSafe(ri)); }
     private IEnumerable<Rate> GetRatesSafe(IList<Rate> ri) {
       Func<IEnumerable<Rate>> a = () => {
+        var barsCount = BarsCountCalc;
         var startDate = CorridorStartDate ?? (CorridorStats.Rates.Count > 0 ? CorridorStats.Rates.LastBC().StartDate : (DateTime?)null);
-        var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate).Min((BarsCount * StreatchRatesMaxRatio).ToInt()) : 0;
-        return ri.Skip((ri.Count - (countByDate * 1.05).Max(BarsCountCalc).ToInt()).Max(0));
+        var countByDate = startDate.HasValue && DoStreatchRates ? ri.Count(r => r.StartDate >= startDate).Min((barsCount * StreatchRatesMaxRatio).ToInt()) : 0;
+        return ri.Skip((ri.Count - (countByDate * 1.05).Max(barsCount).ToInt()).Max(0));
         //return RatesInternal.Skip((RatesInternal.Count - (countByDate * 1).Max(BarsCount)).Max(0));
       };
       return _limitBarToRateProvider == (int)BarPeriod ? a() : ri.GetMinuteTicks((int)BarPeriod, false, false);
@@ -2653,7 +2655,7 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
           var rates = RatesArray;
-          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, GetFftHarmonicsByRatesCountAndRatio(BarsCount, 0.5.Max(PriceCmaLevels)));
+          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, GetFftHarmonicsByRatesCountAndRatio(RatesArray.Count, 0.5.Max(PriceCmaLevels)));
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);

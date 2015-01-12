@@ -232,6 +232,8 @@ namespace HedgeHog.Alice.Store {
     HPAverage = 0,
     Height,
     Price,
-    HeightPrice
+    HeightPrice,
+    Height2,
+    Price12
   }
 }

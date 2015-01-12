@@ -321,5 +321,19 @@ Privet:2.3 3.4
       });
     }
 
+    [TestMethod()]
+    public void StandardDeviationTest() {
+      var values = Range.Double(0, 1000000).ToArray();
+      var swDict = new Dictionary<string, double>();
+      Stopwatch sw = Stopwatch.StartNew();
+      var stDev1 = values.StandardDeviation();
+      swDict.Add("1", sw.ElapsedMilliseconds);sw.Restart();
+      var stDev2 = values.StDev();
+      swDict.Add("2", sw.ElapsedMilliseconds);
+      Console.WriteLine("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}",
+        MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, "", string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
+      Assert.AreEqual(stDev1,stDev2);
+    }
+
   }
 }

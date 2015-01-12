@@ -1974,6 +1974,7 @@ namespace HedgeHog.Alice.Store {
     private int? _BarsCountCalc;
     [DisplayName("Bars Count Calc(45,360,..)")]
     [Category(categoryCorridor)]
+    [Dnr]
     public int BarsCountCalc {
       get { return _BarsCountCalc.GetValueOrDefault(BarsCount); }
       set {
@@ -2034,7 +2035,7 @@ namespace HedgeHog.Alice.Store {
         int min = 24, max = 24 * 10;
         if (!_VoltsAverageLength.Between(min, max)) {
           Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, min, max } + "");
-          VoltsAverageLength = BarsCount / 60;
+          VoltsAverageLength = BarsCountCalc / 60;
           Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, Message = "New value" } + "");
         }
         return _VoltsAverageLength;

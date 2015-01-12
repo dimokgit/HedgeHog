@@ -562,10 +562,10 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsInVirtualTrading"/></summary>
         public const string IsInVirtualTrading = "IsInVirtualTrading";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._VirtualDateStart"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._IpPort"/></summary>
         public const string _VirtualDateStart = "_VirtualDateStart";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualDateStart"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IpPort"/></summary>
         public const string VirtualDateStart = "VirtualDateStart";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._VirtualDelay"/></summary>
@@ -1328,7 +1328,7 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IsInVirtualTrading"/></summary>
         public static PropertyPath IsInVirtualTradingPath { get { return new PropertyPath("IsInVirtualTrading"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualDateStart"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IpPort"/></summary>
         public static PropertyPath VirtualDateStartPath { get { return new PropertyPath("VirtualDateStart"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualDelay"/></summary>

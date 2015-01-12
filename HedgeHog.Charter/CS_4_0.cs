@@ -1157,7 +1157,7 @@ namespace HedgeHog.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.CharterControl.GetDifference"/></summary>
         public const string GetDifference = "GetDifference";
 
-        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.CreateCurrencyDataSource"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.CharterControl.InitPlotter"/></summary>
         public const string CreateCurrencyDataSource = "CreateCurrencyDataSource";
 
         /// <summary>Refers to field <see cref="HedgeHog.CharterControl._DoShowTradingLine"/></summary>

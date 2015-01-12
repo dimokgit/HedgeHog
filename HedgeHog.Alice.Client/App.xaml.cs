@@ -22,6 +22,7 @@ using System.Reactive.Subjects;
 using HedgeHog.Shared;
 using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.StaticFiles;
+using ReactiveUI;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -37,6 +38,18 @@ namespace HedgeHog.Alice.Client {
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
       TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+        try {
+          var trader = App.container.GetExportedValue<TraderModel>();
+          if (trader.IpPort > 0) {
+            string url = "http://+:" + trader.IpPort + "/";
+            _webApp = WebApp.Start<StartUp>(url);
+            GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(new { url } + ""));
+          }
+        } catch (Exception exc) {
+          MessageBox.Show(exc + "");
+        }
+      }), System.Windows.Threading.DispatcherPriority.Background);
     }
 
     void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
@@ -122,14 +135,6 @@ namespace HedgeHog.Alice.Client {
       //ApplicationController controller = container.GetExportedValue<ApplicationController>();
       //controller.Initialize();
       //controller.Run();
-
-        string url = "http://+:80/";
-        try {
-          _webApp = WebApp.Start<StartUp>(url);
-        } catch (Exception exc) {
-          MessageBox.Show(exc + "");
-        }
-
     }
     IDisposable _webApp;
 
