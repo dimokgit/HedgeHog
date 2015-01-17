@@ -27,6 +27,7 @@ namespace HedgeHog.Alice.Store {
         ActionBlock<Action> saveTickActionBlock = new ActionBlock<Action>(a => a());
         Action<FXCoreWrapper.RateLoadingCallbackArgs<Rate>> showProgress = (args) => {
           SaveTickCallBack(period, pair, progressCallback, saveTickActionBlock, args);
+          args.IsProcessed = true;
         };
         #endregion
 

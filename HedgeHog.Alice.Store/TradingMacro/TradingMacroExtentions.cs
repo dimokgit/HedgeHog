@@ -1743,6 +1743,17 @@ namespace HedgeHog.Alice.Store {
       return s;
     }
 
+    public void MoveBuySellLeve(bool isBuy, int pips) {
+      new[] { BuyLevel, SellLevel }
+        .Where(sr => sr.IsBuy == isBuy)
+        .ForEach(sr => {
+          if (pips == 0) { sr.Rate = RatesArray.Middle(); sr.InManual = false; } else {
+            sr.Rate += InPoints(pips);
+            sr.InManual = true;
+          }
+        });
+    }
+
     private Store.SuppRes[] ResistancesNotCurrent() {
       return SuppResNotCurrent(Resistances);
     }
@@ -2000,6 +2011,7 @@ namespace HedgeHog.Alice.Store {
               RatePrev = ri[ri.Count - 2];
               RatePrev1 = ri[ri.Count - 3];
               UseRates(_ => _rateArray = GetRatesSafe(ri).ToList());
+              RatesDuration = (RatesArray.Last().StartDate2 - RatesArray[0].StartDate2).TotalMinutes.ToInt();
             });
             OnSetBarsCountCalc();
             var prices = RatesArray.ToArray(_priceAvg);
@@ -3185,20 +3197,19 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    object _rateArrayLocker = new object();
-    public T UseRates<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 2000) {
-      if (!Monitor.TryEnter(_rateArrayLocker, timeoutInMilliseconds))
-        throw new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then 1 second. RatesArray.Count:" + RatesArray.Count);
+    object _innerRateArrayLocker = new object();
+    public T UseRates<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
+      if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
+        throw new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesArray.Count:" + RatesArray.Count);
       try {
         return func(_Rates);
       } finally {
-        Monitor.Exit(_rateArrayLocker);
+        Monitor.Exit(_innerRateArrayLocker);
       }
     }
-    object _innerRateArrayLocker = new object();
-    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 2000) {
+    public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
       if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
-        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then 1 second. RatesInternal.Count:" + RatesInternal.Count);
+        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then "+timeoutInMilliseconds+" ms. RatesInternal.Count:" + RatesInternal.Count);
       try {
         return func(_Rates);
       } finally {
@@ -3245,7 +3256,7 @@ namespace HedgeHog.Alice.Store {
               });
             Func<Rate, bool> isHistory = r => r.IsHistory;
             Func<Rate, bool> isNotHistory = r => !isHistory(r);
-            var ratesList = UseRatesInternal(ri => ri.TakeWhile(isHistory).TakeLast(1).ToList());
+            var ratesList = RatesInternal.BackwardsIterator().SkipWhile(isNotHistory).Take(1).ToList();
             startDate = ratesList.Select(r => r.StartDate).DefaultIfEmpty(startDate).First();
             if (startDate != TradesManagerStatic.FX_DATE_NOW && _Rates.Count > 10)
               periodsBack = 0;
@@ -3261,18 +3272,20 @@ namespace HedgeHog.Alice.Store {
                 RatesLoader.LoadRates(TradesManager, Pair, _limitBarToRateProvider, periodsBack, rateLastDate, TradesManagerStatic.FX_DATE_NOW, ratesList);
               }
             }
-            UseRatesInternal(rl => {
-              var sd = ratesList[0].StartDate;
-              var sd1 = ratesList.Last().StartDate;
-              var ratesLocal = rl.Where(isNotHistory).ToArray();
-
-              rl.RemoveAll(ratesLocal);
-              rl.RemoveAll(r => r.StartDate >= sd);
-              rl.AddRange(ratesList);
-              var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
-              rl.AddRange(rateTail);
-              return;
-            });
+            {
+              var ratesLocal = RatesInternal.Reverse().TakeWhile(isNotHistory).Reverse().ToArray();
+              var ratesLocalCount = RatesInternal.Reverse().TakeWhile(isNotHistory).Count();
+              UseRatesInternal(rl => {
+                var sd = ratesList[0].StartDate;
+                var sd1 = ratesList.Last().StartDate;
+                rl.RemoveRange(rl.Count - ratesLocalCount, ratesLocalCount);
+                rl.RemoveAll(r => r.StartDate >= sd);
+                rl.AddRange(ratesList);
+                var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
+                rl.AddRange(rateTail);
+                return;
+              });
+            }
             //if (BarPeriod == BarsPeriodType.t1)
             //  UseRatesInternal(ri => { ri.Sort(LambdaComparisson.Factory<Rate>((r1, r2) => r1.StartDate > r2.StartDate)); });
             if (sw.Elapsed > TimeSpan.FromSeconds(LoadRatesSecondsWarning))
@@ -4241,6 +4254,8 @@ namespace HedgeHog.Alice.Store {
     }
     public double RatesHeightMinInPips { get { return InPips(RatesHeightMin); } }
     #endregion
+
+    public int RatesDuration { get; set; }
   }
   public static class WaveInfoExtentions {
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {

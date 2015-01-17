@@ -1037,10 +1037,6 @@ namespace HedgeHog.Alice.Client {
           //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, tm.Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
         }
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-        var rateDateMin = rates.Min(r => r.StartDate2);
-        var rateDateMax = rates.Max(r => r.StartDate2);
-        if ((rateDateMax - rateDateMin).TotalMinutes > 300)
-          Log = new Exception(new { rateDateMin, rateDateMax } + "");
         var price = tm.CurrentPrice;
         price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;

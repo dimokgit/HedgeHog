@@ -174,6 +174,9 @@ namespace HedgeHog {
     public static U[] ToArray<T, U>(this IEnumerable<T> es, Func<T, U> a) {
       return es.Select(a).ToArray();
     }
+    public static List<U> ToList<T, U>(this IEnumerable<T> es, Func<T, U> a) {
+      return es.Select(a).ToList();
+    }
     public static T FirstOrDefault<T>(this IEnumerable<T> v, T defaultValue) {
       return v.Take(1).DefaultIfEmpty(defaultValue).Single();
     }

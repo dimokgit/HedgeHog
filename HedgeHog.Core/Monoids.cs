@@ -50,5 +50,9 @@ namespace HedgeHog {
       return (u1, u2, u3) => value;
     }
     #endregion
+
+    public static object ToFunc(bool p1, int p2, double p3, object p4) {
+      throw new NotImplementedException();
+    }
   }
 }

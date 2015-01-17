@@ -296,17 +296,18 @@ namespace HedgeHog.Alice.Store {
     double GetTradeCloseLevel(Rate rate, bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy](rate, CorridorStats).IfNaN(def); }
 
     void SendSms(string header, object message, bool sendScreenshot) {
-      return;
       if (sendScreenshot) RaiseNeedChartSnaphot();
       SendSms(header, message, sendScreenshot ? _lastChartSnapshot : null);
-      Log = new Exception(new { sms = message + "" } + "");
     }
     void SendSms(string header, object message, byte[] attachment) {
+      if (IsInVitualTrading) return;
+      TaskPoolScheduler.Default.Schedule(() =>
       HedgeHog.Cloud.Emailer.Send(
         "dimokdimon@gmail.com",
-        "13057880763@mymetropcs.com",
+        "dimokdimon@gmail.com",
+        //"13057880763@mymetropcs.com",
         "1Aaaaaaa", Pair + "::" + header, message + "",
-        new[] { Tuple.Create(attachment, "File") }.Where(t => t.Item1 != null).ToArray());
+        new[] { Tuple.Create(attachment, "File.png") }.Where(t => t.Item1 != null).ToArray()));
     }
     private void StrategyEnterUniversal() {
       if (!RatesArray.Any()) return;
@@ -2145,9 +2146,10 @@ namespace HedgeHog.Alice.Store {
                       TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
                     }
                     if (t.GrossPL >= -PriceSpreadAverage) {
-                      BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
+                      _buySellLevelsForEach(sr => sr.CanTrade = sr.InManual = false);
                       if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
                     }
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
                   };

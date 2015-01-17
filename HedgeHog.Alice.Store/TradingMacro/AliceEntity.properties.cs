@@ -1547,6 +1547,9 @@ namespace HedgeHog.Alice.Store {
 
     #region CanTradeAlwaysOn
     private bool _CanTradeAlwaysOn;
+    [Category(categoryActiveYesNo)]
+    [DisplayName("Can Trade On")]
+    [Description("CanTradeAlwaysOn")]
     public bool CanTradeAlwaysOn {
       get { return _CanTradeAlwaysOn; }
       set {

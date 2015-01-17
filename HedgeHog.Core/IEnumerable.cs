@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static class IEnumerableCore {
+
+    public static IEnumerable<T> BackwardsIterator<T>(this IList<T> lst) {
+      for (int i = lst.Count - 1; i >= 0; i--) {
+        yield return lst[i];
+      }
+    }
     #region IfEmpty
     public static IEnumerable<T> IfEmpty<T>(this IEnumerable<T> enumerable,
           Action emptyAction) {

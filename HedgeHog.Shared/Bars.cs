@@ -49,6 +49,8 @@ namespace HedgeHog.Bars {
   public abstract class BarBase : BarBaseDate, IEquatable<BarBase>, IComparable<BarBase>, ICloneable {
     [DataMember]
     public bool IsHistory;
+    [DataMember]
+    public int Row { get; set; }
 
     #region Bid/Ask
     #region Ask
@@ -666,7 +668,6 @@ namespace HedgeHog.Bars {
     #endregion
   }
   public class Tick : Rate {
-    public int Row { get; set; }
     public Tick() { }
     public Tick(bool isHistory) : base(isHistory) { }
     public Tick(DateTime Time, double Ask, double Bid, int Row, bool isHistory)
@@ -686,7 +687,7 @@ namespace HedgeHog.Bars {
 
     public override bool Equals(BarBase other) {
       //return (object)other != null && StartDate == other.StartDate && AskOpen == other.AskOpen && BidOpen == other.BidOpen;
-      return (object)other != null && StartDate == other.StartDate2 && Row == (other as Tick).Row;
+      return (object)other != null && StartDate2 == other.StartDate2 && Row == other.Row;
     }
     public override int GetHashCode() { return StartDate2.GetHashCode() ^ Row.GetHashCode(); }
     //public override int GetHashCode() { return StartDate.GetHashCode() ^ AskOpen.GetHashCode() ^ BidOpen.GetHashCode(); }

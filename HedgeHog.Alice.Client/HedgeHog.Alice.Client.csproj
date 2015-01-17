@@ -309,6 +309,7 @@
     <Compile Include="Classes\IAccountHolder.cs" />
     <Compile Include="Classes\Market.cs" />
     <Compile Include="Classes\MarketHoursHound.cs" />
+    <Compile Include="Classes\OwinStartUp.cs" />
     <Compile Include="Classes\ReportModel.cs" />
     <Compile Include="Classes\Static.cs" />
     <Compile Include="Classes\StyleSelectors.cs" />

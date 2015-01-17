@@ -22,9 +22,16 @@
 </head>
 <body>
   <div class="container">
-    <strong>Trades:</strong>
     <input type="button" value="Stop" id="stopTrades" />
     <input type="button" value="Start" id="startTrades" />
+    <input type="button" value="Close" id="closeTrades" />
+    <input type="button" value="B\/" id="buyDown" />
+    <input type="button" value="B/\" id="buyUp" />
+    <input type="button" value="S\/" id="sellDown" />
+    <input type="button" value="S/\" id="sellUp" />
+    <input type="button" value="<BS>" id="buySellInit" />
+
+
     <input type="text" id="message" size="5" />
     <input type="button" id="sendmessage" value="Send" />
     <input type="hidden" id="displayname" />
@@ -53,13 +60,15 @@
             var chat = $.connection.myHub;
 
       // Create a function that the hub can call to broadcast messages.
-            function addMessage(name, message) {
-              // Html encode display name and message.
-              var encodedName = $('<div />').text(name).html();
-              var encodedMsg = $('<div />').text(message).html();
-              // Add the message to the page.
-              $('#discussion').html('<li><strong>' + encodedName
-                  + '</strong>:&nbsp;&nbsp;' + encodedMsg + '</li>');
+            function addMessage(response) {
+              $('#discussion').html(JSON.stringify(response));
+              //var name = response.ServerTime, message = response.PriceAvg;
+              //// Html encode display name and message.
+              //var encodedName = $('<div />').text(name).html();
+              //var encodedMsg = $('<div />').text(message).html();
+              //// Add the message to the page.
+              //$('#discussion').html('<li><strong>' + encodedName
+              //    + '</strong>:&nbsp;&nbsp;' + encodedMsg + '</li>');
               resetPlotter();
             }
             chat.client.addMessage = addMessage;
@@ -85,6 +94,30 @@
                 $('#startTrades').click(function () {
                   chat.server.startTrades(pair);
                   resetPlotter();
+                });
+                $('#closeTrades').click(function () {
+                  chat.server.closeTrades(pair);
+                  resetPlotter();
+                });
+                function moveTradeLeve(isBuy, pips) {
+                  chat.server.moveTradeLevel(pair, isBuy, pips);
+                  resetPlotter();
+                }
+                $('#buyUp').click(function () {
+                  moveTradeLeve(true, 1);
+                });
+                $('#buyDown').click(function () {
+                  moveTradeLeve(true, -1);
+                });
+                $('#sellUp').click(function () {
+                  moveTradeLeve(false, 1);
+                });
+                $('#sellDown').click(function () {
+                  moveTradeLeve(false, -1);
+                });
+                $('#buySellInit').click(function () {
+                  moveTradeLeve(true, 0);
+                  moveTradeLeve(false, 0);
                 });
             });
             function resetPlotter() {

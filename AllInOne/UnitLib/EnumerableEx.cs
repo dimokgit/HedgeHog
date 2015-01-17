@@ -4,6 +4,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
 using HedgeHog;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 namespace HedgeHog.Tests {
 
   namespace UnitLib {
@@ -64,6 +66,20 @@ namespace HedgeHog.Tests {
           return 0.YieldBreak();
         });
         Assert.IsTrue(Nums.Do(Console.WriteLine).Count() == 11);
+      }
+      [TestMethod]
+      public void ListReverse() {
+        var Nums = Enumerable.Range(0, 100000).ToArray();
+        var swDict = new Dictionary<string, double>();
+        Stopwatch sw = Stopwatch.StartNew();
+        var t1 = Nums.TakeLast(1).Single();
+        swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
+        var t2 = Nums.Reverse().Take(1).Single();
+        swDict.Add("2", sw.ElapsedMilliseconds); sw.Restart();
+        var t3 = Nums.BackwardsIterator().Take(1).Single();
+        swDict.Add("3", sw.ElapsedMilliseconds); sw.Restart();
+        Console.WriteLine("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, "Test", string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
+
       }
     }
   }

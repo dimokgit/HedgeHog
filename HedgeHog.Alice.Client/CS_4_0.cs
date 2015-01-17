@@ -168,6 +168,9 @@ namespace HedgeHog.Alice.Client.FileMetadata.Metadata
             /// <summary>Represents x:Key="OpenTradesTitleTemplate"/></summary>
             public static string OpenTradesTitleTemplateKey { get { return "OpenTradesTitleTemplate"; } }
 
+            /// <summary>Represents x:Key="OpenOrdersTitleTemplate"/></summary>
+            public static string OpenOrdersTitleTemplateKey { get { return "OpenOrdersTitleTemplate"; } }
+
             /// <summary>Represents x:Key="OrdersOnServer"/></summary>
             public static string OrdersOnServerKey { get { return "OrdersOnServer"; } }
 
@@ -176,6 +179,34 @@ namespace HedgeHog.Alice.Client.FileMetadata.Metadata
 
             /// <summary>Represents x:Key="CloseServerTradeTemplate"/></summary>
             public static string CloseServerTradeTemplateKey { get { return "CloseServerTradeTemplate"; } }
+
+
+    }
+
+    /// <summary>Metadata for File FodyWeavers.xml</summary>
+    public static class FodyWeaversXml    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/FodyWeavers.xml", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/FodyWeavers.xml"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/FodyWeavers.xml")); } }
+
+
+    }
+
+    /// <summary>Metadata for File HedgeHog.Alice.Client_TemporaryKey.pfx</summary>
+    public static class HedgeHogAliceClient_TemporaryKeyPfx    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/HedgeHog.Alice.Client_TemporaryKey.pfx", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/HedgeHog.Alice.Client_TemporaryKey.pfx"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/HedgeHog.Alice.Client_TemporaryKey.pfx")); } }
 
 
     }
@@ -223,20 +254,6 @@ namespace HedgeHog.Alice.Client.FileMetadata.Metadata
 
     }
 
-    /// <summary>Metadata for File MVVMLight.Nuget.Readme.txt</summary>
-    public static class MVVMLightNugetReadmeTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/MVVMLight.Nuget.Readme.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/MVVMLight.Nuget.Readme.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/MVVMLight.Nuget.Readme.txt")); } }
-
-
-    }
-
     /// <summary>Metadata for File packages.config</summary>
     public static class PackagesConfig    {
             /// <summary>Resource pack URI for file.</summary>
@@ -268,6 +285,12 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App.ChildWindows"/></summary>
         public const string ChildWindows = "ChildWindows";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.App.TaskScheduler_UnobservedTaskException"/></summary>
+        public const string TaskScheduler_UnobservedTaskException = "TaskScheduler_UnobservedTaskException";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.App.CurrentDomain_UnhandledException"/></summary>
+        public const string CurrentDomain_UnhandledException = "CurrentDomain_UnhandledException";
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.App.Resources"/></summary>
         public const string Resources = "Resources";
 
@@ -283,8 +306,26 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.App.OnStartup"/></summary>
         public const string OnStartup = "OnStartup";
 
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App._webApp"/></summary>
+        public const string _webApp = "_webApp";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.App.OnExit"/></summary>
         public const string OnExit = "OnExit";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App.ResetSignalR"/></summary>
+        public const string ResetSignalR = "ResetSignalR";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App.SignalRInterval"/></summary>
+        public const string SignalRInterval = "SignalRInterval";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App._SignalRSubjectSubjectLocker"/></summary>
+        public const string _SignalRSubjectSubjectLocker = "_SignalRSubjectSubjectLocker";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.App._SignalRSubjectSubject"/></summary>
+        public const string _SignalRSubjectSubject = "_SignalRSubjectSubject";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.App.SetSignalRSubjectSubject"/></summary>
+        public const string SetSignalRSubjectSubject = "SetSignalRSubjectSubject";
 
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.App.IsInDesignMode"/></summary>
@@ -295,24 +336,51 @@ namespace HedgeHog.Alice.Client.Metadata
 
     }
 
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.ProfitToColorConverter"/></summary>
-    public static class ProfitToColorConverterMetadata
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.StartUp"/></summary>
+    public static class StartUpMetadata
     {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.ProfitToColorConverter.defaultInstance"/></summary>
-        public const string defaultInstance = "defaultInstance";
+                /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.StartUp.Pair"/></summary>
+        public const string Pair = "Pair";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.ProfitToColorConverter.Default"/></summary>
-        public const string Default = "Default";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.ProfitToColorConverter.Convert"/></summary>
-        public const string Convert = "Convert";
-
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.ProfitToColorConverter.ConvertBack"/></summary>
-        public const string ConvertBack = "ConvertBack";
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.StartUp.Configuration"/></summary>
+        public const string Configuration = "Configuration";
 
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.ProfitToColorConverter.Default"/></summary>
-        public static PropertyPath DefaultPath { get { return new PropertyPath("Default"); } }
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.StartUp.Pair"/></summary>
+        public static PropertyPath PairPath { get { return new PropertyPath("Pair"); } }
+
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.PairHub"/></summary>
+    public static class PairHubMetadata
+    {
+        
+    }
+
+    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.MyHub"/></summary>
+    public static class MyHubMetadata
+    {
+                /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.MyHub.remoteControl"/></summary>
+        public const string remoteControl = "remoteControl";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.Send"/></summary>
+        public const string Send = "Send";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.ResetPlotter"/></summary>
+        public const string ResetPlotter = "ResetPlotter";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.StopTrades"/></summary>
+        public const string StopTrades = "StopTrades";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.StartTrades"/></summary>
+        public const string StartTrades = "StartTrades";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.SetCanTrade"/></summary>
+        public const string SetCanTrade = "SetCanTrade";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.MyHub.GetTradingMacro"/></summary>
+        public const string GetTradingMacro = "GetTradingMacro";
+
 
     }
 
@@ -563,16 +631,10 @@ namespace HedgeHog.Alice.Client.Metadata
         public const string IsInVirtualTrading = "IsInVirtualTrading";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._IpPort"/></summary>
-        public const string _VirtualDateStart = "_VirtualDateStart";
+        public const string _IpPort = "_IpPort";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IpPort"/></summary>
-        public const string VirtualDateStart = "VirtualDateStart";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._VirtualDelay"/></summary>
-        public const string _VirtualDelay = "_VirtualDelay";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualDelay"/></summary>
-        public const string VirtualDelay = "VirtualDelay";
+        public const string IpPort = "IpPort";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._VirtualPause"/></summary>
         public const string _VirtualPause = "_VirtualPause";
@@ -585,12 +647,6 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualClearTest"/></summary>
         public const string VirtualClearTest = "VirtualClearTest";
-
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.TraderModel._VirtualMonthsToTest"/></summary>
-        public const string _VirtualMonthsToTest = "_VirtualMonthsToTest";
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualMonthsToTest"/></summary>
-        public const string VirtualMonthsToTest = "VirtualMonthsToTest";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.MasterAccount"/></summary>
         public const string MasterAccount = "MasterAccount";
@@ -1228,9 +1284,6 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.UpdateOrders"/></summary>
         public const string UpdateOrders = "UpdateOrders";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.Using"/></summary>
-        public const string Using = "Using";
-
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.TraderModel.changeStop"/></summary>
         public const string changeStop = "changeStop";
 
@@ -1329,19 +1382,13 @@ namespace HedgeHog.Alice.Client.Metadata
         public static PropertyPath IsInVirtualTradingPath { get { return new PropertyPath("IsInVirtualTrading"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.IpPort"/></summary>
-        public static PropertyPath VirtualDateStartPath { get { return new PropertyPath("VirtualDateStart"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualDelay"/></summary>
-        public static PropertyPath VirtualDelayPath { get { return new PropertyPath("VirtualDelay"); } }
+        public static PropertyPath IpPortPath { get { return new PropertyPath("IpPort"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualPause"/></summary>
         public static PropertyPath VirtualPausePath { get { return new PropertyPath("VirtualPause"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualClearTest"/></summary>
         public static PropertyPath VirtualClearTestPath { get { return new PropertyPath("VirtualClearTest"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.VirtualMonthsToTest"/></summary>
-        public static PropertyPath VirtualMonthsToTestPath { get { return new PropertyPath("VirtualMonthsToTest"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.TraderModel.MasterAccount"/></summary>
         public static PropertyPath MasterAccountPath { get { return new PropertyPath("MasterAccount"); } }
@@ -2122,7 +2169,7 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.loadHistoryTast"/></summary>
         public const string loadHistoryTast = "loadHistoryTast";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.isLoadHistoryTaskRunning"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel.isLoadHistoryTaskRunning"/></summary>
         public const string isLoadHistoryTaskRunning = "isLoadHistoryTaskRunning";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._PriceHistoryCommand"/></summary>
@@ -2224,6 +2271,12 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.UpdateTradingStatistics"/></summary>
         public const string UpdateTradingStatistics = "UpdateTradingStatistics";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CalculateCurrentGrossInPips"/></summary>
+        public const string CalculateCurrentGrossInPips = "CalculateCurrentGrossInPips";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.GetTradingMacrosForStatistics"/></summary>
+        public const string GetTradingMacrosForStatistics = "GetTradingMacrosForStatistics";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.InitializeModel"/></summary>
         public const string InitializeModel = "InitializeModel";
 
@@ -2235,6 +2288,9 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.Context_ObjectMaterialized"/></summary>
         public const string Context_ObjectMaterialized = "Context_ObjectMaterialized";
+
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.tm_NeedChartSnaphot"/></summary>
+        public const string tm_NeedChartSnaphot = "tm_NeedChartSnaphot";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.findDispatcherScheduler"/></summary>
         public const string findDispatcherScheduler = "findDispatcherScheduler";
@@ -2257,9 +2313,6 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CoreFX_LoggedOffEvent"/></summary>
         public const string CoreFX_LoggedOffEvent = "CoreFX_LoggedOffEvent";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.fw_PriceChanged"/></summary>
-        public const string fw_PriceChanged = "fw_PriceChanged";
-
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._showChartQueueLocker"/></summary>
         public const string _showChartQueueLocker = "_showChartQueueLocker";
 
@@ -2277,6 +2330,9 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.IsMinimized"/></summary>
         public const string IsMinimized = "IsMinimized";
+
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Client.RemoteControlModel._isParentHidden"/></summary>
+        public const string _isParentHidden = "_isParentHidden";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.ShowChart"/></summary>
         public const string ShowChart = "ShowChart";
@@ -2428,9 +2484,6 @@ namespace HedgeHog.Alice.Client.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.DeleteTradingMacroCommand"/></summary>
         public static PropertyPath DeleteTradingMacroCommandPath { get { return new PropertyPath("DeleteTradingMacroCommand"); } }
-
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.isLoadHistoryTaskRunning"/></summary>
-        public static PropertyPath isLoadHistoryTaskRunningPath { get { return new PropertyPath("isLoadHistoryTaskRunning"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.RemoteControlModel.PriceHistoryCommand"/></summary>
         public static PropertyPath PriceHistoryCommandPath { get { return new PropertyPath("PriceHistoryCommand"); } }
@@ -3412,178 +3465,6 @@ namespace HedgeHog.Alice.Client.FileMetadata.Store.Metadata
 
             /// <summary>BitmapImage for the file.</summary>
             public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Store/Alice.xls")); } }
-
-
-    }
-
-}
-
-namespace HedgeHog.Alice.Client.FileMetadata.Tests.Metadata
-{
-    /// <summary>Metadata for File EURJPY.txt</summary>
-    public static class EURJPYTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/EURJPY.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/EURJPY.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/EURJPY.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_EURJPY_ReversedVoid.txt</summary>
-    public static class Params_EURJPY_ReversedVoidTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_ReversedVoid.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_ReversedVoid.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_ReversedVoid.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_EURJPY_RustyBottoms.txt</summary>
-    public static class Params_EURJPY_RustyBottomsTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_RustyBottoms.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_RustyBottoms.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_RustyBottoms.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_EURJPY_StDev.txt</summary>
-    public static class Params_EURJPY_StDevTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_EURJPY_StDev_CorrByBal.txt</summary>
-    public static class Params_EURJPY_StDev_CorrByBalTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev_CorrByBal.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev_CorrByBal.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev_CorrByBal.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_EURJPY_StDev2.txt</summary>
-    public static class Params_EURJPY_StDev2Txt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev2.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev2.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_EURJPY_StDev2.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Params_TimeFrame_Original.txt</summary>
-    public static class Params_TimeFrame_OriginalTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Params_TimeFrame_Original.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_TimeFrame_Original.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Params_TimeFrame_Original.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Test_EURJPY_StDev3.txt</summary>
-    public static class Test_EURJPY_StDev3Txt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Test_EURJPY_StDev3_Original.txt</summary>
-    public static class Test_EURJPY_StDev3_OriginalTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3_Original.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3_Original.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev3_Original.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Test_EURJPY_StDev31_03.txt</summary>
-    public static class Test_EURJPY_StDev31_03Txt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev31_03.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev31_03.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_EURJPY_StDev31_03.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File Test_Manual.txt</summary>
-    public static class Test_ManualTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/Test_Manual.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_Manual.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/Test_Manual.txt")); } }
-
-
-    }
-
-    /// <summary>Metadata for File TestParams.txt</summary>
-    public static class TestParamsTxt    {
-            /// <summary>Resource pack URI for file.</summary>
-            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/Tests/TestParams.txt", UriKind.Relative); } }
-
-            /// <summary>Relative resource pack URI for the file.</summary>
-            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/TestParams.txt"); } }
-
-            /// <summary>BitmapImage for the file.</summary>
-            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/Tests/TestParams.txt")); } }
 
 
     }
@@ -6915,26 +6796,107 @@ namespace HedgeHog.Alice.Client.FileMetadata.UI.Style.Metadata
 
 }
 
-namespace HedgeHog.Alice.Client.ViewModel.Metadata
+namespace HedgeHog.Alice.Client.FileMetadata.WWW.Scripts.Metadata
 {
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.ViewModel.MainViewModel"/></summary>
-    public static class MainViewModelMetadata
-    {
-        
+    /// <summary>Metadata for File jquery-2.1.3.intellisense.js</summary>
+    public static class Jquery213IntellisenseJs    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.intellisense.js", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.intellisense.js"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.intellisense.js")); } }
+
+
     }
 
-    /// <summary>Metadata for class <see cref="HedgeHog.Alice.Client.ViewModel.ViewModelLocator"/></summary>
-    public static class ViewModelLocatorMetadata
-    {
-                /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.ViewModel.ViewModelLocator.Main"/></summary>
-        public const string Main = "Main";
+    /// <summary>Metadata for File jquery-2.1.3.js</summary>
+    public static class Jquery213Js    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.js", UriKind.Relative); } }
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.ViewModel.ViewModelLocator.Cleanup"/></summary>
-        public const string Cleanup = "Cleanup";
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.js"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.js")); } }
 
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Client.ViewModel.ViewModelLocator.Main"/></summary>
-        public static PropertyPath MainPath { get { return new PropertyPath("Main"); } }
+    }
+
+    /// <summary>Metadata for File jquery-2.1.3.min.js</summary>
+    public static class Jquery213MinJs    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.js", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.js"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.js")); } }
+
+
+    }
+
+    /// <summary>Metadata for File jquery-2.1.3.min.map</summary>
+    public static class Jquery213MinMap    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.map", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.map"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery-2.1.3.min.map")); } }
+
+
+    }
+
+    /// <summary>Metadata for File jquery.signalR-2.1.2.js</summary>
+    public static class JquerySignalR212Js    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.js", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.js"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.js")); } }
+
+
+    }
+
+    /// <summary>Metadata for File jquery.signalR-2.1.2.min.js</summary>
+    public static class JquerySignalR212MinJs    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.min.js", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.min.js"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Scripts/jquery.signalR-2.1.2.min.js")); } }
+
+
+    }
+
+}
+
+namespace HedgeHog.Alice.Client.FileMetadata.WWW.Metadata
+{
+    /// <summary>Metadata for File Trader.html</summary>
+    public static class TraderHtml    {
+            /// <summary>Resource pack URI for file.</summary>
+            public static Uri RelativePackUri { get { return new Uri(@"/HedgeHog.Alice.Client;component/WWW/Trader.html", UriKind.Relative); } }
+
+            /// <summary>Relative resource pack URI for the file.</summary>
+            public static Uri PackUri { get { return new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Trader.html"); } }
+
+            /// <summary>BitmapImage for the file.</summary>
+            public static BitmapImage Source { get { return new BitmapImage(new Uri(@"pack://application:,,,/HedgeHog.Alice.Client;component/WWW/Trader.html")); } }
+
 
     }
 

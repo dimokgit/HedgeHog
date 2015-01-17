@@ -708,7 +708,7 @@ namespace HedgeHog {
       return diffs.Max() - diffs.Min();
     }
     public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a => a.Sign());
