@@ -564,7 +564,7 @@ namespace HedgeHog {
       minOut = min;
       return ret;
     }
-    public static double StandardDeviation(this IList<double> valueList) {
+    public static double StandardDeviation(this IEnumerable<double> valueList) {
       double M = 0.0;
       double S = 0.0;
       int k = 1;
@@ -689,13 +689,23 @@ namespace HedgeHog {
       var height = values.Height();
       return stDev / height;
     }
-    public static double StDevByRegressoin(this IList<double> values, double[] coeffs = null, Action<double[]> callCC = null) {
+    public static double StDevByRegressoin(this IList<double> values) {
+      return values.StDevByRegressoin(d => { });
+    }
+    public static double StDevByRegressoin(this IList<double> values, Action<double> callCC) {
+      return values.StDevByRegressoin(null, callCC);
+    }
+    public static double StDevByRegressoin(this IList<double> values, double[] coeffs) {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
-      var diffs = line.Zip(values, (l, v) => v - l).ToArray();
-      if (callCC != null) callCC(diffs);
-      return diffs.StDev();
+      return line.Zip(values, (l, v) => v - l).StandardDeviation();
+    }
+    public static double StDevByRegressoin(this IList<double> values, double[] coeffs, Action<double> callCC) {
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      var line = new double[values.Count];
+      coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
+      return line.Zip(values, (l, v) => v - l).Do(callCC).StandardDeviation();
     }
     public static double HeightByRegressoin(this IList<double> values) {
       return values.HeightByRegressoin(values.Linear());
@@ -747,14 +757,6 @@ namespace HedgeHog {
       ).DistinctUntilChanged(d => d.slopeSign)
       .Take(2)
       .Select(a => lengthAndSlope(a.length, a.slopeSign));
-    }
-    public static double RsdByRegression(this IEnumerable<double> values) {
-      double min = 0.0, max = 0.0;
-      var stDev = values.SafeArray().StDevByRegressoin(null, diffs => {
-        min = diffs.Where(d => d < 0).Average();
-        max = diffs.Where(d => d >= 0).Average();
-      });
-      return stDev / (max - min);
     }
     public static double RsdNormalized(this IList<double> values) {
       double level;

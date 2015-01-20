@@ -321,8 +321,6 @@ namespace HedgeHog.Alice.Store {
       #endregion
       _isSelfStrategy = true;
       var reverseStrategy = new ObservableValue<bool>(false);
-      var _takeProfitLimitRatioLocal = double.NaN;
-      Func<double> takeProfitLimitRatio = () => _takeProfitLimitRatioLocal.IfNaN(TakeProfitLimitRatio);
       Func<SuppRes, bool> isBuyR = sr => reverseStrategy.Value ? !sr.IsBuy : sr.IsBuy;
       Func<SuppRes, bool> isSellR = sr => reverseStrategy.Value ? !sr.IsSell : sr.IsSell;
       Func<bool> calcAngleOk = () => TradingAngleRange >= 0
@@ -2135,7 +2133,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.SimpleMoveR: {
                 #region FirstTime
                 if (firstTime) {
-                  Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
+                  Log = new Exception(new { TradingAngleRange, CorridorLengthRatio, TradeCountStart, CanTradeAlwaysOn, RsdTreshold } + "");
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
                   #region onCloseTradeLocal
@@ -2161,8 +2159,9 @@ namespace HedgeHog.Alice.Store {
                   bl = getTradeLevel(rateLast, true, BuyLevel.Rate),
                   sl = getTradeLevel(rateLast, false, SellLevel.Rate)
                 });
-                Func<double, double, bool> isComOk = (h, l) => TradingAngleRange.Abs() < 0.1 && MathExtensions.OverlapRatio(CenterOfMassSell, CenterOfMassBuy, h, l) < 0;
-                Func<bool> corridorOk = () => CorridorStats.Rates.Count > CorridorDistance;
+                Func<bool> corridorOk = () => CorridorStats.Rates.Count > CorridorDistance
+                  && IsTresholdOk(CorridorStats.Rates.Count.Div(RatesArray.Count), CorridorLengthRatio);
+                Func<bool> isRatesOk = () => IsTresholdOk(RatesRsd, RsdTreshold);
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
                   .Select(rateLast => new {
                     rateLast,
@@ -2175,8 +2174,7 @@ namespace HedgeHog.Alice.Store {
                           sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
                           sr.IsSell && LevelSellBy != TradeLevelBy.None)
                           .ForEach(sr => {
-                            var count = !TradeByRateDirection || !isComOk(levels.bl, levels.sl) || (sr.IsSell && sr.Rate > CenterOfMassBuy || sr.IsBuy && sr.Rate < CenterOfMassSell) ? 0 : 1;
-                            sr.TradesCount = count;
+                            sr.TradesCount = TradeCountStart;
                             sr.CanTradeEx = true;
                           });
                       }
@@ -2187,7 +2185,7 @@ namespace HedgeHog.Alice.Store {
                     return calcAngleOk() ? WFD.tupleNextEmpty() : WFD.tupleStayEmpty();
                   },ti=>{WorkflowStep = "2.Wait un-flat";
                   (from a in doRateLast select a)
-                    .Where(a=>corridorOk() || getLevels(a.rateLast).Yield().Any(levels=>isComOk(levels.bl, levels.sl)))
+                    .Where(a=>corridorOk() && isRatesOk())
                     .Select(a=>a.a)
                     .ForEach(a => a());
                     return calcAngleOk() ? WFD.tupleStayEmpty() : WFD.tupleNextEmpty();

@@ -532,20 +532,22 @@ namespace HedgeHog.Bars {
 
     #region Operators
     public static bool operator <=(BarBase b1, BarBase b2) {
-      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate <= b2.StartDate;
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate < b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row <= b2.Row);
     }
     public static bool operator >(BarBase b1, BarBase b2) {
-      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate > b2.StartDate;
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate > b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row > b2.Row);
     }
     public static bool operator >=(BarBase b1, BarBase b2) {
-      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate >= b2.StartDate;
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate > b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row >= b2.Row);
     }
     public static bool operator <(BarBase b1, BarBase b2) {
-      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate < b2.StartDate;
+      return (object)b1 == null || (object)b2 == null ? false : b1.StartDate < b2.StartDate || (b1.StartDate == b2.StartDate && b1.Row < b2.Row);
     }
 
 
-    public static bool operator ==(BarBase b1, BarBase b2) { return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2); }
+    public static bool operator ==(BarBase b1, BarBase b2) {
+      return (object)b1 == null && (object)b2 == null ? true : (object)b1 == null ? false : b1.Equals(b2);
+    }
     public static bool operator !=(BarBase b1, BarBase b2) { return (object)b1 == null ? (object)b2 == null ? false : !b2.Equals(b1) : !b1.Equals(b2); }
     #endregion
 
@@ -568,10 +570,16 @@ namespace HedgeHog.Bars {
       return obj is BarBase ? Equals(obj as BarBase) : false;
     }
     public virtual bool Equals(BarBase other) {
-      if ((object)other == null || StartDate != other.StartDate) return false;
+      if ((object)other == null || StartDate != other.StartDate || Row != other.Row) return false;
       return true;
     }
-    public override int GetHashCode() { return StartDate.GetHashCode(); }
+//    public override int GetHashCode_() { return StartDate.GetHashCode(); }
+    public override int GetHashCode() {
+      unchecked // Overflow is fine, just wrap
+      {
+        return 31 * StartDate.GetHashCode() + (Row > 0 ? Row.GetHashCode() : 0);
+      }
+    }
     #endregion
 
     #region ICloneable Members

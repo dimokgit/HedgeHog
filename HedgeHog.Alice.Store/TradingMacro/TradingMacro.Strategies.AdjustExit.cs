@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region DistanceDaysBack
     private int _DistanceDaysBack = 2;
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public int DistanceDaysBack {
       get { return _DistanceDaysBack; }
       set {
@@ -166,20 +166,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => LimitProfitByRatesHeight);
       }
     }
-    private double ExitLevelByCurrentPrice(bool isBuy) {
-      return ExitLevelByCurrentPrice(ClosingDistanceByCurrentGross(), isBuy);
-    }
-    private double ExitLevelByCurrentPrice(double colsingDistance, bool isBuy) {
-      return isBuy ? CurrentPrice.Bid + colsingDistance : CurrentPrice.Ask - colsingDistance;
-    }
-
-    private double ClosingDistanceByCurrentGross() { return ClosingDistanceByCurrentGross(() => TakeProfitLimitRatio); }
-    private double ClosingDistanceByCurrentGross(Func<double> takeProfitLimitRatio) {
-      var tpCloseInPips = TakeProfitPips - CurrentGrossInPipTotal / _tradingStatistics.TradingMacros.Count;
-      var tpColse = InPoints(tpCloseInPips);//.Min(TakeProfitPips * takeProfitLimitRatio()));//.Min(TradingDistance);
-      return tpColse;
-    }
-
     private void AdjustExitLevelsByTradeTime(Action<double, double> adjustExitLevels) {
       Func<double, IEnumerable<double>> rateSinceTrade = def => {
         var d = Trades.Max(t => t.Time);

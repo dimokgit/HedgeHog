@@ -250,22 +250,21 @@ namespace HedgeHog.Alice.Store {
       var end = RatesInternal.Count - 1;
       var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, sd) => new { ok, l, sd });
       var last = func(false, 0, 0.0);
-      var getCount = MonoidsCore.ToFunc(0, 0, (Func<bool, bool>)null, (Func<int, int>)null
-        , (_start, _end, _isOk, _nextStep) => {
-          var _last = func(false, 0, 0.0);
-          var sdMin = InPoints(WaveStDevRatio);
-          return Lib.IteratonSequence(_start, _end, _nextStep)
-          .Select(i => {
-            var rates = ratesInternal.GetRange(0, i.Min(countMin));
-            var stDev = rates.HeightByRegressoin();
-            var x = func(stDev > sdMin, rates.Count, stDev);
-            if (_last.sd < stDev) _last = x;
-            return x;
-          })
-          .SkipWhile(a => _isOk(a.ok))
-          .Take(1)
-          .IfEmpty(() => _last);
-        });
+      var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
+        var _last = func(false, 0, 0.0);
+        var sdMin = InPoints(WaveStDevRatio);
+        return Lib.IteratonSequence(_start, _end, _nextStep)
+        .Select(i => {
+          var rates = ratesInternal.GetRange(0, i.Min(countMin));
+          var stDev = rates.HeightByRegressoin();
+          var x = func(stDev > sdMin, rates.Count, stDev);
+          if (_last.sd < stDev) _last = x;
+          return x;
+        })
+        .SkipWhile(a => _isOk(a.ok))
+        .Take(1)
+        .IfEmpty(() => _last);
+      });
       Func<bool, bool> isOk = b => !b;
       var divider = 100.0;
       Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
@@ -280,8 +279,12 @@ namespace HedgeHog.Alice.Store {
         if (divider < 0) { isOk = b => b; } else { isOk = b => !b; }
       }
     }
-    Func<int, int, Func<bool, bool>, Func<int, int>,T> GetIterator<T>( Func<int, int, Func<bool, bool>, Func<int, int>,T> process) {
+    delegate T Iterator<T>(int start, int end, Func<bool, bool> isOk, Func<int, int> nextStep);
+    Func<int, int, Func<bool, bool>, Func<int, int>, T> GetIterator<T>(Func<int, int, Func<bool, bool>, Func<int, int>, T> process) {
       return process;
+    }
+    static bool IsTresholdOk(double value, double treshold) {
+      return treshold >= 0 ? value >= treshold : value < treshold;
     }
     void ScanRatesLengthByRelativeStDev() {
       var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
@@ -290,34 +293,42 @@ namespace HedgeHog.Alice.Store {
       var end = RatesInternal.Count - 1;
       var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, rsd) => new { ok, l, rsd });
       var last = func(false, 0, 0.0);
-      var getCount = MonoidsCore.ToFunc(0, 0, (Func<bool, bool>)null, (Func<int, int>)null
-        , (_start, _end, _isOk, _nextStep) => {
-          var _last = func(false, 0, 0.0);
-          return Lib.IteratonSequence(_start, _end, _nextStep)
-          .Select(i => {
-            var rates = ratesInternal.GetRange(0, i.Min(countMax));
-            var rsd = rates.Height() / rates.StandardDeviation();
-            var x = func(rsd > WaveStDevRatio, rates.Count, rsd);
-            if (_last.rsd < rsd) _last = x;
-            return x;
-          })
-          .SkipWhile(a => _isOk(a.ok))
-          .Take(1)
-          .IfEmpty(() => _last);
-        });
+      var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
+        var _last = func(false, 0, 0.0);
+        return Lib.IteratonSequence(_start, _end, _nextStep)
+        .Select(i => {
+          var rates = ratesInternal.GetRange(0, i.Min(countMax));
+          var rsd = rates.Height() / rates.StandardDeviation();
+          var x = func(IsTresholdOk(rsd, 100), rates.Count, rsd);
+          if (_last.rsd < rsd) _last = x;
+          return x;
+        })
+        .SkipWhile(a => _isOk(a.ok))
+        .Take(1)
+        .IfEmpty(() => _last);
+      });
       Func<bool, bool> isOk = b => !b;
-      var divider = 100.0;
+      BarsCountCalc = IteratorLoop(start, end, 100, isOk, getCount, a => a.Single().l);
+      OnRatesArrayChaged = OnRatesArrayChaged_SetVoltsByRsd;
+    }
+    void OnRatesArrayChaged_SetVoltsByRsd() {
+      var volt = RatesHeight / StDevByPriceAvg;
+      RatesArray.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r,volt));
+      RatesArray.Reverse<Rate>().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r,volt));
+    }
+    Action OnRatesArrayChaged = () => { };
+    int IteratorLoop<T>(int start, int end, double divider, Func<bool, bool> isOk, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
       Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
+      var _isOk = isOk;
       while (true) {
-        var c = getCount(start, end, isOk, nextStep).Single().l;
-        if (nextStep(c).Abs() <= 1) {
-          BarsCountCalc = c;
-          break;
-        }
+        var c = countMap(getCounter(start, end, isOk, nextStep));
+        if (nextStep(c).Abs() <= 1) 
+          return c;
         divider *= -2;
         start = c; end = start + nextStep(c) * 3;
-        if (divider < 0) { isOk = b => b; } else { isOk = b => !b; }
+        if (divider < 0) { _isOk = b => !isOk(b); } else { _isOk = isOk; }
       }
+
     }
     IEnumerable<T> GetSenterOfMassStrip<T>(IList<double> rates, double height, int roundOffset, Func<double[], double, double, T> map) {
       var rates2 = rates.SafeArray();

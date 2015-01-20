@@ -1842,48 +1842,25 @@ namespace HedgeHog.Alice.Store {
       var cp = _priceAvg ?? CorridorPrice();
       Func<IList<Rate>, int> scan = rates => {
         var prices = rates.Select(cp).ToList();
+        var pricesCount = prices.Count;
         var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
         if (heightMin.IsNaN()) return CorridorDistance;
-        Func<int, bool> heightOk = i => prices.GetRange(0, i).HeightByRegressoin() < heightMin;
+        Func<int, bool> heightOk = i => prices.GetRange(0, i.Min(pricesCount)).HeightByRegressoin() < heightMin;
         Func<int, bool> heightNotOk = i => !heightOk(i);
         Func<IEnumerable<int>, Func<int, bool>, IEnumerable<int>> getIndex = (ints, heightFunc) => ints.SkipWhile(heightFunc).Take(1);
-
+        var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
+          return Lib.IteratonSequence(_start, _end, _nextStep)
+            .Select(i => new { i, ok = prices.GetRange(0, i.Min(pricesCount)).HeightByRegressoin() > heightMin })
+            .SkipWhile(a => _isOk(a.ok))
+            .Take(1)
+            .Select(a => a.i);
+        });
 
         var swDict = new Dictionary<string, double>();
         Stopwatch sw = Stopwatch.StartNew();
         swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
-
-        var rateLastIndex = getIndex(Lib.IteratonSequence(10, prices.Count - 10), heightOk).DefaultIfEmpty().IfEmpty(() =>
-            CorridorStats.Rates
-            .Select(r => r.StartDate).TakeLast(1)
-            .Select(d => RatesArray.SkipWhile(r => r.StartDate < d).Count())
-            )
-            .IfEmpty(() => CorridorDistance)
-            .Single();
-        if (rateLastIndex < 3) return CorridorStats.Rates.Count;
-        var step = Lib.IteratonSequenceNextStep(rateLastIndex);
-        while (step > 1) {
-          var step2 = step.Div(2).Ceiling();
-          rateLastIndex = getIndex(Range.Int32(rateLastIndex + 1, rateLastIndex - step * 3, step2), heightNotOk).Single();
-          step = step2;
-          if (step > 1) {
-            step2 = step.Div(2).Ceiling();
-            rateLastIndex = getIndex(Range.Int32(rateLastIndex - 1, rateLastIndex + step * 3, step2), heightOk).Single();
-            step = step2;
-          }
-        }
-        //int? slope = null;
-        //for (var rli = rateLastIndex; rli < (rateLastIndex * 1.2).Min(ratesForCorridor.Count - 1); rli += (rli / 100) + 1) {
-        //  var coeffs = prices.GetRange(0,rli).Regress(1);
-        //  var currSlope = coeffs.LineSlope().Sign();
-        //  if (!slope.HasValue) slope = currSlope;
-        //  if (currSlope != slope.Value) {
-        //    // TODO Roll back with step of 1
-        //    rateLastIndex = rli;
-        //    break;
-        //  }
-        //}
-        return rateLastIndex;
+        Func<bool, bool> isOk = b => !b;
+        return IteratorLoop(10, pricesCount, 100, isOk, getCount, a => a.IfEmpty(() => new[] { CorridorDistance }).Single());
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }

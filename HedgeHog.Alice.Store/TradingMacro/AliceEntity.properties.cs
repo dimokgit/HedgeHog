@@ -857,7 +857,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("MaxLot By TakeProfit Ratio")]
     [Description("MaxLotSize < LotSize*N")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double MaxLotByTakeProfitRatio_ {
       get { return MaxLotByTakeProfitRatio; }
       set {
@@ -1046,7 +1046,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Correlation Min")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
@@ -1058,7 +1058,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("ProfitToLossExitRatio")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     [Description("Trades.Lot() / AllowedLotSize")]
     public double ProfitToLossExitRatio_ {
       get { return ProfitToLossExitRatio; }
@@ -1244,7 +1244,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("CorridorHeight Max")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double CorridorHeightMax {
       get { return FibMin; }
       set {

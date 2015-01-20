@@ -160,6 +160,7 @@
     </Compile>
     <Compile Include="TradingMacro\Exceptions.cs" />
     <Compile Include="TradingMacro\ScanCorridor\ScanCorridorByFftMA.cs" />
+    <Compile Include="TradingMacro\TradingMacro.ActiveProps.cs" />
     <Compile Include="TradingMacro\TradingMacro.Archive.cs" />
     <Compile Include="TradingMacro\TradingMacro.Enums.cs" />
     <Compile Include="TradingMacro\TradingMacro.LiveTrading.cs" />

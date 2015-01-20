@@ -55,7 +55,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>

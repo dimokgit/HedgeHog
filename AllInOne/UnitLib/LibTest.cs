@@ -323,7 +323,7 @@ Privet:2.3 3.4
 
     [TestMethod()]
     public void StandardDeviationTest() {
-      var values = Range.Double(0, 1000000).ToArray();
+      var values = Range.Double(0, 100000).ToArray();
       var swDict = new Dictionary<string, double>();
       Stopwatch sw = Stopwatch.StartNew();
       var stDev1 = values.StandardDeviation();

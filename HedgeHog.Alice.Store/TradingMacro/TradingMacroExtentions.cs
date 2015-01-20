@@ -1441,6 +1441,7 @@ namespace HedgeHog.Alice.Store {
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
         Rate ratePrev = null;
+        bool noMoreDbRates = false;
         while (!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           var swDict = new Dictionary<string, double>();
           Stopwatch sw = Stopwatch.StartNew();
@@ -1483,8 +1484,18 @@ namespace HedgeHog.Alice.Store {
                 if (RateLast.StartDate > dateMin)
                   continue;
               }
-              if (indexCurrent > _replayRates.Count - BarsCount * .10)
-                _replayRates.AddRange(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2, BarsCount, BarPeriodInt));
+              if (!noMoreDbRates && indexCurrent > _replayRates.Count - BarsCount * .10) {
+                var moreRates = GlobalStorage.GetRateFromDBForwards<Rate>(Pair, _replayRates.Last().StartDate2, BarsCount, BarPeriodInt);
+                if (moreRates.Count == 0)
+                  noMoreDbRates = true;
+                else {
+                  _replayRates.AddRange(moreRates);
+                  var maxCount = barsCountTotal + BarsCount;
+                  var slack = (_replayRates.Count - maxCount).Max(0);
+                  _replayRates.RemoveRange(0, slack);
+                  indexCurrent -= slack;
+                }
+              }
               rate = _replayRates[indexCurrent++];
               UseRatesInternal(ri => {
                 if (CloseTradesBeforeNews) {
@@ -2023,9 +2034,10 @@ namespace HedgeHog.Alice.Store {
             SpreadForCorridor = RatesArray.Spread();
             SetMA();
             OnGeneralPurpose(() => {
+              OnRatesArrayChaged();
               AdjustSuppResCount();
               var coeffs = prices.Linear();
-              StDevByPriceAvg = prices.StDev();
+              StDevByPriceAvg = prices.StandardDeviation();
               StDevByHeight = prices.StDevByRegressoin(coeffs);
               switch (CorridorCalcMethod) {
                 case CorridorCalculationMethod.Height:
@@ -2766,6 +2778,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    static readonly double _ratesHeight_2 = 5.0 / 12;
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
       var tp = double.NaN;
       switch (function) {
@@ -2779,7 +2792,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;
         case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / _ratesHeight_2; break;
         case TradingMacroTakeProfitFunction.RatesHeight_3: tp = RatesHeight / 3; break;
         case TradingMacroTakeProfitFunction.RatesHeight_4: tp = RatesHeight / 4; break;
         case TradingMacroTakeProfitFunction.RatesHeight_5: tp = RatesHeight / 5; break;
