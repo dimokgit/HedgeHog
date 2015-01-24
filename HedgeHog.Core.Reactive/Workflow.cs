@@ -52,31 +52,31 @@ namespace HedgeHog {
     public static Func<Tuple<int, ExpandoObject>> tupleBreakEmpty = () => tupleBreak(emptyWFContext());
     #endregion
     #region Factory
-    public struct scan {
+    public struct Scan {
       public int i;
-      public ExpandoObject o;
-      public Func<bool> c;
-      public scan(int i, ExpandoObject o, Func<bool> c) {
+      public ExpandoObject dict;
+      public Func<bool> cancel;
+      public Scan(int i, ExpandoObject o, Func<bool> c) {
         this.i = i;
-        this.o = o;
-        this.c = c;
+        this.dict = o;
+        this.cancel = c;
       }
     }
-    public static IObservable<scan> WFFactory(this Subject<IList<Func<ExpandoObject, Tuple<int, ExpandoObject>>>> workflowSubject, Func<bool> cancelWorkflow) {
+    public static IObservable<Scan> WFFactory(this Subject<IList<Func<ExpandoObject, Tuple<int, ExpandoObject>>>> workflowSubject, Func<bool> cancelWorkflow) {
       #region Workflow tuple factories
       #endregion
       return workflowSubject
-        .Scan(new scan( 0, emptyWFContext(), cancelWorkflow ), (i, wf) => {
-          if (i.i >= wf.Count || i.c() || i.o.OfType<WF.MustExit>().Any(me => me())) {
-            i.o.Select(kv => kv.Value).OfType<WFD.OnExit>().ForEach(a => a());
-            dynamic d = i.o;
-            ((IDictionary<string, object>)d).Clear();
-            i = new scan(0, i.o, i.c);
+        .Scan(new Scan( 0, emptyWFContext(), cancelWorkflow ), (scan, wf) => {
+          if (scan.i >= wf.Count || scan.cancel() || scan.dict.OfType<WF.MustExit>().Any(me => me())) {
+            scan.dict.Select(kv => kv.Value).OfType<WFD.OnExit>().ForEach(a => a());
+            //dynamic d = i.o;
+            //((IDictionary<string, object>)d).Clear();
+            scan = new Scan(0, scan.dict, scan.cancel);
           }
-          var o = wf[i.i](i.o);// Side effect
+          var o = wf[scan.i](scan.dict);// Side effect
           o.Item2.OfType<WFD.OnLoop>().ToList().ForEach(ol => ol(o.Item2));
           try {
-            var d = new scan((i.i + o.Item1).Max(0), o.Item2, i.c);
+            var d = new Scan((scan.i + o.Item1).Max(0), o.Item2, scan.cancel);
             return d;
           } finally {
             if (o.Item1 != 0) workflowSubject.Repeat(1);

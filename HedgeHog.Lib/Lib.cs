@@ -149,22 +149,6 @@ namespace HedgeHog {
         return n;
       });
     }
-    public static IEnumerable<int> IteratonSequence(int start, int end) {
-      return IteratonSequence(start, end, IteratonSequenceNextStep);
-    }
-    public static IEnumerable<int> IteratonSequence(int start, int end, Func<int, double, int> nextStep, double divider = 100.0) {
-      for (var i = start; i <= end; i += nextStep(i, divider))
-        yield return i;
-    }
-    public static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
-      for (var i = start; i.Between(start, end); i += nextStep(i))
-        yield return i;
-    }
-
-    public static int IteratonSequenceNextStep(int rc, double divider = 100.0) {
-      var s = (rc / divider);
-      return s > 0 ? s.Ceiling() : s.Floor();
-    }
     public static Delegate Compile<T>(this string expression, params ParameterExpression[] parameters) {
       return System.Linq.Dynamic.DynamicExpression.ParseLambda(parameters, typeof(T), expression).Compile();
     }

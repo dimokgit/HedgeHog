@@ -1855,12 +1855,8 @@ namespace HedgeHog.Alice.Store {
             .Take(1)
             .Select(a => a.i);
         });
-
-        var swDict = new Dictionary<string, double>();
-        Stopwatch sw = Stopwatch.StartNew();
-        swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
         Func<bool, bool> isOk = b => !b;
-        return IteratorLoop(10, pricesCount, 100, isOk, getCount, a => a.IfEmpty(() => new[] { CorridorDistance }).Single());
+        return Lib.IteratorLoopPow(10, pricesCount, .55, isOk, getCount, a => a.IfEmpty(() => new[] { RatesArray.Count }).Single());
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }

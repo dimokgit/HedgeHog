@@ -101,18 +101,27 @@ namespace HedgeHog.Alice.Store {
         Log = new Exception(new { _SetCorridorDistanceByDistanceIsRunning } + "");
       _SetCorridorDistanceByDistanceIsRunning++;
       try {
-        var revs = rates.Reverse().ToArray();
-        var ds = revs.Zip(revs.Skip(1), (r1, r2) => r1.PriceAvg.Abs(r2.PriceAvg)).ToArray();
-        var total = ds.Sum() * ratio;
-        var runnig = 0.0;
-        var count = ds.Select(d => runnig += d)
-          .TakeWhile(r => r < total)
-          .Count();
+        var count = CalcCountByDistanceRatio(rates.Reverse().ToArray(_priceAvg), ratio);
         _CorridorDistanceByDistance = Tuple.Create(ratio, count);
         return count;
       } finally {
         _SetCorridorDistanceByDistanceIsRunning--;
       }
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="revs"></param>
+    /// <param name="ratio">0 < ratio < 1</param>
+    /// <returns></returns>
+    private static int CalcCountByDistanceRatio(IList<double> revs, double ratio) {
+      var ds = revs.Zip(revs.Skip(1), (r1, r2) => r1.Abs(r2)).ToArray();
+      var total = ds.Sum() * ratio;
+      var runnig = 0.0;
+      var count = ds.Select(d => runnig += d)
+        .TakeWhile(r => r < total)
+        .Count();
+      return count;
     }
     #region CorridorDistance Subject
     object _CorridorDistanceSubjectLocker = new object();
@@ -2100,19 +2109,13 @@ namespace HedgeHog.Alice.Store {
                   #endregion
                 }
                 #endregion
-                Func<Rate, bool> isInCOM = rate => rate.PriceAvg1.Between(CenterOfMassSell, CenterOfMassBuy);
-                Func<int> voltsAngle = () => -CorridorStats.Rates.Select(GetVoltage).SkipWhile(Lib.IsNaN).TakeWhile(Lib.IsNotNaN).ToArray().Regress(1).LineSlope().Sign();
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
                   .Select(rateLast => new Action<bool>(canTrade => {
                     BuyLevel.RateEx = getTradeLevel(rateLast, true, BuyLevel.Rate);
                     SellLevel.RateEx = getTradeLevel(rateLast, false, SellLevel.Rate);
-                    BuyCloseLevel.RateEx = GetTradeCloseLevel(rateLast, true, BuyCloseLevel.Rate);
-                    SellCloseLevel.RateEx = GetTradeCloseLevel(rateLast, false, SellCloseLevel.Rate);
                     // Only turn on
-                    (canTrade && isInCOM(rateLast) && voltsAngle() > 0).YieldTrue()
-                      .ForEach(_ => _buySellLevels.Where(sr =>
-                        sr.IsBuy && LevelBuyBy != TradeLevelBy.None ||
-                        sr.IsSell && LevelSellBy != TradeLevelBy.None)
+                    (canTrade).YieldTrue()
+                      .ForEach(_ => _buySellLevels
                         .ForEach(sr => sr.CanTradeEx = true));
                   }));
 
@@ -2167,6 +2170,8 @@ namespace HedgeHog.Alice.Store {
                     rateLast,
                     a = new Action(() => {
                       var levels = getLevels(rateLast);
+                      CenterOfMassBuy = levels.bl;
+                      CenterOfMassSell = levels.sl;
                       if (new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }.All(tl => tl.Between(levels.sl, levels.bl))) {
                         BuyLevel.RateEx = levels.bl;
                         SellLevel.RateEx = levels.sl;
@@ -2182,13 +2187,13 @@ namespace HedgeHog.Alice.Store {
                   });
                 var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   _ti =>{ WorkflowStep = "1.Wait flat";
-                    return calcAngleOk() ? WFD.tupleNextEmpty() : WFD.tupleStayEmpty();
+                    return calcAngleOk() ? WFD.tupleNext(_ti) : WFD.tupleStay(_ti);
                   },ti=>{WorkflowStep = "2.Wait un-flat";
                   (from a in doRateLast select a)
                     .Where(a=>corridorOk() && isRatesOk())
                     .Select(a=>a.a)
                     .ForEach(a => a());
-                    return calcAngleOk() ? WFD.tupleStayEmpty() : WFD.tupleNextEmpty();
+                    return calcAngleOk() ? WFD.tupleStay(ti) : WFD.tupleNext(ti);
                   }
                 };
                 workflowSubjectDynamic.OnNext(wfManual);

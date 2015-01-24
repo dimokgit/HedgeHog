@@ -291,45 +291,43 @@ namespace HedgeHog.Alice.Store {
       var countMax = (BarsCount * BarsCountMax).Min(ratesInternal.Count);
       var start = BarsCount;
       var end = RatesInternal.Count - 1;
-      var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, rsd) => new { ok, l, rsd });
-      var last = func(false, 0, 0.0);
+      var func = MonoidsCore.ToFunc(true, 0, 0.0, 0.0, (ok, l, rsd, rsdMax) => new { ok, l, rsd, rsdMax });
+      var last = func(false, 0, 0.0, 0.0);
       var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
-        var _last = func(false, 0, 0.0);
+        var _last = func(false, 0, double.MaxValue, double.MinValue);
+        var rsdMax = double.MinValue;
         return Lib.IteratonSequence(_start, _end, _nextStep)
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
+          //var min = rates.Min();
+          //var avg = rates.Average() - min;
           var rsd = rates.Height() / rates.StandardDeviation();
-          var x = func(IsTresholdOk(rsd, 100), rates.Count, rsd);
-          if (_last.rsd < rsd) _last = x;
+          var x = func(IsTresholdOk(rsd, -100), rates.Count, rsd, rsdMax = rsdMax.Max(rsd));
+          if (_last.rsd > rsd) _last = x;
           return x;
         })
         .SkipWhile(a => _isOk(a.ok))
         .Take(1)
-        .IfEmpty(() => _last);
+        .IfEmpty(() => _last)
+        .Select(x => new { x.l, x.rsd, rsdMax });
       });
       Func<bool, bool> isOk = b => !b;
-      BarsCountCalc = IteratorLoop(start, end, 100, isOk, getCount, a => a.Single().l);
-      OnRatesArrayChaged = OnRatesArrayChaged_SetVoltsByRsd;
+      var lastRsd = 0.0;
+      var rdsMax = 0.0;
+      BarsCountCalc = Lib.IteratorLoopPow(start, end, 0.6, isOk, getCount, a =>
+        a.Do(x => {
+          lastRsd = x.rsd;
+          rdsMax = x.rsdMax;
+        })
+        .Single().l
+      );
+      OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
     }
-    void OnRatesArrayChaged_SetVoltsByRsd() {
-      var volt = RatesHeight / StDevByPriceAvg;
-      RatesArray.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r,volt));
-      RatesArray.Reverse<Rate>().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r,volt));
+    void OnRatesArrayChaged_SetVoltsByRsd(double volt) {
+      RatesArray.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volt));
+      RatesArray.Reverse<Rate>().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volt));
     }
     Action OnRatesArrayChaged = () => { };
-    int IteratorLoop<T>(int start, int end, double divider, Func<bool, bool> isOk, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
-      Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
-      var _isOk = isOk;
-      while (true) {
-        var c = countMap(getCounter(start, end, isOk, nextStep));
-        if (nextStep(c).Abs() <= 1) 
-          return c;
-        divider *= -2;
-        start = c; end = start + nextStep(c) * 3;
-        if (divider < 0) { _isOk = b => !isOk(b); } else { _isOk = isOk; }
-      }
-
-    }
     IEnumerable<T> GetSenterOfMassStrip<T>(IList<double> rates, double height, int roundOffset, Func<double[], double, double, T> map) {
       var rates2 = rates.SafeArray();
       rates.CopyTo(rates2, 0);

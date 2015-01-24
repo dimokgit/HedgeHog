@@ -70,5 +70,11 @@ namespace HedgeHog.Tests {
       return yAverage - slope * (dataLength - 1) / 2.0;
 
     }
+
+    [TestMethod()]
+    public void IteratonSequenceNextStepPowTest() {
+      var values = Enumerable.Range(0, 5).Select(i => Lib.IteratonSequenceNextStepPow(5000, 0.6, i)).ToArray();
+      Assert.AreEqual(0, values[3]);
+    }
   }
 }
