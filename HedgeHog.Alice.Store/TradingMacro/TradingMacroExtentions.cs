@@ -2792,7 +2792,7 @@ namespace HedgeHog.Alice.Store {
         case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;
         case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
         case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / _ratesHeight_2; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight * _ratesHeight_2; break;
         case TradingMacroTakeProfitFunction.RatesHeight_3: tp = RatesHeight / 3; break;
         case TradingMacroTakeProfitFunction.RatesHeight_4: tp = RatesHeight / 4; break;
         case TradingMacroTakeProfitFunction.RatesHeight_5: tp = RatesHeight / 5; break;

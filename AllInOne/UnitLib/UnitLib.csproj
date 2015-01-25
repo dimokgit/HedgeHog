@@ -142,6 +142,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RelativeStDevStoreTest.cs" />
     <Compile Include="RxDataFlow.cs" />
+    <Compile Include="SpeedTests.cs" />
     <Compile Include="TradeExtensionsTest.cs" />
     <Compile Include="TradingMacroTest.cs" />
     <Compile Include="TriggerTest.cs" />

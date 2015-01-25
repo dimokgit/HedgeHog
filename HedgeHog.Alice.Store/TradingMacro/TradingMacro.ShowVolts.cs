@@ -12,6 +12,7 @@ using System.Threading;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -219,7 +220,7 @@ namespace HedgeHog.Alice.Store {
     void OnSetBarsCountCalc(Action p) {
       SetBarsCountCalcSubject.OnNext(p);
     }
-    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByRelativeStDev); }
+    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByCorridorLength); }
     #endregion
 
     double _stDevUniformRatio = Math.Sqrt(12);
@@ -250,7 +251,7 @@ namespace HedgeHog.Alice.Store {
       var end = RatesInternal.Count - 1;
       var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, sd) => new { ok, l, sd });
       var last = func(false, 0, 0.0);
-      var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
+      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
         var _last = func(false, 0, 0.0);
         var sdMin = InPoints(WaveStDevRatio);
         return Lib.IteratonSequence(_start, _end, _nextStep)
@@ -279,10 +280,6 @@ namespace HedgeHog.Alice.Store {
         if (divider < 0) { isOk = b => b; } else { isOk = b => !b; }
       }
     }
-    delegate T Iterator<T>(int start, int end, Func<bool, bool> isOk, Func<int, int> nextStep);
-    Func<int, int, Func<bool, bool>, Func<int, int>, T> GetIterator<T>(Func<int, int, Func<bool, bool>, Func<int, int>, T> process) {
-      return process;
-    }
     static bool IsTresholdOk(double value, double treshold) {
       return treshold >= 0 ? value >= treshold : value < treshold;
     }
@@ -293,7 +290,7 @@ namespace HedgeHog.Alice.Store {
       var end = RatesInternal.Count - 1;
       var func = MonoidsCore.ToFunc(true, 0, 0.0, 0.0, (ok, l, rsd, rsdMax) => new { ok, l, rsd, rsdMax });
       var last = func(false, 0, 0.0, 0.0);
-      var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
+      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
         var _last = func(false, 0, double.MaxValue, double.MinValue);
         var rsdMax = double.MinValue;
         return Lib.IteratonSequence(_start, _end, _nextStep)
@@ -302,7 +299,7 @@ namespace HedgeHog.Alice.Store {
           //var min = rates.Min();
           //var avg = rates.Average() - min;
           var rsd = rates.Height() / rates.StandardDeviation();
-          var x = func(IsTresholdOk(rsd, -100), rates.Count, rsd, rsdMax = rsdMax.Max(rsd));
+          var x = func(!IsTresholdOk(rsd, -100), rates.Count, rsd, rsdMax = rsdMax.Max(rsd));
           if (_last.rsd > rsd) _last = x;
           return x;
         })
@@ -311,10 +308,9 @@ namespace HedgeHog.Alice.Store {
         .IfEmpty(() => _last)
         .Select(x => new { x.l, x.rsd, rsdMax });
       });
-      Func<bool, bool> isOk = b => !b;
       var lastRsd = 0.0;
       var rdsMax = 0.0;
-      BarsCountCalc = Lib.IteratorLoopPow(start, end, 0.6, isOk, getCount, a =>
+      BarsCountCalc = Lib.IteratorLoopPow(ratesInternal.Count,IteratorScanRatesLengthLastRatio, start, end, getCount, a =>
         a.Do(x => {
           lastRsd = x.rsd;
           rdsMax = x.rsdMax;
@@ -323,6 +319,45 @@ namespace HedgeHog.Alice.Store {
       );
       OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
     }
+    void ScanRatesLengthByCorridorLength() {
+      var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
+      var countMax = ratesInternal.Count;
+      var start = BarsCount;
+      var end = RatesInternal.Count - 1;
+      var nsp = Lib.IteratonSequencePower(countMax, IteratorScanRatesLengthLastRatio);
+      var corridors = Lib.IteratonSequence(start, end, i => nsp(i, 0))
+        .Select(i => {
+          var rates = ratesInternal.GetRange(0, i.Min(countMax));
+          var ratesStDev = rates.StandardDeviation();
+          var corrLength = CalcCorridorLengthByHeightByRegressionMin(ratesStDev, 0, rates);
+          return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
+        })
+        .OrderByDescending(x=>x.corrRatio)
+        .Take(1);
+      var lastRsd = 0.0;
+      BarsCountCalc = corridors
+        .Do(x => {
+          lastRsd = x.corrRatio;
+        })
+        .Single().corrLength;
+      OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
+    }
+    #region IteratorScanRatesLengthLastRatio
+    private double _IteratorScanRatesLengthLastRatio = 3;
+    [Category(categoryCorridor)]
+    [DisplayName("ISRLLR")]
+    [Description("IteratorScanRatesLengthLastRatio")]
+    public double IteratorScanRatesLengthLastRatio {
+      get { return _IteratorScanRatesLengthLastRatio; }
+      set {
+        if (_IteratorScanRatesLengthLastRatio != value) {
+          _IteratorScanRatesLengthLastRatio = value;
+          OnPropertyChanged("IteratorScanRatesLengthLastRatio");
+        }
+      }
+    }
+
+    #endregion
     void OnRatesArrayChaged_SetVoltsByRsd(double volt) {
       RatesArray.TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volt));
       RatesArray.Reverse<Rate>().TakeWhile(r => GetVoltage(r).IsNaN()).ForEach(r => SetVoltage(r, volt));

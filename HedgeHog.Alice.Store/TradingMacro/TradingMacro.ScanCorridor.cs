@@ -1840,26 +1840,43 @@ namespace HedgeHog.Alice.Store {
     }
     private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg ?? CorridorPrice();
+      var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
       Func<IList<Rate>, int> scan = rates => {
-        var prices = rates.Select(cp).ToList();
-        var pricesCount = prices.Count;
-        var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
         if (heightMin.IsNaN()) return CorridorDistance;
-        Func<int, bool> heightOk = i => prices.GetRange(0, i.Min(pricesCount)).HeightByRegressoin() < heightMin;
-        Func<int, bool> heightNotOk = i => !heightOk(i);
-        Func<IEnumerable<int>, Func<int, bool>, IEnumerable<int>> getIndex = (ints, heightFunc) => ints.SkipWhile(heightFunc).Take(1);
-        var getCount = GetIterator((_start, _end, _isOk, _nextStep) => {
-          return Lib.IteratonSequence(_start, _end, _nextStep)
-            .Select(i => new { i, ok = prices.GetRange(0, i.Min(pricesCount)).HeightByRegressoin() > heightMin })
-            .SkipWhile(a => _isOk(a.ok))
-            .Take(1)
-            .Select(a => a.i);
-        });
-        Func<bool, bool> isOk = b => !b;
-        return Lib.IteratorLoopPow(10, pricesCount, .55, isOk, getCount, a => a.IfEmpty(() => new[] { RatesArray.Count }).Single());
+        var defaultCount = RatesArray.Count;
+        var prices = rates.Select(cp).ToList();
+        return CalcCorridorLengthByHeightByRegressionMin(heightMin, defaultCount, prices);
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+
+    private int CalcCorridorLengthByHeightByRegressionMin(double heightMin, int defaultCount, List<double> prices) {
+      var getCount =  Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
+        return Lib.IteratonSequence(_start, _end, _nextStep)
+          .Select(i => new { i, ok = prices.GetRange(0, i.Min(prices.Count)).HeightByRegressoin() <= heightMin })
+          .SkipWhile(a => _isOk(a.ok))
+          .Take(1)
+          .Select(a => a.i);
+      });
+      var count = Lib.IteratorLoopPow(prices.Count,IteratorLastRatioForCorridor, 10, prices.Count, getCount, a => a.IfEmpty(() => new[] { defaultCount }).Single());
+      return count;
+    }
+    #region IteratorLastRatioForCorridor
+    private double _IteratorLastRatioForCorridor = 3;
+    [Category(categoryCorridor)]
+    [DisplayName("ILRfC")]
+    [Description("IteratorLastRationForCorridor")]
+    public double IteratorLastRatioForCorridor {
+      get { return _IteratorLastRatioForCorridor; }
+      set {
+        if (_IteratorLastRatioForCorridor != value) {
+          _IteratorLastRatioForCorridor = value;
+          OnPropertyChanged("IteratorLastRatioForCorridor");
+        }
+      }
+    }
+
+    #endregion
     #endregion
     #endregion
 

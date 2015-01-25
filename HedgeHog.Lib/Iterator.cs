@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace HedgeHog {
   public static partial class Lib {
+    public static Func<int, int, Func<bool, bool>, Func<int, int>, T> GetIterator<T>(Func<int, int, Func<bool, bool>, Func<int, int>, T> process) {
+      return process;
+    }
     public static IEnumerable<int> IteratonSequence(int start, int end) {
       return IteratonSequence(start, end, IteratonSequenceNextStep);
     }
@@ -14,45 +17,53 @@ namespace HedgeHog {
         yield return i;
     }
     public static IEnumerable<int> IteratonSequence(int start, int end, Func<int, int> nextStep) {
-      for (var i = start; i.Between(start, end); i += nextStep(i))
+      Func<int, int> getEnd = ns => start + (end - start).Div(ns).Ceiling() * ns;
+      for (var i = start; i.Between(start, getEnd(nextStep(i))); i += nextStep(i))
         yield return i;
     }
 
-    public static int IteratonSequenceNextStep(int rc, double divider = 100.0) {
+    public static int IteratonSequenceNextStep(int rc) {
+      return IteratonSequenceNextStep(rc, 100);
+    }
+    public static int IteratonSequenceNextStep(int rc, double divider) {
       var s = (rc / divider);
       return s > 0 ? s.Ceiling() : s.Floor();
     }
+    public static Func<int, int, int> IteratonSequencePower(int maxCount, double ratio) {
+      var x = ratio == 1 ? 1 : 1 / Math.Log(maxCount, ratio);
+      return (count, loop) => IteratonSequenceNextStep(count, x, loop);
+    }
     public static int IteratonSequenceNextStepPow(int rc, double power = 0.6, int loop = 0) {
-      var e = 1 / power;
-      var p = Math.Pow(power, loop == 0 ? 1 : e * loop);
+      var e = 1 / power.Abs();
+      var p = Math.Pow(power.Abs(), loop == 0 ? 1 : e * loop);
       var s = Math.Pow(rc, p);
-      return s.ToInt();
+      return s.ToInt() * power.Sign();
     }
-    public static int IteratorLoop<T>(int start, int end, double divider, Func<bool, bool> isOk, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
-      Func<int, int> nextStep = i => Lib.IteratonSequenceNextStep(i, divider);
-      var _isOk = isOk;
-      while (true) {
-        var c = countMap(getCounter(start, end, isOk, nextStep));
-        if (nextStep(c).Abs() <= 1)
-          return c;
-        divider *= -2;
-        start = c; end = start + nextStep(c) * 3;
-        if (divider < 0) { _isOk = b => !isOk(b); } else { _isOk = isOk; }
-      }
-
+    public static int IteratonSequenceNextStep(int count, double power = 1, int loop = 0) {
+      var p = count / 100.0 * Math.Pow(count, power.Abs()) / Math.Pow(2, loop);
+      return p.Ceiling() * power.Sign();
     }
-    public static int IteratorLoopPow<T>(int start, int end, double divider, Func<bool, bool> isOk, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
-      Func<int, int, int> nextStep = (i, l) => Lib.IteratonSequenceNextStepPow(i, divider, l);
-      var _isOk = isOk;
+    public static int IteratorLoopPow<T>(int maxCount, double lastStepRatio, int start, int end, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
+      int s = start, e = end;
+      var nsp = IteratonSequencePower(maxCount, lastStepRatio);
+      var divider = 1;
+      Func<int, int, int> nextStep = (i, l) => nsp(i, l) * divider;
+      Func<bool, bool> skipWhile = b => b;
+      bool doContinue = false;
       for (var i = 0; true; i++) {
         Func<int, int> ns = j => nextStep(j, i);
-        var c = countMap(getCounter(start, end, isOk, ns));
-        if (ns(c).Abs() <= 1)
-          return c;
-        start = c; end = start + ns(c) * 3;
-        if (i % 2 == 1) { _isOk = b => !isOk(b); } else { _isOk = isOk; }
+        var sw = i % 2 == 0 ? skipWhile : b => !skipWhile(b);
+        var count = countMap(getCounter(s, e, sw, ns));
+        var step = ns(s).Abs().Max(ns(e).Abs()) * divider;
+        if (!count.Between(s - step, e + step))
+          if (step.Abs() > 1) doContinue = true;
+          else throw new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "");
+        if (ns(count).Abs() <= 1)
+          return count;
+        if (doContinue) continue;
+        divider = -divider;
+        e = s; s = count;// -ns(count) * 2; e = count + ns(count) * 3;
       }
-
     }
   }
 }
