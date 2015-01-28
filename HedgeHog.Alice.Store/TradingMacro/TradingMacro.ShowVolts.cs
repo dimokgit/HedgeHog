@@ -220,7 +220,7 @@ namespace HedgeHog.Alice.Store {
     void OnSetBarsCountCalc(Action p) {
       SetBarsCountCalcSubject.OnNext(p);
     }
-    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByCorridorLength); }
+    void OnSetBarsCountCalc() { OnSetBarsCountCalc(ScanRatesLengthByRelativeStDev); }
     #endregion
 
     double _stDevUniformRatio = Math.Sqrt(12);
@@ -285,61 +285,48 @@ namespace HedgeHog.Alice.Store {
     }
     void ScanRatesLengthByRelativeStDev() {
       var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
-      var countMax = (BarsCount * BarsCountMax).Min(ratesInternal.Count);
-      var start = BarsCount;
-      var end = RatesInternal.Count - 1;
+      var countMax = BarsCountCount() - 1;
       var func = MonoidsCore.ToFunc(true, 0, 0.0, 0.0, (ok, l, rsd, rsdMax) => new { ok, l, rsd, rsdMax });
-      var last = func(false, 0, 0.0, 0.0);
-      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
-        var _last = func(false, 0, double.MaxValue, double.MinValue);
-        var rsdMax = double.MinValue;
-        return Lib.IteratonSequence(_start, _end, _nextStep)
+      var nsp = Lib.IteratonSequencePower(countMax, IteratorScanRatesLengthLastRatio);
+      var corridors = Lib.IteratonSequence(BarsCount, countMax, i => nsp(i, 0))
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
           //var min = rates.Min();
           //var avg = rates.Average() - min;
           var rsd = rates.Height() / rates.StandardDeviation();
-          var x = func(!IsTresholdOk(rsd, -100), rates.Count, rsd, rsdMax = rsdMax.Max(rsd));
-          if (_last.rsd > rsd) _last = x;
-          return x;
+          return new { rates.Count, rsd };
         })
-        .SkipWhile(a => _isOk(a.ok))
-        .Take(1)
-        .IfEmpty(() => _last)
-        .Select(x => new { x.l, x.rsd, rsdMax });
-      });
+        .OrderBy(a => a.rsd)
+        .Take(1);
+
       var lastRsd = 0.0;
-      var rdsMax = 0.0;
-      BarsCountCalc = Lib.IteratorLoopPow(ratesInternal.Count,IteratorScanRatesLengthLastRatio, start, end, getCount, a =>
-        a.Do(x => {
-          lastRsd = x.rsd;
-          rdsMax = x.rsdMax;
-        })
-        .Single().l
-      );
+      BarsCountCalc = corridors
+        .Do(x => lastRsd = x.rsd)
+        .Single().Count;
       OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
     }
     void ScanRatesLengthByCorridorLength() {
+      Func<IEnumerable<int>> defaultLength = () => CorridorStats.Rates.Count.YieldIf(c => c > 0, () => RatesArray.Count);
       var ratesInternal = UseRatesInternal(ri => ri.Reverse().Select(_priceAvg).ToList(), 5000);
-      var countMax = ratesInternal.Count;
+      var countMax = BarsCountCount() - 1;
       var start = BarsCount;
-      var end = RatesInternal.Count - 1;
       var nsp = Lib.IteratonSequencePower(countMax, IteratorScanRatesLengthLastRatio);
-      var corridors = Lib.IteratonSequence(start, end, i => nsp(i, 0))
+      var corridors = Lib.IteratonSequence(BarsCount, countMax, i => nsp(i, 0))
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
-          var ratesStDev = rates.StandardDeviation();
+          var ratesStDev = rates.StandardDeviation() * _stDevUniformRatio / 2;
           var corrLength = CalcCorridorLengthByHeightByRegressionMin(ratesStDev, 0, rates);
           return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
         })
-        .OrderByDescending(x=>x.corrRatio)
+        .Where(x => x.corrRatio > 0)
+        .OrderBy(x => x.corrRatio)
         .Take(1);
       var lastRsd = 0.0;
       BarsCountCalc = corridors
-        .Do(x => {
-          lastRsd = x.corrRatio;
-        })
-        .Single().corrLength;
+        .Do(x => lastRsd = x.corrRatio)
+        .Select(x => x.corrLength)
+        .Concat(defaultLength())
+        .First();
       OnRatesArrayChaged = () => OnRatesArrayChaged_SetVoltsByRsd(lastRsd);
     }
     #region IteratorScanRatesLengthLastRatio

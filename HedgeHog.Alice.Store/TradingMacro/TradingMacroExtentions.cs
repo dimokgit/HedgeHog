@@ -1368,17 +1368,16 @@ namespace HedgeHog.Alice.Store {
         if (!IsInVitualTrading)
           UnSubscribeToTradeClosedEVent(TradesManager);
         SetPlayBackInfo(true, args.DateStart.GetValueOrDefault(), args.DelayInSeconds.FromSeconds());
-        var barsCountTotal = BarsCountCount();
-        var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(barsCountTotal / 1440.0).Ceiling());
+        var dateStartDownload = AddWorkingDays(args.DateStart.Value, -(BarsCountCount() / 1440.0).Ceiling());
         var actionBlock = new ActionBlock<Action>(a => a());
         Action<Order2GoAddIn.FXCoreWrapper.RateLoadingCallbackArgs<Rate>> cb = callBackArgs => PriceHistory.SaveTickCallBack(BarPeriodInt, Pair, o => Log = new Exception(o + ""), actionBlock, callBackArgs);
         var fw = GetFXWraper();
         if (fw != null)
-          PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-barsCountTotal * 2)), o => Log = new Exception(o + ""));
+          PriceHistory.AddTicks(fw, BarPeriodInt, Pair, args.DateStart.GetValueOrDefault(DateTime.Now.AddMinutes(-BarsCountCount() * 2)), o => Log = new Exception(o + ""));
         //GetFXWraper().GetBarsBase<Rate>(Pair, BarPeriodInt, barsCountTotal, args.DateStart.GetValueOrDefault(TradesManagerStatic.FX_DATE_NOW), TradesManagerStatic.FX_DATE_NOW, new List<Rate>(), cb);
         var moreMinutes = (args.DateStart.Value.DayOfWeek == DayOfWeek.Monday ? 17 * 60 + 24 * 60 : args.DateStart.Value.DayOfWeek == DayOfWeek.Saturday ? 1440 : 0);
-        var internalRateCount = barsCountTotal;
-        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), barsCountTotal, BarPeriodInt);
+        var internalRateCount = BarsCountCount();
+        var _replayRates = GlobalStorage.GetRateFromDBBackwards<Rate>(Pair, args.DateStart.Value.ToUniversalTime(), BarsCountCount(), BarPeriodInt);
         _replayRates.TakeLast(1).Select(r => r.StartDate2)
           .ForEach(startDate => _replayRates.AddRange(GlobalStorage.GetRateFromDBForwards<Rate>(Pair, startDate, BarsCount, BarPeriodInt)));
         //var rateStart = rates.SkipWhile(r => r.StartDate < args.DateStart.Value).First();
@@ -1490,7 +1489,7 @@ namespace HedgeHog.Alice.Store {
                   noMoreDbRates = true;
                 else {
                   _replayRates.AddRange(moreRates);
-                  var maxCount = barsCountTotal + BarsCount;
+                  var maxCount = BarsCountCount() + BarsCount;
                   var slack = (_replayRates.Count - maxCount).Max(0);
                   _replayRates.RemoveRange(0, slack);
                   indexCurrent -= slack;
@@ -1513,7 +1512,7 @@ namespace HedgeHog.Alice.Store {
                   else if (args.StepBack) {
                     Debugger.Break();
                   }
-                while (ri.Count > barsCountTotal
+                while (ri.Count > BarsCountCount()
                     && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
                   ri.RemoveAt(0);
               });
@@ -1534,7 +1533,7 @@ namespace HedgeHog.Alice.Store {
               LastRatePullTime = rateLast.StartDate;
               //TradesManager.RaisePriceChanged(Pair, RateLast);
               var d = Stopwatch.StartNew();
-              if (rate != null ) {
+              if (rate != null) {
                 if ((BarPeriod != BarsPeriodType.t1 || ratePrev == null || ratePrev.StartDate.Second != rate.StartDate.Second)) {
                   ratePrev = rate;
                   args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCountCalc) / (_replayRates.Count - BarsCountCalc)).ToInt();
@@ -2045,7 +2044,7 @@ namespace HedgeHog.Alice.Store {
                 case CorridorCalculationMethod.PriceAverage: RatesStDev = StDevByPriceAvg; break;
                 default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
               }
-              Angle = AngleFromTangent(coeffs.LineSlope(),RatesArray);
+              Angle = AngleFromTangent(coeffs.LineSlope(), RatesArray);
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
             }, IsInVitualTrading);
@@ -3222,7 +3221,7 @@ namespace HedgeHog.Alice.Store {
     }
     public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
       if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
-        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then "+timeoutInMilliseconds+" ms. RatesInternal.Count:" + RatesInternal.Count);
+        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesInternal.Count:" + RatesInternal.Count);
       try {
         return func(_Rates);
       } finally {
@@ -3567,7 +3566,7 @@ namespace HedgeHog.Alice.Store {
         Log = new Exception(new { RatesCount = 0, Method = Lib.CallingMethod() } + "");
         return double.NaN;
       }
-      var tickCounts = from sd in rates.Select(r=>r.StartDate)
+      var tickCounts = from sd in rates.Select(r => r.StartDate)
                        group sd by sd.AddMilliseconds(-sd.Millisecond) into grates
                        select grates.Count();
       var barPeriod = BarPeriod != BarsPeriodType.t1

@@ -87,6 +87,11 @@ namespace HedgeHog {
         yield return v;
       else yield break;
     }
+    public static IEnumerable<T> YieldIf<T>(this T v, Func<T, bool> predicate,Func<T> otherwise) {
+      if (predicate(v))
+        yield return v;
+      else yield return otherwise();
+    }
     public static IEnumerable<T> YieldIf<T>(this bool v, Func<T> yielder) {
       if (v)
         yield return yielder();

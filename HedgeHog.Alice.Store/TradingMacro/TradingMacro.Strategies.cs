@@ -79,6 +79,7 @@ namespace HedgeHog.Alice.Store {
           case CorridorByStDevRatio.HeightPrice: return () => StDevByPriceAvg + StDevByHeight;
           case CorridorByStDevRatio.Height2: return () => StDevByHeight * 2;
           case CorridorByStDevRatio.Price12: return () => StDevByPriceAvg * _stDevUniformRatio / 2;
+          case CorridorByStDevRatio.Price2: return () => StDevByPriceAvg * 2;
           default:
             throw new NotSupportedException(new { CorridorByStDevRatioFunc } + "");
         }
@@ -425,7 +426,7 @@ namespace HedgeHog.Alice.Store {
             l1 = hl[1] * 3;
           }
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-          var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
+          var rates = new[] { UseRatesInternal(ri => ri.Last()), CorridorStats.Rates.Last() };
           var regRates = getRegressionLeftRightRates();
 
           rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;

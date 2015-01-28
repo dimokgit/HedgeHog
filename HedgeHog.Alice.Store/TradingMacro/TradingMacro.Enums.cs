@@ -234,6 +234,7 @@ namespace HedgeHog.Alice.Store {
     Price,
     HeightPrice,
     Height2,
-    Price12
+    Price12,
+    Price2
   }
 }
