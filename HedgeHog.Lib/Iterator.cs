@@ -40,8 +40,8 @@ namespace HedgeHog {
       return s.ToInt() * power.Sign();
     }
     public static int IteratonSequenceNextStep(int count, double power = 1, int loop = 0) {
-      var p = count / 100.0 * Math.Pow(count, power.Abs()) / Math.Pow(2, loop);
-      return p.Ceiling() * power.Sign();
+      var p = count / 100.0 * Math.Pow(count, power.Abs()) / Math.Pow(2, loop.Abs());
+      return p.Ceiling() * power.Sign() * ((double)loop).SignUp();
     }
     public static int IteratorLoopPow<T>(int maxCount, double lastStepRatio, int start, int end, Func<int, int, Func<bool, bool>, Func<int, int>, T> getCounter, Func<T, int> countMap) {
       int s = start, e = end;

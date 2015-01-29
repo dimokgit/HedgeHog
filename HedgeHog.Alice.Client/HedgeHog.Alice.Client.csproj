@@ -56,7 +56,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro\</OutputPath>
+    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_04\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -110,9 +110,9 @@
     <Reference Include="GalaSoft.MvvmLight.Platform">
       <HintPath>..\AllInOne\packages\MvvmLightLibs.5.0.2.0\lib\net45\GalaSoft.MvvmLight.Platform.dll</HintPath>
     </Reference>
-    <Reference Include="HedgeHog.Core, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="HedgeHog.Core, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\AllInOne\packages\HedgeHog.Core.1.3.1.0\lib\net45\HedgeHog.Core.dll</HintPath>
+      <HintPath>..\AllInOne\packages\HedgeHog.Core.1.3.2.0\lib\net45\HedgeHog.Core.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.4.9.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

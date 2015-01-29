@@ -585,12 +585,13 @@ namespace Order2GoAddIn {
           var ticksNew = t.Except(ticks).ToList();
           if (ticksNew.Count == 0) break;
           ticks.AddRange(ticksNew);
+          var tickMinDate = ticks.Min(b => b.StartDate);
           var msg = "Bars[" + pair + "]<" + period + ">:" + ticks.Count() + " @ " + endDate;
           var rlc = new RateLoadingCallbackArgs<TBar>(msg, ticksNew);
           if (callBack != null) callBack(rlc);
           if (rlc.IsProcessed) ticks.Clear();
-          if (endDate == TradesManagerStatic.FX_DATE_NOW || endDate > ticks.Min(b => b.StartDate)) {
-            endDate = ticks.Min(b => b.StartDate);
+          if (endDate == TradesManagerStatic.FX_DATE_NOW || endDate > tickMinDate) {
+            endDate = tickMinDate;
           } else
             endDate = endDate.AddSeconds(-30);
         } catch (Exception exc) {

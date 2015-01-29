@@ -46,7 +46,7 @@ namespace HedgeHog.Alice.Store {
         }
         fw.GetBarsBase<Rate>(pair, period, 0, dateStart, DateTime.Now, new List<Rate>(), showProgress);
       } catch (Exception exc) {
-        Debug.WriteLine(exc.ToString());
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
 

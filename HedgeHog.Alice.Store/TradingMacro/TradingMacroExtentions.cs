@@ -2002,7 +2002,7 @@ namespace HedgeHog.Alice.Store {
     public List<Rate> RatesArraySafe {
       get {
         try {
-          if (!SnapshotArguments.IsTarget && UseRatesInternal(ri => ri.Count) < Math.Max(1, BarsCountCalc)) {
+          if (!SnapshotArguments.IsTarget && UseRatesInternal(ri => ri.Count) < Math.Max(1, BarsCountCount())) {
             //Log = new RatesAreNotReadyException();
             return new List<Rate>();
           }
