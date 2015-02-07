@@ -708,6 +708,61 @@ namespace HedgeHog {
         }
       });
     }
+    Segment trendLine_2;
+    Rate[] TrendLine_2 {
+      set {
+        if (trendLine_2 == null) {
+          trendLine_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
+          plotter.Children.Add(trendLine_2);
+        }
+        if (value == null)
+          trendLine_2.Visibility = System.Windows.Visibility.Collapsed;
+        else {
+          trendLine_2.Visibility = System.Windows.Visibility.Visible;
+          trendLine_2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg1);
+          trendLine_2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg1);
+        }
+      }
+    }
+    Segment trendLine2_2;
+    Rate[] TrendLine2_2 {
+      set {
+        if (trendLine2_2 == null) {
+          trendLine2_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.RoyalBlue) };
+          plotter.Children.Add(trendLine2_2);
+        }
+        if (value == null)
+          trendLine2_2.Visibility = System.Windows.Visibility.Collapsed;
+        else {
+          trendLine2_2.Visibility = System.Windows.Visibility.Visible;
+          trendLine2_2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg2);
+          trendLine2_2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg2);
+        }
+      }
+    }
+    Segment trendLine3_2;
+    Rate[] TrendLine3_2 {
+      set {
+        if (trendLine3_2 == null) {
+          trendLine3_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.RoyalBlue) };
+          plotter.Children.Add(trendLine3_2);
+        }
+        if (value == null)
+          trendLine3_2.Visibility = System.Windows.Visibility.Collapsed;
+        else {
+          trendLine3_2.Visibility = System.Windows.Visibility.Visible;
+          trendLine3_2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg3);
+          trendLine3_2.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg3);
+        }
+      }
+    }
+
+    public void SetTrendLines2(Rate[] rates) {
+      if (!rates.Any()) return;
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        TrendLine_2 = TrendLine2_2 = TrendLine3_2 = rates;
+      });
+    }
 
     #region Trend Lines
     Segment _trendLineMA;

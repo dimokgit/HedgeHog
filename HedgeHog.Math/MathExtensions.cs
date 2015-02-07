@@ -696,13 +696,13 @@ namespace HedgeHog {
       return values.StDevByRegressoin(null, callCC);
     }
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).StandardDeviation();
     }
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs, Action<double> callCC) {
-      if (coeffs == null || coeffs.Length == 0) coeffs = values.Regress(1);
+      if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       return line.Zip(values, (l, v) => v - l).Do(callCC).StandardDeviation();

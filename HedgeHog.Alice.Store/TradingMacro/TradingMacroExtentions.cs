@@ -1027,7 +1027,7 @@ namespace HedgeHog.Alice.Store {
       get { return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentLoss, CurrentGrossLot, Pair); }
     }
     private double CurrentLossInPipTotal { get { return TradingStatistics.CurrentLossInPips; } }
-    private double CurrentGrossInPipTotal {
+    public double CurrentGrossInPipTotal {
       get {
         return _tradingStatistics.CurrentGrossInPips;
       }
@@ -1432,7 +1432,6 @@ namespace HedgeHog.Alice.Store {
         TakeProfitBSRatio = 1;
         if (_setVoltsSubscriber != null) _setVoltsSubscriber.Dispose();
         ResetTakeProfitManual();
-        ScanCorridorByStDevAndAngleHeightMin = null;
         StDevByHeight = double.NaN;
         StDevByPriceAvg = double.NaN;
         LastTradeLossInPips = 0;
@@ -2851,6 +2850,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.HorizontalProbe: return ScanCorridorByHorizontalLineCrosses;
         case ScanCorridorFunction.Fixed: return ScanCorridorFixed;
         case ScanCorridorFunction.TillFlat2: return ScanCorridorTillFlat2;
+        case ScanCorridorFunction.TillFlat3: return ScanCorridorTillFlat3;
         case ScanCorridorFunction.BigGap: return ScanCorridorByBigGap;
         case ScanCorridorFunction.BigGap2: return ScanCorridorByBigGap2;
         case ScanCorridorFunction.Spike: return ScanCorridorBySpike;
@@ -3285,7 +3285,7 @@ namespace HedgeHog.Alice.Store {
               }
             }
             {
-              var ratesLocal = RatesInternal.Reverse().TakeWhile(isNotHistory).Reverse().ToArray();
+              var ratesLocal = UseRatesInternal(ri => ri.Reverse().TakeWhile(isNotHistory).Reverse().ToArray());
               var ratesLocalCount = RatesInternal.Reverse().TakeWhile(isNotHistory).Count();
               UseRatesInternal(rl => {
                 var sd = ratesList[0].StartDate;
@@ -3390,6 +3390,7 @@ namespace HedgeHog.Alice.Store {
           CorridorStartDate = null;
           goto case TradingMacroMetadata.TakeProfitFunction;
         case TradingMacroMetadata.BarsCount:
+          break;
         case TradingMacroMetadata.LimitBar:
           //Strategy = Strategies.None;
           if (!IsInVitualTrading) {
@@ -4233,18 +4234,17 @@ namespace HedgeHog.Alice.Store {
     public double BuySellHeightInPips { get { return InPips(BuySellHeight); } }
 
     #region RatesStDevMin
-    private double _RatesStDevMin;
-    public double RatesStDevMin {
-      get { return _RatesStDevMin; }
-      set {
-        if (_RatesStDevMin != value) {
-          _RatesStDevMin = value;
-          OnPropertyChanged("RatesStDevMin");
-          OnPropertyChanged("RatesStDevMinInPips");
-        }
+    int _RatesStDevMinInPips = 10;
+    [Category(categoryActive)]
+    [DisplayName("Rates StDev Min")]
+    [Description("RatesStDevMinInPips for BarsCountValc")]
+    public int RatesStDevMinInPips {
+      get { return _RatesStDevMinInPips; }
+      set { 
+        _RatesStDevMinInPips = value;
+        OnPropertyChanged("RatesStDevMinInPips");
       }
     }
-    public double RatesStDevMinInPips { get { return InPips(RatesStDevMin); } }
     #endregion
 
     #region RatesHeightMin

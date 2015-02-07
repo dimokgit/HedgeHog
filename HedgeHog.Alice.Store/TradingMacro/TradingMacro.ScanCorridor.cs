@@ -928,6 +928,7 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
 
+
     private void LongestGap(IList<Rate> ratesForCorridor) {
       var middle = ratesForCorridor.Average(_priceAvg);
       var result = ratesForCorridor.Gaps(middle, _priceAvg).MaxBy(g => g.Count()).First().Count();
@@ -1838,29 +1839,67 @@ namespace HedgeHog.Alice.Store {
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+    int _corridorLength2 = 0;
     private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg ?? CorridorPrice();
-      var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
+      var heightMin = ScanCorridorByStDevAndAngleHeightMin();
+      var heightMin2 = ScanCorridorByStDevAndAngleHeightMin2();
       Func<IList<Rate>, int> scan = rates => {
         if (heightMin.IsNaN()) return CorridorDistance;
         var defaultCount = RatesArray.Count;
         var prices = rates.Select(cp).ToList();
-        return CalcCorridorLengthByHeightByRegressionMin(heightMin, defaultCount, prices);
+        int count = 0;
+        Func<int,int> getHeight = c => count = CalcCorridorLengthByHeightByRegressionMin(heightMin, defaultCount, prices, c);
+        Func<int,int> getHeight2 = c => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(heightMin2, defaultCount, prices, c);
+        new[] { new { h = heightMin, a = getHeight }, new { h = heightMin2, a = getHeight2 } }
+          .OrderBy(a => a.h)
+          .Aggregate(10, (c, a) => a.a(c));
+        return count;
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
 
-    private int CalcCorridorLengthByHeightByRegressionMin(double heightMin, int defaultCount, List<double> prices) {
-      var getCount =  Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
-        return Lib.IteratonSequence(_start, _end, _nextStep)
+    private int CalcCorridorLengthByHeightByRegressionMin(double heightMin, int defaultCount, List<double> prices, int start = 10) {
+      var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
+        return Partitioner.Create(Lib.IteratonSequence(_start, _end, _nextStep).ToArray(), true)
+          .AsParallel()
           .Select(i => new { i, ok = prices.GetRange(0, i.Min(prices.Count)).HeightByRegressoin() <= heightMin })
           .SkipWhile(a => _isOk(a.ok))
           .Take(1)
           .Select(a => a.i);
       });
-      var count = Lib.IteratorLoopPow(prices.Count,IteratorLastRatioForCorridor, 10, prices.Count, getCount, a => a.IfEmpty(() => new[] { defaultCount }).Single());
+      var count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, start, prices.Count, getCount, a => a.IfEmpty(() => new[] { defaultCount }).Single());
       return count;
     }
+
+    CorridorStatistics ScanCorridorTillFlat3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var ratesReversed = ratesForCorridor.ReverseIfNot();
+      Func<IList<Rate>, int> scan = rates => {
+        var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
+        var ratesInternal = rates.Select(_priceAvg).ToList();
+        var start = CalcCorridorLengthByHeightByRegressionMin(heightMin, ratesInternal.Count, ratesInternal);
+        if (start < CorridorDistance) return start;
+        else {
+          var lopper = MonoidsCore.ToFunc(0, i => {
+            var count = i.Min(ratesInternal.Count);
+            return new { count, slopeSign = ratesInternal.GetRange(0, i.Min(ratesInternal.Count)).LinearSlope().Sign() };
+          });
+          var end = ratesForCorridor.Count - 1;
+          var nextStep = Lib.IteratonSequencePower(end, IteratorScanRatesLengthLastRatio);
+          var corridor = GetLoper(nextStep, lopper, cors => cors
+            .DistinctUntilChanged(a => a.slopeSign)
+            .Take(2)
+            .Buffer(2)
+            .Where(b => b.Count == 2)
+            .Select(b => b[1])
+            .DefaultIfEmpty(new { count = start, slopeSign = 0 })
+            .First());
+          return IteratorLopper(start, end, nextStep, corridor, a => a.count).Last().count;
+        }
+      };
+      return ScanCorridorLazy(ratesReversed, rates => scan(rates), GetShowVoltageFunction());
+    }
+
     #region IteratorLastRatioForCorridor
     private double _IteratorLastRatioForCorridor = 3;
     [Category(categoryCorridor)]

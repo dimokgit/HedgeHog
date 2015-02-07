@@ -765,7 +765,17 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    private CorridorByStDevRatio _CorridorByStDevRatioFunc2;
+    [Category(categoryActiveFuncs)]
+    public CorridorByStDevRatio CorridorByStDevRatioFunc2 {
+      get { return _CorridorByStDevRatioFunc2; }
+      set {
+        if (_CorridorByStDevRatioFunc2 != value) {
+          _CorridorByStDevRatioFunc2 = value;
+          OnPropertyChanged("CorridorByStDevRatioFunc2");
+        }
+      }
+    }
     #endregion
 
     #region UseVoltage

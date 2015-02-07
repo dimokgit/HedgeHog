@@ -42,11 +42,11 @@ namespace HedgeHog.Alice.Client {
                   var hub = GlobalHost.ConnectionManager.GetHubContext<MyHub>();
                   hub.Clients.All.addMessage(new {
                     time = tm.ServerTime.ToString("HH:mm"),
+                    profit = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
                     duration = tm.RatesDuration,
                     count = tm.BarsCountCalc,
                     height = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
                     stDev = IntOrDouble(tm.StDevByHeightInPips,1) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips,1)
-                    //profit = IntOrDouble(tm.CurrentGrossInPips),
                     //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
                   });
                 } catch (Exception exc) {
@@ -74,7 +74,12 @@ namespace HedgeHog.Alice.Client {
         return next();
       });
       // SignalR
-      app.MapSignalR();
+      try {
+        app.MapSignalR();
+      } catch (InvalidOperationException exc) {
+        if (!exc.Message.StartsWith("Counter"))
+          throw;
+      }
     }
   }
   public class MyHub : Hub {
@@ -120,9 +125,12 @@ namespace HedgeHog.Alice.Client {
           count = tm.BarsCountCalc,
           stDev = IntOrDouble(tm.StDevByHeightInPips) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips),
           height = tm.RatesHeightInPips.ToInt(),
-          profit = IntOrDouble(tm.CurrentGrossInPips),
+          profit = IntOrDouble(tm.CurrentGrossInPipTotal),
           closed  = trader.Value.ClosedTrades.Select(t=>new{})
         });
+    }
+    public void SetTradeCount(string pair, int tradeCount) {
+      GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
     public void StopTrades(string pair) { SetCanTrade(pair, false); }
     public void StartTrades(string pair) { SetCanTrade(pair, true); }
@@ -130,6 +138,10 @@ namespace HedgeHog.Alice.Client {
       var tm = GetTradingMacro(pair);
       if (tm != null)
         tm.SetCanTrade(canTrade);
+    }
+    private void GetTradingMacro(string pair,Action<TradingMacro> action) {
+      var tm = GetTradingMacro(pair);
+      if (tm != null) action(tm);
     }
     private TradingMacro GetTradingMacro(string pair) {
       var rc = remoteControl.Value;

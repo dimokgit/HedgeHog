@@ -28,7 +28,8 @@ namespace HedgeHog.Alice {
 namespace HedgeHog.Alice.Store {
   public enum ScanCorridorFunction {
     Fixed = 1,
-    TillFlat2 = 3,
+    TillFlat2 = 2,
+    TillFlat3 = 3,
     BigGap = 4,
     BigGap2 = 5,
     Spike = 6,
@@ -232,8 +233,8 @@ namespace HedgeHog.Alice.Store {
     HPAverage = 0,
     Height,
     Price,
-    HeightPrice,
     Height2,
+    HeightPrice,
     Price12,
     Price2
   }

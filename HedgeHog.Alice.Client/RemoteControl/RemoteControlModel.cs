@@ -1084,6 +1084,7 @@ namespace HedgeHog.Alice.Client {
             /*10*/, tm.WorkflowStep
           );
           charter.SetTrendLines(tm.SetTrendLines());
+          charter.SetTrendLines2(tm.SetTrendLines1231_2());
           charter.SetMATrendLines(tm.LineMA);
           charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;

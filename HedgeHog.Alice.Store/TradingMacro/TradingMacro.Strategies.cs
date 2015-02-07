@@ -69,23 +69,24 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
     Tuple<double, int> _CorridorDistanceByDistance = Tuple.Create(0.0, 0);
-    Func<double> _ScanCorridorByStDevAndAngleHeightMin;
     Func<double> ScanCorridorByStDevAndAngleHeightMin {
-      get {
-        switch (CorridorByStDevRatioFunc) {
-          case CorridorByStDevRatio.HPAverage: return () => StDevByPriceAvg.Avg(StDevByHeight);
-          case CorridorByStDevRatio.Height: return () => StDevByHeight;
-          case CorridorByStDevRatio.Price: return () => StDevByPriceAvg;
-          case CorridorByStDevRatio.HeightPrice: return () => StDevByPriceAvg + StDevByHeight;
-          case CorridorByStDevRatio.Height2: return () => StDevByHeight * 2;
-          case CorridorByStDevRatio.Price12: return () => StDevByPriceAvg * _stDevUniformRatio / 2;
-          case CorridorByStDevRatio.Price2: return () => StDevByPriceAvg * 2;
-          default:
-            throw new NotSupportedException(new { CorridorByStDevRatioFunc } + "");
-        }
-      }
-      set {
-        _ScanCorridorByStDevAndAngleHeightMin = value;
+      get { return GetHeightMinFunc(CorridorByStDevRatioFunc); }
+    }
+    Func<double> ScanCorridorByStDevAndAngleHeightMin2 {
+      get { return GetHeightMinFunc(CorridorByStDevRatioFunc2); }
+    }
+
+    private Func<double> GetHeightMinFunc(CorridorByStDevRatio func) {
+      switch (func) {
+        case CorridorByStDevRatio.HPAverage: return () => StDevByPriceAvg.Avg(StDevByHeight);
+        case CorridorByStDevRatio.Height: return () => StDevByHeight;
+        case CorridorByStDevRatio.Price: return () => StDevByPriceAvg;
+        case CorridorByStDevRatio.HeightPrice: return () => StDevByPriceAvg + StDevByHeight;
+        case CorridorByStDevRatio.Height2: return () => StDevByHeight * 2;
+        case CorridorByStDevRatio.Price12: return () => StDevByPriceAvg * _stDevUniformRatio / 2;
+        case CorridorByStDevRatio.Price2: return () => StDevByPriceAvg * 2;
+        default:
+          throw new NotSupportedException(new { CorridorByStDevRatioFunc } + "");
       }
     }
     int CorridorDistanceByDistance(IList<Rate> rates, double ratio) {
@@ -414,38 +415,7 @@ namespace HedgeHog.Alice.Store {
           return new[] { rateLeft, rateRight };
         };
         Func<int, Rate[]> setTrendLines = (levels) => {
-          double h, l, h1, l1;
-          double[] hl = getStDev == null ? new[] { CorridorStats.StDevMin, CorridorStats.StDevMin } : getStDev();
-          h = hl[0] * 2;
-          l = hl[1] * 2;
-          if (hl.Length >= 4) {
-            h1 = hl[2];
-            l1 = hl[3];
-          } else {
-            h1 = hl[0] * 3;
-            l1 = hl[1] * 3;
-          }
-          if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-          var rates = new[] { UseRatesInternal(ri => ri.Last()), CorridorStats.Rates.Last() };
-          var regRates = getRegressionLeftRightRates();
-
-          rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
-          rates[0].PriceAvg1 = regRates[1];
-          rates[1].PriceAvg1 = regRates[0];
-
-          if (levels > 1) {
-            rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
-            rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
-            rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
-            rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
-          }
-          if (levels > 2) {
-            rates[0].PriceAvg21 = rates[0].PriceAvg1 + h1;
-            rates[0].PriceAvg31 = rates[0].PriceAvg1 - l1;
-            rates[1].PriceAvg21 = rates[1].PriceAvg1 + h1;
-            rates[1].PriceAvg31 = rates[1].PriceAvg1 - l1;
-          }
-          return rates;
+          return SetTrendLines1231(getStDev, getRegressionLeftRightRates, levels);
         };
         SetTrendLines = () => setTrendLines(3);
         #endregion
@@ -2089,7 +2059,6 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.SimpleMove: {
                 #region FirstTime
                 if (firstTime) {
-                  ScanCorridorByStDevAndAngleHeightMin = () => StDevByHeight;
                   Log = new Exception(new { TradingAngleRange, WaveStDevRatio } + "");
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
@@ -2106,25 +2075,28 @@ namespace HedgeHog.Alice.Store {
                     }
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
+                    BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
+                    LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+                    CorridorStartDate = null;
                   };
                   #endregion
+                  onOpenTradeLocal += t => {
+                    _buySellLevelsForEach(sr => { if (!CanTradeAlwaysOn) sr.CanTradeEx = false; });
+                    CorridorStartDate = CorridorStats.Rates.Last().StartDate;
+                  };
                 }
                 #endregion
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
-                  .Select(rateLast => new Action<bool>(canTrade => {
+                  .Select(rateLast => new Action(() => {
                     BuyLevel.RateEx = getTradeLevel(rateLast, true, BuyLevel.Rate);
                     SellLevel.RateEx = getTradeLevel(rateLast, false, SellLevel.Rate);
-                    // Only turn on
-                    (canTrade).YieldTrue()
-                      .ForEach(_ => _buySellLevels
-                        .ForEach(sr => sr.CanTradeEx = true));
                   }));
 
                 var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   _ti =>{ WorkflowStep = "1.Wait go below";
                   (from a in doRateLast
                    where calcAngleOk()
-                   select a).ForEach(a => a(true));
+                   select a).ForEach(a => a());
                   return WFD.tupleStay(_ti);
                   }
                 };
@@ -2137,7 +2109,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.SimpleMoveR: {
                 #region FirstTime
                 if (firstTime) {
-                  Log = new Exception(new { TradingAngleRange, CorridorLengthRatio, TradeCountStart, CanTradeAlwaysOn, RsdTreshold } + "");
+                  Log = new Exception(new { TradingAngleRange, CorridorLengthRatio, TradeCountStart, CanTradeAlwaysOn, RsdTreshold, WaveStDevRatio } + "");
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
                   #region onCloseTradeLocal
@@ -2163,9 +2135,20 @@ namespace HedgeHog.Alice.Store {
                   bl = getTradeLevel(rateLast, true, BuyLevel.Rate),
                   sl = getTradeLevel(rateLast, false, SellLevel.Rate)
                 });
-                Func<bool> corridorOk = () => CorridorStats.Rates.Count > CorridorDistance
+                #region minMax
+                Action<IEnumerable<double>, Action<double>, Action<double>> minMax = (source, aMin, aMax) => {
+                  double max = double.MinValue, min = double.MaxValue;
+                  foreach (var d in source) {
+                    if (d > max) max = d;
+                    if (d < min) min = d;
+                  }
+                  aMax(max); aMin(min);
+                };
+                #endregion
+                Func<bool> corridorOk = () => IsTresholdOk(CorridorStats.Rates.Count, CorridorDistance)
                   && IsTresholdOk(CorridorStats.Rates.Count.Div(RatesArray.Count), CorridorLengthRatio);
-                Func<bool> isRatesOk = () => IsTresholdOk(RatesRsd, RsdTreshold);
+                Func<bool> isRsdOk = () => IsTresholdOk(RatesRsd, RsdTreshold);
+                Func<bool> isStDevOk = () => IsTresholdOk(StDevByPriceAvgInPips, WaveStDevRatio);
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
                   .Select(rateLast => new {
                     rateLast,
@@ -2191,7 +2174,7 @@ namespace HedgeHog.Alice.Store {
                     return calcAngleOk() ? WFD.tupleNext(_ti) : WFD.tupleStay(_ti);
                   },ti=>{WorkflowStep = "2.Wait un-flat";
                   (from a in doRateLast select a)
-                    .Where(a=>corridorOk() && isRatesOk())
+                    .Where(a=>corridorOk() && isRsdOk() && isStDevOk())
                     .Select(a=>a.a)
                     .ForEach(a => a());
                     return calcAngleOk() ? WFD.tupleStay(ti) : WFD.tupleNext(ti);
@@ -3071,9 +3054,76 @@ namespace HedgeHog.Alice.Store {
       #endregion
 
       #region ============ Run =============
-      if (IsTradingActive)
-        _adjustEnterLevels();
+      _adjustEnterLevels();
       #endregion
+    }
+
+    private Rate[] SetTrendLines1231(Func<double[]> getStDev, Func<double[]> getRegressionLeftRightRates, int levels) {
+      double h, l, h1, l1;
+      double[] hl = getStDev == null ? new[] { CorridorStats.StDevMin, CorridorStats.StDevMin } : getStDev();
+      h = hl[0] * 2;
+      l = hl[1] * 2;
+      if (hl.Length >= 4) {
+        h1 = hl[2];
+        l1 = hl[3];
+      } else {
+        h1 = hl[0] * 3;
+        l1 = hl[1] * 3;
+      }
+      if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
+      var rates = new[] { UseRatesInternal(ri => ri.Last()), CorridorStats.Rates.Last() };
+      var regRates = getRegressionLeftRightRates();
+
+      rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
+      rates[0].PriceAvg1 = regRates[1];
+      rates[1].PriceAvg1 = regRates[0];
+
+      if (levels > 1) {
+        rates[0].PriceAvg2 = rates[0].PriceAvg1 + h;
+        rates[0].PriceAvg3 = rates[0].PriceAvg1 - l;
+        rates[1].PriceAvg2 = rates[1].PriceAvg1 + h;
+        rates[1].PriceAvg3 = rates[1].PriceAvg1 - l;
+      }
+      if (levels > 2) {
+        rates[0].PriceAvg21 = rates[0].PriceAvg1 + h1;
+        rates[0].PriceAvg31 = rates[0].PriceAvg1 - l1;
+        rates[1].PriceAvg21 = rates[1].PriceAvg1 + h1;
+        rates[1].PriceAvg31 = rates[1].PriceAvg1 - l1;
+      }
+      return rates;
+    }
+    public Rate[] SetTrendLines1231_2() {
+      return SetTrendLines1231(RatesArray.GetRange(RatesArray.Count - _corridorLength2, _corridorLength2));
+    }
+    public static Rate[] SetTrendLines1231(IList<Rate> corridorValues) {
+      if (corridorValues.Count == 0) return new Rate[0];
+      double h, l, h1, l1;
+      var doubles = corridorValues.ToArray(r => r.PriceAvg);
+      var coeffs = doubles.Linear();
+      var hl = doubles.StDevByRegressoin(coeffs);
+      h = hl * 2;
+      l = hl * 2;
+      h1 = hl * 3;
+      l1 = hl * 3;
+      var rates = new[] { corridorValues[0], corridorValues.Last() };
+      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(corridorValues.Count - 1) };
+      rates.ForEach(r => r.Trends = new Rate.TrendLevels());
+
+      rates[0].Trends.PriceAvg1 = regRates[0];
+      rates[1].Trends.PriceAvg1 = regRates[1];
+
+      var pa1 = rates[0].Trends.PriceAvg1;
+      rates[0].Trends.PriceAvg2 = pa1 + h;
+      rates[0].Trends.PriceAvg3 = pa1 - l;
+      rates[0].Trends.PriceAvg21 = pa1 + h1;
+      rates[0].Trends.PriceAvg31 = pa1 - l1;
+
+      pa1 = rates[1].Trends.PriceAvg1;
+      rates[1].Trends.PriceAvg2 = pa1 + h;
+      rates[1].Trends.PriceAvg3 = pa1 - l;
+      rates[1].Trends.PriceAvg21 = pa1 + h1;
+      rates[1].Trends.PriceAvg31 = pa1 - l1;
+      return rates;
     }
 
     private static void OnCloseTradeLocal(IList<Trade> trades, TradingMacro tm) {

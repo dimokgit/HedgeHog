@@ -604,6 +604,13 @@ namespace HedgeHog.Bars {
   public enum BarsPeriodType { t1 = 0, m1 = 1, m2 = 2, m3 = 3, m5 = 5, m10 = 10, m15 = 15, m30 = 30, H1 = 60, H2 = H1 * 2, H3 = H1 * 3, H4 = H1 * 4, H6 = H1 * 6, H8 = H1 * 8, H12 = H6 * 2, D1 = 24 * H1, W1 = 7 * D1 }
   [DataContract]
   public class Rate : BarBase {
+    public class TrendLevels {
+      public double PriceAvg1 { get; set; }
+      public double PriceAvg2 { get; set; }
+      public double PriceAvg21 { get; set; }
+      public double PriceAvg3 { get; set; }
+      public double PriceAvg31 { get; set; }
+    }
     public Rate() { }
     public Rate(bool isHistory) : base(isHistory) { }
     public Rate(DateTime Time, double Ask, double Bid, bool isHistory) : base(Time, Ask, Bid, isHistory) { }
@@ -625,7 +632,7 @@ namespace HedgeHog.Bars {
 
       this.StartDate2 = StartDate;
     }
-
+    public TrendLevels Trends { get; set; }
     double _distanceHistory = double.NaN;
     public double DistanceHistory {
       get { return _distanceHistory; }

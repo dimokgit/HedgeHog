@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HedgeHog.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -57,7 +58,7 @@ namespace HedgeHog {
         var step = ns(s).Abs().Max(ns(e).Abs()) * divider;
         if (!count.Between(s - step, e + step))
           if (step.Abs() > 1) doContinue = true;
-          else throw new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "");
+          else GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "")));
         if (ns(count).Abs() <= 1)
           return count;
         if (doContinue) continue;
