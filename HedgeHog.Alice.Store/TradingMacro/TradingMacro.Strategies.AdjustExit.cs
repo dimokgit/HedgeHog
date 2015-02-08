@@ -93,8 +93,10 @@ namespace HedgeHog.Alice.Store {
         #endregion
         var tradesCount = Trades.Length;
         if (tradesCount == 0) {
-          if (LevelBuyCloseBy == TradeLevelBy.None) setExitLevel(buyCloseLevel);
-          if (LevelSellCloseBy == TradeLevelBy.None) setExitLevel(sellCloseLevel);
+          //if (LevelBuyCloseBy == TradeLevelBy.None) 
+          setExitLevel(buyCloseLevel);
+          //if (LevelSellCloseBy == TradeLevelBy.None) 
+          setExitLevel(sellCloseLevel);
         } else {
           if (!Trades.Any()) {
             throw new Exception("Should have some trades here.");

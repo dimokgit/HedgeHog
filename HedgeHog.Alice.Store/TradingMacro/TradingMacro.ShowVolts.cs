@@ -17,6 +17,10 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
+    private CorridorStatistics ShowVoltsByCorrelation() {
+      var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).Average());
+      return ShowVolts(volts, 2);
+    }
     CorridorStatistics ShowVoltsByFractalDensity() {
       var volts = !FractalTimes.Any() ? double.NaN
         : (from range in new { dateMin = FractalTimes.Min(), dateMax = FractalTimes.Max() }.Yield()
@@ -104,8 +108,8 @@ namespace HedgeHog.Alice.Store {
       Func<Rate, double> priceFuncFast = r => r.VoltageLocal0[0];
       Action<Rate, double> priceActionFast = (r, v) => r.VoltageLocal0 = new[] { v };
       var frameLength = VoltsFrameLength == 0 ? CorridorDistance : VoltsFrameLength;
-      var cmaLevelsFast = GetFftHarmonicsByRatesCountAndRatio(frameLength, PriceFftLevelsFast);
-      var cmaLevelsSlow = GetFftHarmonicsByRatesCountAndRatio(frameLength, PriceFftLevelsSlow);
+      var cmaLevelsFast = MathExtensions.GetFftHarmonicsByRatesCountAndRatio(frameLength, PriceFftLevelsFast);
+      var cmaLevelsSlow = MathExtensions.GetFftHarmonicsByRatesCountAndRatio(frameLength, PriceFftLevelsSlow);
 
       //var corridorRates = RatesArray.TakeLast(frameLength)/*.Reverse()*/.ToArray();
       //SetMAByFtt(corridorRates, _priceAvg, priceActionFast, cmaLevelsFast);
@@ -171,9 +175,6 @@ namespace HedgeHog.Alice.Store {
       return corridor;
     }
 
-    private static int GetFftHarmonicsByRatesCountAndRatio(int frameLength, double fftHarmsRatio) {
-      return (frameLength * fftHarmsRatio / 100).ToInt();
-    }
 
     private void SetVoltFuncs() {
       if (GetVoltage(RatesArray[0]).IsNotNaN()) {

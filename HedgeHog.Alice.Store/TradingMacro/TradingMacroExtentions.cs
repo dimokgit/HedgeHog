@@ -1692,7 +1692,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
     const double suppResDefault = double.NaN;
-    private int BarsCountCount() { return BarsCountMax < 20 ? BarsCount * BarsCountMax : BarsCountMax; }
+    private int BarsCountCount() { return BarsCountMax < 100 ? BarsCount * BarsCountMax : BarsCountMax; }
 
     public void SuppResResetAllTradeCounts(int tradesCount = 0) { SuppResResetTradeCounts(SuppRes, tradesCount); }
     public static void SuppResResetTradeCounts(IEnumerable<SuppRes> suppReses, double tradesCount = 0) {
@@ -2677,7 +2677,7 @@ namespace HedgeHog.Alice.Store {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
           var rates = RatesArray;
-          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, GetFftHarmonicsByRatesCountAndRatio(RatesArray.Count, 0.5.Max(PriceCmaLevels)));
+          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, MathExtensions.GetFftHarmonicsByRatesCountAndRatio(RatesArray.Count, 0.5.Max(PriceCmaLevels)));
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
@@ -2701,7 +2701,6 @@ namespace HedgeHog.Alice.Store {
           break;
       }
     }
-
     private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, int lastHarmonic) {
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
       var prices = rates/*.AsParallel()*/.Select(getPrice).ToArray();
@@ -2716,8 +2715,6 @@ namespace HedgeHog.Alice.Store {
       rates.Zip(ifft.Skip(rates.Count), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
 
-    Func<double, double, double> _max = (d1, d2) => Math.Max(d1, d2);
-    Func<double, double, double> _min = (d1, d2) => Math.Min(d1, d2);
     public void ScanCorridor(IList<Rate> ratesForCorridor, Action callback = null) {
       try {
         if (!IsActive || !isLoggedIn || !HasRates /*|| !IsTradingHours(tm.Trades, rates.Last().StartDate)*/) return;
@@ -2833,6 +2830,7 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
         case ScanCorridorFunction.StDevHeight: return ScanCorridorByStDevByHeight;
+        case ScanCorridorFunction.StDevHeightFft: return ScanCorridorByStDevByHeightFft;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
@@ -2878,6 +2876,7 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Rsd: return ShowVoltsByRsd;
         case HedgeHog.Alice.VoltageFunction.HarmonicMin: return ShowVoltsByHarmonicMin;
         case HedgeHog.Alice.VoltageFunction.FractalDensity: return ShowVoltsByFractalDensity;
+        case HedgeHog.Alice.VoltageFunction.Correlation: return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
         case HedgeHog.Alice.VoltageFunction.StDevInsideOutRatio: return ShowVoltsByStDevPercentage;
         case HedgeHog.Alice.VoltageFunction.Volatility: return ShowVoltsByVolatility;
@@ -4240,7 +4239,7 @@ namespace HedgeHog.Alice.Store {
     [Description("RatesStDevMinInPips for BarsCountValc")]
     public int RatesStDevMinInPips {
       get { return _RatesStDevMinInPips; }
-      set { 
+      set {
         _RatesStDevMinInPips = value;
         OnPropertyChanged("RatesStDevMinInPips");
       }

@@ -114,8 +114,8 @@ namespace HedgeHog.Alice.Store {
       });
       var count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, BarsCount, prices.Count, getCount, a => a.IfEmpty(() => new[] { RatesArray.Count }).Single());
       BarsCountCalc = count;
-      OnRatesArrayChaged = () =>
-        OnRatesArrayChaged_SetVoltsByRsd(RatesArray.Count / RatesArray.Last().StartDate.Subtract(RatesArray[0].StartDate).TotalSeconds);
+      //OnRatesArrayChaged = () =>
+      //  OnRatesArrayChaged_SetVoltsByRsd(RatesArray.Count / RatesArray.Last().StartDate.Subtract(RatesArray[0].StartDate).TotalSeconds);
     }
 
     static IList<T> IteratorLopper<T>(int start, int end, Func<int, int, int> nextStep, IterationLooperDelegate<T> corridor, Func<T, int> getCount) {
@@ -163,7 +163,7 @@ namespace HedgeHog.Alice.Store {
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
           var ratesStDev = rates.StandardDeviation() * _stDevUniformRatio / 2;
-          var corrLength = CalcCorridorLengthByHeightByRegressionMin(ratesStDev, 0, rates);
+          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0);
           return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
         })
         .Where(x => x.corrRatio > 0)

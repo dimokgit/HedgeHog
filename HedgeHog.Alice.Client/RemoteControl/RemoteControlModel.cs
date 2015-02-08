@@ -145,8 +145,10 @@ namespace HedgeHog.Alice.Client {
           tm.SetCanTrade(false);
           tm.SetTradeCount(0);
           charter.FitToView();
-          tm.CorridorStartDate = null;
+          tm.FreezeCorridorStartDate(true);
           break;
+        case Key.S:
+          tm.FreezeCorridorStartDate(); break;
         case Key.G:
           tm.MakeGhosts();
           break;

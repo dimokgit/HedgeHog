@@ -54,7 +54,7 @@ namespace HedgeHog {
       for (var i = 0; true; i++) {
         Func<int, int> ns = j => nextStep(j, i);
         var sw = i % 2 == 0 ? skipWhile : b => !skipWhile(b);
-        var count = countMap(getCounter(s, e, sw, ns));
+        var count = countMap(getCounter(s, e, sw, ns)).Min(maxCount);
         var step = ns(s).Abs().Max(ns(e).Abs()) * divider;
         if (!count.Between(s - step, e + step))
           if (step.Abs() > 1) doContinue = true;
@@ -64,6 +64,7 @@ namespace HedgeHog {
         if (doContinue) continue;
         divider = -divider;
         e = s; s = count;// -ns(count) * 2; e = count + ns(count) * 3;
+        if (e == s) return count;
       }
     }
   }

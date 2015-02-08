@@ -47,6 +47,33 @@ namespace HedgeHog {
       return bars.Take(bars.Count - 1).Zip(bars.Skip(1), (r1, r2) => new[] { r1, r2 });
     }
 
+    public static ParallelQuery<double> Mirror(this ParallelQuery<double> prices, double linePrice) {
+      return prices.Select(p => linePrice * 2 - p);
+    }
+    public static IEnumerable<double> Mirror(this IList<double> prices, double linePrice) {
+      return prices.Select(p => linePrice * 2 - p);
+    }
+    public static int GetFftHarmonicsByRatesCountAndRatio(int frameLength, double fftHarmsRatio) {
+      return (frameLength * fftHarmsRatio / 100).ToInt();
+    }
+    /// <summary>
+    /// Interpolate values using FFT
+    /// </summary>
+    /// <param name="prices"></param>
+    /// <param name="lastHarmonicRatioIndex">Ranges from 0 to 100. 100 being 1:1</param>
+    /// <returns></returns>
+    public static IList<double> Fft(this IList<double> prices, int lastHarmonicRatioIndex) {
+      var lastHarmonic = GetFftHarmonicsByRatesCountAndRatio(prices.Count, 0.5.Max(lastHarmonicRatioIndex));
+      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
+      var mirror = prices.Mirror(prices.Last()).Reverse().ToArray();
+      mirror = prices.Concat(mirror).ToArray();
+      var mirror2 = prices.Mirror(prices[0]).Reverse().ToArray();
+      mirror = mirror2.Concat(mirror).ToArray();
+      var bins = mirror.Fft0();
+      var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
+      double[] ifft; alglib.fftr1dinv(bins1, out ifft);
+      return ifft.CopyToArray(prices.Count, prices.Count);
+    }
 
     public static double ComplexValue(this alglib.complex b) { return Math.Sqrt(b.x * b.x + b.y * b.y); }
 
