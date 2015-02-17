@@ -1841,23 +1841,7 @@ namespace HedgeHog.Alice.Store {
     }
     int _corridorLength2 = 0;
     private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var cp = _priceAvg ?? CorridorPrice();
-      var heightMin = ScanCorridorByStDevAndAngleHeightMin();
-      var heightMin2 = ScanCorridorByStDevAndAngleHeightMin2();
-      Func<IList<Rate>, int> scan = rates => {
-        if (heightMin.IsNaN()) return CorridorDistance;
-        var defaultCount = RatesArray.Count;
-        var prices = rates.Select(cp).ToList();
-        int count = 0;
-        Func<int, int> getHeight = c => count = CalcCorridorLengthByHeightByRegressionMin(prices, heightMin, defaultCount, c);
-        Func<int, int> getHeight2 = c => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, heightMin2, defaultCount, c);
-        new[] { new { h = heightMin, a = getHeight }, new { h = heightMin2, a = getHeight2 } }
-          .Take(ShowSecondTrend ? 2 : 1)
-          .OrderBy(a => a.h)
-          .Aggregate(10, (c, a) => a.a(c));
-        return count;
-      };
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+      return ScanCorridorByStDevByHeight(ratesForCorridor, rates => rates.ToArray(_priceAvg), priceHigh, priceLow);
     }
     #region ShowSecondTrend
     private bool _ShowSecondTrend = true;
@@ -1886,13 +1870,16 @@ namespace HedgeHog.Alice.Store {
           if (value) {
             CenterOfMassBuy = CenterOfMassSell = RatesArray.Average(_priceAvg);
             ClearCOMs = false;
-          } else 
+          } else
             OnPropertyChanged("ClearCOMs");
         }
       }
     }
     #endregion
     private CorridorStatistics ScanCorridorByStDevByHeightFft(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      return ScanCorridorByStDevByHeight(ratesForCorridor, rates => rates.ToArray(GetPriceMA), priceHigh, priceLow);
+    }
+    private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<IList<Rate>, IEnumerable<double>> tranc, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       var cp = _priceAvg ?? CorridorPrice();
       var heightMin = ScanCorridorByStDevAndAngleHeightMinEx;
       var heightMin2 = ScanCorridorByStDevAndAngleHeightMinEx2;
@@ -1901,10 +1888,10 @@ namespace HedgeHog.Alice.Store {
         var freeze = CorridorStats.Rates.Take(1).Any(rate => GetTradeEnterBy(true)(rate) >= rate.PriceAvg2 || GetTradeEnterBy(false)(rate) <= rate.PriceAvg3);
         if (freeze) return freezedCount();
         var defaultCount = RatesArray.Count;
-        var prices = rates.ToArray(cp).Fft(0).ToList();
+        var prices = tranc(rates).ToList();
         int count = 0;
-        Func<int, double, int> getHeight = (c, h) => count = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c);
-        Func<int, double, int> getHeight2 = (c, h) => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c);
+        Func<int, double, int> getHeight = (c, h) => count = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c, DoFineTuneCorridor);
+        Func<int, double, int> getHeight2 = (c, h) => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, DoFineTuneCorridor ? (c * 0.5).ToInt() : c, false);
         new[] { new { h = heightMin(prices), a = getHeight, i = "" }, new { h = heightMin2(prices), a = getHeight2, i = "2" } }
           .Take(ShowSecondTrend ? 2 : 1)
           .Do(a => { if (a.h.IsNaN())throw new Exception(new StackFrame().GetMethod().Name + ":height" + a.i + " is NaN"); })
@@ -1914,8 +1901,22 @@ namespace HedgeHog.Alice.Store {
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+    #region DoFineTuneCorridor
+    private bool _DoFineTuneCorridor;
+    [Category(categoryCorridor)]
+    [DisplayName("Fine Tune")]
+    public bool DoFineTuneCorridor {
+      get { return _DoFineTuneCorridor; }
+      set {
+        if (_DoFineTuneCorridor != value) {
+          _DoFineTuneCorridor = value;
+          OnPropertyChanged("DoFineTuneCorridor");
+        }
+      }
+    }
 
-    private int CalcCorridorLengthByHeightByRegressionMin(List<double> prices, double heightMin, int defaultCount, int start = 10) {
+    #endregion
+    private int CalcCorridorLengthByHeightByRegressionMin(List<double> prices, double heightMin, int defaultCount, int start, bool fineTune) {
       var getCount = Lib.GetIterator((_start, _end, _isOk, _nextStep) => {
         return Partitioner.Create(Lib.IteratonSequence(_start, _end, _nextStep).ToArray(), true)
           .AsParallel()
@@ -1939,9 +1940,11 @@ namespace HedgeHog.Alice.Store {
           .Select(a => a.i);
       });
       var count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, start, prices.Count, getCount, a => a.IfEmpty(() => new[] { defaultCount }).Single());
-      int? count2 = null;
-      count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, count, prices.Count, getCount2,
-        a => (count2 = a.IfEmpty(() => new[] { count2.GetValueOrDefault(count) }).Single()).Value);
+      if (fineTune) {
+        int? count2 = null;
+        count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, count, prices.Count, getCount2,
+          a => (count2 = a.IfEmpty(() => new[] { count2.GetValueOrDefault(count) }).Single()).Value);
+      }
       return count;
     }
 
@@ -1950,7 +1953,7 @@ namespace HedgeHog.Alice.Store {
       Func<IList<Rate>, int> scan = rates => {
         var heightMin = ScanCorridorByStDevAndAngleHeightMin();// *Math.E;
         var ratesInternal = rates.Select(_priceAvg).ToList();
-        var start = CalcCorridorLengthByHeightByRegressionMin(ratesInternal, heightMin, ratesInternal.Count);
+        var start = CalcCorridorLengthByHeightByRegressionMin(ratesInternal, heightMin, ratesInternal.Count, 10, DoFineTuneCorridor);
         if (start < CorridorDistance) return start;
         else {
           var lopper = MonoidsCore.ToFunc(0, i => {
@@ -2088,7 +2091,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceFftLevelsFast
     private int _PriceFftLevelsFast = 1;
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public int PriceFftLevelsFast {
       get { return _PriceFftLevelsFast; }
       set {
@@ -2102,7 +2105,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceFftLevelsSlow
     private int _PriceFftLevelsSlow = 1;
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public int PriceFftLevelsSlow {
       get { return _PriceFftLevelsSlow; }
       set {

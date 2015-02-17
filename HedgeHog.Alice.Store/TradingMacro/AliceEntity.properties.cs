@@ -1056,7 +1056,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Correlation Min")]
-    [Category(categoryXXX)]
+    [Category(categoryActive)]
     public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
@@ -1990,5 +1990,7 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => FitRatesToPlotter);
       }
     }
+
+    public int IpPort { get; set; }
   }
 }

@@ -75,6 +75,21 @@ namespace HedgeHog {
     }
   }
 
+  public class IntOrDoubleConverter : IValueConverter {
+    private static readonly IntOrDoubleConverter defaultInstance = new IntOrDoubleConverter();
+
+    public static IntOrDoubleConverter Default { get { return defaultInstance; } }
+
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      var treshold = int.Parse(parameter + "");
+      return ((double)value).IntOrDouble(treshold);
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotImplementedException();
+    }
+  }
+
   [ValueConversion(typeof(string), typeof(DateTime?))]
   public class DateTimeConverter : IValueConverter {
     private static readonly DateTimeConverter defaultInstance = new DateTimeConverter();
@@ -95,6 +110,20 @@ namespace HedgeHog {
     #endregion
   }
 
+  public class UtcToLocalDateTimeConverter : IValueConverter {
+    private static readonly UtcToLocalDateTimeConverter defaultInstance = new UtcToLocalDateTimeConverter();
+    public static UtcToLocalDateTimeConverter Default { get { return defaultInstance; } }
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+      return
+        value.GetType() == typeof(DateTimeOffset)
+        ? ((DateTimeOffset)value).ToLocalTime()
+        : DateTime.SpecifyKind(DateTime.Parse(value.ToString()), DateTimeKind.Utc).ToLocalTime();
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+      throw new NotImplementedException();
+    }
+  }
   public class NullableValueConverter : IValueConverter {
     #region IValueConverter Members
     private static readonly NullableValueConverter defaultInstance = new NullableValueConverter();

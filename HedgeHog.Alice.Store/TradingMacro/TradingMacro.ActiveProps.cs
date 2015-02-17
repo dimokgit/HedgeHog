@@ -25,7 +25,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region Rsd
     private double _Rsd;
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     [DisplayName("Rsd Treshold")]
     public double RsdTreshold {
       get { return _Rsd; }

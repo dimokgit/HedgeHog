@@ -113,7 +113,8 @@ namespace HedgeHog.Alice.Store {
           .Select(a => a.i);
       });
       var count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, BarsCount, prices.Count, getCount, a => a.IfEmpty(() => new[] { RatesArray.Count }).Single());
-      BarsCountCalc = count;
+      Func<IEnumerable<Rate>, DateTime, int> freezedCount = (ratesRev, dateStop) => ratesRev.TakeWhile(r2 => r2.StartDate >= dateStop).Count();
+      BarsCountCalc = count.Max(_corridorLength2.Div(CorridorLengthRatio).ToInt());
       //OnRatesArrayChaged = () =>
       //  OnRatesArrayChaged_SetVoltsByRsd(RatesArray.Count / RatesArray.Last().StartDate.Subtract(RatesArray[0].StartDate).TotalSeconds);
     }
@@ -163,7 +164,7 @@ namespace HedgeHog.Alice.Store {
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
           var ratesStDev = rates.StandardDeviation() * _stDevUniformRatio / 2;
-          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0);
+          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0,10,DoFineTuneCorridor);
           return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
         })
         .Where(x => x.corrRatio > 0)

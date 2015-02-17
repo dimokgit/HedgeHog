@@ -29,7 +29,7 @@ using System.Diagnostics;
 namespace HedgeHog.UI {
   public partial class NewsCasterControl : UserControl {
     [Export]
-    public NewsCasterModel NewsCasterModel { get { return NewsCasterModel.Default; } } 
+    public NewsCasterModel NewsCasterModel { get { return NewsCasterModel.Default; } }
     public NewsCasterControl() {
       InitializeComponent();
     }
@@ -37,7 +37,6 @@ namespace HedgeHog.UI {
   public class NewsCasterModel : Models.ModelBase {
     private static readonly NewsCasterModel defaultInstance = new NewsCasterModel();
     public static NewsCasterModel Default { get { return defaultInstance; } }
-
     public class FetchNewsException : Exception {
       public FetchNewsException(object message, Exception inner = null) : base(message + "", inner) { }
     }
@@ -45,7 +44,7 @@ namespace HedgeHog.UI {
     Color GetEventColor(DateTimeOffset time) {
       if (time.Between(DateTimeOffset.Now.AddHours(2), DateTimeOffset.Now.AddMinutes(15))) return Colors.Yellow;
       if (time.Between(DateTimeOffset.Now.AddMinutes(15), DateTimeOffset.Now.AddMinutes(-15))) return Colors.LimeGreen;
-      if (DateTimeOffset.Now.Between(time.AddMinutes(15),time.AddMinutes(45))) return Colors.GreenYellow;
+      if (DateTimeOffset.Now.Between(time.AddMinutes(15), time.AddMinutes(45))) return Colors.GreenYellow;
       return Colors.Transparent;
     }
     private void UpdateNewsColor() {
@@ -81,18 +80,18 @@ namespace HedgeHog.UI {
     private void ProcessNews(IEnumerable<NewsEvent> events) {
       newsObserver = null;
       var newNews = events.Select(evt => new NewsContainer(evt))
-        .Except(News, new LambdaComparer<NewsContainer>((l, r) => l.Event.Name == r.Event.Name && l.Event.Time == r.Event.Time));
+        .Except(News, new LambdaComparer<NewsContainer>((l, r) => l.Event.Level == r.Event.Level && l.Event.Name == r.Event.Name && l.Event.Time == r.Event.Time));
       ForexStorage.UseForexContext(c => {
         var dateLast = c.Event__News.Max(e => e.Time);
         newNews.Select(evt => evt.Event)
-          .Where(evt => evt.Time > dateLast)
+          //.Where(evt => evt.Time > dateLast)
           .ForEach(evt => c.Event__News.Add(new Event__News() {
             Level = (evt.Level + "").Substring(0, 1),
             Country = evt.Country,
             Name = evt.Name,
             Time = evt.Time
           }));
-      }, c => c.SaveChanges()
+      },(c, exc) => Log = exc, c => c.SaveChanges()
       );
       newNews.ForEach(evt => News.Add(evt));
       NewsView.GroupDescriptions.Clear();
@@ -210,7 +209,7 @@ namespace HedgeHog.UI {
 
       public NewsContainer(NewsEvent newsEvent) {
         this.Event = newsEvent;
-        this.Date = newsEvent.Time.Date;
+        this.Date = newsEvent.Time.ToLocalTime().Date;
       }
 
       public override string ToString() {
@@ -239,12 +238,13 @@ namespace HedgeHog.UI {
           FetchNews();
         else {
           var maxDate = News.Max(evt => evt.Event.Time).Date;
-          if (maxDate.DayOfWeek!= DayOfWeek.Friday && maxDate == DateTime.Now.Date)
+          if (maxDate.DayOfWeek != DayOfWeek.Friday && maxDate == DateTime.Now.Date)
             FetchNews(DateTime.Now.Date.AddDays(1));
           else UpdateNewsColor();
         }
         a(10.FromMinutes());
       });
+      ProcessNews(NewsHound.MyFxBook.Fetch());
     }
     static NewsCasterModel() {
       SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()

@@ -929,7 +929,7 @@ namespace HedgeHog.Alice.Store {
     public int TicksPerMinuteMinimum { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Min().ToInt(); } }
     public double TicksPerMinuteInstant { get { return PriceQueue.TickPerMinute(.25); } }
     public double TicksPerMinute { get { return PriceQueue.TickPerMinute(.5); } }
-    public double TicksPerMinuteAverage { get { return PriceQueue.TickPerMinute(1); } }
+    public double TicksPerMinuteAverage { get; private set; }
 
     int priceQueueCount = 600;
     public class TicksPerPeriod {
@@ -1753,10 +1753,15 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void MoveBuySellLeve(bool isBuy, int pips) {
+      Func<double, double> setOrDef = l => l > 0 ? l : RatesArray.Middle();
+
       new[] { BuyLevel, SellLevel }
         .Where(sr => sr.IsBuy == isBuy)
         .ForEach(sr => {
-          if (pips == 0) { sr.Rate = RatesArray.Middle(); sr.InManual = false; } else {
+          if (pips == 0) {
+            sr.Rate = setOrDef(sr.IsBuy ? CenterOfMassBuy : CenterOfMassSell);
+            sr.InManual = true;
+          } else {
             sr.Rate += InPoints(pips);
             sr.InManual = true;
           }
@@ -1818,12 +1823,13 @@ namespace HedgeHog.Alice.Store {
     /// </summary>
     /// <param name="uid"></param>
     /// <param name="rateNew"></param>
-    public void UpdateSuppRes(Guid uid, double rateNew) {
+    public SuppRes UpdateSuppRes(Guid uid, double rateNew) {
       var suppRes = SuppRes.ToArray().SingleOrDefault(sr => sr.UID == uid);
       if (suppRes == null)
         throw new InvalidOperationException("SuppRes UID:" + uid + " does not exist.");
       suppRes.Rate = rateNew;
       suppRes.InManual = true;
+      return suppRes;
     }
 
     #endregion
@@ -2046,6 +2052,7 @@ namespace HedgeHog.Alice.Store {
               Angle = AngleFromTangent(coeffs.LineSlope(), RatesArray);
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
+              TicksPerMinuteAverage = RatesArray.Count / RatesArray.Last().StartDate.Subtract(RatesArray[0].StartDate).TotalSeconds;
             }, IsInVitualTrading);
             OnScanCorridor(_rateArray, () => {
               try {
@@ -2661,6 +2668,7 @@ namespace HedgeHog.Alice.Store {
     private static Func<Rate, double> GetPriceMA(MovingAverageType movingAverageType) {
       switch (movingAverageType) {
         case Store.MovingAverageType.FFT:
+        case Store.MovingAverageType.FFT2:
         case Store.MovingAverageType.RegressByMA:
         case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
@@ -2676,8 +2684,10 @@ namespace HedgeHog.Alice.Store {
     private void SetMA() {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
-          var rates = RatesArray;
-          SetMAByFtt(rates, _priceAvg, (rate, d) => rate.PriceCMALast = d, MathExtensions.GetFftHarmonicsByRatesCountAndRatio(RatesArray.Count, 0.5.Max(PriceCmaLevels)));
+          SetMAByFtt(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
+          break;
+        case Store.MovingAverageType.FFT2:
+          SetMAByFtt2(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
           break;
         case Store.MovingAverageType.RegressByMA:
           RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
@@ -2701,18 +2711,11 @@ namespace HedgeHog.Alice.Store {
           break;
       }
     }
-    private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, int lastHarmonic) {
-      Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
-      var prices = rates/*.AsParallel()*/.Select(getPrice).ToArray();
-      var mirror = prices/*.AsParallel()*/.Mirror(prices.Last()).Reverse().ToArray();
-      mirror = prices.Concat(mirror).ToArray();
-      var mirror2 = prices/*.AsParallel()*/.Mirror(prices[0]).Reverse().ToArray();
-      mirror = mirror2.Concat(mirror).ToArray();
-      var bins = mirror.Fft0();
-      var bins1 = bins.Take(lastHarmonic).Concat(repeat(bins.Count - lastHarmonic)).ToArray();
-      double[] ifft;
-      alglib.fftr1dinv(bins1, out ifft);
-      rates.Zip(ifft.Skip(rates.Count), (rate, d) => { setValue(rate, d); return 0; }).Count();
+    private static void SetMAByFtt(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
+      rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
+    }
+    private static void SetMAByFtt2(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
+      rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
     }
 
     public void ScanCorridor(IList<Rate> ratesForCorridor, Action callback = null) {
@@ -2989,6 +2992,8 @@ namespace HedgeHog.Alice.Store {
       while (_priceQueue.Count > PriceCmaLevels.Max(5)) _priceQueue.Dequeue();
       _priceQueue.Enqueue(price);
       Account account = e.Account;
+      if (account.IsMarginCall)
+        BroadcastCloseAllTrades();
       var timeSpanDict = new Dictionary<string, long>();
       try {
         CalcTakeProfitDistance();
@@ -4240,8 +4245,11 @@ namespace HedgeHog.Alice.Store {
     public int RatesStDevMinInPips {
       get { return _RatesStDevMinInPips; }
       set {
-        _RatesStDevMinInPips = value;
-        OnPropertyChanged("RatesStDevMinInPips");
+        if (_RatesStDevMinInPips != value) {
+          _RatesStDevMinInPips = value;
+          OnPropertyChanged("RatesStDevMinInPips");
+          FreezeCorridorStartDate(true);
+        }
       }
     }
     #endregion

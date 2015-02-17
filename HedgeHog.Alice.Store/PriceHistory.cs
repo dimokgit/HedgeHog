@@ -14,7 +14,7 @@ using HedgeHog.Shared.Messages;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
-    public static void LoadBars(FXCoreWrapper fw,string pairToLoad,Action<object> progressCallback = null) {
+    public static void LoadBars(FXCoreWrapper fw, string pairToLoad, Action<object> progressCallback = null) {
       var pairsToLoad = new RequestPairForHistoryMessage();
       GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<RequestPairForHistoryMessage>(pairsToLoad);
       foreach (var pair in pairsToLoad.Pairs)
@@ -34,11 +34,14 @@ namespace HedgeHog.Alice.Store {
         var offset = TimeSpan.FromMinutes(period);
         using (var context = new ForexEntities()) {
           if (dateStart > DateTime.MinValue) {
-            var dateEnd = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(DateTime.Now).Min().Subtract(offset).DateTime;
+            var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Min();
+            if (dateMin == DateTimeOffset.MinValue) dateMin = DateTimeOffset.Now;
+            var dateEnd = dateMin.Subtract(offset).DateTime;
             fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
           }
-          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).DefaultIfEmpty(dateStart);
-          dateStart = q.Max().DateTime;
+          var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
+          if (q > DateTimeOffset.MinValue)
+            dateStart = q.DateTime;
           if (dateStart == DateTime.MinValue) {
             if (period == 0) throw new Exception("Either period or dateStart must be provided.");
           } else

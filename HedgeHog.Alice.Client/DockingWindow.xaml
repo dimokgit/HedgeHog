@@ -51,7 +51,9 @@
                 <Run>H   - Fit chart to view</Run><LineBreak/>
                 <Run>L   - Set LevelsBy Corridor</Run><LineBreak/>
                 <Run>M   - Manual Mode (On/Off)</Run><LineBreak/>
+                <Run>S   - Freeze CorridorStart Date</Run><LineBreak/>
                 <Run>T   - Buy/Sell (On/Off)</Run><LineBreak/>
+                <Run>W   - Wrap Trade IN Corridor</Run><LineBreak/>
                 <Run>/?p - Pause Virtual Trading(On/Off)</Run><LineBreak/>
                 <Run>> - Advance on bar</Run>
               </TextBlock>

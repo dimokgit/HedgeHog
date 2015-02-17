@@ -18,7 +18,7 @@ using System.Collections.Concurrent;
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     private CorridorStatistics ShowVoltsByCorrelation() {
-      var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).Average());
+      var volts = InPips(WaveShort.Rates.Select(r => r.PriceAvg.Abs(r.PriceCMALast)).StandardDeviation());
       return ShowVolts(volts, 2);
     }
     CorridorStatistics ShowVoltsByFractalDensity() {

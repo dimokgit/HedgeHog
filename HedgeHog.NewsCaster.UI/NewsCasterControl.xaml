@@ -13,6 +13,7 @@
   <UserControl.Resources>
     <my:PassThroughConverter x:Key="PassThroughConverter" />
     <my:CompareValueConverter x:Key="CompareValueConverter" />
+    <my:UtcToLocalDateTimeConverter x:Key="UtcToLocalDateTimeConverter" />
     <sys:String x:Key="Level">√</sys:String>
     <Style x:Key="GroupHeaderStyle" TargetType="{x:Type GroupItem}">
       <Setter Property="Template">
@@ -125,7 +126,7 @@
             </Style>
           </DataGridTextColumn.ElementStyle>
         </DataGridTextColumn>-->
-        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:H:mm\}}" IsReadOnly="True">
+        <DataGridTextColumn Header="Time" Binding="{Binding Event.Time, StringFormat=\{0:H:mm\},Converter={x:Static Member=my:UtcToLocalDateTimeConverter.Default}}" IsReadOnly="True">
           <DataGridTextColumn.CellStyle>
             <Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
               <Setter Property="Background" Value="{Binding Color}"/>

@@ -11,6 +11,10 @@ using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Reactive.Concurrency;
+using System.IO;
+using System.Xml.Linq;
+using Newtonsoft.Json;
+
 namespace HedgeHog.NewsCaster {
   public enum NewsEventType { Report, Speech };
   public enum NewsEventLevel { L, M, H } ;
@@ -44,6 +48,32 @@ namespace HedgeHog.NewsCaster {
     public static string Decode(this string text) { return HAP.HtmlEntity.DeEntitize(text).Trim(); }
   }
   public static class NewsHound {
+    public class MyFxBook {
+      private static FetchParam MakeUrl(DateTime date) {
+        Func<DateTime, string> df = d => d.ToString("yyyy-MM-dd");
+        date = date.AddDays((int)DayOfWeek.Monday - (int)date.DayOfWeek);
+        var dateEnd = date.AddDays(7);
+        return new FetchParam {
+          Url = "http://www.myfxbook.com/calendar_statement.xml?filter=2-3_JPY-CNY-CAD-AUD-NZD-CLP-GBP-CHF-EUR-USD",
+          Date = date
+        };
+      }
+      static IEnumerable<NewsEvent> ParseWeek(MyFxBookEvents events) {
+        return from evt in events.response.events.@event
+               select new NewsEvent() {
+                 Country = evt.currency,
+                 Level = (NewsEventLevel)Enum.Parse(typeof(NewsEventLevel), evt.impact[0] + ""),
+                 Name = evt.name,
+                 Time = evt.dateUtc
+               };
+      }
+      public static IEnumerable<NewsEvent> Fetch() {
+        var xml = XDocument.Load("http://www.myfxbook.com/calendar_statement.xml?filter=2-3_JPY-CNY-CAD-AUD-NZD-CLP-GBP-CHF-EUR-USD");
+        var json = JsonConvert.SerializeObject(xml);
+        var o = JsonConvert.DeserializeObject<MyFxBookEvents>(json);
+        return ParseWeek(o);
+      }
+    }
     public static class EconoDay {
       static DateTime ParseEventDate(string date) {
         DateTime d;
@@ -59,17 +89,17 @@ namespace HedgeHog.NewsCaster {
       }
       static string starXPath(string text) { return ".//img[@alt='[" + text + "]']"; }
 
-      private static IEnumerable<IEnumerable<NewsEvent>> ParseWeek(HAP.HtmlDocument doc,DateTime dateStart) {
+      private static IEnumerable<IEnumerable<NewsEvent>> ParseWeek(HAP.HtmlDocument doc, DateTime dateStart) {
         var tableTabSpace = doc.DocumentNode.SelectSingleNode("//body//table//tr/td[@class='tabspace']");
         var tableCaNavMon = tableTabSpace.SelectNode("//table[@class='calnavmon']");
         var tableEvents = tableTabSpace.SelectNode("//table[@class='eventstable']");
         var trWeekDay = tableEvents.SelectNode("tr/td[./@class='navwkday' or ./@class='currentnavwkday']/..");
         var tdsWeekDay = trWeekDay.SelectCollection("td", true);
 
-        var weekDay =  ParseWeekDate(tdsWeekDay[0].InnerText.Decode() + " " + dateStart.Year);
+        var weekDay = ParseWeekDate(tdsWeekDay[0].InnerText.Decode() + " " + dateStart.Year);
         var weekDays = new List<DateTimeOffset>(Enumerable.Range(0, 5).Select(i => weekDay.AddDays(i)));
         weekDays.Add(weekDays.Last().AddDays(2));
-        
+
         var trEvents = tableEvents.SelectNode("tr/td[@class='events']/..");
         var tds = trEvents.SelectNodes("td");
         var news = tds.Take(5).Aggregate(new List<IEnumerable<NewsEvent>>(),
@@ -86,46 +116,45 @@ namespace HedgeHog.NewsCaster {
             return list;
           });
       }
+      //      private static IEnumerable<IEnumerable<NewsEvent>> ParseDay(HAP.HtmlDocument doc, DateTime date) {
+      //        var trsEvents = doc.DocumentNode.SelectNodes("//tr@class='dailyeventtext']");
+      //        trsEvents.Aggregate(
+      //          new List<NewsEvent>(),
+      //          (list, tr) => {
+      //            var tds = tr.SelectNodes("td");
+      //            var time = date.Date.Add(ParseEventDate(tds[0].InnerText.Decode()).TimeOfDay);
+      //            var name = tds[2].InnerText.Decode().Trim();
+      //            var country = name.Split(':').FirstOrDefault();
+      //            if (string.IsNullOrWhiteSpace(country)) country = "ALL";
+      //            else name = name.Substring(country.Length + 1);
 
-//      private static IEnumerable<IEnumerable<NewsEvent>> ParseDay(HAP.HtmlDocument doc, DateTime date) {
-//        var trsEvents = doc.DocumentNode.SelectNodes("//tr@class='dailyeventtext']");
-//        trsEvents.Aggregate(
-//          new List<NewsEvent>(),
-//          (list, tr) => {
-//            var tds = tr.SelectNodes("td");
-//            var time = date.Date.Add(ParseEventDate(tds[0].InnerText.Decode()).TimeOfDay);
-//            var name = tds[2].InnerText.Decode().Trim();
-//            var country = name.Split(':').FirstOrDefault();
-//            if (string.IsNullOrWhiteSpace(country)) country = "ALL";
-//            else name = name.Substring(country.Length + 1);
+      //            list.Add(new NewsEvent { 
+      //            });
+      //            return list;
+      //          }
+      //          );
+      ////        var newsEvent = new NewsEvent();
 
-//            list.Add(new NewsEvent { 
-//            });
-//            return list;
-//          }
-//          );
-////        var newsEvent = new NewsEvent();
+      //        var weekDay = ParseWeekDate(tdsWeekDay[0].InnerText.Decode() + " " + date.Year);
+      //        var weekDays = new List<DateTimeOffset>(Enumerable.Range(0, 5).Select(i => weekDay.AddDays(i)));
+      //        weekDays.Add(weekDays.Last().AddDays(2));
 
-//        var weekDay = ParseWeekDate(tdsWeekDay[0].InnerText.Decode() + " " + date.Year);
-//        var weekDays = new List<DateTimeOffset>(Enumerable.Range(0, 5).Select(i => weekDay.AddDays(i)));
-//        weekDays.Add(weekDays.Last().AddDays(2));
-
-//        var trEvents = tableEvents.SelectNode("tr/td[@class='events']/..");
-//        var tds = trEvents.SelectNodes("td");
-//        var news = tds.Take(5).Aggregate(new List<IEnumerable<NewsEvent>>(),
-//        (list0, td) => {
-//          var ne = ParseEventTD(weekDays, list0.Count, td);
-//          list0.Add(ne);
-//          return list0;
-//        });
-//        var tdEventsFri = tableEvents.SelectCollection("tr/td[@class='eventsfri']/..", true).Last().Element("td");
-//        news.Add(ParseEventTD(weekDays, news.Count, tdEventsFri));
-//        return news.Aggregate(new List<IEnumerable<NewsEvent>>(),
-//          (list, events) => {
-//            list.Add(events.Where(evt => evt.Level != NewsEventLevel.Low));
-//            return list;
-//          });
-//      }
+      //        var trEvents = tableEvents.SelectNode("tr/td[@class='events']/..");
+      //        var tds = trEvents.SelectNodes("td");
+      //        var news = tds.Take(5).Aggregate(new List<IEnumerable<NewsEvent>>(),
+      //        (list0, td) => {
+      //          var ne = ParseEventTD(weekDays, list0.Count, td);
+      //          list0.Add(ne);
+      //          return list0;
+      //        });
+      //        var tdEventsFri = tableEvents.SelectCollection("tr/td[@class='eventsfri']/..", true).Last().Element("td");
+      //        news.Add(ParseEventTD(weekDays, news.Count, tdEventsFri));
+      //        return news.Aggregate(new List<IEnumerable<NewsEvent>>(),
+      //          (list, events) => {
+      //            list.Add(events.Where(evt => evt.Level != NewsEventLevel.Low));
+      //            return list;
+      //          });
+      //      }
 
       private static List<NewsEvent> ParseEventTD(List<DateTimeOffset> weekDays, int columnIndex, HAP.HtmlNode td) {
         var ne = td.SelectCollection("div[@class='econoevents']", false)
@@ -143,17 +172,17 @@ namespace HedgeHog.NewsCaster {
         if (string.IsNullOrWhiteSpace(country))
           country = "ALL";
         else
-          name = name.Substring(country.Length+1);
+          name = name.Substring(country.Length + 1);
         var childNodes = div.ChildNodes;
         var dates = (from node in childNodes
-                    where node.NodeType == HAP.HtmlNodeType.Text
-                    select node.InnerText.Decode()).ToArray();
+                     where node.NodeType == HAP.HtmlNodeType.Text
+                     select node.InnerText.Decode()).ToArray();
         if (!dates.Any())
           throw new NewsParserException("No text nodes found in column " + (columnIndex + 1) + " for " + name);
 
         var date = dates.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
         if (date == null) return;
-          //throw new NewsParserException("No dates found in column " + (columnIndex + 1) + " for " + name);
+        //throw new NewsParserException("No dates found in column " + (columnIndex + 1) + " for " + name);
 
         var level = div.SelectSingleNode(starXPath("Star")) != null
           ? NewsEventLevel.H
@@ -187,11 +216,11 @@ namespace HedgeHog.NewsCaster {
       public DateTime Date { get; set; }
       public string Url { get; set; }
     }
-    static IObservable<IEnumerable<NewsEvent>> Fetch(Func<HAP.HtmlDocument,DateTime, IEnumerable<IEnumerable<NewsEvent>>> parser, params FetchParam[] urls) {
+    static IObservable<IEnumerable<NewsEvent>> Fetch(Func<HAP.HtmlDocument, DateTime, IEnumerable<IEnumerable<NewsEvent>>> parser, params FetchParam[] urls) {
       var hw = new HAP.HtmlWeb() { PreRequest = (hr) => { hr.Timeout = 150 * 1000; return true; } };
       return urls.ToObservable(NewThreadScheduler.Default).Select(url => {
         try {
-          return parser(hw.Load(url.Url),url.Date).SelectMany(evt => evt);
+          return parser(hw.Load(url.Url), url.Date).SelectMany(evt => evt);
         } catch (Exception exc) {
           throw new NewsHoundException(new { url }, exc);
         }

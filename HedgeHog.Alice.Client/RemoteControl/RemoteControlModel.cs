@@ -136,7 +136,7 @@ namespace HedgeHog.Alice.Client {
           tm.SetTradeCount(1);
           break;
         case Key.A:
-          tm.IsTradingActive = !tm.IsTradingActive;
+          tm.ToggleIsActive();
           charter.FitToView();
           break;
         case Key.C:
@@ -160,6 +160,9 @@ namespace HedgeHog.Alice.Client {
           break;
         case Key.T:
           tm.ToggleCanTrade();
+          break;
+        case Key.W:
+          tm.WrapTradeInCorridor();
           break;
       }
     }
@@ -214,7 +217,7 @@ namespace HedgeHog.Alice.Client {
     void charter_SupportResistanceChanged(object sender, SupportResistanceChangedEventArgs e) {
       try {
         var tm = GetTradingMacro((CharterControl)sender);
-        tm.UpdateSuppRes(e.UID, e.NewPosition);
+        tm.UpdateSuppRes(e.UID, e.NewPosition).IsActive = false; ;
         tm.IsTradingActive = false;
       } catch (Exception exc) {
         Log = exc;
@@ -991,6 +994,9 @@ namespace HedgeHog.Alice.Client {
         return _showChartQueue;
       }
     }
+    double IntOrDouble(double d, double max = 10) {
+      return d.Abs() > max ? d.ToInt() : d.Round(1);
+    }
     void AddShowChart(TradingMacro tm) {
       if (tm.IsInVitualTrading)
         GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.Invoke(() => ShowChart(tm), DispatcherPriority.ContextIdle);
@@ -1072,16 +1078,16 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×[{1}]{2:n2}°{3:n0}‡{4:n0}∆[{5:n0}/{6:n0}][{7:n0}/{8:n0}][{10}]"///↨↔
+            string.Format(":{0}×[{1}]{2:n2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
-            /*1*/, tm.RatesArray.Count + (tm.BarsCount == tm.BarsCountCalc ? "" : ("," + tm.BarsCount))
+            /*1*/, tm.RatesArray.Count + "," + tm.TicksPerMinuteAverage.ToInt()
             /*2*/, tm.CorridorAngle
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
-            /*5*/, tm.StDevByHeightInPips
-            /*6*/, tm.StDevByPriceAvgInPips
-            /*7*/, tm.CorridorStats.StDevByHeightInPips
-            /*8*/, tm.CorridorStats.StDevByPriceAvgInPips
+            /*5*/, IntOrDouble(tm.StDevByHeightInPips,5)
+            /*6*/, IntOrDouble(tm.StDevByPriceAvgInPips,5)
+            /*7*/, IntOrDouble(tm.CorridorStats.StDevByHeightInPips,5)
+            /*8*/, IntOrDouble(tm.CorridorStats.StDevByPriceAvgInPips, 5)
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
@@ -1455,6 +1461,7 @@ namespace HedgeHog.Alice.Client {
       var isFilterOk = TradingMacroFilter(tm) && tm.IsActive;
       if (!unwind && isFilterOk) {
         tm.TradingStatistics = _tradingStatistics;
+        tm.IpPort = MasterModel.IpPort;
         try {
           tm.SubscribeToTradeClosedEVent(() => tradesManager);
         } catch (Exception exc) {

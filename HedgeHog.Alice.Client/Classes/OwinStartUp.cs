@@ -42,11 +42,13 @@ namespace HedgeHog.Alice.Client {
                   var hub = GlobalHost.ConnectionManager.GetHubContext<MyHub>();
                   hub.Clients.All.addMessage(new {
                     time = tm.ServerTime.ToString("HH:mm"),
-                    profit = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-                    duration = tm.RatesDuration,
-                    count = tm.BarsCountCalc,
-                    height = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
-                    stDev = IntOrDouble(tm.StDevByHeightInPips,1) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips,1)
+                    prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
+                    tpm = tm.TicksPerMinuteAverage.ToInt(),
+                    dur = tm.RatesDuration,
+                    cnt = tm.BarsCountCalc,
+                    hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
+                    std = IntOrDouble(tm.StDevByHeightInPips, 1) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips, 1),
+                    rsdMin = tm.RatesStDevMinInPips
                     //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
                   });
                 } catch (Exception exc) {
@@ -63,6 +65,13 @@ namespace HedgeHog.Alice.Client {
           var rc = remoteControl.Value;
           {
             var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == path);
+            if (tm != null) {
+              context.Response.ContentType = "image/png";
+              return context.Response.WriteAsync(rc.GetCharter(tm).GetPng());
+            }
+          }
+          {
+            var tm = rc.TradingMacrosCopy.Skip(1).FirstOrDefault(t => t.PairPlain == path.Replace("2", ""));
             if (tm != null) {
               context.Response.ContentType = "image/png";
               return context.Response.WriteAsync(rc.GetCharter(tm).GetPng());
@@ -112,6 +121,26 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
+    public void ManualToggle(string pair) {
+      try {
+        GetTradingMacro(pair).ResetSuppResesInManual();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
+    public void ToggleStartDate(string pair) {
+      UseTradingMacro(pair, tm => tm.ToggleCorridorStartDate());
+    }
+    public void ToggleIsActive(string pair) {
+      UseTradingMacro(pair, tm => tm.ToggleIsActive());
+    }
+    public void SetRsdTreshold(string pair, int pips) {
+      try {
+        GetTradingMacro(pair).RatesStDevMinInPips = pips;
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }
@@ -148,5 +177,13 @@ namespace HedgeHog.Alice.Client {
       var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
       return tm;
     }
+    void UseTradingMacro(string pair,Action<TradingMacro> action) {
+      try {
+        action(GetTradingMacro(pair));
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
+
   }
 }

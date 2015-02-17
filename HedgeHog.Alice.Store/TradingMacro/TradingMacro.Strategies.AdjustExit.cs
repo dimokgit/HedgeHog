@@ -21,7 +21,7 @@ namespace HedgeHog.Alice.Store {
     }
     #region EllasticRange
     private int _EllasticRange = 5;
-    [Category(categoryActive)]
+    [Category(categoryTrading)]
     public int EllasticRange {
       get { return _EllasticRange; }
       set {
@@ -115,7 +115,7 @@ namespace HedgeHog.Alice.Store {
             var ratesHeightInPips = new[] { 
               LimitProfitByRatesHeight? TradingDistance :double.NaN
             }.Min(m => InPips(m));
-            var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips : 0);
+            var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips + this.PriceSpreadAverageInPips : 0);
             var ratesShort = RatesArray.TakeLast(5).ToArray();
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;

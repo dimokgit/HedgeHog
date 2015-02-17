@@ -144,5 +144,9 @@ namespace HedgeHog {
       return d1 < d2 ? d1 <= value && value <= d2 : d1 <= value || value <= d2;
     }
     #endregion
+    public static double IntOrDouble(this double d, double max = 10) {
+      return d.Abs() > max ? d.ToInt() : Math.Round(d, 1);
+    }
+
   }
 }

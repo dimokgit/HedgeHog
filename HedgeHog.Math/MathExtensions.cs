@@ -62,8 +62,8 @@ namespace HedgeHog {
     /// <param name="prices"></param>
     /// <param name="lastHarmonicRatioIndex">Ranges from 0 to 100. 100 being 1:1</param>
     /// <returns></returns>
-    public static IList<double> Fft(this IList<double> prices, int lastHarmonicRatioIndex) {
-      var lastHarmonic = GetFftHarmonicsByRatesCountAndRatio(prices.Count, 0.5.Max(lastHarmonicRatioIndex));
+    public static IList<double> Fft(this IList<double> prices, double lastHarmonicRatioIndex) {
+      var lastHarmonic = GetFftHarmonicsByRatesCountAndRatio(prices.Count, 0.1.Max(lastHarmonicRatioIndex));
       Func<int, IEnumerable<alglib.complex>> repeat = (count) => { return Enumerable.Repeat(new alglib.complex(0), count); };
       var mirror = prices.Mirror(prices.Last()).Reverse().ToArray();
       mirror = prices.Concat(mirror).ToArray();

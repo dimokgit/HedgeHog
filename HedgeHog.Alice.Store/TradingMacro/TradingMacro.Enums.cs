@@ -215,7 +215,7 @@ namespace HedgeHog.Alice.Store {
     AskLowBidHigh = 4, 
     PriceMA = 8 }
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3 }
-  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4 }
+  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4, FFT2 = 5 }
 
   public enum TradeLevelBy {
     None = 0,

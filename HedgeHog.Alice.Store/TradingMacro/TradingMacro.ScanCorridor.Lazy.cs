@@ -91,13 +91,13 @@ namespace HedgeHog.Alice.Store {
       if (voltRates.Any()) {
         tasks.Add(Task.Factory.StartNew(() => {
           try {
-            var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).Average();
+            var voltageAvgLow = voltRates.AverageByIterations(-averageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageAverage = () => voltageAvgLow;
           } catch (Exception exc) { Log = exc; }
         }));
         tasks.Add(Task.Factory.StartNew(() => {
           try {
-            var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).Average();
+            var voltageAvgHigh = voltRates.AverageByIterations(averageIterations).DefaultIfEmpty(double.NaN).Average();
             GetVoltageHigh = () => voltageAvgHigh;
           } catch (Exception exc) { Log = exc; }
         }));
