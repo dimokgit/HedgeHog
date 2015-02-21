@@ -26,7 +26,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
     Schedulers.ThreadScheduler syncronizeScheduler;
     #endregion
 
-    TradingAccountModel _accountModel = new TradingAccountModel();
+    TradingAccountModel _accountModel = new TradingAccountModel(t => { throw new NotImplementedException(); });
     public TradingAccountModel AccountModel { get { return _accountModel; } }
 
     TraderModel _masterModel;
@@ -381,7 +381,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
       LocalTradesList = new ListCollectionView(LocalTrades = new ObservableCollection<Trade>());
       AbsentTradesList = new ListCollectionView(AbsentTrades = new ObservableCollection<Trade>());
 
-      fwLocal = new FXW(this.CoreFX);
+      fwLocal = new FXW(this.CoreFX, t => { throw new NotImplementedException(); });
       tradeRequestManager = new TradeRequestManager(fwLocal);
       CoreFX.LoggedIn += (s, e) => {
         //fwLocal.TradeAdded += fw_TradeAded;

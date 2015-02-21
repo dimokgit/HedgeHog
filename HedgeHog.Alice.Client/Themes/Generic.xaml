@@ -10,6 +10,7 @@
 
   <hh:BoolToColorConverter x:Key="BoolToColorConverter"/>
   <hh:ProfitToColorConverter x:Key="ProfitToColorConverter"/>
+  <hh:IntOrDoubleConverter x:Key="IntOrDoubleConverter"/>
   <DataTemplate x:Key="CombinedBalanceCellTemplate">
     <WrapPanel>
       <TextBlock Text="{Binding Balance,StringFormat=c0}"/>
@@ -67,7 +68,7 @@
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <TextBlock HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding CurrentGrossInPips,StringFormat=c0}" />
+                        <TextBlock Text="{Binding CurrentGrossInPips,Converter={x:Static hh:IntOrDoubleConverter.Default},ConverterParameter=7.5}" />
                         <TextBlock Margin="-2" 
                                    Visibility="{Binding GrossToExitInPips,Converter={x:Static hh:DoubleToColorConverter.Default},ConverterParameter=Collapsed|Collapsed|Visible}">></TextBlock>
                         <TextBlock Text="{Binding GrossToExitInPips,StringFormat=c0}"/>
@@ -80,12 +81,12 @@
                     </DataTemplate>
                   </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=c0}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=${0},Converter={x:Static hh:IntOrDoubleConverter.Default},ConverterParameter=7.5}" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="DPL$">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                       <TextBlock HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding DayPL,StringFormat=c0}" />
+                        <TextBlock Text="{Binding DayPL,StringFormat=${0},Converter={x:Static hh:IntOrDoubleConverter.Default},ConverterParameter=7.5}" />
                         <TextBlock Margin="-2" 
                                    Visibility="{Binding DayTakeProfit,Converter={x:Static hh:DoubleToColorConverter.Default},ConverterParameter=Collapsed|Collapsed|Visible}">></TextBlock>
                         <TextBlock Text="{Binding DayTakeProfit,StringFormat=c0}"/>

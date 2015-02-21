@@ -161,7 +161,7 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    protected Account accountCached = new Account();
+    //protected Account accountCached = new Account();
 
 
 //    protected ITradesManager tradesManager { get { return IsInVirtualTrading ? virtualTrader : (ITradesManager)fw; } }

@@ -47,8 +47,8 @@
           <TextBlock.InputBindings>
             <MouseBinding Command="{Binding DataContext.ShowPropertiesDialogCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}" CommandParameter="{Binding}" MouseAction="LeftClick"/>
           </TextBlock.InputBindings>
-          </TextBlock>
-          <TextBlock Visibility="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource AncestorType=DataGrid},Converter={StaticResource BooleanToVisibilityConverter}}">
+        </TextBlock>
+        <TextBlock Visibility="{Binding DataContext.ShowAllMacrosFilter,RelativeSource={RelativeSource AncestorType=DataGrid},Converter={StaticResource BooleanToVisibilityConverter}}">
             <TextBlock Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
             <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active" IsEnabled="False"/>
           </TextBlock>
@@ -76,7 +76,7 @@
         <ComboBox ItemsSource="{Binding DataContext.Instruments,Mode=OneWay,RelativeSource={RelativeSource AncestorType=DataGrid}}" SelectedValue="{Binding Pair,Mode=TwoWay}"></ComboBox>
         <TextBox Text="{Binding MaximumPositions}" ToolTip="Maximum Positions"/>
         <TextBox Text="{Binding TradingMacroName}" ToolTip="Trading Macro Name"/>
-          <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>
+        <CheckBox IsChecked="{Binding IsActive}" ToolTip="Is Active"/>
         <TextBox Text="{Binding MonthsOfHistory}" ToolTip="Months Of History"/>
         <Button Content="PH"  CommandParameter="{Binding BindsDirectlyToSource=True}" ToolTip="Price History"
                 Command="{Binding DataContext.PriceHistoryCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
@@ -155,9 +155,9 @@
     </DataTemplate>
     <DataTemplate x:Key="LossCellTemplate">
       <WrapPanel Background="{Binding CurrentGross,Converter={StaticResource ProfitToColorConverter}}">
-        <TextBlock Text="{Binding CurrentLoss,StringFormat=c0}"  ToolTip="Current Loss" />
-        <TextBlock Text="{Binding CurrentGross,StringFormat=/{0:c0}}" ToolTip="Current Gross"  />
-        <TextBlock Text="{Binding CurrentGrossInPips,StringFormat=[{0:n0}]}" ToolTip="Current Gross In Pips"  />
+        <TextBlock Text="{Binding CurrentLoss,StringFormat=${0},Converter={x:Static lib:IntOrDoubleConverter.Default},ConverterParameter=7.5}"  ToolTip="Current Loss" />
+        <TextBlock Text="{Binding CurrentGross,StringFormat=/${0},Converter={x:Static lib:IntOrDoubleConverter.Default},ConverterParameter=7.5}" ToolTip="Current Gross"  />
+        <TextBlock Text="{Binding CurrentGrossInPips,StringFormat=[{0}],Converter={x:Static lib:IntOrDoubleConverter.Default},ConverterParameter=7.5}" ToolTip="Current Gross In Pips"  />
         <!--<TextBlock Text="{Binding CurrentLossPercent,StringFormat=/{0:p2}}" ToolTip="Current Loss Percent" />-->
         <!--<LineBreak/>
           <TextBlock Background="{Binding RunningBalance,Converter={StaticResource ProfitToColorConverter}}"
@@ -168,9 +168,9 @@
       <WrapPanel>
         <TextBox Text="{Binding CurrentLoss}" ToolTip="Current Loss" HorizontalAlignment="Stretch" HorizontalContentAlignment="Right"  />
         <!--<LineBreak/>-->
-      <TextBox Text="{Binding RunningBalance,StringFormat=n0}"  ToolTip="Running Balance" />
-      <TextBox Text="{Binding MinimumGross,StringFormat=n0}"  ToolTip="Minimum Gross" />
-      <TextBox Text="{Binding HistoryMaximumLot}"  ToolTip="History Maximum Lot" />
+        <TextBox Text="{Binding RunningBalance,StringFormat=n0}"  ToolTip="Running Balance" />
+        <TextBox Text="{Binding MinimumGross,StringFormat=n0}"  ToolTip="Minimum Gross" />
+        <TextBox Text="{Binding HistoryMaximumLot}"  ToolTip="History Maximum Lot" />
       </WrapPanel>
     </DataTemplate>
     <DataTemplate x:Key="CloseCellTemplate">
@@ -228,7 +228,7 @@
       <Setter Property="FontWeight" Value="Normal"></Setter>
     </Style>
   </UserControl.Resources>
-    <Grid>
+  <Grid>
     <DataGrid ItemsSource="{Binding TradingMacrosCopy}" AutoGenerateColumns="False" EnableRowVirtualization="False" KeyDown="DataGrid_KeyDown" Style="{StaticResource ReadOnlyDataGridStyle}" FontSize="12"
               FontWeight="Black" VerticalScrollBarVisibility="Auto" Background="#FFF7F3F7">
       <DataGrid.RowStyle>
@@ -289,13 +289,13 @@
                   <TextBlock Text="{Binding TakeProfitPips,StringFormat=|{0:n0}]}" ToolTip="Take Profit Pips"/>
                   <TextBlock Text="{Binding BuySellHeightInPips,StringFormat=|{0:n0}]}" Margin="0,0" ToolTip="Buy-Sell Height">
                   </TextBlock>
-                <!--<LineBreak/>
+                  <!--<LineBreak/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadShortInPips,StringFormat=n1}" ToolTip="Spread Short"/>
                 <TextBlock Margin="-3">/</TextBlock>
                 <TextBlock Text="{Binding SpreadLongInPips,StringFormat=n1}" ToolTip="Spread Long" Margin="-3,0,0,0"/>
                 <TextBlock Text="{Binding PriceCmaPeriodByStDevRatio,StringFormat=n1}" ToolTip="Price Cma Period By StDev Ratio"/>-->
-              </WrapPanel>
+                </WrapPanel>
                 <Popup IsOpen="{Binding ShowPopup}">
                   <Border CornerRadius="2" Background="AliceBlue" BorderThickness="1" BorderBrush="DarkBlue">
                     <TextBlock Text="{Binding PopupText}" Foreground="Black" Margin="5" FontWeight="Bold"></TextBlock>
@@ -333,86 +333,86 @@
               <ComboBox SelectedValue="{Binding Strategy,Mode=TwoWay}" Text="" ItemsSource="{Binding Source={StaticResource StrategyValues}}">
                 <i:Interaction.Triggers>
                   <i:EventTrigger EventName="SelectionChanged">
-            <galaCmd:EventToCommand 
+                    <galaCmd:EventToCommand 
               Command="{Binding DataContext.SetStrategiesCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}"
               CommandParameter="{Binding SelectedValue,RelativeSource={RelativeSource AncestorType=ComboBox}}"
               PassEventArgsToCommand="false" />
-          </i:EventTrigger>
-        </i:Interaction.Triggers>
+                  </i:EventTrigger>
+                </i:Interaction.Triggers>
               </ComboBox>
             </DataTemplate>
           </DataGridTemplateColumn.HeaderTemplate>
           <DataGridTemplateColumn.CellTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal">
-              <TextBlock Text="{Binding Strategy}" 
+                <TextBlock Text="{Binding Strategy}" 
                          Background="{Binding Strategy,Converter={x:Static Member=lib:CompareValueConverter.Default},ConverterParameter=None}"
                           ToolTipService.ShowDuration="3000000">
-                    <TextBlock.ToolTip>
-                      <StackPanel>
-                        <StackPanel.Resources>
-                          <Style BasedOn="{StaticResource {x:Type TextBlock}}"  TargetType="TextBlock">
-                            <Setter Property="FontFamily" Value="Courier New"/>
-                          </Style>
-                        </StackPanel.Resources>
-                        <TextBlock>RatesHeight...... :
+                  <TextBlock.ToolTip>
+                    <StackPanel>
+                      <StackPanel.Resources>
+                        <Style BasedOn="{StaticResource {x:Type TextBlock}}"  TargetType="TextBlock">
+                          <Setter Property="FontFamily" Value="Courier New"/>
+                        </Style>
+                      </StackPanel.Resources>
+                      <TextBlock>RatesHeight...... :
                             <TextBlock Text="{Binding RatesHeightInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>StDevBy(H/P)..... :
+                      <TextBlock>StDevBy(H/P)..... :
                           <TextBlock Text="{Binding StDevByHeightInPips,StringFormat=n0}"/>/
                           <TextBlock Text="{Binding StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>Corridor Height.. :
+                      <TextBlock>Corridor Height.. :
                           <TextBlock Text="{Binding CorridorStats.HeightByRegressionInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>Wave.StDevBy(H/P) :
+                      <TextBlock>Wave.StDevBy(H/P) :
                           <TextBlock Text="{Binding CorridorStats.StDevByHeightInPips,StringFormat=n0}"/>/<TextBlock
                             Text="{Binding CorridorStats.StDevByPriceAvgInPips,StringFormat=n0}"/>
                         </TextBlock>
-                        <TextBlock>Bars Spread...... :
+                      <TextBlock>Bars Spread...... :
                           <TextBlock Text="{Binding SpreadForCorridorInPips,StringFormat=n1}"/>
                         </TextBlock>
-                        <TextBlock>DistanceIterations:
+                      <TextBlock>DistanceIterations:
                           <TextBlock Text="{Binding DistanceIterationsReal,StringFormat=n1}"/>
                         </TextBlock>
-                        <TextBlock>RatesHeight/StDev :
+                      <TextBlock>RatesHeight/StDev :
                           <TextBlock Text="{Binding RatesRsd,StringFormat=n1}"/>
                         </TextBlock>
-                        
-                        <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
-                          <ListBox.ItemTemplate>
-                            <DataTemplate>
-                              <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
-                            </DataTemplate>
-                          </ListBox.ItemTemplate>
-                       </ListBox>
-                      </StackPanel>
-                    </TextBlock.ToolTip>
-                
-              </TextBlock>
+
+                      <ListBox ItemsSource="{Binding CorridorStats.LegInfos}" Visibility="Collapsed">
+                        <ListBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Angle,StringFormat=n0}"/>
+                          </DataTemplate>
+                        </ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                  </TextBlock.ToolTip>
+
+                </TextBlock>
                 <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
                   <Border.ToolTip>Trading Active</Border.ToolTip>
-                    <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
+                  <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
                       Fill="{Binding TradingState,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
                 </Border>
                 <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
                   <Border.ToolTip>In Trading Hours</Border.ToolTip>
-                    <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
+                  <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
                       Fill="{Binding TradingTimeState,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
                 </Border>
-        <Button Content="{Binding}"  Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="-4"
+                <Button Content="{Binding}"  Background="Transparent" BorderBrush="Transparent" BorderThickness="0" Padding="-4"
                 CommandParameter="{Binding BindsDirectlyToSource=True}" VerticalAlignment="Stretch"
             Command="{Binding DataContext.ToggleCloseAtZeroCommand,RelativeSource={RelativeSource AncestorType=DataGrid}}">
-          <Button.ContentTemplate>
-            <DataTemplate>
-                <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
-                  <Border.ToolTip>Close ASAP</Border.ToolTip>
-                    <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
+                  <Button.ContentTemplate>
+                    <DataTemplate>
+                      <Border Background="Yellow" CornerRadius="2" BorderBrush="Gray" BorderThickness="1" Margin="1" VerticalAlignment="Center">
+                        <Border.ToolTip>Close ASAP</Border.ToolTip>
+                        <Ellipse Width="10" Height="10" Stroke="Gray" StrokeThickness="1" Margin="1" VerticalAlignment="Center"
                       Fill="{Binding CloseAtZero,Converter={x:Static Member=lib:BoolToColorConverter.Default},ConverterParameter=Gray|RED|GREEN}" />
-                </Border>
-            </DataTemplate>
-          </Button.ContentTemplate>
-        </Button>
+                      </Border>
+                    </DataTemplate>
+                  </Button.ContentTemplate>
+                </Button>
               </StackPanel>
             </DataTemplate>
           </DataGridTemplateColumn.CellTemplate>
@@ -431,9 +431,9 @@
                 <TextBlock hhui:Tooltip.Content="{Binding InfoTooltip,Mode=OneWay}"
                          Background="{Binding HasCorridor,Converter={StaticResource BoolToColorConverter},ConverterParameter=White|Pink|White}" >
               <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd HH:mm:ss ddd}">
-                <TextBlock.ToolTip>
-                  <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd/yyyy HH:mm:ss}"/>
-                </TextBlock.ToolTip>
+                    <TextBlock.ToolTip>
+                      <TextBlock Text="{Binding LastRatePullTime,StringFormat=MM/dd/yyyy HH:mm:ss}"/>
+                    </TextBlock.ToolTip>
               </TextBlock>
                 <TextBlock>|</TextBlock>
               <TextBlock Text="{Binding CorridorStartDate,StringFormat={}{0:MM/dd HH:mm}}"/>
@@ -459,20 +459,20 @@
               <Expander ExpandDirection="Right" Margin="0,-2,0,-7">
                 <Expander.Content>
                   <StackPanel>
-                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <tlrkInput:RadNumericUpDown SmallChange=".01" Padding="0" Value="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
-              <CheckBox Content="■" IsChecked="{Binding DataContext.ReplayArguments.MustStop,RelativeSource={RelativeSource AncestorType=DataGrid}}" VerticalAlignment="Center" Margin="0,-4" />
-              <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                      <tlrkInput:RadNumericUpDown SmallChange=".01" Padding="0" Value="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
+                      <CheckBox Content="■" IsChecked="{Binding DataContext.ReplayArguments.MustStop,RelativeSource={RelativeSource AncestorType=DataGrid}}" VerticalAlignment="Center" Margin="0,-4" />
+                      <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
                       Command="{Binding DataContext.StartReplayCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
                       CommandParameter="{Binding BindsDirectlyToSource=True}" />
-              <CheckBox Content="||" IsChecked="{Binding DataContext.ReplayArguments.InPause,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
-              <CheckBox Content="&lt;" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
-              <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content="||" IsChecked="{Binding DataContext.ReplayArguments.InPause,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content="&lt;" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                       <StackPanel Orientation="Horizontal">
-                      <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
-                      <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.MonthsToTest,RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" ToolTip="MonthsToTest" />
+                        <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                        <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.MonthsToTest,RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" ToolTip="MonthsToTest" />
                       </StackPanel>
                       <Border HorizontalAlignment="Stretch" Width="100" BorderThickness="1" BorderBrush="Plum">
                         <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value="{Binding DataContext.ReplayArguments.CurrentPosition,Mode=TwoWay,RelativeSource={RelativeSource AncestorType=DataGrid}}"
@@ -491,15 +491,15 @@
               <Expander ExpandDirection="Right" Margin="0,-2,0,-7">
                 <Expander.Content>
                   <StackPanel Orientation="Horizontal" DataContext="{Binding SnapshotArguments}">
-                  <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
-                  <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateStart,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
-                  <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateEnd,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
-                  <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateEnd,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
-                  <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding ShowCommand}" />
-                  <Button Content="≤" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding DescendCommand}" />
-                  <Button Content="≥" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding AdvanceCommand}" />
-                  <Button Content="{Binding Label}" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding MatchCommand}" />
-                  <CheckBox Content="Target" IsChecked="{Binding IsTarget}" Margin="0,-4" />
+                    <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateStart,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                    <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateStart,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
+                    <TextBox hhui:SelectTextOnFocus.Active="True" MinWidth="10" Text="{Binding DateEnd,Mode=TwoWay,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                    <tlrkInput:RadDateTimePicker SelectedValue="{Binding DateEnd,Mode=TwoWay}" Width="18" DateTimeWatermarkContent="" />
+                    <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding ShowCommand}" />
+                    <Button Content="≤" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding DescendCommand}" />
+                    <Button Content="≥" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding AdvanceCommand}" />
+                    <Button Content="{Binding Label}" ContentTemplate="{StaticResource SmallButtonTemplate}" Command="{Binding MatchCommand}" />
+                    <CheckBox Content="Target" IsChecked="{Binding IsTarget}" Margin="0,-4" />
                   </StackPanel>
                 </Expander.Content>
               </Expander>

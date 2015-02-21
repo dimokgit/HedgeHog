@@ -405,7 +405,7 @@ namespace HedgeHog.Alice.Client {
     public override TradingAccountModel AccountModel {
       get {
         if (_accountModel == null) {
-          _accountModel = new TradingAccountModel();
+          _accountModel = new TradingAccountModel(CommissionByTrade);
           AccountModel.CloseAllTrades += AccountModel_CloseAllTrades;
         }
         return _accountModel;
@@ -1362,7 +1362,7 @@ namespace HedgeHog.Alice.Client {
     void fwMaster_TradeRemoved(Trade trade) {
       if (IsInVirtualTrading) {
         var account = TradesManager.GetAccount();
-        account.Balance += trade.GrossPL - CommissionByTrade(trade);
+        account.Balance += trade.NetPL;
       }
       OnMasterTradeRemoved(trade);
     }
@@ -1408,7 +1408,7 @@ namespace HedgeHog.Alice.Client {
     void fwMaster_PriceChanged(object sender,PriceChangedEventArgs e) {
       try {
         if (IsInVirtualTrading) {
-          e.Account.Equity = e.Account.Balance + e.Account.Trades.Sum(t => t.GrossPL);
+          e.Account.Equity = e.Account.Balance + e.Account.Trades.Sum(t => t.NetPL);
           UpdateTradingAccount(e.Account);
         }
         Price Price = e.Price;
@@ -1628,8 +1628,12 @@ namespace HedgeHog.Alice.Client {
 
     public override string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
     override public double CommissionByTrade(Trade trade) {
-      return MasterAccount == null ? 0 
-        : (trade == null ? 1 : trade.Lots / 10000.0) * MasterAccount.Commission;
+      return MasterAccount == null
+        ? 0
+        : trade == null
+        ? 0
+        : TradesManagerStatic.PipAmount(trade.Lots, FWMaster.GetBaseUnitSize(trade.Pair), fwMaster.GetPipCost(trade.Pair).Round(1)
+        ) * MasterAccount.Commission;
     }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";
@@ -1642,7 +1646,7 @@ namespace HedgeHog.Alice.Client {
           TradeStatistics tradeStats = trade.InitUnKnown<TradeUnKNown>().TradeStats ?? new TradeStatistics();
           //if (GlobalStorage.Context.TradeHistories.Count(t => t.Id == trade.Id) > 0) return;
           ////var ct = ClosedTrade.CreateClosedTrade(trade.Buy, trade.Close, trade.CloseInPips, trade.GrossPL, trade.Id + "", trade.IsBuy, trade.IsParsed, trade.Limit, trade.LimitAmount, trade.LimitInPips, trade.Lots, trade.Open, trade.OpenInPips, trade.OpenOrderID + "", trade.OpenOrderReqID + "", trade.Pair, trade.PipValue, trade.PL, trade.PointSize, trade.PointSizeFormat, trade.Remark + "", trade.Stop, trade.StopAmount, trade.StopInPips, trade.Time, trade.TimeClose, trade.UnKnown + "", TradingMaster.AccountId + "", CommissionByTrade(trade), trade.IsVirtual, DateTime.Now, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack);
-          var ct = new t_Trade { Id = trade.Id, Buy = trade.Buy, PL = trade.PL, GrossPL = trade.GrossPL, Lot = trade.Lots, Pair = trade.Pair, TimeOpen = trade.Time, TimeClose = trade.TimeClose, AccountId = TradingMaster.AccountId + "", Commission = CommissionByTrade(trade), IsVirtual = trade.IsVirtual, CorridorMinutesBack = tradeStats.CorridorStDev, CorridorHeightInPips = tradeStats.CorridorStDevCma, SessionId = tradeStats.SessionId, PriceOpen = trade.Open, PriceClose = trade.Close };
+          var ct = new t_Trade { Id = trade.Id, Buy = trade.Buy, PL = trade.PL, GrossPL = trade.GrossPL, Lot = trade.Lots, Pair = trade.Pair, TimeOpen = trade.Time, TimeClose = trade.TimeClose, AccountId = TradingMaster.AccountId + "", Commission = trade.Commission, IsVirtual = trade.IsVirtual, CorridorMinutesBack = tradeStats.CorridorStDev, CorridorHeightInPips = tradeStats.CorridorStDevCma, SessionId = tradeStats.SessionId, PriceOpen = trade.Open, PriceClose = trade.Close };
           //var ct = TradeHistory.CreateTradeHistory(trade.Id, trade.Buy, (float)trade.PL, (float)trade.GrossPL, trade.Lots, trade.Pair, trade.Time, trade.TimeClose, TradingMaster.AccountId + "", (float)CommissionByTrade(trade), trade.IsVirtual, tradeStats.TakeProfitInPipsMinimum, tradeStats.MinutesBack, tradeStats.SessionId);
           ct.TimeStamp = DateTime.Now;
           ct.SessionInfo = tradeStats.SessionInfo;
@@ -1652,7 +1656,7 @@ namespace HedgeHog.Alice.Client {
           }, (c, e) => {
             c.t_Trade.Remove(ct);
             Log = new Exception(ct.ToXml());
-            MessageBox.Show(ct.ToXml(), "AddCosedTrade");
+            Log = e;
           });
         }
       } catch (Exception exc) { Log = exc; }

@@ -82,7 +82,7 @@ namespace Order2GoTest {
 
     private void btnLogin_Click(object sender, RoutedEventArgs e) {
       if (_coreFx.LogOn("D31538164001", "8802", true)) {
-        _fw = new O2G.FXCoreWrapper(_coreFx);
+        _fw = new O2G.FXCoreWrapper(_coreFx, t => { throw new NotImplementedException(); });
         _fw.Error += new EventHandler<HedgeHog.Shared.ErrorEventArgs>(_fw_Error);
         _fw.OrderError += new EventHandler<O2G.OrderErrorEventArgs>(_fw_OrderError);
         Log = "Logged in.";

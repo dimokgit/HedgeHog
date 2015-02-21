@@ -112,7 +112,7 @@ namespace HedgeHog.Shared {
     public Account Account {
       get {
         if (_account == null) {
-          _account = new Account() {
+          _account = new Account(CommissionByTrade) {
             ID = accountId,
             Balance = 50000,
             UsableMargin = 50000,

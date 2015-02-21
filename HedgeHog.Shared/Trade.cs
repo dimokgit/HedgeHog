@@ -42,6 +42,9 @@ namespace HedgeHog.Shared {
     public static double NetClose(this IEnumerable<Trade> trades) {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Close * t.Lots) / trades.Sum(t => t.Lots);
     }
+    public static double Net(this IEnumerable<Trade> trades) {
+      return trades == null ? 0 : trades.Select(t => t.NetPL).DefaultIfEmpty(0).Sum(t => t);
+    }
     public static double Gross(this IEnumerable<Trade> trades) {
       return trades == null ? 0 : trades.Select(t => t.GrossPL).DefaultIfEmpty(0).Sum(t => t);
     }
@@ -211,11 +214,17 @@ namespace HedgeHog.Shared {
         if (BaseUnitSize == 0) BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
         TimeClose = price.Time;
         Close = Buy ? price.Bid : price.Ask;
+        Commission = CommissionByTrade(this);
         //Close = Buy ? price.BuyClose : price.SellClose;
       }
     }
-
-    public double NetPL { get { return GrossPL + Commission; } }
+    Func<Trade, double> _commissionByTrade = t => { throw new NotImplementedException(); };
+    public Func<Trade, double> CommissionByTrade {
+      get { return _commissionByTrade; }
+      set { _commissionByTrade = value; }
+    }
+    public double NetPL { get { return GrossPL - CommissionByTrade(this); } }
+    public double NetPLInPips { get { return InPips(NetPL); } }
     public double OpenInPips { get { return InPips(this.Open); } }
     public double CloseInPips { get { return InPips(this.Close); } }
 

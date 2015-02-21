@@ -8651,10 +8651,10 @@ namespace HedgeHog.Alice.Store.Metadata
     /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingStatistics"/></summary>
     public static class TradingStatisticsMetadata
     {
-                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._GetGrossInPips"/></summary>
+                /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._GetNetInPips"/></summary>
         public const string _GetGrossInPips = "_GetGrossInPips";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.GetGrossInPips"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.GetNetInPips"/></summary>
         public const string GetGrossInPips = "GetGrossInPips";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingStatistics._CurrentGrossInPips"/></summary>
@@ -8763,7 +8763,7 @@ namespace HedgeHog.Alice.Store.Metadata
         public const string OriginalProfit = "OriginalProfit";
 
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.GetGrossInPips"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.GetNetInPips"/></summary>
         public static PropertyPath GetGrossInPipsPath { get { return new PropertyPath("GetGrossInPips"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingStatistics.CurrentGrossInPips"/></summary>

@@ -902,6 +902,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustEnterLevels
+        Func<Trade, bool> minPLOk = t => t.NetPLInPips > -PriceSpreadAverage;
         Action<Action> firstTimeAction = a => {
           if (firstTime) {
             Log = new Exception(new { CorrelationMinimum, CorridorDistance } + "");
@@ -909,7 +910,7 @@ namespace HedgeHog.Alice.Store {
             #region onCloseTradeLocal
             onCanTradeLocal = canTrade => canTrade || Trades.Any();
             onCloseTradeLocal += t => {
-              var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+              var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
               TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
               TakeProfitManual = double.NaN;
               BroadcastCloseAllTrades(this, tm => OnCloseTradeLocal(new[] { t }, tm));
@@ -2040,10 +2041,10 @@ namespace HedgeHog.Alice.Store {
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   onCloseTradeLocal += t => {
                     if (IsInVitualTrading) {
-                      var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+                      var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
                       TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
                     }
-                    if (t.GrossPL >= -PriceSpreadAverage) {
+                    if (minPLOk(t)) {
                       BuyLevel.CanTrade = SellLevel.CanTrade = false;
                       if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
                     }
@@ -2086,7 +2087,8 @@ namespace HedgeHog.Alice.Store {
                     return isManual() ? WFD.tupleBreakEmpty() : canSetLevels() ? WFD.tupleStay(_ti) : WFD.tupleNext(_ti);
                   }
                   ,_ti=>{
-                    if (!IsInVitualTrading || !IsAutoStrategy) SendSms("Trade Levels Set", "", true);
+                    _buySellLevelsForEach(sr => sr.TradesCount = TradeCountStart);
+                    if (!IsInVitualTrading && !IsAutoStrategy) SendSms("Trade Levels Set", "", true);
                     else BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
                     var limeTime = CorridorStats.Rates.Last().StartDateContinuous;
                     LineTimeMinFunc = () => limeTime;
@@ -2109,10 +2111,10 @@ namespace HedgeHog.Alice.Store {
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   onCloseTradeLocal += t => {
                     if (IsInVitualTrading) {
-                      var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+                      var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
                       TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
                     }
-                    if (t.GrossPL >= -PriceSpreadAverage) {
+                    if (minPLOk(t)) {
                       _buySellLevelsForEach(sr => sr.CanTrade = sr.InManual = false);
                       if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
                     }
@@ -2186,10 +2188,10 @@ namespace HedgeHog.Alice.Store {
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   onCloseTradeLocal += t => {
                     if (IsInVitualTrading) {
-                      var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+                      var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
                       TakeProfitManual = (t.PL < 0 ? InPoints(t.PL.Abs() * 1.4).Max(TakeProfitManual) : double.NaN).Max(tpByGross);
                     }
-                    if (t.GrossPL >= -PriceSpreadAverage) {
+                    if (minPLOk(t)) {
                       _buySellLevelsForEach(sr => sr.CanTrade = sr.InManual = false);
                       if (!IsInVitualTrading && !IsAutoStrategy) IsTradingActive = false;
                     }
@@ -2244,7 +2246,7 @@ namespace HedgeHog.Alice.Store {
                 #region onCloseTradeLocal
                 onCanTradeLocal = canTrade => canTrade || Trades.Any();
                 onCloseTradeLocal += t => {
-                  var tpByGross = InPoints(_tradingStatistics.GetGrossInPips()).Min(0).Abs() / 3;
+                  var tpByGross = InPoints(_tradingStatistics.GetNetInPips()).Min(0).Abs() / 3;
                   TakeProfitManual = tpByGross;
                   BroadcastCloseAllTrades(this, tm => OnCloseTradeLocal(new[] { t }, tm));
                 };
@@ -2661,7 +2663,7 @@ namespace HedgeHog.Alice.Store {
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
                   onCloseTradeLocal += t => {
-                    if (t.GrossPL > -PriceSpreadAverage)
+                    if (minPLOk(t))
                       if (!IsAutoStrategy) {
                         IsTradingActive = false;
                         CorridorStartDate = null;

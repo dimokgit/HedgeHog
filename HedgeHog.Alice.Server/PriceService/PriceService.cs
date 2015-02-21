@@ -65,7 +65,7 @@ namespace HedgeHog.Alice.Server {
 
     #region Ctor
     public PriceService() {
-      _fw = new FXCoreWrapper(App.CoreFX);
+      _fw = new FXCoreWrapper(App.CoreFX, t => { throw new NotImplementedException(); });
       App.CoreFX.LoggedIn += CoreFX_LoggedInEvent;
       MainWindowModel.Default.PropertyChanged += MainWindowModel_PropertyChanged;
       //bl.PairLoaded += bl_PairLoaded;

@@ -12,10 +12,10 @@ using System.Reflection;
 namespace HedgeHog.Alice.Store {
   public class TradingStatistics : INotifyPropertyChanged{
 
-    Func<double> _GetGrossInPips;
-    public Func<double> GetGrossInPips {
-      get { return _GetGrossInPips; }
-      set { _GetGrossInPips = value; }
+    Func<double> _GetNetInPips;
+    public Func<double> GetNetInPips {
+      get { return _GetNetInPips; }
+      set { _GetNetInPips = value; }
     }
 
     #region CurrentGrossInPips

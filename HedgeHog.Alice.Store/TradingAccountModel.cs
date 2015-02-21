@@ -10,6 +10,8 @@ using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Store {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
+    public TradingAccountModel(Func<Trade,double> commissionByTrade):base(commissionByTrade) {
+    }
     TradingStatistics _tradingStatistics;
     public TradingStatistics TradingStatistics {
       get { return _tradingStatistics; }
@@ -235,6 +237,7 @@ namespace HedgeHog.Alice.Store {
     public event PropertyChangedEventHandler PropertyChanged;
 
     #endregion
+
 
   }
 }

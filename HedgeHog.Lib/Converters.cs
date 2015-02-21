@@ -82,8 +82,8 @@ namespace HedgeHog {
 
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
-      var treshold = int.Parse(parameter + "");
-      return ((double)value).IntOrDouble(treshold);
+      var treshold = double.Parse(parameter + "");
+      return Mixins.IntOrDouble((double)value,treshold);
     }
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
       throw new NotImplementedException();
@@ -353,6 +353,11 @@ namespace HedgeHog {
 
     public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
       return value;
+    }
+  }
+  static class Mixins {
+    public static double IntOrDouble(double d, double max = 10) {
+      return d.Abs() > max ? d.ToInt() : Math.Round(d, 1);
     }
   }
 }

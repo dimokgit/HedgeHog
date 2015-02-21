@@ -307,6 +307,7 @@ namespace HedgeHog.Alice.Store {
           .Merge(Observable.FromEvent<OrderRemovedEventHandler, Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
           .Subscribe(updateEntryOrders);
+        updateEntryOrders("Start Tracking");
       };
       #endregion
       #region startBuySellCloseLevelsTracking

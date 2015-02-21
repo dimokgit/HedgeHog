@@ -659,7 +659,7 @@ namespace HedgeHog.Alice.Client {
     CancellationTokenSource _threadCancelation = new CancellationTokenSource();
     public RemoteControlModel() {
       try {
-        _tradingStatistics.GetGrossInPips = () => CalculateCurrentGrossInPips();
+        _tradingStatistics.GetNetInPips = () => CalculateCurrentNetInPips();
         if (!IsInDesigh) {
           InitializeModel();
           App.container.SatisfyImportsOnce(this);
@@ -726,7 +726,7 @@ namespace HedgeHog.Alice.Client {
           _tradingStatistics.CurrentGross = grosses.Sum(g => g);
           _tradingStatistics.CurrentGrossAverage = grosses.Average();
           {
-            _tradingStatistics.CurrentGrossInPips = _tradingStatistics.GetGrossInPips();
+            _tradingStatistics.CurrentGrossInPips = _tradingStatistics.GetNetInPips();
             //tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
             //.ToArray().Yield()
             //.Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
@@ -739,10 +739,10 @@ namespace HedgeHog.Alice.Client {
       }
     }
 
-    private double CalculateCurrentGrossInPips() {
+    private double CalculateCurrentNetInPips() {
       TradingMacro[] tms = GetTradingMacrosForStatistics();
       var currentLoss = _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
-      var totalGross = tradesManager.GetTrades().Gross() + currentLoss;
+      var totalGross = tradesManager.GetTrades().Net() + currentLoss;
       Func<TradingMacro, double> calcGrossInPips = tm => tradesManager.MoneyAndLotToPips(totalGross, tm.CurrentGrossLot, tm.Pair);
       var currentGrossInPips = tms.Where(tm => tm.Trades.Any())
         .IfEmpty(() => tms)
@@ -1251,9 +1251,8 @@ namespace HedgeHog.Alice.Client {
         var pair = trade.Pair;
         var tm = GetTradingMacros(pair).First();
         tm.LastTrade = trade;
-        var commission = MasterModel.CommissionByTrade(trade);
-        var totalGross = trade.GrossPL - commission;
-        tm.LastTradeLossInPips = (trade.PL - tm.InPips(commission)).Min(0);
+        var totalGross = trade.NetPL;
+        tm.LastTradeLossInPips = tm.InPips(totalGross).Min(0);
         tm.RunningBalance += totalGross;
         tm.CurrentLoss = tm.CurrentLoss + totalGross;
         OnZeroPositiveLoss(tm);

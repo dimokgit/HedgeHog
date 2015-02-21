@@ -8,6 +8,10 @@ using HedgeHog.Shared;
 namespace HedgeHog.Shared {
   [DataContract]
   public class Account {
+    public Account(Func<Trade,double> commissionByTrade) {
+      this.CommissionByTrade = commissionByTrade;
+    }
+    public Func<Trade, double> CommissionByTrade { get; set; }
     [DataMember]
     public string ID { get; set; }
     [DataMember]
@@ -47,7 +51,7 @@ namespace HedgeHog.Shared {
 
     public double PL { get { return Math.Round(Trades.GrossInPips(), 1); } }
 
-    public double Gross { get { return Math.Round(Equity - Balance, 1); } }
+    public double Gross { get { return Math.Round(Equity - Balance-Trades.Sum(CommissionByTrade), 1); } }
 
     public double StopToBalanceRatio { get { return StopAmount / Balance; } }
 

@@ -2271,7 +2271,7 @@ namespace HedgeHog.Alice.Client.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.UpdateTradingStatistics"/></summary>
         public const string UpdateTradingStatistics = "UpdateTradingStatistics";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CalculateCurrentGrossInPips"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.CalculateCurrentNetInPips"/></summary>
         public const string CalculateCurrentGrossInPips = "CalculateCurrentGrossInPips";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Client.RemoteControlModel.GetTradingMacrosForStatistics"/></summary>

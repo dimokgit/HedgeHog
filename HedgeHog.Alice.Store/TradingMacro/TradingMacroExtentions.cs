@@ -41,8 +41,8 @@ namespace HedgeHog.Alice.Store {
     #region Subjects
     static TimeSpan THROTTLE_INTERVAL = TimeSpan.FromSeconds(1);
 
-    public void OnLoadRates() {
-      broadcastLoadRates.Post(u => LoadRates());
+    public void OnLoadRates(Action a = null) {
+      broadcastLoadRates.Post(u => LoadRates(a));
     }
 
     #region ScanCorridor Broadcast
@@ -2759,7 +2759,10 @@ namespace HedgeHog.Alice.Store {
     double CalculateTakeProfit(bool dontAdjust = false) {
       var tp = 0.0;
       tp = GetValueByTakeProfitFunction(TakeProfitFunction);
-      return dontAdjust ? tp : tp.Max((PriceSpreadAverage.GetValueOrDefault(double.NaN) + InPoints(CommissionByTrade(null))) * 2);
+      Func<Trade> newTrade = () => new Trade() { Lots = LotSizeByLossBuy.Max(LotSizeByLossSell), Pair = Pair, CommissionByTrade = CommissionByTrade };
+      return dontAdjust
+        ? tp
+        : tp.Max((PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2 + CommissionByTrade(newTrade())));
     }
 
     #region TakeProfitBSRatio
@@ -3394,11 +3397,10 @@ namespace HedgeHog.Alice.Store {
           CorridorStartDate = null;
           goto case TradingMacroMetadata.TakeProfitFunction;
         case TradingMacroMetadata.BarsCount:
-          break;
         case TradingMacroMetadata.LimitBar:
           //Strategy = Strategies.None;
           if (!IsInVitualTrading) {
-            Task.Factory.StartNew(() => LoadRates(() => UseRatesInternal(ri => ri.Clear())));
+            OnLoadRates(() => UseRatesInternal(ri => ri.Clear()));
           } else {
             var func = new[] { 
               SetVoltage, SetVoltage2, 

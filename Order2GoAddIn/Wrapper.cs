@@ -453,8 +453,8 @@ namespace Order2GoAddIn {
     #region Constructor
     PropertyObserver<CoreFX> _coreFxObserver;
     public CoreFX CoreFX { get; set; }
-    public FXCoreWrapper() : this(new CoreFX(), null, null) { }
-    public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null, null) { }
+    //public FXCoreWrapper() : this(new CoreFX(), null, null) { }
+    //public FXCoreWrapper(CoreFX coreFX) : this(coreFX, null, null) { }
     public FXCoreWrapper(CoreFX coreFX, Func<Trade, double> commissionByTrade) : this(coreFX, null, commissionByTrade) { }
     public FXCoreWrapper(CoreFX coreFX, string pair, Func<Trade, double> commissionByTrade) {
       if (coreFX == null) throw new NullReferenceException("coreFx parameter can npt be null.");
@@ -773,7 +773,7 @@ namespace Order2GoAddIn {
         var row = GetRows(TABLE_ACCOUNTS).First();
         //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
         var trades = new Trade[] { };
-        var account = new Account() {
+        var account = new Account(CommissionByTrade) {
           ID = row.CellValue(FIELD_ACCOUNTID) + "",
           Balance = (double)row.CellValue(FIELD_BALANCE),
           UsableMargin = (double)row.CellValue(FIELD_USABLEMARGIN),
@@ -1110,7 +1110,8 @@ namespace Order2GoAddIn {
         TimeClose = ConvertDateToLocal((DateTime)t.CellValue("CloseTime")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
         OpenOrderID = t.CellValue("OpenOrderID") + "",
         OpenOrderReqID = t.CellValue("OpenOrderReqID") + "",
-        Remark = new TradeRemark(t.CellValue("OQTXT") + "")
+        Remark = new TradeRemark(t.CellValue("OQTXT") + ""),
+        CommissionByTrade = CommissionByTrade
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
@@ -1143,7 +1144,8 @@ namespace Order2GoAddIn {
         OpenOrderReqID = t.CellValue("OpenOrderReqID") + "",
         //StopOrderID = t.CellValue("StopOrderID") + "",
         //LimitOrderID = t.CellValue("LimitOrderID") + "",
-        Remark = new TradeRemark(t.CellValue("QTXT") + "")
+        Remark = new TradeRemark(t.CellValue("QTXT") + ""),
+        CommissionByTrade = CommissionByTrade
       };
       if (!IsFIFO(trade.Pair)) {
         trade.Limit = (double)t.CellValue("Limit");
@@ -1178,7 +1180,8 @@ namespace Order2GoAddIn {
         Time = ConvertDateToLocal((DateTime)t.GetValue("Time")),// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset),
         OpenOrderID = t.GetValue("OpenOrderID") + "",
         OpenOrderReqID = t.GetValue("OpenOrderReqID") + "",
-        Remark = new TradeRemark(t.GetValue("QTXT") + "")
+        Remark = new TradeRemark(t.GetValue("QTXT") + ""),
+        CommissionByTrade = CommissionByTrade
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
@@ -1205,7 +1208,8 @@ namespace Order2GoAddIn {
         Time = ConvertDateToLocal(t.GetDateTime("Time")),// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset),
         OpenOrderID = t.Get("OpenOrderID"),
         OpenOrderReqID = t.Get("OpenOrderReqID"),
-        Remark = new TradeRemark(t.Get("QTXT"))
+        Remark = new TradeRemark(t.Get("QTXT")),
+        CommissionByTrade = CommissionByTrade
       };
       if (IsFIFO(trade.Pair)) {
         var netLimit = GetNetLimitOrder(trade);
