@@ -126,15 +126,15 @@ namespace HedgeHog.Bars {
       return bars.Last().StartDate < bars.First().StartDate;
     }
 
-    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars) where TBar : BarBaseDate {
+    public static void SetStartDateForChart<TBar>(this IList<TBar> bars) where TBar : BarBaseDate {
       bars.SetStartDateForChart(bars.GetPeriod());
     }
-    public static void SetStartDateForChart<TBar>(this IEnumerable<TBar> bars, TimeSpan period) where TBar : BarBaseDate {
+    public static void SetStartDateForChart<TBar>(this IList<TBar> bars, TimeSpan period) where TBar : BarBaseDate {
       if (period > TimeSpan.Zero) {
-        bars = bars.OrderBarsDescending();
+        bars = bars.Reverse().ToList();
         var rateLast = bars.First();
         rateLast.StartDateContinuous = rateLast.StartDate;
-        bars.OrderBarsDescending().Aggregate((bp, bn) => {
+        bars.Aggregate((bp, bn) => {
           bn.StartDateContinuous = bp.StartDateContinuous - period;
           return bn;
         });

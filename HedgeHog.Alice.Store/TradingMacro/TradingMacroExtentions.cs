@@ -764,7 +764,7 @@ namespace HedgeHog.Alice.Store {
 
 
         if (value != null && UseRates(rs => rs.Any())) {
-          SetTrendLines();
+          SetTrendLines(RatesArray);
           CorridorAngle = CorridorStats.Slope;
           var tp = CalculateTakeProfit();
           TakeProfitPips = InPips(tp);

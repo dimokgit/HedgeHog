@@ -252,7 +252,7 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    public delegate Rate[] SetTrendLinesDelegate();
+    public delegate Rate[] SetTrendLinesDelegate(IList<Rate> rates);
     double[] _getRegressionLeftRightRates() {
       var rateLeft = CorridorStats.Coeffs.RegressionValue(CorridorStats.Rates.Count - 1);
       var rightIndex = RatesArray.ReverseIfNot().IndexOf(CorridorStats.Rates.LastBC());
@@ -260,11 +260,11 @@ namespace HedgeHog.Alice.Store {
       return new[] { rateLeft, rateRight };
     }
 
-    Rate[] _setTrendLineDefault() {
+    Rate[] _setTrendLineDefault(IList<Rate> source) {
       double h, l;
       h = l = CorridorStats.StDevMin;
       if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-      var rates = new[] { RatesArray.LastBC(), CorridorStats.Rates.LastBC() };
+      var rates = new[] { source.LastBC(), source.Skip(source.Count - CorridorStats.Rates.Count).First() };
       var regRates = _getRegressionLeftRightRates();
 
       rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
@@ -449,10 +449,10 @@ namespace HedgeHog.Alice.Store {
           var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
           return new[] { rateLeft, rateRight };
         };
-        Func<int, Rate[]> setTrendLines = (levels) => {
-          return SetTrendLines1231(getStDev, getRegressionLeftRightRates, levels);
+        Func<IList<Rate>, int, Rate[]> setTrendLines = (rates,levels) => {
+          return SetTrendLines1231(rates,getStDev, getRegressionLeftRightRates, levels);
         };
-        SetTrendLines = () => setTrendLines(3);
+        SetTrendLines = rates => setTrendLines(rates,3);
         #endregion
         Func<bool, Func<Rate, double>> tradeExit = isBuy => MustExitOnReverse ? _priceAvg : GetTradeExitBy(isBuy);
         Action onEOW = () => { };
@@ -3031,7 +3031,7 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    private Rate[] SetTrendLines1231(Func<double[]> getStDev, Func<double[]> getRegressionLeftRightRates, int levels) {
+    private Rate[] SetTrendLines1231(IList<Rate> source, Func<double[]> getStDev, Func<double[]> getRegressionLeftRightRates, int levels) {
       double h, l, h1, l1;
       double[] hl = getStDev == null ? new[] { CorridorStats.StDevMin, CorridorStats.StDevMin } : getStDev();
       h = hl[0] * 2;
@@ -3044,7 +3044,7 @@ namespace HedgeHog.Alice.Store {
         l1 = hl[1] * 3;
       }
       if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-      var rates = new[] { UseRatesInternal(ri => ri.Last()), CorridorStats.Rates.Last() };
+      var rates = new[] { source.Last(), source.Skip(source.Count- CorridorStats.Rates.Count).First() };
       var regRates = getRegressionLeftRightRates();
 
       rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
@@ -3065,9 +3065,9 @@ namespace HedgeHog.Alice.Store {
       }
       return rates;
     }
-    public Rate[] SetTrendLines1231_2() {
-      var c = _corridorLength2.Min(RatesArray.Count);
-      return SetTrendLines1231(RatesArray.GetRange(RatesArray.Count - c, c));
+    public Rate[] SetTrendLines1231_2(List<Rate> source) {
+      var c = _corridorLength2.Min(source.Count);
+      return SetTrendLines1231(source.GetRange(source.Count - c, c));
     }
     public static Rate[] SetTrendLines1231(IList<Rate> corridorValues) {
       if (corridorValues.Count == 0) return new Rate[0];

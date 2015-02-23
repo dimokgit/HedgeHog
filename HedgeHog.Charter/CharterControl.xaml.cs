@@ -2136,17 +2136,16 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
     public void AddTicks(List<Rate> ticks, List<Volt> voltsByTick,
   double[] voltageHighLow, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
-      AddTicks( ticks.ToArray(), null, new string[0], null, voltageHighLow, voltageCurr, priceMaxAvg, priceMinAvg,
+      AddTicks( ticks, null, new string[0], null, voltageHighLow, voltageCurr, priceMaxAvg, priceMinAvg,
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
-    public void AddTicks( Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
+    public void AddTicks( IList<Rate> ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
                           double[] voltageHighLow, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
       PriceBar[] voltsByTick = voltsByTicks.Take(1).Where(pb => pb.Length > 0).FirstOrDefault();
       #region Conversion Functions
       #endregion
-      ticks = ticks.ToArray();
       #region Set DataSources
       if (ticks.Any(t => t != null && t.PriceAvg1 != 0)) {
         #region Set Trendlines

@@ -1029,24 +1029,26 @@ namespace HedgeHog.Alice.Client {
           if (charter.IsParentHidden) return;
           if (tm.IsCharterMinimized) return;
         }
-        Rate[] rates = tm.RatesArray.ToArray();//.RatesCopy();
+        List<Rate> rates = tm.RatesArray.ToList();//.RatesCopy();
         if (!rates.Any()) return;
         string pair = tm.Pair;
         if (tm == null) return;
         if (rates.Count() == 0) return;
+        var ratesForChart = rates;
         if (tm.FitRatesToPlotter) {
           var distanceInSeconds = rates.DistinctUntilChanged(r => r.StartDate2.AddMilliseconds(-r.StartDate2.Millisecond)).Count() / charter.ChartAreaWidth;
-          rates = Task.Factory.StartNew(() => rates
-            .Reverse()
+          ratesForChart = Task.Factory.StartNew(() => rates
+            .Reverse<Rate>()
             .GroupByCloseness(distanceInSeconds, (r1, r2, d) => (r1.StartDate2 - r2.StartDate2).TotalSeconds.Abs() < d)
             .Reverse()
-            .ToArray(g => {
+            .ToList(g => {
               var rate = g.GroupToRate();
               tm.SetVoltage(rate, g.Average(r => tm.GetVoltage(r)));
               return rate;
             })).Result;
           //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, tm.Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
         }
+        ratesForChart.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
@@ -1055,7 +1057,7 @@ namespace HedgeHog.Alice.Client {
         var corridorTime2 = !tm.WaveTradeStart1.HasRates ? DateTime.MinValue : tm.WaveTradeStart1.Rates.LastBC().StartDateContinuous;// tm.CorridorsRates.Count < 2 ? DateTime.MinValue : tm.CorridorsRates[1][0].StartDateContinuous;
         var timeCurr = tm.LastTrade.Pair == tm.Pair && !tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.TimeClose }.Max() : DateTime.MinValue;
         var timeLow = tm.LastTrade.Pair == tm.Pair && tm.LastTrade.Buy ? new[] { tm.LastTrade.Time, tm.LastTrade.Time }.Max() : DateTime.MinValue;
-        var dateMin = rates.Min(r => r.StartDateContinuous);
+        var dateMin = ratesForChart.Min(r => r.StartDateContinuous);
         string[] info = new string[] { };
         //RunWithTimeout.WaitFor<object>.Run(TimeSpan.FromSeconds(1), () => {
         //charter.Dispatcher.Invoke(new Action(() => {
@@ -1092,12 +1094,11 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          charter.SetTrendLines(tm.SetTrendLines());
-          charter.SetTrendLines2(tm.SetTrendLines1231_2());
+          charter.SetTrendLines(tm.SetTrendLines(rates));
+          charter.SetTrendLines2(tm.SetTrendLines1231_2(rates));
           charter.SetMATrendLines(tm.LineMA);
           charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
-          var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
           var volts = tm.GetVoltage;
           var volts2 = tm.GetVoltage2;
@@ -1106,12 +1107,12 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
           PriceBar[] distances = !tm.UseVoltage ? new PriceBar[0]
-            : rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r) }).ToArray();
+            : ratesForChart.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r) }).ToArray();
           var lastDist = distances.TakeWhile(d => d.Speed.IsNotNaN()).Select(d => d.Speed).LastOrDefault();
           distances.Where(d => d.Speed.IsNaN()).ForEach(d => d.Speed = lastDist);
           //var volt2Dedault = rates.SkipWhile(r => volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
           //PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
-          charter.AddTicks(rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
+          charter.AddTicks(ratesForChart, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
@@ -1126,9 +1127,9 @@ namespace HedgeHog.Alice.Client {
           else if (tm.LineTimeMinFunc != null)
             charter.LineTimeMin = tm.LineTimeMinFunc();
           if (tm.WaveShort.HasRates)
-            charter.LineTimeShort = tm.WaveShort.Rates.LastBC();
+            charter.LineTimeShort = rates.Skip(rates.Count- tm.WaveShort.Rates.Count).First();
           if (tm.CorridorDistance > 0)
-            charter.LineTimeTakeProfit = tm.RatesArray.Skip(tm.RatesArray.Count - tm.CorridorDistance).First().StartDateContinuous;
+            charter.LineTimeTakeProfit = rates.Skip(rates.Count - tm.CorridorDistance).First().StartDateContinuous;
           var dic = tm.Resistances.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, true));
           charter.SetBuyRates(dic);
           dic = tm.Supports.ToDictionary(s => s.UID, s => new CharterControl.BuySellLevel(s, s.Rate, false));
