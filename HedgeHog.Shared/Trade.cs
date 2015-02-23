@@ -11,19 +11,6 @@ using System.Diagnostics;
 
 namespace HedgeHog.Shared {
   public static class TradeExtensions {
-    public static double DistanceMaximum(this IList<Trade> trades) {
-      return trades.DistanceMaximum(t => t.PL);
-    }
-    public static double DistanceMaximum(this IList<Trade> trades, Func<Trade, double> tradeValue) {
-      var distanceMax = 0.0;
-      if (trades != null && trades.Count > 1)
-        trades.OrderBy(tradeValue).Aggregate((tp, tn) => {
-          distanceMax = Math.Max(distanceMax, tradeValue(tn) - tradeValue(tp));
-          return tn;
-        });
-      return distanceMax;
-    }
-
     public static int Positions(this IEnumerable<Trade> trades,int lotBase) {
       return ((double)trades.Sum(t => t.Lots) / lotBase).Ceiling();
     }
@@ -34,7 +21,7 @@ namespace HedgeHog.Shared {
       return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.Buy ? t.Lots : -t.Lots);
     }
     public static double GrossInPips(this IEnumerable<Trade> trades) {
-      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.PL * t.Lots) / trades.Sum(t => t.Lots);
+      return trades == null || trades.Count() == 0 ? 0 : trades.Sum(t => t.PL * t.Lots) / trades.Lots();
     }
     public static double NetOpen(this IEnumerable<Trade> trades, double defaultValue = 0) {
       return trades == null || trades.Count() == 0 ? defaultValue : trades.Sum(t => t.Open * t.Lots) / trades.Sum(t => t.Lots);
@@ -65,6 +52,7 @@ namespace HedgeHog.Shared {
     }
   }
   public class TradeEventArgs : EventArgs {
+    public bool IsHandled { get; set; }
     public Trade Trade { get; set; }
     public TradeEventArgs(Trade newTrade) {
       this.Trade = newTrade;
@@ -76,6 +64,15 @@ namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
   public class Trade : PositionBase {
+    /// <summary>
+    /// Not Implemented exception
+    /// </summary>
+    public static Func<double> PipRateNI = () => { throw new NotImplementedException(); };
+    public static Trade Create(string pair, double pipSize,Func<Trade,double> commissionByTrade) {
+      return new Trade() { Pair = pair, PipSize = pipSize, CommissionByTrade = commissionByTrade };
+    }
+    protected Trade() {
+    }
     [DataMember]
     public string Id { get; set; }
     string _Pair;
@@ -277,18 +274,6 @@ namespace HedgeHog.Shared {
 
       this.Remark = new TradeRemark(xmlElement.Attribute("CQTXT").Value);
     }
-
-    double _PipSize;
-
-    [UpdateOnUpdate]
-    public double PipSize {
-      get { return _PipSize; }
-      set {
-        _PipSize = value; 
-      }
-    }
-
-
   }
   [Serializable]
   [DataContract]

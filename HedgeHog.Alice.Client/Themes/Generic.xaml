@@ -32,7 +32,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
             <DataGrid AutoGenerateColumns="False" ItemsSource="{Binding}" FontWeight="Black"
-                      RowBackground="{Binding [0].OriginalProfit,Converter={StaticResource ProfitToColorConverter}}">
+                      RowBackground="{Binding [0].CurrentGrossInPips,Converter={StaticResource ProfitToColorConverter}}">
               <DataGrid.Columns>
                 <DataGridTextColumn Header="Account" Binding="{Binding ID}" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="Balance" CellTemplate="{StaticResource CombinedBalanceCellTemplate}" IsReadOnly="True">
@@ -81,7 +81,7 @@
                     </DataTemplate>
                   </DataGridTemplateColumn.CellEditingTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="$$$" Binding="{Binding Gross,StringFormat=${0},Converter={x:Static hh:IntOrDoubleConverter.Default},ConverterParameter=7.5}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="$$$" Binding="{Binding Net,StringFormat=${0},Converter={x:Static hh:IntOrDoubleConverter.Default},ConverterParameter=7.5}" IsReadOnly="True"/>
                 <DataGridTemplateColumn Header="DPL$">
                   <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>

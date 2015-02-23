@@ -11,6 +11,7 @@ using System.Threading.Tasks.Dataflow;
 using System.Reactive;
 using HedgeHog.Shared;
 using HedgeHog.Shared.Messages;
+using EntityFramework.BulkInsert.Extensions;
 
 namespace HedgeHog.Alice.Store {
   public static class PriceHistory {
@@ -34,9 +35,9 @@ namespace HedgeHog.Alice.Store {
         var offset = TimeSpan.FromMinutes(period);
         using (var context = new ForexEntities()) {
           if (dateStart > DateTime.MinValue) {
-            var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Min();
-            if (dateMin == DateTimeOffset.MinValue) dateMin = DateTimeOffset.Now;
-            var dateEnd = dateMin.Subtract(offset).DateTime;
+            var dateMin = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Min(b => (DateTimeOffset?)b.StartDate);
+            if (!dateMin.HasValue) dateMin = DateTimeOffset.Now;
+            var dateEnd = dateMin.Value.Subtract(offset).DateTime;
             fw.GetBarsBase<Rate>(pair, period, 0, dateStart, dateEnd, new List<Rate>(), showProgress);
           }
           var q = context.t_Bar.Where(b => b.Pair == pair && b.Period == period).Select(b => b.StartDate).Max();
@@ -57,22 +58,22 @@ namespace HedgeHog.Alice.Store {
       if (progressCallback != null) progressCallback(args.Message);
       else Debug.WriteLine("{0}", args.Message);
       var context = new ForexEntities();
-      foreach (var t in args.NewRates.Distinct()) {
-        var bar = context.t_Bar.Create();
-        FillBar(period, pair, bar, t);
-        context.t_Bar.Add(bar);
-      }
-      Action a = new Action(() => {
-        try {
-          context.SaveChanges();
-          context.Dispose();
-        } catch (Exception exc) {
-          if (progressCallback != null) progressCallback(exc);
-        }
-      });
+      context.Configuration.AutoDetectChangesEnabled = false;
+      context.Configuration.ValidateOnSaveEnabled = false;
+      Action a = () =>
+        args.NewRates.Distinct().Do(t => {
+          context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
+          try {
+            context.SaveChanges();
+          } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) {
+          } catch (Exception exc) {
+            if (progressCallback != null) progressCallback(exc);
+          }
+        }).TakeLast(1)
+        .ForEach(_ => context.Dispose());
       saveTickActionBlock.Post(a);
     }
-    private static void FillBar(int period, string pair, t_Bar bar, Rate t) {
+    private static t_Bar FillBar(int period, string pair, t_Bar bar, Rate t) {
       bar.Pair = pair;
       bar.Period = period;
       bar.StartDate = t.StartDate2;
@@ -86,6 +87,7 @@ namespace HedgeHog.Alice.Store {
       bar.BidClose = (float)t.BidClose;
       bar.Volume = t.Volume;
       bar.Row = new[] { t }.OfType<Tick>().Select(tick => tick.Row).DefaultIfEmpty().Single();
+      return bar;
     }
   }
 }

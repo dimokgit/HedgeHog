@@ -10,7 +10,7 @@ using HedgeHog.Alice.Store;
 
 namespace HedgeHog.Alice.Store {
   public class TradingAccountModel : Shared.Account, INotifyPropertyChanged {
-    public TradingAccountModel(Func<Trade,double> commissionByTrade):base(commissionByTrade) {
+    public TradingAccountModel(Func<Trade,double> commissionByTrade):base() {
     }
     TradingStatistics _tradingStatistics;
     public TradingStatistics TradingStatistics {
@@ -162,7 +162,7 @@ namespace HedgeHog.Alice.Store {
         () => accountRow.IsMarginCall,
         () => accountRow.PipsToMC,
         () => accountRow.PL,
-        () => accountRow.Gross,
+        () => accountRow.Net,
         () => accountRow.UsableMargin,
         () => accountRow.Trades,
         () => accountRow.HasProfit,
@@ -183,7 +183,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public bool HasProfit { get { return Gross > 0; } }
+    public bool HasProfit { get { return Net > 0; } }
     public void OnPropertyChanged(params Expression<Func<object>>[] propertyLamdas) {
       foreach (var pl in propertyLamdas) 
         RaisePropertyChanged(pl);

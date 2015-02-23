@@ -1208,6 +1208,7 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Register<Exception>(this, exc => Log = exc);
         #region FXCM
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
+        TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
         virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
         var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
         this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
@@ -1627,13 +1628,21 @@ namespace HedgeHog.Alice.Client {
     #endregion
 
     public override string TradingMacroName { get { return MasterAccount == null ? "" : MasterAccount.TradingMacroName; } }
+    double CommissionByLot(int lot) {
+      return MasterAccount == null
+        ? 0
+        : lot/ 10000.0 * MasterAccount.Commission;
+    }
+    static T TestDefault<T>(T value,string errorMessage) {
+      if (EqualityComparer<T>.Default.Equals(value, default(T))) throw new ArgumentException(errorMessage);
+      return value;
+    }
     override public double CommissionByTrade(Trade trade) {
       return MasterAccount == null
         ? 0
         : trade == null
         ? 0
-        : TradesManagerStatic.PipAmount(trade.Lots, FWMaster.GetBaseUnitSize(trade.Pair), fwMaster.GetPipCost(trade.Pair).Round(1)
-        ) * MasterAccount.Commission;
+        : CommissionByLot(TestDefault(trade.Lots,"trade.Lots==0"));
     }
     public double CommissionByTrades(params Trade[] trades) { return trades.Sum(t => CommissionByTrade(t)); }
     string tradeIdLast = "";

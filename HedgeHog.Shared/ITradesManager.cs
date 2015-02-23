@@ -9,6 +9,7 @@ using System.Threading;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Windows;
+using System.Text.RegularExpressions;
 
 namespace HedgeHog.Shared {
   public interface ITradesManager {
@@ -34,13 +35,16 @@ namespace HedgeHog.Shared {
     Offer[] GetOffers();
     Offer GetOffer(string pair);
     Price GetPrice(string pair);
+    Price PriceFactory(string pair, double ask, double bid, DateTime timeLocal, int askChangeDirection = 0, int bidChangeDirection = 0);
     #endregion
 
     #region Money
-    int MoneyAndPipsToLot(double Money, double pips, string pair);
+    double RateForPipAmount(Price price);
+    double RateForPipAmount(double ask, double bid);
     #endregion
 
     #region Trades
+    Trade TradeFactory(string pair);
     Trade[] GetTradesInternal(string Pair);
     Trade[] GetTrades(string pair);
     Trade[] GetTrades();
@@ -166,10 +170,6 @@ namespace HedgeHog.Shared {
       var rateLast = rates[rates.Count - 1];
       return rateLast.StartDate.AddMinutes(barMinutes)/* - TimeSpan.FromSeconds(1)*/;
     }
-
-    public static double RelativeDollar(int baseLotSize, int baseUnitSize, double pipCost) {
-      return (baseLotSize / baseUnitSize) * pipCost;
-    }
     public static readonly DateTime FX_DATE_NOW = DateTime.FromOADate(0);
     public static int GetLotSize(double lot, int baseUnitSize, bool useCeiling) {
       return (lot / baseUnitSize).ToInt(useCeiling) * baseUnitSize;
@@ -181,29 +181,73 @@ namespace HedgeHog.Shared {
       var amountToTrade = balance * leverage * tradeRatio;
       return GetLotSize(amountToTrade, baseUnitSize);
     }
-    public static int MoneyAndPipsToLot(double Money, double pips, double PipCost, int BaseUnitSize) {
-      return GetLotSize(Money / pips / PipCost * BaseUnitSize, BaseUnitSize);
-    }
-    public static double MoneyAndLotToPips(this ITradesManager tm, double money, double lots, string pair) {
-      return tm == null ? double.NaN : MoneyAndLotToPips(money, lots, tm.GetPipCost(pair), tm.GetBaseUnitSize(pair));
-    }
-    public static double MoneyAndLotToPips(double money, double lots, double pipCost, double baseUnitSize) {
-      return money / lots / pipCost * baseUnitSize;
+    public static double MoneyAndLotToPips(this ITradesManager tm, double money, int lots, string pair) {
+      return tm == null ? double.NaN : MoneyAndLotToPips(pair, money, lots,tm.RateForPipAmount(tm.GetPrice(pair)), tm.GetPipSize(pair));
     }
     public static double MarginRequired(int lot, double baseUnitSize, double mmr) {
       return lot / baseUnitSize * mmr;
     }
-    public static double PipAmount(int lot, double baseUnitSize, double pipCost) {
-      return lot / (baseUnitSize / pipCost);
+    public static string AccountCurrency = null;
+    static string[] PairCurrencies(string pair) {
+      var ret = Regex.Matches(Regex.Replace(pair, "[^a-z]", "", RegexOptions.IgnoreCase), @"\w{3}")
+        .Cast<Match>().Select(m => m.Value.ToUpper()).ToArray();
+      if (ret.Length != 2) throw new ArgumentException(new { pair, error = "Wrong format" } + "");
+      return ret;
     }
+    public static double PipByPair(string pair, Func<double> left, Func<double> right) {
+      if (string.IsNullOrEmpty(AccountCurrency)) throw new ArgumentNullException(new { AccountCurrency } + "");
+      Func<double> error = () => { throw new NotSupportedException(new { pair, error = "Not Supported" } + ""); };
+      var acc = AccountCurrency.ToUpper();
+      var foos = new[] { 
+        new { acc, a = left} ,
+        new { acc, a = right}
+      };
+      return PairCurrencies(pair)
+        .Zip(foos, (c, f) => new { ok = c == f.acc, f.a })
+        .Where(a => a.ok)
+        .Select(a => a.a)
+        .IfEmpty(() => error)
+        .First()();
+    }
+    #region PipAmount
+    /// <summary>
+    /// Pip Dollar Value
+    /// </summary>
+    /// <param name="lot"></param>
+    /// <param name="rate">Usually Ask or (Ask+Bid)/2</param>
+    /// <param name="pipSize">EUR/USD:0.0001, USD/JPY:0.01</param>
+    /// <returns></returns>
+    public static double PipAmount(string pair, int lot, double rate, double pipSize) {
+      return PipsAndLotToMoney(pair, 1, lot, rate, pipSize);
+    }
+    #endregion
+    public static double PipsAndLotToMoney(string pair, double pips, int lot, double rate, double pipSize) {
+      var pl = pips * lot;
+      return PipByPair(pair,
+        () => pl * pipSize / rate,
+        () => pl / 10000);
+    }
+    public static double MoneyAndLotToPips(string pair, double money, int lot, double rate, double pipSize) {
+      var ml = money / lot;
+      return PipByPair(pair,
+        () => ml * rate /  pipSize,
+        () => ml * 10000);
+    }
+    #region PipCost
+    public static double PipCost(string pair, double rate, int baseUnit, double pipSize) {
+      return PipByPair(pair,
+        () => baseUnit * pipSize / rate,
+        () => baseUnit / 10000.0);
+    }
+    #endregion
     public static double InPoins(ITradesManager tm, string pair, double? price) {
       return (price * tm.GetPipSize(pair)).GetValueOrDefault();
     }
-    public static double MarginLeft(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
-      return balance - MarginRequired(lot, baseUnitSize, mmr) + pl * PipAmount(lot, baseUnitSize, pipCost);
+    public static double MarginLeft2(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipAmount) {
+      return balance - MarginRequired(lot, baseUnitSize, mmr) + pl * pipAmount;
     }
-    public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipCost) {
-      return MarginLeft(lot, pl, balance, mmr, baseUnitSize, pipCost) / PipAmount(lot, baseUnitSize, pipCost);
+    public static double PipToMarginCall(int lot, double pl, double balance, double mmr, double baseUnitSize, double pipAmount) {
+      return MarginLeft2(lot, pl, balance, mmr, baseUnitSize, pipAmount) / pipAmount;
     }
     public static int LotToMarginCall(int pipsToMC, double balance, int baseUnitSize, double pipCost, double MMR) {
       var lot = balance / (pipsToMC * pipCost / baseUnitSize + 1.0 / baseUnitSize * MMR);

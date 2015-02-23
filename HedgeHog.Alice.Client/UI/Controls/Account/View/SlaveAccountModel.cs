@@ -187,7 +187,7 @@ namespace HedgeHog.Alice.Client.UI.Controls {
 
         //masterTradesPending.ForEach(pt => localTrades.Add(pt));
         ShowTrades(
-          localTrades().Concat(masterTradesPending.Select(id => new Trade() { Id = id, Remark = new TradeRemark(id) })).ToList(),
+          localTrades().Concat(masterTradesPending.Select(id => { var t = fwLocal.TradeFactory(""); { t.Id = id; t.Remark = new TradeRemark(id); } return t; })).ToList(),
           LocalTrades);
 
         #region Sync (Open)

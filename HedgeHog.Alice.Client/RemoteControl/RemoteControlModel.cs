@@ -89,6 +89,7 @@ namespace HedgeHog.Alice.Client {
         charterNew.SetBinding(CharterControl.IsActiveProperty, isActiveBinding);
         charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
         charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
+        charterNew.RoundTo = tradingMacro.Digits();
         //charter.Show();
 
         /*
@@ -767,7 +768,7 @@ namespace HedgeHog.Alice.Client {
       var fileName = "ClosedTrades.xml";
       if (!File.Exists("ClosedTrades.xml")) return;
       foreach (var tradeString in File.ReadAllLines("ClosedTrades.xml").Where(s => !string.IsNullOrWhiteSpace(s))) {
-        var trade = new Trade().FromString(tradeString);
+        var trade = tradesManager.TradeFactory("").FromString(tradeString);
         MasterModel.AddCosedTrade(trade);
         //if (trade.TimeClose > DateTime.Now.AddMonths(-1)) ClosedTrades.Add(trade);
       }
@@ -932,10 +933,12 @@ namespace HedgeHog.Alice.Client {
             vt.RatesByPair = () => GetTradingMacros().GroupBy(tm => tm.Pair).ToDictionary(tm => tm.First().Pair, tm => tm.First().UseRatesInternal(ri => ri, 2000));
             vt.BarMinutes = (int)GetTradingMacros().First().BarPeriod;
           }
-          PriceChangeSubscriptionDispose();
-          _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>
-            (h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
-            .Subscribe(pce => { UpdateTradingStatistics(); }, exc => Log = exc);
+          if (false) {
+            PriceChangeSubscriptionDispose();
+            _priceChangedSubscribsion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>
+              (h => h, h => tradesManager.PriceChanged += h, h => tradesManager.PriceChanged -= h)
+              .Subscribe(pce => { UpdateTradingStatistics(); }, exc => Log = exc);
+          }
           tradesManager.TradeAdded += fw_TradeAdded;
           tradesManager.TradeClosed += fw_TradeClosed;
           tradesManager.Error += fw_Error;
@@ -945,7 +948,7 @@ namespace HedgeHog.Alice.Client {
           InitTradingMacro(tm);
           if (!IsInVirtualTrading) {
             (sender as CoreFX).SetOfferSubscription(tm.Pair);
-            tm.CurrentPrice = tradesManager.GetPrice(tm.Pair) ?? tm.CurrentPrice;
+            tm.CurrentPrice = tradesManager.GetPrice(tm.Pair);
           }
           tm.CurrentLot = tm.Trades.Sum(t => t.Lots);
           if (!IsInVirtualTrading) {
@@ -1032,7 +1035,7 @@ namespace HedgeHog.Alice.Client {
         if (tm == null) return;
         if (rates.Count() == 0) return;
         if (tm.FitRatesToPlotter) {
-          var distanceInSeconds = rates.DistinctUntilChanged(r=>r.StartDate2.AddMilliseconds(-r.StartDate2.Millisecond)).Count()/ charter.ChartAreaWidth;
+          var distanceInSeconds = rates.DistinctUntilChanged(r => r.StartDate2.AddMilliseconds(-r.StartDate2.Millisecond)).Count() / charter.ChartAreaWidth;
           rates = Task.Factory.StartNew(() => rates
             .Reverse()
             .GroupByCloseness(distanceInSeconds, (r1, r2, d) => (r1.StartDate2 - r2.StartDate2).TotalSeconds.Abs() < d)
@@ -1045,8 +1048,6 @@ namespace HedgeHog.Alice.Client {
           //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, tm.Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
         }
         rates.SetStartDateForChart(((int)tm.BarPeriod).FromMinutes());
-        var price = tm.CurrentPrice;
-        price.Digits = tradesManager.GetDigits(pair);
         var csFirst = tm.CorridorStats;
         if (csFirst == null || !csFirst.Rates.Any()) return;
         var corridorTime0 = tm.WaveTradeStart == null || !tm.WaveTradeStart.HasRates ? DateTime.MinValue : tm.WaveTradeStart.Rates[0].StartDateContinuous;
@@ -1084,9 +1085,9 @@ namespace HedgeHog.Alice.Client {
             /*2*/, tm.CorridorAngle
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
-            /*5*/, IntOrDouble(tm.StDevByHeightInPips,5)
-            /*6*/, IntOrDouble(tm.StDevByPriceAvgInPips,5)
-            /*7*/, IntOrDouble(tm.CorridorStats.StDevByHeightInPips,5)
+            /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)
+            /*6*/, IntOrDouble(tm.StDevByPriceAvgInPips, 5)
+            /*7*/, IntOrDouble(tm.CorridorStats.StDevByHeightInPips, 5)
             /*8*/, IntOrDouble(tm.CorridorStats.StDevByPriceAvgInPips, 5)
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
@@ -1094,7 +1095,7 @@ namespace HedgeHog.Alice.Client {
           charter.SetTrendLines(tm.SetTrendLines());
           charter.SetTrendLines2(tm.SetTrendLines1231_2());
           charter.SetMATrendLines(tm.LineMA);
-          charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
+          charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
           var distance = rates.LastBC().DistanceHistory;
           //var stDevBars = rates.Select(r => new PriceBar { StartDate = r.StartDateContinuous, Speed = tm.InPips(r.PriceStdDev) }).ToArray();
@@ -1104,13 +1105,13 @@ namespace HedgeHog.Alice.Client {
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(volts(r))).ToArray().FillGaps(r => double.IsNaN(volts(r)), r => r.DistanceHistory, (r, d) => r.DistanceHistory = d)),
           //  Task.Factory.StartNew(() => rates.SkipWhile(r => double.IsNaN(r.Distance1)).ToArray().FillGaps(r => double.IsNaN(r.Distance1), r => r.Distance1, (r, d) => r.Distance1 = d))
           //);
-          PriceBar[] distances = !tm.UseVoltage ? new PriceBar[0] 
+          PriceBar[] distances = !tm.UseVoltage ? new PriceBar[0]
             : rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts(r) }).ToArray();
           var lastDist = distances.TakeWhile(d => d.Speed.IsNotNaN()).Select(d => d.Speed).LastOrDefault();
           distances.Where(d => d.Speed.IsNaN()).ForEach(d => d.Speed = lastDist);
           //var volt2Dedault = rates.SkipWhile(r => volts2(r).IsNaN()).Select(volts2).FirstOrDefault();
           //PriceBar[] distances1 = rates.Select(r => new PriceBar { StartDate2 = new DateTimeOffset(r.StartDateContinuous.ToUniversalTime()), Speed = volts2(r).IfNaN(volt2Dedault) }).ToArray();
-          charter.AddTicks(price, rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
+          charter.AddTicks(rates, true ? new PriceBar[1][] { distances/*, distances1*/} : new PriceBar[0][], info, null,
             new[] { tm.GetVoltageHigh(), tm.GetVoltageLow() }, tm.GetVoltageAverage(), 0, 0, tm.Trades.IsBuy(true).NetOpen(), tm.Trades.IsBuy(false).NetOpen(),
             corridorTime0, corridorTime1, corridorTime2, new double[0]);
           if (tm.CorridorStats.StopRate != null)
@@ -1157,9 +1158,16 @@ namespace HedgeHog.Alice.Client {
     }
 
     public void fw_TradeAdded(object sender, TradeEventArgs e) {
+      if (e.IsHandled) return;
+      e.IsHandled = true;
       try {
         Trade trade = e.Trade;
+        var comm = MasterModel.CommissionByTrade(trade);
+        if (IsInVirtualTrading)
+          MasterModel.AccountModel.Balance -= comm;
         var tm = GetTradingMacros(trade.Pair).First();
+        tm.CurrentLoss -= comm;
+        tm.RunningBalance -= comm;
         //if (tm.LastTrade.Time < trade.Time) tm.LastTrade = trade;
         var trades = tradesManager.GetTradesInternal(trade.Pair);
         tm.CurrentLot = trades.Sum(t => t.Lots);
@@ -1246,6 +1254,8 @@ namespace HedgeHog.Alice.Client {
       GlobalStorage.UseAliceContextSaveChanges();
     }
     void fw_TradeClosed(object sender, TradeEventArgs e) {
+      if (e.IsHandled) return;
+      e.IsHandled = true;
       var trade = e.Trade;
       try {
         var pair = trade.Pair;
@@ -1456,6 +1466,7 @@ namespace HedgeHog.Alice.Client {
     void ScheduleInitTradingMacro(TradingMacro tm, bool unwind = false) {
       new Action(() => InitTradingMacro(tm, unwind)).ScheduleOnUI();
     }
+    Dictionary<TradingMacro, IDisposable> _syncDisposables = new Dictionary<TradingMacro, IDisposable>();
     private void InitTradingMacro(TradingMacro tm, bool unwind = false) {
       var isFilterOk = TradingMacroFilter(tm) && tm.IsActive;
       if (!unwind && isFilterOk) {
@@ -1463,12 +1474,19 @@ namespace HedgeHog.Alice.Client {
         tm.IpPort = MasterModel.IpPort;
         try {
           tm.SubscribeToTradeClosedEVent(() => tradesManager);
+          _syncDisposables.Add(tm, tm.SyncObservable.Subscribe(_ => {
+            UpdateTradingStatistics();
+          }));
         } catch (Exception exc) {
           Log = exc;
         }
       } else
         try {
           tm.UnSubscribeToTradeClosedEVent(tradesManager);
+          if (_syncDisposables.ContainsKey(tm)) {
+            _syncDisposables[tm].Dispose();
+            _syncDisposables.Remove(tm);
+          }
           if (!isFilterOk) DeleteCharter(tm);
         } catch (Exception exc) {
           Log = exc;

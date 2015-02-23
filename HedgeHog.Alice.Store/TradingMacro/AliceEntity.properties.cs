@@ -1056,7 +1056,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Correlation Min")]
-    [Category(categoryActive)]
+    [Category(categoryCorridor)]
     public double CorrelationMinimum {
       get { return StDevToSpreadRatio; }
       set {
@@ -1696,20 +1696,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #region ClosePriceMode
-    [Category(categoryTrading)]
-    public ClosePriceMode ClosePriceMode {
-      get { return Price.ClosePriceMode; }
-      set {
-        if (Price.ClosePriceMode != value) {
-          Price.ClosePriceMode = value;
-          OnPropertyChanged("ClosePriceMode");
-        }
-      }
-    }
-
-    #endregion
-
     public Freezing FreezeStopType {
       get { return (Freezing)this.FreezeStop; }
       set {
@@ -1872,19 +1858,11 @@ namespace HedgeHog.Alice.Store {
           : TradesManager.ServerTime;
       }
     }
-    Price GetVirtualCurrentPrice() {
-      try {
-        var rate = RatesArray.LastOrDefault();
-        return new Price(Pair, rate, ServerTime, PointSize, TradesManager.GetDigits(Pair), true);
-      } catch {
-        throw;
-      }
-    }
     double? _currentSpread;
     Price _currentPrice;
     public Price CurrentPrice {
       get {
-        return IsInVitualTrading ? GetVirtualCurrentPrice() : _currentPrice;
+        return _currentPrice;
       }
       set {
         _currentPrice = value;

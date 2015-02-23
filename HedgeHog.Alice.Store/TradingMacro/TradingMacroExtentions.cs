@@ -1001,6 +1001,8 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged(TradingMacroMetadata.CurrentGross);
       OnPropertyChanged(TradingMacroMetadata.CurrentGrossInPips);
       OnPropertyChanged(TradingMacroMetadata.OpenTradesGross);
+      OnPropertyChanged(TradingMacroMetadata.OpenTradesGross2);
+      SyncSubject.OnNext(this);
     }
     #endregion
 
@@ -1011,12 +1013,13 @@ namespace HedgeHog.Alice.Store {
     public double OpenTradesGross {
       get { return Trades.Gross() - (TradesManager == null ? 0 : TradesManager.CommissionByTrades(Trades)); }
     }
+    public double OpenTradesGross2 { get { return OpenTradesGross - TradesManager.CommissionByTrades(Trades); } }
 
     public double CurrentGross {
       get { return CurrentLoss + OpenTradesGross; }
     }
 
-    public double CurrentGrossLot { get { return Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
+    public int CurrentGrossLot { get { return Trades.Select(t => t.Lots).DefaultIfEmpty(AllowedLotSizeCore()).Sum(); } }
     public double CurrentGrossInPips {
       get {
         return TradesManager == null ? double.NaN : TradesManager.MoneyAndLotToPips(CurrentGross, CurrentGrossLot, Pair);
@@ -1148,7 +1151,7 @@ namespace HedgeHog.Alice.Store {
       return _inPips == null ? double.NaN : _inPips(Pair, d);
     }
 
-    int Digits() { return TradesManager.GetDigits(Pair); }
+    public int Digits() { return TradesManager.GetDigits(Pair); }
     private const int RatesHeightMinimumOff = 0;
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
@@ -1425,11 +1428,10 @@ namespace HedgeHog.Alice.Store {
         MagnetPrice = double.NaN;
         var currentPosition = -1;
         var indexCurrent = 0;
-        LastTrade = new Trade();
+        LastTrade = TradesManager.TradeFactory(Pair);
         _timeFrameHeights.Clear();
         FractalTimes = FractalTimes.Take(0);
         LineTimeMinFunc = null;
-        TakeProfitBSRatio = 1;
         if (_setVoltsSubscriber != null) _setVoltsSubscriber.Dispose();
         ResetTakeProfitManual();
         StDevByHeight = double.NaN;
@@ -1536,9 +1538,9 @@ namespace HedgeHog.Alice.Store {
                 if ((BarPeriod != BarsPeriodType.t1 || ratePrev == null || ratePrev.StartDate.Second != rate.StartDate.Second)) {
                   ratePrev = rate;
                   args.CurrentPosition = currentPosition = (100.0 * (indexCurrent - BarsCountCalc) / (_replayRates.Count - BarsCountCalc)).ToInt();
-                  var price = new Price(Pair, rateLast, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true);
+                  var price = new Price(Pair, rateLast);
                   swDict.Add("Before RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
-                  TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate, ServerTime, TradesManager.GetPipSize(Pair), TradesManager.GetDigits(Pair), true));
+                  TradesManager.RaisePriceChanged(Pair, BarPeriodInt, new Price(Pair, rate));
                   swDict.Add("After RaisePriceChanged", sw.ElapsedMilliseconds); sw.Restart();
                   ReplayEvents();
                   {
@@ -2121,6 +2123,7 @@ namespace HedgeHog.Alice.Store {
       return TradesManager == null ? double.NaN : TradesManager.InPoints(Pair, d);
     }
 
+    [ResetOnPair]
     double _pointSize = double.NaN;
     public double PointSize {
       get {
@@ -2131,13 +2134,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     #region PipAmount
-    private double _PipAmount;
     public double PipAmount {
-      get { return TradesManagerStatic.PipAmount(AllowedLotSizeCore(), TradesManager.GetBaseUnitSize(Pair), PipCost); }
+      get { return TradesManagerStatic.PipAmount(Pair, AllowedLotSizeCore(), TradesManager.RateForPipAmount(CurrentPrice.Ask, CurrentPrice.Bid), PointSize); }
     }
 
     #endregion
 
+    [ResetOnPair]
     double _pipCost = double.NaN;
     public double PipCost {
       get {
@@ -2158,10 +2161,10 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    Trade _lastTrade = new Trade();
+    Trade _lastTrade;
 
     public Trade LastTrade {
-      get { return _lastTrade; }
+      get { return _lastTrade ?? (_lastTrade = TradesManager.TradeFactory(Pair)); }
       set {
         if (value == null) return;
         _lastTrade = value;
@@ -2417,7 +2420,7 @@ namespace HedgeHog.Alice.Store {
 
     void AddCurrentTick(Price price) {
       UseRatesInternal(ri => {
-        if (BarPeriod != BarsPeriodType.t1 && (!ri.Any() || !HasRates || price.IsPlayback)) return;
+        if (BarPeriod != BarsPeriodType.t1 && (!ri.Any() || !HasRates)) return;
         var isTick = BarPeriod == BarsPeriodType.t1;
         if (BarPeriod == 0) {
           ri.Add(isTick ? new Tick(price, 0, false) : new Rate(price, false));
@@ -2746,28 +2749,35 @@ namespace HedgeHog.Alice.Store {
 
     delegate CorridorStatistics ScanCorridorDelegate(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow);
 
-    private List<Rate> RatesForTrades() {
-      return GetRatesSafe().Where(LastRateFilter).ToList();
-    }
-
-    private double CalculateTakeProfitInDollars(double? takeProfitInPips = null) {
-      return takeProfitInPips.GetValueOrDefault(CalculateTakeProfit()) * LotSize / 10000;
-    }
     public double CalculateTakeProfitInPips(bool dontAdjust = false) {
       return InPips(CalculateTakeProfit(dontAdjust));
     }
-    double CalculateTakeProfit(bool dontAdjust = false) {
-      var tp = 0.0;
-      tp = GetValueByTakeProfitFunction(TakeProfitFunction);
-      Func<Trade> newTrade = () => new Trade() { Lots = LotSizeByLossBuy.Max(LotSizeByLossSell), Pair = Pair, CommissionByTrade = CommissionByTrade };
-      return dontAdjust
-        ? tp
-        : tp.Max((PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2 + CommissionByTrade(newTrade())));
+    Trade _tradeForProfit;
+    private Trade TradeForCommissionCalculation() {
+      var trade = _tradeForProfit ?? (_tradeForProfit = TradesManager.TradeFactory(Pair));
+      trade.Lots = LotSizeByLossBuy.Max(LotSizeByLossSell);
+      return trade;
     }
+    double CommissionInPips() {
+      var trade = Trades.LastOrDefault() ?? TradeForCommissionCalculation();
+      if (trade.Lots == 0) return 0;
+      var com = CommissionByTrade(trade);
+      var rate = TradesManager.RateForPipAmount(CurrentPrice);
+      return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trade.Lots, rate, PointSize);
+    }
+    double CalculateTakeProfit(bool dontAdjust = false) {
+      var tp = GetValueByTakeProfitFunction(TakeProfitFunction);
+      return (dontAdjust
+        ? tp
+        : tp.Max(PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2)
+        ) + InPoints(CommissionInPips());
+    }
+
 
     #region TakeProfitBSRatio
     private double _TakeProfitBSRatio = 1;
-    ///"TakeProfit = (BuyLevel-SellLevel)*X"
+    [Description("TakeProfit = (BuyLevel-SellLevel)*X")]
+    [Category(categoryActive)]
     public double TakeProfitBSRatio {
       get { return _TakeProfitBSRatio; }
       set {
@@ -2814,7 +2824,7 @@ namespace HedgeHog.Alice.Store {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
-          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * (function == TradingMacroTakeProfitFunction.BuySellLevels2 ? 2 : 1);
+          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2;
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_2)
             tp /= 2;
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_X)
@@ -2963,7 +2973,29 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
+    IObservable<TradingMacro> _SyncObservable;
+    public IObservable<TradingMacro> SyncObservable { get { return _SyncObservable ?? (_SyncObservable = InitSyncObservable()); } }
+    BroadcastBlock<TradingMacro> buffer = new BroadcastBlock<TradingMacro>(n => n);
+    object _SyncSubjectLocker = new object();
+    ISubject<TradingMacro> _SyncSubject;
+    ISubject<TradingMacro> SyncSubject {
+      get {
+        if (SyncObservable == null)
+          lock (_SyncSubjectLocker) {
+            if (_SyncSubject == null)
+              InitSyncObservable();
+          }
+        return _SyncSubject;
+      }
+    }
 
+    private IObservable<TradingMacro> InitSyncObservable() {
+      _SyncSubject = new Subject<TradingMacro>();
+      _SyncSubject
+        .ObserveOn(TaskPoolScheduler.Default)
+        .Subscribe(a => buffer.SendAsync(a), exc => Log = exc);
+      return _SyncObservable = buffer.AsObservable();
+    }
     #region ScanCorridor Subject
     object _ScanCoridorSubjectLocker = new object();
     ISubject<Action> _ScanCoridorSubject;
@@ -3080,8 +3112,12 @@ namespace HedgeHog.Alice.Store {
         : TradesManagerStatic.LotToMarginCall(MaxPipsToPMC()
         , account.Equity / tms.Count(tm => tm.TradingRatioByPMC)
         , BaseUnitSize
-        , PipCost
+        , GetPipCost()
         , TradesManager.GetOffer(Pair).MMR);
+    }
+
+    private double GetPipCost() {
+      return TradesManagerStatic.PipCost(Pair, TradesManager.RateForPipAmount(CurrentPrice), BaseUnitSize, PointSize);
     }
 
     int LotSizeByLoss(ITradesManager tradesManager, double loss, int baseLotSize, double lotMultiplierInPips) {
@@ -3114,10 +3150,6 @@ namespace HedgeHog.Alice.Store {
     public int AllowedLotSizeCore(double? lotMultiplierInPips = null) {
       if (!HasRates) return 0;
       return LotSizeByLoss(lotMultiplierInPips).Max(LotSize);//.Min(MaxLotByTakeProfitRatio.ToInt() * LotSize);
-    }
-    private int CalculateLotCore(double totalGross, double? takeProfitPips = null) {
-      //return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TakeProfitPips), Pair);
-      return TradesManager.MoneyAndPipsToLot(Math.Min(0, totalGross).Abs(), takeProfitPips.GetValueOrDefault(TradingStatistics.TakeProfitPips), Pair);
     }
     #endregion
 
@@ -4329,5 +4361,7 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+  }
+  public class ResetOnPairAttribute : Attribute {
   }
 }

@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="AliceModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="AliceModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="OrderTemplate">
           <Key>
             <PropertyRef Name="ID" />
@@ -42,6 +42,7 @@
           <Property Name="IsActive" Type="bit" Nullable="false" />
           <Property Name="TradingMacroName" Type="nvarchar" MaxLength="64" Nullable="false" />
           <Property Name="PipsToExit" Type="float" />
+          <Property Name="Currency" Type="char" MaxLength="3" Nullable="false" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -168,6 +169,7 @@
           <Property Type="Boolean" Name="IsActive" Nullable="false" />
           <Property Type="String" Name="TradingMacroName" Nullable="false" MaxLength="64" FixedLength="false" Unicode="true" />
           <Property Type="Double" Name="PipsToExit" />
+          <Property Name="Currency" Type="String" Nullable="false" MaxLength="3" FixedLength="true" Unicode="false" />
         </EntityType>
         <EntityType Name="TradingMacro">
           <Key>
@@ -328,6 +330,7 @@
           <EntitySetMapping Name="TradingAccounts">
             <EntityTypeMapping TypeName="IsTypeOf(AliceModel.TradingAccount)">
               <MappingFragment StoreEntitySet="TradingAccount">
+                <ScalarProperty Name="Currency" ColumnName="Currency" />
                 <ScalarProperty Name="PipsToExit" ColumnName="PipsToExit" />
                 <ScalarProperty Name="TradingMacroName" ColumnName="TradingMacroName" />
                 <ScalarProperty Name="IsActive" ColumnName="IsActive" />
@@ -450,6 +453,7 @@
         <edmx:DesignerProperty Name="EnablePluralization" Value="False" />
         <edmx:DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
         <edmx:DesignerProperty Name="UseLegacyProvider" Value="True" />
+        <edmx:DesignerProperty Name="CodeGenerationStrategy" Value="Default" />
       </edmx:DesignerInfoPropertySet>
     </edmx:Options>
     <!-- Diagram content (shape and connector positions) -->

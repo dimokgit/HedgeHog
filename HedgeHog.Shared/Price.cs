@@ -21,10 +21,8 @@ namespace HedgeHog.Shared {
     }
   }
   public delegate void PriceChangedEventHandler(Price Price);
-  public enum ClosePriceMode { Average, ChartAskBid }
   [Serializable]
   public class Price {
-    public static ClosePriceMode ClosePriceMode = ClosePriceMode.Average;
     public double Bid { get; set; }
     public double Ask { get; set; }
     public double Average { get { return (Ask + Bid) / 2; } }
@@ -35,39 +33,26 @@ namespace HedgeHog.Shared {
     public int AskChangeDirection { get; set; }
     public bool IsReal { get { return Time != DateTime.MinValue; } }
     public bool IsPlayback { get; set; }
-    public int Digits { get; set; }
-    public double PipSize { get; set; }
     public Price() {    }
-    public Price(string pair, Rate rate, DateTime serverTime, double pipSize, int digits, bool isPlayBack) {
+    public Price (string pair, double ask, double bid, int asChangeDirection, int bidChangeDirection, DateTime serverTimeLocal) {
+        Ask = ask; Bid = bid;
+        AskChangeDirection = asChangeDirection;
+        BidChangeDirection = bidChangeDirection;
+        Time = serverTimeLocal;
+        Pair = pair;
+    }
+
+    public Price(string pair, Rate rate ) {
       if (rate == null) {
-        Ask = Bid = BuyClose = SellClose = double.NaN;
+        Ask = Bid = double.NaN;
       } else {
         Ask = rate.AskClose;
         Bid = rate.BidClose;
-        switch (ClosePriceMode) {
-          case Shared.ClosePriceMode.ChartAskBid:
-            if (double.IsNaN(rate.PriceChartAsk)) goto case Shared.ClosePriceMode.Average;
-            BuyClose = rate.PriceChartAsk;
-            SellClose = rate.PriceChartBid;
-            break;
-          case Shared.ClosePriceMode.Average:
-            BuyClose = (rate.BidHigh + rate.BidClose) / 2;
-            SellClose = (rate.AskLow + rate.AskClose) / 2;
-            break;
-          default:
-            BuyClose = rate.BidHigh;
-            SellClose = rate.AskLow;
-            throw new NotSupportedException(ClosePriceMode.GetType().Name + "." + ClosePriceMode + " is not supported");
-        }
       }
-      Digits = digits;
-      Time = serverTime;
+      Time = rate.StartDate;
       Pair = pair;
-      PipSize = pipSize;
       AskChangeDirection = 0;
       BidChangeDirection = 0;
-      this.IsPlayback = isPlayBack;
-
     }
     public double BuyClose { get; set; }
     public double SellClose { get; set; }

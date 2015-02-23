@@ -773,7 +773,7 @@ namespace Order2GoAddIn {
         var row = GetRows(TABLE_ACCOUNTS).First();
         //Debug.WriteLine("GetAccount1:{0} ms", sw.Elapsed.TotalMilliseconds);
         var trades = new Trade[] { };
-        var account = new Account(CommissionByTrade) {
+        var account = new Account() {
           ID = row.CellValue(FIELD_ACCOUNTID) + "",
           Balance = (double)row.CellValue(FIELD_BALANCE),
           UsableMargin = (double)row.CellValue(FIELD_USABLEMARGIN),
@@ -896,6 +896,12 @@ namespace Order2GoAddIn {
     }
 
     #endregion
+    public double RateForPipAmount(Price price) { return price.Ask.Avg(price.Bid); }
+    public double RateForPipAmount(double ask, double bid) { return ask.Avg(bid); }
+
+    public Trade TradeFactory(string pair) {
+      return Trade.Create(pair, GetPipSize(pair), CommissionByTrade);
+    }
 
     #region Get Tables
     #region GetOffers
@@ -1096,22 +1102,22 @@ namespace Order2GoAddIn {
       //    }
     }
     Trade InitClosedTrade(FXCore.RowAut t) {
-      var trade = new Trade() {
-        Id = t.CellValue("TradeID") + "",
-        Pair = t.CellValue(FIELD_INSTRUMENT) + "",
-        Buy = (t.CellValue("BS") + "") == "B",
-        IsBuy = (t.CellValue("BS") + "") == "B",
-        PL = (double)t.CellValue("PL"),
-        GrossPL = (double)t.CellValue("GrossPL"),
-        Lots = (Int32)t.CellValue("Lot"),
-        Open = (double)t.CellValue("Open"),
-        Close = (double)t.CellValue("Close"),
-        Time = ConvertDateToLocal((DateTime)t.CellValue("OpenTime")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
-        TimeClose = ConvertDateToLocal((DateTime)t.CellValue("CloseTime")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
-        OpenOrderID = t.CellValue("OpenOrderID") + "",
-        OpenOrderReqID = t.CellValue("OpenOrderReqID") + "",
-        Remark = new TradeRemark(t.CellValue("OQTXT") + ""),
-        CommissionByTrade = CommissionByTrade
+      var trade = TradeFactory(t.CellValue(FIELD_INSTRUMENT) + "");
+      {
+        trade.Id = t.CellValue("TradeID") + "";
+        trade.Buy = (t.CellValue("BS") + "") == "B";
+        trade.IsBuy = (t.CellValue("BS") + "") == "B";
+        trade.PL = (double)t.CellValue("PL");
+        trade.GrossPL = (double)t.CellValue("GrossPL");
+        trade.Lots = (Int32)t.CellValue("Lot");
+        trade.Open = (double)t.CellValue("Open");
+        trade.Close = (double)t.CellValue("Close");
+        trade.Time = ConvertDateToLocal((DateTime)t.CellValue("OpenTime"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.TimeClose = ConvertDateToLocal((DateTime)t.CellValue("CloseTime"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.OpenOrderID = t.CellValue("OpenOrderID") + "";
+        trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
+        trade.Remark = new TradeRemark(t.CellValue("OQTXT") + "");
+        trade.CommissionByTrade = CommissionByTrade;
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
@@ -1128,24 +1134,23 @@ namespace Order2GoAddIn {
       return PipsAndLotInMoney(trade.IsBuy ? diff : -diff, trade.Lots, trade.Pair);
     }
     Trade InitTrade(FXCore.RowAut t) {
-      var trade = new Trade() {
-        Id = t.CellValue("TradeID") + "",
-        Pair = t.CellValue(FIELD_INSTRUMENT) + "",
-        Buy = (t.CellValue("BS") + "") == "B",
-        IsBuy = (bool)t.CellValue("IsBuy"),
-        PipSize = GetPipSize(t.CellValue(FIELD_INSTRUMENT) + ""),
-        PL = (double)t.CellValue("PL"),
-        GrossPL = (double)t.CellValue("GrossPL"),
-        Lots = (Int32)t.CellValue("Lot"),
-        Open = (double)t.CellValue("Open"),
-        Close = (double)t.CellValue("Close"),
-        Time = ConvertDateToLocal((DateTime)t.CellValue("Time")),// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset),
-        OpenOrderID = t.CellValue("OpenOrderID") + "",
-        OpenOrderReqID = t.CellValue("OpenOrderReqID") + "",
-        //StopOrderID = t.CellValue("StopOrderID") + "",
-        //LimitOrderID = t.CellValue("LimitOrderID") + "",
-        Remark = new TradeRemark(t.CellValue("QTXT") + ""),
-        CommissionByTrade = CommissionByTrade
+      var trade = TradeFactory(t.CellValue(FIELD_INSTRUMENT) + "");
+      {
+        trade.Id = t.CellValue("TradeID") + "";
+        trade.Buy = (t.CellValue("BS") + "") == "B";
+        trade.IsBuy = (bool)t.CellValue("IsBuy");
+        trade.PL = (double)t.CellValue("PL");
+        trade.GrossPL = (double)t.CellValue("GrossPL");
+        trade.Lots = (Int32)t.CellValue("Lot");
+        trade.Open = (double)t.CellValue("Open");
+        trade.Close = (double)t.CellValue("Close");
+        trade.Time = ConvertDateToLocal((DateTime)t.CellValue("Time"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.OpenOrderID = t.CellValue("OpenOrderID") + "";
+        trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
+        //StopOrderID = t.CellValue("StopOrderID") + "";
+        //LimitOrderID = t.CellValue("LimitOrderID") + "";
+        trade.Remark = new TradeRemark(t.CellValue("QTXT") + "");
+        trade.CommissionByTrade = CommissionByTrade;
       };
       if (!IsFIFO(trade.Pair)) {
         trade.Limit = (double)t.CellValue("Limit");
@@ -1164,24 +1169,24 @@ namespace Order2GoAddIn {
       return trade;
     }
     Trade InitTrade(FXCore.ParserAut t) {
-      var trade = new Trade() {
-        Id = t.GetValue("TradeID") + "",
-        Pair = t.GetValue(FIELD_INSTRUMENT) + "",
-        Buy = (t.GetValue("BS") + "") == "B",
-        IsBuy = (bool)t.GetValue("IsBuy"),
-        PipSize = GetPipSize(t.GetValue(FIELD_INSTRUMENT) + ""),
-        PL = (double)t.GetValue("PL"),
-        GrossPL = (double)t.GetValue("GrossPL"),
-        Limit = (double)t.GetValue("Limit"),
-        Stop = (double)t.GetValue("Stop"),
-        Lots = (Int32)t.GetValue("Lot"),
-        Open = (double)t.GetValue("Open"),
-        Close = (double)t.GetValue("Close"),
-        Time = ConvertDateToLocal((DateTime)t.GetValue("Time")),// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset),
-        OpenOrderID = t.GetValue("OpenOrderID") + "",
-        OpenOrderReqID = t.GetValue("OpenOrderReqID") + "",
-        Remark = new TradeRemark(t.GetValue("QTXT") + ""),
-        CommissionByTrade = CommissionByTrade
+      var trade = TradeFactory(t.GetValue(FIELD_INSTRUMENT) + "");
+      {
+        trade.Id = t.GetValue("TradeID") + "";
+        trade.Pair = t.GetValue(FIELD_INSTRUMENT) + "";
+        trade.Buy = (t.GetValue("BS") + "") == "B";
+        trade.IsBuy = (bool)t.GetValue("IsBuy");
+        trade.PL = (double)t.GetValue("PL");
+        trade.GrossPL = (double)t.GetValue("GrossPL");
+        trade.Limit = (double)t.GetValue("Limit");
+        trade.Stop = (double)t.GetValue("Stop");
+        trade.Lots = (Int32)t.GetValue("Lot");
+        trade.Open = (double)t.GetValue("Open");
+        trade.Close = (double)t.GetValue("Close");
+        trade.Time = ConvertDateToLocal((DateTime)t.GetValue("Time"));// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.OpenOrderID = t.GetValue("OpenOrderID") + "";
+        trade.OpenOrderReqID = t.GetValue("OpenOrderReqID") + "";
+        trade.Remark = new TradeRemark(t.GetValue("QTXT") + "");
+        trade.CommissionByTrade = CommissionByTrade;
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
@@ -1192,24 +1197,24 @@ namespace Order2GoAddIn {
       return InitTrade(new NameValueParser(t));
     }
     Trade InitTrade(NameValueParser t) {
-      var trade = new Trade() {
-        Id = t.Get("TradeID"),
-        Pair = t.Get(FIELD_INSTRUMENT),
-        Buy = (t.Get("BS") + "") == "B",
-        IsBuy = t.GetBool("IsBuy"),
-        PipSize = GetPipSize(t.Get(FIELD_INSTRUMENT)),
-        PL = t.GetDouble("PL"),
-        GrossPL = t.GetDouble("GrossPL"),
-        Limit = t.GetDouble("Limit"),
-        Stop = t.GetDouble("Stop"),
-        Lots = t.GetInt("Lot"),
-        Open = t.GetDouble("Open"),
-        Close = t.GetDouble("Close"),
-        Time = ConvertDateToLocal(t.GetDateTime("Time")),// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset),
-        OpenOrderID = t.Get("OpenOrderID"),
-        OpenOrderReqID = t.Get("OpenOrderReqID"),
-        Remark = new TradeRemark(t.Get("QTXT")),
-        CommissionByTrade = CommissionByTrade
+      var trade = TradeFactory(t.Get(FIELD_INSTRUMENT));
+      {
+        trade.Id = t.Get("TradeID");
+        trade.Pair = t.Get(FIELD_INSTRUMENT);
+        trade.Buy = (t.Get("BS") + "") == "B";
+        trade.IsBuy = t.GetBool("IsBuy");
+        trade.PL = t.GetDouble("PL");
+        trade.GrossPL = t.GetDouble("GrossPL");
+        trade.Limit = t.GetDouble("Limit");
+        trade.Stop = t.GetDouble("Stop");
+        trade.Lots = t.GetInt("Lot");
+        trade.Open = t.GetDouble("Open");
+        trade.Close = t.GetDouble("Close");
+        trade.Time = ConvertDateToLocal(t.GetDateTime("Time"));// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.OpenOrderID = t.Get("OpenOrderID");
+        trade.OpenOrderReqID = t.Get("OpenOrderReqID");
+        trade.Remark = new TradeRemark(t.Get("QTXT"));
+        trade.CommissionByTrade = CommissionByTrade;
       };
       if (IsFIFO(trade.Pair)) {
         var netLimit = GetNetLimitOrder(trade);
@@ -1546,6 +1551,16 @@ namespace Order2GoAddIn {
         throw new NullReferenceException();
       }
       return price;
+    }
+    public Price PriceFactory(string pair, double ask, double bid, DateTime timeLocal, int asChangeDirection = 0, int bidChangeDirection = 0) {
+      return new Price() {
+        Ask = ask, Bid = bid,
+        AskChangeDirection = asChangeDirection,
+        BidChangeDirection = bidChangeDirection,
+        Time = timeLocal,
+        Pair = pair
+      };
+
     }
     private Price GetPrice(FXCore.RowAut Row) {
       return Row == null ? null : new Price() {
@@ -2247,26 +2262,30 @@ namespace Order2GoAddIn {
     public double PipsToMarginCallCore(Account account) {
       var trades = GetTrades();
       if (!trades.Any()) return int.MaxValue;
-      var summaries = (from t in trades
-                       group t by t.Pair into sms
-                       select new { Pair = sms.Key, Amount = sms.Sum(t => t.Lots), Trades = sms.ToArray() }
-      ).ToArray();
+      var summaries = (
+        from t in trades
+        group t by t.Pair into sms
+        let lot = sms.Sum(t => t.Lots)
+        let rate = RateForPipAmount(GetPrice(sms.Key))
+        let pipSize = GetPipSize(sms.Key)
+        select new {
+          Pair = sms.Key, Amount = (double)lot, Trades = sms.ToArray(),
+          PipAmount = TradesManagerStatic.PipAmount(sms.Key, lot, rate, pipSize)
+        }).ToArray();
+      //Func<string,double> pipAnount = (pair)=>TradesManagerStatic.PipAmount(pair,)
       var ptmcs = from t in summaries
-                  join pc in pipCostDictionary
-                  on t.Pair equals pc.Key
                   select new {
                     t.Pair,
                     t.Amount,
-                    PipCost = pc.Value,
                     PMC = TradesManagerStatic.PipToMarginCall(
                       t.Trades.Lots(),
                       t.Trades.GrossInPips(),
                       account.Balance,
                       GetOffer(t.Pair).MMR,
                       GetBaseUnitSize(t.Pair),
-                      GetPipCost(t.Pair))
+                      t.PipAmount)
                   };
-      return ptmcs.Select(p => p.PMC).DefaultIfEmpty(double.NaN).Average();
+      return ptmcs.Select(p => p.PMC * p.Amount).DefaultIfEmpty(double.NaN).Sum() / ptmcs.Select(p => p.Amount).DefaultIfEmpty(double.NaN).Sum();
     }
 
     private double PipsToMarginCallPerUnitCurrency(Trade[] trades) {
@@ -2293,10 +2312,6 @@ namespace Order2GoAddIn {
     }
     public double PipsAndLotInMoney(double pips, int lot, string pair) {
       return PipsAndLotToMoney(pips, lot, GetPipCost(pair), GetBaseUnitSize(pair));
-    }
-
-    public int MoneyAndPipsToLot(double Money, double pips, string pair) {
-      return TradesManagerStatic.MoneyAndPipsToLot(Money, pips, GetPipCost(pair), GetBaseUnitSize(pair));
     }
 
     #endregion
@@ -2660,10 +2675,14 @@ namespace Order2GoAddIn {
         var timeClose = DateTime.Parse(getData(3).Value);
         var grossPL = double.Parse(getData(6).Value);
         var pipSize = GetPipCost(pair);
-        var pl = TradesManagerStatic.MoneyAndLotToPips(grossPL, volume, pipSize, GetBaseUnitSize(pair));
+        var pl = TradesManagerStatic.MoneyAndLotToPips(pair, grossPL, volume, priceClose, GetPipSize(pair));
         var commission = double.Parse(getData(7).Value);
         var rollover = double.Parse(getData(8).Value);
-        trades.Add(new Trade() { Pair = pair, Buy = isBuy, Open = priceOpen, Close = priceClose, Commission = commission + rollover, GrossPL = grossPL, PL = pl, Id = ticket.Value, IsBuy = isBuy, Lots = volume, Time = timeOpen, TimeClose = timeClose, OpenOrderID = "", OpenOrderReqID = "" });
+        var trade = TradeFactory(pair);
+        {
+          trade.Buy = isBuy; trade.Open = priceOpen; trade.Close = priceClose; trade.Commission = commission + rollover; trade.GrossPL = grossPL; trade.PL = pl; trade.Id = ticket.Value; trade.IsBuy = isBuy; trade.Lots = volume; trade.Time = timeOpen; trade.TimeClose = timeClose; trade.OpenOrderID = ""; trade.OpenOrderReqID = "";
+        }
+        trades.Add(trade);
         row = row.NextNode as XElement;
       }
       return trades;
@@ -2673,7 +2692,7 @@ namespace Order2GoAddIn {
         var trades = GetClosedTrades(pair);
         if (trades.Length == -1)
           trades = GetTradesFromReport(DateTime.Now.AddDays(-7), DateTime.Now.AddDays(1).Date).ToArray();
-        return trades.DefaultIfEmpty(new Trade()).OrderBy(t => t.Id).Last();
+        return trades.IfEmpty(() => TradeFactory(pair)).OrderBy(t => t.Id).Last();
       } catch (Exception exc) {
         RaiseError(exc);
         return null;

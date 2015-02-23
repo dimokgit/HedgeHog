@@ -3,6 +3,7 @@ using System.Data.Entity.Core;
 using System.Linq;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Data.Entity.Core.Objects;
 
 namespace HedgeHog.Alice.Store {
   public partial class AliceEntities {

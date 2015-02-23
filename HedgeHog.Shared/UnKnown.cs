@@ -11,6 +11,14 @@ namespace HedgeHog.Shared {
   [DataContract]
   public abstract class PositionBase : INotifyPropertyChanged {
 
+    double _PipSize;
+    [UpdateOnUpdate]
+    protected double PipSize {
+      get { return _PipSize; }
+      set {
+        _PipSize = value;
+      }
+    }
     [DataMember]
     [UpdateOnUpdate]
     public double PipCost { get; set; }

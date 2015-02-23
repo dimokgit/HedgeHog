@@ -139,8 +139,8 @@
     </DataTemplate>
     <DataTemplate x:Key="NetCellTemplate">
       <!--<Label HorizontalAlignment="Left" HorizontalContentAlignment="Left" Background="{Binding OpenTradesGross,Converter={StaticResource ProfitToColorConverter}}">-->
-      <WrapPanel Background="{Binding OpenTradesGross,Converter={StaticResource ProfitToColorConverter}}">
-        <TextBlock Text="{Binding OpenTradesGross,StringFormat=[{0:c1}]}" ToolTip="Open Trades Gross"/>
+      <WrapPanel Background="{Binding OpenTradesGross2,Converter={StaticResource ProfitToColorConverter}}">
+        <TextBlock Text="{Binding OpenTradesGross2,StringFormat=[{0:c1}]}" ToolTip="Open Trades Gross"/>
         <TextBlock Text="{Binding PositionsBuy}" ToolTip="Positions Buy"/>
         <TextBlock Text="{Binding PositionsSell,StringFormat=|{0}}" ToolTip="Positions Sell"/>
         <TextBlock Text="{Binding PipsPerPosition,StringFormat=[{0:n0}}" ToolTip="Pips Per Position"/>

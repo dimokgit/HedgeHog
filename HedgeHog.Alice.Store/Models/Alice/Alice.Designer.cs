@@ -10,6 +10,7 @@
 using System;
 using System.ComponentModel;
 using System.Data.Entity.Core.EntityClient;
+using System.Data.Entity.Core.Metadata.Edm;
 using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Core.Objects.DataClasses;
 using System.Linq;
@@ -19,7 +20,7 @@ using System.Xml.Serialization;
 [assembly: EdmSchemaAttribute()]
 #region EDM Relationship Metadata
 
-[assembly: EdmRelationshipAttribute("AliceModel", "TradingMacro_SuppRes", "TradingMacro", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.One, typeof(HedgeHog.Alice.Store.TradingMacro), "SuppRes", System.Data.Entity.Core.Metadata.Edm.RelationshipMultiplicity.Many, typeof(HedgeHog.Alice.Store.SuppRes), true)]
+[assembly: EdmRelationshipAttribute("AliceModel", "TradingMacro_SuppRes", "TradingMacro", RelationshipMultiplicity.One, typeof(HedgeHog.Alice.Store.TradingMacro), "SuppRes", RelationshipMultiplicity.Many, typeof(HedgeHog.Alice.Store.SuppRes), true)]
 
 #endregion
 
@@ -612,7 +613,8 @@ namespace HedgeHog.Alice.Store
         /// <param name="commission">Initial value of the Commission property.</param>
         /// <param name="isActive">Initial value of the IsActive property.</param>
         /// <param name="tradingMacroName">Initial value of the TradingMacroName property.</param>
-        public static TradingAccount CreateTradingAccount(global::System.String password, global::System.Boolean isDemo, global::System.Guid id, global::System.Boolean isMaster, global::System.String tradeRatio, global::System.Double commission, global::System.Boolean isActive, global::System.String tradingMacroName)
+        /// <param name="currency">Initial value of the Currency property.</param>
+        public static TradingAccount CreateTradingAccount(global::System.String password, global::System.Boolean isDemo, global::System.Guid id, global::System.Boolean isMaster, global::System.String tradeRatio, global::System.Double commission, global::System.Boolean isActive, global::System.String tradingMacroName, global::System.String currency)
         {
             TradingAccount tradingAccount = new TradingAccount();
             tradingAccount.Password = password;
@@ -623,6 +625,7 @@ namespace HedgeHog.Alice.Store
             tradingAccount.Commission = commission;
             tradingAccount.IsActive = isActive;
             tradingAccount.TradingMacroName = tradingMacroName;
+            tradingAccount.Currency = currency;
             return tradingAccount;
         }
 
@@ -896,6 +899,30 @@ namespace HedgeHog.Alice.Store
         private Nullable<global::System.Double> _PipsToExit;
         partial void OnPipsToExitChanging(Nullable<global::System.Double> value);
         partial void OnPipsToExitChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=false)]
+        [DataMemberAttribute()]
+        public global::System.String Currency
+        {
+            get
+            {
+                return _Currency;
+            }
+            set
+            {
+                OnCurrencyChanging(value);
+                ReportPropertyChanging("Currency");
+                _Currency = StructuralObject.SetValidValue(value, false, "Currency");
+                ReportPropertyChanged("Currency");
+                OnCurrencyChanged();
+            }
+        }
+        private global::System.String _Currency;
+        partial void OnCurrencyChanging(global::System.String value);
+        partial void OnCurrencyChanged();
 
         #endregion
 

@@ -1647,7 +1647,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
       CursorCoordinateGraph ccg = new CursorCoordinateGraph() { ShowVerticalLine = true };
       ccg.XTextMapping = x => GetPriceStartDate(dateAxis.ConvertFromDouble(x)).ToString("ddd dd HH:mm");
-      ccg.YTextMapping = x => x.Round(_roundTo) + "";
+      ccg.YTextMapping = x => x.Round(RoundTo) + "";
       plotter.Children.Add(ccg);
 
       dateAxis.MayorLabelProvider = null;
@@ -2133,19 +2133,18 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     bool inRendering;
     private bool IsPlotterInitialised;
-    public void AddTicks(Price lastPrice, List<Rate> ticks, List<Volt> voltsByTick,
+    public void AddTicks(List<Rate> ticks, List<Volt> voltsByTick,
   double[] voltageHighLow, double voltageCurr, double priceMaxAvg, double priceMinAvg,
   double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, double[] priceAverageAskBid) {
-      AddTicks(lastPrice, ticks.ToArray(), null, new string[0], null, voltageHighLow, voltageCurr, priceMaxAvg, priceMinAvg,
+      AddTicks( ticks.ToArray(), null, new string[0], null, voltageHighLow, voltageCurr, priceMaxAvg, priceMinAvg,
                       netBuy, netSell, timeHigh, timeCurr, DateTime.MinValue, priceAverageAskBid);
     }
-    public void AddTicks(Price lastPrice, Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
+    public void AddTicks( Rate[] ticks, PriceBar[][] voltsByTicks, string[] info, bool? trendHighlight,
                           double[] voltageHighLow, double voltageAverage, double priceMaxAvg, double priceMinAvg,
                           double netBuy, double netSell, DateTime timeHigh, DateTime timeCurr, DateTime timeLow, double[] priceAverageAskBid) {
       if (inRendering) return;
       PriceBar[] voltsByTick = voltsByTicks.Take(1).Where(pb => pb.Length > 0).FirstOrDefault();
       #region Conversion Functions
-      _roundTo = lastPrice.Digits;
       #endregion
       ticks = ticks.ToArray();
       #region Set DataSources
@@ -2401,7 +2400,14 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
 
     Func<Rate, bool> hasGannAnglesFilter = r => r.GannPrice1x1 > 0;
     private LineGraph _voltGraph;
-    private int _roundTo;
+    private int _roundTo = -1;
+    public int RoundTo {
+      get {
+        if (_roundTo < 0) throw new ArgumentOutOfRangeException("RoundTo");
+        return _roundTo;
+      }
+      set { _roundTo = value; }
+    }
     private void SetGannAngles(ICollection<Rate> rates, int selectedIndex) {
       var rateFirst = rates.FirstOrDefault(hasGannAnglesFilter);
       if (rateFirst == null) return;

@@ -60,23 +60,5 @@ namespace UnitLib
     //}
     //
     #endregion
-
-
-    /// <summary>
-    ///A test for DistanceMaximum
-    ///</summary>
-    [TestMethod()]
-    public void DistanceMaximumTest() {
-      IList<Trade> trades = new[] { new Trade() { PL = -100 }, new Trade() { PL = -50 }, new Trade() { PL = -300 } }.ToList();
-      double expected = 200;
-      double actual = trades.DistanceMaximum();
-      Assert.AreEqual(expected, actual);
-      trades.Clear();
-      actual = trades.DistanceMaximum();
-      Assert.AreEqual(0, actual);
-      trades = null;
-      actual = trades.DistanceMaximum();
-      Assert.AreEqual(0, actual);
-    }
   }
 }
