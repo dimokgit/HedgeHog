@@ -134,6 +134,12 @@ namespace HedgeHog.Alice.Client {
     public void ToggleIsActive(string pair) {
       UseTradingMacro(pair, tm => tm.ToggleIsActive());
     }
+    public void FlipTradeLevels(string pair) {
+      UseTradingMacro(pair, tm => tm.FlipTradeLevels());
+    }
+    public void CenterTradeLevels(string pair) {
+      UseTradingMacro(pair, tm => tm.CenterTradeLevels());
+    }
     public void SetRsdTreshold(string pair, int pips) {
       try {
         GetTradingMacro(pair).RatesStDevMinInPips = pips;

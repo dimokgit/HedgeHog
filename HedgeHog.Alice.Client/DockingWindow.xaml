@@ -48,6 +48,7 @@
                 <Run>0,1 - Corridor Cross Count</Run><LineBreak/>
                 <Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
                 <Run>C   - Clear Custom Corridor</Run><LineBreak/>
+                <Run>F   - Flip Trade Levels</Run><LineBreak/>
                 <Run>H   - Fit chart to view</Run><LineBreak/>
                 <Run>L   - Set LevelsBy Corridor</Run><LineBreak/>
                 <Run>M   - Manual Mode (On/Off)</Run><LineBreak/>

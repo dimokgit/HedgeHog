@@ -52,6 +52,18 @@ namespace HedgeHog {
   /// Interaction logic for CharterControl.xaml
   /// </summary>
   public partial class CharterControl : Models.UserControlModel {
+    #region RoutedEvents
+    private void MenuItem_Click(object sender, RoutedEventArgs e) {
+      OnCenterTradeLevels();
+    }
+    public event EventHandler<EventArgs> CenterTradeLevels;
+    private void OnCenterTradeLevels() {
+      if (CenterTradeLevels != null)
+        CenterTradeLevels(this, EventArgs.Empty);
+    }
+
+    #endregion
+
     public enum MessageType { Add, Remove }
     public CharterControl()
       : this("", null) {

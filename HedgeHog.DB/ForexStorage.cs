@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Text;
@@ -31,6 +32,11 @@ namespace HedgeHog.DB {
             throw;
           }
         }
+    }
+    public static void SaveConcurrent(this DbContext context)  {
+      try {
+        context.SaveChanges();
+      } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) { }
     }
     public static T UseForexContext<T>(Func<ForexEntities, T> action, Action<ForexEntities, Exception> error = null, Action<ForexEntities> exit = null) {
       try {

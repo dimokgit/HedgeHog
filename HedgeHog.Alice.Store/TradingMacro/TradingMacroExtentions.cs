@@ -2320,7 +2320,6 @@ namespace HedgeHog.Alice.Store {
 
     private Strategies _Strategy;
     [Category(categorySession)]
-    [Dnr]
     public Strategies Strategy {
       get {
         return _Strategy;
@@ -4015,7 +4014,7 @@ namespace HedgeHog.Alice.Store {
     private bool _isStrategyRunning;
 
     #region IsTradingActive
-    private bool _IsTradingActive = true;
+    private bool _IsTradingActive = false;
 
     private static TaskScheduler _currentDispatcher;
 
@@ -4113,6 +4112,19 @@ namespace HedgeHog.Alice.Store {
     }
     public void SetTradeCount(int tradeCount) {
       _suppResesForBulk().ForEach(sr => sr.TradesCount = tradeCount);
+    }
+    public void FlipTradeLevels() {
+      try {
+        IsTradingActive = false;
+        var b = BuyLevel.Rate;
+        BuyLevel.Rate = SellLevel.Rate;
+        SellLevel.Rate = b;
+        var s = LevelSellBy;
+        LevelSellBy = LevelBuyBy;
+        LevelBuyBy = s;
+      } catch (Exception exc) {
+        Log = exc;
+      }
     }
 
     #region RatesRsd

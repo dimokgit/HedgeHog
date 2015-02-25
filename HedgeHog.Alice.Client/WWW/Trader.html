@@ -63,6 +63,8 @@
             <li><input type="button" value="Manual" id="manualToggle" /></li>
             <li><button id="toggleStartDate">StartDate</button></li>
             <li><button id="toggleIsActive">Active</button></li>
+            <li><button id="flipTradeLevels">Flip</button></li>
+            <li><button id="centerTradeLevels">Flip</button></li>
           </ul>
         </li>
       </ul>
@@ -163,6 +165,8 @@
           });
           $('#toggleStartDate').click(function () { invokeByName("toggleStartDate"); });
           $('#toggleIsActive').click(function () { invokeByName("toggleIsActive"); });
+          $('#flipTradeLevels').click(function () { invokeByName("flipTradeLevels"); });
+          $('#centerTradeLevels').click(function () { invokeByName("centerTradeLevels"); });
           $('#rsdMin').change(function () {
             chat.server.setRsdTreshold(pair, $('#rsdMin').val());
             resetPlotter();

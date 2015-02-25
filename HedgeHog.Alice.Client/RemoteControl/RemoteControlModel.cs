@@ -90,6 +90,7 @@ namespace HedgeHog.Alice.Client {
         charterNew.TradeLineChanged += new EventHandler<PositionChangedBaseEventArgs<double>>(charterNew_TradeLineChanged);
         charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
         charterNew.RoundTo = tradingMacro.Digits();
+        charterNew.CenterTradeLevels += charterNew_CenterTradeLevels;
         //charter.Show();
 
         /*
@@ -113,6 +114,11 @@ namespace HedgeHog.Alice.Client {
       if (charterOld.Parent == null)
         RequestAddCharterToUI(charterOld);
       return charterOld;
+    }
+
+    void charterNew_CenterTradeLevels(object sender, EventArgs e) {
+      var tm = GetTradingMacro((CharterControl)sender);
+      tm.CenterTradeLevels();      
     }
 
     void charterNew_ShowChart(object sender, EventArgs e) {
@@ -147,6 +153,9 @@ namespace HedgeHog.Alice.Client {
           tm.SetTradeCount(0);
           charter.FitToView();
           tm.FreezeCorridorStartDate(true);
+          break;
+        case Key.F:
+          tm.FlipTradeLevels();
           break;
         case Key.S:
           tm.FreezeCorridorStartDate(); break;
@@ -1125,7 +1134,7 @@ namespace HedgeHog.Alice.Client {
           else if (tm.LineTimeMin.HasValue)
             charter.LineTimeMin = tm.LineTimeMin.Value;
           else if (tm.LineTimeMinFunc != null)
-            charter.LineTimeMin = tm.LineTimeMinFunc();
+            charter.LineTimeMin = tm.LineTimeMinFunc(rates);
           if (tm.WaveShort.HasRates)
             charter.LineTimeShort = rates.Skip(rates.Count- tm.WaveShort.Rates.Count).First();
           if (tm.CorridorDistance > 0)

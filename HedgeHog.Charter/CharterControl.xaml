@@ -91,6 +91,15 @@
     </WrapPanel>
     <!--<d3:ChartPlotter Name="plotter" Grid.Row="1" Background="{Binding IsActive,Converter={StaticResource BoolToColorConverter},ConverterParameter= #F75D59|#F75D59|#FFF7F3F7}">-->
     <d3:ChartPlotter Name="plotter" Grid.Row="1" Background="{Binding BackgroundCurrent}">
+
+      <d3:ViewportPanel Name="ViewPanel" Background="transparent">
+        <d3:DefaultContextMenu.PlotterContextMenu>
+          <d3:ObjectCollection>
+            <MenuItem Header="Center Levels" ToolTip="Center Tarding Levels" Click="MenuItem_Click"/>
+          </d3:ObjectCollection>
+        </d3:DefaultContextMenu.PlotterContextMenu>
+      </d3:ViewportPanel>
+
       <d3:HorizontalDateTimeAxis Name="dateAxis" ShowMayorLabels="True" IsDefaultAxis="True" FontSize="10" ShowMinorTicks="False" Visibility="Visible" />
       <d3:InjectedPlotter Name="innerPlotter" Background="Aqua">
         <d3:VerticalAxis Placement="Right" FontSize="10"/>

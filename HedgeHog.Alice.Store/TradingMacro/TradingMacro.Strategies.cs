@@ -44,6 +44,7 @@ namespace HedgeHog.Alice.Store {
     bool _trimAtZero;
     bool _trimToLotSize;
 
+    int CorridorDistanceByLengthRatio { get { return (RatesArray.Count * CorridorLengthRatio).ToInt(); } }
     #region CorridorDistance
     public int CorridorDistance {
       get {
@@ -449,10 +450,10 @@ namespace HedgeHog.Alice.Store {
           var rateRight = new[] { rateLeft, -CorridorStats.Coeffs[1] }.RegressionValue(rightIndex);
           return new[] { rateLeft, rateRight };
         };
-        Func<IList<Rate>, int, Rate[]> setTrendLines = (rates,levels) => {
-          return SetTrendLines1231(rates,getStDev, getRegressionLeftRightRates, levels);
+        Func<IList<Rate>, int, Rate[]> setTrendLines = (rates, levels) => {
+          return SetTrendLines1231(rates, getStDev, getRegressionLeftRightRates, levels);
         };
-        SetTrendLines = rates => setTrendLines(rates,3);
+        SetTrendLines = rates => setTrendLines(rates, 3);
         #endregion
         Func<bool, Func<Rate, double>> tradeExit = isBuy => MustExitOnReverse ? _priceAvg : GetTradeExitBy(isBuy);
         Action onEOW = () => { };
@@ -1436,7 +1437,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.Spike: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   HarmonicMin = int.MaxValue;
                   canTradeSubject
                     .DistinctUntilChanged(a => a.canTrade)
@@ -1675,7 +1676,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle3: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -1756,7 +1757,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle31: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -1833,7 +1834,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle32: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { VoltsFrameLength } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -1906,7 +1907,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.FrameAngle4: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast(CorridorDistance).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast(CorridorDistance).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio, onCanTradeLocal } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -1975,7 +1976,7 @@ namespace HedgeHog.Alice.Store {
                       SellLevel.RateEx = context.down;
                       _buySellLevelsForEach(sr => sr.CanTradeEx = true);
                       context = replaceContext(getContext(context.up, context.down, true, context.rate));
-                      LineTimeMinFunc = () => context.rate.StartDateContinuous;
+                      LineTimeMinFunc = rates => context.rate.StartDateContinuous;
                     }
                     return tupleStay(_ti);
                   }
@@ -1990,7 +1991,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.StDevAngle: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio, onCanTradeLocal } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2031,10 +2032,11 @@ namespace HedgeHog.Alice.Store {
 
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove: {
-                var conditions = MonoidsCore.ToFunc(() => new { TradingAngleRange, CorridorDistanceRatio });
+                var conditions = MonoidsCore.ToFunc(() => new { TradingAngleRange, CorridorLengthRatio });
                 #region FirstTime
                 if (firstTime) {
                   Log = new Exception(conditions() + "");
+                  LineTimeMinFunc = rates0 => rates0[rates0.Count - CorridorDistanceByLengthRatio.Abs()].StartDateContinuous;
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
                   #region onCloseTradeLocal
@@ -2065,19 +2067,9 @@ namespace HedgeHog.Alice.Store {
                     BuyLevel.RateEx = getTradeLevel(rateLast, true, BuyLevel.Rate);
                     SellLevel.RateEx = getTradeLevel(rateLast, false, SellLevel.Rate);
                   }));
-                Func<bool> corridorLengthOk = () => CorridorStats.Rates.Count < CorridorDistance;
+                Func<bool> corridorLengthOk = () => IsTresholdOk(CorridorStats.Rates.Count, CorridorDistanceByLengthRatio);
                 Func<bool> canSetLevels = () => calcAngleOk() && corridorLengthOk();
-                var corrLevel = GetVoltageAverage();
-                Action setCOM = () => new[] { RatesArray.Where(r => GetVoltage(r) <= corrLevel) }
-                  .Where(rs => UseVoltage)
-                  .Select(rs => rs.ToArray(_priceAvg))
-                  .Where(rs => rs.Length > 0)
-                  .ForEach(rs => {
-                    CenterOfMassBuy = rs.Max();
-                    CenterOfMassSell = rs.Min();
-                  });
-                OnGeneralPurpose(setCOM, true);
-                Func<bool> isManual = () => _buySellLevels.Any(sr => sr.InManual);
+                Func<bool> isManual = () => _buySellLevels.Any(sr => sr.InManual) || (conditions().TradingAngleRange == 0 && conditions().CorridorLengthRatio == 0);
                 var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   _ti =>{ WorkflowStep = "1.Wait "+conditions() ;
                   return !isManual() && canSetLevels() ?WFD.tupleNext(_ti): WFD.tupleStay(_ti);
@@ -2090,8 +2082,6 @@ namespace HedgeHog.Alice.Store {
                     _buySellLevelsForEach(sr => sr.TradesCount = TradeCountStart);
                     if (!IsInVitualTrading && !IsAutoStrategy) SendSms("Trade Levels Set", "", true);
                     else BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
-                    var limeTime = CorridorStats.Rates.Last().StartDateContinuous;
-                    LineTimeMinFunc = () => limeTime;
                     return WFD.tupleNext(_ti);
                   }
             };
@@ -2181,7 +2171,7 @@ namespace HedgeHog.Alice.Store {
                 if (firstTime) {
                   DoFineTuneCorridor = false;
                   Log = new Exception(new { TradingAngleRange, CorrelationMinimum, CorridorDistance, CorridorCrossesMaximum, DoFineTuneCorridor } + "");
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorLengthRatio * RatesArray.Count).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates0 => rates0.TakeLast((CorridorLengthRatio * RatesArray.Count).ToInt()).First().StartDateContinuous;
                   workFlowObservableDynamic.Subscribe();
                   ResetTakeProfitManual();
                   #region onCloseTradeLocal
@@ -2279,7 +2269,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.LongFlat: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { CorridorDistance, WaveStDevRatio, PriceFftLevels = PriceFftLevelsFast, VoltsFrameLength } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2352,7 +2342,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.StDevFlat: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates => rates.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { VoltsFrameLength, TradingAngleRange, VoltsBelowAboveLengthMin } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2416,7 +2406,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.StDevFlat2: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates0 => rates0.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { VoltsFrameLength, VoltsBelowAboveLengthMin } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2500,7 +2490,7 @@ namespace HedgeHog.Alice.Store {
             case TrailingWaveMethod.StDevFlat3: {
                 #region firstTime
                 if (firstTime) {
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates0 => rates0.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { VoltsFrameLength, VoltsBelowAboveLengthMin } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -2588,7 +2578,7 @@ namespace HedgeHog.Alice.Store {
                     ScanCorridorBy = ScanCorridorFunction.StDevIntegral3;
                     Log = new Exception(new { ScanCorridorBy = ScanCorridorFunction.StDevIntegral3 } + "");
                   }
-                  LineTimeMinFunc = () => RatesArray.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
+                  LineTimeMinFunc = rates0 => rates0.TakeLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
                   Log = new Exception(new { VoltsFrameLength, VoltsBelowAboveLengthMin, WaveStDevRatio } + "");
                   workFlowObservable.Subscribe();
                   #region onCloseTradeLocal
@@ -3044,7 +3034,7 @@ namespace HedgeHog.Alice.Store {
         l1 = hl[1] * 3;
       }
       if (CorridorStats == null || !CorridorStats.Rates.Any()) return new[] { new Rate(), new Rate() };
-      var rates = new[] { source.Last(), source.Skip(source.Count- CorridorStats.Rates.Count).First() };
+      var rates = new[] { source.Last(), source.Skip(source.Count - CorridorStats.Rates.Count).First() };
       var regRates = getRegressionLeftRightRates();
 
       rates[0].PriceChartAsk = rates[0].PriceChartBid = double.NaN;
@@ -3112,7 +3102,11 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    public Func<DateTime> LineTimeMinFunc;
+    Func<IList<Rate>, DateTime> _LineTimeMinFunc;
+    public Func<IList<Rate>, DateTime> LineTimeMinFunc {
+      get { return _LineTimeMinFunc; }
+      set { _LineTimeMinFunc = value; }
+    }
     private void BroadcastCloseAllTrades() {
       BroadcastCloseAllTrades(this, tm => { });
     }

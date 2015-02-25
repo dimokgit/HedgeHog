@@ -64,8 +64,7 @@ namespace HedgeHog.Alice.Store {
         args.NewRates.Distinct().Do(t => {
           context.t_Bar.Add(FillBar(period, pair, context.t_Bar.Create(), t));
           try {
-            context.SaveChanges();
-          } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) {
+            context.SaveConcurrent();
           } catch (Exception exc) {
             if (progressCallback != null) progressCallback(exc);
           }

@@ -1970,5 +1970,11 @@ namespace HedgeHog.Alice.Store {
     }
 
     public int IpPort { get; set; }
+
+    public void CenterTradeLevels() {
+      IsTradingActive = false;
+      BuyLevel.Rate = SellLevel.Rate = _RatesMax.Avg(_RatesMin);
+      BuyLevel.InManual = SellLevel.InManual = true;
+    }
   }
 }
