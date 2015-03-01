@@ -5864,7 +5864,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.SyncSubject"/></summary>
         public const string SyncSubject = "SyncSubject";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.InitSyncObservable"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.InitBufferedObservable"/></summary>
         public const string InitSyncObservable = "InitSyncObservable";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ScanCoridorSubjectLocker"/></summary>

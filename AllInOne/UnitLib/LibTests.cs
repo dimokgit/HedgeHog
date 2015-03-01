@@ -63,10 +63,14 @@ namespace HedgeHog.Tests {
     public static double Intercept1(double[] data, out double intersept) {
       double avgY;
       var slope = Slope1(data, out avgY);
-      intersept = Intecsept(slope, avgY, data.Length);
+      intersept = Intercept(slope, avgY, data.Length);
       return slope;
     }
-    static double Intecsept(double slope, double yAverage, int dataLength) {
+
+    private static double Intercept(double slope, double avgY, int p) {
+      throw new NotImplementedException();
+    }
+    static double Intersept(double slope, double yAverage, int dataLength) {
       return yAverage - slope * (dataLength - 1) / 2.0;
 
     }

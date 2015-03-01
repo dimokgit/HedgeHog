@@ -561,6 +561,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="Store\Alice.xls" />
+    <None Include="WWW\d3-knockout\README.md" />
     <None Include="WWW\Scripts\jquery-2.1.3.min.map" />
   </ItemGroup>
   <ItemGroup>
@@ -675,6 +676,53 @@
   <ItemGroup>
     <Content Include="Settings\EURUSD%281%29_Last.txt" />
     <Content Include="Settings\USDJPY%282%29_Last.txt" />
+    <Content Include="WWW\d3-knockout\.gitignore" />
+    <Content Include="WWW\d3-knockout\app.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\custom-binding-handlers\bar-chart-binding.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\custom-binding-handlers\election-binding.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\custom-binding-handlers\line-chart-binding.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" />
+    <Content Include="WWW\d3-knockout\e1.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\e2.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\e3.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\examples.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\style\bar-chart-demo.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\style\bootstrap.min.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\style\gh-fork-ribbon.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\view-models\bar-data-view-model.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\view-models\data-view-model.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\view-models\election-data-view-model.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\d3-knockout\view-models\line-data-view-model.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="WWW\Scripts\jquery-2.1.3.intellisense.js" />
     <Content Include="WWW\Scripts\jquery-2.1.3.js" />
     <Content Include="WWW\Scripts\jquery-2.1.3.min.js">
@@ -684,7 +732,13 @@
     <Content Include="WWW\Scripts\jquery.signalR-2.1.2.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="WWW\Trader2.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="WWW\Trader.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\Trader3.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Resource Include="Images\down-arrow-3675-16.png" />

@@ -424,6 +424,7 @@ namespace HedgeHog.Alice.Store {
     public DateTime? TradeDate { get; set; }
   }
   public partial class TradingMacro {
+    bool IsPrimaryMacro { get {return TradingStatistics != null && TradingStatistics.TradingMacros.Any(tm => tm == this); } }
 
     TradingStatistics _tradingStatistics = new TradingStatistics();
     public TradingStatistics TradingStatistics {
@@ -1971,10 +1972,5 @@ namespace HedgeHog.Alice.Store {
 
     public int IpPort { get; set; }
 
-    public void CenterTradeLevels() {
-      IsTradingActive = false;
-      BuyLevel.Rate = SellLevel.Rate = _RatesMax.Avg(_RatesMin);
-      BuyLevel.InManual = SellLevel.InManual = true;
-    }
   }
 }

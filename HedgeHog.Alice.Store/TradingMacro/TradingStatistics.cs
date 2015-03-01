@@ -31,19 +31,6 @@ namespace HedgeHog.Alice.Store {
     }
     #endregion
 
-    #region CurrentGrossAverage
-    private double _CurrentGrossAverage = double.NaN;
-    public double CurrentGrossAverage {
-      get { return _CurrentGrossAverage; }
-      set {
-        if (_CurrentGrossAverage != value) {
-          _CurrentGrossAverage = value;
-          RaisePropertyChanged("CurrentGrossAverage");
-        }
-      }
-    }
-
-    #endregion
     #region CurrentLoss
     private double _CurrentGross = double.NaN;
     public double CurrentGross {

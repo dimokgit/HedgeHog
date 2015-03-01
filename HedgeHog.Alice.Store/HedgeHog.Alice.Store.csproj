@@ -175,6 +175,7 @@
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.FFT.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanCorridor.Lib.cs" />
     <Compile Include="TradingMacro\TradingMacro.ScanRatesLength.cs" />
+    <Compile Include="TradingMacro\TradingMacro.Shorthands.cs" />
     <Compile Include="TradingMacro\TradingMacro.ShowVolts.cs" />
     <Compile Include="TradingMacro\TradingMacro.SnapshotArguments.cs" />
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>d3-knockout-demo</title>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+
+    <script type='text/javascript' src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script type='text/javascript' src="http://knockoutjs.com/downloads/knockout-3.0.0.js" charset="utf-8"></script>
+
+    <link rel="stylesheet" href="style/bootstrap.min.css">
+    <link rel="stylesheet" href="style/bar-chart-demo.css">
+    <link rel="stylesheet" href="style/gh-fork-ribbon.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="github-fork-ribbon-wrapper right">
+            <div class="github-fork-ribbon">
+                <a href="https://github.com/teodoran/d3-knockout-demo">Fork me on GitHub</a>
+            </div>
+        </div>
+
+        <h1>D3 knockout demo</h1>
+        <hr class="featurette-divider">
+
+        <p>
+            This demo shows a way to use <a href="http://d3js.org/">D3</a> with <a href="http://knockoutjs.com/">Knockout</a>, in order to create reusable charts, that automatically updates it's data from Knockout observables.
+        </p>
+        <p>
+            The first example is a basic "election meter" type chart. The example is implemented as a <a href="http://knockoutjs.com/documentation/custom-bindings.html">custom binding</a>.
+        </p>
+
+        <h3>Red vs. Blue</h3>
+        
+        <div class="row">
+            <!-- This line is adds the chart to the html -->
+            <div class="col-md-12 miniChart" data-bind="electionChart: electionData"></div>
+        </div>
+
+        <hr class="featurette-divider">
+
+        <footer>
+            <p class="pull-right"><a href="https://github.com/teodoran/blog-photo">GitHub</a></p>
+            <p>
+                KodeKollektivet.no &middot;
+                <a href="http://folk.ntnu.no/steffenp/">Steffen Pöhner</a> &middot;
+                <a href="https://twitter.com/magnuskiro">Magnus Kirø</a> &middot;
+                <a href="http://folk.ntnu.no/teodoran/">Teodor Elstad</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Add the javascript files to the html -->
+    <script type='text/javascript' src='view-models/election-data-view-model.js'></script>
+    <script type='text/javascript' src='custom-binding-handlers/election-binding.js'></script>
+    <script type='text/javascript' src='app.js'></script>
+</body>
+</html>

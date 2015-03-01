@@ -344,18 +344,6 @@ namespace HedgeHog.Alice.Store {
           .Retry(2)
           .Subscribe(_ => { }, exc => Log = exc);
     }
-    public void WrapTradeInCorridor() {
-      if (Trades.Any()) {
-        LevelBuyBy = LevelSellBy = LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-        if (Trades.HaveBuy()) {
-          BuyLevel.Rate = Trades.NetOpen();
-          SellLevel.Rate = BuyLevel.Rate - CorridorStats.HeightByRegression;
-        } else {
-          SellLevel.Rate = Trades.NetOpen();
-          BuyLevel.Rate = SellLevel.Rate + CorridorStats.HeightByRegression;
-        }
-      }
-    }
     private void StrategyEnterUniversal() {
       if (!RatesArray.Any()) return;
 
@@ -2035,6 +2023,7 @@ namespace HedgeHog.Alice.Store {
                 var conditions = MonoidsCore.ToFunc(() => new { TradingAngleRange, CorridorLengthRatio });
                 #region FirstTime
                 if (firstTime) {
+                  SetAlwaysOn = () => { TradingAngleRange = 0; CorridorLengthRatio = 0.01; };
                   Log = new Exception(conditions() + "");
                   LineTimeMinFunc = rates0 => rates0[rates0.Count - CorridorDistanceByLengthRatio.Abs()].StartDateContinuous;
                   workFlowObservableDynamic.Subscribe();
@@ -2063,23 +2052,29 @@ namespace HedgeHog.Alice.Store {
                 }
                 #endregion
                 var doRateLast = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
-                  .Select(rateLast => new Action(() => {
+                  .Where(_ => calcAngleOk())
+                  .Do(rateLast => {
                     BuyLevel.RateEx = getTradeLevel(rateLast, true, BuyLevel.Rate);
                     SellLevel.RateEx = getTradeLevel(rateLast, false, SellLevel.Rate);
-                  }));
+                  });
                 Func<bool> corridorLengthOk = () => IsTresholdOk(CorridorStats.Rates.Count, CorridorDistanceByLengthRatio);
                 Func<bool> canSetLevels = () => calcAngleOk() && corridorLengthOk();
-                Func<bool> isManual = () => _buySellLevels.Any(sr => sr.InManual) || (conditions().TradingAngleRange == 0 && conditions().CorridorLengthRatio == 0);
+                Func<bool> isManual = () => _buySellLevels.Any(sr => sr.InManual);
+                Func<bool> isAlwaysOn = () => (conditions().TradingAngleRange == 0 && conditions().CorridorLengthRatio.Abs() <= 0.01);
+                doRateLast.Where(_ => isAlwaysOn()).Any();
                 var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                  _ti =>{ WorkflowStep = "1.Wait "+conditions() ;
-                  return !isManual() && canSetLevels() ?WFD.tupleNext(_ti): WFD.tupleStay(_ti);
+                  _ti =>{ WorkflowStep = "1.Wait corr" ;
+                  return !isManual() && corridorLengthOk() ?WFD.tupleNext(_ti): WFD.tupleStay(_ti);
                   },
-                  _ti =>{ WorkflowStep = "2.Until "+conditions();
-                    doRateLast.ForEach(a => a());
-                    return isManual() ? WFD.tupleBreakEmpty() : canSetLevels() ? WFD.tupleStay(_ti) : WFD.tupleNext(_ti);
+                  _ti =>{ WorkflowStep = "2.Wait angle"+conditions();
+                    return isManual() ? WFD.tupleBreakEmpty() : calcAngleOk() ? WFD.tupleNext(_ti) : WFD.tupleStay(_ti);
+                  },
+                  _ti =>{ WorkflowStep = "3.Until corr ok";
+                    doRateLast.Any();
+                    return isManual() ? WFD.tupleBreakEmpty() : corridorLengthOk() ? WFD.tupleStay(_ti) : WFD.tupleNext(_ti);
                   }
                   ,_ti=>{
-                    _buySellLevelsForEach(sr => sr.TradesCount = TradeCountStart);
+                    _buySellLevelsForEach(sr => sr.TradesCountEx = TradeCountStart);
                     if (!IsInVitualTrading && !IsAutoStrategy) SendSms("Trade Levels Set", "", true);
                     else BuyLevel.CanTradeEx = SellLevel.CanTradeEx = true;
                     return WFD.tupleNext(_ti);

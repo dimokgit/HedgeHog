@@ -95,7 +95,8 @@
       <d3:ViewportPanel Name="ViewPanel" Background="transparent">
         <d3:DefaultContextMenu.PlotterContextMenu>
           <d3:ObjectCollection>
-            <MenuItem Header="Center Levels" ToolTip="Center Tarding Levels" Click="MenuItem_Click"/>
+            <MenuItem Header="Default Levels" ToolTip="Default Tarding Levels" Click="MenuItem_Click"/>
+            <MenuItem Header="Always On" ToolTip="" Click="AlwaysOn_Click"/>
           </d3:ObjectCollection>
         </d3:DefaultContextMenu.PlotterContextMenu>
       </d3:ViewportPanel>

@@ -8,6 +8,8 @@ using System.Reactive.Disposables;
 using System.Threading;
 using System.Reactive;
 using System.Reactive.Subjects;
+using System.Threading.Tasks.Dataflow;
+using System.Runtime.CompilerServices;
 
 namespace HedgeHog {
   public static class ObservableExtensions {
@@ -82,6 +84,33 @@ namespace HedgeHog {
     public static IDisposable SubscribeToLatestOnBGThread(this IObservable<Action> subject
       , Action<Exception> onError, ThreadPriority priority = ThreadPriority.Normal) {
       return subject.SubscribeToLatestOnBGThread(a => a(), onError, priority);
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public static ISubject<T> InitBufferedObservable<T>(this ISubject<T> subject, ref IObservable<T> observable, Action<Exception> onError) {
+      if (subject != null) {
+        if (observable == null) throw new Exception("observable is null");
+        return subject;
+      }
+      if (observable != null) throw new Exception("observable is not null");
+      subject = new Subject<T>();
+      observable = subject.InitBufferedObservable(onError);
+      return subject;
+    }
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    public static IObservable<T> InitBufferedObservable<T>(this IObservable<T> observable,ref ISubject<T> subject , Action<Exception> onError) {
+      if (observable != null) {
+        if (subject == null) throw new Exception("subject is null");
+        return observable;
+      }
+      if (subject == null) 
+        subject = new Subject<T>();
+      return observable = subject.InitBufferedObservable(onError);
+    }
+    public static IObservable<T> InitBufferedObservable<T>(this ISubject<T> subject, Action<Exception> onError) {
+      BroadcastBlock<T> buffer = new BroadcastBlock<T>(n => n);
+      subject.ObserveOn(TaskPoolScheduler.Default)
+        .Subscribe(a => buffer.SendAsync(a), onError);
+      return buffer.AsObservable();
     }
   }
 }

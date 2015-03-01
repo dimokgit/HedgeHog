@@ -1,0 +1,53 @@
+.bigChart {
+    height: 500px;
+}
+
+.smallChart {
+    height: 300px;
+}
+
+.miniChart {
+    height: 40px;
+}
+
+.vspace {
+    height: 15px;
+}
+
+.election {
+    background-color: steelblue;
+}
+
+.republican {
+    fill: brown;
+}
+
+.bar {
+    fill: steelblue;
+}
+
+.bar:hover {
+    fill: brown;
+}
+
+.axis {
+    font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.area {
+  fill: steelblue;
+}
+
+/* line chart specifics.*/
+.line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1px;
+}

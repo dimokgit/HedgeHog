@@ -54,12 +54,20 @@ namespace HedgeHog {
   public partial class CharterControl : Models.UserControlModel {
     #region RoutedEvents
     private void MenuItem_Click(object sender, RoutedEventArgs e) {
-      OnCenterTradeLevels();
+      OnSetDefaultTradeLevels();
     }
-    public event EventHandler<EventArgs> CenterTradeLevels;
-    private void OnCenterTradeLevels() {
-      if (CenterTradeLevels != null)
-        CenterTradeLevels(this, EventArgs.Empty);
+    private void AlwaysOn_Click(object sender, RoutedEventArgs e) {
+      OnSetDefaultTradeLevels();
+    }
+    public event EventHandler<EventArgs> SetAlwaysOn;
+    private void OnAlwaysOn() {
+      if (SetAlwaysOn != null)
+        SetAlwaysOn(this, EventArgs.Empty);
+    }
+    public event EventHandler<EventArgs> SetDefaultTradeLevels;
+    private void OnSetDefaultTradeLevels() {
+      if (SetDefaultTradeLevels != null)
+        SetDefaultTradeLevels(this, EventArgs.Empty);
     }
 
     #endregion
@@ -705,7 +713,7 @@ namespace HedgeHog {
       if ((mas ?? new double[0]).Any())
         TrendLineMA = mas;
     }
-    public void SetTrendLines(Rate[] rates) {
+    public void SetTrendLines(Rate[] rates,bool isStatic = false) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = rates;
@@ -714,6 +722,7 @@ namespace HedgeHog {
         var corridorTime = rateLast.StartDate;
         lineTimeMax.ToolTip = corridorTime;
         if (!CorridorStartPointX.IsMouseCaptured) {
+          if (_lineTimeShort != null) _lineTimeShort.StrokeThickness = isStatic ? 3 : 1;
           CorridorStartPointX.Position =
             new Point(dateAxis.ConvertToDouble(timeHigh), _trendLinesY = rates.Min(r => r.PriceAvg) + (_trendLinesH = rates.Height()) / 2);
           CorridorStartPointX.ToolTip = corridorTime.ToString("MM/dd/yyyy HH:mm");

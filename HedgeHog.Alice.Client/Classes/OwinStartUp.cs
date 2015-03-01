@@ -29,6 +29,7 @@ namespace HedgeHog.Alice.Client {
 
       // SignalR timer
       var remoteControl = App.container.GetExport<RemoteControlModel>();
+      
       app.UseCors(CorsOptions.AllowAll);
       app.Use((context, next) => {
         try {
@@ -44,10 +45,8 @@ namespace HedgeHog.Alice.Client {
                     time = tm.ServerTime.ToString("HH:mm"),
                     prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
                     tpm = tm.TicksPerMinuteAverage.ToInt(),
-                    dur = tm.RatesDuration,
-                    cnt = tm.BarsCountCalc,
+                    dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
                     hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
-                    std = IntOrDouble(tm.StDevByHeightInPips, 1) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips, 1),
                     rsdMin = tm.RatesStDevMinInPips
                     //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
                   });
@@ -137,16 +136,29 @@ namespace HedgeHog.Alice.Client {
     public void FlipTradeLevels(string pair) {
       UseTradingMacro(pair, tm => tm.FlipTradeLevels());
     }
-    public void CenterTradeLevels(string pair) {
-      UseTradingMacro(pair, tm => tm.CenterTradeLevels());
+    public void WrapTradeInCorridor(string pair) {
+      UseTradingMacro(pair, tm => tm.WrapTradeInCorridor());
+    }
+    public void SetDefaultTradeLevels(string pair) {
+      UseTradingMacro(pair, tm => tm.SetDefaultTradeLevels());
+    }
+    public void SetAlwaysOn(string pair) {
+      UseTradingMacro(pair, tm => tm.SetAlwaysOn());
+    }
+    public void Buy(string pair) {
+      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"));
+    }
+    public void Sell(string pair) {
+      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"));
     }
     public void SetRsdTreshold(string pair, int pips) {
-      try {
-        GetTradingMacro(pair).RatesStDevMinInPips = pips;
-      } catch (Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-      }
+      UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
+    public void AskRates(int charterWidth,DateTimeOffset startDate,string pair){
+      UseTradingMacro(pair, tm =>
+      Clients.Caller.addRates(remoteControl.Value.ServeChart(charterWidth, startDate, tm)));
+    }
+
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }
@@ -156,7 +168,7 @@ namespace HedgeHog.Alice.Client {
       if (tm != null)
         Clients.All.resetPlotter(new {
           time = tm.ServerTime.ToString("HH:mm:ss"),
-          duration = tm.RatesDuration,
+          duration = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
           count = tm.BarsCountCalc,
           stDev = IntOrDouble(tm.StDevByHeightInPips) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips),
           height = tm.RatesHeightInPips.ToInt(),
@@ -167,12 +179,12 @@ namespace HedgeHog.Alice.Client {
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
-    public void StopTrades(string pair) { SetCanTrade(pair, false); }
-    public void StartTrades(string pair) { SetCanTrade(pair, true); }
-    void SetCanTrade(string pair, bool canTrade) {
+    public void StopTrades(string pair) { SetCanTrade(pair, false,null); }
+    public void StartTrades(string pair, bool isBuy) { SetCanTrade(pair, true, isBuy); }
+    void SetCanTrade(string pair, bool canTrade,bool? isBuy) {
       var tm = GetTradingMacro(pair);
       if (tm != null)
-        tm.SetCanTrade(canTrade);
+        tm.SetCanTrade(canTrade, isBuy);
     }
     private void GetTradingMacro(string pair,Action<TradingMacro> action) {
       var tm = GetTradingMacro(pair);

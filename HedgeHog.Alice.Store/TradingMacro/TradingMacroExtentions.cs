@@ -2828,6 +2828,8 @@ namespace HedgeHog.Alice.Store {
             tp /= 2;
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_X)
             tp *= TakeProfitBSRatio;
+          // TODO: this is to prevent acidentally setting a too small corridor. Thonk something better
+          tp = tp.Max(CorridorStats.StDevByHeight, CorridorStats.StDevByPriceAvg);
           break;
         case TradingMacroTakeProfitFunction.RegressionLevels:
           throw new NotImplementedException("RegressionLevels must be implemented locally.");
@@ -2973,27 +2975,20 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     IObservable<TradingMacro> _SyncObservable;
-    public IObservable<TradingMacro> SyncObservable { get { return _SyncObservable ?? (_SyncObservable = InitSyncObservable()); } }
-    BroadcastBlock<TradingMacro> buffer = new BroadcastBlock<TradingMacro>(n => n);
+    public IObservable<TradingMacro> SyncObservable {
+      get { return (_SyncObservable = _SyncObservable.InitBufferedObservable(ref _SyncSubject, exc => Log = exc)); }
+    }
     object _SyncSubjectLocker = new object();
     ISubject<TradingMacro> _SyncSubject;
     ISubject<TradingMacro> SyncSubject {
-      get {
-        if (SyncObservable == null)
-          lock (_SyncSubjectLocker) {
-            if (_SyncSubject == null)
-              InitSyncObservable();
-          }
-        return _SyncSubject;
-      }
+      get { return (_SyncSubject = _SyncSubject.InitBufferedObservable(ref _SyncObservable, exc => Log = exc)); }
     }
 
-    private IObservable<TradingMacro> InitSyncObservable() {
-      _SyncSubject = new Subject<TradingMacro>();
-      _SyncSubject
-        .ObserveOn(TaskPoolScheduler.Default)
+    private IObservable<T> InitBufferedObservable<T>(ISubject<T> s) {
+      BroadcastBlock<T> buffer = new BroadcastBlock<T>(n => n);
+      s.ObserveOn(TaskPoolScheduler.Default)
         .Subscribe(a => buffer.SendAsync(a), exc => Log = exc);
-      return _SyncObservable = buffer.AsObservable();
+      return buffer.AsObservable();
     }
     #region ScanCorridor Subject
     object _ScanCoridorSubjectLocker = new object();
@@ -4096,37 +4091,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     IEnumerable<SuppRes> _suppResesForBulk() { return SuppRes.Where(sr => !sr.IsExitOnly || sr.InManual); }
-    public void ResetSuppResesInManual() {
-      ResetSuppResesInManual(!_suppResesForBulk().Any(sr => sr.InManual));
-    }
-    public void ResetSuppResesInManual(bool isManual) {
-      _suppResesForBulk().ToList().ForEach(sr => sr.InManual = isManual);
-    }
-    public void SetCanTrade(bool canTrade) {
-      _suppResesForBulk().ToList().ForEach(sr => sr.CanTrade = canTrade);
-    }
-    public void ToggleCanTrade() {
-      var srs = _suppResesForBulk().ToList();
-      var canTrade = !srs.Any(sr => sr.CanTrade);
-      srs.ForEach(sr => sr.CanTrade = canTrade);
-    }
-    public void SetTradeCount(int tradeCount) {
-      _suppResesForBulk().ForEach(sr => sr.TradesCount = tradeCount);
-    }
-    public void FlipTradeLevels() {
-      try {
-        IsTradingActive = false;
-        var b = BuyLevel.Rate;
-        BuyLevel.Rate = SellLevel.Rate;
-        SellLevel.Rate = b;
-        var s = LevelSellBy;
-        LevelSellBy = LevelBuyBy;
-        LevelBuyBy = s;
-      } catch (Exception exc) {
-        Log = exc;
-      }
-    }
-
     #region RatesRsd
     public double RatesRsd { get { return RatesHeight / StDevByPriceAvg; } }
     #endregion
