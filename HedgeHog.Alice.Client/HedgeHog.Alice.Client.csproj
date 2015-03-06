@@ -689,7 +689,9 @@
     <Content Include="WWW\d3-knockout\custom-binding-handlers\line-chart-binding.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js" />
+    <Content Include="WWW\d3-knockout\custom-binding-handlers\trend-line-chart-binding.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="WWW\d3-knockout\e1.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

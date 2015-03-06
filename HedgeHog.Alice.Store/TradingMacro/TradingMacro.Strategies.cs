@@ -2048,6 +2048,8 @@ namespace HedgeHog.Alice.Store {
                   #endregion
                   onOpenTradeLocal += t => {
                     _buySellLevelsForEach(sr => { if (!CanTradeAlwaysOn) sr.CanTradeEx = false; });
+                    if (SellLevel.Rate > BuyLevel.Rate)
+                      WrapTradeInCorridor();
                   };
                 }
                 #endregion

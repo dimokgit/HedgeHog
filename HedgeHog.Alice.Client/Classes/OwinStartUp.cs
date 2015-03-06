@@ -29,30 +29,27 @@ namespace HedgeHog.Alice.Client {
 
       // SignalR timer
       var remoteControl = App.container.GetExport<RemoteControlModel>();
-      
+
       app.UseCors(CorsOptions.AllowAll);
       app.Use((context, next) => {
         try {
           App.SetSignalRSubjectSubject(() => {
             var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
             if (tm != null) {
-              var rl = tm.RateLast;
-              if (rl != null) {
-                try {
-                  var trader = App.container.GetExport<TraderModel>();
-                  var hub = GlobalHost.ConnectionManager.GetHubContext<MyHub>();
-                  hub.Clients.All.addMessage(new {
-                    time = tm.ServerTime.ToString("HH:mm"),
-                    prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-                    tpm = tm.TicksPerMinuteAverage.ToInt(),
-                    dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
-                    hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
-                    rsdMin = tm.RatesStDevMinInPips
-                    //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
-                  });
-                } catch (Exception exc) {
-                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-                }
+              try {
+                var trader = App.container.GetExport<TraderModel>();
+                var hub = GlobalHost.ConnectionManager.GetHubContext<MyHub>();
+                hub.Clients.All.addMessage(new {
+                  time = tm.ServerTime.ToString("HH:mm:ss"),
+                  prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
+                  tpm = tm.TicksPerMinuteAverage.ToInt(),
+                  dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
+                  hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
+                  rsdMin = tm.RatesStDevMinInPips
+                  //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
+                });
+              } catch (Exception exc) {
+                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
               }
             }
           });
@@ -154,9 +151,9 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int pips) {
       UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
-    public void AskRates(int charterWidth,DateTimeOffset startDate,string pair){
-      UseTradingMacro(pair, tm =>
-      Clients.Caller.addRates(remoteControl.Value.ServeChart(charterWidth, startDate, tm)));
+    public void AskRates(int charterWidth, DateTimeOffset startDate, string pair, int chartNum) {
+      UseTradingMacro(pair, chartNum, tm =>
+        Clients.Caller.addRates(remoteControl.Value.ServeChart(charterWidth, startDate, tm)));
     }
 
     double IntOrDouble(double d, double max = 10) {
@@ -173,31 +170,34 @@ namespace HedgeHog.Alice.Client {
           stDev = IntOrDouble(tm.StDevByHeightInPips) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips),
           height = tm.RatesHeightInPips.ToInt(),
           profit = IntOrDouble(tm.CurrentGrossInPipTotal),
-          closed  = trader.Value.ClosedTrades.Select(t=>new{})
+          closed = trader.Value.ClosedTrades.Select(t => new { })
         });
     }
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
-    public void StopTrades(string pair) { SetCanTrade(pair, false,null); }
+    public void StopTrades(string pair) { SetCanTrade(pair, false, null); }
     public void StartTrades(string pair, bool isBuy) { SetCanTrade(pair, true, isBuy); }
-    void SetCanTrade(string pair, bool canTrade,bool? isBuy) {
+    void SetCanTrade(string pair, bool canTrade, bool? isBuy) {
       var tm = GetTradingMacro(pair);
       if (tm != null)
         tm.SetCanTrade(canTrade, isBuy);
     }
-    private void GetTradingMacro(string pair,Action<TradingMacro> action) {
+    private void GetTradingMacro(string pair, Action<TradingMacro> action) {
       var tm = GetTradingMacro(pair);
       if (tm != null) action(tm);
     }
-    private TradingMacro GetTradingMacro(string pair) {
+    private TradingMacro GetTradingMacro(string pair, int chartNum = 0) {
       var rc = remoteControl.Value;
-      var tm = rc.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
+      var tm = rc.TradingMacrosCopy.Skip(chartNum).FirstOrDefault(t => t.PairPlain == pair);
       return tm;
     }
-    void UseTradingMacro(string pair,Action<TradingMacro> action) {
+    void UseTradingMacro(string pair, Action<TradingMacro> action) {
+      UseTradingMacro(pair, 0, action);
+    }
+    void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action) {
       try {
-        action(GetTradingMacro(pair));
+        action(GetTradingMacro(pair, chartNum));
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }

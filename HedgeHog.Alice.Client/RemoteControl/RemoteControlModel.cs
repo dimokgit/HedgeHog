@@ -1034,23 +1034,16 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
     public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, TradingMacro tm) {
+      string pair = tm.Pair;
       Func<Rate, ExpandoObject> map = rate => new {
-        date = rate.StartDate2,
-        close = rate.PriceAvg
+        d = rate.StartDate2,
+        c = rate.PriceAvg
       }.ToExpando();
-      dateStart = dateStart.AddMinutes(-tm.BarPeriodInt * 60);
+      dateStart = dateStart.AddSeconds(-(tm.BarPeriodInt * 60).Max(1) * 60);
       List<Rate> rates = tm.RatesArray.ToList();
-      var ratesForChart = rates.Where(r => r.StartDate2 >= dateStart).ToList();
-      var distanceInSeconds = rates.DistinctUntilChanged(r => r.StartDate2.AddMilliseconds(-r.StartDate2.Millisecond)).Count() / (double)chartWidth;
-      ratesForChart = rates
-        .Reverse<Rate>()
-        .GroupByCloseness(distanceInSeconds, (r1, r2, d) => (r1.StartDate2 - r2.StartDate2).TotalSeconds.Abs() < d)
-        .Reverse()
-        .ToList(g => {
-          var rate = g.GroupToRate();
-          tm.SetVoltage(rate, g.Average(r => tm.GetVoltage(r)));
-          return rate;
-        });
+      var ratesForChart = rates.Where(r => r.StartDate2 >= dateStart).ToArray();
+      if(tm.BarPeriod == BarsPeriodType.t1)
+        ratesForChart = ratesForChart.GroupTicksToRates().ToArray();
 
       var trends = tm.SetTrendLines(rates).OrderBars().ToList();
       var trendLines = new {
@@ -1063,16 +1056,31 @@ namespace HedgeHog.Alice.Client {
       }.ToExpando();
       var tradeLevels = new {
         buy = tm.BuyLevel.Rate,
+        canBuy = tm.BuyLevel.CanTrade,
+        manualBuy = tm.BuyLevel.InManual,
         sell = tm.SellLevel.Rate,
+        canSell = tm.SellLevel.CanTrade,
+        manualSell = tm.SellLevel.InManual,
         buyClose = tm.BuyCloseLevel.Rate,
         sellClose = tm.SellCloseLevel.Rate
       }.ToExpando();
+      var tmg = tradesManager;
+      var trades0 = tmg.GetTrades(pair);
+      Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
+      var trades = new {
+        buy = getTrades(true).NetOpen(),
+        sell = getTrades(false).NetOpen()
+      }.ToExpando();
+      var price = tmg.GetPrice(pair);
+      var askBid = new { ask = price.Ask, bid = price.Bid }.ToExpando();
       return new {
         rates = ratesForChart.Select(map).ToArray(),
         dateStart = tm.RatesArray[0].StartDate2,
         trendLines,
-        sTradingActive = tm.IsTradingActive,
-        tradeLevels = tradeLevels
+        isTradingActive = tm.IsTradingActive,
+        tradeLevels = tradeLevels,
+        trades,
+        askBid
       }.ToExpando();
     }
     bool? _isParentHidden;

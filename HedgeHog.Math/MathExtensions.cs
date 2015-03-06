@@ -903,6 +903,43 @@ namespace HedgeHog {
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
     public enum RoundTo { Second, Minute, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
+    public static DateTimeOffset Round(this DateTimeOffset d, RoundTo rt) {
+      DateTimeOffset dtRounded = new DateTimeOffset();
+      switch (rt) {
+        case RoundTo.Second:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, d.Second, d.Offset);
+          if (d.Millisecond >= 500) dtRounded = dtRounded.AddSeconds(1);
+          break;
+        case RoundTo.Minute:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          if (d.Second >= 30) dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.Hour:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
+          if (d.Minute >= 30) dtRounded = dtRounded.AddHours(1);
+          break;
+        case RoundTo.HourFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
+          break;
+        case RoundTo.DayFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, 0, 0, 0, d.Offset);
+          break;
+        case RoundTo.Day:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, 0, 0, 0, d.Offset);
+          if (d.Hour >= 12) dtRounded = dtRounded.AddDays(1);
+          break;
+        case RoundTo.Month:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, 1, 0, 0, 0, d.Offset);
+          break;
+        case RoundTo.MonthEnd:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, 1, 0, 0, 0, d.Offset).AddMonths(1).AddDays(-1);
+          break;
+        case RoundTo.Week:
+          dtRounded = d.AddDays(-(int)d.DayOfWeek).Date;
+          break;
+      }
+      return dtRounded;
+    }
     public static DateTime Round(this DateTime d, RoundTo rt) {
       DateTime dtRounded = new DateTime();
       switch (rt) {

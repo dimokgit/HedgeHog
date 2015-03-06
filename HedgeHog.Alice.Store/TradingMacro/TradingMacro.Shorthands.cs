@@ -65,7 +65,6 @@ namespace HedgeHog.Alice.Store {
         .ForEach(rate => {
           IsTradingActive = false;
           LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-          BuyLevel.InManual = SellLevel.InManual = true;
           Func<bool> isWide2 = () =>
             LevelBuyBy == TradeLevelBy.PriceAvg22 &&
             LevelSellBy == TradeLevelBy.PriceAvg32;
