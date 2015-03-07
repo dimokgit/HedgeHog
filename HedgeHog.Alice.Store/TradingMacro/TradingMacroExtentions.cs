@@ -1476,7 +1476,7 @@ namespace HedgeHog.Alice.Store {
               });
             } else {
               if (RateLast != null && tms().Length > 1) {
-                var a = tms().Select(tm => tm.UseRatesInternal(ri => ri.TakeLast(1).Select(r => r.StartDate).DefaultIfEmpty().Single())).ToArray();
+                var a = tms().Select(tm => tm.UseRatesInternal(ri => ri.LastOrDefault().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First())).ToArray();
                 var dateMin = a.Min();
                 if (tms().Distinct(tm => tm.BarPeriod).Count() == 1 && (dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt * 60) {
                   Log = new Exception("MaxTime-MinTime>30mins");

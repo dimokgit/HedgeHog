@@ -5,9 +5,19 @@ using System.Text;
 using HedgeHog;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Reflection;
+using ReactiveUI;
 
 namespace HedgeHog {
   public static partial class Lib {
+    public static List<T> InnerList<T>(this ReactiveUI.ReactiveList<T>source){
+      var field = typeof(ReactiveList<T>).GetField("_inner", BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
+      return (List<T>)field.GetValue(source);
+    }
+    public static List<T> CopyLast<T>(this List<T> source, int count) {
+      var startIndex = Math.Max(0, source.Count - count);
+      return source.GetRange(startIndex, source.Count - startIndex);
+    }
     public static IEnumerable<U> Reverse<T, U>(this IEnumerable<T> source, Func<T, U> projector) {
       return source.Reverse().Select(projector);
     }

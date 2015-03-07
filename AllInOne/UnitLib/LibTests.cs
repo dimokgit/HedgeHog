@@ -80,5 +80,15 @@ namespace HedgeHog.Tests {
       var values = Enumerable.Range(0, 5).Select(i => Lib.IteratonSequenceNextStepPow(5000, 0.6, i)).ToArray();
       Assert.AreEqual(0, values[3]);
     }
+
+    [TestMethod()]
+    public void InnerListTest() {
+      ReactiveUI.ReactiveList<int> rl = new ReactiveUI.ReactiveList<int>(new[] { 1, 2, 3 });
+      Assert.IsTrue(rl.InnerList().SequenceEqual(rl));
+      Assert.AreEqual(rl.Last(), rl.InnerList().CopyLast(1)[0]);
+      Assert.IsTrue(rl.Skip(1).SequenceEqual(rl.InnerList().CopyLast(2)));
+      Assert.IsTrue(rl.Skip(0).SequenceEqual(rl.InnerList().CopyLast(30)));
+      Assert.IsTrue(rl.InnerList().CopyLast(0).IsEmpty());
+    }
   }
 }
