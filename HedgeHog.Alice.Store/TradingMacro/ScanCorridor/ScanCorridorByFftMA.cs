@@ -20,7 +20,7 @@ namespace HedgeHog.Alice.Store {
         isInFlight = true;
         var barsCount = BarsCountCalc;
         TaskPoolScheduler.Default.Schedule(() => {
-          UseRatesInternal(ri => ri.TakeLast(barsCount * 2).Reverse().Skip(1))
+          UseRatesInternal(ri => ri.CopyLast(barsCount * 2).Reverse<Rate>().Skip(1))
             .SkipWhile(rate => GetVoltage(rate).IsNotNaN())
             .Buffer(barsCount, 1)
             .TakeWhile(rates => rates.Count == barsCount)

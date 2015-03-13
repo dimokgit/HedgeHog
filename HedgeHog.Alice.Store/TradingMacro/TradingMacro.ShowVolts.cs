@@ -95,8 +95,11 @@ namespace HedgeHog.Alice.Store {
     EventLoopScheduler _setVoltsScheduler = new EventLoopScheduler();
     CompositeDisposable _setVoltsSubscriber = null;
     private CorridorStatistics ShowVoltsByVolatility() {
-      if (WaveShort.HasRates == false)
-        WaveShort.Rates = RatesArray.TakeLast(CorridorDistance).Reverse().ToArray();
+      if (WaveShort.HasRates == false) {
+        var wr = RatesArray.CopyLast(CorridorDistance);
+        wr.Reverse();
+        WaveShort.Rates = wr;
+      }
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       var line = corridor.Coeffs.RegressionLine(corridor.Rates.Count);
       Func<Rate, double> priceFunc = r => r.VoltageLocal;
@@ -116,13 +119,13 @@ namespace HedgeHog.Alice.Store {
       //SetMAByFtt(corridorRates, _priceAvg, priceActionSlow, cmaLevelsSlow);
       //SetVoltage(corridorRates[0], InPips(CalcVolatility(corridorRates, priceFuncFast, priceFuncSlow)));
       {
-        var corridorRates = RatesArray.TakeLast(frameLength + PriceFftLevelsFast.Max(PriceFftLevelsSlow)).ToArray();
+        var corridorRates = RatesArray.CopyLast(frameLength + PriceFftLevelsFast.Max(PriceFftLevelsSlow));
         var trimaFast = corridorRates.GetTrima(PriceFftLevelsFast).Reverse().Take(frameLength).ToArray();
         var trimaSlow = corridorRates.GetTrima(PriceFftLevelsSlow).Reverse().Take(frameLength).ToArray();
         SetVoltage(corridorRates.Last(), InPips(CalcVolatility(trimaFast, trimaSlow)));
       }
       if (_setVoltsSubscriber == null || _setVoltsSubscriber.IsDisposed) {
-        var voltRates0 = UseRatesInternal(ri => ri.TakeLast(BarsCountCalc * 2).ToArray());
+        IList<Rate> voltRates0 = UseRatesInternal(ri => ri.CopyLast(BarsCountCalc * 2));
         var voltRates = voltRates0
           .Reverse()
           .Zip(voltRates0.GetTrima(PriceFftLevelsFast).Reverse(), (r, f) => new { r, f })
@@ -213,8 +216,11 @@ namespace HedgeHog.Alice.Store {
       get {
         lock (_SetBarsCountCalcSubjectLocker)
           if (_SetBarsCountCalcSubject == null) {
-            _SetBarsCountCalcSubject = new Subject<Action>();
-            _SetBarsCountCalcSubject.SubscribeToLatestOnBGThread(exc => Log = exc, ThreadPriority.Lowest);
+            IObservable<Action> o = null;
+            _SetBarsCountCalcSubject = _SetBarsCountCalcSubject.InitBufferedObservable(ref o,exc => Log = exc);
+            o
+              .ObserveOn(new EventLoopScheduler())
+              .Subscribe(a => a());
           }
         return _SetBarsCountCalcSubject;
       }

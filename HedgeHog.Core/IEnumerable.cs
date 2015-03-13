@@ -121,7 +121,7 @@ namespace HedgeHog {
         .Select(g => new { v=g.Key, c = g.Count()})
         .ToArray();
       var valuesRange = values.Distinct(a => a.v).ToArray();
-      var last = valuesRange.TakeLast(1).Select(a => a.v).DefaultIfEmpty(double.NaN).Last();
+      var last = valuesRange.LastOrDefault().YieldNotNull().Select(a => a.v).DefaultIfEmpty(double.NaN).Last();
       //var strips = values.BufferVertical(d => d, 0.05, (d => d * .009 * 3), (b, t, rates) => new { b, t, rates }).ToArray();
       var ranges = (
         from value in valuesRange

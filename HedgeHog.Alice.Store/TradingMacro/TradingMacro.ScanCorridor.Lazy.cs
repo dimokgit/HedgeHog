@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Func<IList<Rate>, int> counter, Func<CorridorStatistics> showVolts = null) {
-      IEnumerable<IList<Rate>> ratesCount = CorridorStats.Rates.TakeLast(1)
+      IEnumerable<IList<Rate>> ratesCount = CorridorStats.Rates.CopyLast(1)
         .Where(_ => IsCorridorForwardOnly)
         .Select(rl => ratesReversed.TakeWhile(r => r.StartDate >= rl.StartDate)
           .Count())

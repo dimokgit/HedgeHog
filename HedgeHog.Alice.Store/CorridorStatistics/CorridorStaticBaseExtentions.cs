@@ -88,19 +88,19 @@ namespace HedgeHog.Alice.Store {
     public static CorridorStatistics ScanCorridorWithAngle(this IList<Rate> rates, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       return rates.ScanCorridorWithAngle(r => r.PriceAvg, priceHigh, priceLow, barsInterval, pointSize, corridorMethod);
     }
-    public static CorridorStatistics ScanCorridorWithAngle<T>(this IList<T> rates,Func<T,double>price, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod)where T: Rate {
+    public static CorridorStatistics ScanCorridorWithAngle(this IList<Rate> source,Func<Rate,double>price, Func<Rate, double> priceHigh, Func<Rate, double> priceLow, TimeSpan barsInterval, double pointSize, CorridorCalculationMethod corridorMethod) {
       try {
-        if (rates == null) throw new ArgumentNullException("Rates list must not be null.");
-        if (rates.Count == 0) throw new ArgumentOutOfRangeException("Rates list must not be empty.");
-        rates = rates.ToArray();
+        if (source == null) throw new ArgumentNullException("Rates list must not be null.");
+        if (source.Count == 0) throw new ArgumentOutOfRangeException("Rates list must not be empty.");
+        var rates = source.ToList();
         #region Funcs
         double[] linePrices = new double[rates.Count()];
         Func<int, double> priceLine = index => linePrices[index];
         Action<int, double> lineSet = (index, d) => linePrices[index] = d;
         var coeffs = rates.SetRegressionPrice(price, lineSet);
         var sineOffset = 1;// Math.Sin(Math.PI / 2 - coeffs[1] / pointSize);
-        Func<T, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
-        Func<T, int, double> heightLow = (rate, index) => (priceLow(rate) - priceLine(index)) * sineOffset;
+        Func<Rate, int, double> heightHigh = (rate, index) => (priceHigh(rate) - priceLine(index)) * sineOffset;
+        Func<Rate, int, double> heightLow = (rate, index) => (priceLow(rate) - priceLine(index)) * sineOffset;
         #endregion
         #region Locals
         var lineLow = new LineInfo(new Rate[0], 0, 0);
@@ -139,7 +139,7 @@ namespace HedgeHog.Alice.Store {
           }
         stDevDict.Add(CorridorCalculationMethod.PriceAverage, rates.StDev(price));
 
-        return new CorridorStatistics((IList<Rate>)rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2) {
+        return new CorridorStatistics(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2) {
           priceLine = linePrices, priceHigh = priceHigh, priceLow = priceLow,
           StDevs = stDevDict, HeightByRegression = height.IfNaN(stDevDict[CorridorCalculationMethod.Height] * 4)
         };

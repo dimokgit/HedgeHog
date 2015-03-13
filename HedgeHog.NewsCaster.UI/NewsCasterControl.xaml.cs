@@ -58,6 +58,7 @@ namespace HedgeHog.UI {
     private void FetchNews(DateTime? date = null) {
       if (newsObserver != null) return;
       try {
+        ProcessNews(NewsHound.MyFxBook.Fetch());
         var dateStart = DateTime.Now.AddDays(-7).Round(MathExtensions.RoundTo.Week).AddDays(1);// DateTime.Parse("1/2/2012");
         var dates = Enumerable.Range(0, 10000).Select(i => dateStart.AddDays(i * 7))
           .TakeWhile(d => d <= DateTime.Now.Date.AddDays(1)).ToArray();

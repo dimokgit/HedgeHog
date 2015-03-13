@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog.Shared {
-  public class ReplayArguments:GalaSoft.MvvmLight.ViewModelBase {
+  public class ReplayArguments<TTradingMacro>:GalaSoft.MvvmLight.ViewModelBase {
 
     #region Session Statistics
     public class SessionStatistics {
@@ -116,15 +116,15 @@ namespace HedgeHog.Shared {
         }
       }
     }
-    public List<object> TradingMacros = new List<object>();
-    public void SetTradingMacros<T>(IList<T> tms) {
+    public List<TTradingMacro> TradingMacros = new List<TTradingMacro>();
+    public void SetTradingMacros(IList<TTradingMacro> tms) {
       TradingMacros.Clear();
-      TradingMacros.AddRange(tms.Cast<object>());
+      TradingMacros.AddRange(tms);
       _TradingMacrosIndex = 0;
     }
     int _TradingMacrosIndex = 0;
-    public bool IsMyTurn(object tm) {
-      return TradingMacros[_TradingMacrosIndex] == tm;
+    public bool IsMyTurn(TTradingMacro tm) {
+      return TradingMacros[_TradingMacrosIndex].Equals(tm);
     }
     public void NextTradingMacro() {
       _TradingMacrosIndex = (_TradingMacrosIndex + 1) % TradingMacros.Count;

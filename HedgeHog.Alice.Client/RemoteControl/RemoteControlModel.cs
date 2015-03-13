@@ -1012,7 +1012,7 @@ namespace HedgeHog.Alice.Client {
         lock (_showChartQueueLocker) {
           if (_showChartQueue == null) {
             _showChartQueue = new Subject<Action>();
-            _showChartQueue.Throttle(TimeSpan.FromSeconds(1)).SubscribeToLatestOnBGThread(action => action.InvoceOnUI(DispatcherPriority.ContextIdle), exc => Log = exc);
+            _showChartQueue.Throttle(TimeSpan.FromSeconds(0.1)).SubscribeToLatestOnBGThread(action => action.InvoceOnUI(DispatcherPriority.ContextIdle), exc => Log = exc);
           }
         }
         return _showChartQueue;
@@ -1034,17 +1034,17 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
     public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, TradingMacro tm) {
+      var digits = tm.Digits() + 1;
+      if (dateStart > tm.LoadRatesStartDate2) dateStart = tm.LoadRatesStartDate2;
       string pair = tm.Pair;
       Func<Rate, ExpandoObject> map = rate => new {
         d = rate.StartDate2,
-        c = rate.PriceAvg
+        c = rate.PriceAvg.Round(digits)
       }.ToExpando();
-      dateStart = dateStart.AddSeconds(-(tm.BarPeriodInt * 60).Max(1) * 60);
       List<Rate> rates = tm.RatesArray.ToList();
       var ratesForChart = rates.Where(r => r.StartDate2 >= dateStart).ToArray();
-      if(tm.BarPeriod == BarsPeriodType.t1)
+      if (tm.BarPeriod == BarsPeriodType.t1)
         ratesForChart = ratesForChart.GroupTicksToRates().ToArray();
-
       var trends = tm.SetTrendLines(rates).OrderBars().ToList();
       var trendLines = new {
         dates = trends.ToArray(t => t.StartDate2),
@@ -1058,9 +1058,11 @@ namespace HedgeHog.Alice.Client {
         buy = tm.BuyLevel.Rate,
         canBuy = tm.BuyLevel.CanTrade,
         manualBuy = tm.BuyLevel.InManual,
+        buyCount = tm.BuyLevel.TradesCount,
         sell = tm.SellLevel.Rate,
         canSell = tm.SellLevel.CanTrade,
         manualSell = tm.SellLevel.InManual,
+        sellCount = tm.SellLevel.TradesCount,
         buyClose = tm.BuyCloseLevel.Rate,
         sellClose = tm.SellCloseLevel.Rate
       }.ToExpando();
@@ -1154,7 +1156,7 @@ namespace HedgeHog.Alice.Client {
           charter.HeaderText =
             string.Format(":{0}×[{1}]{2:n2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
-            /*1*/, tm.RatesArray.Count + "," + tm.TicksPerMinuteAverage.ToInt()
+            /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
             /*2*/, tm.CorridorAngle
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips

@@ -29,6 +29,7 @@ using HedgeHog.Alice.Store.Metadata;
 using System.Threading.Tasks.Dataflow;
 using HedgeHog.Shared.Messages;
 using ReactiveUI;
+using System.Reactive;
 namespace HedgeHog.Alice.Client {
   public class MasterListChangedEventArgs : EventArgs {
     public Trade[] MasterTrades { get; set; }
@@ -1198,6 +1199,14 @@ namespace HedgeHog.Alice.Client {
     #region Ctor
     Schedulers.ThreadScheduler.CommandDelegate Using_FetchServerTrades;
     MvvmFoundation.Wpf.PropertyObserver<CoreFX> _coreFXObserver;
+    IObservable<EventPattern<PriceChangedEventArgs>> _priceChanged;
+    public IObservable<EventPattern<PriceChangedEventArgs>> PriceChanged {
+      get { return _priceChanged; }
+      set {
+        _priceChanged = value;
+        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.PriceChanged));
+      }
+    }
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     TraderModel() {
@@ -1210,7 +1219,6 @@ namespace HedgeHog.Alice.Client {
         fwMaster = new FXW(this.CoreFX, CommissionByTrade);
         TradesManagerStatic.AccountCurrency = MasterAccount.Currency;
         virtualTrader = new VirtualTradesManager(LoginInfo.AccountId, CommissionByTrade);
-        var pn = Lib.GetLambda<CoreFX>(cfx => cfx.SessionStatus);
         this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
@@ -1219,10 +1227,11 @@ namespace HedgeHog.Alice.Client {
           TradesManager.Error += fwMaster_Error;
           TradesManager.TradeAdded += fwMaster_TradeAdded;
           TradesManager.TradeRemoved += fwMaster_TradeRemoved;
+          PriceChanged = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h);
           if (IsInVirtualTrading)
             TradesManager.PriceChanged += fwMaster_PriceChanged;
           else
-            PriceChangeSubscribtion = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h)
+            PriceChangeSubscribtion = PriceChanged
               .Do(ie => UpdateTradingAccountTargetBlock.Post(ie.EventArgs.Account))
               .Where(ie => TradesManager.GetTrades().Select(t => t.Pair).Contains(ie.EventArgs.Pair))
               .Buffer(_throttleInterval)
@@ -1299,6 +1308,7 @@ namespace HedgeHog.Alice.Client {
           //TradesManager.PriceChanged -= fwMaster_PriceChanged;
           //fwMaster.OrderChanged -= fwMaster_OrderChanged;
           fwMaster.OrderAdded -= fwMaster_OrderAdded;
+          PriceChangeSubscribtion.Dispose();
         };
         #endregion
 

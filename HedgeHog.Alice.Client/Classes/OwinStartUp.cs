@@ -7,18 +7,25 @@ using Microsoft.Owin.StaticFiles;
 using Owin;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Dynamic;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
   public class StartUp {
     public string Pair { get { return "usdjpy"; } }
+    List<string> Pairs = new List<string>() { "usdjpy", "eurusd" };
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }
     public void Configuration(IAppBuilder app) {
-
+      GlobalHost.Configuration.DefaultMessageBufferSize = 1;
       // Static content
       var fileSystem = new PhysicalFileSystem("./www");
       var fsOptions = new FileServerOptions {
@@ -29,30 +36,51 @@ namespace HedgeHog.Alice.Client {
 
       // SignalR timer
       var remoteControl = App.container.GetExport<RemoteControlModel>();
+      var trader = App.container.GetExportedValue<TraderModel>();
 
+      var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
+        time = tm.ServerTime.ToString("HH:mm:ss"),
+        prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
+        tpm = tm.TicksPerMinuteAverage.ToInt(),
+        dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
+        hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
+        rsdMin = tm.RatesStDevMinInPips,
+        equity = remoteControl.Value.MasterModel.AccountModel.Equity
+        //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
+      });
+      IDisposable priceChanged = null;
+      var propName = Lib.GetLambda<TraderModel>(x => x.PriceChanged);
+      trader.PropertyChanged += (object sender, PropertyChangedEventArgs e) => {
+        if (e.PropertyName != propName) return;
+        if (priceChanged != null) priceChanged.Dispose();
+        var trm = (TraderModel)sender;
+        priceChanged = trm.PriceChanged
+          .Select(x => x.EventArgs.Pair.Replace("/", "").ToLower())
+          .Where(pair => Pairs.Contains(pair))
+          .Subscribe(pair => {
+            try {
+              GlobalHost.ConnectionManager.GetHubContext<MyHub>()
+                .Clients.All.priceChanged(pair);
+            } catch (Exception exc) {
+              GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+            }
+          });
+      };
       app.UseCors(CorsOptions.AllowAll);
       app.Use((context, next) => {
         try {
-          App.SetSignalRSubjectSubject(() => {
-            var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
-            if (tm != null) {
-              try {
-                var trader = App.container.GetExport<TraderModel>();
-                var hub = GlobalHost.ConnectionManager.GetHubContext<MyHub>();
-                hub.Clients.All.addMessage(new {
-                  time = tm.ServerTime.ToString("HH:mm:ss"),
-                  prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-                  tpm = tm.TicksPerMinuteAverage.ToInt(),
-                  dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
-                  hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
-                  rsdMin = tm.RatesStDevMinInPips
-                  //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
-                });
-              } catch (Exception exc) {
-                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+          if (context == null)
+            App.SetSignalRSubjectSubject(() => {
+              var tm = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == Pair);
+              if (tm != null) {
+                try {
+                  GlobalHost.ConnectionManager.GetHubContext<MyHub>()
+                    .Clients.All.addMessage(makeClienInfo(tm));
+                } catch (Exception exc) {
+                  GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+                }
               }
-            }
-          });
+            });
 
           if (context.Request.Path.Value.ToLower() == "/hello") {
             return context.Response.WriteAsync("privet:" + DateTimeOffset.Now);
@@ -89,11 +117,37 @@ namespace HedgeHog.Alice.Client {
   }
   public class MyHub : Hub {
     Lazy<RemoteControlModel> remoteControl;
+    IObservable<string> _PriceChangedObservable;
+    Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
+    public IObservable<string> PriceChangedObservable {
+      get { return (_PriceChangedObservable = _PriceChangedObservable.InitBufferedObservable(ref _PriceChangedSubject, exc => Log = exc)); }
+    }
+    ISubject<string> _PriceChangedSubject;
+    ISubject<string> PriceChangedSubject {
+      get { return (_PriceChangedSubject = _PriceChangedSubject.InitBufferedObservable(ref _PriceChangedObservable, exc => Log = exc)); }
+    }
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
     }
-    public MyHub(TradingMacro tm) {
-      Clients.All.newInfo(tm.RateLast.PriceAvg + "");
+    public void AskChangedPrice(string pair) {
+      var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
+        time = tm.ServerTime.ToString("HH:mm:ss"),
+        prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
+        tps = tm.TicksPerSecondAverage.Round(1),
+        dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
+        hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
+        rsdMin = tm.RatesStDevMinInPips,
+        equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0)
+        //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
+      });
+      var tm2 = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
+      if (tm2 != null) {
+        try {
+          Clients.Caller.addMessage(makeClienInfo(tm2));
+        } catch (Exception exc) {
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        }
+      }
     }
     public void Send(string pair, string newInyterval) {
       try {
@@ -110,7 +164,7 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
-    public void MoveTradeLevel(string pair, bool isBuy, int pips) {
+    public void MoveTradeLevel(string pair, bool isBuy, double pips) {
       try {
         GetTradingMacro(pair).MoveBuySellLeve(isBuy, pips);
       } catch (Exception exc) {
@@ -151,9 +205,42 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int pips) {
       UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
-    public void AskRates(int charterWidth, DateTimeOffset startDate, string pair, int chartNum) {
-      UseTradingMacro(pair, chartNum, tm =>
+    public void AskRates(int charterWidth, DateTimeOffset startDate, string pair) {
+      UseTradingMacro(pair, 0, tm =>
         Clients.Caller.addRates(remoteControl.Value.ServeChart(charterWidth, startDate, tm)));
+    }
+    public void AskRates2(int charterWidth, DateTimeOffset startDate, string pair) {
+      try {
+        var tm = GetTradingMacro(pair, 1);
+        Clients.Caller.addRates2(tm != null && tm.IsActive ? remoteControl.Value.ServeChart(charterWidth, startDate, tm) : new ExpandoObject());
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+      }
+    }
+    public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels) {
+      UseTradingMacro(pair, tm => tm.SetTradeLevelsPreset(presetLevels));
+    }
+    public object[] ReadNews() {
+      var date = DateTimeOffset.UtcNow.AddMinutes(-60);
+      return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date).ToArray())
+        .Select(en => new { en.Time, en.Name, en.Level, en.EventLevel, en.Country, en })
+        .ToArray();
+    }
+    public void SaveTradeSettings(string pair,ExpandoObject ts) {
+      UseTradingMacro(pair, tm => {
+        var props = (IDictionary<string, object>)ts;
+        props.ForEach(kv => {
+          tm.SetProperty(kv.Key, kv.Value);
+        });
+      });
+    }
+    public void ReadTradeSettings(string pair) {
+      UseTradingMacro(pair, tm => {
+        var ts = new {
+          tm.IsTakeBack, tm.LimitProfitByRatesHeight, tm.CorridorCrossesMaximum
+        }.ToExpando();
+        Clients.Caller.readTradeSettings(ts);
+      });
     }
 
     double IntOrDouble(double d, double max = 10) {

@@ -220,11 +220,11 @@ namespace HedgeHog.Alice.Store {
     public CorridorStatistics() {
 
     }
-    public CorridorStatistics(TradingMacro tm, IList<Rate> rates, double stDev, double[] coeffs) {
+    public CorridorStatistics(TradingMacro tm, List<Rate> rates, double stDev, double[] coeffs) {
       this.TradingMacro = tm;
       Init(rates, stDev, coeffs, stDev, stDev, stDev * 2, stDev * 2, 0, 0);
     }
-    public CorridorStatistics(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown) {
+    public CorridorStatistics(List<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown) {
       Init(rates, stDev, coeffs, heightUp0, heightDown0, heightUp, heightDown, 0, 0);
     }
 
@@ -245,7 +245,7 @@ namespace HedgeHog.Alice.Store {
         () => HeightUpDown0, () => HeightUpDown, () => HeightUpDown0InPips, () => HeightUpDownInPips, () => HeightUpDown0ToSpreadRatio);
     }
 
-    public void Init(IList<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int iterations, int corridorCrossesCount) {
+    public void Init(List<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int iterations, int corridorCrossesCount) {
       this.Rates = rates;
       this.RatesStDev = this.Rates.StDev(r => r.PriceAvg);
       this.StDev = stDev.IfNaN(this.RatesStDev);
@@ -421,9 +421,9 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    IList<Rate> _Rates = new List<Rate>();
+    List<Rate> _Rates = new List<Rate>();
 
-    public IList<Rate> Rates {
+    public List<Rate> Rates {
       get { return _Rates; }
       set {
         _Rates = value;

@@ -90,5 +90,13 @@ namespace HedgeHog.Tests {
       Assert.IsTrue(rl.Skip(0).SequenceEqual(rl.InnerList().CopyLast(30)));
       Assert.IsTrue(rl.InnerList().CopyLast(0).IsEmpty());
     }
+    [TestMethod()]
+    public void CopyLastFromArray() {
+      var rl = new[] { 1, 2, 3 };
+      Assert.AreEqual(rl.Last(), rl.CopyLast(1)[0]);
+      Assert.IsTrue(rl.Skip(1).SequenceEqual(rl.CopyLast(2)));
+      Assert.IsTrue(rl.Skip(0).SequenceEqual(rl.CopyLast(30)));
+      Assert.IsTrue(rl.CopyLast(0).IsEmpty());
+    }
   }
 }

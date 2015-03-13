@@ -32,7 +32,7 @@ namespace HedgeHog.Alice.Store {
       var ratesReversedOriginal = rates.ReverseIfNot().SafeArray();
       var stDev = StDevByPriceAvg.Avg(StDevByHeight);
       Func<int> getDefault = () => {
-        var startDate = CorridorStats.Rates.TakeLast(1).Select(r => r.StartDate).DefaultIfEmpty().First();
+        var startDate = CorridorStats.Rates.CopyLast(1).Select(r => r.StartDate).DefaultIfEmpty().First();
         return ratesReversedOriginal.TakeWhile(r => r.StartDate >= startDate).Count();
       };
       return RunSplits(rates, _priceAvg, CorrelationMinimum.ToInt()).IfEmpty(getDefault).Max();

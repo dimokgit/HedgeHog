@@ -8,26 +8,6 @@ using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    void ScanRatesLengthByStDevAndMean(Func<IList<Rate>> RatesInternal,Action<int> setLength) {
-      var func = MonoidsCore.ToFunc(true, 0, 0.0, (ok, l, mean) => new { ok, l, mean });
-      var last = func(false, 0, 0.0);
-      Range.Int32(BarsCount, RatesInternal().Count, 100)
-        .Select(i => {
-          var rates = RatesInternal().TakeLast(i).ToArray(_priceAvg);
-          var height = rates.StDev() * _stDevUniformRatio / 2;
-          double max = rates.Max(), min = rates.Min();
-          var mean = max.Avg(min);
-          var com = GetSenterOfMassStrip(rates, height, -1, (rs, t, b) => new { t, b });
-          return last = func(com.Any(a => !mean.Between(a.b, a.t)), rates.Length, mean);
-        })
-        .SkipWhile(a => !a.ok)
-        .DefaultIfEmpty(last)
-        .Take(1)
-        .ForEach(a => {
-          MagnetPrice = a.mean;
-          setLength(a.l);
-        });
-    }
     void ScanRatesLengthByStDevMin() {
       var ratesInternal = UseRatesInternal(ri => ri.Reverse().ToList(_priceAvg), 5000);
       var countMin = ratesInternal.Count;

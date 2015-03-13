@@ -59,7 +59,7 @@ namespace HedgeHog.Alice.Store {
       Action<double, double> adjustExitLevels = (buyLevel, sellLevel) => {
         #region Set (buy/sell)Level
         {
-          var d = Trades.TakeLast(1).Select(t => t.Time).FirstOrDefault();
+          var d = Trades.CopyLast(1).Select(t => t.Time).FirstOrDefault();
           var rateSinceTrade = EnumerableEx.If(() => !d.IsMin() && DoAdjustExitLevelByTradeTime, RatesArray
             .Reverse<Rate>()
             .TakeWhile(r => r.StartDate >= d)
@@ -111,12 +111,12 @@ namespace HedgeHog.Alice.Store {
             var tpColse = InPoints((TakeProfitPips - CurrentGrossInPipTotal).Min(TakeProfitPips));// ClosingDistanceByCurrentGross(takeProfitLimitRatio);
             var currentGrossOthers = _tradingStatistics.TradingMacros.Where(tm => tm != this).Sum(tm => tm.CurrentGross);
             var currentGrossOthersInPips = TradesManager.MoneyAndLotToPips(currentGrossOthers, CurrentGrossLot, Pair);
-            var ellasic = RatesArray.TakeLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
+            var ellasic = RatesArray.CopyLast(EllasticRange).Average(_priceAvg).Abs(RateLast.PriceAvg);
             var ratesHeightInPips = new[] { 
               LimitProfitByRatesHeight? TradingDistance :double.NaN
             }.Min(m => InPips(m));
             var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips + this.PriceSpreadAverageInPips : 0);
-            var ratesShort = RatesArray.TakeLast(5).ToArray();
+            var ratesShort = RatesArray.CopyLast(5);
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
             var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips);

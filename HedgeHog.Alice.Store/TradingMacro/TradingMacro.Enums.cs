@@ -229,6 +229,9 @@ namespace HedgeHog.Alice.Store {
     PriceAvg31,
     PriceAvg32,
   }
+  public enum TradeLevelsPreset {
+    SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4
+  }
   public enum CorridorByStDevRatio {
     HPAverage = 0,
     Height,

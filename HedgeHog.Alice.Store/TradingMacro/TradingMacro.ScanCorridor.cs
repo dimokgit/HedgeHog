@@ -39,7 +39,7 @@ namespace HedgeHog.Alice.Store {
     }
     private double[] VoltsFromInternalRates(int frameLength, int offset) {
       var ratesAll = UseRatesInternal(ri =>
-        ri.TakeLast(offset + 1440 * (DistanceDaysBack + 2) + frameLength * 2).Reverse().Skip(offset).ToArray().FillDistance().ToList());
+        ri.CopyLast(offset + 1440 * (DistanceDaysBack + 2) + frameLength * 2).Reverse<Rate>().Skip(offset).ToArray().FillDistance().ToList());
       var timeMax = ratesAll[0].StartDate.TimeOfDay;
       var timeMin = ratesAll[0].StartDate.AddMinutes(-BarPeriodInt * frameLength).TimeOfDay;
       var dateMax = ratesAll.Select(r => r.StartDate).SkipWhile(r => (ratesAll[0].StartDate - r).TotalDays < 1)
@@ -123,7 +123,7 @@ namespace HedgeHog.Alice.Store {
       }, IsInVitualTrading);
       Func<Rate, double> distanceFunc = r => GetVoltage2(r).Abs();
       var distanceMin = UseRatesInternal(ri =>
-        ri.TakeLast((VoltsAverageLength * 60).ToInt())
+        ri.CopyLast((VoltsAverageLength * 60).ToInt())
         .Select(distanceFunc)
         .Where(Lib.IsNotNaN)
         .Average() * CorridorDistance);
@@ -173,7 +173,7 @@ namespace HedgeHog.Alice.Store {
         var va = voltsAll.ToArray().AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
         GetVoltageAverage = () => va;
       }, IsInVitualTrading);
-      var distanceMin = UseRatesInternal(ri => ri.TakeLast((VoltsAverageLength * 60).ToInt()).Average(GetVoltage) * CorridorDistance);
+      var distanceMin = UseRatesInternal(ri => ri.CopyLast((VoltsAverageLength * 60).ToInt()).Average(GetVoltage) * CorridorDistance);
       var distanceSum = 0.0;
       var count = ratesReversed.Select(r => (distanceSum += GetVoltage(r))).TakeWhile(d => d < distanceMin).Count();
       Func<IList<Rate>, int> scan = rates => distanceMin == 0 ? CorridorDistance : count;
@@ -182,7 +182,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region ScanCorridorByDistance
     private CorridorStatistics ScanCorridorByDistanceMax(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToList());
+      var ratesAll = UseRatesInternal(ri => ri.CopyLast(1440 * 2 + CorridorDistance * 2).Reverse<Rate>().ToArray().FillDistance().ToList());
       var dateMax = ratesAll[0].StartDate.AddDays(-1);
       var timeMax = dateMax.TimeOfDay;
       var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
@@ -280,7 +280,7 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
     private CorridorStatistics ScanCorridorByDistance51(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      if (UseRatesInternal(ri => ri.TakeLast(10)).First().Distance.IsNaN()) {
+      if (UseRatesInternal(ri => ri.CopyLast(10)).First().Distance.IsNaN()) {
         Log = new Exception("Loading distance volts ...");
         Enumerable.Range(1, BarsCountCalc).ForEach(offset =>
           DistancesFromInternalRates(offset, (rates, volts) => SetVoltage(rates[0], volts)));
@@ -316,7 +316,7 @@ namespace HedgeHog.Alice.Store {
     }
     private double[] DistancesFromInternalRates(int offset, Action<IList<Rate>, double> setVolts) {
       var ratesAll = UseRatesInternal(ri =>
-        ri.TakeLast(offset + 1440 * (DistanceDaysBack + 2) + CorridorDistance * 2).Reverse().Skip(offset).ToArray().FillDistance().ToList());
+        ri.CopyLast(offset + 1440 * (DistanceDaysBack + 2) + CorridorDistance * 2).Reverse<Rate>().Skip(offset).ToArray().FillDistance().ToList());
       var timeMax = ratesAll[0].StartDate.TimeOfDay;
       var timeMin = ratesAll[0].StartDate.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
       var dateMax = ratesAll.Select(r => r.StartDate).SkipWhile(r => (ratesAll[0].StartDate - r).TotalDays < 1)
@@ -378,7 +378,7 @@ namespace HedgeHog.Alice.Store {
           .Count(x => x.DayOfWeek != DayOfWeek.Saturday && x.DayOfWeek != DayOfWeek.Sunday);
     }
     private CorridorStatistics ScanCorridorByDistance5(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * DistanceDaysBack + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToList());
+      var ratesAll = UseRatesInternal(ri => ri.CopyLast(1440 * DistanceDaysBack + CorridorDistance * 2).Reverse<Rate>().ToArray().FillDistance().ToList());
       var dateMax = ratesAll[0].StartDate.AddDays(-1);
       var timeMax = dateMax.TimeOfDay;
       var timeMin = dateMax.AddMinutes(-BarPeriodInt * CorridorDistance).TimeOfDay;
@@ -406,7 +406,7 @@ namespace HedgeHog.Alice.Store {
         .Select(chunk => selector(chunk.Distance(), chunk[0].StartDate));
     }
     private CorridorStatistics ScanCorridorByDistance3(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * 2 + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToArray());
+      var ratesAll = UseRatesInternal(ri => ri.CopyLast(1440 * 2 + CorridorDistance * 2).Reverse<Rate>().ToArray().FillDistance().ToArray());
       var ratesPrev = from r0 in ratesAll.Take(CorridorDistance + 1)
                       join r1 in ratesAll.Skip(CorridorDistance + 1) on r0.StartDate.TimeOfDay equals r1.StartDate.TimeOfDay into rg
                       select rg;
@@ -441,7 +441,7 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
     }
     private CorridorStatistics ScanCorridorByDistance2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesAll = UseRatesInternal(ri => ri.TakeLast(1440 * DistanceDaysBack + CorridorDistance * 2).Reverse().ToArray().FillDistance().ToArray());
+      var ratesAll = UseRatesInternal(ri => ri.CopyLast(1440 * DistanceDaysBack + CorridorDistance * 2).Reverse<Rate>().ToArray().FillDistance().ToArray());
       var ratesPrev = from r0 in ratesAll.Take(CorridorDistance + 1)
                       join r1 in ratesAll.Skip(CorridorDistance + 1) on r0.StartDate.TimeOfDay equals r1.StartDate.TimeOfDay into rg
                       select rg;
@@ -535,7 +535,7 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorBySpike24(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<double, double, double> calcHeight = (p, l) => SpikeHeightAbs ? p.Abs(l) : p - l;
       Func<IList<Rate>, int> scan = (rates) => {
-        var prices = rates.Select(_priceAvg).ToArray();
+        var prices = rates.Select(_priceAvg).ToList();
         var spikeOut = new { length = 0, distance = 0.0 };
         var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
         var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
@@ -716,11 +716,11 @@ namespace HedgeHog.Alice.Store {
         select projector(length, distance)
       );
     }
-    private static ParallelQuery<T> Spikes24<T>(IList<double> prices, OrderablePartitioner<int> lengths, Func<double, double, double> calcHeight, Func<int, double, T> projector) {
+    private static ParallelQuery<T> Spikes24<T>(List<double> prices, OrderablePartitioner<int> lengths, Func<double, double, double> calcHeight, Func<int, double, T> projector) {
       Func<IEnumerable<double>, IEnumerable<double>, double> priceHeight = (price, line) => price.Zip(line, calcHeight).MaxBy(d => d.Abs()).First();
-      Func<IList<double>, IList<double>, int, double> priceHeightLast = (price, line, chunk) => priceHeight(price.TakeLast(chunk), line.TakeLast(chunk));
+      Func<double[], double[], int, double> priceHeightLast = (price, line, chunk) => priceHeight(price.CopyLast(chunk), line.CopyLast(chunk));
       Func<IList<double>, IList<double>, int, double> priceHeightFirst = (price, line, chunk) => priceHeight(price.Take(chunk), line.Take(chunk));
-      Func<IList<double>, IList<double>, int, double[]> priceHeights = (price, line, chunk)
+      Func<double[], double[], int, double[]> priceHeights = (price, line, chunk)
         => new[] { priceHeightLast(price, line, chunk), priceHeightFirst(price, line, chunk) };
       return (
         from length in lengths.AsParallel()
@@ -894,7 +894,7 @@ namespace HedgeHog.Alice.Store {
     private CorridorStatistics ScanCorridorTillFlat2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<IList<Rate>, int> scan = (rates) => {
         var prices = rates.ToArray(_priceAvg);
-        Func<int> getPrevCount = () => CorridorStats.Rates.Select(r => r.StartDate).TakeLast(1)
+        Func<int> getPrevCount = () => CorridorStats.Rates.CopyLast(1).Select(r => r.StartDate)
           .Select(date => RatesArray.ReverseIfNot().TakeWhile(r => r.StartDate >= date).Count())
           .DefaultIfEmpty(CorridorDistance).First();
         Stopwatch sw = Stopwatch.StartNew();
@@ -1433,7 +1433,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     SortedDictionary<DateTime, double> _timeFrameHeights = new SortedDictionary<DateTime, double>();
-    private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+    private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       Func<Rate, double> price = rate => rate.PriceCMALast;
       Func<IList<Rate>, DateTime, DateTime, IEnumerable<Rate>> revRatesByDates = (rates, dtMin, dtMax) =>
         rates.SkipWhile(r => r.StartDate > dtMax).TakeWhile(r => r.StartDate >= dtMin);
@@ -1452,7 +1452,7 @@ namespace HedgeHog.Alice.Store {
         .Select(dates => revs.SkipWhile(r => r.StartDate > dates[2]).TakeWhile(r => r.StartDate >= dates[0]).Count())
         .DefaultIfEmpty(CorridorDistance).First().Max(CorridorDistance);
       Func<DateTime, double> stDev = date => revs.SkipWhile(r => r.StartDate > date).Take(corridorDistance).Height(price);
-      DateTime dateMax = revs[0].StartDate, dateMin = revs.TakeLast((corridorDistance * 1.1).ToInt()).First().StartDate;
+      DateTime dateMax = revs[0].StartDate, dateMin = revs.CopyLast((corridorDistance * 1.1).ToInt()).First().StartDate;
       _timeFrameHeights.Keys.Where(d => !d.Between(dateMin, dateMax)).ToList().ForEach(d => _timeFrameHeights.Remove(d));
       //_timeFrameHeights.TakeWhile(kv => kv.Value == double.MaxValue).Select(kv => kv.Key).ToList().ForEach(d => _timeFrameHeights.Remove(d));
       //_timeFrameHeights.Clear();
@@ -1622,8 +1622,8 @@ namespace HedgeHog.Alice.Store {
       var startStopRates = WaveShort.Rates.ReverseIfNot();
       var bigBarStart = CorridorStartDate.GetValueOrDefault(startStopRates.LastBC().StartDate)
         .Max(IsCorridorForwardOnly ? CorridorStats.StartDate : DateTime.MinValue);
-      var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToArray();
-      if (corridorRates.Length > 1) {
+      var corridorRates = RatesArray.SkipWhile(r => r.StartDate < bigBarStart).Reverse().ToList();
+      if (corridorRates.Count > 1) {
         return new CorridorStatistics(this, corridorRates, double.NaN, new[] { corridorRates.Average(r => r.PriceAvg), 0.0 });
       }
       return null;
@@ -1883,7 +1883,7 @@ namespace HedgeHog.Alice.Store {
       var cp = _priceAvg ?? CorridorPrice();
       var heightMin = ScanCorridorByStDevAndAngleHeightMinEx;
       var heightMin2 = ScanCorridorByStDevAndAngleHeightMinEx2;
-      Func<int> freezedCount = () => CorridorStats.Rates.TakeLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
+      Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
       Func<IList<Rate>, int> scan = rates => {
         var freeze = CorridorStats.Rates.Take(1).Any(rate => GetTradeEnterBy(true)(rate) >= rate.PriceAvg2 || GetTradeEnterBy(false)(rate) <= rate.PriceAvg3);
         if (freeze) return freezedCount();

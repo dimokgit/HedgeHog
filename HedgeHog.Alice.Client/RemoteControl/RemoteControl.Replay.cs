@@ -33,8 +33,8 @@ namespace HedgeHog.Alice.Client {
         return _StartReplayCommand;
       }
     }
-    ReplayArguments _replayArguments = new ReplayArguments();
-    public ReplayArguments ReplayArguments {
+    ReplayArguments<TradingMacro> _replayArguments = new ReplayArguments<TradingMacro>();
+    public ReplayArguments<TradingMacro> ReplayArguments {
       get { return _replayArguments; }
     }
 

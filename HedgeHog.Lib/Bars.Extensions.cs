@@ -53,6 +53,9 @@ namespace HedgeHog.Bars {
         : AlgLib.correlation.spearmanrankcorrelation(corr1, corr2, corr1.Length); ;
     }
 
+    public static List<TBar> ReverseIfNot<TBar>(this List<TBar> bars) where TBar : BarBaseDate {
+      return bars[bars.Count() - 1].StartDate > bars[0].StartDate ? bars.Reverse<TBar>().ToList() : bars;
+    }
     /// <summary>
     /// Reverse bars if they are not reversed
     /// </summary>
