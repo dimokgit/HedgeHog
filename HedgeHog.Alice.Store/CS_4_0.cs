@@ -4262,6 +4262,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetDefaultTradeLevels"/></summary>
         public const string SetDefaultTradeLevels = "SetDefaultTradeLevels";
 
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetTradeLevelsPreset"/></summary>
+        public const string SetTradeLevelsPreset = "SetTradeLevelsPreset";
+
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.ShowVoltsByCorrelation"/></summary>
         public const string ShowVoltsByCorrelation = "ShowVoltsByCorrelation";
 
@@ -5026,6 +5029,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TicksPerMinuteAverage"/></summary>
         public const string TicksPerMinuteAverage = "TicksPerMinuteAverage";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TicksPerSecondAverage"/></summary>
+        public const string TicksPerSecondAverage = "TicksPerSecondAverage";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro.priceQueueCount"/></summary>
         public const string priceQueueCount = "priceQueueCount";
@@ -6031,6 +6037,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRates"/></summary>
         public const string LoadRates = "LoadRates";
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesStartDate2"/></summary>
+        public const string LoadRatesStartDate2 = "LoadRatesStartDate2";
 
         /// <summary>Metadata for class <see cref="HedgeHog.Alice.Store.TradingMacro.OnPropertyChangedDispatcher"/></summary>
         public static class OnPropertyChangedDispatcherMetadata
@@ -7659,6 +7668,9 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TicksPerMinuteAverage"/></summary>
         public static PropertyPath TicksPerMinuteAveragePath { get { return new PropertyPath("TicksPerMinuteAverage"); } }
 
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TicksPerSecondAverage"/></summary>
+        public static PropertyPath TicksPerSecondAveragePath { get { return new PropertyPath("TicksPerSecondAverage"); } }
+
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.PriceQueue"/></summary>
         public static PropertyPath PriceQueuePath { get { return new PropertyPath("PriceQueue"); } }
 
@@ -7931,6 +7943,9 @@ namespace HedgeHog.Alice.Store.Metadata
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro._limitBarToRateProvider"/></summary>
         public static PropertyPath _limitBarToRateProviderPath { get { return new PropertyPath("_limitBarToRateProvider"); } }
+
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.LoadRatesStartDate2"/></summary>
+        public static PropertyPath LoadRatesStartDate2Path { get { return new PropertyPath("LoadRatesStartDate2"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.broadcastCorridorDatesChange"/></summary>
         public static PropertyPath broadcastCorridorDatesChangePath { get { return new PropertyPath("broadcastCorridorDatesChange"); } }

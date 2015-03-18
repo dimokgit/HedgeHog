@@ -43,7 +43,7 @@
     }
 
     .loss {
-      background-color: lightpink;
+      background-color: #ffd3d9;
       font-weight: bold;
     }
     .modal-header{
@@ -92,17 +92,40 @@
             <li><button data-bind="click:setTradeCount.bind($data,2)">Trade Count:2</button></li>
           </ul>
         </li>
-        <li role="presentation" class="dropdown">
+        <li role="presentation" class="dropdown-submenu">
           <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-random"></span></button>
           <ul class="dropdown-menu" role="menu">
-            <li><input type="button" value="1" data-bind="click:setTradeLevels" /></li>
-            <li><input type="button" value="2" data-bind="click:setTradeLevels" /></li>
-            <li><input type="button" value="3" data-bind="click:setTradeLevels" /></li>
-            <li><input type="button" value="4" data-bind="click:setTradeLevels" /></li>
+            <li>
+              <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />
+              <button data-bind="click:setTradeLevels.bind($data,1,true)">Buy</button>
+              <button data-bind="click:setTradeLevels.bind($data,1,false)">Sell</button>
+            </li>
+            <li>
+              <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
+              <button data-bind="click:setTradeLevels.bind($data,2,true)">Buy</button>
+              <button data-bind="click:setTradeLevels.bind($data,2,false)">Sell</button>
+            </li>
+            <li>
+              <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
+              <button data-bind="click:setTradeLevels.bind($data,3,true)">Buy</button>
+              <button data-bind="click:setTradeLevels.bind($data,3,false)">Sell</button>
+            </li>
+            <li>
+              <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,4,null)" />
+              <button data-bind="click:setTradeLevels.bind($data,4,true)">Buy</button>
+              <button data-bind="click:setTradeLevels.bind($data,4,false)">Sell</button>
+            </li>
             <li role="presentation" class="divider"></li>
             <li><input type="button" value="Flip" data-bind="click:flipTradeLevels" /></li>
+            <li class="dropdown-submenu">
+              <span tabindex="-1">Levels</span>
+              <ul class="dropdown-menu">
+                <li>Dimok</li>
+              </ul>
+            </li>
           </ul>
         </li>
+        <!--Other-->
         <li role="presentation" class="dropdown">
           <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">...</button>
           <ul class="dropdown-menu" role="menu">
@@ -118,7 +141,8 @@
             </li>
           </ul>
         </li>
-        <li>
+        <!--Settings-->
+        <li class="navbar-right" style="margin-right:2px">
           <button class=""
                   data-toggle="modal"
                   data-target="#settingsDialog">
@@ -128,16 +152,17 @@
       </ul>
     </nav>
   </div>
+
+  <!--Info bar-->
   <div class="container container-fluid">
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
     <span id="discussion"></span>
     <input value="" id="rsdMin" style="width:1.5em" />
   </div>
+
+  <!--Charts-->
   <div data-bind="lineChart: chartData"></div>
   <div data-bind="lineChart: chartData2"></div>
-  <script type='text/javascript' src='d3-knockout/view-models/line-data-view-model.js'></script>
-  <script type='text/javascript' src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
-  <script type='text/javascript' src='d3-knockout/app.js'></script>
 
   <!--Settings dialog-->
   <div data-bind="with:tradeSettings" class="modal fade" id="settingsDialog" tabindex="-1" role="dialog" aria-labelledby="settingsDialog" aria-hidden="true">
@@ -169,18 +194,21 @@
             </div>
             <div class="form-group">
               <div class="col-xs-offset-7 col-xs-5">
-                <button class="btn btn-primary btn-xs" data-bind="click:$parent.saveTradeSettings">Save</button>
+                <button class="btn btn-primary btn-xs" data-bind="click:$parent.saveTradeSettings" data-dismiss="modal">Save</button>
               </div>
             </div>
           </form>
         </div>
         <div class="modal-footer" style="display:none">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Save changes</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
         </div>
       </div>
     </div>
   </div>
 
+  <script type='text/javascript' src='d3-knockout/view-models/line-data-view-model.js'></script>
+  <script type='text/javascript' src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
+  <script type='text/javascript' src='d3-knockout/app.js'></script>
 </body>
 </html>

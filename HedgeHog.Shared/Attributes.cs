@@ -8,4 +8,6 @@ namespace HedgeHog {
   // Do Not Recessitate
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public sealed class DnrAttribute : Attribute { }
+  [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+  public sealed class WwwSettingAttribute : Attribute { }
 }

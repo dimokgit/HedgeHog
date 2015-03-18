@@ -1840,6 +1840,10 @@ namespace HedgeHog.Alice.Store {
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
     int _corridorLength2 = 0;
+    public int CorridorLength2 {
+      get { return _corridorLength2; }
+      set { _corridorLength2 = value; }
+    }
     private CorridorStatistics ScanCorridorByStDevByHeight(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
       return ScanCorridorByStDevByHeight(ratesForCorridor, rates => rates.ToArray(_priceAvg), priceHigh, priceLow);
     }

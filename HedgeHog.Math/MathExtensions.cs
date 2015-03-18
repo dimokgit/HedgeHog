@@ -680,6 +680,16 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
+    public static IEnumerable<Tuple<int, DateTimeOffset>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
+      return values
+        .Select((rate, i) => new { v = value(rate), d = date(rate), i })
+        .Where(x => !x.v.IsNaN())
+        .Buffer(waveWidth, 1)
+        .Where(chank => chank.Count == waveWidth)
+        .Select(chunk => new { slope = chunk.Select(r => r.v).ToArray().LinearSlope().SignUp(), chunk[0].d, chunk[0].i })
+        .DistinctUntilChanged(a => a.slope)
+        .Select(r => Tuple.Create(r.i + waveWidth / 2, r.d));//.SkipLast(1);
+    }
     /// <summary>
     /// Try not to materialize it.
     /// </summary>

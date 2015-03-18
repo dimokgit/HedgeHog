@@ -1326,11 +1326,6 @@ namespace HedgeHog {
     }
     #endregion
 
-    #region DataSources
-    EnumerableDataSource<Point> ds = null;
-    EnumerableDataSource<Volt> dsVoltsPoly = null;
-    #endregion
-
 
     class DraggablePointInfo {
       public object DataContext { get; set; }
@@ -1422,7 +1417,6 @@ namespace HedgeHog {
     }
 
     bool _isShiftDown;
-    bool _dragPointPositionChanged;
     void SetBuySellRates(Dictionary<Guid, BuySellLevel> suppReses) {
       foreach (var suppRes in suppReses) {
         var isBuy = suppRes.Value.IsBuy;
@@ -1466,7 +1460,6 @@ namespace HedgeHog {
             }
             OnSupportResistanceChanged(s as DraggablePoint, uid, e.PreviousPosition, position);
             if (!dragPoint.IsMouseOver) return;
-            _dragPointPositionChanged = true;
           };
           ////dragPoint.ToolTip = "UID:" + uid;
           //plotter.PreviewMouseLeftButtonDown += (s, e) => {
@@ -1831,7 +1824,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
             other.Position = new Point(other.Position.X + e.Position.X - e.PreviousPosition.X, other.Position.Y + e.Position.Y - e.PreviousPosition.Y);
           RaiseShowChart();
         } catch (Exception exc) {
-          Debugger.Break();
+          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(exc));
         }
       };
 

@@ -131,6 +131,7 @@ namespace HedgeHog.Alice.Store {
     #region Real-time trading orders
     #region CanDoNetLimitOrders
     private bool _CanDoNetLimitOrders;
+    [WwwSetting]
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Limit Orders")]
     public bool CanDoNetLimitOrders {
@@ -146,6 +147,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region CanDoNetStopOrders
     private bool _CanDoNetStopOrders;
+    [WwwSetting]
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Stop Orders")]
     public bool CanDoNetStopOrders {
@@ -161,6 +163,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region CanDoEntryOrders
     private bool _CanDoEntryOrders = false;
+    [WwwSetting]
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Entry Orders")]
     [Dnr]

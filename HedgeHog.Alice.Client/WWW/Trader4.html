@@ -1,0 +1,364 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Trader 4</title>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--#region CSS-->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css">
+  <link href="Styles/BS-dropdown-submenu.css" rel="stylesheet" />
+  <link rel='stylesheet prefetch' href='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.css'>
+  <!--#endregion-->
+  <!--#region scripts-->
+  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+  <script src="Scripts/jquery.signalR-2.1.2.min.js"></script>
+  <script src="Scripts/bootstrap-notify.min.js"></script>
+  <script src='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.js'></script>
+  <script src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
+  <script src='d3-knockout/app.js'></script>
+  <!--#endregion-->
+
+  <style type="text/css">
+    body, html {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .container {
+      /*background-color: #99CCFF;*/
+      padding: 0;
+      margin: 0;
+    }
+
+    ul, li {
+      padding: 0;
+      margin: 0;
+    }
+
+    #profit {
+      display: inline-block;
+    }
+
+    .profit {
+      background-color: chartreuse;
+      font-weight: bold;
+    }
+
+    .loss {
+      background-color: #ffd3d9;
+      font-weight: bold;
+    }
+    /*#region Bootstrap */
+    .navbar-nav > li > a {
+      padding-top: 1px !important;
+      padding-bottom: 1px !important;
+    }
+
+    .navbar {
+      min-height: 0 !important;
+      margin-bottom: 0;
+    }
+
+    .navbar-brand {
+      float: left;
+      height: auto;
+      padding: 0;
+      font-size: inherit;
+      line-height: none;
+    }
+
+    .navbar-collapse.collapse {
+      padding-left: 0;
+    }
+    /*#endregion */
+
+    .modal-header {
+      min-height: 1em;
+      padding: 5px;
+    }
+
+    .modal-body {
+      padding: 5px;
+    }
+
+    .form-horizontal .form-group {
+      margin-bottom: 0;
+      margin-left: 0;
+      margin-right: 0;
+    }
+
+    [data-notify="progressbar"] {
+      margin-bottom: 0;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+    }
+    #settingsGrid input[type=text]{
+      width:100%;
+    }
+  </style>
+  <script>
+    $(function () {
+      $('.modal').on('show.bs.modal', function () {
+        $(this).find('.modal-body').css({
+          width: 'auto', //probably not needed
+          height: 'auto', //probably not needed
+          'max-height': '100%'
+        });
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <!--#region Nav bar-->
+  <div class="navbar navbar-default" role="navigation">
+    <div class="container">
+      <!--#region Header-->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#"></a>
+      </div>
+      <!--#endregion-->
+      <div class="collapse navbar-collapse">
+        <!--#region Settings-->
+        <ul class="nav navbar-nav navbar-right">
+          <li>
+            <button data-bind="click:readNews"
+                    data-toggle="modal"
+                    data-target="#newsDialog">
+              <span class="glyphicon glyphicon-globe"></span>
+            </button>
+          </li>
+          <li>
+            <button class=""
+                    data-toggle="modal"
+                    data-target="#settingsDialog">
+              <span class="glyphicon glyphicon-cog"></span>
+            </button>
+          </li>
+        </ul>
+        <!--#endregion-->
+        <!--#region Left bar-->
+        <ul class="nav navbar-nav">
+          <li><input type="button" value="Stop" id="stopTrades" /></li>
+          <li><input type="button" value=" Close " id="closeTrades" /></li>
+          <li><button id="buyDown">B<span class="glyphicon glyphicon-save"></span></button></li>
+          <li><button id="buyUp">B<span class="glyphicon glyphicon-open"></span></button></li>
+          <li><button id="sellDown">S<span class="glyphicon glyphicon-save"></span></button></li>
+          <li><button id="sellUp">S<span class="glyphicon glyphicon-open"></span></button></li>
+          <li>
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" area-expanded="false">
+              <span class="glyphicon glyphicon-superscript"></span>
+            </button>
+            <ul class="dropdown-menu" role="menu">
+              <li><button data-bind="click:setTradeCount.bind($data,0)">Trade Count:0</button></li>
+              <li><button data-bind="click:setTradeCount.bind($data,1)">Trade Count:1</button></li>
+              <li><button data-bind="click:setTradeCount.bind($data,2)">Trade Count:2</button></li>
+            </ul>
+          </li>
+          <!--#region Trade Levels-->
+          <li>
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-random"></span></button>
+            <ul class="dropdown-menu multi-level">
+              <li>
+                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,1,true)">Buy</button>
+                <button data-bind="click:setTradeLevels.bind($data,1,false)">Sell</button>
+              </li>
+              <li>
+                <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,2,true)">Buy</button>
+                <button data-bind="click:setTradeLevels.bind($data,2,false)">Sell</button>
+              </li>
+              <li>
+                <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,3,true)">Buy</button>
+                <button data-bind="click:setTradeLevels.bind($data,3,false)">Sell</button>
+              </li>
+              <li>
+                <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,4,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,4,true)">Buy</button>
+                <button data-bind="click:setTradeLevels.bind($data,4,false)">Sell</button>
+              </li>
+              <li role="presentation" class="divider"></li>
+              <li><input type="button" value="Flip" data-bind="click:flipTradeLevels" /></li>
+              <li role="presentation" class="divider"></li>
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Levels</a>
+                <ul class="dropdown-menu">
+                  <li>
+                    <button>DImok</button>
+                  </li>
+                  <li class="dropdown-submenu">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                    <ul class="dropdown-menu">
+                      <li class="dropdown-submenu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                        <ul class="dropdown-menu">
+                          <li><a href="#">Action</a></li>
+                          <li><a href="#">Another action</a></li>
+                          <li><a href="#">Something else here</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">Separated link</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">One more separated link</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <!--#endregion-->
+          <!--#region Other-->
+          <li>
+            <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">...</button>
+            <ul class="dropdown-menu multi-level">
+              <li><button id="toggleIsActive">Active</button></li>
+              <li><input type="button" value="Manual" id="manualToggle" /></li>
+              <li><button id="toggleStartDate">StartDate</button></li>
+              <li><button id="setDefaultTradeLevels">Default</button></li>
+              <li><button id="alwaysOn">AlwaysOn</button></li>
+              <li><button id="buySellInit">WrapTrade</button></li>
+              <li>
+                <input type="button" value=" Buy " id="buy" />
+                <input type="button" value=" Sell " id="sell" />
+              </li>
+            </ul>
+          </li>
+          <!--#endregion-->
+          <!--#region Sample-->
+          <li style="display:none">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 2 <b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#">Action</a></li>
+              <li><a href="#">Another action</a></li>
+              <li><a href="#">Something else here</a></li>
+              <li class="divider"></li>
+              <li><a href="#">Separated link</a></li>
+              <li class="divider"></li>
+              <li><a href="#">One more separated link</a></li>
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li class="divider"></li>
+                  <li><a href="#">Separated link</a></li>
+                  <li class="divider"></li>
+                  <li class="dropdown-submenu">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                    <ul class="dropdown-menu">
+                      <li class="dropdown-submenu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown</a>
+                        <ul class="dropdown-menu">
+                          <li><a href="#">Action</a></li>
+                          <li><a href="#">Another action</a></li>
+                          <li><a href="#">Something else here</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">Separated link</a></li>
+                          <li class="divider"></li>
+                          <li><a href="#">One more separated link</a></li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <!--#endregion-->
+        </ul>
+        <!--#endregion-->
+      </div><!--/.nav-collapse -->
+    </div>
+  </div>
+  <!--#endregion-->
+  <!--#region Info Bar-->
+  <div class="container container-fluid" style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%">
+    <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
+    <span id="discussion"></span>
+    <input value="" id="rsdMin" style="width:1.5em;height:1.5em" />
+  </div>
+  <!--#endregion-->
+  <!--#region Charts-->
+  <div data-bind="lineChart: chartData"></div>
+  <div data-bind="lineChart: chartData2"></div>
+  <!--#endregion-->
+  <!--#region Dialogs-->
+  <!--#region Settings dialog-->
+  <div class="modal fade" id="settingsDialog" tabindex="-1" role="dialog" aria-labelledby="settingsDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Trade Settings</span>
+        </div>
+        <div class="modal-body">
+          <div id="settingsGrid"></div>
+          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeSettings" data-dismiss="modal">Save</button>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+  <!--#region News-->
+  <div class="modal fade" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">News</span>
+          <a href="http://www.tradingeconomics.com/united-states/calendar" target="_blank">Calendar</a>
+        </div>
+        <div class="modal-body">
+          <table border="1">
+            <!-- ko foreach: newsGrouped -->
+            <thead>
+              <tr>
+                <th colspan="10" data-bind="text:date"></th>
+              </tr>
+            </thead>
+            <tbody data-bind="foreach:values">
+              <tr data-bind="style:{fontWeight:Level == 'H'?'bold':''}">
+                <td data-bind="text:Country,style:{backgroundColor:Level == 'H'?'coral':''}"></td>
+                <td data-bind="text:Time.toLocaleTimeString()" style="text-align:right;padding-left:5px;padding-right:1px"></td>
+                <td data-bind="text:Name"></td>
+              </tr>
+            </tbody>
+            <!-- /ko -->
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+  <!--#region Settings grid-->
+  <!--#endregion-->
+  <!--#endregion-->
+
+</body>
+</html>

@@ -128,7 +128,7 @@ Privet:2.3 3.4
         rq.Enqueue(() => action(i1));
       }
       bool isCompleted = false;
-      rq.ToObservable(Scheduler.NewThread).Subscribe(a=>a(),()=>isCompleted = true);
+      rq.ToObservable(NewThreadScheduler.Default).Subscribe(a=>a(),()=>isCompleted = true);
       var ii = 6;
       while (!isCompleted) {
         var i1 = ++ii;

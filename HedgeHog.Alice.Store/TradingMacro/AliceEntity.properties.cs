@@ -8,7 +8,6 @@ using HedgeHog.Alice.Store.Metadata;
 using HedgeHog.Shared;
 using HedgeHog.Models;
 using System.Reactive.Concurrency;
-using ReactiveUI;
 using System.Reactive.Linq;
 using System.Linq.Expressions;
 using ReactiveUI;
@@ -520,7 +519,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-
     [DisplayName("Take Profit")]
     [Category(categoryActiveFuncs)]
     [Description("TakeProfitFunction")]
@@ -623,7 +621,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => TradingHoursRange);
       }
     }
-    WeekDays _TradingDaysRange = WeekDays.Full;
 
     [DisplayName("Trading Days")]
     [Category(categoryActiveFuncs)]
@@ -712,6 +709,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
+    [WwwSetting]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -833,7 +831,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-
+    [WwwSetting]
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
@@ -941,7 +939,6 @@ namespace HedgeHog.Alice.Store {
         OnPropertyChanged(() => ChartLowMethod);
       }
     }
-
 
     [DisplayName("Trading Angle Range")]
     [Category(categoryActive)]

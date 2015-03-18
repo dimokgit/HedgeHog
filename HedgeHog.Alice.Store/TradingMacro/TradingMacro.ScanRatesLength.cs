@@ -75,7 +75,9 @@ namespace HedgeHog.Alice.Store {
     }
     void ScanRatesLengthByStDevMin2() {
       if (CorridorStartDate.HasValue) {
-        BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
+        //BarsCountCalc = (CorridorStats.Rates.Count * 1.1).Max(BarsCountCalc).Min(BarsCountCount()).ToInt();
+        if (CorridorStats.Rates.Count * 1.05 > RatesArray.Count)
+          SetCorridorStartDateToNextWave(true);
         return;
       }
       var prices = UseRatesInternal(ri => ri.Reverse().ToList(_priceAvg));

@@ -160,6 +160,12 @@ namespace HedgeHog.Alice.Client {
           charter.FitToView();
           tm.FreezeCorridorStartDate(true);
           break;
+        case Key.E:
+          tm.SetCorridorStartDateToNextWave();
+          break;
+        case Key.I:
+          tm.SetCorridorStartDateToNextWave(backwards: true);
+          break;
         case Key.F:
           tm.FlipTradeLevels();
           break;
@@ -346,7 +352,6 @@ namespace HedgeHog.Alice.Client {
       var lot = ot.Lot * 1000 + tradesManager.GetTradesInternal(ot.Pair).Where(t => t.Buy != buy).Sum(t => t.Lots);
       if (ot.Price == 0) {
         try {
-          object psOrderId, DI;
           throw new NotImplementedException();
           //var slFLag = buy?(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN):(fwMaster.Desk.SL_PEGLIMITOPEN+fwMaster.Desk.SL_PEGSTOPOPEN);
           throw new NotImplementedException();
@@ -1033,26 +1038,51 @@ namespace HedgeHog.Alice.Client {
       if (!_isMinimized)
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
-    public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, TradingMacro tm) {
+    int _lastServedRatesCount = 0;
+    public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var digits = tm.Digits() + 1;
-      if (dateStart > tm.LoadRatesStartDate2) dateStart = tm.LoadRatesStartDate2;
+      if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
       string pair = tm.Pair;
-      Func<Rate, ExpandoObject> map = rate => new {
-        d = rate.StartDate2,
-        c = rate.PriceAvg.Round(digits)
-      }.ToExpando();
+      Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando("d", rate.StartDate2, "c", rate.PriceAvg.Round(digits));
       List<Rate> rates = tm.RatesArray.ToList();
-      var ratesForChart = rates.Where(r => r.StartDate2 >= dateStart).ToArray();
-      if (tm.BarPeriod == BarsPeriodType.t1)
+      var ratesForChart = rates.Where(r => r.StartDate2 >= dateEnd).ToArray();
+      var ratesForChart2 = rates.Where(r => r.StartDate2 < dateStart).ToArray();
+      if (tm.BarPeriod == BarsPeriodType.t1) {
         ratesForChart = ratesForChart.GroupTicksToRates().ToArray();
+        ratesForChart2 = ratesForChart2.GroupTicksToRates().ToArray();
+      }
+      var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
+        if (tm.BarPeriod == BarsPeriodType.m1) {
+          var ds = rates.Last().StartDate2;
+          return rates.Reverse<Rate>()
+            .Select((r, i) => EnumsExtensions.CreateExpando("d", ds.AddMinutes(-i), "c", r.PriceAvg))
+            .Reverse().ToArray();
+        } else return rates3.Select(map).ToArray();
+      });
       var trends = tm.SetTrendLines(rates).OrderBars().ToList();
       var trendLines = new {
-        dates = trends.ToArray(t => t.StartDate2),
+        dates = new DateTimeOffset[]{
+          tm.BarPeriod == BarsPeriodType.m1
+          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
+          : trends[0].StartDate2,
+          rates.Last().StartDate2},
         close1 = trends.ToArray(t => t.PriceAvg1),
         close2 = trends.ToArray(t => t.PriceAvg2),
         close3 = trends.ToArray(t => t.PriceAvg3),
         close21 = trends.ToArray(t => t.PriceAvg21),
         close31 = trends.ToArray(t => t.PriceAvg31)
+      }.ToExpando();
+      var trends2 = tm.SetTrendLines1231_2(rates).OrderBars().ToList();
+      var trendLines2 = new {
+        dates = trends2.Count == 0
+        ? new DateTimeOffset[0]
+        : new DateTimeOffset[]{
+          tm.BarPeriod == BarsPeriodType.m1
+          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorLength2-1))
+          : trends2[0].StartDate2,
+          rates.Last().StartDate2},
+        close2 = trends2.ToArray(t => t.Trends.PriceAvg2),
+        close3 = trends2.ToArray(t => t.Trends.PriceAvg3),
       }.ToExpando();
       var tradeLevels = new {
         buy = tm.BuyLevel.Rate,
@@ -1076,13 +1106,17 @@ namespace HedgeHog.Alice.Client {
       var price = tmg.GetPrice(pair);
       var askBid = new { ask = price.Ask, bid = price.Bid }.ToExpando();
       return new {
-        rates = ratesForChart.Select(map).ToArray(),
+        rates = getRates(ratesForChart),
+        rates2 = getRates(ratesForChart2),
+        ratesCount = rates.Count,
         dateStart = tm.RatesArray[0].StartDate2,
         trendLines,
+        trendLines2,
         isTradingActive = tm.IsTradingActive,
         tradeLevels = tradeLevels,
         trades,
-        askBid
+        askBid,
+        hasStartDate = tm.CorridorStartDate.HasValue
       }.ToExpando();
     }
     bool? _isParentHidden;

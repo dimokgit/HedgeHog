@@ -9,8 +9,19 @@ using System.Collections.Concurrent;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
+    public void SetCorridorStartDateToNextWave(bool backwards = false) {
+      var waveWidth = BarPeriod == BarsPeriodType.m1 ? 60 : 3600.Div(TicksPerSecondAverage).ToInt();
+      var indexOffset = waveWidth / 6;
+      var waves = RatesArray.Reverse<Rate>().ToArray().Extreams(waveWidth, r=>r.PriceCMALast, r => r.StartDate);
+      var startIndex = CorridorStats.Rates.Count - 1;
+      var waves2 = !backwards
+        ? waves.SkipWhile(w => w.Item1 < startIndex + indexOffset).Take(1)
+        : waves.TakeWhile(w => w.Item1 < startIndex - indexOffset).TakeLast(1);
+      waves2
+        .ForEach(t => CorridorStartDate = RatesArray[RatesArray.Count - t.Item1].StartDate);
+    }
     private IList<int> MACrosses(IList<Rate> rates, int frame) {
-      var rates1 = rates.Zip(rates.Skip(1), (f, s) => new { f= f.PriceAvg, s=s.PriceAvg, ma = f.PriceCMALast }).ToArray();
+      var rates1 = rates.Zip(rates.Skip(1), (f, s) => new { f = f.PriceAvg, s = s.PriceAvg, ma = f.PriceCMALast }).ToArray();
       var crosses = new int[0].ToConcurrentQueue();
       Partitioner.Create(Enumerable.Range(0, rates.Count - frame).ToArray(), true).AsParallel()
         .ForAll(i => {

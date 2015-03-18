@@ -2779,7 +2779,8 @@ namespace HedgeHog.Alice.Store {
 
 
     #region TakeProfitBSRatio
-    private double _TakeProfitBSRatio = 1;
+    private double _TakeProfitBSRatio = 0;
+    [WwwSetting]
     [Description("TakeProfit = (BuyLevel-SellLevel)*X")]
     [Category(categoryActive)]
     public double TakeProfitBSRatio {
@@ -2788,6 +2789,7 @@ namespace HedgeHog.Alice.Store {
         if (_TakeProfitBSRatio != value) {
           _TakeProfitBSRatio = value;
           OnPropertyChanged("TakeProfitBSRatio");
+          //if (value > 0) TakeProfitFunction = TradingMacroTakeProfitFunction.BuySellLevels_X;
         }
       }
     }
@@ -2821,7 +2823,6 @@ namespace HedgeHog.Alice.Store {
           return InPoints(_harmonics.Select(h => h.Height).OrderByDescending(h => h).Take(2).Average());
         case TradingMacroTakeProfitFunction.BuySellLevels_X:
         case TradingMacroTakeProfitFunction.BuySellLevels_2:
-        case TradingMacroTakeProfitFunction.BuySellLevels2:
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = _buyLevelRate - _sellLevelRate;
           if (double.IsNaN(tp)) {
@@ -2833,7 +2834,7 @@ namespace HedgeHog.Alice.Store {
             tp /= 2;
           if (function == TradingMacroTakeProfitFunction.BuySellLevels_X)
             tp *= TakeProfitBSRatio;
-          // TODO: this is to prevent acidentally setting a too small corridor. Thonk something better
+          // TODO: this is to prevent acidentally setting a too small corridor. Think something better
           tp = tp.Max(CorridorStats.StDevByHeight, CorridorStats.StDevByPriceAvg);
           break;
         case TradingMacroTakeProfitFunction.RegressionLevels:

@@ -2033,6 +2033,7 @@ namespace HedgeHog.Alice.Store {
                   onCanTradeLocal = canTrade => canTrade || Trades.Any();
                   onCloseTradeLocal += t => {
                     if (minPLOk(t)) {
+                      BuyLevel.InManual = SellLevel.InManual = false;
                       BuyLevel.CanTrade = SellLevel.CanTrade = false;
                       if (!IsAutoStrategy) IsTradingActive = false;
                     }
@@ -2044,7 +2045,9 @@ namespace HedgeHog.Alice.Store {
                   };
                   #endregion
                   onOpenTradeLocal += t => {
-                    _buySellLevelsForEach(sr => { if (!CanTradeAlwaysOn) sr.CanTradeEx = false; });
+                    _buySellLevels.Where(bs => -bs.TradesCount >= CorridorCrossesMaximum)
+                      .Take(1)
+                      .ForEach(_ => _buySellLevelsForEach(sr => sr.CanTradeEx = false));
                   };
                 }
                 #endregion
@@ -2055,7 +2058,7 @@ namespace HedgeHog.Alice.Store {
                     SellLevel.RateEx = getTradeLevel(rateLast, false, SellLevel.Rate);
                   });
                 Func<bool> corridorLengthOk = () => IsTresholdOk(CorridorStats.Rates.Count, CorridorDistanceByLengthRatio);
-                Func<bool> canSetLevels = () => calcAngleOk() && corridorLengthOk();
+                Func<bool> canSetLevels = () => calcAngleOk() && corridorLengthOk() && _buySellLevels.All(bs => !bs.CanTrade);
                 Func<bool> isManual = () => _buySellLevels.Any(sr => sr.InManual);
                 //Func<bool> isAlwaysOn = () => (conditions().TradingAngleRange == 0 && conditions().CorridorLengthRatio.Abs() <= 0.01);
                 doRateLast/*.Where(_ => isAlwaysOn())*/.Any();
@@ -2064,12 +2067,11 @@ namespace HedgeHog.Alice.Store {
                     return canSetLevels() ?WFD.tupleNext(_ti): WFD.tupleStay(_ti);
                   },
                   _ti =>{
-                    _buySellLevelsForEach(sr => sr.InManual = false);
                     doRateLast.Any();
                     _buySellLevelsForEach(sr => {
                       if (IsAutoStrategy)
                         sr.CanTradeEx = true;
-                      sr.InManual = true;
+                      sr.TradesCountEx = 0;
                     });
                     SendSms("Trade Levels Set", "", true);
                     return WFD.tupleNext(_ti);
@@ -3082,6 +3084,35 @@ namespace HedgeHog.Alice.Store {
       rates[1].Trends.PriceAvg31 = pa1 - l1;
       return rates;
     }
+    public static Rate.TrendLevels[] SetTrendLines2(IList<double> doubles) {
+      if (doubles.Count == 0) return new Rate.TrendLevels[0];
+      double h, l, h1, l1;
+      var coeffs = doubles.Linear();
+      var hl = doubles.StDevByRegressoin(coeffs);
+      h = hl * 2;
+      l = hl * 2;
+      h1 = hl * 3;
+      l1 = hl * 3;
+      var rates = new Rate.TrendLevels[2];
+      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(doubles.Count - 1) };
+
+      rates[0].PriceAvg1 = regRates[0];
+      rates[1].PriceAvg1 = regRates[1];
+
+      var pa1 = rates[0].PriceAvg1;
+      rates[0].PriceAvg2 = pa1 + h;
+      rates[0].PriceAvg3 = pa1 - l;
+      rates[0].PriceAvg21 = pa1 + h1;
+      rates[0].PriceAvg31 = pa1 - l1;
+
+      pa1 = rates[1].PriceAvg1;
+      rates[1].PriceAvg2 = pa1 + h;
+      rates[1].PriceAvg3 = pa1 - l;
+      rates[1].PriceAvg21 = pa1 + h1;
+      rates[1].PriceAvg31 = pa1 - l1;
+      return rates;
+    }
+
 
     private static void OnCloseTradeLocal(IList<Trade> trades, TradingMacro tm) {
       tm.BuyCloseLevel.InManual = tm.SellCloseLevel.InManual = false;

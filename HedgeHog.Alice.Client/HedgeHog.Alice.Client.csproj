@@ -562,7 +562,9 @@
     </None>
     <None Include="Store\Alice.xls" />
     <None Include="WWW\d3-knockout\README.md" />
-    <None Include="WWW\Scripts\jquery-2.1.3.min.map" />
+    <None Include="WWW\Scripts\jquery-2.1.3.min.map">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controls\" />
@@ -725,6 +727,9 @@
     <Content Include="WWW\d3-knockout\view-models\line-data-view-model.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="WWW\Scripts\bootstrap-notify.min.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="WWW\Scripts\jquery-2.1.3.intellisense.js" />
     <Content Include="WWW\Scripts\jquery-2.1.3.js" />
     <Content Include="WWW\Scripts\jquery-2.1.3.min.js">
@@ -734,6 +739,9 @@
     <Content Include="WWW\Scripts\jquery.signalR-2.1.2.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="WWW\Styles\BS-dropdown-submenu.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="WWW\Trader2.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -741,6 +749,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="WWW\Trader3.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="WWW\Trader4.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Resource Include="Images\down-arrow-3675-16.png" />

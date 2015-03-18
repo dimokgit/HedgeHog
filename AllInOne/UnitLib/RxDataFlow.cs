@@ -56,7 +56,7 @@ namespace UnitLib {
         });
       var isDone = false;
       Observable.Range(0, 100)
-        .ObserveOn(Scheduler.ThreadPool)
+        .ObserveOn(ThreadPoolScheduler.Instance)
         .Subscribe(i => {
           bb.Post(i);
           Thread.Sleep(110);
