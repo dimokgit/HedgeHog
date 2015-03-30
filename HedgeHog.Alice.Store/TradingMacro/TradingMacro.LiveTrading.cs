@@ -224,7 +224,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     void SubscribeToEntryOrderRelatedEvents() {
       var bsThrottleTimeSpan = 0.1.FromSeconds();
-      var cpThrottleTimeSpan = 0.5.FromSeconds();
+      var cpThrottleTimeSpan = 0.25.FromSeconds();
       var buySelPropsExceptions = new[] { "CanTradeEx", "IsGhost" };
       Func<IReactivePropertyChangedEventArgs<SuppRes>, bool> buySellPropsFilter = _ => !buySelPropsExceptions.Contains(_.PropertyName);
       //ISubject<Action> fxWraper = new Subject<Action>();
@@ -299,7 +299,7 @@ namespace HedgeHog.Alice.Store {
         _reactiveBuySellLevelsSubscribtion = (CompositeDisposable)
           _reactiveBuySellLevels.ItemChanged
           .Where(buySellPropsFilter)
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           //.Do(_ => Log = new Exception(new { Name = "startBuySellLevelsTracking", _.PropertyName, Value = _.Value + "" } + ""))
           .Select(_ => _.Sender.IsBuy ? "Buy" + (_.Sender.IsExitOnly ? "Close" : "") + "Level" : "Sell" + (_.Sender.IsExitOnly ? "Close" : "") + "Level")
           .Merge(ReactiveTrades.ItemChanged.Where(_ => _.PropertyName == "Stop").Select(_ => _.Sender.IsBuy ? "BuyTrade" : "SellTrade"))
@@ -308,7 +308,9 @@ namespace HedgeHog.Alice.Store {
           .Merge(Observable.FromEventPattern<EventHandler<OrderEventArgs>, OrderEventArgs>(
             h => GetFXWraper().OrderChanged += h, h => GetFXWraper().OrderChanged -= h).Select(e => "OrderChanged"))
           .Merge(Observable.FromEvent<OrderRemovedEventHandler, Order>(h => GetFXWraper().OrderRemoved += h, h => GetFXWraper().OrderRemoved -= h).Select(_ => "OrderRemoved"))
-          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
+          .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
           .Subscribe(updateEntryOrders);
         updateEntryOrders("Start Tracking");
       };
@@ -324,7 +326,7 @@ namespace HedgeHog.Alice.Store {
           .ForEach(lr => SetTradeNetLimit(trade, lr));
         Trades.Take(1).ForEach(changeRate);
       };
-      Func<Trade, double[]> getDefaultStop = trade =>
+      Func<Trade, double[]> getDefaultStop = trade => // Take care of reversed corridor
         bsCloseLevels()
         .Where(_ => SellLevel.Rate > BuyLevel.Rate)
         .Where(bs => bs.IsBuy != trade.IsBuy)
@@ -334,25 +336,33 @@ namespace HedgeHog.Alice.Store {
         .ToArray();
       Action updateTradeStopOrders = () => {
         var bsLevels = new[] { BuyLevel, SellLevel }.Where(sr => sr != null);
-        Func<Trade, double> levelRate = trade => getDefaultStop(trade)
-        .Concat(bsLevels.Where(sr => sr.IsBuy == !trade.IsBuy).Select(t => t.Rate).Take(1))
-        .First();
-        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(trade.Stop.Abs(levelRate(trade)) > PointSize)
-          .ForEach(fw => SetTradeNetStop(trade, levelRate(trade)));
+        Func<Trade, IEnumerable<double>> levelRate = trade =>
+          getDefaultStop(trade)
+          .Concat(bsLevels
+          .Where(sr => sr.IsBuy == !trade.IsBuy && (!CanDoEntryOrders || !sr.CanTrade))
+          .Select(t => t.Rate)
+          .Take(1)
+          )
+          .Take(1);
+        Action<Trade> changeRate = trade => GetFXWraper().YieldNotNull(levelRate(trade).Any(rate => trade.Stop.Abs(rate) > PointSize))
+          .ForEach(fw => levelRate(trade).ForEach(rate => SetTradeNetStop(trade, rate)));
         Trades.Take(1).ForEach(changeRate);
       };
       #endregion
       // New Limit
       Action startBuySellCloseLimitTracking = () => {
-        _reactiveBuySellLimitLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
+        _reactiveBuySellLimitLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }
+          .CreateDerivedCollection(sr => sr);
         _reactiveBuySellLimitLevels.ChangeTrackingEnabled = true;
         _reactiveBuySellCloseLimitSubscribtion = (CompositeDisposable)_reactiveBuySellLimitLevels
           .ItemChanged
           .Where(buySellPropsFilter)
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           //.Do(_ => Log = new Exception(new { Name = "startBuySellCloseLevelsTracking", _.PropertyName, Value = _.Value + "" } + ""))
           .Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level")
-          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
+          .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
           .Subscribe(_ => {
             if (CanDoNetLimitOrders) updateTradeLimitOrders();
             else CloseAllNetLimits();
@@ -360,15 +370,18 @@ namespace HedgeHog.Alice.Store {
       };
       // New Stop
       Action startBuySellCloseStopTracking = () => {
-        _reactiveBuySellStopLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }.CreateDerivedCollection(sr => sr);
+        _reactiveBuySellStopLevels = new[] { BuyCloseLevel, SellCloseLevel, BuyLevel, SellLevel }
+          .CreateDerivedCollection(sr => sr);
         _reactiveBuySellStopLevels.ChangeTrackingEnabled = true;
         _reactiveBuySellCloseStopSubscribtion = (CompositeDisposable)_reactiveBuySellStopLevels
           .ItemChanged
           .Where(buySellPropsFilter)
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           //.Do(_ => Log = new Exception(new { Name = "startBuySellCloseLevelsTracking", _.PropertyName, Value = _.Value + "" } + ""))
           .Select(_ => _.Sender.IsBuy ? "Buy(Close)Level" : "Sell(Close)Level")
-          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Throttle(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
+          .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
+          .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
           .Subscribe(_ => {
             if (CanDoNetStopOrders) updateTradeStopOrders();
             else CloseAllNetStops();
@@ -388,7 +401,7 @@ namespace HedgeHog.Alice.Store {
           Strategy == Strategies.Universal && BuyLevel != null && SellLevel != null && CanDoEntryOrders && !MustStopTrading && !IsInVitualTrading
           )
           .DistinctUntilChanged()
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live entry orders
             try {
               if (st) {// Subscribe to events in order to update live entry orders
@@ -413,7 +426,7 @@ namespace HedgeHog.Alice.Store {
       //  , (b, s, non, nos, eo) =>
       //    BuyCloseLevel != null && SellCloseLevel != null && CanDoNetOrders && !IsInVitualTrading)
       //    .DistinctUntilChanged()
-      //    .Throttle(bsThrottleTimeSpan)
+      //    .Sample(bsThrottleTimeSpan)
       //    .Subscribe(st => {// Turn on/off live net orders
       //      try {
       //        CleanReactiveBuySell(ref _reactiveBuySellCloseLevelsSubscribtion, ref _reactiveBuySellCloseLevels);
@@ -433,7 +446,7 @@ namespace HedgeHog.Alice.Store {
         , (b, s, non) =>
           BuyCloseLevel != null && SellCloseLevel != null && CanDoNetLimitOrders && !IsInVitualTrading)
           .DistinctUntilChanged()
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders
             try {
               CleanReactiveBuySell(ref _reactiveBuySellCloseLimitSubscribtion, ref _reactiveBuySellLimitLevels);
@@ -455,7 +468,7 @@ namespace HedgeHog.Alice.Store {
         , (b, s, non) =>
           BuyCloseLevel != null && SellCloseLevel != null && CanDoNetStopOrders && !IsInVitualTrading)
           .DistinctUntilChanged()
-          .Throttle(bsThrottleTimeSpan)
+          .Sample(bsThrottleTimeSpan)
           .Subscribe(st => {// Turn on/off live net orders
             try {
               CleanReactiveBuySell(ref _reactiveBuySellCloseStopSubscribtion, ref _reactiveBuySellStopLevels);

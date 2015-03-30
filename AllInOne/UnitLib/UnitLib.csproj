@@ -150,6 +150,7 @@
     <Compile Include="BarBaseTest.cs" />
     <Compile Include="Enum.cs" />
     <Compile Include="ExtensionsTest.cs" />
+    <Compile Include="GlobalStorageTests.cs" />
     <Compile Include="LibTest.cs" />
     <Compile Include="LibTests.cs" />
     <Compile Include="MathExtensionsTest.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="t_TradeTest.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="EnumerableEx.cs" />
+    <Compile Include="Reactive.cs" />
     <Compile Include="WFDTests.cs" />
   </ItemGroup>
   <ItemGroup>

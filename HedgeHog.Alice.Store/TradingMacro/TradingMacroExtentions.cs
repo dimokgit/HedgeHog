@@ -920,16 +920,8 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     #region TicksPerMinute
-    public bool IsTicksPerMinuteOk {
-      get {
-        return Math.Max(TicksPerMinuteInstant, TicksPerMinute) < TicksPerMinuteAverage;
-      }
-    }
-    public int TicksPerMinuteMaximun { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Max().ToInt(); } }
-    public int TicksPerMinuteMinimum { get { return new double[] { TicksPerMinute, TicksPerMinuteAverage, TicksPerMinuteInstant }.Min().ToInt(); } }
     public double TicksPerMinuteInstant { get { return PriceQueue.TickPerMinute(.25); } }
     public double TicksPerMinute { get { return PriceQueue.TickPerMinute(.5); } }
-    public double TicksPerMinuteAverage { get; private set; }
     public double TicksPerSecondAverage { get; private set; }
 
     int priceQueueCount = 600;
@@ -993,9 +985,6 @@ namespace HedgeHog.Alice.Store {
       OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteInstant);
       OnPropertyChanged(TradingMacroMetadata.TicksPerMinute);
       OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteAverage);
-      OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteMaximun);
-      OnPropertyChanged(TradingMacroMetadata.TicksPerMinuteMinimum);
-      OnPropertyChanged(TradingMacroMetadata.IsTicksPerMinuteOk);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinute);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaFirst);
       OnPropertyChanged(TradingMacroMetadata.PipsPerMinuteCmaLast);
@@ -1663,7 +1652,7 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorAngle; }
       set {
         if (PointSize != 0) {
-          var ca = AngleFromTangent(value, CorridorStats.Rates);
+          var ca = AngleFromTangent(value, () => CalcTicksPerSecond(CorridorStats.Rates));
           if (Math.Sign(ca) != Math.Sign(_CorridorAngle) && _corridorDirectionChanged != null)
             _corridorDirectionChanged(this, EventArgs.Empty);
           _CorridorAngle = ca;
@@ -1756,23 +1745,6 @@ namespace HedgeHog.Alice.Store {
       if (s == null) throw new Exception("There is no Restiance.");
       return s;
     }
-
-    public void MoveBuySellLeve(bool isBuy, double pips) {
-      Func<double, double> setOrDef = l => l > 0 ? l : RatesArray.Middle();
-
-      new[] { BuyLevel, SellLevel }
-        .Where(sr => sr.IsBuy == isBuy)
-        .ForEach(sr => {
-          if (pips == 0) {
-            sr.Rate = setOrDef(sr.IsBuy ? CenterOfMassBuy : CenterOfMassSell);
-            sr.InManual = true;
-          } else {
-            sr.Rate += InPoints(pips);
-            sr.InManual = true;
-          }
-        });
-    }
-
     private Store.SuppRes[] ResistancesNotCurrent() {
       return SuppResNotCurrent(Resistances);
     }
@@ -2042,7 +2014,6 @@ namespace HedgeHog.Alice.Store {
             #endregion
             SpreadForCorridor = RatesArray.Spread();
             SetMA();
-            Func<IList<Rate>, double> tps = rates => rates.Count / rates.Last().StartDate.Subtract(rates[0].StartDate).TotalSeconds.Abs();
             OnGeneralPurpose(() => {
               OnRatesArrayChaged();
               AdjustSuppResCount();
@@ -2055,14 +2026,15 @@ namespace HedgeHog.Alice.Store {
                 case CorridorCalculationMethod.PriceAverage: RatesStDev = StDevByPriceAvg; break;
                 default: throw new Exception(new { CorridorCalcMethod } + " is not supported.");
               }
-              Angle = AngleFromTangent(coeffs.LineSlope(), RatesArray);
+              Angle = UseRates(rates => AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(rates)));
               //RatesArray.Select(GetPriceMA).ToArray().Regression(1, (coefs, line) => LineMA = line);
               OnPropertyChanged(() => RatesRsd);
-              TicksPerMinuteAverage = tps(RatesArray);
             }, IsInVitualTrading);
             OnScanCorridor(_rateArray, () => {
               try {
-                TicksPerSecondAverage = tps(CorridorStats.Rates);
+                var cs = CorridorStats.Rates[0].StartDate.AddMinutes(-10);
+                var rl = CorridorStats.Rates.TakeWhile(r => r.StartDate > cs).ToArray();
+                TicksPerSecondAverage = CalcTicksPerSecond(rl);
                 RaiseShowChart();
                 RunStrategy();
               } catch (Exception exc) { Log = exc; if (IsInVitualTrading) Strategy = Strategies.None; throw; }
@@ -2083,13 +2055,16 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    double CalcTicksPerSecond(IList<Rate> rates) {
+      if(BarPeriod != BarsPeriodType.t1 )return 1;
+      return  rates.CalcTicksPerSecond();
+    }
     int GetCrossesCount(IList<Rate> rates, double level) {
       return rates.Count(r => level.Between(r.BidLow, r.AskHigh));
     }
     double _streatchRatesMaxRatio = 1;
 
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double StreatchRatesMaxRatio {
       get { return _streatchRatesMaxRatio; }
       set {
@@ -2688,6 +2663,9 @@ namespace HedgeHog.Alice.Store {
     }
     double _sqrt2 = 1.5;// Math.Sqrt(1.5);
 
+    public double CmaPeriodByRatesCount() {
+      return RatesArray.Count * PriceCmaLevels / 100.0;
+    }
     private void SetMA() {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
@@ -2706,11 +2684,18 @@ namespace HedgeHog.Alice.Store {
           break;
         case Store.MovingAverageType.Cma:
           if (PriceCmaLevels > 0) {
+            RatesArray.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
+            //UseRates(rates => {
+            //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
+            //  rates.Reverse();
+            //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceCMALast));
+            //  rates.Reverse();
+            //});
             //RatesArray.SetCma((p, r) => r.PriceAvg - p.PriceAvg, r => {
             //  if(r.PriceCMAOther == null)r.PriceCMAOther = new List<double>();
             //  return r.PriceCMAOther;
             //}, PriceCmaPeriod + CmaOffset, PriceCmaLevels + CmaOffset.ToInt());
-            RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
+            //RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
           }
           break;
         case Store.MovingAverageType.Trima:
@@ -2723,6 +2708,11 @@ namespace HedgeHog.Alice.Store {
     }
     private static void SetMAByFtt2(IList<Rate> rates, Func<Rate, double> getPrice, Action<Rate, double> setValue, double lastHarmonicRatioIndex) {
       rates.Zip(rates.ToArray(getPrice).Fft(lastHarmonicRatioIndex).Fft(lastHarmonicRatioIndex), (rate, d) => { setValue(rate, d); return 0; }).Count();
+    }
+    private IEnumerable<double> GetCma<T>(IEnumerable<T> rates, Func<T, double> value, double period) {
+      return rates.Scan(double.NaN, (ma, r) => ma.Cma(period, value(r)))
+              .Reverse()
+              .Scan(double.NaN, (ma, d) => ma.Cma(period, d));
     }
 
     public void ScanCorridor(List<Rate> ratesForCorridor, Action callback = null) {
@@ -2852,14 +2842,12 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
         case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
         case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
-        case ScanCorridorFunction.StDevHeight: return ScanCorridorByStDevByHeight;
+        case ScanCorridorFunction.WaveCount: return ScanCorridorByWaveCount;
         case ScanCorridorFunction.StDevHeightFft: return ScanCorridorByStDevByHeightFft;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
         case ScanCorridorFunction.FttMACorr: return ScanCorridorByFftMA;
-        case ScanCorridorFunction.TimeFrame: return ScanCorridorByTimeFrameAndAngle;
-        case ScanCorridorFunction.TimeFrame2: return ScanCorridorByTimeFrameAndAngle2;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
         case ScanCorridorFunction.RangeDistance: return ScanCorridorByDistanceHeightRatio;
@@ -2877,7 +2865,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Spike: return ScanCorridorBySpike;
         case ScanCorridorFunction.Spike2: return ScanCorridorBySpike21;
         case ScanCorridorFunction.Spike231: return ScanCorridorBySpike231;
-        case ScanCorridorFunction.Spike24: return ScanCorridorBySpike24;
         case ScanCorridorFunction.Spike30: return ScanCorridorBySpike30;
         case ScanCorridorFunction.Distance: return ScanCorridorByDistance;
         case ScanCorridorFunction.Distance2: return ScanCorridorByDistance2;
@@ -3241,22 +3228,31 @@ namespace HedgeHog.Alice.Store {
     }
 
     object _innerRateArrayLocker = new object();
-    public T UseRates<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
+    public T UseRates<T>(Func<List<Rate>, T> func, int timeoutInMilliseconds = 3000) {
       if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
         throw new TimeoutException("[" + Pair + "] _rateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesArray.Count:" + RatesArray.Count);
       try {
-        return func(_Rates);
+        return func(_rateArray);
       } finally {
         Monitor.Exit(_innerRateArrayLocker);
       }
     }
+    public void UseRates(Action<List<Rate>> func, int timeoutInMilliseconds = 3000) {
+      UseRates<Unit>(_ => { func(_); return Unit.Default; }, timeoutInMilliseconds);
+    }
+    object _innerRateLocker = new object();
+    string _UseRatesInternalSource = string.Empty;
     public T UseRatesInternal<T>(Func<ReactiveList<Rate>, T> func, int timeoutInMilliseconds = 3000) {
-      if (!Monitor.TryEnter(_innerRateArrayLocker, timeoutInMilliseconds))
-        throw new TimeoutException("[" + Pair + "] _innerRateArrayLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesInternal.Count:" + RatesInternal.Count);
+      if (!Monitor.TryEnter(_innerRateLocker, timeoutInMilliseconds))
+        throw new TimeoutException("[" + Pair + "] _innerRateLocker was busy for more then " + timeoutInMilliseconds + " ms. RatesInternal.Count:" + RatesInternal.Count + "\nSource:\n" + _UseRatesInternalSource);
       try {
+        //_UseRatesInternalSource = string.Join("\n", Enumerable.Range(1, 3)
+        //  .Select(frame => new[] { new StackFrame(frame, true) }
+        //    .Select(sf => new { frame, sf.GetMethod().Name, file = sf.GetFileName() + ":" + sf.GetFileLineNumber() }))
+        //    .SelectMany(x => x + ""));
         return func(_Rates);
       } finally {
-        Monitor.Exit(_innerRateArrayLocker);
+        Monitor.Exit(_innerRateLocker);
       }
     }
     public void UseRatesInternal(Action<ReactiveList<Rate>> action) {
@@ -3589,20 +3585,13 @@ namespace HedgeHog.Alice.Store {
       set { _waveRates = value; }
     }
     private double CorridorAngleFromTangent() {
-      return CorridorStats.Coeffs == null ? double.NaN : -AngleFromTangent(CorridorStats.Coeffs.LineSlope(), CorridorStats.Rates);
+      return CorridorStats.Coeffs == null ? double.NaN : -AngleFromTangent(CorridorStats.Coeffs.LineSlope(), () => CalcTicksPerSecond(CorridorStats.Rates));
     }
 
-    private double AngleFromTangent(double tangent, IList<Rate> rates) {
-      if (rates.Count == 0) {
-        Log = new Exception(new { RatesCount = 0, Method = Lib.CallingMethod() } + "");
-        return double.NaN;
-      }
-      var tickCounts = from sd in rates.Select(r => r.StartDate)
-                       group sd by sd.AddMilliseconds(-sd.Millisecond) into grates
-                       select grates.Count();
+    private double AngleFromTangent(double tangent, Func<double> ticksPerSecond) {
       var barPeriod = BarPeriod != BarsPeriodType.t1
         ? BarPeriodInt
-        : 1.0 / 60 * tickCounts.Average();
+        : 1.0 / 60 * ticksPerSecond();
       return tangent.Angle(barPeriod, PointSize);
     }
 

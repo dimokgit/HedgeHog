@@ -694,7 +694,7 @@ namespace Order2GoAddIn {
           .Cast<FXCore.MarketRateAut>().ToList();
         //);
         var ms = (DateTime.Now - d).TotalMilliseconds;
-        _historyTimeAverage = Lib.Cma(_historyTimeAverage, 10, ms);
+        _historyTimeAverage = _historyTimeAverage.Cma(10, ms);
         if (period == 0)
           return mr.GroupBy(r => r.StartDate)
             .SelectMany(g => g.Select((r, i) => new Tick(ConvertDateToLocal(r.StartDate), r.AskOpen, r.BidOpen, i, true))).ToArray();
@@ -1233,7 +1233,9 @@ namespace Order2GoAddIn {
 
     #region GetOrders
     string[] _stopLimitOrderTypes = new[] { "S", "L", "SE", "LE" };
-    bool IsNetOrderFilter(Order order) { return IsFIFO(order.Pair) ? order.IsNetOrder || order.OCOBulkID > 0 : _stopLimitOrderTypes.Contains(order.Type); }
+    bool IsNetOrderFilter(Order order) {
+      return order.Status != "S" && (IsFIFO(order.Pair) ? order.IsNetOrder || order.OCOBulkID > 0 : _stopLimitOrderTypes.Contains(order.Type));
+    }
     bool IsEntryOrderFilter(Order order) { return order.OCOBulkID == 0 && string.IsNullOrWhiteSpace(order.PrimaryOrderID) && !order.IsNetOrder; }
     public double GetOffer(bool buy) {
       if (!IsLoggedIn) return double.NaN;

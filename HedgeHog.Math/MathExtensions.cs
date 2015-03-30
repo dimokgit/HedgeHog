@@ -603,6 +603,23 @@ namespace HedgeHog {
       }
       return Math.Sqrt(S / (k - 2));
     }
+    public static double StandardDeviation<T>(this IEnumerable<T> valueList,Func<T,double> get,out double max, out double min) {
+      double M = 0.0;
+      double S = 0.0;
+      int k = 1;
+      max = double.MinValue;
+      min = double.MaxValue;
+      foreach (T v in valueList) {
+        var value = get(v);
+        double tmpM = M;
+        M += (value - tmpM) / k;
+        S += (value - tmpM) * (value - M);
+        k++;
+        if (max < value) max = value;
+        if (min > value) min = value;
+      }
+      return Math.Sqrt(S / (k - 2));
+    }
     public static T[] CopyToArray<T>(this IList<T> values, int count) {
       return values.SafeArray().CopyToArray(count);
     }
@@ -680,15 +697,16 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
-    public static IEnumerable<Tuple<int, DateTimeOffset>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
+    public static IEnumerable<Tuple<int, DateTimeOffset, int>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
+      var mid = waveWidth / 2;
       return values
-        .Select((rate, i) => new { v = value(rate), d = date(rate), i })
-        .Where(x => !x.v.IsNaN())
+        .Select((rate, i) => new { y = value(rate), x = date(rate), i })
+        .Where(x => !x.y.IsNaN())
         .Buffer(waveWidth, 1)
         .Where(chank => chank.Count == waveWidth)
-        .Select(chunk => new { slope = chunk.Select(r => r.v).ToArray().LinearSlope().SignUp(), chunk[0].d, chunk[0].i })
+        .Select(chunk => new { slope = chunk.LinearSlope(r => r.y).SignUp(), chunk[mid].x, i = chunk[0].i+mid })
         .DistinctUntilChanged(a => a.slope)
-        .Select(r => Tuple.Create(r.i + waveWidth / 2, r.d));//.SkipLast(1);
+        .Select(r => Tuple.Create(r.i, r.x, r.slope));//.SkipLast(1);
     }
     /// <summary>
     /// Try not to materialize it.
@@ -751,8 +769,14 @@ namespace HedgeHog {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
-      var diffs = line.Zip(values, (l, v) => l - v).ToArray();
-      return diffs.Max() - diffs.Min();
+      double max = double.MinValue, min = double.MaxValue;
+      var n = values.Count;
+      for (var i = 0; i < n; i++) {
+        var v = line[i] - values[i];
+        if (max < v) max = v;
+        if (min > v) min = v;
+      }
+      return max - min;
     }
     public static double HeightByRegressoin2(this IList<double> values, double[] coeffs = null) {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
@@ -760,6 +784,33 @@ namespace HedgeHog {
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a => a.Sign());
       return diffs.Select(g => g.Select(v => v)).SelectMany(a => a).ToArray().StDev() * 4;
+    }
+    static int FuzzyFind(this IList<double> sortedList, double value) {
+      return FuzzyFind(sortedList, value, 0, sortedList.Count - 1);
+    }
+    static int FuzzyFind(IList<double> sortedList, double value, int indexLeft, int indexRight) {
+      if (!value.Between(sortedList[0], sortedList[sortedList.Count - 1])) return -1;
+      if (indexLeft == indexRight) return indexRight;
+      if (value == sortedList[indexLeft]) return indexLeft;
+      if (value == sortedList[indexRight]) return indexRight;
+      var middle = indexLeft + (indexRight - indexLeft) / 2;
+      if (value.Between(sortedList[indexLeft], sortedList[middle]))
+        return FuzzyFind(sortedList, value, indexLeft, middle);
+      return FuzzyFind(sortedList, value, middle + 1, indexRight);
+    }
+    public static int FuzzyFind<T,U>(this IList<T> sortedList, U value, Func<U, T, T, bool> isBetween) {
+      return FuzzyFind<T,U>(sortedList, value, 0, sortedList.Count - 1, isBetween);
+    }
+    static int FuzzyFind<T,U>(IList<T> sortedList, U value, int indexLeft, int indexRight, Func<U, T, T, bool> isBetween) {
+      if (!isBetween(value, sortedList[0], sortedList[sortedList.Count - 1])) return -1;
+      if (indexLeft == indexRight) return indexRight;
+      if (isBetween(value, sortedList[indexLeft], sortedList[indexLeft])) return indexLeft;
+      if (isBetween(value, sortedList[indexRight], sortedList[indexRight])) return indexRight;
+      var middle = indexLeft + (indexRight - indexLeft) / 2;
+      if (isBetween(value, sortedList[indexLeft], sortedList[middle]))
+        return FuzzyFind<T,U>(sortedList, value, indexLeft, middle, isBetween);
+      if (middle == indexLeft) return indexRight;
+      return FuzzyFind<T,U>(sortedList, value, middle, indexRight, isBetween);
     }
     static IEnumerable<int> IteratonSequence(int start, int end) {
       return IteratonSequence(start, end, NestStep);
@@ -908,6 +959,18 @@ namespace HedgeHog {
 
     public static double Average(this IEnumerable<double> values, Func<double> defaultValue) {
       return values.Count() == 0 ? defaultValue() : values.Average();
+    }
+    public static double Cma(this double? MA, double Periods, double NewValue) {
+      if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      return MA.Value + (NewValue - MA.Value) / (Periods + 1);
+    }
+    public static double Cma(this double MA, double Periods, double NewValue) {
+      if (double.IsNaN(MA)) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      return MA + (NewValue - MA) / (Periods + 1);
+    }
+    static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
+      if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
+      return Cma(MA, Periods, NewValue);
     }
 
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }

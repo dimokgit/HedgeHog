@@ -1042,35 +1042,59 @@ namespace HedgeHog.Alice.Client {
     public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
       var digits = tm.Digits() + 1;
       if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
+      else dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));
       string pair = tm.Pair;
-      Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando("d", rate.StartDate2, "c", rate.PriceAvg.Round(digits));
+      Func<Rate, double> rateHL = rate => (rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow).Round(digits);
+      #region map
+      Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando(
+        "d", rate.StartDate2,
+        "c", rateHL(rate),
+        "v", rate.VoltageLocal3,
+        "m", rate.PriceCMALast.Round(digits)
+        );
+      #endregion
+      
       List<Rate> rates = tm.RatesArray.ToList();
       var ratesForChart = rates.Where(r => r.StartDate2 >= dateEnd).ToArray();
       var ratesForChart2 = rates.Where(r => r.StartDate2 < dateStart).ToArray();
+      var tps = tm.TicksPerSecondAverage;
+      ratesForChart.Concat(ratesForChart2).Where(r => r.VoltageLocal3.IsNaN()).ForEach(r => r.VoltageLocal3 = tps);
+
+      Func<IGrouping<DateTimeOffset, Rate>, Rate> mapTickToRate = g => {
+        var r = g.GroupToRate();
+        r.VoltageLocal3 = g.Average(r2 => r2.VoltageLocal3).Round(2);
+        return r;
+      };
+      double cmaPeriod = tm.CmaPeriodByRatesCount();
       if (tm.BarPeriod == BarsPeriodType.t1) {
-        ratesForChart = ratesForChart.GroupTicksToRates().ToArray();
-        ratesForChart2 = ratesForChart2.GroupTicksToRates().ToArray();
+        cmaPeriod /= tm.TicksPerSecondAverage;
+        ratesForChart = ratesForChart.GroupTicksToRates(mapTickToRate).ToArray();
+        ratesForChart2 = ratesForChart2.GroupTicksToRates(mapTickToRate).ToArray();
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
         if (tm.BarPeriod == BarsPeriodType.m1) {
           var ds = rates.Last().StartDate2;
           return rates.Reverse<Rate>()
-            .Select((r, i) => EnumsExtensions.CreateExpando("d", ds.AddMinutes(-i), "c", r.PriceAvg))
+            .Select((r, i) => EnumsExtensions.CreateExpando(
+              "d", ds.AddMinutes(-i),
+              "c", rateHL(r),
+              "v", r.VoltageLocal3,
+              "m", r.PriceCMALast.Round(digits)))
             .Reverse().ToArray();
         } else return rates3.Select(map).ToArray();
       });
-      var trends = tm.SetTrendLines(rates).OrderBars().ToList();
+      var trends = tm.SetTrendLines1231_1(rates).OrderBars().ToList();
       var trendLines = new {
         dates = new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
           ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
           : trends[0].StartDate2,
           rates.Last().StartDate2},
-        close1 = trends.ToArray(t => t.PriceAvg1),
-        close2 = trends.ToArray(t => t.PriceAvg2),
-        close3 = trends.ToArray(t => t.PriceAvg3),
-        close21 = trends.ToArray(t => t.PriceAvg21),
-        close31 = trends.ToArray(t => t.PriceAvg31)
+        close1 = trends.ToArray(t => t.Trends.PriceAvg1),
+        close2 = trends.ToArray(t => t.Trends.PriceAvg2),
+        close3 = trends.ToArray(t => t.Trends.PriceAvg3),
+        close21 = trends.ToArray(t => t.Trends.PriceAvg21),
+        close31 = trends.ToArray(t => t.Trends.PriceAvg31)
       }.ToExpando();
       var trends2 = tm.SetTrendLines1231_2(rates).OrderBars().ToList();
       var trendLines2 = new {
@@ -1116,7 +1140,8 @@ namespace HedgeHog.Alice.Client {
         tradeLevels = tradeLevels,
         trades,
         askBid,
-        hasStartDate = tm.CorridorStartDate.HasValue
+        hasStartDate = tm.CorridorStartDate.HasValue,
+        cmaPeriod
       }.ToExpando();
     }
     bool? _isParentHidden;

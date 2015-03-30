@@ -19,18 +19,35 @@ namespace HedgeHog {
       double avgY;
       return GetSlope(data, out avgY);
     }
+    public static double LinearSlope<T>(this IList<T> data,Func<T,double> get) {
+      double avgY;
+      return GetSlope(data, get, out avgY);
+    }
     public static T Linear<T>(this IList<double> data, LinearRegressionMap<T> map) {
       var slope = 0.0;
       return map(GetIntercept(data, out slope), slope);
     }
-    static double GetSlope(IList<double> yArray, out double averageY) {
+    static double GetSlope<T>(IList<T> yArray,Func<T,double> get, out double averageY) {
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0, sumx2 = 0;
       for (int i = 0; i < yArray.Count; i++) {
-        sumxy += (double)i * yArray[i];
+        var v = get(yArray[i]);
+        sumxy += (double)i * v;
+        sumx += i;
+        sumy += v;
+        sumx2 += (double)i * i;
+      }
+      return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
+    }
+    static double GetSlope(IList<double> yArray, out double averageY) {
+      double n = yArray.Count;
+      double sumxy = 0, sumx = 0, sumy = 0;
+      long sumx2 = 0;
+      for (int i = 0; i < n; i++) {
+        sumxy += i * yArray[i];
         sumx += i;
         sumy += yArray[i];
-        sumx2 += (double)i * i;
+        sumx2 += i * i;
       }
       return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
     }

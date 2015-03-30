@@ -625,7 +625,7 @@ namespace HedgeHog {
       public void Add(double value, double cmaPeriod) {
         Current = value;
         for (var i = 0; i < CmaArray.Length; i++) {
-          CmaArray[i] = Lib.Cma(CmaArray[i], cmaPeriod, value);
+          CmaArray[i] = CmaArray[i].Cma(cmaPeriod, value);
           value = CmaArray[i].Value;
         }
         RaisePropertyChanged("Difference");
@@ -674,18 +674,6 @@ namespace HedgeHog {
     public static TimeSpan FromMinutes(this int i) { return TimeSpan.FromMinutes(i); }
     public static TimeSpan FromMinutes(this double i) { return TimeSpan.FromMinutes(i); }
 
-    public static double Cma(this double? MA, double Periods, double NewValue) {
-      if (!MA.HasValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
-      return MA.Value + (NewValue - MA.Value) / (Periods + 1);
-    }
-    public static double Cma(this double MA, double Periods, double NewValue) {
-      if (double.IsNaN(MA)) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
-      return MA + (NewValue - MA) / (Periods + 1);
-    }
-    static double Cma(double MA, double zeroValue, double Periods, double NewValue) {
-      if (MA == zeroValue) return NewValue;// Else CMA = MA + (NewValue - MA) / (Periods + 1)
-      return Cma(MA, Periods, NewValue);
-    }
     public static IEnumerable<T> OfType<T>(this IEnumerable e, T type) {
       return e.OfType<T>();
     }

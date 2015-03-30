@@ -40,7 +40,9 @@ namespace HedgeHog.Shared {
         account.Balance,
         offer.MMR,
         GetBaseUnitSize(trade.Pair),
-        CommissionByTrade(trade)) * trade.Lots) / trades.Lots();
+        TradesManagerStatic.PipAmount(trade.Pair,trade.Lots,trade.Close,GetPipSize(trade.Pair))
+       // CommissionByTrade(trade)
+      ) * trade.Lots) / trades.Lots();
     }
     public double PipsToMarginCall {
       get {

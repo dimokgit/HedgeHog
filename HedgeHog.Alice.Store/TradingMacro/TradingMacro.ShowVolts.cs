@@ -35,7 +35,7 @@ namespace HedgeHog.Alice.Store {
       RatesInternal.AsEnumerable().Reverse().Take(RatesArray.Count + CorridorDistance * 2)
         .Integral(frameLength)
         .AsParallel()
-        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs(), CorridorStats.Rates) })
+        .Select(rates => new { rate = rates[0], angle = AngleFromTangent(rates.Regress(1, _priceAvg).LineSlope().Abs(),()=>CalcTicksPerSecond(CorridorStats.Rates)) })
         .ToArray()
         .OrderByDescending(a => a.rate.StartDate)
         .Integral(frameLength * 2)

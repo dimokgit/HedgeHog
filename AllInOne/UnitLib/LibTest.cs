@@ -90,7 +90,7 @@ namespace HedgeHog.Tests {
       var d = DateTime.Parse("1/1/2011");
       var d1 = TimeZoneInfo.ConvertTimeToUtc(d);
       var d2 = new DateTimeOffset(d, d - d1);
-      Assert.AreEqual(d,d1);
+      Assert.AreEqual(d, d1);
     }
 
     [TestMethod]
@@ -104,7 +104,7 @@ Privet:2.3 3.4
       paramsText = File.ReadAllText(Path.Combine(path, "TestParams.txt"));
       var paramLines = paramsText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
       var paramsArray = paramLines.Select(pl => pl.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries)).ToArray();
-      var paramDict = paramsArray.Where(a=>a.Length>1).ToDictionary(pa => pa[0], pa => pa[1] );
+      var paramDict = paramsArray.Where(a => a.Length > 1).ToDictionary(pa => pa[0], pa => pa[1]);
       var params1 = paramDict.ToArray();
     }
     public void ToListSpeed() {
@@ -128,7 +128,7 @@ Privet:2.3 3.4
         rq.Enqueue(() => action(i1));
       }
       bool isCompleted = false;
-      rq.ToObservable(NewThreadScheduler.Default).Subscribe(a=>a(),()=>isCompleted = true);
+      rq.ToObservable(NewThreadScheduler.Default).Subscribe(a => a(), () => isCompleted = true);
       var ii = 6;
       while (!isCompleted) {
         var i1 = ++ii;
@@ -151,18 +151,18 @@ Privet:2.3 3.4
     }
     public void Observe_Buffer2() {
       var bb = new BroadcastBlock<string>(s => { /*Debug.WriteLine("b:" + s);*/ return s; });
-      bb.AsObservable().Buffer(1.FromSeconds()).Where(s=>s.Any()).Subscribe(s => {
-//        Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + string.Join("\t" + Environment.NewLine, s));
+      bb.AsObservable().Buffer(1.FromSeconds()).Where(s => s.Any()).Subscribe(s => {
+        //        Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + string.Join("\t" + Environment.NewLine, s));
         Debug.WriteLine(DateTime.Now.ToString("mm:ss.fff") + Environment.NewLine + "\t" + s.Count);
       });
-      for (int i = 0; i < 1000000;i++ )
+      for (int i = 0; i < 1000000; i++)
         bb.SendAsync(DateTime.Now.ToString(i + " mm:ss.fff"));
       Thread.Sleep(10000);
     }
     public void Observe_Buffer() {
       var subject = new Subject<string>();
       subject.Buffer(1.FromSeconds())
-        .Where(sl=>sl.Any())
+        .Where(sl => sl.Any())
         .Subscribe(sl => {
           Debug.WriteLine(string.Join(Environment.NewLine, sl));
         });
@@ -186,7 +186,7 @@ Privet:2.3 3.4
       });
       Task.Factory.StartNew(() => {
         var d = DateTime.Now;
-        while (d.AddSeconds(5)>DateTime.Now) {
+        while (d.AddSeconds(5) > DateTime.Now) {
           bb.SendAsync(DateTime.Now.ToString("mm:ss"));
         }
       });
@@ -219,7 +219,7 @@ Privet:2.3 3.4
       Assert.IsTrue(mc.Contains(key));
     }
     public void MA() {
-      var d = Enumerable.Range(1, 1000).Select(i => Math.Cos(i)).ToDictionary(n=>n,n=>n);
+      var d = Enumerable.Range(1, 1000).Select(i => Math.Cos(i)).ToDictionary(n => n, n => n);
       SortedList<double, double> sl = new SortedList<double, double>(d);
       var period = 9;
       Stopwatch sw = Stopwatch.StartNew();
@@ -237,18 +237,6 @@ Privet:2.3 3.4
       Debug.WriteLine("{0}:{1:n1}ms", MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds);
       var mas11 = mas2.Select(li => li.Value).Except(outReal);
       Assert.IsFalse(mas11.Any());
-    }
-
-    public void CMA() {
-      var d = Enumerable.Range(1, 100).Select(i => (double)i).ToArray();
-      var period = 10;
-      var maList = new List<double>() { d[0] };
-      var a = d.Aggregate((p, c) => {
-        var ma = Lib.Cma(p, period, c);
-        maList.Add(ma);
-        return ma;
-      });
-      Debug.WriteLine(string.Join(Environment.NewLine, maList));
     }
     public void ObservableCollectionTest() {
       var oc = new ObservableCollection<string>();
@@ -311,7 +299,7 @@ Privet:2.3 3.4
       var tzs = (from tz in TimeZoneInfo.GetSystemTimeZones()
                  select tz).ToArray();
       var ld = DateTimeOffset.Parse("11/1/2013").InLondon();
-      TestContext.WriteLine(ld + ""+tzs.Count());
+      TestContext.WriteLine(ld + "" + tzs.Count());
     }
     [TestMethod]
     public void Unsubscribe() {
@@ -327,12 +315,37 @@ Privet:2.3 3.4
       var swDict = new Dictionary<string, double>();
       Stopwatch sw = Stopwatch.StartNew();
       var stDev1 = values.StandardDeviation();
-      swDict.Add("1", sw.ElapsedMilliseconds);sw.Restart();
+      swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
       var stDev2 = values.StDev();
       swDict.Add("2", sw.ElapsedMilliseconds);
       Console.WriteLine("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}",
         MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, "", string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value)));
-      Assert.AreEqual(stDev1,stDev2);
+      Assert.AreEqual(stDev1, stDev2);
+    }
+
+    [TestMethod()]
+    public void FuzzyFindTest() {
+      FuzzyFindTestImpl(5000.5);
+      FuzzyFindTestImpl(5001.5);
+    }
+    public void FuzzyFindTestImpl(double value) {
+      var values = Enumerable.Range(0, (value * 2).ToInt()).Select(i => (double)i).ToArray();
+      var index = values.FuzzyFind(value, MathCore.Between);
+      Assert.AreEqual(index, Math.Ceiling(value));
+
+      values = Enumerable.Range(0, (value * 2 + 2).ToInt()).Select(i => (double)i).ToArray();
+      index = values.FuzzyFind(value, MathCore.Between);
+      Assert.AreEqual(index, Math.Ceiling(value));
+
+      values = Enumerable.Range(0, (value * 2 - 2).ToInt()).Select(i => (double)i).ToArray();
+      index = values.FuzzyFind(value, MathCore.Between);
+      Assert.AreEqual(index, Math.Ceiling(value));
+
+      index = values.FuzzyFind(-1, MathCore.Between);
+      Assert.AreEqual(index, -1);
+      index = values.FuzzyFind(values.Length * 2, MathCore.Between);
+      Assert.AreEqual(index, -1);
+
     }
 
   }

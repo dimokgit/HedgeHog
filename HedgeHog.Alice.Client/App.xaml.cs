@@ -33,7 +33,6 @@ namespace HedgeHog.Alice.Client {
   static public  CompositionContainer container;
   static public List<Window> ChildWindows = new List<Window>();
     App() {
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
       DataFlowProcessors.Initialize();
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;

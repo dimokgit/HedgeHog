@@ -52,5 +52,111 @@ namespace HedgeHog.Alice.Store {
       }
     }
     #endregion
+    #region PriceFftLevelsFast
+    private int _PriceFftLevelsFast = 1;
+    [Category(categoryCorridor)]
+    public int PriceFftLevelsFast {
+      get { return _PriceFftLevelsFast; }
+      set {
+        if (_PriceFftLevelsFast != value) {
+          _PriceFftLevelsFast = value;
+          OnPropertyChanged("PriceFftLevelsFast");
+        }
+      }
+    }
+    #endregion
+
+    #region PriceFftLevelsSlow
+    private int _PriceFftLevelsSlow = 1;
+    [Category(categoryCorridor)]
+    public int PriceFftLevelsSlow {
+      get { return _PriceFftLevelsSlow; }
+      set {
+        if (_PriceFftLevelsSlow != value) {
+          _PriceFftLevelsSlow = value;
+          OnPropertyChanged("PriceFftLevelsSlow");
+        }
+      }
+    }
+
+    #endregion
+    #region VoltsHighIterations
+    private int _VoltsHighIterations;
+    [Category(categoryXXX)]
+    public int VoltsHighIterations {
+      get { return _VoltsHighIterations; }
+      set {
+        if (_VoltsHighIterations != value) {
+          _VoltsHighIterations = value;
+          OnPropertyChanged("VoltsHighIterations");
+        }
+      }
+    }
+    #endregion
+    #region VoltsFrameLength
+    private int _VoltsFrameLength;
+    [Category(categoryXXX)]
+    public int VoltsFrameLength {
+      get { return _VoltsFrameLength; }
+      set {
+        if (_VoltsFrameLength != value) {
+          _VoltsFrameLength = value;
+          OnPropertyChanged("VoltsFrameLength");
+        }
+      }
+    }
+
+    #endregion
+    #region VoltsAverageLength
+    private double _VoltsAverageLength = 2880;
+    [Category(categoryXXX)]
+    [Description("Frame length in hours")]
+    public double VoltsAverageLength {
+      get {
+        int min = 24, max = 24 * 10;
+        if (!_VoltsAverageLength.Between(min, max)) {
+          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, min, max } + "");
+          VoltsAverageLength = BarsCountCalc / 60;
+          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, Message = "New value" } + "");
+        }
+        return _VoltsAverageLength;
+      }
+      set {
+        if (_VoltsAverageLength != value) {
+          _VoltsAverageLength = value;
+          OnPropertyChanged("VoltsAverageLength");
+        }
+      }
+    }
+    #endregion
+    #region CloseTradesBeforeNews
+    private bool _CloseTradesBeforeNews = true;
+    [Category(categoryActiveYesNo)]
+    public bool CloseTradesBeforeNews {
+      get { return _CloseTradesBeforeNews; }
+      set {
+        if (_CloseTradesBeforeNews != value) {
+          _CloseTradesBeforeNews = value;
+          OnPropertyChanged("CloseTradesBeforeNews");
+        }
+      }
+    }
+
+    #endregion
+    #region TpsMin
+    private double _TpsMin;
+    [Category(categoryActive)]
+    [DisplayName("TicksPerSec Min")]
+    public double TpsMin {
+      get { return _TpsMin; }
+      set {
+        if (_TpsMin != value) {
+          _TpsMin = value;
+          OnPropertyChanged("TpsMin");
+        }
+      }
+    }
+
+    #endregion
   }
 }

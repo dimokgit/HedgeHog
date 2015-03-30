@@ -36,6 +36,21 @@ namespace HedgeHog.Bars {
   }
 
   public static class Extensions {
+    public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks)where TBar:BarBaseDate {
+      return ticks.CalcTicksPerSecond(0.5);
+    }
+    public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks, double treshold)where TBar:BarBaseDate {
+      var tps = ticks.Count / (ticks.Last().StartDate - ticks[0].StartDate).Duration().TotalSeconds;
+      return tps >= treshold
+        ? tps
+        : 1 / ticks
+        .Buffer(2, 1)
+        .Where(b => b.Count == 2)
+        .Select(b => (b[1].StartDate - b[0].StartDate).Duration().TotalSeconds)
+        .Where(s => s < 60 * 5)
+        .Average();
+    }
+
 
     public static IList<TBar> FindWave<TBar>(this IList<IList<TBar>> waves, IList<TBar> wave) where TBar : BarBase {
       if (wave == null || wave.Count == 0) return null;
@@ -1230,6 +1245,19 @@ namespace HedgeHog.Bars {
              group tick by tick.StartDate2.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
              select GroupToRate(gt);
     }
+    public static IEnumerable<Rate> GroupAdjacentTicks(this IEnumerable<Rate> ticks, TimeSpan interval) {
+      return ticks.GroupByAdjacent(t=>t.StartDate2,(t1, t2) => (t1 - t2).Duration() <= interval)
+        .Select(GroupToRate);
+    }
+    public static IEnumerable<TResult> GroupAdjacentTicks<TValue,TResult>(this IEnumerable<TValue> ticks, TimeSpan interval,Func<TValue,DateTime> key, Func<IGrouping<DateTime, TValue>, TResult> map) {
+      return ticks.GroupByAdjacent(key, (t1, t2) => (t1 - t2).Duration() <= interval)
+        .Select(map);
+    }
+    public static IEnumerable<T> GroupTicksToRates<T>(this IEnumerable<Rate> ticks, Func<IGrouping<DateTimeOffset, Rate>, T> map) {
+      return from tick in ticks
+             group tick by tick.StartDate2.AddMilliseconds(-tick.StartDate2.Millisecond) into gt
+             select map(gt);
+    }
 
     public static Rate GroupToRate(this IGrouping<DateTimeOffset, Rate> gt) {
       return new Rate() {
@@ -1242,8 +1270,8 @@ namespace HedgeHog.Bars {
         BidClose = gt.Last().BidClose,
         BidHigh = gt.Max(t => t.BidHigh),
         BidLow = gt.Min(t => t.BidLow),
-        PriceCMALast = gt.Average(r => r.PriceCMALast),
-        Mass = gt.Sum(t => t.Mass)
+        PriceCMALast = gt.Average(r => r.PriceCMALast)
+        //,Mass = gt.Sum(t => t.Mass)
       };
     }
     public static Rate GroupToRate(this IGrouping<Rate, Rate> gt) {
@@ -1259,6 +1287,21 @@ namespace HedgeHog.Bars {
         BidLow = gt.Min(t => t.BidLow),
         PriceCMALast = gt.Average(r => r.PriceCMALast),
         Mass = gt.Sum(t => t.Mass)
+      };
+    }
+    public static Rate GroupToRate(this IList<Rate> gt) {
+      return new Rate() {
+        StartDate2 = gt[0].StartDate2,
+        AskOpen = gt.First().AskOpen,
+        AskClose = gt.Last().AskClose,
+        AskHigh = gt.Max(t => t.AskHigh),
+        AskLow = gt.Min(t => t.AskLow),
+        BidOpen = gt.First().BidOpen,
+        BidClose = gt.Last().BidClose,
+        BidHigh = gt.Max(t => t.BidHigh),
+        BidLow = gt.Min(t => t.BidLow),
+        PriceCMALast = gt.Average(r => r.PriceCMALast)
+        //,Mass = gt.Sum(t => t.Mass)
       };
     }
 
@@ -1575,7 +1618,7 @@ namespace HedgeHog.Bars {
       double? cma3 = null;
       foreach (var bar in bars) {
         bar.PriceCMA = new List<double>(3);
-        cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, cmaSource(bar))).Value)).Value);
+        cma3 = cma3.Cma(cmaPeriod, (cma2 = cma2.Cma(cmaPeriod, (cma1 = cma1.Cma(cmaPeriod, cmaSource(bar))).Value)).Value);
         bar.PriceCMA.Add(cma1.Value);
         bar.PriceCMA.Add(cma2.Value);
         bar.PriceCMA.Add(cma3.Value);
@@ -1585,7 +1628,7 @@ namespace HedgeHog.Bars {
       , double? cma1 = null, double? cma2 = null, double? cma3 = null) where TBars : BarBase {
       foreach (var t in ticks) {
         t.PriceCMA = new List<double>(3);
-        cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, t.PriceAvg)).Value)).Value);
+        cma3 = cma3.Cma(cmaPeriod, (cma2 = cma2.Cma(cmaPeriod, (cma1 = cma1.Cma(cmaPeriod, t.PriceAvg)).Value)).Value);
         t.PriceCMA.Add(cma1.Value);
         t.PriceCMA.Add(cma2.Value);
         t.PriceCMA.Add(cma3.Value);
@@ -1665,20 +1708,6 @@ namespace HedgeHog.Bars {
       return Enumerable.Range(outBegIdx, ticks.Count - outBegIdx)
         .Select(i => outTrima[i + 1 - period])
         .ToArray();
-    }
-    public static DataPoint[] GetCurve(IEnumerable<BarBase> ticks, int cmaPeriod) {
-      double? cma1 = null;
-      double? cma2 = null;
-      double? cma3 = null;
-      int i = 0;
-      return (from tick in ticks
-              select
-              new DataPoint() {
-                Value = (cma3 = Lib.Cma(cma3, cmaPeriod, (cma2 = Lib.Cma(cma2, cmaPeriod, (cma1 = Lib.Cma(cma1, cmaPeriod, tick.PriceAvg)).Value)).Value)).Value,
-                Date = tick.StartDate,
-                Index = i++
-              }
-                  ).ToArray();
     }
     public static TBar FindBar<TBar>(this IEnumerable<TBar> bars, DateTime startDate) where TBar : BarBaseDate {
       if (bars.Count() < 2) return bars.FirstOrDefault();

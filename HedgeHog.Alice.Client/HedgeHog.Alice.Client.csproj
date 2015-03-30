@@ -56,7 +56,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro 2\</OutputPath>
+    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -739,9 +739,11 @@
     <Content Include="WWW\Scripts\jquery.signalR-2.1.2.min.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="WWW\Scripts\pnotify.custom.min.js" />
     <Content Include="WWW\Styles\BS-dropdown-submenu.css">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="WWW\Styles\pnotify.custom.min.css" />
     <Content Include="WWW\Trader2.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -49,6 +49,8 @@ namespace HedgeHog.Shared {
     Trade[] GetTrades(string pair);
     Trade[] GetTrades();
     Trade GetLastTrade(string pair);
+    Trade[] GetClosedTrades(string pair);
+
 
     PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price);
 

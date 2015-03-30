@@ -558,7 +558,7 @@ namespace HedgeHog.Alice.Store {
 
     [DisplayName("Streatch Rates")]
     [Description("Streatch Rates to Corridor")]
-    [Category(categoryActiveYesNo)]
+    [Category(categoryXXX)]
     public bool DoStreatchRates_ {
       get { return DoStreatchRates; }
       set { DoStreatchRates = value; }
@@ -963,7 +963,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trade By Rate Direction")]
-    [Category(categoryActiveYesNo)]
+    [Category(categoryXXX_NU)]
     public bool TradeByRateDirection_ {
       get { return TradeByRateDirection; }
       set { TradeByRateDirection = value; }
@@ -1037,7 +1037,7 @@ namespace HedgeHog.Alice.Store {
     }
     [DisplayName("Wave StDev Ratio")]
     [Description("Wave Corridor = StDev*sqrt(X)")]
-    [Category(categoryActive)]
+    [Category(categoryXXX)]
     public double WaveStDevRatio {
       get { return SpreadShortToLongTreshold; }
       set {
@@ -1461,7 +1461,7 @@ namespace HedgeHog.Alice.Store {
           RateLast.SetPriceChart();
         }
         OnPropertyChanged(TradingMacroMetadata.CurrentPrice);
-        var currentSpread = RoundPrice(Lib.Cma(this._currentSpread, 10, this._currentPrice.Spread));
+        var currentSpread = RoundPrice(this._currentSpread.Cma(10, this._currentPrice.Spread));
         if (currentSpread == this._currentSpread) return;
         this._currentSpread = currentSpread;
         SetPriceSpreadOk();

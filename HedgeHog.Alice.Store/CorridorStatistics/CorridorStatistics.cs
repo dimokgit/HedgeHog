@@ -247,7 +247,7 @@ namespace HedgeHog.Alice.Store {
 
     public void Init(List<Rate> rates, double stDev, double[] coeffs, double heightUp0, double heightDown0, double heightUp, double heightDown, int iterations, int corridorCrossesCount) {
       this.Rates = rates;
-      this.RatesStDev = this.Rates.StDev(r => r.PriceAvg);
+      this.RatesStDev = this.Rates.StandardDeviation(r => r.PriceAvg, out _RatesMin, out _RatesMax);
       this.StDev = stDev.IfNaN(this.RatesStDev);
       this.EndDate = rates[0].StartDate;
       this.Coeffs = coeffs;
@@ -258,7 +258,6 @@ namespace HedgeHog.Alice.Store {
       this.HeightDown = heightDown;
       this.HeightDown0 = heightDown0;
       this.CorridorCrossesCount = corridorCrossesCount;
-      this.RatesHeight = this.Rates.Height(out _RatesMin, out _RatesMax);
       // Must the last one
       this.EndDate = rates[0].StartDate;
       RaisePropertyChanged("Height");
@@ -316,8 +315,7 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorFib; }
       set {
         if (value != 0 && _CorridorFib != value) {
-          //_CorridorFib = Lib.CMA(_CorridorFib, 0, TicksPerMinuteMinimum, Math.Min(99, value.Abs()) * Math.Sign(value));
-          _CorridorFib = Lib.Cma(_CorridorFib, CorridorFibCmaPeriod, value);
+          _CorridorFib = _CorridorFib.Cma(CorridorFibCmaPeriod, value);
           CorridorFibAverage = _CorridorFib;
           RaisePropertyChanged("CorridorFib");
         }
@@ -329,7 +327,7 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorFibAverage; }
       set {
         if (value != 0 && _CorridorFibAverage != value) {
-          _CorridorFibAverage = Lib.Cma(_CorridorFibAverage, CorridorFibCmaPeriod, value);
+          _CorridorFibAverage = _CorridorFibAverage.Cma(CorridorFibCmaPeriod, value);
           RaisePropertyChanged("CorridorFibAverage");
         }
       }

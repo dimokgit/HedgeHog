@@ -15,17 +15,6 @@ namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
     #region ScanCorridor Extentions
     #region New
-    #region SpikeHeightAbs
-    bool _spikeHeightAbs;
-    [Category(categoryActiveYesNo)]
-    public bool SpikeHeightAbs {
-      get { return _spikeHeightAbs; }
-      set {
-        _spikeHeightAbs = value;
-        OnPropertyChanged(() => SpikeHeightAbs);
-      }
-    }
-    #endregion
     private IEnumerable<T> VoltsByTimeframe<T>(int frameLength, TimeSpan timeMax, TimeSpan timeMin, List<Rate> ratesAll2, Func<double, DateTime, T> selector) {
       return ratesAll2
         .Select((rate, i) => new { rate, i, isIn = rate.StartDate.TimeOfDay.Between(timeMin, timeMax) })
@@ -68,7 +57,7 @@ namespace HedgeHog.Alice.Store {
         .TakeWhile(chunk => GetVoltage2(chunk[0]).IsNaN() && GetVoltage(chunk.Last()).IsNotNaN())
         .ForEach(chunk => {
           var volts = chunk.ToArray(GetVoltage);
-          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -AngleFromTangent(coeffs.LineSlope(), CorridorStats.Rates), line });
+          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(CorridorStats.Rates)), line });
           var corr = AlgLib.correlation.pearsoncorrelation(volts, regRes.line);
           chunk[0].VoltageLocal0 = new[] { regRes.angle, corr };
           SetVoltage2(chunk[0], regRes.angle.Abs());
@@ -94,7 +83,7 @@ namespace HedgeHog.Alice.Store {
         .TakeWhile(chunk => GetVoltage2(chunk[0]).IsNaN() && gv3(chunk.Last()).IsNotNaN())
         .ForEach(chunk => {
           var volts = chunk.ToArray(gv3);
-          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -AngleFromTangent(coeffs.LineSlope(), CorridorStats.Rates), line });
+          var regRes = volts.Regression(1, (coeffs, line) => new { angle = -AngleFromTangent(coeffs.LineSlope(), () => CalcTicksPerSecond(CorridorStats.Rates)), line });
           chunk[0].VoltageLocal0 = new[] { regRes.angle };
           SetVoltage2(chunk[0], regRes.angle);
         });
@@ -155,7 +144,7 @@ namespace HedgeHog.Alice.Store {
         .TakeWhile(chunk => takeWhile(GetVoltage(chunk[0]), chunk.Last().VoltageLocal3))
         .ForEach(chunk => {
           var volts = chunk.ToArray(r => r.VoltageLocal3);
-          var regRes = volts.Regression(1, (coeffs, line) => new { angle = AngleFromTangent(coeffs.LineSlope().Abs(), CorridorStats.Rates), line });
+          var regRes = volts.Regression(1, (coeffs, line) => new { angle = AngleFromTangent(coeffs.LineSlope().Abs(), () => CalcTicksPerSecond(CorridorStats.Rates)), line });
           var corr = AlgLib.correlation.pearsoncorrelation(volts, regRes.line);
           chunk[0].VoltageLocal0 = new[] { regRes.angle, corr };
           SetVoltage(chunk[0], regRes.angle);
@@ -343,19 +332,6 @@ namespace HedgeHog.Alice.Store {
         GlobalStorage.Instance.ResetGenericList(chunks.Select(ch => new { Distance = InPips(ch.dist / CorridorDistance).Round(2), Date = ch.date }));
       return chunks.Select(a => a.dist).Skip(1).ToArray();
     }
-    #region VoltsHighIterations
-    private int _VoltsHighIterations;
-    [Category(categoryActive)]
-    public int VoltsHighIterations {
-      get { return _VoltsHighIterations; }
-      set {
-        if (_VoltsHighIterations != value) {
-          _VoltsHighIterations = value;
-          OnPropertyChanged("VoltsHighIterations");
-        }
-      }
-    }
-    #endregion
     #region VoltsAvgIterations
     private int _VoltsAvgIterations;
     [Category(categoryActive)]
@@ -510,36 +486,6 @@ namespace HedgeHog.Alice.Store {
         var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
         var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
           , (op) => Spikes31(prices, Partitioner.Create(op.ToArray(), true), spikeProjector));
-        var lengths1 = spike(Lib.IteratonSequence(10, rates.Count))
-          .OrderByDescending(t => t.distance)
-          .Select(t => t.length)
-          .Take(rates.Count / 20)
-          .ToArray()
-          .GroupByLambda((l1, l2) => l1.Abs(l2) <= Lib.IteratonSequenceNextStep(l1).Max(Lib.IteratonSequenceNextStep(l2)))
-          .Take(3)
-          .Select(g => g.Select(g1 => g1))
-          .SelectMany(l => l)
-          .SelectMany(length => {
-            var ns = (Lib.IteratonSequenceNextStep(length) * 1.1).ToInt();
-            return Enumerable.Range(length - ns, ns * 2);
-          })
-          .Distinct()
-          .Where(l => l <= rates.Count)
-          .ToArray();
-        return spike(lengths1.DefaultIfEmpty(rates.Count))
-          .OrderByDescending(t => t.distance)
-          .First().length;
-      };
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan, GetShowVoltageFunction());
-    }
-    private CorridorStatistics ScanCorridorBySpike24(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      Func<double, double, double> calcHeight = (p, l) => SpikeHeightAbs ? p.Abs(l) : p - l;
-      Func<IList<Rate>, int> scan = (rates) => {
-        var prices = rates.Select(_priceAvg).ToList();
-        var spikeOut = new { length = 0, distance = 0.0 };
-        var spikeProjector = spikeOut.ToFunc(0, 0.0, (length, distance) => new { length, distance });
-        var spike = new[] { spikeOut }.AsParallel().ToFunc((IEnumerable<int>)null
-          , (op) => Spikes24(prices, Partitioner.Create(op.ToArray(), true), calcHeight, spikeProjector));
         var lengths1 = spike(Lib.IteratonSequence(10, rates.Count))
           .OrderByDescending(t => t.distance)
           .Select(t => t.length)
@@ -1433,56 +1379,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     SortedDictionary<DateTime, double> _timeFrameHeights = new SortedDictionary<DateTime, double>();
-    private CorridorStatistics ScanCorridorByTimeFrameAndAngle2(List<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      Func<Rate, double> price = rate => rate.PriceCMALast;
-      Func<IList<Rate>, DateTime, DateTime, IEnumerable<Rate>> revRatesByDates = (rates, dtMin, dtMax) =>
-        rates.SkipWhile(r => r.StartDate > dtMax).TakeWhile(r => r.StartDate >= dtMin);
-      var fractalAnon = new { slope = 0, date = DateTime.MinValue };
-      var calcFractals = fractalAnon.Yield().ToFunc(new Rate[0] as IList<Rate>, DateTime.MinValue, 0);
-      calcFractals = (rates, dateToStart, distance) => rates
-            .Integral(distance)
-            .TakeWhile(chunk => chunk[0].StartDate > dateToStart)
-            .Select(chunk => new { slope = chunk.Regress(1, price).LineSlope().SignUp(), date = chunk[0].StartDate })
-            .DistinctUntilChanged(a => a.slope).Skip(1);//.SkipLast(1);
-      var revs = ratesForCorridor.ReverseIfNot();
-      var corridorDistance = FractalTimes.OrderBy(date => date)
-        .TakeLast(3)
-        .Yield(dates => dates.ToArray())
-        .Where(dates => dates.Length == 3)
-        .Select(dates => revs.SkipWhile(r => r.StartDate > dates[2]).TakeWhile(r => r.StartDate >= dates[0]).Count())
-        .DefaultIfEmpty(CorridorDistance).First().Max(CorridorDistance);
-      Func<DateTime, double> stDev = date => revs.SkipWhile(r => r.StartDate > date).Take(corridorDistance).Height(price);
-      DateTime dateMax = revs[0].StartDate, dateMin = revs.CopyLast((corridorDistance * 1.1).ToInt()).First().StartDate;
-      _timeFrameHeights.Keys.Where(d => !d.Between(dateMin, dateMax)).ToList().ForEach(d => _timeFrameHeights.Remove(d));
-      //_timeFrameHeights.TakeWhile(kv => kv.Value == double.MaxValue).Select(kv => kv.Key).ToList().ForEach(d => _timeFrameHeights.Remove(d));
-      //_timeFrameHeights.Clear();
-      var dateStart = _timeFrameHeights.Keys.LastOrDefault();
-      Func<IList<Rate>, int> scan = (rates) => {
-        calcFractals(rates, dateStart, corridorDistance)
-          .Select(a => new { a.slope, a.date, stDev = stDev(a.date) })
-          .ForEach(a => { if (_timeFrameHeights.ContainsKey(a.date))_timeFrameHeights.Remove(a.date); _timeFrameHeights.Add(a.date, a.stDev); });
-        //if (!_timeFrameHeights.ContainsKey(dateMax))
-        //  _timeFrameHeights.Add(dateMax, double.MaxValue);
-
-        var dateStop = _timeFrameHeights.DefaultIfEmpty(new KeyValuePair<DateTime, double>(revs[0].StartDate, 0.0)).MinBy(a => a.Value).First().Key;
-        var index = revs.TakeWhile(r => r.StartDate > dateStop).Count();
-        SetCorridorStopDate(revs[index]);
-        var count = index + corridorDistance;
-        if (index > ratesForCorridor.Count * 2.0 / 3) {
-          var secondDateStart = revs[index - revs.Count / 3 + 1].StartDate;
-          var tfs = _timeFrameHeights.SkipWhile(kv => kv.Key < secondDateStart);
-          SetCOMs(revs, tfs);
-        } else if (index < ratesForCorridor.Count / 3) {
-          revs.Skip(revs.Count * 2 / 3).Take(1).Select(r => r.StartDate)
-            .ForEach(secondDateStart => {
-              var tfs = _timeFrameHeights.TakeWhile(kv => kv.Key < secondDateStart);
-              SetCOMs(revs, tfs);
-            });
-        }
-        return count;
-      };
-      return ScanCorridorLazy(revs, scan, GetShowVoltageFunction());
-    }
 
     private void SetCOMs(IList<Rate> revs, IEnumerable<KeyValuePair<DateTime, double>> tfs) {
       var thirdDateStart = tfs.OrderBy(kv => kv.Value).Select(kv => kv.Key).DefaultIfEmpty().First();
@@ -1495,46 +1391,6 @@ namespace HedgeHog.Alice.Store {
       revs.Skip(secondIndex).Take(CorridorDistance).Height(out min, out max);
       CenterOfMassBuy = max;
       CenterOfMassSell = min;
-    }
-    private CorridorStatistics ScanCorridorByTimeFrameAndAngle(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = ratesForCorridor.ReverseIfNot();
-      var startMax = CorridorStopDate.IfMin(DateTime.MaxValue);
-      var startMin = CorridorStartDate.GetValueOrDefault(ratesReversed[CorridorDistanceRatio.ToInt() - 1].StartDate);
-      WaveShort.Rates = null;
-      var isAutoCorridor = startMax.IsMax() && !CorridorStartDate.HasValue;
-      var length = CorridorDistanceRatio.ToInt();
-      var doubles = Enumerable.Range(0, ratesForCorridor.Count).Select(i => (double)i).ToArray();
-      var hasCorridor = false;
-      if (isAutoCorridor) {
-        var pricesAll = ratesReversed.Select(_priceAvg).ToArray();
-        var stop = ratesReversed.Count - length;
-        Func<int, int, int[]> iterate = (start, step) => {
-          var anglePrev = double.NaN;
-          var startPrev = 0;
-          for (; start < stop; start += step) {
-            var prices = new double[length];
-            Array.Copy(pricesAll, start, prices, 0, length);
-            var dX = new double[length];
-            Array.Copy(doubles, 0, dX, 0, length);
-            var slope = dX.Regress(prices, 1).LineSlope();
-            var angle = AngleFromTangent(slope, CorridorStats.Rates).Abs();
-            if (slope.Sign() != anglePrev.IfNaN(slope).Sign() || angle <= TradingAngleRange) {
-              hasCorridor = true;
-              return new int[] { startPrev, start };
-            }
-            anglePrev = slope;
-            startPrev = start;
-          }
-          return new int[] { stop, stop };
-        };
-        var step1 = length / 10;
-        var steps = iterate(0, step1);
-        steps = iterate((steps[0] - step1).Max(0), 1);
-        WaveShort.Rates = ratesReversed.Skip(steps[0]).Take(length).ToArray();
-      } else
-        WaveShort.Rates = ratesReversed.SkipWhile(r => r.StartDate > startMax).TakeWhile(r => r.StartDate >= startMin).ToArray();
-      if (hasCorridor) _CorridorStartDateByScan = WaveShort.Rates.LastBC().StartDate;
-      return WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
     }
 
     private CorridorStatistics ScanCorridorByTime(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
@@ -1695,7 +1551,7 @@ namespace HedgeHog.Alice.Store {
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = AngleFromTangent(coeffs[1], CorridorStats.Rates) / groupLength;
+        var angle = AngleFromTangent(coeffs[1], () => CalcTicksPerSecond(CorridorStats.Rates)) / groupLength;
         var sineOffset = Math.Cos(-angle * Math.PI / 180);
         var heights = new List<double>(new double[rates]);
         Enumerable.Range(0, rates).ForEach(i => heights[i] = (line[i] - ratesShrunken[i]) * sineOffset);
@@ -1751,7 +1607,7 @@ namespace HedgeHog.Alice.Store {
         double[] prices = null;
         double[] coeffs;
         var line = ratesShrunken.Regression(rates, 1, out coeffs, out prices);
-        var angle = AngleFromTangent(coeffs[1], CorridorStats.Rates) / groupLength;
+        var angle = AngleFromTangent(coeffs[1], () => CalcTicksPerSecond(CorridorStats.Rates)) / groupLength;
         var sineOffset = Math.Cos(-angle * Math.PI / 180);
         var heights = new List<double>(new double[rates]);
         Enumerable.Range(0, rates).ForEach(i => heights[i] = (line[i] - ratesShrunken[i]) * sineOffset);
@@ -1888,23 +1744,131 @@ namespace HedgeHog.Alice.Store {
       var heightMin = ScanCorridorByStDevAndAngleHeightMinEx;
       var heightMin2 = ScanCorridorByStDevAndAngleHeightMinEx2;
       Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
+      Func<Rate, double> priceAvg02 = rate => (rate.PriceAvg2 - rate.PriceAvg1) / 2 + rate.PriceAvg1;
+      Func<Rate, double> priceAvg03 = rate => rate.PriceAvg1 + (rate.PriceAvg3 - rate.PriceAvg1) / 2;
+      var freeze = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
+        .Any(rate => GetTradeEnterBy(true)(rate) >= priceAvg02(rate) || GetTradeEnterBy(false)(rate) <= priceAvg03(rate));
       Func<IList<Rate>, int> scan = rates => {
-        var freeze = CorridorStats.Rates.Take(1).Any(rate => GetTradeEnterBy(true)(rate) >= rate.PriceAvg2 || GetTradeEnterBy(false)(rate) <= rate.PriceAvg3);
         if (freeze) return freezedCount();
-        var defaultCount = RatesArray.Count;
+        var defaultCount = rates.Count;
         var prices = tranc(rates).ToList();
         int count = 0;
-        Func<int, double, int> getHeight = (c, h) => count = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c, DoFineTuneCorridor);
-        Func<int, double, int> getHeight2 = (c, h) => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, DoFineTuneCorridor ? (c * 0.5).ToInt() : c, false);
-        new[] { new { h = heightMin(prices), a = getHeight, i = "" }, new { h = heightMin2(prices), a = getHeight2, i = "2" } }
+        Func<int, double, int> getHeight = (c, h) => count = _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, c, DoFineTuneCorridor);
+        //Func<int, double, int> getHeight2 = (c, h) => _corridorLength2 = CalcCorridorLengthByHeightByRegressionMin(prices, h, defaultCount, DoFineTuneCorridor ? (c * 0.5).ToInt() : c, false);
+        new[] { new { h = heightMin(prices), a = getHeight, i = "" }/*, new { h = heightMin2(prices), a = getHeight2, i = "2" }*/ }
           .Take(ShowSecondTrend ? 2 : 1)
           .Do(a => { if (a.h.IsNaN())throw new Exception(new StackFrame().GetMethod().Name + ":height" + a.i + " is NaN"); })
           .OrderBy(a => a.h)
           .Aggregate(10, (c, a) => a.a(c, a.h));
-        return count;
+        if (TicksPerSecondAverage == 0) return count;
+        var waveWidth = BarPeriod == BarsPeriodType.m1 ? 60 : _corridorLength2;// 3600.Div(TicksPerSecondAverage).ToInt();
+        var maxCount = 1000;
+        var bufferCount = (rates.Count - count).Div(maxCount).ToInt().Max(1);
+        var ratesForWave = rates
+          .Skip(count)
+          .Buffer(bufferCount)
+          .Select(b => new { Price = b.Average(r => r.PriceCMALast), StartDate = b.Last().StartDate }).ToList();
+        //var s = string.Join(Environment.NewLine, ratesForWave.Select(r => r.StartDate + "," + r.PriceCMALast));
+        //string.IsNullOrEmpty(s);
+        //ratesForWave.Reverse();
+        var cmas = rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount() * CmaRatioForWaveLength);
+        var csv = rates.Select((r, i) => new { r, i }).Zip(cmas, (r, ma) => new { r.r.PriceCMALast, ma }).Csv("{0},{1}", x => x.PriceCMALast, x => x.ma);
+        csv.IsEmpty();
+        var dmas = rates.Select((r, i) => new { r, i })
+          .Zip(cmas, (r, ma) => new { r, ma })
+          .DistinctUntilChanged(x => x.r.r.PriceCMALast.Sign(x.ma))
+          .ToArray();
+        var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.r.i - dma1.r.i).DefaultIfEmpty(0.0).ToArray();
+        var widthAvg = widths.AverageByIterations(-1).Average();
+        var waveWidth2 = widths.Where(w => w > widthAvg).Average().Div(bufferCount).ToInt();
+        return ratesForWave
+          .Extreams(waveWidth2, r => r.Price, r => r.StartDate)
+          .Skip(1)
+          .Take(1)
+          .Select(w => rates.FuzzyFind(w.Item2, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+          .DefaultIfEmpty(count)
+          .Select(c => (Func<int>)(() => c))
+          .Concat(new[] { freezedCount }.Where(_ => IsCorridorForwardOnly))
+          .Max(a => a());
       };
       return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
+    private CorridorStatistics ScanCorridorByWaveCount(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
+      var heightMin = ScanCorridorByStDevAndAngleHeightMinEx;
+      var heightMin2 = ScanCorridorByStDevAndAngleHeightMinEx2;
+      Func<int> freezedCount = () => CorridorStats.Rates.CopyLast(1).Select(r => RatesArray.SkipWhile(r2 => r2.StartDate < r.StartDate).Count()).FirstOrDefault(CorridorDistance);
+      Func<Rate, double> priceAvg02 = rate => (rate.PriceAvg2 - rate.PriceAvg1) / 2 + rate.PriceAvg1;
+      Func<Rate, double> priceAvg03 = rate => rate.PriceAvg1 + (rate.PriceAvg3 - rate.PriceAvg1) / 2;
+      var freeze = CorridorStats.Rates.SkipWhile(r => r.PriceAvg1.IsNaN()).Take(1)
+        .Any(rate => GetTradeEnterBy(true)(rate) >= priceAvg02(rate) || GetTradeEnterBy(false)(rate) <= priceAvg03(rate));
+      Func<IList<Rate>, int> scan = rates => {
+        if (freeze) return freezedCount();
+
+        MaGapMax = rates.Skip(rates.Count.Div(1.1).ToInt()).Max(r => r.PriceCMALast.Abs(r.PriceAvg));
+
+        var cmas = rates.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount() * CmaRatioForWaveLength);
+
+        if (CmaRatioForWaveLength == 0) {
+          var csv = rates.Select((r, i) => new { r, i }).Zip(cmas, (r, ma) => new { r.r.PriceCMALast, ma }).Csv("{0},{1}", x => x.PriceCMALast, x => x.ma);
+          csv.IsEmpty();
+        }
+
+        var maxCount = 1000;
+        var bufferCount = (rates.Count).Div(maxCount).ToInt();
+
+        var dmas = rates.Select((r, i) => new { r, i })
+          .Zip(cmas, (r, ma) => new { r, ma })
+          .DistinctUntilChanged(x => x.r.r.PriceCMALast.Sign(x.ma))
+          .ToArray();
+
+        var widths = dmas.Zip(dmas.Skip(1), (dma1, dma2) => (double)dma2.r.i - dma1.r.i).DefaultIfEmpty(0.0).ToArray();
+        var widthAvg = widths.AverageByIterations(-1).Average();
+        var waveWidth = widths.Where(w => w > widthAvg).Average().Div(bufferCount).ToInt();
+
+        var ratesForWave = rates
+          .Buffer(bufferCount)
+          .Select(b => new { Price = b.Average(r => r.PriceCMALast), StartDate = b.Last().StartDate });
+        return ratesForWave
+          .Extreams(waveWidth, r => r.Price, r => r.StartDate)
+          .Skip(CorridorWaveCount - 1)
+          .Take(1)
+          .Select(w => rates.FuzzyFind(w.Item2, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+          .Select(c => (Func<int>)(() => c))
+          .Concat(new[] { freezedCount }.Where(_ => IsCorridorForwardOnly))
+          .DefaultIfEmpty(freezedCount)
+          .DefaultIfEmpty(() => CorridorStats.Rates.Count)
+          .Max(a => a());
+      };
+      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
+    }
+    #region CorridorWaveCount
+    private int _CorridorWaveCount = 3;
+    [Category(categoryActive)]
+    public int CorridorWaveCount {
+      get { return _CorridorWaveCount; }
+      set {
+        if (_CorridorWaveCount != value) {
+          _CorridorWaveCount = value;
+          OnPropertyChanged("CorridorWaveCount");
+        }
+      }
+    }
+
+    #endregion
+    #region CmaRatioForWaveLength
+    private double _CmaRatioForWaveLength = 3;
+    [Category(categoryActive)]
+    public double CmaRatioForWaveLength {
+      get { return _CmaRatioForWaveLength; }
+      set {
+        if (_CmaRatioForWaveLength != value) {
+          _CmaRatioForWaveLength = value;
+          OnPropertyChanged("CmaRatioForWaveLength");
+        }
+      }
+    }
+
+    #endregion
     #region DoFineTuneCorridor
     private bool _DoFineTuneCorridor;
     [Category(categoryCorridor)]
@@ -1999,9 +1963,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #endregion
 
-    #region DistanceIterationsReal
-    void DistanceIterationsRealClear() { _DistanceIterationsReal = 0; }
-    private double _DistanceIterationsReal;
     private bool _crossesOk;
 
     #region DistancePerBar
@@ -2027,21 +1988,6 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    #endregion
-
-    [DisplayName("Distance Iterations")]
-    [Description("DistanceIterationsReal=F(DistanceIterations,X)")]
-    [Category(categoryCorridor)]
-    public double DistanceIterationsReal {
-      get { return _DistanceIterationsReal; }
-      set {
-        if (_DistanceIterationsReal < value) {
-          _DistanceIterationsReal = value;
-          OnPropertyChanged(() => DistanceIterationsReal);
-        }
-      }
-    }
-
     #endregion
 
     public double CorridorCorrelation { get; set; }
@@ -2093,84 +2039,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #region PriceFftLevelsFast
-    private int _PriceFftLevelsFast = 1;
-    [Category(categoryCorridor)]
-    public int PriceFftLevelsFast {
-      get { return _PriceFftLevelsFast; }
-      set {
-        if (_PriceFftLevelsFast != value) {
-          _PriceFftLevelsFast = value;
-          OnPropertyChanged("PriceFftLevelsFast");
-        }
-      }
-    }
-    #endregion
-
-    #region PriceFftLevelsSlow
-    private int _PriceFftLevelsSlow = 1;
-    [Category(categoryCorridor)]
-    public int PriceFftLevelsSlow {
-      get { return _PriceFftLevelsSlow; }
-      set {
-        if (_PriceFftLevelsSlow != value) {
-          _PriceFftLevelsSlow = value;
-          OnPropertyChanged("PriceFftLevelsSlow");
-        }
-      }
-    }
-
-    #endregion
-    #region VoltsFrameLength
-    private int _VoltsFrameLength;
-    [Category(categoryActive)]
-    public int VoltsFrameLength {
-      get { return _VoltsFrameLength; }
-      set {
-        if (_VoltsFrameLength != value) {
-          _VoltsFrameLength = value;
-          OnPropertyChanged("VoltsFrameLength");
-        }
-      }
-    }
-
-    #endregion
-    #region VoltsAverageLength
-    private double _VoltsAverageLength = 2880;
-    [Category(categoryActive)]
-    [Description("Frame length in hours")]
-    public double VoltsAverageLength {
-      get {
-        int min = 24, max = 24 * 10;
-        if (!_VoltsAverageLength.Between(min, max)) {
-          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, min, max } + "");
-          VoltsAverageLength = BarsCountCalc / 60;
-          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, Message = "New value" } + "");
-        }
-        return _VoltsAverageLength;
-      }
-      set {
-        if (_VoltsAverageLength != value) {
-          _VoltsAverageLength = value;
-          OnPropertyChanged("VoltsAverageLength");
-        }
-      }
-    }
-    #endregion
-    #region CloseTradesBeforeNews
-    private bool _CloseTradesBeforeNews = true;
-    [Category(categoryActiveYesNo)]
-    public bool CloseTradesBeforeNews {
-      get { return _CloseTradesBeforeNews; }
-      set {
-        if (_CloseTradesBeforeNews != value) {
-          _CloseTradesBeforeNews = value;
-          OnPropertyChanged("CloseTradesBeforeNews");
-        }
-      }
-    }
-
-    #endregion
-
+    public double MaGapMax { get; set; }
   }
 }

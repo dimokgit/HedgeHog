@@ -31,14 +31,13 @@ namespace HedgeHog.Alice.Store {
     Fixed = 1,
     TillFlat2 = 2,
     TillFlat3 = 3,
-    StDevHeight = 4,
+    WaveCount = 4,
     StDevHeightFft = 5,
     BigGap = 400,
     BigGap2 = 500,
     Spike = 6,
     Spike2 = 7,
     Spike231 = 8,
-    Spike24 = 9,
     Spike30 = 10,
     Distance = 11,
     Distance2 = 12,
@@ -63,8 +62,6 @@ namespace HedgeHog.Alice.Store {
     StDevSplits3 = 48,
     TimeRatio = 59,
     Height = 60,
-    TimeFrame = 62,
-    TimeFrame2 = 65,
     Ftt = 64,
     FttMACorr = 66
   }
@@ -228,6 +225,8 @@ namespace HedgeHog.Alice.Store {
     PriceAvg3,
     PriceAvg31,
     PriceAvg32,
+    CmaGapH,
+    CmaGapL
   }
   public enum TradeLevelsPreset {
     SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4

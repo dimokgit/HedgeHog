@@ -5,13 +5,18 @@
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!--#region CSS-->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
-  <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css" />
   <link href="Styles/BS-dropdown-submenu.css" rel="stylesheet" />
-  <link rel='stylesheet prefetch' href='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.css'>
+  <link rel='stylesheet prefetch' href='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.css' />
+  <link rel="stylesheet" href="Styles/pnotify.custom.min.css" />
+  <link rel="stylesheet" href="Styles/pnotify.picon.css" />
+  <link rel="stylesheet" href="Styles/oxygen/icons.css" />
+  <link href="Styles/font-wesome/font-awesome.css" rel="stylesheet" />
   <!--#endregion-->
   <!--#region scripts-->
   <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+
   <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
@@ -19,7 +24,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
   <script src="Scripts/jquery.signalR-2.1.2.min.js"></script>
-  <script src="Scripts/bootstrap-notify.min.js"></script>
+  <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
+  <script src="Scripts/pnotify.custom.min.js"></script>
   <script src='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.js'></script>
   <script src='d3-knockout/custom-binding-handlers/trend-line-chart-binding.js'></script>
   <script src='d3-knockout/app.js'></script>
@@ -104,8 +110,9 @@
       width: 100%;
       height: 5px;
     }
-    #settingsGrid input[type=text]{
-      width:100%;
+
+    #settingsGrid input[type=text] {
+      width: 100%;
     }
   </style>
   <script>
@@ -179,30 +186,32 @@
             <ul class="dropdown-menu multi-level">
               <li>
                 <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,1,true)">Buy</button>
-                <button data-bind="click:setTradeLevels.bind($data,1,false)">Sell</button>
-              </li>
-              <li>
                 <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,2,true)">Buy</button>
-                <button data-bind="click:setTradeLevels.bind($data,2,false)">Sell</button>
-              </li>
-              <li>
                 <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,3,true)">Buy</button>
-                <button data-bind="click:setTradeLevels.bind($data,3,false)">Sell</button>
-              </li>
-              <li>
                 <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,4,null)" />
-                <button data-bind="click:setTradeLevels.bind($data,4,true)">Buy</button>
-                <button data-bind="click:setTradeLevels.bind($data,4,false)">Sell</button>
               </li>
               <li role="presentation" class="divider"></li>
               <li><input type="button" value="Flip" data-bind="click:flipTradeLevels" /></li>
               <li role="presentation" class="divider"></li>
+              <!--Buy/Sell levels-->
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Buy Level</a>
+                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="true">
+                  <li><a href="#" data-bind="text:text,click:$root.setTradeLevelBuy" style="width:100%"></a></li>
+                </ul>
+              </li>
+              <li class="dropdown-submenu">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Sell Level</a>
+                <ul class="dropdown-menu" data-bind="foreach:tradeLevelBys" data-is-buy="false">
+                  <li><a href="#" data-bind="text:text,click:$root.setTradeLevelSell" style="width:100%"></a></li>
+                </ul>
+              </li>
+              <!--Other sub menus-->
               <li class="dropdown-submenu">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Levels</a>
                 <ul class="dropdown-menu">
+                  <li>DImok</li>
+                  <li>DImok</li>
                   <li>
                     <button>DImok</button>
                   </li>
@@ -232,9 +241,11 @@
           <li>
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">...</button>
             <ul class="dropdown-menu multi-level">
-              <li><button id="toggleIsActive">Active</button></li>
+              <li>
+                <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0)">Active 1</button>
+                <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,1)">Active 2</button>
+              </li>
               <li><input type="button" value="Manual" id="manualToggle" /></li>
-              <li><button id="toggleStartDate">StartDate</button></li>
               <li><button id="setDefaultTradeLevels">Default</button></li>
               <li><button id="alwaysOn">AlwaysOn</button></li>
               <li><button id="buySellInit">WrapTrade</button></li>
@@ -301,8 +312,8 @@
   </div>
   <!--#endregion-->
   <!--#region Charts-->
-  <div data-bind="lineChart: chartData"></div>
-  <div data-bind="lineChart: chartData2"></div>
+  <div data-bind="lineChart: chartData,lineChartPrice: price,chartNum:0"></div>
+  <div data-bind="lineChart: chartData2,lineChartPrice: price,chartNum:1"></div>
   <!--#endregion-->
   <!--#region Dialogs-->
   <!--#region Settings dialog-->

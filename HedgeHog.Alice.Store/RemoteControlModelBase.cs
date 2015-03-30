@@ -44,6 +44,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     protected ITradesManager tradesManager { get { return MasterModel.TradesManager; } }
+    public Trade[] GetClosedTrades(string pair) { return tradesManager.GetClosedTrades(pair); }
     public string VirtualPair { get; set; }
     public DateTime VirtualStartDate { get; set; }
     Task backTestThread;

@@ -26,17 +26,19 @@ namespace HedgeHog {
     static public TaskScheduler DispatcherTaskScheduler {
       get {
         if (_DispatcherTaskScheduler == null)
-          throw new NullReferenceException("DispatcherScheduler is null.\nCall DataFlowProcessors.Initialize() method as early as possible, but right after GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize().");
+          throw new NullReferenceException("DispatcherScheduler is null.\nCall DataFlowProcessors.Initialize() method as early as possible");//, but right after GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize().");
         return _DispatcherTaskScheduler;
       }
     }
     static DataFlowProcessors() {
-      GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.Initialize();
+      ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => {
         _DispatcherTaskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
         _UIDispatcherScheduler = DispatcherScheduler.Current;
-      }), DispatcherPriority.Send);
+      });
     }
-    public static void Initialize() { }
+    public static void Initialize() {
+    }
     public static BroadcastBlock<Action<Unit>> SubscribeToBroadcastBlock() { return SubscribeToBroadcastBlock<Unit>(() => Unit.Default); }
     public static BroadcastBlock<Action<Unit>> SubscribeToBroadcastBlockOnDispatcher() { return SubscribeToBroadcastBlockOnDispatcher<Unit>(() => Unit.Default); }
     public static BroadcastBlock<Action<T>> SubscribeToBroadcastBlockOnDispatcher<T>(Func<T> getT) { return SubscribeToBroadcastBlock(getT, DispatcherTaskScheduler); }

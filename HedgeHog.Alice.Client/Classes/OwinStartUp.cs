@@ -41,7 +41,6 @@ namespace HedgeHog.Alice.Client {
       var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
         time = tm.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-        tpm = tm.TicksPerMinuteAverage.ToInt(),
         dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
         hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
         rsdMin = tm.RatesStDevMinInPips,
@@ -119,14 +118,22 @@ namespace HedgeHog.Alice.Client {
   }
   public class MyHub : Hub {
     Lazy<RemoteControlModel> remoteControl;
-    IObservable<string> _PriceChangedObservable;
-    Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
-    public IObservable<string> PriceChangedObservable {
-      get { return (_PriceChangedObservable = _PriceChangedObservable.InitBufferedObservable(ref _PriceChangedSubject, exc => Log = exc)); }
+    static Exception Log { set { GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(value)); } }
+    static ISubject<Action> _AskRatesSubject;
+    static ISubject<Action> AskRatesSubject {
+      get { return _AskRatesSubject; }
     }
-    ISubject<string> _PriceChangedSubject;
-    ISubject<string> PriceChangedSubject {
-      get { return (_PriceChangedSubject = _PriceChangedSubject.InitBufferedObservable(ref _PriceChangedObservable, exc => Log = exc)); }
+    static ISubject<Action> _AskRates2Subject;
+    static ISubject<Action> AskRates2Subject {
+      get { return _AskRates2Subject; }
+    }
+    static MyHub() {
+      _AskRatesSubject = new Subject<Action>();
+      _AskRatesSubject.InitBufferedObservable<Action>(exc => Log = exc);
+      _AskRatesSubject.Subscribe(a => a());
+      _AskRates2Subject = new Subject<Action>();
+      _AskRates2Subject.InitBufferedObservable<Action>(exc => Log = exc);
+      _AskRates2Subject.Subscribe(a => a());
     }
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
@@ -139,7 +146,8 @@ namespace HedgeHog.Alice.Client {
         dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
         hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
         rsdMin = tm.RatesStDevMinInPips,
-        equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0)
+        equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
+        price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid }
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       });
       var tm2 = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
@@ -180,11 +188,11 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
-    public void ToggleStartDate(string pair) {
-      UseTradingMacro(pair, tm => tm.ToggleCorridorStartDate());
+    public void ToggleStartDate(string pair,int chartNumber) {
+      UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate());
     }
-    public void ToggleIsActive(string pair) {
-      UseTradingMacro(pair, tm => tm.ToggleIsActive());
+    public void ToggleIsActive(string pair,int chartNumber) {
+      UseTradingMacro(pair, chartNumber, tm => tm.ToggleIsActive());
     }
     public void FlipTradeLevels(string pair) {
       UseTradingMacro(pair, tm => tm.FlipTradeLevels());
@@ -207,21 +215,32 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int pips) {
       UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
-    public void AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
-      UseTradingMacro(pair, 0, tm =>
-        Clients.Caller.addRates(remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)));
+    public ExpandoObject AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+      return UseTradingMacro(pair, 0, tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
     }
-    public void AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+    public ExpandoObject AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
       try {
         var tm = GetTradingMacro(pair, 1);
-        Clients.Caller.addRates2(tm != null && tm.IsActive ? remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm) : new ExpandoObject());
+        return tm != null && tm.IsActive
+          ? remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)
+          : new ExpandoObject();
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
       }
     }
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
       bool? b = isBuy == null ? null : (bool?)isBuy;
       UseTradingMacro(pair, tm => tm.SetTradeLevelsPreset(presetLevels, b));
+    }
+    public void SetTradeLevel(string pair, bool isBuy,int level) {
+      UseTradingMacro(pair, tm => {
+        if (isBuy) {
+          tm.LevelBuyBy = (TradeLevelBy)level;
+        } else {
+          tm.LevelSellBy = (TradeLevelBy)level;
+        }
+      });
     }
     public object[] ReadNews() {
       var date = DateTimeOffset.UtcNow.AddMinutes(-60);
@@ -251,6 +270,14 @@ namespace HedgeHog.Alice.Client {
           .ForEach(p => e.Add(p.Name, p.GetValue(tm)));
         return e as ExpandoObject;
       });
+    }
+    public Trade[] ReadClosedTrades(string pair) {
+      try {
+        return remoteControl.Value.GetClosedTrades(pair);
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
+      }
     }
     #endregion
     double IntOrDouble(double d, double max = 10) {

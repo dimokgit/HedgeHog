@@ -52,7 +52,7 @@ namespace HedgeHog {
     /// <param name="polyOrder"></param>
     /// <returns>Coeffs</returns>
     public static double[] Regress(this IList<double> dY, int polyOrder) {
-      return Regress(Enumerable.Range(0,dY.Count).Select(i=>(double)i).ToArray(), dY.SafeArray(), polyOrder);
+      return Regress(Enumerable.Range(0, dY.Count).Select(i => (double)i).ToArray(), dY.SafeArray(), polyOrder);
     }
     public static double[] Regress(this double[] dX, double[] dY, int polyOrder) {
       if (polyOrder == 1) throw new InvalidCastException(new { polyOrder, error = "Use Linear instead" } + "");
@@ -66,13 +66,16 @@ namespace HedgeHog {
         for (int j = 0; j < nPolyOrder + 1; j++) {
           dZ[i, j] = j == 1 ? dX[i] : j == 2 ? dX[i] * dX[i] : Math.Pow(dX[i], (double)j);
         }
-      } 
+      }
       return MatrixNumeric.Regress(dZ, dY);
 
     }
 
     public static void SetRegressionPrice(this double[] coeffs, int start, int count, Action<int, double> a) {
-      Enumerable.Range(start, count).ToList().ForEach(i => a(i, coeffs.RegressionValue(i)));
+      var end = start + count;
+      for (var i = start; i < end; i++)
+        a(i, coeffs.RegressionValue(i));
+      //Enumerable.Range(start, count).ToList().ForEach(i => a(i, coeffs.RegressionValue(i)));
     }
     /// <summary>
     /// Regression line
@@ -83,7 +86,7 @@ namespace HedgeHog {
       return values.Regression(1);
     }
     public delegate T RegressionResultProjector<T>(double[] coeffs, double[] line);
-    public static T Regression<T>(this IList<double> values, int polyOrder,RegressionResultProjector<T> project) {
+    public static T Regression<T>(this IList<double> values, int polyOrder, RegressionResultProjector<T> project) {
       double[] coeffs;
       var line = values.Regression(polyOrder, out coeffs);
       return project(coeffs, line);
@@ -110,7 +113,7 @@ namespace HedgeHog {
       return coeffs.RegressionLine(values.Count);
     }
 
-    public static double[] RegressionLine(this double[] coeffs,int lineLength) {
+    public static double[] RegressionLine(this double[] coeffs, int lineLength) {
       var parabola = new double[lineLength];
       coeffs.SetRegressionPrice(0, lineLength, (i, v) => parabola[i] = v);
       return parabola;
@@ -147,9 +150,13 @@ namespace HedgeHog {
     /// <returns>Regression value by position</returns>
     public static double RegressionValue(this double[] coeffs, int i) {
       double y = 0; int j = 0;
-      for (var ii = 0; ii < coeffs.Length; ii++)
-        y += coeffs[ii] * (ii == 0 ? 1 : ii == 1 ? i : Math.Pow(i, ii));
-        //y += coeffs[ii] * Math.Pow(i, ii);
+      int n = coeffs.Length;
+      if (n == 2) {
+        y = coeffs[0] + coeffs[1] * i;
+      } else
+        for (var ii = 0; ii < n; ii++)
+          y += coeffs[ii] * (ii == 1 ? i : ii == 0 ? 1 : Math.Pow(i, ii));
+      //y += coeffs[ii] * Math.Pow(i, ii);
       //coeffs.ToList().ForEach(c => y += coeffs[j] * Math.Pow(i, j++));
       return y;
     }
