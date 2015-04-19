@@ -8,8 +8,6 @@ using System.Reflection;
 
 namespace UnitLib
 {
-    
-    
     /// <summary>
     ///This is a test class for MathExtensionsTest and is intended
     ///to contain all MathExtensionsTest Unit Tests
@@ -62,7 +60,6 @@ namespace UnitLib
     //}
     //
     #endregion
-
 
     /// <summary>
     ///A test for AverageByIterations
@@ -176,6 +173,13 @@ namespace UnitLib
     ///</summary>
     [TestMethod()]
     public void RoundTest() {
+      var date = DateTime.Parse("1999-01-01 15:14:13");
+      var dateFloor = DateTime.Parse("1999-01-01 15:14:00");
+      var dateCieling = DateTime.Parse("1999-01-01 15:15:00");
+      Assert.AreEqual(dateFloor, date.Round(MathExtensions.RoundTo.Minute));
+      Assert.AreEqual(dateFloor, date.Round(MathExtensions.RoundTo.MinuteFloor));
+      Assert.AreEqual(dateCieling, date.Round(MathExtensions.RoundTo.MinuteCieling));
+      return;
       DateTime dt = DateTime.Parse("1/1/1990  15:34");
       int period = 3;
       DateTime expected = new DateTime(); // TODO: Initialize to an appropriate value
@@ -183,6 +187,7 @@ namespace UnitLib
       actual = MathExtensions.Round(dt, period);
       Assert.AreEqual(expected, actual);
       Assert.Inconclusive("Verify the correctness of this test method.");
+
     }
 
     /// <summary>

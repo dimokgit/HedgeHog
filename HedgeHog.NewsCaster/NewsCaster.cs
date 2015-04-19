@@ -59,6 +59,7 @@ namespace HedgeHog.NewsCaster {
         };
       }
       static IEnumerable<NewsEvent> ParseWeek(MyFxBookEvents events) {
+        if (events.response.events == null) return new NewsEvent[0];
         return from evt in events.response.events.@event
                select new NewsEvent() {
                  Country = evt.currency,

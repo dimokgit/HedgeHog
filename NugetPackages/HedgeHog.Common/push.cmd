@@ -1,1 +1,0 @@
-﻿nuget push HedgeHog.Common.1.2.0.nupkg -ApiKey 363997b2-7eb9-4721-9825-9bedef8e9f87

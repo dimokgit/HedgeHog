@@ -50,20 +50,6 @@ namespace HedgeHog.Alice.Store {
     CorridorStatistics ShowVoltsByRsd() {
       return ShowVolts(RatesRsd, 2);
     }
-    CorridorStatistics ShowVoltsByHarmonicMin() {
-      RatesInternal.Select((r, i) => new { r, i })
-        .Skip(CorridorDistance - 1)
-        .SkipWhile(r => !GetVoltage(r.r).IsNaN())
-        .Select(r => r.i)
-        .ForEach(endIndex => {
-          var a = RatesInternal.CopyToArray(endIndex - CorridorDistance + 1, CorridorDistance);
-          var hour = FastHarmonics(a, 29, 30).First().Hours;
-          SetVoltage(RatesInternal[endIndex], hour);
-        });
-      //RatesArray.AsEnumerable().Reverse().TakeWhile(r => GetVoltage(r).IsNaN())
-      //  .ForEach(rate => { SetVoltage(rate, HarmonicMin); });
-      return ShowVolts(HarmonicMin, 3);
-    }
     CorridorStatistics ShowVoltsByStDevPercentage() {
       var corridor = WaveShort.Rates.ScanCorridorWithAngle(CorridorGetHighPrice(), CorridorGetLowPrice(), TimeSpan.Zero, PointSize, CorridorCalcMethod);
       var middle = WaveShort.Rates.Average(_priceAvg);

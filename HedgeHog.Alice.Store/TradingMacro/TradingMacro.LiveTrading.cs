@@ -222,6 +222,12 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    class UpdateEntryOrdersBuffer : AsyncBuffer<UpdateEntryOrdersBuffer, Action> {
+      protected override Action PushImpl(Action action) {
+        return action;
+      }
+    }
+    UpdateEntryOrdersBuffer _updateEntryOrdersBuffer = UpdateEntryOrdersBuffer.Create();
     void SubscribeToEntryOrderRelatedEvents() {
       var bsThrottleTimeSpan = 0.1.FromSeconds();
       var cpThrottleTimeSpan = 0.25.FromSeconds();
@@ -311,7 +317,7 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
           .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
-          .Subscribe(updateEntryOrders);
+          .Subscribe(reason => _updateEntryOrdersBuffer.Push(() => updateEntryOrders(reason)));
         updateEntryOrders("Start Tracking");
       };
       #endregion

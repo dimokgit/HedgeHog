@@ -730,8 +730,9 @@ namespace HedgeHog {
       });
     }
     Segment trendLine_2;
-    Rate[] TrendLine_2 {
+    IList<Rate> TrendLine_2 {
       set {
+        return;
         if (trendLine_2 == null) {
           trendLine_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkGray) };
           plotter.Children.Add(trendLine_2);
@@ -746,7 +747,7 @@ namespace HedgeHog {
       }
     }
     Segment trendLine2_2;
-    Rate[] TrendLine2_2 {
+    IList<Rate> TrendLine2_2 {
       set {
         if (trendLine2_2 == null) {
           trendLine2_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.RoyalBlue) };
@@ -762,7 +763,7 @@ namespace HedgeHog {
       }
     }
     Segment trendLine3_2;
-    Rate[] TrendLine3_2 {
+    IList<Rate> TrendLine3_2 {
       set {
         if (trendLine3_2 == null) {
           trendLine3_2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.RoyalBlue) };
@@ -778,10 +779,48 @@ namespace HedgeHog {
       }
     }
 
-    public void SetTrendLines2(Rate[] rates) {
+    public void SetTrendLines2(IList<Rate> rates) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
         TrendLine_2 = TrendLine2_2 = TrendLine3_2 = rates;
+      });
+    }
+    Segment trendLine2_1;
+    IList<Rate> TrendLine2_1 {
+      set {
+        if (trendLine2_1 == null) {
+          trendLine2_1 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.MediumSeaGreen) };
+          plotter.Children.Add(trendLine2_1);
+        }
+        if (value == null)
+          trendLine2_1.Visibility = System.Windows.Visibility.Collapsed;
+        else {
+          trendLine2_1.Visibility = System.Windows.Visibility.Visible;
+          trendLine2_1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg2);
+          trendLine2_1.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg2);
+        }
+      }
+    }
+    Segment trendLine3_1;
+    IList<Rate> TrendLine3_1 {
+      set {
+        if (trendLine3_1 == null) {
+          trendLine3_1 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.MediumSeaGreen) };
+          plotter.Children.Add(trendLine3_1);
+        }
+        if (value == null)
+          trendLine3_1.Visibility = System.Windows.Visibility.Collapsed;
+        else {
+          trendLine3_1.Visibility = System.Windows.Visibility.Visible;
+          trendLine3_1.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg3);
+          trendLine3_1.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg3);
+        }
+      }
+    }
+    public void SetTrendLines1(IList<Rate> rates) {
+      if (!rates.Any()) return;
+      GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
+        TrendLine2_1 = TrendLine3_1 = rates;
       });
     }
 
@@ -2216,7 +2255,7 @@ Never mind i created CustomGenericLocationalTicksProvider and it worked like a c
                 SetPoint(i++, GetPriceHigh(rp), GetPriceLow(rp)/* < rn.PriceAvg ? rp.PriceLow : rp.PriceHigh*/, GetPriceMA(rp), rp);
                 return rn;
               });
-              if (CalculateLastPrice == null)
+              if (CalculateLastPrice == null || animatedPriceY.Last() == 0)
                 SetPoint(i, GetPriceHigh(lastRate), GetPriceLow(lastRate), GetPriceMA(lastRate), lastRate);
               //SetPoint(i, CalculateLastPrice(lastRate, GetPriceHigh), CalculateLastPrice(lastRate, GetPriceLow), CalculateLastPrice(lastRate, GetPriceMA), lastRate);
             }

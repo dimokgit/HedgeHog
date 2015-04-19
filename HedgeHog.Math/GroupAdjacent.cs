@@ -5,36 +5,32 @@ using System.Text;
 
 namespace HedgeHog {
   public static class GroupAdjacentExtention {
-    public static IEnumerable<IGrouping<TKey, TSource>>
-      GroupByAdjacent<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
-      keyComparer = keyComparer ?? (Func<TKey, TKey, bool>)((o1, o2) => o1.Equals(o2));
-      TKey last = default(TKey);
+    public static IEnumerable<TSource>
+      DistinctLastUntilChanged<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
+        keyComparer = keyComparer ?? EqualityComparer<TKey>.Default.Equals;
+      TKey lastKey = default(TKey);
+      TSource last = default(TSource);
       bool haveLast = false;
-      List<TSource> list = new List<TSource>();
       foreach (TSource s in source) {
         TKey k = keySelector(s);
         if (haveLast) {
-          if (!keyComparer(k, last)) {
-            yield return new GroupOfAdjacent<TSource, TKey>(list, last);
-            list = new List<TSource>();
-            list.Add(s);
-            last = k;
-          } else {
-            list.Add(s);
+          if (!keyComparer(k, lastKey)) {
+            yield return last;
+            lastKey = k;
           }
+          last = s;
         } else {
-          list.Add(s);
-          last = k;
+          last = s;
+          lastKey = k;
           haveLast = true;
         }
       }
       if (haveLast)
-        yield return new GroupOfAdjacent<TSource, TKey>(list, last);
+        yield return last;
     }
-    public static IEnumerable<IGrouping<TKey, TSource>> 
-      GroupAdjacent<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector,Func<TKey,TKey,bool> keyComparer = null) 
-    {
-      keyComparer = keyComparer ?? (Func<TKey, TKey, bool>)((o1, o2) => o1.Equals(o2));
+    public static IEnumerable<IGrouping<TKey, TSource>>
+      GroupByAdjacent<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TKey, bool> keyComparer = null) {
+        keyComparer = keyComparer ?? EqualityComparer<TKey>.Default.Equals;
       TKey last = default(TKey);
       bool haveLast = false;
       List<TSource> list = new List<TSource>();
@@ -48,7 +44,6 @@ namespace HedgeHog {
             last = k;
           } else {
             list.Add(s);
-            last = k;
           }
         } else {
           list.Add(s);

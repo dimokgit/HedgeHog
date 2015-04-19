@@ -263,6 +263,11 @@ namespace HedgeHog {
     public static IEnumerable<T> TakeEx<T>(this IEnumerable<T> list, int count) {
       return count >= 0 ? list.Take(count) : list.Skip(list.Count() + count);
     }
+    public static T Last<T>(this IList<T> list, int index) {
+      if (list.Count == 0)
+        return default(T);
+      return list[list.Count - index - 1];
+    }
     /// <summary>
     /// Last By Count
     /// </summary>

@@ -160,7 +160,7 @@ namespace HedgeHog.Alice.Store {
       return adjustExitLevels;
     }
     bool _limitProfitByRatesHeight;
-    [WwwSetting]
+    [WwwSetting(Index=wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     public bool LimitProfitByRatesHeight {
       get { return _limitProfitByRatesHeight; }

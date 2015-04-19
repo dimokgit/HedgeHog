@@ -49,6 +49,9 @@ namespace HedgeHog.Alice.Store {
     static bool IsTresholdOk(double value, double treshold) {
       return treshold >= 0 ? value >= treshold : value < -treshold;
     }
+    static bool IsTresholdAbsOk(double value, double treshold) {
+      return treshold >= 0 ? value.Abs() >= treshold : value.Abs() < -treshold;
+    }
     delegate T IterationLooperDelegate<T>(int start, int end, int loop);
     IterationLooperDelegate<T> GetLoper<T>(Func<int, int, int> nextStep, Func<int, T> looper, Func<IEnumerable<T>, T> counter) {
       return (start, end, loop) =>
@@ -107,20 +110,19 @@ namespace HedgeHog.Alice.Store {
           .IfEmpty(() => last)
           .Select(a => a.d);
       });
-      //UseRatesInternal(ri => ri.Count - ri.TakeWhile(r => r.StartDate < date).Count()
-      Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate.Round(MathExtensions.RoundTo.Minute) };
-      Func<DateTime, int> dateToCount = date => prices.FuzzyFind(date, isBetween) + 1;
-      var count = Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
-        a => dateToCount(a.IfEmpty(defaultDate).Single()));
-      Func<DateTime, int> dateToCount2 = date => UseRatesInternal(ri => ri.Count - ri.FuzzyFind(date, isBetweenRates) + 1);
-      count = (isTicks ? dateToCount2(prices[count - 1].StartDate) : count);//.Max(_corridorLength2.Div(CorridorLengthRatio).ToInt());
-
-      var canGoBack = BarsCountCalc == BarsCount || count > BarsCountCalc;
-      var canGoForward = BarsCountCalc.Div(count) >= 1.1;
-      if (canGoBack || canGoForward)
-        BarsCountCalc = count;
+      Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate.Round(MathExtensions.RoundTo.MinuteFloor) };
+      Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
+      var corrDate = BarsCountLastDate;
+      Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
+        a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single().Round(MathExtensions.RoundTo.MinuteFloor)));
+      BarsCountLastDate = corrDate.Max(BarsCountLastDate);
+      BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
     }
-
+    DateTime __barsCountLastDate = DateTime.MinValue;
+    public DateTime BarsCountLastDate {
+      get { return __barsCountLastDate; }
+      set { __barsCountLastDate = value; }
+    }
     static IList<T> IteratorLopper<T>(int start, int end, Func<int, int, int> nextStep, IterationLooperDelegate<T> corridor, Func<T, int> getCount) {
       var corridors = corridor(start, end, 0).Yield().ToList();
       for (var loop = 0; true; ) {

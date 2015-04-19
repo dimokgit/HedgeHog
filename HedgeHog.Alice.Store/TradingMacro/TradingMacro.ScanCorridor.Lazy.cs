@@ -20,9 +20,24 @@ namespace HedgeHog.Alice.Store {
       var rates = ratesCount.DefaultIfEmpty(ratesReversed).First();
       return ScanCorridorLazy(rates, new Lazy<int>(() => counter(rates)), showVolts);
     }
+
+    class TaskRunner {
+      Task _task;
+      Action _action;
+      public void Run(Action a) {
+        if (_task != null && !_task.IsCompleted)
+          _action = a;
+        else {
+          _action = null;
+          _task = Task.Run(a);
+          _task.ContinueWith(_ => {
+            if (_action != null) Run(_action);
+          });
+        }
+      }
+    }
+    TaskRunner _corridorsTask = new TaskRunner();
     private CorridorStatistics ScanCorridorLazy(IList<Rate> ratesReversed, Lazy<int> lazyCount, Func<CorridorStatistics> showVolts = null, Action postProcess = null) {
-      Stopwatch sw = Stopwatch.StartNew();
-      var swDict = new Dictionary<string, double>();
       Lazy<int> lenghForwardOnly = new Lazy<int>(() => {
         if (ratesReversed.Count < RatesArray.Count) return ratesReversed.Count;
         var date = CorridorStats.Rates.Last().StartDate;
@@ -39,19 +54,19 @@ namespace HedgeHog.Alice.Store {
           .TakeWhile(r => r.StartDate > ratesReversed[lazyCount.Value].StartDate).ToArray()
         : ratesReversed.SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value).Take(lengthMax.Value.Min(lazyCount.Value)).ToArray()
         : ratesReversed.SkipWhile(r => r.StartDate > startMax.Value).TakeWhile(r => r.StartDate >= startMin).ToArray();
-      swDict.Add("0", sw.ElapsedMilliseconds); sw.Restart();
       if (IsCorridorForwardOnly && _isCorridorStopDateManual && rates.Last().StartDate < CorridorStats.StartDate)
         WaveShort.ResetRates(CorridorStats.Rates);
       else WaveShort.ResetRates(rates);
+      if (CorridorStartDate.HasValue)
+        _corridorsTask.Run(() => {
+          _corridorLength1 = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate1).Count();
+          _corridorLength2 = ratesReversed.TakeWhile(r => r.StartDate >= _corridorStartDate2).Count();
+        });
       if (postProcess != null) postProcess();
-      swDict.Add("1", sw.ElapsedMilliseconds); sw.Restart();
-      try {
-        return (showVolts ?? GetShowVoltageFunction())();
-      } finally {
-        swDict.Add("SHowVolts", sw.ElapsedMilliseconds);sw.Restart();
-        //Log = new Exception(("[{2}]{0}:{1:n1}ms" + Environment.NewLine + "{3}").Formater(MethodBase.GetCurrentMethod().Name, sw.ElapsedMilliseconds, Pair, string.Join(Environment.NewLine, swDict.Select(kv => "\t" + kv.Key + ":" + kv.Value))));
-
-      }
+      TrendLines1 = new Lazy<IList<Rate>>(() => CalcTrendLines(_corridorLength1));
+      TrendLines = new Lazy<IList<Rate>>(SetTrendLines1231);
+      TrendLines2 = new Lazy<IList<Rate>>(() => CalcTrendLines(_corridorLength2));
+      return (showVolts ?? GetShowVoltageFunction())();
     }
     private CorridorStatistics ShowVoltsByStDevIntegral() {
       SetVoltsByStDevDblIntegral3(UseRatesInternal(ri => ri.Reverse().ToArray()), VoltsFrameLength);

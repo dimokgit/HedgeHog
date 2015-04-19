@@ -107,6 +107,11 @@
     this.flipTradeLevels = function () {
       serverCall("flipTradeLevels", [pair], resetPlotter);
     };
+    this.setTradeLevelsFlip = function (l) {
+      serverCall("setPresetTradeLevels", [pair, l, null], function () {
+        serverCall("flipTradeLevels", [pair], resetPlotter);
+      });
+    }
     this.setTradeLevels = function (l, isBuy) {
       serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], resetPlotter);
     };
@@ -115,10 +120,6 @@
     }
     function toggleStartDate(chartNum) {
       serverCall("toggleStartDate", [pair, chartNum]);
-    }
-    function saveTradeSettings() {
-      var ts = settingsGrid().jqPropertyGrid('get');
-      serverCall("saveTradeSettings", [pair, ts],resetPlotter);
     }
     function setCorridorStartDate(chartNumber, index) {
       serverCall("setCorridorStartDateToNextWave", [pair, chartNumber, index === 1]);
@@ -129,6 +130,32 @@
     function setTradeLevel(isBuy, data) {
       serverCall("setTradeLevel", [pair, isBuy, data.value], resetPlotter);
     }
+    function setTradeCloseLevel(isBuy, data) {
+      serverCall("setTradeCloseLevel", [pair, isBuy, data.value], resetPlotter);
+    }
+    function moveCorridorWavesCount(chartIndex,step) {
+      serverCall("moveCorridorWavesCount", [pair, chartIndex, step * 0.1], resetPlotter);
+    }
+    function saveTradeSettings() {
+      var ts = settingsGrid().jqPropertyGrid('get');
+      settingsGrid().jqPropertyGrid('destroy');
+      settingsGrid().empty();
+      serverCall("saveTradeSettings", [pair, ts], resetPlotter);
+    }
+    function readTradeSettings() {
+      settingsGrid().jqPropertyGrid('destroy');
+      settingsGrid().empty();
+      serverCall("readTradeSettings", [pair], function (ts) {
+        var tsMeta = {
+          CorridorCrossesMaximum: {
+            type: 'number',
+            options: { step: 1, numberFormat: "n" }
+          },
+          TakeProfitBSRatio: { type: 'number', options: { step: 0.1, numberFormat: "n" } }
+        };
+        settingsGrid().jqPropertyGrid(ts, tsMeta);
+      });
+    }
     // #endregion
     // #endregion
 
@@ -137,11 +164,15 @@
     this.tradeLevelBys = ko.observableArray([]);
     this.setTradeLevelBuy = setTradeLevel.bind(null,true);
     this.setTradeLevelSell = setTradeLevel.bind(null, false);
+    this.setTradeCloseLevelBuy = setTradeCloseLevel.bind(null, true);
+    this.setTradeCloseLevelSell = setTradeCloseLevel.bind(null, false);
+    this.moveCorridorWavesCount = moveCorridorWavesCount;
     // #endregion
     // #region Trade Settings
     this.saveTradeSettings = saveTradeSettings;
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
+    this.readTradeSettings = readTradeSettings;
     // #endregion
     // #region News
     this.readNews = function () {
@@ -261,10 +292,13 @@
         askBid: askBid || {},
         trades: trades || [],
         isTradingActive: isTradingActive || false,
+
         setTradeLevelActive: setTradeLevelActive,
         setCorridorStartDate: setCorridorStartDate,
         toggleIsActive: toggleIsActive,
         toggleStartDate: toggleStartDate,
+        moveCorridorWavesCount: moveCorridorWavesCount,
+
         shouldUpdateData: shouldUpdateData,
         chartNum: chartNum,
         hasStartDate: hasStartDate,
@@ -345,29 +379,16 @@
     chat.client.addMessage = addMessage;
     chat.client.priceChanged = priceChanged;
     // #endregion
-    var defs = [];
     // #region Start the connection.
     //$.connection.hub.logging = true;
     $.connection.hub.start().done(function () {
 
       //#region Load static data
-      var defTS = defs.push($.Deferred()) - 1;
-      chat.server.readTradeSettings(pair).done(function (ts) {
-        var tsMeta = {
-          CorridorCrossesMaximum: {
-            type: 'number',
-            options: { step: 1, numberFormat: "n" }
-          },
-          TakeProfitBSRatio: { type: 'number', options: { step: 0.1, numberFormat: "n" } }
-        };
-        settingsGrid().jqPropertyGrid(ts, tsMeta);
-        defs[defTS].resolve();
-      });
       chat.server.readTradeLevelBys().done(function (levels) {
         dataViewModel.tradeLevelBys.push.apply(dataViewModel.tradeLevelBys, $.map(levels, function (v, n) { return { text: n, value: v }; }));
       });
       //dataViewModel.readNews();
-      $.when.apply($, defs).done(function () {
+      $.when.apply($, []).done(function () {
         ko.applyBindings(dataViewModel);
       });
       //#endregion

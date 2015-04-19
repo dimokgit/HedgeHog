@@ -4568,7 +4568,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.FreezeCorridorStartDate"/></summary>
         public const string FreezeCorridorStartDate = "FreezeCorridorStartDate";
 
-        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetTrendLines1231"/></summary>
+        /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalcTrendLines"/></summary>
         public const string SetTrendLines1231 = "SetTrendLines1231";
 
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.SetTrendLines1231_2"/></summary>
@@ -5825,10 +5825,10 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to method <see cref="HedgeHog.Alice.Store.TradingMacro.CalculateTakeProfit"/></summary>
         public const string CalculateTakeProfit = "CalculateTakeProfit";
 
-        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._TakeProfitBSRatio"/></summary>
+        /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._TakeProfitXRatio"/></summary>
         public const string _TakeProfitBSRatio = "_TakeProfitBSRatio";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitBSRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitXRatio"/></summary>
         public const string TakeProfitBSRatio = "TakeProfitBSRatio";
 
         /// <summary>Refers to field <see cref="HedgeHog.Alice.Store.TradingMacro._ratesHeight_2"/></summary>
@@ -7896,7 +7896,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.HasTradesByDistanceDelegate"/></summary>
         public static PropertyPath HasTradesByDistanceDelegatePath { get { return new PropertyPath("HasTradesByDistanceDelegate"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitBSRatio"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.TakeProfitXRatio"/></summary>
         public static PropertyPath TakeProfitBSRatioPath { get { return new PropertyPath("TakeProfitBSRatio"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.TradingMacro.IsInVitualTrading"/></summary>

@@ -747,9 +747,6 @@ namespace HedgeHog.Alice.Client {
           ///_tradingStatistics.AllowedLotMinimum = tms.Select(tm => tm.LotSizeByLossBuy.Max(tm.LotSizeByLossSell)).Min();
           {
             _tradingStatistics.CurrentGrossInPips = _tradingStatistics.GetNetInPips();
-            //tms.Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
-            //.ToArray().Yield()
-            //.Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot)).First();
           }
           _tradingStatistics.CurrentLossInPips = tms.Sum(tm => tm.CurrentLossInPips);
           _tradingStatistics.OriginalProfit = MasterModel.AccountModel.OriginalProfit;
@@ -760,16 +757,11 @@ namespace HedgeHog.Alice.Client {
     }
 
     private double CalculateCurrentNetInPips() {
-      TradingMacro[] tms = GetTradingMacrosForStatistics();
-      var currentLoss = _tradingStatistics.CurrentLoss = tms.Sum(tm => tm.CurrentLoss);
-      var totalGross = tradesManager.GetTrades().Net2() + currentLoss;
-      Func<TradingMacro, double> calcGrossInPips = tm => tradesManager.MoneyAndLotToPips(totalGross, tm.CurrentGrossLot, tm.Pair);
-      // TODO: should be weighted average
-      var currentGrossInPips = tms.Where(tm => tm.Trades.Any())
-        .IfEmpty(() => tms)
-        .Select(calcGrossInPips)
-        .Average();
-      return currentGrossInPips;
+      return GetTradingMacrosForStatistics()
+        .Select(tm => new { tm.CurrentGrossInPips, tm.CurrentGrossLot })
+        .ToArray().Yield()
+        .Select(_ => _.Sum(tm => tm.CurrentGrossInPips * tm.CurrentGrossLot) / _.Sum(tm => tm.CurrentGrossLot))
+        .FirstOrDefault();
     }
 
     public TradingMacro[] GetTradingMacrosForStatistics() {
@@ -1083,7 +1075,7 @@ namespace HedgeHog.Alice.Client {
             .Reverse().ToArray();
         } else return rates3.Select(map).ToArray();
       });
-      var trends = tm.SetTrendLines1231_1(rates).OrderBars().ToList();
+      var trends = tm.TrendLines.Value.ToList();
       var trendLines = new {
         dates = new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
@@ -1096,7 +1088,7 @@ namespace HedgeHog.Alice.Client {
         close21 = trends.ToArray(t => t.Trends.PriceAvg21),
         close31 = trends.ToArray(t => t.Trends.PriceAvg31)
       }.ToExpando();
-      var trends2 = tm.SetTrendLines1231_2(rates).OrderBars().ToList();
+      var trends2 = tm.TrendLines2.Value.ToList();
       var trendLines2 = new {
         dates = trends2.Count == 0
         ? new DateTimeOffset[0]
@@ -1227,7 +1219,8 @@ namespace HedgeHog.Alice.Client {
             /*10*/, tm.WorkflowStep
           );
           charter.SetTrendLines(tm.SetTrendLines(rates), tm.CorridorStartDate.HasValue);
-          charter.SetTrendLines2(tm.SetTrendLines1231_2(rates));
+          charter.SetTrendLines2(tm.TrendLines2.Value);
+          charter.SetTrendLines1(tm.TrendLines1.Value);
           charter.SetMATrendLines(tm.LineMA);
           charter.CalculateLastPrice = tm.IsInVitualTrading || tm.FitRatesToPlotter ? (Func<Rate, Func<Rate, double>, double>)null : tm.CalculateLastPrice;
           charter.PriceBarValue = pb => pb.Speed;
@@ -1297,7 +1290,7 @@ namespace HedgeHog.Alice.Client {
         Trade trade = e.Trade;
         var comm = MasterModel.CommissionByTrade(trade);
         if (IsInVirtualTrading)
-          MasterModel.AccountModel.Balance -= comm;
+          tradesManager.GetAccount().Balance -= comm;
         var tm = GetTradingMacros(trade.Pair).First();
         tm.CurrentLoss -= comm;
         tm.RunningBalance -= comm;

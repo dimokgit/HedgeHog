@@ -115,7 +115,7 @@
           .attr("d", d3.svg.symbol().type("circle").size(150))
           .attr("transform", "rotate(-90)")
           .on("click", function (d, i) {
-            chartData.setCorridorStartDate(chartData.chartNum, i);
+            chartData.moveCorridorWavesCount(chartData.chartNum, i == 0 ? 1 : -1);
           })
         ;
       addLine("ask", "steelblue", 1, "2,2");
@@ -290,10 +290,10 @@
       setHLine(trades.buy || trades.sell, "trade", trades.buy ? "darkgreen" : "red", 1, "2,2,5,2");
 
       // #region trade levels
-      setTradeLevel(tradeLevels.buy, "buyEnter", "darkred",2);
-      setTradeLevel(tradeLevels.buyClose, "buyClose", "darkblue", trades.buy ? 1 : 0);
-      setTradeLevel(tradeLevels.sell, "sellEnter", "darkblue",2);
-      setTradeLevel(tradeLevels.sellClose, "sellClose", "darkred", trades.sell ? 1 : 0);
+      setTradeLevel(tradeLevels.buy, "buyEnter", "darkred",1);
+      setTradeLevel(tradeLevels.buyClose, "buyClose", "darkblue", trades.buy ? 1 : 0, 3);
+      setTradeLevel(tradeLevels.sell, "sellEnter", "darkblue",1);
+      setTradeLevel(tradeLevels.sellClose, "sellClose", "darkred", trades.sell ? 1 : 0, 3);
 
       var chkBoxData = [
         tradeLevelUIFactory(x(data[0].d), y(tradeLevels.buy) - 16, tradeLevels.canBuy, tradeLevels.manualBuy, tradeLevels.buyCount),
@@ -353,14 +353,16 @@
             .attr("y2", y(yDomain[1]));// y position of the second end of the line
         //.duration(animationDuration);    
       }
-      function setTradeLevel(level, levelName, lineColour,strokeWidth) {
+      function setTradeLevel(level, levelName, lineColour, strokeWidth, strokeDash) {
+        strokeDash = strokeDash || 5;
+        var strokeDashArray = strokeDash + "," + strokeDash;
         var dates = [data[0].d, data[data.length - 1].d];
         if (dates) {
           if (level)
             svg.select("line.line" + levelName)
               .style("stroke", lineColour)  // colour the line
               .style("stroke-width", strokeWidth)  // colour the line
-              .style("stroke-dasharray", "5,5")  // colour the line
+              .style("stroke-dasharray", strokeDashArray)  // colour the line
               .attr("x1", x(dates[0]) - xAxisOffset) // x position of the first end of the line
               .attr("y1", y(level)) // y position of the first end of the line
               .attr("x2", x(dates[1]) + xAxisOffset) // x position of the second end of the line

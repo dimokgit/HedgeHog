@@ -260,8 +260,9 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
+    [WwwSetting(Index=wwwSettingsCorridor)]
     [Category(categoryActive)]
-    public int PriceCmaLevels_ {
+    public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
       set {
         if (PriceCmaLevels != value) {
@@ -683,14 +684,14 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    [DisplayName("Median Function")]
-    [Category(categoryActiveFuncs)]
-    public MedianFunctions MedianFunction {
-      get { return (MedianFunctions)ExtreamCloseOffset; }
+    [DisplayName("ExtreamCloseOffset")]
+    [Category(categoryXXX_NU)]
+    public int ExtreamCloseOffset_ {
+      get { return ExtreamCloseOffset; }
       set {
-        if (ExtreamCloseOffset != (int)value) {
-          ExtreamCloseOffset = (int)value;
-          OnPropertyChanged("MedianFunction");
+        if (ExtreamCloseOffset != value) {
+          ExtreamCloseOffset = value;
+          OnPropertyChanged("ExtreamCloseOffset");
         }
       }
     }
@@ -709,7 +710,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
-    [WwwSetting]
+    [WwwSetting(Index=wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -725,14 +726,13 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    [DisplayName("Variance Function")]
-    [Category(categoryActiveFuncs)]
-    public VarainceFunctions VarianceFunction {
-      get { return (VarainceFunctions)CorridorBigToSmallRatio.ToInt(); }
+    [Category(categoryXXX_NU)]
+    public double CorridorBigToSmallRatio_ {
+      get { return CorridorBigToSmallRatio; }
       set {
-        if (CorridorBigToSmallRatio != (double)value) {
-          CorridorBigToSmallRatio = (double)value;
-          OnPropertyChanged("VarianceFunction");
+        if (CorridorBigToSmallRatio != value) {
+          CorridorBigToSmallRatio = value;
+          OnPropertyChanged("CorridorBigToSmallRatio_");
         }
       }
     }
@@ -815,6 +815,9 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTest = "Test";
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
+    public const int wwwSettingsLiveOrders = 10;
+    public const int wwwSettingsCorridor = 20;
+    public const int wwwSettingsTrading = 30;
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -831,7 +834,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [WwwSetting]
+    [WwwSetting(Index=wwwSettingsCorridor)]
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
@@ -1516,10 +1519,10 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
-    IEnumerable<TradeLevelBy> GetLevelByByProximity(SuppRes suppRes, Rate rate) {
+    IEnumerable<TradeLevelBy> GetLevelByByProximity(SuppRes suppRes) {
       return (from tl in TradeLevelFuncs.Where(tl => tl.Key != TradeLevelBy.None)
               where suppRes.InManual
-              let b = new { level = tl.Key, dist = suppRes.Rate.Abs(tl.Value(rate, CorridorStats)) }
+              let b = new { level = tl.Key, dist = suppRes.Rate.Abs(tl.Value()) }
               orderby b.dist
               select b.level
               )
@@ -1538,7 +1541,7 @@ namespace HedgeHog.Alice.Store {
         SetLevelBy(SellCloseLevel, rate, tl => LevelSellCloseBy = tl);
     }
     private void SetLevelBy(SuppRes suppRes, Rate rate, Action<TradeLevelBy> setLevel) {
-      GetLevelByByProximity(suppRes, rate)
+      GetLevelByByProximity(suppRes)
         .Do(setLevel)
         .ForEach(_ => suppRes.InManual = false);
     }

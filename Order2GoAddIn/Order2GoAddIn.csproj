@@ -134,10 +134,6 @@
       <Project>{22E8AF73-0298-40E9-BBFE-6BA069C17C86}</Project>
       <Name>HedgeHog.Shared</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RunWithTimeout\RunWithTimeout.csproj">
-      <Project>{F51E34F9-C9BA-47BD-9129-1A94D04E62CA}</Project>
-      <Name>RunWithTimeout</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Interop.FXCore.dll" />

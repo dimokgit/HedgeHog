@@ -339,6 +339,7 @@ namespace HedgeHog.Alice.Store {
       set {
         if (_InManual == value) return;
         _InManual = value;
+        if (value) TradesCount = 0;
         OnPropertyChanged("InManual");
       }
     }

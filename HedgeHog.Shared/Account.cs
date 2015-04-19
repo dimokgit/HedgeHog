@@ -11,9 +11,21 @@ namespace HedgeHog.Shared {
     [DataMember]
     public string ID { get; set; }
     [DataMember]
-    public double Balance { get; set; }
+    double _balance;
+    public double Balance {
+      get { return _balance; }
+      set {
+        _balance = value;
+      }
+    }
+    double _equity;
     [DataMember]
-    public double Equity { get; set; }
+    public double Equity {
+      get { return _equity; }
+      set {
+        _equity = value;
+      }
+    }
     [DataMember]
     public double UsableMargin { get; set; }
     [DataMember]

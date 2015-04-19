@@ -117,7 +117,7 @@ namespace HedgeHog.Alice.Store {
       var dateLoadStart = dateStart.AddYears(-1);
       var ratesHistory = GlobalStorage.GetRateFromDB(Pair, dateLoadStart.DateTime, int.MaxValue, BarPeriodInt);
       ratesHistory.Take(interval).ForEach(r => r.CrossesDensity = 0);
-      ratesHistory.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
+      ratesHistory.Cma(r => r.PriceAvg, PriceCmaLevels);
       Enumerable.Range(0, ratesHistory.Count() - interval).AsParallel().ForAll(i => {
         try {
           var range = new Rate[interval];
@@ -2651,12 +2651,8 @@ namespace HedgeHog.Alice.Store {
       switch (movingAverageType) {
         case Store.MovingAverageType.FFT:
         case Store.MovingAverageType.FFT2:
-        case Store.MovingAverageType.RegressByMA:
-        case Store.MovingAverageType.Regression:
         case Store.MovingAverageType.Cma:
           return r => r.PriceCMALast;
-        case Store.MovingAverageType.Trima:
-          return r => r.PriceTrima;
         default:
           throw new NotSupportedException(new { movingAverageType }.ToString());
       }
@@ -2674,14 +2670,6 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.FFT2:
           SetMAByFtt2(RatesArray, _priceAvg, (rate, d) => rate.PriceCMALast = d, PriceCmaLevels.Div(10));
           break;
-        case Store.MovingAverageType.RegressByMA:
-          RatesArray.SetCma((p, r) => r.PriceAvg, 3, 3);
-          RatesArray.AsParallel().SetRegressionPriceP(PriceCmaLevels, r => r.PriceCMALast, (r, d) => r.PriceCMALast = d);
-          break;
-        case Store.MovingAverageType.Regression:
-          Action<Rate, double> a = (r, d) => r.PriceCMALast = d;
-          RatesArray.AsParallel().SetRegressionPriceP(PriceCmaLevels, _priceAvg, a);
-          break;
         case Store.MovingAverageType.Cma:
           if (PriceCmaLevels > 0) {
             RatesArray.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
@@ -2697,9 +2685,6 @@ namespace HedgeHog.Alice.Store {
             //}, PriceCmaPeriod + CmaOffset, PriceCmaLevels + CmaOffset.ToInt());
             //RatesArray.SetCma((p, r) => r.PriceAvg, PriceCmaLevels, PriceCmaLevels);
           }
-          break;
-        case Store.MovingAverageType.Trima:
-          RatesArray.SetTrima(PriceCmaLevels);
           break;
       }
     }
@@ -2753,11 +2738,12 @@ namespace HedgeHog.Alice.Store {
       return trade;
     }
     double CommissionInPips() {
-      var trade = Trades.LastOrDefault() ?? TradeForCommissionCalculation();
-      if (trade.Lots == 0) return 0;
+      IList<Trade> trades = Trades.DefaultIfEmpty(Trades.LastOrDefault() ?? TradeForCommissionCalculation()).ToList();
+      var trade = trades.First();
+      if (trades.Lots() == 0) return 0;
       var com = CommissionByTrade(trade);
       var rate = TradesManager.RateForPipAmount(CurrentPrice);
-      return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trade.Lots, rate, PointSize);
+      return TradesManagerStatic.MoneyAndLotToPips(Pair, com, trades.Lots(), rate, PointSize);
     }
     double CalculateTakeProfit(bool dontAdjust = false) {
       var tp = GetValueByTakeProfitFunction(TakeProfitFunction);
@@ -2769,66 +2755,80 @@ namespace HedgeHog.Alice.Store {
 
 
     #region TakeProfitBSRatio
-    private double _TakeProfitBSRatio = 0;
-    [WwwSetting]
+    private double _TakeProfitXRatio = 1;
+    [WwwSetting(Index=wwwSettingsTrading)]
     [Description("TakeProfit = (BuyLevel-SellLevel)*X")]
     [Category(categoryActive)]
-    public double TakeProfitBSRatio {
-      get { return _TakeProfitBSRatio; }
+    public double TakeProfitXRatio {
+      get { return _TakeProfitXRatio; }
       set {
-        if (_TakeProfitBSRatio != value) {
-          _TakeProfitBSRatio = value;
-          OnPropertyChanged("TakeProfitBSRatio");
+        if (_TakeProfitXRatio != value) {
+          _TakeProfitXRatio = value.Max(0.1);
+          OnPropertyChanged("TakeProfitXRatio");
           //if (value > 0) TakeProfitFunction = TradingMacroTakeProfitFunction.BuySellLevels_X;
         }
       }
     }
 
     #endregion
+
+    Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
+    Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
+      get {
+        if (_TradeLevelFuncs == null)
+          _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
+        { {TradeLevelBy.PriceAvg1,()=>TrendLines.Value[1].Trends.PriceAvg1},
+          
+          {TradeLevelBy.PriceAvg02,()=>TrendLines.Value[1].Trends.PriceAvg02},
+          {TradeLevelBy.PriceAvg2,()=>TrendLines.Value[1].Trends.PriceAvg2},
+          {TradeLevelBy.PriceAvg21,()=>TrendLines.Value[1].Trends.PriceAvg21},
+          {TradeLevelBy.PriceAvg22,()=>TrendLines.Value[1].Trends.PriceAvg22},
+
+          {TradeLevelBy.PriceAvg03,()=>TrendLines.Value[1].Trends.PriceAvg03},
+          {TradeLevelBy.PriceAvg3,()=>TrendLines.Value[1].Trends.PriceAvg3},
+          {TradeLevelBy.PriceAvg31,()=>TrendLines.Value[1].Trends.PriceAvg31},
+          {TradeLevelBy.PriceAvg32,()=>TrendLines.Value[1].Trends.PriceAvg32},
+
+          {TradeLevelBy.PriceHigh,()=> TrendLines2Trends.PriceAvg2},
+          {TradeLevelBy.PriceLow,()=> TrendLines2Trends.PriceAvg3},
+        
+          {TradeLevelBy.PriceHigh0,()=> TrendLines1Trends.PriceAvg2},
+          {TradeLevelBy.PriceLow0,()=> TrendLines1Trends.PriceAvg3},
+
+          {TradeLevelBy.None,()=>double.NaN}
+        }; return _TradeLevelFuncs;
+      }
+    }
+
+
     static readonly double _ratesHeight_2 = 5.0 / 12;
+    private bool IsTakeProfitFunctionAbsolute {
+      get {
+        return TakeProfitFunction.ToString().StartsWith("PriceAvg");
+      }
+    }
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
       var tp = double.NaN;
       switch (function) {
-        case TradingMacroTakeProfitFunction.CorridorHeight_BS:
-          return GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.CorridorHeight).Min(GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction.BuySellLevels));
-        case TradingMacroTakeProfitFunction.CorridorStDevMin: tp = CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.CorridorStDevMax: tp = CorridorStats.StDevByHeight.Max(CorridorStats.StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.CorridorHeight: tp = CorridorStats.StDevByHeight * 4; break;
+        #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
-        case TradingMacroTakeProfitFunction.WaveShort: tp = WaveShort.RatesHeight; break;
-        case TradingMacroTakeProfitFunction.WaveShortStDev: tp = WaveShort.RatesStDev; break;
-        case TradingMacroTakeProfitFunction.WaveTradeStart: tp = WaveTradeStart.RatesHeight - (WaveTradeStart1.HasRates ? WaveTradeStart1.RatesHeight : 0); break;
-        case TradingMacroTakeProfitFunction.WaveTradeStartStDev: tp = WaveTradeStart.RatesStDev; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight * _ratesHeight_2; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_3: tp = RatesHeight / 3; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_4: tp = RatesHeight / 4; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_5: tp = RatesHeight / 5; break;
-        case TradingMacroTakeProfitFunction.RatesStDevMax: tp = StDevByHeight.Max(StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.RatesStDevMin: tp = StDevByHeight.Min(StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.RatesStDevAvg: tp = StDevByHeight.Avg(StDevByPriceAvg); break;
-        case TradingMacroTakeProfitFunction.Spread: return SpreadForCorridor;
-        case TradingMacroTakeProfitFunction.PriceSpread: return PriceSpreadAverage.GetValueOrDefault(double.NaN);
-        case TradingMacroTakeProfitFunction.Harmonic:
-          if (_harmonics == null || !_harmonics.Any()) throw new InvalidOperationException("Function " + function + " is using _harmonics that is empty.");
-          return InPoints(_harmonics.Select(h => h.Height).OrderByDescending(h => h).Take(2).Average());
-        case TradingMacroTakeProfitFunction.BuySellLevels_X:
-        case TradingMacroTakeProfitFunction.BuySellLevels_2:
+        case TradingMacroTakeProfitFunction.RatesHeightX: tp = RatesHeight * TakeProfitXRatio; break;
+        #endregion
+        #region BuySellLevels
+        case TradingMacroTakeProfitFunction.BuySellLevelsX:
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = _buyLevelRate - _sellLevelRate;
           if (double.IsNaN(tp)) {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
-          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2;
-          if (function == TradingMacroTakeProfitFunction.BuySellLevels_2)
-            tp /= 2;
-          if (function == TradingMacroTakeProfitFunction.BuySellLevels_X)
-            tp *= TakeProfitBSRatio;
+          tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2 + InPoints(this.CommissionInPips());
+          if (function == TradingMacroTakeProfitFunction.BuySellLevelsX)
+            tp *= TakeProfitXRatio;
           // TODO: this is to prevent acidentally setting a too small corridor. Think something better
-          tp = tp.Max(CorridorStats.StDevByHeight, CorridorStats.StDevByPriceAvg);
+          tp = tp.Max(CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg));
           break;
-        case TradingMacroTakeProfitFunction.RegressionLevels:
-          throw new NotImplementedException("RegressionLevels must be implemented locally.");
+        #endregion
         default:
           throw new NotImplementedException(new { function } + "");
       }
@@ -2839,9 +2839,6 @@ namespace HedgeHog.Alice.Store {
     ScanCorridorDelegate GetScanCorridorFunction(ScanCorridorFunction function) {
       switch (function) {
         case ScanCorridorFunction.WaveStDevHeight: return ScanCorridorByStDevHeight;
-        case ScanCorridorFunction.Sinus: return ScanCorridorBySinus;
-        case ScanCorridorFunction.Sinus1: return ScanCorridorBySinus_1;
-        case ScanCorridorFunction.StDevAngle: return ScanCorridorByStDevAndAngle;
         case ScanCorridorFunction.WaveCount: return ScanCorridorByWaveCount;
         case ScanCorridorFunction.StDevHeightFft: return ScanCorridorByStDevByHeightFft;
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
@@ -2884,7 +2881,6 @@ namespace HedgeHog.Alice.Store {
         case HedgeHog.Alice.VoltageFunction.Sdi: return ShowVoltsByStDevIntegral;
         case HedgeHog.Alice.VoltageFunction.Volume: return ShowVoltsByFrameAngle;
         case HedgeHog.Alice.VoltageFunction.Rsd: return ShowVoltsByRsd;
-        case HedgeHog.Alice.VoltageFunction.HarmonicMin: return ShowVoltsByHarmonicMin;
         case HedgeHog.Alice.VoltageFunction.FractalDensity: return ShowVoltsByFractalDensity;
         case HedgeHog.Alice.VoltageFunction.Correlation: return ShowVoltsByCorrelation;
         case HedgeHog.Alice.VoltageFunction.AboveBelowRatio: return ShowVoltsByAboveBelow;
@@ -3006,8 +3002,10 @@ namespace HedgeHog.Alice.Store {
       while (_priceQueue.Count > PriceCmaLevels.Max(5)) _priceQueue.Dequeue();
       _priceQueue.Enqueue(price);
       Account account = e.Account;
-      if (account.IsMarginCall)
+      if (account.IsMarginCall) {
+        CloseTrades("Margin Call.");
         BroadcastCloseAllTrades();
+      }
       var timeSpanDict = new Dictionary<string, long>();
       try {
         CalcTakeProfitDistance();

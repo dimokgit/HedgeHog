@@ -32,9 +32,7 @@ namespace HedgeHog {
       return (T)d[key];
     }
     public static GetSetter<T> Make<T>(string key,params T[] def) {
-      GetSetter<T> ret = (e, f) => e.GetSet(key, f);
-      //def.ForEach(d=>ret())
-      return ret;
+      return (e, f) => e.GetSet(key, f);
     }
     #endregion
     #region Delegates
@@ -63,8 +61,6 @@ namespace HedgeHog {
       }
     }
     public static IObservable<Scan> WFFactory(this Subject<IList<Func<ExpandoObject, Tuple<int, ExpandoObject>>>> workflowSubject, Func<bool> cancelWorkflow) {
-      #region Workflow tuple factories
-      #endregion
       return workflowSubject
         .Scan(new Scan( 0, emptyWFContext(), cancelWorkflow ), (scan, wf) => {
           if (scan.i >= wf.Count || scan.cancel() || scan.dict.OfType<WF.MustExit>().Any(me => me())) {

@@ -242,6 +242,15 @@ namespace HedgeHog.Alice.Client {
         }
       });
     }
+    public void SetTradeCloseLevel(string pair, bool isBuy, int level) {
+      UseTradingMacro(pair, tm => {
+        if (isBuy) {
+          tm.LevelBuyCloseBy = (TradeLevelBy)level;
+        } else {
+          tm.LevelSellCloseBy = (TradeLevelBy)level;
+        }
+      });
+    }
     public object[] ReadNews() {
       var date = DateTimeOffset.UtcNow.AddMinutes(-60);
       var countries = new[] { "USD", "GBP", "EUR", "JPY" };
@@ -265,8 +274,10 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro(pair, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
-          .Select(x => x.Item2)
-          .OrderBy(p => p.Name)
+          .Select(x => new { i = x.Item1.Index, p = x.Item2 })
+          .OrderBy(x => x.p.Name)
+          .OrderBy(x => x.i)
+          .Select(x => x.p)
           .ForEach(p => e.Add(p.Name, p.GetValue(tm)));
         return e as ExpandoObject;
       });
@@ -278,6 +289,9 @@ namespace HedgeHog.Alice.Client {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
+    }
+    public void MoveCorridorWavesCount(string pair, int chartNumber, int step) {
+      UseTradingMacro(pair, chartNumber, tm => tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2));
     }
     #endregion
     double IntOrDouble(double d, double max = 10) {
@@ -296,9 +310,6 @@ namespace HedgeHog.Alice.Client {
           profit = IntOrDouble(tm.CurrentGrossInPipTotal),
           closed = trader.Value.ClosedTrades.Select(t => new { })
         });
-    }
-    public void SetCorridorStartDateToNextWave(string pair, int chartNum, bool backwards) {
-      UseTradingMacro(pair, chartNum, tm => tm.SetCorridorStartDateToNextWave(backwards));
     }
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));

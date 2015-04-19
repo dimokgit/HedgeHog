@@ -19,19 +19,27 @@ namespace HedgeHog {
       double avgY;
       return GetSlope(data, out avgY);
     }
-    public static double LinearSlope<T>(this IList<T> data,Func<T,double> get) {
+    public static double LinearSlope<T>(this IList<T> data, Func<T, double> get,out double max,out double min) {
       double avgY;
-      return GetSlope(data, get, out avgY);
+      return GetSlope(data, get, out avgY, out max, out min);
+    }
+    public static double LinearSlope<T>(this IList<T> data, Func<T, double> get) {
+      double avgY,max,min;
+      return GetSlope(data, get, out avgY, out max, out min);
     }
     public static T Linear<T>(this IList<double> data, LinearRegressionMap<T> map) {
       var slope = 0.0;
       return map(GetIntercept(data, out slope), slope);
     }
-    static double GetSlope<T>(IList<T> yArray,Func<T,double> get, out double averageY) {
+    static double GetSlope<T>(IList<T> yArray,Func<T,double> get, out double averageY,out double max, out double min) {
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0, sumx2 = 0;
+      max = double.MinValue;
+      min = double.MaxValue;
       for (int i = 0; i < yArray.Count; i++) {
         var v = get(yArray[i]);
+        if (max < v) max = v;
+        if (min > v) min = v;
         sumxy += (double)i * v;
         sumx += i;
         sumy += v;

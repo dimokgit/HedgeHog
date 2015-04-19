@@ -183,6 +183,7 @@
     <Compile Include="TradingMacro\TradingMacroExtentions.cs" />
     <Compile Include="TradingMacro\TradingMacro.Strategies.cs" />
     <Compile Include="TradingMacro\TradingStatistics.cs" />
+    <Compile Include="TradingMacro\Universal.cs" />
     <EntityDeploy Include="Model\Model1.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>Model1.Designer.cs</LastGenOutput>

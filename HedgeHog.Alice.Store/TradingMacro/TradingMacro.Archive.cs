@@ -51,7 +51,6 @@ namespace HedgeHog.Alice.Store {
       switch (chartHighLowMethod) {
         case ChartHighLowMethod.AskBidByReg: return r => r.PriceChartAsk;
         case ChartHighLowMethod.Average: return r => r.PriceAvg;
-        case ChartHighLowMethod.Trima: return r => r.PriceTrima;
         case ChartHighLowMethod.Volts: return r => r.VoltageLocal;
         case ChartHighLowMethod.Volts2: return r => r.VoltageLocal2;
         case ChartHighLowMethod.Volts3: return r => r.VoltageLocal3;
@@ -64,7 +63,6 @@ namespace HedgeHog.Alice.Store {
         case ChartHighLowMethod.AskBidByReg: return r => r.PriceChartBid;
         case ChartHighLowMethod.Average: return r => r.PriceAvg;
         case ChartHighLowMethod.AskBidByMA: return r => r.PriceAvg > GetPriceMA(movingAverageType)(r) ? r.BidHigh : r.BidLow;
-        case ChartHighLowMethod.Trima: return r => r.PriceTrima;
         case ChartHighLowMethod.Volts: return r => r.VoltageLocal;
         case ChartHighLowMethod.Volts2: return r => r.VoltageLocal2;
         case ChartHighLowMethod.Volts3: return r => r.VoltageLocal3;

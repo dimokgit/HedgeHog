@@ -135,7 +135,6 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="FileLogger.cs" />
-    <Compile Include="GroupAdjacent.cs" />
     <Compile Include="Iterator.cs" />
     <Compile Include="KeyEqualityComparer.cs" />
     <Compile Include="LambdaComparer.cs" />

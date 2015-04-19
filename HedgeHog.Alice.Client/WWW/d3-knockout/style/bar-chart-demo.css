@@ -48,6 +48,6 @@
 /* line chart specifics.*/
 .line {
     fill: none;
-    stroke: steelblue;
-    stroke-width: 1px;
+    stroke: black;
+    stroke-width: 0.5px;
 }

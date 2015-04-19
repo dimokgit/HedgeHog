@@ -1612,7 +1612,7 @@ namespace HedgeHog.Bars {
         bar.FillOverlap(bars.Where(r => r.StartDate < bar.StartDate)/*.Take(10)*/, period);
       return bars;
     }
-    public static void SetCMA<TBars>(this ICollection<TBars> bars, Func<TBars, double> cmaSource, int cmaPeriod) where TBars : BarBase {
+    public static void SetCMA<TBars>(this ICollection<TBars> bars, Func<TBars, double> cmaSource, double cmaPeriod) where TBars : BarBase {
       double? cma1 = null;
       double? cma2 = null;
       double? cma3 = null;
@@ -1634,8 +1634,8 @@ namespace HedgeHog.Bars {
         t.PriceCMA.Add(cma3.Value);
       }
     }
-    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, Func<TBar, List<double>> getCmaHolder, double cmaPeriod, int cmaLevels = 3) where TBar : BarBase {
-      var cmas = new List<double>(cmaLevels);
+    public static void SetCma<TBar>(this ICollection<TBar> ticks, Func<TBar, TBar, double> getValue, Func<TBar, List<double>> getCmaHolder, double cmaPeriod,double cmaLevels = 3) where TBar : BarBase {
+      var cmas = new List<double>(cmaLevels.ToInt());
       var first = ticks.First();
       var firstAvg = ticks.Take(cmaPeriod.ToInt()).Zip(ticks.Skip(1).Take(cmaPeriod.ToInt()), (f, s) => getValue(s, f)).Average();
       for (var i = 0; i < cmaLevels; i++)
@@ -1689,13 +1689,6 @@ namespace HedgeHog.Bars {
         }
         t.PriceCMALast = t.PriceCMA[t.PriceCMA.Count - 1];
       }
-    }
-    public static void SetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
-      int outBegIdx, outNBElement;
-      var outTrima = ticks.Select(t => t.PriceAvg).ToArray().Trima(period, out outBegIdx, out outNBElement);
-      var up = ticks.Count;
-      for (; outBegIdx < up; outBegIdx++)
-        ticks[outBegIdx].PriceTrima = outTrima[outBegIdx + 1 - period];
     }
     public static IList<double> GetTrima<TBars>(this IList<TBars> ticks, int period) where TBars : BarBase {
       int outBegIdx;

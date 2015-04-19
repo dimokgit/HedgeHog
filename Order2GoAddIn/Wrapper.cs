@@ -1782,10 +1782,15 @@ namespace Order2GoAddIn {
       }
     }
     public void ChangeEntryOrderRate(string orderId, double rate) {
-      object o1;
       var order = GetOrders("").SingleOrDefault(o => o.OrderID == orderId);
-      if (order != null)
+      if (order == null) return;
+      var shouldBeType = GetFixOrderKindString(order.Pair, order.IsBuy, rate);
+      if (shouldBeType == order.Type)
         Desk.ChangeOrderRate2(orderId, rate, 1);
+      else {
+        Desk.DeleteOrder(orderId);
+        FixOrderOpenEntry(order.Pair, order.IsBuy, order.Lot, rate, order.Stop, order.Limit, order.QTXT);
+      }
     }
     public void ChangeEntryOrderLot(string orderId, int lot) {
       object o1;

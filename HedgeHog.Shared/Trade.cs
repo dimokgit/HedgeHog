@@ -118,7 +118,7 @@ namespace HedgeHog.Shared {
         var gross = Buy ? Close - Open : Open - Close;
         PL = gross / PipSize;
         var offset = Pair == "USDOLLAR" ? 1 : 10.0;
-        GrossPL = gross * (Lots / (offset * BaseUnitSize)) / PipSize;
+        GrossPL = TradesManagerStatic.PipsAndLotToMoney(Pair, PL, Lots, Close, PipSize);
       }
     }
     [DataMember]

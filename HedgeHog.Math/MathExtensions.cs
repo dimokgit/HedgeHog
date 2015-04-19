@@ -28,7 +28,7 @@ namespace HedgeHog {
     }
 
   }
-  public static class MathExtensions {
+  public static partial class MathExtensions {
     public class Box<T> {
       public T Value { get; set; }
       public Box(T v) {
@@ -603,7 +603,7 @@ namespace HedgeHog {
       }
       return Math.Sqrt(S / (k - 2));
     }
-    public static double StandardDeviation<T>(this IEnumerable<T> valueList,Func<T,double> get,out double max, out double min) {
+    public static double StandardDeviation<T>(this IEnumerable<T> valueList, Func<T, double> get, out double max, out double min) {
       double M = 0.0;
       double S = 0.0;
       int k = 1;
@@ -698,14 +698,17 @@ namespace HedgeHog {
     }
 
     public static IEnumerable<Tuple<int, DateTimeOffset, int>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
-      var mid = waveWidth / 2;
       return values
         .Select((rate, i) => new { y = value(rate), x = date(rate), i })
         .Where(x => !x.y.IsNaN())
         .Buffer(waveWidth, 1)
         .Where(chank => chank.Count == waveWidth)
-        .Select(chunk => new { slope = chunk.LinearSlope(r => r.y).SignUp(), chunk[mid].x, i = chunk[0].i+mid })
-        .DistinctUntilChanged(a => a.slope)
+        .Select(chunk => {
+          var slope = chunk.LinearSlope(r => r.y).SignUp();
+          var extream = slope > 0 ? chunk.MaxBy(c => c.y).First() : chunk.MinBy(c => c.y).First();
+          return new { slope, extream.x, i = extream.i };
+        })
+        .DistinctLastUntilChanged(a => a.slope)
         .Select(r => Tuple.Create(r.i, r.x, r.slope));//.SkipLast(1);
     }
     /// <summary>
@@ -750,6 +753,12 @@ namespace HedgeHog {
     public static double StDevByRegressoin(this IList<double> values, Action<double> callCC) {
       return values.StDevByRegressoin(null, callCC);
     }
+    public static double StDevByRegressoin(this IEnumerable<double> values, int valuesCount, double[] coeffs) {
+      if (coeffs == null) throw new ArgumentNullException("coeffs");
+      var line = new double[valuesCount];
+      coeffs.SetRegressionPrice(0, valuesCount, (i, v) => line[i] = v);
+      return line.Zip(values, (l, v) => v - l).StandardDeviation();
+    }
     public static double StDevByRegressoin(this IList<double> values, double[] coeffs) {
       if (coeffs == null || coeffs.Length == 0) coeffs = values.Linear();
       var line = new double[values.Count];
@@ -784,33 +793,6 @@ namespace HedgeHog {
       coeffs.SetRegressionPrice(0, values.Count, (i, v) => line[i] = v);
       var diffs = line.Zip(values, (l, v) => l - v).ToArray().GroupBy(a => a.Sign());
       return diffs.Select(g => g.Select(v => v)).SelectMany(a => a).ToArray().StDev() * 4;
-    }
-    static int FuzzyFind(this IList<double> sortedList, double value) {
-      return FuzzyFind(sortedList, value, 0, sortedList.Count - 1);
-    }
-    static int FuzzyFind(IList<double> sortedList, double value, int indexLeft, int indexRight) {
-      if (!value.Between(sortedList[0], sortedList[sortedList.Count - 1])) return -1;
-      if (indexLeft == indexRight) return indexRight;
-      if (value == sortedList[indexLeft]) return indexLeft;
-      if (value == sortedList[indexRight]) return indexRight;
-      var middle = indexLeft + (indexRight - indexLeft) / 2;
-      if (value.Between(sortedList[indexLeft], sortedList[middle]))
-        return FuzzyFind(sortedList, value, indexLeft, middle);
-      return FuzzyFind(sortedList, value, middle + 1, indexRight);
-    }
-    public static int FuzzyFind<T,U>(this IList<T> sortedList, U value, Func<U, T, T, bool> isBetween) {
-      return FuzzyFind<T,U>(sortedList, value, 0, sortedList.Count - 1, isBetween);
-    }
-    static int FuzzyFind<T,U>(IList<T> sortedList, U value, int indexLeft, int indexRight, Func<U, T, T, bool> isBetween) {
-      if (!isBetween(value, sortedList[0], sortedList[sortedList.Count - 1])) return -1;
-      if (indexLeft == indexRight) return indexRight;
-      if (isBetween(value, sortedList[indexLeft], sortedList[indexLeft])) return indexLeft;
-      if (isBetween(value, sortedList[indexRight], sortedList[indexRight])) return indexRight;
-      var middle = indexLeft + (indexRight - indexLeft) / 2;
-      if (isBetween(value, sortedList[indexLeft], sortedList[middle]))
-        return FuzzyFind<T,U>(sortedList, value, indexLeft, middle, isBetween);
-      if (middle == indexLeft) return indexRight;
-      return FuzzyFind<T,U>(sortedList, value, middle, indexRight, isBetween);
     }
     static IEnumerable<int> IteratonSequence(int start, int end) {
       return IteratonSequence(start, end, NestStep);
@@ -924,9 +906,15 @@ namespace HedgeHog {
       return values;
     }
     public static IList<T> AverageByIterations<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
+      if (iterations == 0) return values;
       var avg = values.Select(getValue).DefaultIfEmpty(double.NaN).Average();
       if (averagesOut != null) averagesOut.Insert(0, avg);
-      return values.Distinct().Count() < 2 || iterations == 0 ? values : values.Where(r => compare(getValue(r), avg)).ToArray().AverageByIterations(getValue, compare, iterations - 1, averagesOut);
+      return values.Distinct().Count() < 2  
+        ? values 
+        : values
+        .Where(r => compare(getValue(r), avg))
+        .ToArray()
+        .AverageByIterations(getValue, compare, iterations - 1, averagesOut);
     }
 
     public static IList<T> AverageByPercentage<T>(this IList<T> values, Func<T, double> getValue, Func<double, double, bool> compare, double iterations, List<double> averagesOut = null) {
@@ -975,7 +963,7 @@ namespace HedgeHog {
 
     //public static bool IsMax(this DateTime d) { return d == DateTime.MaxValue; }
     //public static bool IsMin(this DateTime d) { return d == DateTime.MinValue; }
-    public enum RoundTo { Second, Minute, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
+    public enum RoundTo { Second, Minute, MinuteFloor, MinuteCieling, Hour, HourFloor, Day, DayFloor, Month, MonthEnd, Week }
     public static DateTimeOffset Round(this DateTimeOffset d, RoundTo rt) {
       DateTimeOffset dtRounded = new DateTimeOffset();
       switch (rt) {
@@ -986,6 +974,13 @@ namespace HedgeHog {
         case RoundTo.Minute:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
           if (d.Second >= 30) dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.MinuteFloor:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          break;
+        case RoundTo.MinuteCieling:
+          dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0, d.Offset);
+          if (d.Second > 0) dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.Hour:
           dtRounded = new DateTimeOffset(d.Year, d.Month, d.Day, d.Hour, 0, 0, d.Offset);
@@ -1023,6 +1018,13 @@ namespace HedgeHog {
         case RoundTo.Minute:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
           if (d.Second >= 30) dtRounded = dtRounded.AddMinutes(1);
+          break;
+        case RoundTo.MinuteFloor:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
+          break;
+        case RoundTo.MinuteCieling:
+          dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, d.Minute, 0);
+          if (d.Second > 0) dtRounded = dtRounded.AddMinutes(1);
           break;
         case RoundTo.Hour:
           dtRounded = new DateTime(d.Year, d.Month, d.Day, d.Hour, 0, 0);

@@ -302,12 +302,6 @@ namespace HedgeHog.Bars {
 
     public List<double> PriceCMAOther { get; set; }
 
-    double _PriceTrima = double.NaN;
-    [DataMember]
-    public double PriceTrima {
-      get { return _PriceTrima; }
-      set { _PriceTrima = value; }
-    }
     [DataMember]
     public double PriceStdDev { get; set; }
 
@@ -606,10 +600,23 @@ namespace HedgeHog.Bars {
   public class Rate : BarBase {
     public class TrendLevels {
       public double PriceAvg1 { get; set; }
+
       public double PriceAvg2 { get; set; }
+      public double PriceAvg02 { get; set; }
       public double PriceAvg21 { get; set; }
+      public double PriceAvg22 { get; set; }
+      
+      public double PriceAvg03 { get; set; }
       public double PriceAvg3 { get; set; }
       public double PriceAvg31 { get; set; }
+      public double PriceAvg32{ get; set; }
+      
+      public double Slope { get; set; }
+      public double StDev { get; set; }
+      public TrendLevels(double slope,double stDev) {
+        this.Slope = slope;
+        this.StDev = stDev;
+      }
     }
     public Rate() { }
     public Rate(bool isHistory) : base(isHistory) { }

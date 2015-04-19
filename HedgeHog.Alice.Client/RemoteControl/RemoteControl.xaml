@@ -460,7 +460,7 @@
                 <Expander.Content>
                   <StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                      <tlrkInput:RadNumericUpDown SmallChange=".01" Padding="0" Value="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
+                      <tlrkInput:RadNumericUpDown Width="30" SmallChange=".01" Padding="0" Value="{Binding DataContext.ReplayArguments.DelayInSeconds,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4"/>
                       <CheckBox Content="■" IsChecked="{Binding DataContext.ReplayArguments.MustStop,RelativeSource={RelativeSource AncestorType=DataGrid}}" VerticalAlignment="Center" Margin="0,-4" />
                       <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
                       Command="{Binding DataContext.StartReplayCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
@@ -471,10 +471,10 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                       <StackPanel Orientation="Horizontal">
-                        <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
+                        <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.DateStart,StringFormat={}{0:MM/dd/yy HH:mm},Converter={StaticResource DateTimeConverter},RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" />
                         <TextBox MinWidth="10" Text="{Binding DataContext.ReplayArguments.MonthsToTest,RelativeSource={RelativeSource AncestorType=DataGrid}, NotifyOnValidationError=False,FallbackValue={x:Null}}" ToolTip="MonthsToTest" />
                       </StackPanel>
-                      <Border HorizontalAlignment="Stretch" Width="100" BorderThickness="1" BorderBrush="Plum">
+                      <Border HorizontalAlignment="Stretch" Width="100" BorderThickness="1" BorderBrush="Plum" Visibility="Collapsed">
                         <Slider Orientation="Horizontal" HorizontalAlignment="Stretch" Value="{Binding DataContext.ReplayArguments.CurrentPosition,Mode=TwoWay,RelativeSource={RelativeSource AncestorType=DataGrid}}"
                               Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" TickPlacement="TopLeft" TickFrequency="10" />
                       </Border>

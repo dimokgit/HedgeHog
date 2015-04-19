@@ -9,10 +9,20 @@ using System.Reflection;
 namespace HedgeHog.Tests {
 
   namespace UnitLib {
-    public static class Mixins {
-    }
     [TestClass]
     public class EnumerableExTest {
+      [TestMethod()]
+      public void DistinctLastUntilChangedTest() {
+        var source1 = new[] { new { i = 0, x = 2 }, new { i = 0, x = 1 }, new { i = 1, x = 3 }, new { i = 2, x = 4 }, new { i = 2, x = 5 } };
+        var test1 = new[] { new { i = 0, x = 1 }, new { i = 1, x = 3 }, new { i = 2, x = 5 } };
+        var test2 = new[] { new { i = 0, x = 1 }, new { i = 1, x = 3 }, new { i = 2, x = 4 } };
+        var result1 = source1.DistinctLastUntilChanged(a => a.i).ToArray();
+        Assert.IsTrue(test1.SequenceEqual(result1));
+        Assert.IsFalse(test2.SequenceEqual(result1));
+        var source2 = new[] { new { i = 0, x = 1 }, new { i = 1, x = 3 }, new { i = 2, x = 4 }, new { i = 2, x = 6 }, new { i = 2, x = 5 } };
+        var result2 = source2.DistinctLastUntilChanged(a => a.i).ToArray();
+        Assert.IsTrue(test1.SequenceEqual(result2));
+      }
       [TestMethod]
       public void BufferVerticalTest() {
         var rand = new Random();

@@ -110,10 +110,10 @@ namespace HedgeHog.Alice.Store {
           IsTradingActive = false;
           if (isBuy) {
             LevelBuyBy = level;
-            BuyLevel.Rate = TradeLevelFuncs[level](rate, CorridorStats);
+            BuyLevel.Rate = TradeLevelFuncs[level]();
           } else {
             LevelSellBy = level;
-            SellLevel.Rate = TradeLevelFuncs[level](rate, CorridorStats);
+            SellLevel.Rate = TradeLevelFuncs[level]();
           }
           RaiseShowChart();
         });
@@ -123,14 +123,20 @@ namespace HedgeHog.Alice.Store {
         {TradeLevelsPreset.SuperNarrow,Tuple.Create( TradeLevelBy.PriceAvg02, TradeLevelBy.PriceAvg03)},
         {TradeLevelsPreset.Narrow,Tuple.Create( TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3)},
         {TradeLevelsPreset.Wide,Tuple.Create( TradeLevelBy.PriceAvg21, TradeLevelBy.PriceAvg31)},
-        {TradeLevelsPreset.SuperWide,Tuple.Create( TradeLevelBy.PriceAvg22, TradeLevelBy.PriceAvg32)}
+        {TradeLevelsPreset.SuperWide,Tuple.Create( TradeLevelBy.PriceAvg22, TradeLevelBy.PriceAvg32)},
+
+        {TradeLevelsPreset.SuperNarrowR,Tuple.Create( TradeLevelBy.PriceAvg03, TradeLevelBy.PriceAvg02)},
+        {TradeLevelsPreset.NarrowR,Tuple.Create( TradeLevelBy.PriceAvg3, TradeLevelBy.PriceAvg2)},
+        {TradeLevelsPreset.WideR,Tuple.Create( TradeLevelBy.PriceAvg31, TradeLevelBy.PriceAvg21)},
+        {TradeLevelsPreset.SuperWideR,Tuple.Create( TradeLevelBy.PriceAvg32, TradeLevelBy.PriceAvg22)}
+
       };
       IsTradingActive = false;
       Action setLevels =()=> CorridorStats.Rates.Where(r => !r.PriceAvg1.IsNaN())
         .Take(1)
         .ForEach(rate => {
-          BuyLevel.Rate = TradeLevelFuncs[LevelBuyBy](rate, CorridorStats);
-          SellLevel.Rate = TradeLevelFuncs[LevelSellBy](rate, CorridorStats);
+          BuyLevel.Rate = TradeLevelFuncs[LevelBuyBy]();
+          SellLevel.Rate = TradeLevelFuncs[LevelSellBy]();
           BuyLevel.InManual = SellLevel.InManual = false;
           RaiseShowChart();
         });

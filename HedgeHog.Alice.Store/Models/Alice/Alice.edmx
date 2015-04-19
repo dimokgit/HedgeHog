@@ -124,7 +124,7 @@
           <Property Name="CorridorLengthMinimum" Type="float" Nullable="false" />
           <Property Name="CorridorCrossHighLowMethodInt" Type="int" Nullable="false" />
           <Property Name="MovingAverageTypeInt" Type="int" />
-          <Property Name="PriceCmaLevels" Type="int" Nullable="false" />
+          <Property Name="PriceCmaLevels" Type="float" Nullable="false" />
           <Property Name="VolumeTresholdIterations" Type="int" Nullable="false" />
           <Property Name="StDevTresholdIterations" Type="int" Nullable="false" />
           <Property Name="StDevAverageLeewayRatio" Type="float" Nullable="false" />
@@ -252,7 +252,7 @@
           <Property Type="Double" Name="CorridorLengthMinimum" Nullable="false" />
           <Property Type="Int32" Name="CorridorCrossHighLowMethodInt" Nullable="false" />
           <Property Type="Int32" Name="MovingAverageTypeInt" />
-          <Property Type="Int32" Name="PriceCmaLevels" Nullable="false" />
+          <Property Type="Double" Name="PriceCmaLevels" Nullable="false" />
           <Property Type="Int32" Name="VolumeTresholdIterations" Nullable="false" />
           <Property Type="Int32" Name="StDevTresholdIterations" Nullable="false" />
           <Property Type="Double" Name="StDevAverageLeewayRatio" Nullable="false" />

@@ -11,7 +11,6 @@ namespace HedgeHog.Alice {
     Volume = 5,
     Rsd = 6,
     FractalDensity = 7,
-    HarmonicMin = 8,
     Correlation = 9,
     AboveBelowRatio = 10,
     StDevInsideOutRatio = 20,
@@ -53,9 +52,6 @@ namespace HedgeHog.Alice.Store {
     RangeDistance = 91,
     RangeDistanceMax = 92,
     RangeDistanceMin = 93,
-    Sinus = 20,
-    Sinus1 = 21,
-    StDevAngle = 40,
     StDevBalance = 44,
     StDevBalanceR = 45,
     StDevSplits = 46,
@@ -66,12 +62,9 @@ namespace HedgeHog.Alice.Store {
     FttMACorr = 66
   }
   public enum TrailingWaveMethod {
-    LongFlat = 3,
-    SmartMoveR = 4,
+    SimpleMoveBO = 4,
     SimpleMove = 5,
-    SimpleMoveR = 6,
-    Spike = 7,
-    Spike2 = 8,
+    SimpleMoveRng = 6,
     ManualRange = 10,
     GreenStrip = 11,
     DistAvgMin = -11,
@@ -93,38 +86,31 @@ namespace HedgeHog.Alice.Store {
     StDevFlat2 = 88,
     StDevFlat3 = 89,
     StDevFlat4 = 90,
-    ElliottWave = 60,
     LongCross = 80,
     LongLine = 160,
     Recorder = 1000
   }
   public enum TradingMacroTakeProfitFunction {
-    CorridorStDevMin = 3,
-    CorridorStDevMax = 4,
-    CorridorHeight = 5,
-    BuySellLevels = 6,
-    BuySellLevels2 = 7,
-    BuySellLevels_2 = 8,
-    BuySellLevels_X = 9,
-    RatesHeight = 10,
-    RatesStDevMax = 11,
-    RatesHeight_2 = 12,
-    WaveShort = 13,
-    WaveTradeStart = 14,
-    RatesStDevMin = 15,
-    RatesStDevAvg = 16,
-    Spread = 20,
-    Zero = 25,
-    PriceSpread = 26,
-    WaveShortStDev = 27,
-    WaveTradeStartStDev = 28,
-    CorridorHeight_BS = 29,
-    RegressionLevels = 30,
-    RatesHeight_3 = 103,
-    RatesHeight_4 = 104,
-    RatesHeight_5 = 105,
-    Harmonic = 110
-
+    BuySellLevels,
+    BuySellLevelsX,
+    RatesHeight,
+    RatesHeightX
+  }
+  public enum TradeLevelBy {
+    None = 0,
+    PriceAvg1,
+    PriceAvg02,
+    PriceAvg2,
+    PriceAvg21,
+    PriceAvg22,
+    PriceAvg03,
+    PriceAvg3,
+    PriceAvg31,
+    PriceAvg32,
+    PriceHigh,
+    PriceLow,
+    PriceHigh0,
+    PriceLow0
   }
   public enum CorridorHeightMethods {
     ByMA = 0,
@@ -160,31 +146,6 @@ namespace HedgeHog.Alice.Store {
     Harmonic = 9,
     CorrTouch = 10
   }
-  public enum MedianFunctions {
-    Void = -1,
-    WaveShort = 0,
-    WaveTrade = 1,
-    Density = 2,
-    WaveStart = 20,
-    WaveStart1 = 21,
-    Regression = 30,
-    Regression1 = 31
-  }
-  public enum VarainceFunctions {
-    Zero = -1,
-    Price = 0,
-    Hight = 10,
-    Max = 20,
-    Min = 30,
-    Min2 = 31,
-    Sum = 40,
-    Wave = 50,
-    Rates3 = 60,
-    Rates2 = 61,
-    Rates = 62,
-    Rates4 = 63,
-    StDevSqrt = 70
-  }
   public enum Freezing { None = 0, Freez = 1, Float = 2 }
   public enum CorridorCalculationMethod { Height = 1, Price = 2, HeightUD = 3, Minimum = 4, Maximum = 5, PriceAverage = 6 }
   [Flags]
@@ -212,24 +173,11 @@ namespace HedgeHog.Alice.Store {
     AskLowBidHigh = 4, 
     PriceMA = 8 }
   public enum ChartHighLowMethod { AskBidByReg = 0, Average = 1, AskBidByMA = 2, Trima = 3, Volts, Volts2, Volts3 }
-  public enum MovingAverageType { Cma = 0, Trima = 1, Regression = 2, RegressByMA = 3, FFT = 4, FFT2 = 5 }
+  public enum MovingAverageType { Cma = 0, FFT = 4, FFT2 = 5 }
 
-  public enum TradeLevelBy {
-    None = 0,
-    PriceAvg1,
-    PriceAvg02,
-    PriceAvg2,
-    PriceAvg21,
-    PriceAvg22,
-    PriceAvg03,
-    PriceAvg3,
-    PriceAvg31,
-    PriceAvg32,
-    CmaGapH,
-    CmaGapL
-  }
   public enum TradeLevelsPreset {
-    SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4
+    SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4,
+    SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,
