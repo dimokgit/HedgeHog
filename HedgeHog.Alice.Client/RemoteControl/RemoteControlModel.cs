@@ -1100,6 +1100,18 @@ namespace HedgeHog.Alice.Client {
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3),
       }.ToExpando();
+      var trends1 = tm.TrendLines1.Value.ToList();
+      var trendLines1 = new {
+        dates = trends1.Count == 0
+        ? new DateTimeOffset[0]
+        : new DateTimeOffset[]{
+          tm.BarPeriod == BarsPeriodType.m1
+          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorLength1-1))
+          : trends1[0].StartDate2,
+          rates.Last().StartDate2},
+        close2 = trends1.ToArray(t => t.Trends.PriceAvg2),
+        close3 = trends1.ToArray(t => t.Trends.PriceAvg3),
+      }.ToExpando();
       var tradeLevels = new {
         buy = tm.BuyLevel.Rate,
         canBuy = tm.BuyLevel.CanTrade,
@@ -1128,6 +1140,7 @@ namespace HedgeHog.Alice.Client {
         dateStart = tm.RatesArray[0].StartDate2,
         trendLines,
         trendLines2,
+        trendLines1,
         isTradingActive = tm.IsTradingActive,
         tradeLevels = tradeLevels,
         trades,

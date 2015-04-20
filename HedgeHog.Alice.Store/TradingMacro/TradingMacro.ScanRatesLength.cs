@@ -110,13 +110,17 @@ namespace HedgeHog.Alice.Store {
           .IfEmpty(() => last)
           .Select(a => a.d);
       });
-      Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate.Round(MathExtensions.RoundTo.MinuteFloor) };
+      Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
       Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
       var corrDate = BarsCountLastDate;
-      Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
-        a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single().Round(MathExtensions.RoundTo.MinuteFloor)));
-      BarsCountLastDate = corrDate.Max(BarsCountLastDate);
-      BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
+      try {
+        Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
+          a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
+        BarsCountLastDate = corrDate.Max(BarsCountLastDate);
+        BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
+      } catch (Exception exc) {
+        Log = exc;
+      }
     }
     DateTime __barsCountLastDate = DateTime.MinValue;
     public DateTime BarsCountLastDate {

@@ -98,6 +98,7 @@
       // Trend Lines
       addLine(1); addLine(2); addLine(3); addLine(21); addLine(31);
       addLine("2_2"); addLine("3_2");
+      addLine("2_1"); addLine("3_1");
       // Other lines
       addLine("buyEnter"); addLine("sellEnter"); addLine("buyClose"); addLine("sellClose");
       addLine("corridorStart");
@@ -210,6 +211,7 @@
       var tradeLevels = chartData.tradeLevels || {};
       var trendLines = chartData.trendLines;
       var trendLines2 = chartData.trendLines2;
+      var trendLines1 = chartData.trendLines1;
       var trades = chartData.trades;
       var isTradingActive = chartData.isTradingActive;
       var shouldUpdateData = chartData.shouldUpdateData || svgChanged;
@@ -265,8 +267,11 @@
         setTrendLine(trendLines, 21, "darkred");
         setTrendLine(trendLines, 31, "darkred");
 
-        setTrendLine2(trendLines2, 2, "steelblue");
-        setTrendLine2(trendLines2, 3, "steelblue");
+        setTrendLine2(trendLines2, 2, 2, "steelblue");
+        setTrendLine2(trendLines2, 3, 2, "steelblue");
+
+        setTrendLine2(trendLines1, 2, 1, "lightseagreen");
+        setTrendLine2(trendLines1, 3, 1, "lightseagreen");
       // #endregion
       }
       // #endregion
@@ -384,12 +389,12 @@
           //.duration(animationDuration);    
         }
       }
-      function setTrendLine2(trendLines, lineNumber, lineColour) {
+      function setTrendLine2(trendLines, lineNumber,trendIndex, lineColour) {
         var dates = (trendLines || {}).dates;
         if (dates && dates.length) {
           var line = trendLines["close" + lineNumber];
           if (line)
-            svg.select("line.line" + lineNumber + "_2")
+            svg.select("line.line" + lineNumber + "_" + trendIndex)
               .style("visibility", "visible")
               .style("stroke", lineColour)  // colour the line
               .attr("x1", x(dates[0])) // x position of the first end of the line
@@ -398,7 +403,7 @@
               .attr("y2", y(line[1]));// y position of the second end of the line
           //.duration(animationDuration);    
         } else
-          svg.select("line.line" + lineNumber + "_2").style("visibility", "hidden");
+          svg.select("line.line" + lineNumber + "_" + trendIndex).style("visibility", "hidden");
       }
       // #endregion
     }

@@ -290,8 +290,8 @@ namespace HedgeHog.Alice.Client {
         throw;
       }
     }
-    public void MoveCorridorWavesCount(string pair, int chartNumber, int step) {
-      UseTradingMacro(pair, chartNumber, tm => tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2));
+    public double MoveCorridorWavesCount(string pair, int chartNumber, double step) {
+      return UseTradingMacro(pair, chartNumber, tm => { return tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2).Round(1); });
     }
     #endregion
     double IntOrDouble(double d, double max = 10) {

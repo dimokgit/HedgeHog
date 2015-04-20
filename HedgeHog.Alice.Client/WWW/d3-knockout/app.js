@@ -99,7 +99,7 @@
           });
         })
       ;
-      if (done) r.done(done);
+      if (done) r.done(function (data) { done(data, note); });
     }
     function setTradeLevelActive(levelIndex) {
       serverCall("startTrades", [pair, levelIndex === 0], resetPlotter);
@@ -134,16 +134,23 @@
       serverCall("setTradeCloseLevel", [pair, isBuy, data.value], resetPlotter);
     }
     function moveCorridorWavesCount(chartIndex,step) {
-      serverCall("moveCorridorWavesCount", [pair, chartIndex, step * 0.1], resetPlotter);
+      serverCall("moveCorridorWavesCount", [pair, chartIndex, step * 0.1], function (priceCma, note) {
+        note.update({
+          type: "success",
+          text: "Done: " + priceCma,
+          icon: 'picon picon-task-complete',
+          hide: true,
+          delay: 1000
+        });
+        resetPlotter();
+      });
     }
     function saveTradeSettings() {
       var ts = settingsGrid().jqPropertyGrid('get');
-      settingsGrid().jqPropertyGrid('destroy');
       settingsGrid().empty();
       serverCall("saveTradeSettings", [pair, ts], resetPlotter);
     }
     function readTradeSettings() {
-      settingsGrid().jqPropertyGrid('destroy');
       settingsGrid().empty();
       serverCall("readTradeSettings", [pair], function (ts) {
         var tsMeta = {
@@ -223,12 +230,12 @@
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
 
       commonChartParts = { tradeLevels: response.tradeLevels, askBid: response.askBid, trades: response.trades };
-      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod));
+      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod));
     }
     function updateChart2(response) {
       if (!commonChartParts.tradeLevels) return;
       if (!response.rates) {
-        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
+        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
         return;
       }
       setTrendDates(response.trendLines, response.trendLines2);
@@ -248,7 +255,7 @@
         return d.d >= endDate || d.d < startDate;
       });
       lineChartData2.push.apply(lineChartData2, rates);
-      self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
+      self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
     }
     // #endregion
     // #region LastDate
@@ -282,12 +289,13 @@
     // #endregion
 
     // #region Helpers
-    function chartDataFactory(data, trendLines, trendLines2, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod) {
-      setTrendDates(trendLines, trendLines2);
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod) {
+      setTrendDates(trendLines, trendLines2, trendLines1);
       return {
         data: data ? data() : [],
         trendLines: trendLines,
         trendLines2: trendLines2,
+        trendLines1: trendLines1,
         tradeLevels: tradeLevels,
         askBid: askBid || {},
         trades: trades || [],
@@ -328,7 +336,7 @@
       var i = array.indexOf(item);
       array.splice(i, 1);
     }
-    function defaultChartData(chartNum) { return chartDataFactory(lineChartData, { dates: [] }, {}, null, null, null, false, false, chartNum, false, 0); }
+    function defaultChartData(chartNum) { return chartDataFactory(lineChartData, { dates: [] }, {}, {}, null, null, null, false, false, chartNum, false, 0); }
     // #endregion
   }
   // #endregion

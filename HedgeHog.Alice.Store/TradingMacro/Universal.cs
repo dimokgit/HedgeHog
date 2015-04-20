@@ -1639,11 +1639,9 @@ namespace HedgeHog.Alice.Store {
                 #region WorkFlow
                 var rateLast = ratesLast.Take(1);
                 Func<bool> isSpikeUp = () => rateLast
-                  .Where(rate => TrendLines2Trends.PriceAvg3 < rate.PriceAvg3)
-                  .Any(rl => ratesLast.Any(r => r.PriceAvg > rl.PriceAvg21));
+                  .Any(rl => ratesLast.Any(r => r.PriceAvg > TrendLinesTrendsPriceMax));
                 Func<bool> isSpikeDown = () => rateLast
-                  .Where(rate => TrendLines2Trends.PriceAvg2 > rate.PriceAvg2)
-                  .Any(rl => ratesLast.Any(r => r.PriceAvg < rl.PriceAvg31));
+                  .Any(rl => ratesLast.Any(r => r.PriceAvg < TrendLinesTrendsPriceMin));
                 Func<bool> isSpike = () => isSpikeUp() || isSpikeDown();
 
                 var hasSpikeUp = WFD.Make("hasSpikeUp", false);
@@ -1925,81 +1923,6 @@ namespace HedgeHog.Alice.Store {
                    ).Any());
                 var setUpDown = getUpDown.Value
                   //.Where(_ => currentPriceOk.Value)
-                  .Do(ud => {
-                    BuyLevel.RateEx = ud.up;
-                    SellLevel.RateEx = ud.down;
-                  });
-                var wfManual = new Func<List<object>, Tuple<int, List<object>>>[] {
-                    _ti =>{ WorkflowStep = "1 Wait Start";
-                    var dict = _ti.OfType<Dictionary<string, DateTime>>().FirstOrDefault();
-                    if (dict == null) _ti.Add(dict = new Dictionary<string, DateTime>() { { "StartDate", DateTime.MinValue } });
-                      var rangeDate = setUpDown.Select(a => a.StartDate).DefaultIfEmpty().Single();
-                    if (rangeDate > dict["StartDate"]) { 
-                        _buySellLevelsForEach(sr => { sr.TradesCountEx = 0; sr.CanTradeEx = true; });
-                        dict["StartDate"] = rangeDate;
-                    }
-                      if(!getUpDown.Value.Any())
-                        _buySellLevelsForEach(sr => { sr.TradesCountEx = 0; sr.CanTradeEx = false; });
-                      return tupleStay(_ti);
-                    }};
-                workflowSubject.OnNext(wfManual);
-              } adjustExitLevels0();
-              break;
-            #endregion
-            #region StDevFlat4
-            case TrailingWaveMethod.StDevFlat4: {
-                #region firstTime
-                if (firstTime) {
-                  if (ScanCorridorBy != ScanCorridorFunction.StDevIntegral3) {
-                    ScanCorridorBy = ScanCorridorFunction.StDevIntegral3;
-                    Log = new Exception(new { ScanCorridorBy = ScanCorridorFunction.StDevIntegral3 } + "");
-                  }
-                  LineTimeMinFunc = rates0 => rates0.CopyLast((CorridorDistance * WaveStDevRatio).ToInt()).First().StartDateContinuous;
-                  Log = new Exception(new { VoltsFrameLength, VoltsBelowAboveLengthMin, WaveStDevRatio } + "");
-                  workFlowObservable.Subscribe();
-                  #region onCloseTradeLocal
-                  onCloseTradeLocal += t => {
-                    if (t.PL > 0) _buySellLevelsForEach(sr => sr.CanTradeEx = false);
-                    if (!IsInVitualTrading && (CurrentGrossInPipTotal > 0 || !IsAutoStrategy && t.PL > 0))
-                      IsTradingActive = false;
-                    if (CurrentGrossInPipTotal > 0)
-                      BroadcastCloseAllTrades();
-                  };
-                  onOpenTradeLocal += WorkflowMixin.YAction<Trade>(h => t => {
-                    onOpenTradeLocal.UnSubscribe(h, d => onOpenTradeLocal -= d);
-                  });
-                  #endregion
-                  //initTradeRangeShift();
-                }
-                #endregion
-                var point = InPoints(1);
-                var voltsMin = GetVoltageAverage();
-                Func<Rate, double, bool> isInVerticalRange = (r, max) => GetVoltage(r) < max && GetVoltage2(r) > WaveStDevRatio;
-                var rates = RatesArray.Reverse((r, i) => new { r, i }).ToArray();
-                var rateSlots = rates
-                  .Select(rate => new { rate.r, rate.i, isInside = isInVerticalRange(rate.r, voltsMin) })
-                  .SkipWhile(rate => !rate.isInside)
-                  .DistinctUntilChanged(rate => rate.isInside).ToArray();
-                var longestSlot = (
-                  from z in (rateSlots.Zip(rateSlots.Skip(1), (s1, s2) => new { r1 = s1, r2 = s2, l = s2.i - s1.i })).AsParallel()
-                  where z.r1.isInside && z.l > VoltsBelowAboveLengthMin
-                  select z
-                  ).OrderByDescending(z => z.l)
-                  .Select(z => rates.SkipWhile(r => r.r > z.r1.r).Take(z.l).ToArray(r => r.r))
-                  .Take(1)
-                  .ToArray();
-                var getUpDown = MonoidsCore.ToLazy(() => longestSlot.Select(ls =>
-                  new { up = ls.Max(r => r.AskHigh), down = ls.Min(r => r.BidLow), ls.Last().StartDate }).ToArray());
-                getUpDown.Value.ForEach(ud => {
-                  CenterOfMassBuy = ud.up;
-                  CenterOfMassSell = ud.down;
-                });
-                var currentPriceOk = MonoidsCore.ToLazy(() =>
-                  (from ud in getUpDown.Value
-                   select CurrentEnterPrice(null).Between(ud.up, ud.down)
-                   ).Any());
-                var setUpDown = getUpDown.Value
-                  .Where(_ => currentPriceOk.Value)
                   .Do(ud => {
                     BuyLevel.RateEx = ud.up;
                     SellLevel.RateEx = ud.down;

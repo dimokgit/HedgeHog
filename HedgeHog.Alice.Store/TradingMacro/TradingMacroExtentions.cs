@@ -335,7 +335,7 @@ namespace HedgeHog.Alice.Store {
       try {
         var settings = Lib.ReadTestParameters(path);
         settings.ForEach(tp =>
-          this.SetProperty(tp.Key, (object)tp.Value, p => p.GetCustomAttribute<DnrAttribute>() == null));
+          this.SetProperty(tp.Key, (object)tp.Value, p => p != null && p.GetCustomAttribute<DnrAttribute>() == null));
         Log = new Exception("{0} Settings loaded.".Formater(Pair));
       } catch (Exception exc) {
         Log = exc;
@@ -1428,6 +1428,7 @@ namespace HedgeHog.Alice.Store {
         StDevByPriceAvg = double.NaN;
         LastTradeLossInPips = 0;
         LoadRatesStartDate2 = DateTimeOffset.MinValue;
+        BarsCountLastDate = DateTime.MinValue;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2056,8 +2057,8 @@ namespace HedgeHog.Alice.Store {
       }
     }
     double CalcTicksPerSecond(IList<Rate> rates) {
-      if(BarPeriod != BarsPeriodType.t1 )return 1;
-      return  rates.CalcTicksPerSecond();
+      if (BarPeriod != BarsPeriodType.t1) return 1;
+      return rates.CalcTicksPerSecond();
     }
     int GetCrossesCount(IList<Rate> rates, double level) {
       return rates.Count(r => level.Between(r.BidLow, r.AskHigh));
@@ -2756,9 +2757,9 @@ namespace HedgeHog.Alice.Store {
 
     #region TakeProfitBSRatio
     private double _TakeProfitXRatio = 1;
-    [WwwSetting(Index=wwwSettingsTrading)]
+    [WwwSetting(Index = wwwSettingsTrading)]
     [Description("TakeProfit = (BuyLevel-SellLevel)*X")]
-    [Category(categoryActive)]
+    [Category(categoryActiveFuncs)]
     public double TakeProfitXRatio {
       get { return _TakeProfitXRatio; }
       set {
@@ -2795,16 +2796,11 @@ namespace HedgeHog.Alice.Store {
           {TradeLevelBy.PriceHigh0,()=> TrendLines1Trends.PriceAvg2},
           {TradeLevelBy.PriceLow0,()=> TrendLines1Trends.PriceAvg3},
 
+          {TradeLevelBy.PriceMax,()=> TrendLinesTrendsPriceMax},
+          {TradeLevelBy.PriceMin,()=> TrendLinesTrendsPriceMin},
+
           {TradeLevelBy.None,()=>double.NaN}
         }; return _TradeLevelFuncs;
-      }
-    }
-
-
-    static readonly double _ratesHeight_2 = 5.0 / 12;
-    private bool IsTakeProfitFunctionAbsolute {
-      get {
-        return TakeProfitFunction.ToString().StartsWith("PriceAvg");
       }
     }
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function) {
@@ -2812,7 +2808,7 @@ namespace HedgeHog.Alice.Store {
       switch (function) {
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
-        case TradingMacroTakeProfitFunction.RatesHeightX: tp = RatesHeight * TakeProfitXRatio; break;
+        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
         #endregion
         #region BuySellLevels
         case TradingMacroTakeProfitFunction.BuySellLevelsX:
@@ -2869,8 +2865,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
         case ScanCorridorFunction.Distance6: return ScanCorridorByDistance52;
         case ScanCorridorFunction.Distance7: return ScanCorridorByDistance7;
-        case ScanCorridorFunction.StDevIntegral: return ScanCorridorByStDevIntegral;
-        case ScanCorridorFunction.StDevIntegral3: return ScanCorridorByStDevTripleIntegral;
       }
       throw new NotSupportedException(function + "");
     }

@@ -526,20 +526,27 @@ namespace HedgeHog {
       o.SetProperty(p, v, pi => true);
     }
     public static void SetProperty(this object o, string p, object v, Func<PropertyInfo, bool> propertyPredicate = null) {
-      var convert = new Func<object, Type, object>((valie, type) => {
-        if (valie != null) {
+      var convert = new Func<object, Type, object>((value, type) => {
+        if (value != null) {
           Type tThis = Nullable.GetUnderlyingType(type);
           if (tThis == null) tThis = type;
-          valie = tThis.IsEnum ? Enum.Parse(tThis, v + "") : Convert.ChangeType(v, tThis, null);
+          if (tThis.IsEnum) 
+            try{
+            return Enum.Parse(tThis, v + "", true);
+            } catch (Exception exc) {
+              throw new ArgumentException(new { property = p } + "", exc);
+            }
+          return Convert.ChangeType(v, tThis, null);
         }
-        return valie;
+        return value;
       });
-      var pi = o.GetType().GetProperty(p);
+      var t = o.GetType();
+      var pi = t.GetProperty(p);
       if (propertyPredicate != null && !propertyPredicate(pi)) return;
       if (pi != null) pi.SetValue(o, v = convert(v, pi.PropertyType), new object[] { });
       else {
         System.Reflection.FieldInfo fi = o.GetType().GetField(p);
-        if (fi == null) throw new NotImplementedException("Property " + p + " is not implemented in " + o.GetType().FullName + ".");
+        if (fi == null) throw new MissingMemberException(t.Name, p);
         fi.SetValue(o, convert(v, fi.FieldType));
       }
     }
@@ -697,14 +704,14 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
-    public static IEnumerable<Tuple<int, DateTimeOffset, int>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
+    public static IEnumerable<Tuple<int, DateTimeOffset, double>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
       return values
         .Select((rate, i) => new { y = value(rate), x = date(rate), i })
         .Where(x => !x.y.IsNaN())
         .Buffer(waveWidth, 1)
         .Where(chank => chank.Count == waveWidth)
         .Select(chunk => {
-          var slope = chunk.LinearSlope(r => r.y).SignUp();
+          var slope = chunk.LinearSlope(r => r.y);
           var extream = slope > 0 ? chunk.MaxBy(c => c.y).First() : chunk.MinBy(c => c.y).First();
           return new { slope, extream.x, i = extream.i };
         })

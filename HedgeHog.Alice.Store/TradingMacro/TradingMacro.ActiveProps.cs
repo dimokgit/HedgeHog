@@ -107,28 +107,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    #region VoltsAverageLength
-    private double _VoltsAverageLength = 2880;
-    [Category(categoryXXX)]
-    [Description("Frame length in hours")]
-    public double VoltsAverageLength {
-      get {
-        int min = 24, max = 24 * 10;
-        if (!_VoltsAverageLength.Between(min, max)) {
-          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, min, max } + "");
-          VoltsAverageLength = BarsCountCalc / 60;
-          Log = new Exception(new { VoltsAverageLength = _VoltsAverageLength, Message = "New value" } + "");
-        }
-        return _VoltsAverageLength;
-      }
-      set {
-        if (_VoltsAverageLength != value) {
-          _VoltsAverageLength = value;
-          OnPropertyChanged("VoltsAverageLength");
-        }
-      }
-    }
-    #endregion
     #region CloseTradesBeforeNews
     private bool _CloseTradesBeforeNews = true;
     [Category(categoryActiveYesNo)]

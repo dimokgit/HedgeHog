@@ -44,8 +44,6 @@ namespace HedgeHog.Alice.Store {
     Distance5 = 14,
     Distance6 = 15,
     Distance7 = 16,
-    StDevIntegral = 17,
-    StDevIntegral3 = 18,
     HorizontalProbe = 200,
     WaveStDevHeight = 80,
     StDevMinInRange = 81,
@@ -85,7 +83,6 @@ namespace HedgeHog.Alice.Store {
     StDevFlat = 87,
     StDevFlat2 = 88,
     StDevFlat3 = 89,
-    StDevFlat4 = 90,
     LongCross = 80,
     LongLine = 160,
     Recorder = 1000
@@ -94,7 +91,7 @@ namespace HedgeHog.Alice.Store {
     BuySellLevels,
     BuySellLevelsX,
     RatesHeight,
-    RatesHeightX
+    RatesHeight_2
   }
   public enum TradeLevelBy {
     None = 0,
@@ -110,7 +107,9 @@ namespace HedgeHog.Alice.Store {
     PriceHigh,
     PriceLow,
     PriceHigh0,
-    PriceLow0
+    PriceLow0,
+    PriceMax,
+    PriceMin
   }
   public enum CorridorHeightMethods {
     ByMA = 0,
@@ -177,7 +176,9 @@ namespace HedgeHog.Alice.Store {
 
   public enum TradeLevelsPreset {
     SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4,
-    SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8
+    SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8,
+    Corridor2 = 9,Corridor2R=10,
+    Corridor1 = 11,Corridor1R=12
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,

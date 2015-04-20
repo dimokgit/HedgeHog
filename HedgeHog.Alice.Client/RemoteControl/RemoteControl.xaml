@@ -465,9 +465,9 @@
                       <Button Content="►" ContentTemplate="{StaticResource SmallButtonTemplate}"
                       Command="{Binding DataContext.StartReplayCommand,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=DataGrid}}"
                       CommandParameter="{Binding BindsDirectlyToSource=True}" />
-                      <CheckBox Content="||" IsChecked="{Binding DataContext.ReplayArguments.InPause,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
-                      <CheckBox Content="&lt;" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
-                      <CheckBox Content=">" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content="" IsChecked="{Binding DataContext.ReplayArguments.InPause,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content="" IsChecked="{Binding DataContext.ReplayArguments.StepBack,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
+                      <CheckBox Content="" IsChecked="{Binding DataContext.ReplayArguments.StepForward,RelativeSource={RelativeSource AncestorType=DataGrid}}" Margin="0,-4" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal">
                       <StackPanel Orientation="Horizontal">

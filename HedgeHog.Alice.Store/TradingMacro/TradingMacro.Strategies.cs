@@ -303,6 +303,13 @@ namespace HedgeHog.Alice.Store {
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
     private Rate.TrendLevels TrendLines2Trends { get { return TrendLines2.Value[1].Trends; } }
     private Rate.TrendLevels TrendLines1Trends { get { return TrendLines1.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLinesTrends { get { return TrendLines.Value[1].Trends; } }
+    private double TrendLinesTrendsPriceMax {
+      get { return TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2, TrendLines1Trends.PriceAvg2); }
+    }
+    private double TrendLinesTrendsPriceMin {
+      get { return TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3, TrendLines1Trends.PriceAvg3); }
+    }
 
     double GetTradeCloseLevel(bool buy, double def = double.NaN) {
       return CorridorStats.Rates
@@ -419,16 +426,24 @@ namespace HedgeHog.Alice.Store {
       rates[1].Trends.PriceAvg1 = regRates[1];
 
       var pa1 = rates[0].Trends.PriceAvg1;
+      rates[0].Trends.PriceAvg02 = pa1 + hl;
+      rates[0].Trends.PriceAvg03 = pa1 - hl;
       rates[0].Trends.PriceAvg2 = pa1 + h;
       rates[0].Trends.PriceAvg3 = pa1 - l;
       rates[0].Trends.PriceAvg21 = pa1 + h1;
       rates[0].Trends.PriceAvg31 = pa1 - l1;
+      rates[0].Trends.PriceAvg22 = pa1 + h*2;
+      rates[0].Trends.PriceAvg32 = pa1 - l*2;
 
       pa1 = rates[1].Trends.PriceAvg1;
+      rates[1].Trends.PriceAvg02 = pa1 + hl;
+      rates[1].Trends.PriceAvg03 = pa1 - hl;
       rates[1].Trends.PriceAvg2 = pa1 + h;
       rates[1].Trends.PriceAvg3 = pa1 - l;
       rates[1].Trends.PriceAvg21 = pa1 + h1;
       rates[1].Trends.PriceAvg31 = pa1 - l1;
+      rates[1].Trends.PriceAvg22 = pa1 + h * 2;
+      rates[1].Trends.PriceAvg32 = pa1 - l * 2;
       return rates;
     }
     public static Rate.TrendLevels[] SetTrendLines2(IList<double> doubles) {

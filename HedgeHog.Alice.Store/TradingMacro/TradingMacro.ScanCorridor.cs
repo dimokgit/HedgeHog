@@ -99,31 +99,6 @@ namespace HedgeHog.Alice.Store {
         }), true);
     }
 
-    private CorridorStatistics ScanCorridorByStDevIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
-      SetVoltsByStDevDblIntegral4(ratesReversed, VoltsFrameLength, GetPriceMA);
-      var voltsAll = ratesForCorridor.Select(GetVoltage).Where(Lib.IsNotNaN).ToArray();
-      var voltsAll2 = ratesForCorridor.Select(GetVoltage2).ToArray();
-      OnGeneralPurpose(() => {
-        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
-        GetVoltageHigh = () => vh;
-        var va = voltsAll2.Average();
-        GetVoltageAverage = () => va;
-      }, IsInVitualTrading);
-      Func<Rate, double> distanceFunc = r => GetVoltage2(r).Abs();
-      var distanceMin = UseRatesInternal(ri =>
-        ri.CopyLast((VoltsAverageLength * 60).ToInt())
-        .Select(distanceFunc)
-        .Where(Lib.IsNotNaN)
-        .Average() * CorridorDistance);
-      var distanceSum = 0.0;
-      var count = ratesReversed.Select(r => (distanceSum += distanceFunc(r))).TakeWhile(d => d < distanceMin).Count();
-      Func<IList<Rate>, int> scan = rates => distanceMin == 0
-        ? CorridorDistance
-        : count;// rateChunks.SkipWhile(chunk => chunk.Sum(GetVoltage) < distanceMin).First().Count;
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
-    }
-
     #region ScanCorridorByStDevTripleIntegral
     private void SetVoltsByStDevTripleIntegral(IList<Rate> ratesReversed, int frameLength) {
       Func<double, double, bool> takeWhile = (d1, d2) => d1.IsNaN() && d2.IsNotNaN();
@@ -150,23 +125,6 @@ namespace HedgeHog.Alice.Store {
           SetVoltage(chunk[0], regRes.angle);
           SetVoltage2(chunk[0], corr);
         });
-    }
-    private CorridorStatistics ScanCorridorByStDevTripleIntegral(IList<Rate> ratesForCorridor, Func<Rate, double> priceHigh, Func<Rate, double> priceLow) {
-      var ratesReversed = UseRatesInternal(ri => ri.Reverse().ToArray());
-      SetVoltsByStDevTripleIntegral(ratesReversed, VoltsFrameLength);
-      var voltsAll = ratesForCorridor.Select(GetVoltage).ToArray();
-      var voltsAll2 = ratesForCorridor.Select(GetVoltage2);
-      OnGeneralPurpose(() => {
-        var vh = voltsAll.AverageByIterations(VoltsHighIterations).DefaultIfEmpty().Average();
-        GetVoltageHigh = () => vh;
-        var va = voltsAll.ToArray().AverageByIterations(VoltsAvgIterations).DefaultIfEmpty().Average();
-        GetVoltageAverage = () => va;
-      }, IsInVitualTrading);
-      var distanceMin = UseRatesInternal(ri => ri.CopyLast((VoltsAverageLength * 60).ToInt()).Average(GetVoltage) * CorridorDistance);
-      var distanceSum = 0.0;
-      var count = ratesReversed.Select(r => (distanceSum += GetVoltage(r))).TakeWhile(d => d < distanceMin).Count();
-      Func<IList<Rate>, int> scan = rates => distanceMin == 0 ? CorridorDistance : count;
-      return ScanCorridorLazy(ratesForCorridor.ReverseIfNot(), scan);
     }
     #endregion
     #region ScanCorridorByDistance
@@ -1665,15 +1623,15 @@ namespace HedgeHog.Alice.Store {
           .Buffer(bufferCount)
           .Select(b => new { Price = b.Average(r => r.PriceCMALast), StartDate = b.Last().StartDate });
         var extreams = ratesForWave.Extreams(waveWidth, r => r.Price, r => r.StartDate).ToArray();
-        var extreams2 = extreams.Scan(Tuple.Create(0, DateTimeOffset.Now, 0), (p, t) => {
+        var extreams2 = extreams.Scan(Tuple.Create(0, DateTimeOffset.Now, 0.0), (p, t) => {
           return p.Item1 == 0 ? t
             : t.Item1 - p.Item1 < waveWidth / 2
             ? p
-            : p.Item3 == t.Item3
+            : p.Item3.SignUp() == t.Item3.SignUp()
             ? p
             : t;
         });
-        Func<List<Tuple<int, DateTimeOffset, int>>> newList = () => new List<Tuple<int, DateTimeOffset, int>>();
+        Func<List<Tuple<int, DateTimeOffset, double>>> newList = () => new List<Tuple<int, DateTimeOffset, double>>();
         var extreams21 = extreams.Scan(newList(), (l, t) => {
           if (l.Count > 0 && t.Item1 - l[0].Item1 > waveWidth / 2)
             l = newList();
@@ -1681,12 +1639,14 @@ namespace HedgeHog.Alice.Store {
           return l;
         })
         .Select(l => l[0])
-        .GroupByAdjacent(t => t.Item3)
+        .GroupByAdjacent(t => t.Item3.SignUp())
         .Select(g => g.Last())
         .ToArray();
         var extreams3 = extreams21
           .DistinctUntilChanged(t => t.Item1)
-          .SelectMany(w => rates.FuzzyIndex(w.Item2, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate)))
+          .SelectMany(w => 
+            rates.FuzzyIndex(w.Item2, (d, r1, r2) => d.Between(r1.StartDate, r2.StartDate))
+          )
           .ToList();
         var count = extreams3
           .Skip(CorridorWaveCount-1)
