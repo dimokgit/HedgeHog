@@ -1590,13 +1590,8 @@ namespace HedgeHog.Alice.Store {
         .SkipWhile(x => x.std0.Ratio(x.std1) > 1.5)
         .Select(b => b.i)
         .Take(1);
-      var indexByStartDate = CorridorStartDate
-        .YieldIf(d => d.HasValue)
-        .SelectMany(sd => rates.FuzzyIndex(sd.Value, isBetween))
-        .SelectMany(i => extreams3.SkipWhile(c => c < i - widthAvg / 3.0).Take(1))
-        .Take(1);
-      var index = indexByStartDate
-        .Concat(extreams3.Skip(CorridorWaveCount - 1))
+      var index = extreams3
+        .Skip(CorridorWaveCount - 1)
         .Take(1)
         .DefaultIfEmpty(extreams3.DefaultIfEmpty(rates.Count - 1).Last())
         //.Where(_ => !freeze())

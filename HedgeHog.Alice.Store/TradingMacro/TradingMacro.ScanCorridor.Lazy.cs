@@ -47,7 +47,7 @@ namespace HedgeHog.Alice.Store {
 
       var startMax = new Lazy<DateTime>(() => CorridorStopDate.IfMin(DateTime.MaxValue));
       var startMin = CorridorStartDate.GetValueOrDefault(CorridorStats.StartDate);
-      var rates = !CorridorStartDate.HasValue || ScanCorridorBy == ScanCorridorFunction.WaveCount
+      var rates = !CorridorStartDate.HasValue
         ? !CorridorStopDate.IsMin()
         ? ratesReversed
           .SkipWhile(r => lazyCount.Value > 0 && r.StartDate > startMax.Value)
