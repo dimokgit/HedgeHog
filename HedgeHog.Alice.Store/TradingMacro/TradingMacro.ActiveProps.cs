@@ -39,6 +39,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TradeCountStart
     private int _TradeCountStart;
+    [WwwSetting(Group=wwwSettingsTrading)]
     [Category(categoryActive)]
     [DisplayName("TradeCountStart")]
     [Description("Starting TradeCount for Buy/Sell Trade Lines")]
@@ -123,6 +124,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TpsMin
     private double _TpsMin;
+    [WwwSetting(Group=wwwSettingsCorridor)]
     [Category(categoryActive)]
     [DisplayName("TicksPerSec Min")]
     public double TpsMin {

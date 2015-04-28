@@ -117,10 +117,9 @@ namespace HedgeHog.Alice.Store {
             }.Min(m => InPips(m));
             var takeBackInPips = (IsTakeBack ? Trades.GrossInPips() - CurrentGrossInPips - currentGrossOthersInPips + this.PriceSpreadAverageInPips : 0);
             var ratesShort = RatesArray.CopyLast(5);
-            var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy) - PointSize / 10;
-            var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell) + PointSize / 10;
+            var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy - PointSize / 10);
+            var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell + PointSize / 10);
             var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips);
-            var isReversedCorridor = SellLevel.Rate > BuyLevel.Rate;
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {
@@ -130,8 +129,8 @@ namespace HedgeHog.Alice.Store {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
               var levelBy = LevelBuyCloseBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
               buyCloseLevel.RateEx = new[]{
-                GetTradeCloseLevel(true,Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
-                ,isReversedCorridor?double.MinValue: priceAvgMax
+                GetTradeCloseLevel(true).Min(Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
+                ,priceAvgMax
               }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
               ;
               if (signB != (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign())
@@ -147,8 +146,8 @@ namespace HedgeHog.Alice.Store {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var levelBy = LevelSellCloseBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
               sellCloseLevel.RateEx = new[] { 
-                GetTradeCloseLevel(false,Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
-                , isReversedCorridor? double.MaxValue: priceAvgMin
+                GetTradeCloseLevel(false).Max(Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
+                , priceAvgMin
               }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
               ;
               if (sign != (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign())
@@ -160,7 +159,7 @@ namespace HedgeHog.Alice.Store {
       return adjustExitLevels;
     }
     bool _limitProfitByRatesHeight;
-    [WwwSetting(Index=wwwSettingsTrading)]
+    [WwwSetting(Group=wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     public bool LimitProfitByRatesHeight {
       get { return _limitProfitByRatesHeight; }

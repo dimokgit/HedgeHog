@@ -55,7 +55,8 @@ namespace HedgeHog.Alice.Client {
       try {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(e.Exception));
       } catch { }
-      MessageBox.Show(e.Exception.ToString());
+      if (!IsHandled(e.Exception))
+        MessageBox.Show(e.Exception.ToString());
     }
 
     void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
@@ -64,7 +65,9 @@ namespace HedgeHog.Alice.Client {
       } catch { }
       MessageBox.Show(((Exception)e.ExceptionObject).ToString());
     }
-
+    bool IsHandled(AggregateException e) {
+      return e!=null && e.Flatten().InnerException.InnerException is System.Net.HttpListenerException;
+    }
     public ResourceDictionary Resources
     {
         get { return base.Resources; }

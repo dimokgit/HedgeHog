@@ -613,6 +613,7 @@ namespace HedgeHog.Bars {
       
       public double Slope { get; set; }
       public double StDev { get; set; }
+      public double Angle { get; set; }
       public TrendLevels(double slope,double stDev) {
         this.Slope = slope;
         this.StDev = stDev;

@@ -260,7 +260,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
-    [WwwSetting(Index=wwwSettingsCorridor)]
+    [WwwSetting(Group=wwwSettingsCorridor)]
     [Category(categoryActive)]
     public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
@@ -624,7 +624,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Days")]
-    [Category(categoryActiveFuncs)]
+    [Category(categoryTrading)]
     public WeekDays TradingDaysRange {
       get { return (WeekDays)CorridorRatioForRange; }
       set {
@@ -710,7 +710,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
-    [WwwSetting(Index=wwwSettingsTrading)]
+    [WwwSetting(Group=wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -815,9 +815,9 @@ namespace HedgeHog.Alice.Store {
     public const string categoryTest = "Test";
     public const string categoryTestControl = "Test Control";
     public const string categorySession = "Session";
-    public const int wwwSettingsLiveOrders = 10;
-    public const int wwwSettingsCorridor = 20;
-    public const int wwwSettingsTrading = 30;
+    public const string wwwSettingsLiveOrders = "3. Live Orders";
+    public const string wwwSettingsCorridor = "2. Corridor";
+    public const string wwwSettingsTrading = "1. Trading";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -834,7 +834,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [WwwSetting(Index=wwwSettingsCorridor)]
+    [WwwSetting(Group=wwwSettingsCorridor)]
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
@@ -944,6 +944,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     [DisplayName("Trading Angle Range")]
+    [WwwSetting(Group = wwwSettingsCorridor)]
     [Category(categoryActive)]
     public double TradingAngleRange_ {
       get { return TradingAngleRange; }
@@ -1025,7 +1026,7 @@ namespace HedgeHog.Alice.Store {
 
 
     [DisplayName("Turn Off Function")]
-    [Category(categoryActiveFuncs)]
+    [Category(categoryTrading)]
     public TurnOffFunctions TurnOffFunction {
       get { return (TurnOffFunctions)CorridorIterationsIn; }
       set {
@@ -1253,7 +1254,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region ExitFunction
     [DisplayName("ExitFunction")]
-    [Category(categoryActiveFuncs)]
+    [Category(categoryTrading)]
     public ExitFunctions ExitFunction {
       get { return (ExitFunctions)VolumeTresholdIterations; }
       set {

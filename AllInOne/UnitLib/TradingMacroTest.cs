@@ -63,7 +63,11 @@ namespace UnitLib
     //
     #endregion
 
-
+    [TestMethod]
+    public void GetTradeConditions() {
+      var tcs = new TradingMacro().GetTradeConditions();
+      Assert.IsTrue(tcs != null);
+    }
     /// <summary>
     ///A test for Fractals
     ///</summary>

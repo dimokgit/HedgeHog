@@ -56,9 +56,10 @@ namespace HedgeHog {
         var sw = i % 2 == 0 ? skipWhile : b => !skipWhile(b);
         var count = countMap(getCounter(s, e, sw, ns)).Min(maxCount);
         var step = ns(s).Abs().Max(ns(e).Abs()) * divider;
-        if (!count.Between(s - step, e + step))
+        if (!count.Between(s - step-1, e + step))
           if (step.Abs() > 1) doContinue = true;
-          else GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "")));
+          else
+            if (count.Abs(s) > 1) GalaSoft.MvvmLight.Messaging.Messenger.Default.Send(new LogMessage(new Exception(new { func = "IteratorLoopPow: !count.between(start,end)", count, start = s, end = e } + "")));
         if (ns(count).Abs() <= 1)
           return count;
         if (doContinue) continue;

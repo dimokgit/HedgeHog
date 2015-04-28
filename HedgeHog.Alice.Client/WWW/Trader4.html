@@ -4,6 +4,25 @@
   <title>Trader 4</title>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--#region-->
+  <link rel="apple-touch-icon" sizes="57x57" href="HedgeHog.ico/apple-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="HedgeHog.ico/apple-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="HedgeHog.ico/apple-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="HedgeHog.ico/apple-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="HedgeHog.ico/apple-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="HedgeHog.ico/apple-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="HedgeHog.ico/apple-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="HedgeHog.ico/apple-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="HedgeHog.ico/apple-icon-180x180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="HedgeHog.ico/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="HedgeHog.ico/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="HedgeHog.ico/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="HedgeHog.ico/favicon-16x16.png">
+  <link rel="manifest" href="HedgeHog.ico/manifest.json">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="HedgeHog.ico/ms-icon-144x144.png">
+  <meta name="theme-color" content="#ffffff">
+  <!--#endregion-->
   <!--#region CSS-->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css" />
@@ -40,8 +59,6 @@
     }
 
     .container {
-      /*background-color: #99CCFF;*/
-      padding: 0;
       margin: 0;
     }
 
@@ -50,7 +67,11 @@
       margin: 0;
     }
 
-    #profit {
+    #discussion {
+      padding: 0;
+    }
+
+    #profit,#openTradeGross {
       display: inline-block;
     }
 
@@ -82,16 +103,16 @@
       line-height: none;
     }
 
-    .navbar-collapse.collapse {
-      padding-left: 0;
-    }
     /*#endregion */
 
     .modal-header {
       min-height: 1em;
       padding: 5px;
     }
-
+    .navbar-toggle{
+      padding-bottom:0;
+      padding-top:0;
+    }
     .modal-body {
       padding: 5px;
     }
@@ -113,6 +134,12 @@
 
     #settingsGrid input[type=text] {
       width: 100%;
+    }
+    #settingsGrid .pgGroupRow{
+      cursor:default;
+    }
+    #settingsGrid .pgGroupRow :hover{
+      text-decoration: underline;
     }
   </style>
   <script>
@@ -161,6 +188,13 @@
             </button>
           </li>
           <li>
+            <button data-bind="click:getTradeSettings"
+                    data-toggle="modal"
+                    data-target="#tradeConditionsDialog">
+              <span class="glyphicon glyphicon-ok"></span>
+            </button>
+          </li>
+          <li>
             <button data-toggle="modal"
                     data-target="#cheatSheetDialog">
               <span class="glyphicon glyphicon-book"></span>
@@ -191,20 +225,23 @@
             <button class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-random"></span></button>
             <ul class="dropdown-menu multi-level">
               <li>
-<!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
+                <!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
                 <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
                 <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
                 <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,4,null)" />
                 <button data-bind="click:setTradeLevels.bind($data,9,null)">
                   <span class="glyphicon glyphicon-resize-full"></span>
                 </button>
-                <button data-bind="click:setTradeLevels.bind($data,11,null)" >
+                <button data-bind="click:setTradeLevels.bind($data,11,null)">
                   <span class="glyphicon glyphicon-resize-small"></span>
                 </button>
               </li>
-              <li><input type="button" value="Flip" data-bind="click:flipTradeLevels" /></li>
               <li>
-    <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
+                <input type="button" value="Flip" data-bind="click:flipTradeLevels" />
+                <input type="button" value="XCloseX" data-bind="click:resetCloseLevels" />
+              </li>
+              <li>
+                <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
                 <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,6,null)" />
                 <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,7,null)" />
                 <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,8,null)" />
@@ -285,7 +322,7 @@
               <li><input type="button" value="Manual" id="manualToggle" /></li>
               <li><button id="setDefaultTradeLevels">Default</button></li>
               <li><button id="alwaysOn">AlwaysOn</button></li>
-              <li><button id="buySellInit">WrapTrade</button></li>
+              <li><button data-bind="click:wrapTradeInCorridor">WrapTrade</button></li>
               <li>
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />
@@ -342,8 +379,9 @@
   </div>
   <!--#endregion-->
   <!--#region Info Bar-->
-  <div class="container container-fluid" style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%">
+  <div style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%">
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
+    <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross>0,loss:openTradeGross()<0}"></span>
     <span id="discussion"></span>
     <input value="" id="rsdMin" style="width:1.5em;height:1.5em" />
   </div>
@@ -354,10 +392,10 @@
   <!--#endregion-->
   <!--#region Dialogs-->
   <!--#region Settings dialog-->
-  <div class="modal fade" id="settingsDialog" tabindex="-1" role="dialog" aria-labelledby="settingsDialog" aria-hidden="true">
+  <div class="modal" id="settingsDialog" tabindex="-1" role="dialog" aria-labelledby="settingsDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header" style="display:none">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <span class="modal-title" id="myModalLabel">Trade Settings</span>
         </div>
@@ -373,8 +411,35 @@
     </div>
   </div>
   <!--#endregion-->
+  <!--#region TradeConditions dialog-->
+  <div class="modal" id="tradeConditionsDialog" tabindex="-1" role="dialog" aria-labelledby="tradeConditionsDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Trade Conditions</span>
+        </div>
+        <div class="modal-body">
+          <table>
+            <tbody data-bind="foreach:tradeConditions">
+              <tr>
+                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}"/></td>
+                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeConditions" data-dismiss="modal">Save</button>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
   <!--#region CheatSheet-->
-  <div class="modal fade" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
+  <div class="modal" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -403,7 +468,7 @@
   </div>
   <!--#endregion-->
   <!--#region News-->
-  <div class="modal fade" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
+  <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">

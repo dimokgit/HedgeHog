@@ -40,6 +40,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
@@ -183,7 +184,7 @@
       <Name>VTClasses</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.Alice.Store\HedgeHog.Alice.Store.csproj">
-      <Project>{C8766AE8-E649-4D05-A206-7D2FAB63F14A}</Project>
+      <Project>{c8766ae8-e649-4d05-a206-7d2fab63f14a}</Project>
       <Name>HedgeHog.Alice.Store</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\HedgeHog.Charter\HedgeHog.Charter.csproj">
@@ -239,8 +240,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <Shadow Include="Test References\HedgeHog.Alice.Store.accessor" />
-    <Shadow Include="Test References\HedgeHog.NewsCaster.accessor" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TestParams.txt">

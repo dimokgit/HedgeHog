@@ -42,8 +42,6 @@ namespace HedgeHog.Alice.Store {
     Distance2 = 12,
     Distance3 = 13,
     Distance5 = 14,
-    Distance6 = 15,
-    Distance7 = 16,
     HorizontalProbe = 200,
     WaveStDevHeight = 80,
     StDevMinInRange = 81,
@@ -57,7 +55,6 @@ namespace HedgeHog.Alice.Store {
     TimeRatio = 59,
     Height = 60,
     Ftt = 64,
-    FttMACorr = 66
   }
   public enum TrailingWaveMethod {
     SimpleMoveBO = 4,
@@ -89,9 +86,7 @@ namespace HedgeHog.Alice.Store {
   }
   public enum TradingMacroTakeProfitFunction {
     BuySellLevels,
-    BuySellLevelsX,
     RatesHeight,
-    RatesHeight_2
   }
   public enum TradeLevelBy {
     None = 0,

@@ -704,7 +704,7 @@ namespace HedgeHog {
       return extreams.Where(d => d != null).OrderBy(d => d.i).Select(d => fill(new Extream<T>(d.rate, d.slope, d.i))).ToArray();
     }
 
-    public static IEnumerable<Tuple<int, DateTimeOffset, double>> Extreams<T>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, DateTimeOffset> date) {
+    public static IEnumerable<Tuple<int, U, double>> Extreams<T,U>(this IEnumerable<T> values, int waveWidth, Func<T, double> value, Func<T, U> date) {
       return values
         .Select((rate, i) => new { y = value(rate), x = date(rate), i })
         .Where(x => !x.y.IsNaN())
@@ -715,7 +715,7 @@ namespace HedgeHog {
           var extream = slope > 0 ? chunk.MaxBy(c => c.y).First() : chunk.MinBy(c => c.y).First();
           return new { slope, extream.x, i = extream.i };
         })
-        .DistinctLastUntilChanged(a => a.slope)
+        .DistinctLastUntilChanged(a => a.slope.SignUp())
         .Select(r => Tuple.Create(r.i, r.x, r.slope));//.SkipLast(1);
     }
     /// <summary>

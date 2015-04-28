@@ -27,6 +27,7 @@ namespace HedgeHog.Alice.Store {
         .Select(t => t.Item1)
         .IfEmpty(() => CorridorStats.Rates.Count.Div(1.1).ToInt().YieldIf(backwards))
         .ForEach(count => CorridorStartDate = RatesArray[RatesArray.Count - count].StartDate);
+      ScanCorridorByWaveCount(RatesArray, _priceAvg, _priceAvg);
     }
     private IList<int> MACrosses(IList<Rate> rates, int frame) {
       var rates1 = rates.Zip(rates.Skip(1), (f, s) => new { f = f.PriceAvg, s = s.PriceAvg, ma = f.PriceCMALast }).ToArray();

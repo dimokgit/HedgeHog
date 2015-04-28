@@ -230,6 +230,7 @@ namespace HedgeHog.Shared {
         () => pl / 10000);
     }
     public static double MoneyAndLotToPips(string pair, double money, int lot, double rate, double pipSize) {
+      if (money == 0 || lot == 0) return 0;
       var ml = money / lot;
       return PipByPair(pair,
         () => ml * rate /  pipSize,

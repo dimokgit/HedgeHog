@@ -26,6 +26,7 @@ namespace HedgeHog.Alice.Client {
     }
     public void Configuration(IAppBuilder app) {
       GlobalHost.Configuration.DefaultMessageBufferSize = 1;
+      //GlobalHost.HubPipeline.AddModule(new MyHubPipelineModule());
       // Static content
       var fileSystem = new PhysicalFileSystem("./www");
       var fsOptions = new FileServerOptions {
@@ -142,12 +143,14 @@ namespace HedgeHog.Alice.Client {
       var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
         time = tm.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
+        otg= IntOrDouble(tm.OpenTradesGross2InPips, 1),
         tps = tm.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
         hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
         rsdMin = tm.RatesStDevMinInPips,
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
-        price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid }
+        price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid },
+        tci = GetTradeConditionsInfo(tm)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       });
       var tm2 = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
@@ -158,6 +161,22 @@ namespace HedgeHog.Alice.Client {
           GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         }
       }
+    }
+    public string[] ReadTradingConditions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray());
+    }
+    public string[] GetTradingConditions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, name) => name).ToArray());
+    }
+    public void SetTradingConditions(string pair, string[] names) {
+      UseTradingMacro(pair, tm => tm.TradeConditionsSet(names));
+    }
+    public Dictionary<string, bool> GetTradingConditionsInfo(string pair) {
+      return UseTradingMacro(pair, tm => GetTradeConditionsInfo(tm));
+    }
+
+    private static Dictionary<string, bool> GetTradeConditionsInfo(TradingMacro tm) {
+      return tm.TradeConditionsInfo((d, c) => new { c, d = d() }).ToDictionary(x => x.c, x => x.d);
     }
     public void Send(string pair, string newInyterval) {
       try {
@@ -274,11 +293,10 @@ namespace HedgeHog.Alice.Client {
       return UseTradingMacro(pair, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
-          .Select(x => new { i = x.Item1.Index, p = x.Item2 })
+          .Select(x => new { x.Item1.Group, p = x.Item2 })
           .OrderBy(x => x.p.Name)
-          .OrderBy(x => x.i)
-          .Select(x => x.p)
-          .ForEach(p => e.Add(p.Name, p.GetValue(tm)));
+          .OrderBy(x => x.Group)
+          .ForEach(x => e.Add(x.p.Name, new { v = x.p.GetValue(tm), g = x.Group }));
         return e as ExpandoObject;
       });
     }
@@ -290,8 +308,12 @@ namespace HedgeHog.Alice.Client {
         throw;
       }
     }
-    public double MoveCorridorWavesCount(string pair, int chartNumber, double step) {
-      return UseTradingMacro(pair, chartNumber, tm => { return tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2).Round(1); });
+    public int MoveCorridorWavesCount(string pair, int chartNumber, int step) {
+      return UseTradingMacro(pair, chartNumber, tm => {
+        tm.IsTradingActive = false;
+        return tm.CorridorWaveCount = tm.CorridorWaveCount + step;
+        //return tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2).Round(1);
+      });
     }
     #endregion
     double IntOrDouble(double d, double max = 10) {

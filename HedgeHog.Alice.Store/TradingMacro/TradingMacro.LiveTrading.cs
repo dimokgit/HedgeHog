@@ -147,7 +147,6 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region CanDoNetStopOrders
     private bool _CanDoNetStopOrders;
-    [WwwSetting]
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Stop Orders")]
     public bool CanDoNetStopOrders {

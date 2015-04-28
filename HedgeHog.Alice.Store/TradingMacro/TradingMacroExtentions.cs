@@ -763,9 +763,8 @@ namespace HedgeHog.Alice.Store {
         }
 
 
-        if (value != null && UseRates(rs => rs.Any())) {
-          SetTrendLines(RatesArray);
-          CorridorAngle = CorridorStats.Slope;
+        if (value != null && RatesArray.Count>0) {
+          CorridorAngle = TrendLinesTrends.Angle;
           var tp = CalculateTakeProfit();
           TakeProfitPips = InPips(tp);
           if (false && !IsGannAnglesManual)
@@ -1004,6 +1003,7 @@ namespace HedgeHog.Alice.Store {
       get { return Trades.Gross() - (TradesManager == null ? 0 : TradesManager.CommissionByTrades(Trades)); }
     }
     public double OpenTradesGross2 { get { return OpenTradesGross - TradesManager.CommissionByTrades(Trades); } }
+    public double OpenTradesGross2InPips { get { return TradesManager.MoneyAndLotToPips(OpenTradesGross2, Trades.Lots(), Pair); } }
 
     public double CurrentGross {
       get { return CurrentLoss + OpenTradesGross; }
@@ -1653,7 +1653,7 @@ namespace HedgeHog.Alice.Store {
       get { return _CorridorAngle; }
       set {
         if (PointSize != 0) {
-          var ca = AngleFromTangent(value, () => CalcTicksPerSecond(CorridorStats.Rates));
+          var ca = value;
           if (Math.Sign(ca) != Math.Sign(_CorridorAngle) && _corridorDirectionChanged != null)
             _corridorDirectionChanged(this, EventArgs.Empty);
           _CorridorAngle = ca;
@@ -2757,7 +2757,7 @@ namespace HedgeHog.Alice.Store {
 
     #region TakeProfitBSRatio
     private double _TakeProfitXRatio = 1;
-    [WwwSetting(Index = wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTrading)]
     [Description("TakeProfit = (BuyLevel-SellLevel)*X")]
     [Category(categoryActiveFuncs)]
     public double TakeProfitXRatio {
@@ -2771,6 +2771,23 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #endregion
+
+    #region RatesHeightXRatio
+    private double _TradingDistanceX = 1;
+    [WwwSetting(Group = wwwSettingsTrading)]
+    [Description("TradingDistance = RetasHeight * X")]
+    [Category(categoryActiveFuncs)]
+    public double TradingDistanceX {
+      get { return _TradingDistanceX; }
+      set {
+        if (_TradingDistanceX != value) {
+          _TradingDistanceX = value;
+          OnPropertyChanged("TradingDistanceX");
+        }
+      }
+    }
+    
     #endregion
 
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
@@ -2807,26 +2824,21 @@ namespace HedgeHog.Alice.Store {
       var tp = double.NaN;
       switch (function) {
         #region RatesHeight
-        case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight; break;
-        case TradingMacroTakeProfitFunction.RatesHeight_2: tp = RatesHeight / 2; break;
+        case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight * TradingDistanceX; break;
         #endregion
         #region BuySellLevels
-        case TradingMacroTakeProfitFunction.BuySellLevelsX:
         case TradingMacroTakeProfitFunction.BuySellLevels:
           tp = _buyLevelRate - _sellLevelRate;
           if (double.IsNaN(tp)) {
             if (_buyLevel == null || _sellLevel == null) return double.NaN;
             tp = (_buyLevel.Rate - _sellLevel.Rate).Abs();
           }
+          tp *= TakeProfitXRatio;
           tp += PriceSpreadAverage.GetValueOrDefault(double.NaN) * 2 + InPoints(this.CommissionInPips());
-          if (function == TradingMacroTakeProfitFunction.BuySellLevelsX)
-            tp *= TakeProfitXRatio;
-          // TODO: this is to prevent acidentally setting a too small corridor. Think something better
-          tp = tp.Max(CorridorStats.StDevByHeight.Min(CorridorStats.StDevByPriceAvg));
           break;
         #endregion
         default:
-          throw new NotImplementedException(new { function } + "");
+          throw new NotImplementedException(new { function, source = "GetValueByTakeProfitFunction" } + "");
       }
       TakeProfitManual.Max(tp);
       return tp;
@@ -2840,7 +2852,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Height: return ScanCorridorByHeight;
         case ScanCorridorFunction.TimeRatio: return ScanCorridorByTime;
         case ScanCorridorFunction.Ftt: return ScanCorridorByFft;
-        case ScanCorridorFunction.FttMACorr: return ScanCorridorByFftMA;
         case ScanCorridorFunction.StDevBalance: return ScanCorridorByStDevBalance;
         case ScanCorridorFunction.StDevBalanceR: return ScanCorridorByStDevBalanceR;
         case ScanCorridorFunction.RangeDistance: return ScanCorridorByDistanceHeightRatio;
@@ -2863,8 +2874,6 @@ namespace HedgeHog.Alice.Store {
         case ScanCorridorFunction.Distance2: return ScanCorridorByDistance2;
         case ScanCorridorFunction.Distance3: return ScanCorridorByDistance3;
         case ScanCorridorFunction.Distance5: return ScanCorridorByDistance51;
-        case ScanCorridorFunction.Distance6: return ScanCorridorByDistance52;
-        case ScanCorridorFunction.Distance7: return ScanCorridorByDistance7;
       }
       throw new NotSupportedException(function + "");
     }
@@ -3069,12 +3078,13 @@ namespace HedgeHog.Alice.Store {
     }
 
     public int MaxPipsToPMC() {
-      return
+      return InPips(
         Enumerable.Range(0, 1)
         .Where(_ => BuyLevel != null && SellLevel != null)
-        .Select(_ => InPips(BuyLevel.Rate.Abs(SellLevel.Rate) + PriceSpreadAverage * 2) * 1.2)
-        .Concat(new[] { RatesHeightInPips })
-        .Max(pmc => pmc.ToInt());
+        .Select(_ => (BuyLevel.Rate.Abs(SellLevel.Rate) + PriceSpreadAverage.GetValueOrDefault() * 2) * 1.2)
+        .Concat(new[] { GetValueByTakeProfitFunction(TradingDistanceFunction) })
+        .Max(pmc => pmc))
+        .ToInt();
     }
 
     public int CalcLotSizeByPMC(Account account) {
@@ -3584,7 +3594,7 @@ namespace HedgeHog.Alice.Store {
       var barPeriod = BarPeriod != BarsPeriodType.t1
         ? BarPeriodInt
         : 1.0 / 60 * ticksPerSecond();
-      return tangent.Angle(barPeriod, PointSize);
+      return tangent.Angle(BarPeriodInt.Max(1), PointSize);
     }
 
 
@@ -4238,6 +4248,7 @@ namespace HedgeHog.Alice.Store {
           _RatesStDevMinInPips = value;
           OnPropertyChanged("RatesStDevMinInPips");
           FreezeCorridorStartDate(true);
+          BarsCountLastDate = DateTime.MinValue;
         }
       }
     }

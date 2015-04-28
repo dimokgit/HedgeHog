@@ -1045,10 +1045,10 @@ namespace HedgeHog.Alice.Client {
         "m", rate.PriceCMALast.Round(digits)
         );
       #endregion
-      
-      List<Rate> rates = tm.RatesArray.ToList();
-      var ratesForChart = rates.Where(r => r.StartDate2 >= dateEnd).ToArray();
-      var ratesForChart2 = rates.Where(r => r.StartDate2 < dateStart).ToArray();
+
+      if (tm.RatesArray.Count == 0) return new { rates = new int[0] }.ToExpando();
+      var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
+      var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
       var tps = tm.TicksPerSecondAverage;
       ratesForChart.Concat(ratesForChart2).Where(r => r.VoltageLocal3.IsNaN()).ForEach(r => r.VoltageLocal3 = tps);
 
@@ -1065,18 +1065,22 @@ namespace HedgeHog.Alice.Client {
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
         if (tm.BarPeriod == BarsPeriodType.m1) {
-          var ds = rates.Last().StartDate2;
-          return rates.Reverse<Rate>()
-            .Select((r, i) => EnumsExtensions.CreateExpando(
-              "d", ds.AddMinutes(-i),
-              "c", rateHL(r),
-              "v", r.VoltageLocal3,
-              "m", r.PriceCMALast.Round(digits)))
-            .Reverse().ToArray();
+          return tm.UseRates(rates => {
+            var ds = rates.Last().StartDate2;
+            return rates.Reverse<Rate>()
+              .Select((r, i) => EnumsExtensions.CreateExpando(
+                "d", ds.AddMinutes(-i),
+                "c", rateHL(r),
+                "v", r.VoltageLocal3,
+                "m", r.PriceCMALast.Round(digits)))
+              .Reverse()
+              //.Take(rates3.Count)
+              .ToArray();
+          });
         } else return rates3.Select(map).ToArray();
       });
       var trends = tm.TrendLines.Value.ToList();
-      var trendLines = new {
+      var trendLines = tm.UseRates(rates => new {
         dates = new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
           ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
@@ -1087,16 +1091,17 @@ namespace HedgeHog.Alice.Client {
         close3 = trends.ToArray(t => t.Trends.PriceAvg3),
         close21 = trends.ToArray(t => t.Trends.PriceAvg21),
         close31 = trends.ToArray(t => t.Trends.PriceAvg31)
-      }.ToExpando();
+      }.ToExpando());
+      var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
       var trends2 = tm.TrendLines2.Value.ToList();
       var trendLines2 = new {
         dates = trends2.Count == 0
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
-          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorLength2-1))
+          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength2-1))
           : trends2[0].StartDate2,
-          rates.Last().StartDate2},
+          ratesLastStartDate2},
         close2 = trends2.ToArray(t => t.Trends.PriceAvg2),
         close3 = trends2.ToArray(t => t.Trends.PriceAvg3),
       }.ToExpando();
@@ -1106,9 +1111,9 @@ namespace HedgeHog.Alice.Client {
         ? new DateTimeOffset[0]
         : new DateTimeOffset[]{
           tm.BarPeriod == BarsPeriodType.m1
-          ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorLength1-1))
+          ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength1-1))
           : trends1[0].StartDate2,
-          rates.Last().StartDate2},
+          ratesLastStartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3),
       }.ToExpando();
@@ -1136,7 +1141,7 @@ namespace HedgeHog.Alice.Client {
       return new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
-        ratesCount = rates.Count,
+        ratesCount = tm.RatesArray.Count,
         dateStart = tm.RatesArray[0].StartDate2,
         trendLines,
         trendLines2,
@@ -1218,10 +1223,10 @@ namespace HedgeHog.Alice.Client {
           charter.GannAngle1x1Index = tm.GannAngle1x1Index;
 
           charter.HeaderText =
-            string.Format(":{0}×[{1}]{2:n2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
+            string.Format(":{0}×[{1}]{2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
-            /*2*/, tm.CorridorAngle
+            /*2*/, tm.CorridorAngle.Round(2)+"/"+tm.TrendLines1.Value[1].Trends.Angle.Round(2)
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
             /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)
@@ -1231,7 +1236,7 @@ namespace HedgeHog.Alice.Client {
             /*9*/, tm.CorridorStats.Rates.Count.Div(tm.CorridorDistance).ToInt()
             /*10*/, tm.WorkflowStep
           );
-          charter.SetTrendLines(tm.SetTrendLines(rates), tm.CorridorStartDate.HasValue);
+          charter.SetTrendLines(tm.TrendLines.Value.OrderBarsDescending().ToArray(), tm.CorridorStartDate.HasValue);
           charter.SetTrendLines2(tm.TrendLines2.Value);
           charter.SetTrendLines1(tm.TrendLines1.Value);
           charter.SetMATrendLines(tm.LineMA);

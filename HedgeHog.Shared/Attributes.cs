@@ -10,7 +10,6 @@ namespace HedgeHog {
   public sealed class DnrAttribute : Attribute { }
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public sealed class WwwSettingAttribute : Attribute {
-    public int Index { get; set; }
     public string Group { get; set; }
   }
 }

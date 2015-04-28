@@ -713,10 +713,10 @@ namespace HedgeHog {
       if ((mas ?? new double[0]).Any())
         TrendLineMA = mas;
     }
-    public void SetTrendLines(Rate[] rates,bool isStatic = false) {
+    public void SetTrendLines(IList<Rate> rates,bool isStatic = false) {
       if (!rates.Any()) return;
       GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
-        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = rates;
+        TrendLine = TrendLine2 = TrendLine02 = TrendLine3 = TrendLine03 = TrendLine21 = TrendLine31 = rates.ToArray();
         var rateLast = rates.LastBC();
         var timeHigh = rateLast.StartDateContinuous;
         var corridorTime = rateLast.StartDate;
@@ -848,8 +848,8 @@ namespace HedgeHog {
           trendLine.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine.Visibility = System.Windows.Visibility.Visible;
-          trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg1);
-          trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg1);
+          trendLine.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg1);
+          trendLine.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().Trends.PriceAvg1);
           TradeLineStartPosition = trendLine.StartPoint;
           TradeLineStopPosition = trendLine.EndPoint;
         }
@@ -859,12 +859,12 @@ namespace HedgeHog {
     Segment trendLine21 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine21 {
       set {
-        if (value == null || value[0].PriceAvg21 == 0)
+        if (value == null || value[0].Trends.PriceAvg21 == 0)
           trendLine21.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine21.Visibility = System.Windows.Visibility.Visible;
-          trendLine21.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg21);
-          trendLine21.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg21);
+          trendLine21.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg21);
+          trendLine21.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().Trends.PriceAvg21);
         }
       }
     }
@@ -872,12 +872,12 @@ namespace HedgeHog {
     Segment trendLine2 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine2 {
       set {
-        if (value == null || value[0].PriceAvg2 == 0)
+        if (value == null || value[0].Trends.PriceAvg2 == 0)
           trendLine2.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine2.Visibility = System.Windows.Visibility.Visible;
-          trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg2);
-          trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg2);
+          trendLine2.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg2);
+          trendLine2.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().Trends.PriceAvg2);
         }
       }
     }
@@ -885,12 +885,12 @@ namespace HedgeHog {
     Segment trendLine02 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine02 {
       set {
-        if (value == null || value[0].PriceAvg02 == 0)
+        if (value == null || value[0].Trends.PriceAvg02 == 0)
           trendLine02.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine02.Visibility = System.Windows.Visibility.Visible;
-          trendLine02.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg02);
-          trendLine02.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg02);
+          trendLine02.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg02);
+          trendLine02.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().Trends.PriceAvg02);
         }
       }
     }
@@ -898,12 +898,12 @@ namespace HedgeHog {
     Segment trendLine31 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine31 {
       set {
-        if (value == null || value[0].PriceAvg31 == 0)
+        if (value == null || value[0].Trends.PriceAvg31 == 0)
           trendLine31.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine31.Visibility = System.Windows.Visibility.Visible;
-          trendLine31.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg31);
-          trendLine31.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().PriceAvg31);
+          trendLine31.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg31);
+          trendLine31.EndPoint = new Point(dateAxis.ConvertToDouble(value.LastBC().StartDateContinuous), value.LastBC().Trends.PriceAvg31);
         }
       }
     }
@@ -911,12 +911,12 @@ namespace HedgeHog {
     Segment trendLine3 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed) };
     Rate[] TrendLine3 {
       set {
-        if (value == null || value[0].PriceAvg3 == 0)
+        if (value == null || value[0].Trends.PriceAvg3 == 0)
           trendLine3.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine3.Visibility = System.Windows.Visibility.Visible;
-          trendLine3.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg3);
-          trendLine3.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg3);
+          trendLine3.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg3);
+          trendLine3.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg3);
         }
       }
     }
@@ -924,12 +924,12 @@ namespace HedgeHog {
     Segment trendLine03 = new Segment() { StrokeThickness = 1, Stroke = new SolidColorBrush(Colors.DarkRed), StrokeDashArray = { 2 } };
     Rate[] TrendLine03 {
       set {
-        if (value == null || value[0].PriceAvg03 == 0)
+        if (value == null || value[0].Trends.PriceAvg03 == 0)
           trendLine03.Visibility = System.Windows.Visibility.Collapsed;
         else {
           trendLine03.Visibility = System.Windows.Visibility.Visible;
-          trendLine03.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].PriceAvg03);
-          trendLine03.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().PriceAvg03);
+          trendLine03.StartPoint = new Point(dateAxis.ConvertToDouble(value[0].StartDateContinuous), value[0].Trends.PriceAvg03);
+          trendLine03.EndPoint = new Point(dateAxis.ConvertToDouble(value.Last().StartDateContinuous), value.Last().Trends.PriceAvg03);
         }
       }
     }
