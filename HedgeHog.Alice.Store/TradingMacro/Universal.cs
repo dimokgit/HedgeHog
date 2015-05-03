@@ -1569,7 +1569,7 @@ namespace HedgeHog.Alice.Store {
                 var tci = TradeConditionsInfo((d, n) => new { n, v = d() }).ToArray();
                 WorkflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
                 SetTradeLevelsToLevelBy(getTradeLevel)();
-                if (tci.Count(x => x.v) > 0 && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual)) {
+                if (!tci.Any(x => !x.v) && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual) && !CorridorStartDate.HasValue) {
                   _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = 0; });
                   FreezeCorridorStartDate();
                 }

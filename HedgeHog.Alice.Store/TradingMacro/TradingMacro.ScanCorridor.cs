@@ -1575,21 +1575,8 @@ namespace HedgeHog.Alice.Store {
       .ToArray();
       var extreams3 = extreams21
         .DistinctUntilChanged(t => t.Item1)
-        .SelectMany(w =>
-          rates.FuzzyIndex(w.Item2, isBetween)
-        )
+        .SelectMany(w => rates.FuzzyIndex(w.Item2, isBetween))
         .ToList();
-      var countByStdRatio = extreams3
-        .Buffer(2, 1)
-        .Where(b => b.Count == 2)
-        .Select(b => new {
-          i = b[1],
-          std0 = CalcTrendLines(b[0])[0].Trends.StDev,
-          std1 = CalcTrendLines(b[1])[0].Trends.StDev
-        })
-        .SkipWhile(x => x.std0.Ratio(x.std1) > 1.5)
-        .Select(b => b.i)
-        .Take(1);
       var index = extreams3
         .Skip(CorridorWaveCount - 1)
         .Take(1)

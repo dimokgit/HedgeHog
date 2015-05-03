@@ -3005,7 +3005,9 @@ namespace HedgeHog.Alice.Store {
       while (_priceQueue.Count > PriceCmaLevels.Max(5)) _priceQueue.Dequeue();
       _priceQueue.Enqueue(price);
       Account account = e.Account;
-      if (account.IsMarginCall) {
+      if (account.IsMarginCall && IsPrimaryMacro) {
+        IsTradingActive = false;
+        SuppRes.ForEach(sr => sr.CanTrade = false);
         CloseTrades("Margin Call.");
         BroadcastCloseAllTrades();
       }

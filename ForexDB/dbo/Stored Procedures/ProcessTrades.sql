@@ -7,8 +7,8 @@ SELECT TOP 1 @SessionInfo = SessionInfo FROM t_Trade WHERE SessionId = @SessionI
 DECLARE @RunningBalance float SET @RunningBalance = 0.00
 DECLARE @RunningBalanceTotal float SET @RunningBalanceTotal = 0.00
 UPDATE t_Trade SET 
-	@RunningBalance = RunningBalance = (CASE WHEN @RunningBalance+ [GrossPL] < 0 THEN @RunningBalance+ [GrossPL] ELSE 0 END),
-	@RunningBalanceTotal = RunningBalanceTotal = @RunningBalanceTotal+ [GrossPL],
+	@RunningBalance = RunningBalance = (CASE WHEN @RunningBalance+ [GrossPL]-commission < 0 THEN @RunningBalance+ [GrossPL]-commission ELSE 0 END),
+	@RunningBalanceTotal = RunningBalanceTotal = @RunningBalanceTotal+ [GrossPL]-commission,
 	SessionInfo = ''
 WHERE SessionId = @SessionId
 

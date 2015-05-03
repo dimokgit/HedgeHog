@@ -188,7 +188,7 @@
             </button>
           </li>
           <li>
-            <button data-bind="click:getTradeSettings"
+            <button data-bind="click:getTradingConditions"
                     data-toggle="modal"
                     data-target="#tradeConditionsDialog">
               <span class="glyphicon glyphicon-ok"></span>
@@ -321,8 +321,8 @@
               </li>
               <li><input type="button" value="Manual" id="manualToggle" /></li>
               <li><button id="setDefaultTradeLevels">Default</button></li>
-              <li><button id="alwaysOn">AlwaysOn</button></li>
-              <li><button data-bind="click:wrapTradeInCorridor">WrapTrade</button></li>
+              <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
+              <li><button data-bind="click:wrapCurrentPriceInCorridor">Wrap Price</button></li>
               <li>
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />
@@ -381,7 +381,7 @@
   <!--#region Info Bar-->
   <div style="background-color: whitesmoke;border-bottom:1px solid silver;width:100%">
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
-    <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross>0,loss:openTradeGross()<0}"></span>
+    <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross()>0,loss:openTradeGross()<0},visible:openTradeGross()!=0"></span>
     <span id="discussion"></span>
     <input value="" id="rsdMin" style="width:1.5em;height:1.5em" />
   </div>
@@ -419,7 +419,7 @@
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <span class="modal-title" id="myModalLabel">Trade Conditions</span>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" data-bind="visible:tradingConditionsReady">
           <table>
             <tbody data-bind="foreach:tradeConditions">
               <tr>

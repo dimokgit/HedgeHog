@@ -13,9 +13,13 @@
     [Volume]         INT                CONSTRAINT [DF_t_Bar_Volume] DEFAULT ((0)) NOT NULL,
     [ID]             INT                IDENTITY (1, 1) NOT NULL,
     [StartDateLocal] AS                 (CONVERT([datetime],[startdate],(0))) PERSISTED,
-    [Row]            INT                NULL,
+    [Row]            INT                NOT NULL,
     CONSTRAINT [PK_t_Bar] PRIMARY KEY NONCLUSTERED ([ID] ASC)
 );
+
+
+
+
 
 
 

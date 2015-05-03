@@ -1,11 +1,13 @@
-﻿CREATE VIEW dbo.v_Trade
+﻿
+
+CREATE VIEW [dbo].[v_Trade]
 AS
-SELECT        T.Buy, T.PL - T.Commission AS PL, T.GrossPL - T.Commission * T.Lot * 0 / 10000.0 AS GrossPL, T.Lot, T.Pair, T.TimeOpen, T.TimeClose, T.Commission, 
+SELECT      T.Id,  T.Buy, T.PL AS PL, T.GrossPL - T.Commission * T.Lot * 0 / 10000.0 AS GrossPL, T.Lot, T.Pair, T.TimeOpen, T.TimeClose, T.Commission, 
                          T.TimeStamp, T.CorridorHeightInPips AS VoltsHigh, T.CorridorMinutesBack AS VoltsAvg, T.SessionId, DATEDIFF(hh, T.TimeOpen, T.TimeClose) AS TradeLength, 
                          CONVERT(bit, CASE WHEN T .pl > 0 THEN 1 ELSE 0 END) AS HasProfit, DATEDIFF(n, T.TimeOpen, T.TimeClose) AS TradeLengthInMinutes, 
                          ISNULL(T.CorridorHeightInPips / NULLIF (T.CorridorMinutesBack, 0) / 1000, 0) AS PLToCorr, dbo.Date(T.TimeOpen) AS DateOpen, dbo.Date(T.TimeClose) 
                          AS DateClose, DATEPART(dw, T.TimeOpen) AS DW, dbo.ISOweek(T.TimeOpen) AS WM, T.RunningBalance, T.RunningBalanceTotal, S.SuperSessionUid, 
-                         S.CorridorDistanceRatio, S.WaveStDevRatio, S.DistanceDaysBack
+                         S.CorridorDistanceRatio, S.WaveStDevRatio, S.DistanceDaysBack, S.VoltsFrameLength
 FROM            dbo.t_Trade AS T INNER JOIN
                          dbo.v_TradeSession AS S ON T.SessionId = S.SessionId
 

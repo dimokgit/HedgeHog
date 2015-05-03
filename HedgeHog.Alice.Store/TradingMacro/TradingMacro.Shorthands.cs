@@ -69,6 +69,15 @@ namespace HedgeHog.Alice.Store {
       }
       RaiseShowChart();
     }
+    public void WrapCurrentPriceInCorridor() {
+      LevelBuyBy = LevelSellBy = LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+      var offset = StDevByHeight / 2;
+      BuyLevel.Rate = CurrentPrice.Average + offset;
+      SellLevel.Rate = CurrentPrice.Average - offset;
+      BuyLevel.InManual = SellLevel.InManual = true;
+      BuyLevel.TradesCount = SellLevel.TradesCount = 0;
+      RaiseShowChart();
+    }
     public void SetDefaultTradeLevels() {
       Func<bool> isWide2 = () =>
         LevelBuyBy == TradeLevelBy.PriceAvg22 &&

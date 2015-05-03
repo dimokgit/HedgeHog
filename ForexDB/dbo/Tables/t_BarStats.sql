@@ -13,6 +13,10 @@
 );
 
 
+
+
+
+
 GO
 CREATE UNIQUE CLUSTERED INDEX [IX_t_BarStats]
     ON [dbo].[t_BarStats]([Pair] ASC, [Period] ASC, [Length] ASC, [StartDateLocal] ASC);

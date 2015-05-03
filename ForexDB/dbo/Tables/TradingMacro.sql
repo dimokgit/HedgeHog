@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [dbo].[TradingMacro] (
     [Pair]                             NVARCHAR (8)     CONSTRAINT [DF__TradingMac__Pair__517BBDC6] DEFAULT ((1)) NOT NULL,
     [TradingRatio]                     FLOAT (53)       CONSTRAINT [DF__TradingMa__Tradi__526FE1FF] DEFAULT ((1)) NOT NULL,
-    [UID]                              UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL,
+    [UID]                              UNIQUEIDENTIFIER CONSTRAINT [DF_TradingMacro_UID] DEFAULT (newid()) NOT NULL,
     [LimitBar]                         INT              CONSTRAINT [DF__TradingMa__Limit__53640638] DEFAULT ((5)) NOT NULL,
     [CurrentLoss]                      FLOAT (53)       CONSTRAINT [DF__TradingMa__Curre__54582A71] DEFAULT ((0)) NOT NULL,
     [ReverseOnProfit]                  BIT              CONSTRAINT [DF__TradingMa__Rever__554C4EAA] DEFAULT ((1)) NOT NULL,
@@ -75,7 +75,7 @@
     [CorridorLengthMinimum]            FLOAT (53)       CONSTRAINT [DF__TradingMa__Corri__0F78F03F] DEFAULT ((0.1)) NOT NULL,
     [CorridorCrossHighLowMethodInt]    INT              CONSTRAINT [DF__TradingMa__Corri__106D1478] DEFAULT ((0)) NOT NULL,
     [MovingAverageTypeInt]             INT              NULL,
-    [PriceCmaLevels]                   INT              CONSTRAINT [DF__TradingMa__Price__116138B1] DEFAULT ((3)) NOT NULL,
+    [PriceCmaLevels]                   FLOAT (53)       CONSTRAINT [DF__TradingMa__Price__116138B1] DEFAULT ((3)) NOT NULL,
     [VolumeTresholdIterations]         INT              CONSTRAINT [DF__TradingMa__Volum__12555CEA] DEFAULT ((1)) NOT NULL,
     [StDevTresholdIterations]          INT              CONSTRAINT [DF__TradingMa__StDev__13498123] DEFAULT ((1)) NOT NULL,
     [StDevAverageLeewayRatio]          FLOAT (53)       CONSTRAINT [DF__TradingMa__StDev__143DA55C] DEFAULT ((0.9)) NOT NULL,
@@ -86,6 +86,8 @@
     [VoltageFunction]                  INT              CONSTRAINT [DF_TradingMacro_VoltageFunction] DEFAULT ((0)) NOT NULL,
     CONSTRAINT [PK__TradingMacro__0000000000000086] PRIMARY KEY CLUSTERED ([UID] ASC)
 );
+
+
 
 
 

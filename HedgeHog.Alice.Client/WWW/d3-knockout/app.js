@@ -56,6 +56,49 @@
       })
       .always(function () { ratesInFlight2 = false; });
   }
+  // #region pending request messages
+  var pendingMessages = {};
+  function clearPendingMessages(key) {// jshint ignore:line
+    var notes = (pendingMessages[key] || []);
+    while (notes.length)
+      notifyClose(notes.pop());
+  }
+  function addPendingError(key, message, settings) {
+    return addPendingMessage(key, message, $.extend({ type: NOTE_ERROR }, settings));
+  }
+  function addPendingMessage(key, message, settings) {
+    pendingMessages[key] = pendingMessages[key] || [];
+    var note = showInfoPerm(message, $.extend({
+      hide: false,
+      icon: 'fa fa-spinner fa-spin',
+    }, settings));
+    pendingMessages[key].push(note);
+    return note;
+  }
+  // #endregion
+  function serverCall(name, args, done) {
+    var note = addPendingMessage(name, name + " is in progress ...");
+    var r = chat.server[name].apply(chat.server, args)
+      .always(function () {
+        //clearPendingMessages(name);
+      }).fail(function (error) {
+        notifyClose(note);
+        addPendingError(name, error + "", { title: name, icon: true });
+      }).done(function () {
+        var isCustom = typeof done === 'string';
+        var msg = isCustom ? "\n" + done : "";
+        resetPlotter();
+        note.update({
+          type: "warning",
+          text: name + " is done" + msg,
+          icon: 'picon picon-task-complete',
+          hide: true,
+          delay: isCustom ? 3000 : 1000
+        });
+      })
+    ;
+    if (done) r.done(function (data) { done(data, note); });
+  }
   // #endregion
 
   // #region dataViewModel
@@ -70,49 +113,6 @@
     var lineChartData = ko.observableArray(lineChartDataEmpty());
     var lineChartData2 = ko.observableArray(lineChartDataEmpty());
     // #region Server proxies
-    // #region pending request messages
-    var pendingMessages = {};
-    function clearPendingMessages(key) {// jshint ignore:line
-      var notes = (pendingMessages[key] || []);
-      while (notes.length)
-        notifyClose(notes.pop());
-    }
-    function addPendingError(key, message, settings) {
-      return addPendingMessage(key, message, $.extend({ type: NOTE_ERROR }, settings));
-    }
-    function addPendingMessage(key, message, settings) {
-      pendingMessages[key] = pendingMessages[key] || [];
-      var note = showInfoPerm(message, $.extend({
-        hide: false,
-        icon: 'fa fa-spinner fa-spin',
-      }, settings));
-      pendingMessages[key].push(note);
-      return note;
-    }
-    // #endregion
-    function serverCall(name, args, done) {
-      var note = addPendingMessage(name, name + " is in progress ...");
-      var r = chat.server[name].apply(chat.server, args)
-        .always(function () {
-          //clearPendingMessages(name);
-        }).fail(function (error) {
-          notifyClose(note);
-          addPendingError(name, error + "", { title: name, icon: true });
-        }).done(function () {
-          var isCustom = typeof done === 'string';
-          var msg = isCustom ? "\n" + done : "";
-          resetPlotter();
-          note.update({
-            type: "warning",
-            text: name + " is done" + msg,
-            icon: 'picon picon-task-complete',
-            hide: true,
-            delay: isCustom ? 3000 : 1000
-          });
-        })
-      ;
-      if (done) r.done(function (data) { done(data, note); });
-    }
     function wrapTradeInCorridor() {
       serverCall("wrapTradeInCorridor", [pair], "Close levels were reset to None.");
     }
@@ -181,7 +181,8 @@
           },
           TradingAngleRange_: { type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TakeProfitXRatio: { type: 'number', options: { step: 0.1, numberFormat: "n" } },
-          TradingDistanceX: { type: 'number', options: { step: 0.1, numberFormat: "n" } }
+          TradingDistanceX: { type: 'number', options: { step: 0.1, numberFormat: "n" } },
+          PriceCmaLevels_: { type: 'number', options: { step: 0.1, numberFormat: "n" } }
         };
         var properties = {}, meta = {};
         $.map(ts, function (v, n) {
@@ -209,6 +210,7 @@
     this.setTradeCloseLevelBuy = setTradeCloseLevel.bind(null, true);
     this.setTradeCloseLevelSell = setTradeCloseLevel.bind(null, false);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
+    this.wrapCurrentPriceInCorridor = function () { serverCall("wrapCurrentPriceInCorridor", [pair]); }
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
     // #endregion
@@ -221,6 +223,8 @@
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
     this.readTradeSettings = readTradeSettings;
+
+    this.tradingConditionsReady = ko.observable(false);
     this.readTradingConditions = readTradingConditions;
     this.saveTradeConditions = function () {
       var tcs = self.tradeConditions()
@@ -231,12 +235,14 @@
         });
       serverCall("setTradingConditions", [pair, tcs]);
     }
-    this.getTradeSettings = function () {
+    this.getTradingConditions = function () {
+      self.tradingConditionsReady(false);
       function hasName(name) { return function (name2) { return name === name2; } }
       serverCall("getTradingConditions", [pair], function (tcs) {
         self.tradeConditions().forEach(function (tc) {
           tc.checked(tcs.filter(hasName(tc.name)).length > 0);
         });
+        self.tradingConditionsReady(true);
       });
     };
     // #endregion
@@ -488,14 +494,14 @@
     // #region Start the connection.
     //$.connection.hub.logging = true;
     $.connection.hub.start().done(function () {
-
+      showInfo(JSON.parse(arguments[0].data)[0].name + " started");
       //#region Load static data
-      chat.server.readTradeLevelBys().done(function (levels) {
+      var defTL = serverCall("readTradeLevelBys", [], function (levels) {
         dataViewModel.tradeLevelBys.push.apply(dataViewModel.tradeLevelBys, $.map(levels, function (v, n) { return { text: n, value: v }; }));
       });
-      dataViewModel.readTradingConditions();
+      var defTC = dataViewModel.readTradingConditions();
       //dataViewModel.readNews();
-      $.when.apply($, []).done(function () {
+      $.when.apply($, [defTL,defTC]).done(function () {
         ko.applyBindings(dataViewModel);
       });
       //#endregion
@@ -519,10 +525,7 @@
         chat.server.setTradeCount(pair, $("#tradeCounts").val());
         resetPlotter();
       });
-      function moveTradeLeve(isBuy, pips) {
-        chat.server.moveTradeLevel(pair, isBuy, pips);
-        resetPlotter();
-      }
+      function moveTradeLeve(isBuy, pips) { serverCall("moveTradeLevel", [pair, isBuy, pips]); }
       var pipStep = 0.5;
       $('#buyUp').click(function () {
         moveTradeLeve(true, pipStep);
@@ -536,15 +539,10 @@
       $('#sellDown').click(function () {
         moveTradeLeve(false, -pipStep);
       });
-      $('#manualToggle').click(function () {
-        chat.server.manualToggle(pair);
-        resetPlotter();
-      });
-      $('#sell').click(function () { invokeByName("sell"); });
-      $('#buy').click(function () { invokeByName("buy"); });
-      $('#flipTradeLevels').click(function () { invokeByName("flipTradeLevels"); });
-      $('#setDefaultTradeLevels').click(function () { invokeByName("setDefaultTradeLevels"); });
-      $('#alwaysOn').click(function () { invokeByName("setAlwaysOn"); });
+      $('#manualToggle').click(function () { serverCall("manualToggle", [pair]); });
+      $('#sell').click(function () { serverCall("sell", [pair]); });
+      $('#buy').click(function () { serverCall("buy", [pair]); });
+      $('#flipTradeLevels').click(function () { serverCall("flipTradeLevels",[pair]); });
       $('#rsdMin').change(function () {
         chat.server.setRsdTreshold(pair, $('#rsdMin').val());
         resetPlotter();

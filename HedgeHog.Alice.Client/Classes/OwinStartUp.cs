@@ -219,8 +219,8 @@ namespace HedgeHog.Alice.Client {
     public void WrapTradeInCorridor(string pair) {
       UseTradingMacro(pair, tm => tm.WrapTradeInCorridor());
     }
-    public void SetDefaultTradeLevels(string pair) {
-      UseTradingMacro(pair, tm => tm.SetDefaultTradeLevels());
+    public void WrapCurrentPriceInCorridor(string pair) {
+      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor());
     }
     public void SetAlwaysOn(string pair) {
       UseTradingMacro(pair, tm => tm.SetAlwaysOn());
