@@ -1,0 +1,26 @@
+{
+  "name": "json.date-extensions",
+  "version": "1.2.1",
+  "main": "json.date-extensions.js",
+  "license": "MIT",
+  "ignore": [
+    "*.sln",
+    ".*",
+    "tests"
+  ],
+  "keywords": [
+    "json",
+    "date"
+  ],
+  "homepage": "https://github.com/RickStrahl/json.date-extensions",
+  "_release": "1.2.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "1.2.1",
+    "commit": "92f0c1be1081df6e8e9359673ed26abfc1fa493c"
+  },
+  "_source": "git://github.com/RickStrahl/json.date-extensions.git",
+  "_target": "~1.2.1",
+  "_originalSource": "json.date-extensions",
+  "_direct": true
+}

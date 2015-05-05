@@ -21,7 +21,7 @@ namespace HedgeHog.Bars {
       set {
         if (_StartDate2 != value) {
           _StartDate2 = value;
-          StartDate = value.ToLocalTime().DateTime;
+          StartDate = _StartDate2.LocalDateTime;
         }
       }
     }
@@ -502,7 +502,7 @@ namespace HedgeHog.Bars {
     public BarBase(DateTimeOffset startDate, double ask, double bid, bool isHistory) {
       SetAsk(ask);
       SetBid(bid);
-      StartDate2 = startDate.UtcDateTime;
+      StartDate2 = startDate.ToUniversalTime();
       IsHistory = isHistory;
     }
     public void AddTick(Price price) { AddTick(price.Time.ToUniversalTime(), price.Ask, price.Bid); }

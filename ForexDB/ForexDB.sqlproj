@@ -503,6 +503,13 @@
     <Build Include="dbo\Stored Procedures\sVolatility.sql" />
     <Build Include="dbo\Stored Procedures\sCleatVirtuaslTradesBySuperSession.sql" />
     <Build Include="dbo\Stored Procedures\sCleatVirtuaslTrades.sql" />
+    <Build Include="dbo\Tables\Table_1.sql" />
+    <Build Include="dbo\Tables\t_BarExtender.sql" />
+    <Build Include="dbo\Functions\WeekOfMonthWhole.sql" />
+    <Build Include="dbo\Functions\WeekOfMonthCut.sql" />
+    <Build Include="dbo\Stored Procedures\sGetBarsForward.sql" />
+    <Build Include="dbo\Stored Procedures\sGetBarsBackwards.sql" />
+    <Build Include="dbo\Stored Procedures\sCleatVirtuaslTradesBySessionUID.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Schema Objects\Assemblies\LightLib.dll">
@@ -552,6 +559,13 @@
     <None Include="Assemblies\SQL_DateFuncs_3.dll" />
     <None Include="Assemblies\LightLib_9.dll" />
     <None Include="SqlSchemaCompare.scmp" />
+    <None Include="Assemblies\SQL_DateFuncs_4.dll" />
+    <None Include="Assemblies\TA-Lib-Core_10.dll" />
+    <None Include="Assemblies\SQLCLR_10.dll" />
+    <None Include="Assemblies\LightLib_10.dll" />
+    <None Include="Assemblies\TA-Lib-Core_11.dll" />
+    <None Include="Assemblies\SQLCLR_11.dll" />
+    <None Include="Assemblies\LightLib_11.dll" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LightLib, Version=1.0.3118.19909, Culture=neutral, PublicKeyToken=null">
@@ -585,7 +599,7 @@
       <SqlPermissionSet>UNSAFE</SqlPermissionSet>
     </Reference>
     <Reference Include="SQL_DateFuncs">
-      <HintPath>Assemblies\SQL_DateFuncs_3.dll</HintPath>
+      <HintPath>Assemblies\SQL_DateFuncs_4.dll</HintPath>
       <SqlAssemblyName>SQL_DateFuncs</SqlAssemblyName>
       <IsModelAware>True</IsModelAware>
       <GenerateSqlClrDdl>False</GenerateSqlClrDdl>

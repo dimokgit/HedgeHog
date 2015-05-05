@@ -14,12 +14,14 @@
 (function () {
   // #region Globals
   "use strict";
+  // enable global JSON date parsing
+  JSON.useDateParser();
   var chat;
   var pair = "usdjpy";
   var NOTE_ERROR = "error";
   function settingsGrid() { return $("#settingsGrid"); }
   $(function () {
-    $("#settingsDialog").on("click", ".pgGroupRow", function (a, b, c) {
+    $("#settingsDialog").on("click", ".pgGroupRow", function () {
       $(this).nextUntil(".pgGroupRow").toggle();
     });
   });
@@ -126,7 +128,7 @@
       serverCall("setPresetTradeLevels", [pair, l, null], function () {
         serverCall("flipTradeLevels", [pair], resetPlotter);
       });
-    }
+    };
     this.setTradeLevels = function (l, isBuy) {
       serverCall("setPresetTradeLevels", [pair, l, isBuy === undefined ? null : isBuy], resetPlotter);
     };
@@ -163,9 +165,6 @@
     /**
      * @param {Object} ts
      */
-    function saveTradeSetting(ts) {
-      serverCall("saveTradeSettings", [pair, ts], resetPlotter);
-    }
     function saveTradeSettings() {
       var ts = settingsGrid().jqPropertyGrid('get');
       settingsGrid().empty();
@@ -210,16 +209,35 @@
     this.setTradeCloseLevelBuy = setTradeCloseLevel.bind(null, true);
     this.setTradeCloseLevelSell = setTradeCloseLevel.bind(null, false);
     this.wrapTradeInCorridor = wrapTradeInCorridor;
-    this.wrapCurrentPriceInCorridor = function () { serverCall("wrapCurrentPriceInCorridor", [pair]); }
+    this.wrapCurrentPriceInCorridor = function () { serverCall("wrapCurrentPriceInCorridor", [pair]); };
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
+    var closedTrades = [];
+    this.readClosedTrades = function () {
+      if (closedTrades.length) {
+        closedTrades = [];
+        resetPlotter();
+      } else
+        serverCall("readClosedTrades", [pair], function (trades) {
+          closedTrades = trades.map(function (t) {
+            return {
+              timeOpen: t.Time,
+              timeClose: t.TimeClose,
+              isBuy: t.IsBuy,
+              open: t.Open,
+              close: t.Close,
+              grossPL: t.GrossPL
+            };
+          });
+        });
+    };
     // #endregion
     // #region Trade Settings
     this.saveTradeSettings = saveTradeSettings;
     this.resetCloseLevels = function () {
       self.setTradeCloseLevelBuy({ value: 0 });
       self.setTradeCloseLevelSell({ value: 0 });
-    }
+    };
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
     this.readTradeSettings = readTradeSettings;
@@ -234,10 +252,10 @@
           return tc.name;
         });
       serverCall("setTradingConditions", [pair, tcs]);
-    }
+    };
     this.getTradingConditions = function () {
       self.tradingConditionsReady(false);
-      function hasName(name) { return function (name2) { return name === name2; } }
+      function hasName(name) { return function (name2) { return name === name2; }; }
       serverCall("getTradingConditions", [pair], function (tcs) {
         self.tradeConditions().forEach(function (tc) {
           tc.checked(tcs.filter(hasName(tc.name)).length > 0);
@@ -249,7 +267,7 @@
     // #region News
     this.readNews = function () {
       serverCall("readNews", [], function (news) {
-        self.news(setJsonDate(news, "Time"));
+        self.news(news);
       });
     };
     this.news = ko.observableArray([]);
@@ -264,8 +282,24 @@
         }).value();
     });
     // #endregion
+    // #region Info bar
     this.profit = ko.observable(0);
     this.openTradeGross = ko.observable(0);
+    var tradeConditionsInfos = ko.observableArray() ;
+    this.syncTradeConditionInfos = function (tci) {
+      var tcid = toKoDictionary(tci);
+      while (tradeConditionsInfos().length > tcid.length)
+        tradeConditionsInfos.pop();
+      var i = 0, l = tradeConditionsInfos().length;
+      for (; i < l; i++) {
+        tradeConditionsInfos()[i].key(tcid[i].key());
+        tradeConditionsInfos()[i].value(tcid[i].value());
+      }
+      for (; i < tcid.length; i++)
+        tradeConditionsInfos.push(tcid[i]);
+    };
+    this.tradeConditionInfos = tradeConditionsInfos;
+    // #endregion
     // #region Charts
     this.chartArea = [{}, {}];
     this.chartData = ko.observable(defaultChartData(0));
@@ -278,7 +312,7 @@
     var commonChartParts = {};
     function updateChart(response) {
       if (response.rates.length === 0) return;
-      setTrendDates(response.trendLines, response.trendLines2);
+      //setTrendDates(response.trendLines, response.trendLines2);
       var rates = response.rates;
       rates.forEach(function (d) {
         d.d = new Date(Date.parse(d.d));
@@ -297,20 +331,17 @@
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
 
       commonChartParts = { tradeLevels: response.tradeLevels, askBid: response.askBid, trades: response.trades };
-      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod));
+      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod,closedTrades));
     }
     function updateChart2(response) {
       if (!commonChartParts.tradeLevels) return;
       if (!response.rates) {
-        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
+        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTrades));
         return;
       }
       if (response.rates.length === 0) return;
-      setTrendDates(response.trendLines, response.trendLines2);
+      //setTrendDates(response.trendLines, response.trendLines2);
       var rates = response.rates;
-      rates.forEach(function (d) {
-        d.d = new Date(Date.parse(d.d));
-      });
       //rates = continuoseDates(rates, response.trendLines.dates);
       var x1 = _.last(lineChartData2());
       var x2 = _.last(rates);
@@ -318,7 +349,7 @@
 
       //if (shouldUpdateData)
       var endDate = rates[0].d;
-      var startDate = new Date(Date.parse(response.dateStart));
+      var startDate = response.dateStart;
       lineChartData2.remove(function (d) {
         return d.d >= endDate || d.d < startDate;
       });
@@ -357,7 +388,7 @@
     // #endregion
 
     // #region Helpers
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod) {
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod,closedTrades) {
       setTrendDates(trendLines, trendLines2, trendLines1);
       return {
         data: data ? data() : [],
@@ -378,7 +409,8 @@
         shouldUpdateData: shouldUpdateData,
         chartNum: chartNum,
         hasStartDate: hasStartDate,
-        cmaPeriod: cmaPeriod
+        cmaPeriod: cmaPeriod,
+        closedTrades: closedTrades
       };
     }
     function continuoseDates(data, dates) {// jshint ignore:line
@@ -405,13 +437,6 @@
       array.splice(i, 1);
     }
     function defaultChartData(chartNum) { return chartDataFactory(lineChartData, { dates: [] }, {}, {}, null, null, null, false, false, chartNum, false, 0); }
-    function parseMethodName(method) {
-      try {
-        return method.match(/<(.+)>/)[1].substr(4);
-      } catch (e) {
-        throw "Method [" + method + "] is in unsupported format.";
-      }
-    }
     // #endregion
   }
   // #endregion
@@ -472,6 +497,9 @@
       dataViewModel.price(response.price);
       delete response.price;
 
+      dataViewModel.syncTradeConditionInfos(response.tci);
+      delete response.tci;
+
       $('#discussion').text(JSON.stringify(response).replace(/["{}]/g, ""));
 
       resetPlotter();
@@ -493,8 +521,12 @@
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
-    $.connection.hub.start().done(function () {
-      showInfo(JSON.parse(arguments[0].data)[0].name + " started");
+    $.connection.hub.start().done(function (a) {
+      try{
+        showInfo(JSON.parse(a.data)[0].name + " started");
+      } catch (e) {
+        showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data));
+      }
       //#region Load static data
       var defTL = serverCall("readTradeLevelBys", [], function (levels) {
         dataViewModel.tradeLevelBys.push.apply(dataViewModel.tradeLevelBys, $.map(levels, function (v, n) { return { text: n, value: v }; }));
@@ -547,11 +579,6 @@
         chat.server.setRsdTreshold(pair, $('#rsdMin').val());
         resetPlotter();
       });
-
-      function invokeByName(func) {
-        chat.server[func](pair);
-        resetPlotter();
-      }
       // #endregion
     });
     // #endregion
@@ -560,6 +587,13 @@
   // #endregion
 
   // #region Helpers
+  function toKoDictionary(o) {
+    return toDictionary(o, toKo, toKo);
+    function toKo(k) { return ko.observable(k); }
+  }
+  function toDictionary(o, keyMap, valueMap) {
+    return $.map(o, function (v, n) { return { key: keyMap ? keyMap(n) : n, value: valueMap ? valueMap(v) : v }; });
+  }
   function getSecondsBetween(startDate, endDate) {
     return (startDate - endDate) / 1000;
   }
@@ -621,12 +655,6 @@
     .forEach(function (tls) {
       if (tls) tls.dates = (tls.dates || []).map(function (d) { return new Date(d); });
     });
-  }
-  function setJsonDate(data, name) {
-    data.forEach(function (d) {
-      d[name] = new Date(Date.parse(d[name]));
-    });
-    return data;
   }
   function dateAdd(date, interval, units) {
     var ret = new Date(date); //don't change original date

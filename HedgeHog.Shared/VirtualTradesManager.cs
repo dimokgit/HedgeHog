@@ -183,8 +183,8 @@ namespace HedgeHog.Shared {
         trade.Lots = lot;
         trade.Open = isBuy ? price.Ask : price.Bid;
         trade.Close = isBuy ? price.Bid : price.Ask;
-        trade.Time = price.Time;
-        trade.TimeClose = price.Time;
+        trade.Time2 = price.Time2.DateTime;
+        trade.Time2Close = price.Time2.DateTime;
         trade.IsVirtual = true;
       };
       tradesOpened.Add(trade);
@@ -277,7 +277,7 @@ namespace HedgeHog.Shared {
       return tradesOpened.ToArray();
     }
     public Trade[] GetClosedTrades(string Pair) {
-      return tradesClosed.Where(t => t.Pair == Pair).ToArray();
+      return tradesClosed.Where(t => t.Pair.ToLower() == Pair.ToLower()).ToArray();
     }
     public Trade GetLastTrade(string pair) {
       throw new NotImplementedException();
@@ -498,10 +498,6 @@ namespace HedgeHog.Shared {
 
     #endregion
 
-
-    public Price PriceFactory(string pair, double ask, double bid, DateTime timeLocal, int askChangeDirection = 0, int bidChangeDirection = 0) {
-      throw new NotImplementedException();
-    }
   }
 
 }

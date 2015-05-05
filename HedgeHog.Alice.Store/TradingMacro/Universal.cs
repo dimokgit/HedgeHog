@@ -19,7 +19,7 @@ namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
     #region TradeConditions
     public delegate bool TradeConditionDelegate();
-    public TradeConditionDelegate C0_GT_C { get { return () => TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
+    public TradeConditionDelegate WideOk { get { return () => TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
     public TradeConditionDelegate TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public TradeConditionDelegate AngleOk {
       get {
@@ -44,9 +44,9 @@ namespace HedgeHog.Alice.Store {
       }
     }
     void TradeConditionsReset() { TradeConditions = new TradeConditionDelegate[0]; }
-    public TradeConditionDelegate[] GetTradeConditions() { return new[] { C0_GT_C, TpsOk, AngleOk, Angle0Ok }; }
+    public TradeConditionDelegate[] GetTradeConditions() { return new[] { WideOk, TpsOk, AngleOk, Angle0Ok }; }
     public static string ParseTradeConditionName(MethodInfo method) {
-      return Regex.Match(method.Name,"<(.+)>").Groups[1].Value.Substring(4);
+      return Regex.Match(method.Name, "<(.+)>").Groups[1].Value.Substring(4);
 
     }
     public TradeConditionDelegate[] TradeConditionsSet(IList<string> names) {
@@ -1566,12 +1566,41 @@ namespace HedgeHog.Alice.Store {
                     turnItOff(TradeConditions.Any() || _buySellLevels.Any(bs => -bs.TradesCount >= CorridorCrossesMaximum) && canTradeOff, null);
                 }
                 #endregion
+                var isDirectional = TradeConditionsAllInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count() > 0;
+                Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
                 var tci = TradeConditionsInfo((d, n) => new { n, v = d() }).ToArray();
-                WorkflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
+                var tciOk = tci.Select(x => x.v).DefaultIfEmpty(false).All(b => b);
+                var workflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
                 SetTradeLevelsToLevelBy(getTradeLevel)();
-                if (!tci.Any(x => !x.v) && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual) && !CorridorStartDate.HasValue) {
-                  _buySellLevelsForEach(sr => { sr.CanTradeEx = true; sr.TradesCountEx = 0; });
-                  FreezeCorridorStartDate();
+                var canTradeOk = tciOk && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual) && !CorridorStartDate.HasValue;
+                var canTradeTime = WFD.Make("canTradeTime", DateTime.MaxValue);
+                var graceSeconds = 30;
+                Func<ExpandoObject, int> canTradeTimeOk = eo => graceSeconds - (ServerTime - canTradeTime(eo)).TotalSeconds.ToInt();
+                if (tci.IsEmpty()) WorkflowStep = "";
+                else {
+                  var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                  eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
+                    if( canTradeOk){
+                      canTradeTime(eo, () => ServerTime);
+                      return WFD.tupleNext(eo) ;
+                    }
+                    return WFD.tupleStay(eo);
+                  },eo=>{WorkflowStep = "2.Wait "+canTradeTimeOk(eo)+"sec" ;
+                    if (canTradeTimeOk(eo) < 0 || !canTradeOk) {
+                      canTradeTime(eo,() => DateTime.MinValue);
+                      return canTradeOk ? WFD.tupleNext(eo) : WFD.tupleBreakEmpty();
+                    }
+                    return WFD.tupleStay(eo);
+                  },_=>{WorkflowStep = "3.Start Trading";
+                  _buySellLevelsForEach(sr => {
+                    sr.CanTradeEx = canEnter(sr.IsBuy); 
+                    sr.TradesCountEx = 0;
+                  });
+                    FreezeCorridorStartDate();
+                    return WFD.tupleBreakEmpty();
+                  }
+                };
+                  workflowSubjectDynamic.OnNext(wfManual);
                 }
               }
               adjustExitLevels0();
@@ -1610,7 +1639,7 @@ namespace HedgeHog.Alice.Store {
                 #endregion
                 #region Locals
                 Func<bool> isTpsOk = () => IsTresholdOk(TicksPerSecondAverage, TpsMin);
-                var tradeLevels = MonoidsCore.ToLazy(() => new[]{new { up = getTradeLevel(true, double.NaN), down = getTradeLevel(false, double.NaN) }}) ;
+                var tradeLevels = MonoidsCore.ToLazy(() => new[] { new { up = getTradeLevel(true, double.NaN), down = getTradeLevel(false, double.NaN) } });
                 Func<bool> isInside = () => (from tl in tradeLevels.Value
                                              from cp in new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }
                                              select cp.Between(tl.down, tl.up)).All(t => t);

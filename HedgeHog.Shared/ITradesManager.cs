@@ -35,7 +35,6 @@ namespace HedgeHog.Shared {
     Offer[] GetOffers();
     Offer GetOffer(string pair);
     Price GetPrice(string pair);
-    Price PriceFactory(string pair, double ask, double bid, DateTime timeLocal, int askChangeDirection = 0, int bidChangeDirection = 0);
     #endregion
 
     #region Money

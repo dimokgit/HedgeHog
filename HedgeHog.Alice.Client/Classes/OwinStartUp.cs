@@ -48,24 +48,26 @@ namespace HedgeHog.Alice.Client {
         equity = remoteControl.Value.MasterModel.AccountModel.Equity
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       });
-      IDisposable priceChanged = null;
-      var propName = Lib.GetLambda<TraderModel>(x => x.PriceChanged);
-      trader.PropertyChanged += (object sender, PropertyChangedEventArgs e) => {
-        if (e.PropertyName != propName) return;
-        if (priceChanged != null) priceChanged.Dispose();
-        var trm = (TraderModel)sender;
-        priceChanged = trm.PriceChanged
-          .Select(x => x.EventArgs.Pair.Replace("/", "").ToLower())
-          .Where(pair => Pairs.Contains(pair))
-          .Subscribe(pair => {
-            try {
-              GlobalHost.ConnectionManager.GetHubContext<MyHub>()
-                .Clients.All.priceChanged(pair);
-            } catch (Exception exc) {
-              GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-            }
-          });
-      };
+      {
+        IDisposable priceChanged = null;
+        var propName = Lib.GetLambda<TraderModel>(x => x.PriceChanged);
+        trader.PropertyChanged += (object sender, PropertyChangedEventArgs e) => {
+          if (e.PropertyName != propName) return;
+          if (priceChanged != null) priceChanged.Dispose();
+          var trm = (TraderModel)sender;
+          priceChanged = trm.PriceChanged
+            .Select(x => x.EventArgs.Pair.Replace("/", "").ToLower())
+            .Where(pair => Pairs.Contains(pair))
+            .Subscribe(pair => {
+              try {
+                GlobalHost.ConnectionManager.GetHubContext<MyHub>()
+                  .Clients.All.priceChanged(pair);
+              } catch (Exception exc) {
+                GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+              }
+            });
+        };
+      }
       app.UseCors(CorsOptions.AllowAll);
       app.Use((context, next) => {
         try {
@@ -143,24 +145,18 @@ namespace HedgeHog.Alice.Client {
       var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
         time = tm.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-        otg= IntOrDouble(tm.OpenTradesGross2InPips, 1),
+        otg = IntOrDouble(tm.OpenTradesGross2InPips, 1),
         tps = tm.TicksPerSecondAverage.Round(1),
         dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
         hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
         rsdMin = tm.RatesStDevMinInPips,
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid },
-        tci = GetTradeConditionsInfo(tm)
+        tci = GetTradeConditionsInfo(tm),
+        wfs = tm.WorkflowStep
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       });
-      var tm2 = remoteControl.Value.TradingMacrosCopy.FirstOrDefault(t => t.PairPlain == pair);
-      if (tm2 != null) {
-        try {
-          Clients.Caller.addMessage(makeClienInfo(tm2));
-        } catch (Exception exc) {
-          GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        }
-      }
+      UseTradingMacro(pair, tm => Clients.Caller.addMessage(makeClienInfo(tm)));
     }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray());
@@ -302,7 +298,7 @@ namespace HedgeHog.Alice.Client {
     }
     public Trade[] ReadClosedTrades(string pair) {
       try {
-        return remoteControl.Value.GetClosedTrades(pair);
+        return remoteControl.Value.GetClosedTrades(pair.Substring(0, 3) + "/" + pair.Substring(3, 3));
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;

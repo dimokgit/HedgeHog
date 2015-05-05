@@ -38,10 +38,12 @@
 
   <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
+  <script src="Scripts/linq.js"></script>
+  <script src="Scripts/json.date-extensions.min.js"></script>
   <script src="Scripts/jquery.signalR-2.1.2.min.js"></script>
   <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
   <script src="Scripts/pnotify.custom.min.js"></script>
@@ -71,7 +73,7 @@
       padding: 0;
     }
 
-    #profit,#openTradeGross {
+    #profit, #openTradeGross {
       display: inline-block;
     }
 
@@ -79,6 +81,15 @@
       background-color: chartreuse;
       font-weight: bold;
     }
+
+    .trade-condition {
+      color: brown;
+    }
+
+      .trade-condition.on {
+        color: forestgreen;
+        font-weight: bold;
+      }
 
     .loss {
       background-color: #ffd3d9;
@@ -109,10 +120,12 @@
       min-height: 1em;
       padding: 5px;
     }
-    .navbar-toggle{
-      padding-bottom:0;
-      padding-top:0;
+
+    .navbar-toggle {
+      padding-bottom: 0;
+      padding-top: 0;
     }
+
     .modal-body {
       padding: 5px;
     }
@@ -135,12 +148,14 @@
     #settingsGrid input[type=text] {
       width: 100%;
     }
-    #settingsGrid .pgGroupRow{
-      cursor:default;
+
+    #settingsGrid .pgGroupRow {
+      cursor: default;
     }
-    #settingsGrid .pgGroupRow :hover{
-      text-decoration: underline;
-    }
+
+      #settingsGrid .pgGroupRow :hover {
+        text-decoration: underline;
+      }
   </style>
   <script>
     $(function () {
@@ -327,6 +342,7 @@
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />
               </li>
+              <li><button data-bind="click:readClosedTrades">Closed Trades</button></li>
             </ul>
           </li>
           <!--#endregion-->
@@ -383,7 +399,11 @@
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
     <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross()>0,loss:openTradeGross()<0},visible:openTradeGross()!=0"></span>
     <span id="discussion"></span>
-    <input value="" id="rsdMin" style="width:1.5em;height:1.5em" />
+    <span data-bind="visible:tradeConditionInfos().length">&#x262D</span>
+    <!-- ko foreach: tradeConditionInfos -->
+    <span class="trade-condition" data-bind="text:key,css:{on:value()}"></span>
+    <!-- /ko -->
+    <input value="" id="rsdMin" style="width:1.5em;height:1.5em;position:absolute;left:0;top:0" />
   </div>
   <!--#endregion-->
   <!--#region Charts-->
@@ -423,7 +443,7 @@
           <table>
             <tbody data-bind="foreach:tradeConditions">
               <tr>
-                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}"/></td>
+                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
                 <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
               </tr>
             </tbody>
@@ -474,7 +494,7 @@
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
           <span class="modal-title" id="myModalLabel">News</span>
-          <a href="http://www.tradingeconomics.com/united-states/calendar" target="_blank">Calendar</a>
+          <a href="http://www.econoday.com/economic-calendar.aspx" target="_blank">Calendar</a>
         </div>
         <div class="modal-body">
           <table border="1">

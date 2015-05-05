@@ -1046,7 +1046,7 @@ namespace HedgeHog.Alice.Client {
         );
       #endregion
 
-      if (tm.RatesArray.Count == 0) return new { rates = new int[0] }.ToExpando();
+      if (tm.RatesArray.Count == 0 || tm.BuyLevel == null) return new { rates = new int[0] }.ToExpando();
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
       var tps = tm.TicksPerSecondAverage;
@@ -1116,7 +1116,7 @@ namespace HedgeHog.Alice.Client {
           ratesLastStartDate2},
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3),
-      }.ToExpando();
+      };
       var tradeLevels = new {
         buy = tm.BuyLevel.Rate,
         canBuy = tm.BuyLevel.CanTrade,
@@ -1128,14 +1128,14 @@ namespace HedgeHog.Alice.Client {
         sellCount = tm.SellLevel.TradesCount,
         buyClose = tm.BuyCloseLevel.Rate,
         sellClose = tm.SellCloseLevel.Rate
-      }.ToExpando();
+      };
       var tmg = tradesManager;
       var trades0 = tmg.GetTrades(pair);
       Func<bool, Trade[]> getTrades = isBuy => trades0.Where(t => t.IsBuy == isBuy).ToArray();
-      var trades = new {
-        buy = getTrades(true).NetOpen(),
-        sell = getTrades(false).NetOpen()
-      }.ToExpando();
+      var trades = new ExpandoObject();
+      var tradeFoo = MonoidsCore.ToFunc(false,isBuy=>new { o = getTrades(isBuy).NetOpen(), t = getTrades(isBuy).Max(t => t.Time) } );
+      getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
+      getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
       var askBid = new { ask = price.Ask, bid = price.Bid }.ToExpando();
       return new {

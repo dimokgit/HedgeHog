@@ -1,5 +1,8 @@
+/// <reference path="../../bower/bower_components/d3/d3.js" />
+/// <reference path="../../Scripts/linq.js" />
+/// <reference path="../../bower/bower_components/underscore/underscore.js" />
 // jscs:disable
-/*global ko, d3*/
+/*global ko, d3, _*/
 /*ignore jscs*/
 (function () {
   function tradeLevelUIFactory(x, y, on, manual, tradeCount) { return { x: x, y: y, on: on ? true : false, manual: manual ? true : false, tradeCount: tradeCount }; }
@@ -116,7 +119,7 @@
           .attr("d", d3.svg.symbol().type("circle").size(150))
           .attr("transform", "rotate(-90)")
           .on("click", function (d, i) {
-            chartData.moveCorridorWavesCount(chartData.chartNum, i == 0 ? 1 : -1);
+            chartData.moveCorridorWavesCount(chartData.chartNum, i === 0 ? 1 : -1);
           })
         ;
       addLine("ask", "steelblue", 1, "2,2");
@@ -163,7 +166,6 @@
       viewModel = bindingContext.$root;
       var chartData = ko.unwrap(valueAccessor());
       var data = chartData.data;
-      var cmaPeriod = chartData.cmaPeriod;
       if (data.length === 0) {
         $(element).hide();
         return;
@@ -292,7 +294,7 @@
       // #endregion
       // #endregion
 
-      setHLine(trades.buy || trades.sell, "trade", trades.buy ? "darkgreen" : "red", 1, "2,2,5,2");
+      setHLine((trades.buy || {}).o || (trades.sell || {}).o, "trade", trades.buy ? "darkgreen" : "red", 1, "2,2,5,2");
 
       // #region trade levels
       setTradeLevel(tradeLevels.buy, "buyEnter", "darkred",1);
@@ -324,6 +326,52 @@
         .style('font-weight', function (d) { return d.manual ? "bold" : ""; });
       // #endregion
 
+      // #region CLosed Trades
+      var closedTradesPath = "closedTrades";
+      var closedTrades = chartData.closedTrades;
+      function getClosedTradesDelta(data) { return svg.selectAll("path." + closedTradesPath).data(data); }
+      if (closedTrades && closedTrades.length)
+        (function () {
+          var ud = ["up", "down"];
+          function ctf(ct, time, level, u, d) {
+            var isOpen = time.match(/open$/i),
+              paint = ct.grossPL > 0 ? "green" : "red";
+            return {
+              x: ct[time], y: ct[level],
+              shape: "triangle-" + (ct.isBuy ? ud[u] : ud[d]),
+              fill: !isOpen ? "white" : "white",
+              stroke: paint,
+              strokeWidth: !isOpen ? 3 : 2,
+              size: isOpen ? 100 : 60,
+              dateMin: data[0].d
+            };
+          }
+          function map(ct) { return [ctf(ct, "timeOpen", "open", 0, 1), ctf(ct, "timeClose", "close", 1, 0)]; }
+          var cts = Enumerable.from(closedTrades)
+            .selectMany(map)
+            .where("ct => ct.x > ct.dateMin")
+            .toArray();
+          var closedTradesDelta = getClosedTradesDelta(cts);
+          closedTradesDelta
+            .enter()
+            .append("path")
+            .attr("class", closedTradesPath)
+            .attr("d", function (d) {
+              return d3.svg.symbol().type(d.shape).size(d.size)();
+            })
+            .style("fill", function (ct) { return ct.fill; })
+            .style("stroke", function (ct) { return ct.stroke; })
+            .style("stroke-width", function (ct) { return ct.strokeWidth; })
+          ;
+          closedTradesDelta
+            .attr("transform", function (d) {
+              return "translate(" + x(d.x) + "," + y(d.y) + ")";
+            });
+
+        })();
+      else
+        getClosedTradesDelta([]).exit().remove();
+      // #endregion
       d3.select(element).select("svg")
         .style('background-color', isTradingActive ? "whitesmoke" : "peachpuff");
 

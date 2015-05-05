@@ -163,12 +163,36 @@ namespace HedgeHog.Shared {
         _GrossPL = value;
       }
     }
+    private DateTime _time2;
     [DataMember]
     [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
-    public DateTime Time { get; set; }
+    public DateTime Time2 {
+      get { return _time2; }
+      set {
+        Time = TimeZoneInfo.ConvertTimeFromUtc(_time2 = value, TimeZoneInfo.Local);
+      }
+    }
     [DataMember]
+    [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
+    public DateTime Time { get; private set; }
+
+    private DateTime _time2Close;
+    [DataMember]
+    [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
+    public DateTime Time2Close {
+      get { return _time2Close; }
+      set {
+        TimeClose = TimeZoneInfo.ConvertTimeFromUtc(_time2Close = value, TimeZoneInfo.Local);
+      }
+    }
+    DateTime _TimeClose;
+    [DataMember]
+    [DisplayFormat(DataFormatString = "{0:dd HH:mm}")]
     [DisplayName("Time Close")]
-    public DateTime TimeClose { get; set; }
+    public DateTime TimeClose {
+      get { return _TimeClose; }
+      set { _TimeClose = value; }
+    }
     public DateTime DateClose { get { return TimeClose.Date; } }
     public int DaysSinceClose { get { return Math.Floor((DateTime.Now - TimeClose).TotalDays).ToInt(); } }
     [DataMember]
@@ -212,7 +236,7 @@ namespace HedgeHog.Shared {
       if (price.Pair == Pair) {
         if (PipSize == 0) PipSize = tradesManager.GetPipSize(Pair);
         if (BaseUnitSize == 0) BaseUnitSize = tradesManager.GetBaseUnitSize(Pair);
-        TimeClose = price.Time;
+        Time2Close = price.Time2.DateTime;
         Close = Buy ? price.Bid : price.Ask;
         Commission = CommissionByTrade(this);
         //Close = Buy ? price.BuyClose : price.SellClose;
@@ -264,19 +288,6 @@ namespace HedgeHog.Shared {
             this.SetProperty(property.Name, element.Value);
       }
       return this;
-    }
-    public void FromString(XElement xmlElement) {
-      this.Buy = this.IsBuy = xmlElement.Attribute("BS").Value == "B";
-      this.Close = double.Parse(xmlElement.Attribute("Close").Value);
-      this.GrossPL = double.Parse(xmlElement.Attribute("GrossPL").Value);
-      this.Id = xmlElement.Attribute("TradeID").Value;
-      this.Lots = int.Parse(xmlElement.Attribute("Lot").Value);
-      this.Pair = xmlElement.Attribute("Instrument").Value;
-      this.PL = double.Parse(xmlElement.Attribute("PL").Value);
-      this.Time = DateTime.Parse(xmlElement.Attribute("OpenTime").Value);
-      this.TimeClose = DateTime.Parse(xmlElement.Attribute("CloseTime").Value);
-
-      this.Remark = new TradeRemark(xmlElement.Attribute("CQTXT").Value);
     }
   }
   [Serializable]

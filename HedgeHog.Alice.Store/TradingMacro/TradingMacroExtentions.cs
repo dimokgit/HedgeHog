@@ -3926,7 +3926,7 @@ namespace HedgeHog.Alice.Store {
               _IsUp = null;
               return;
             }
-            _getUp = new Lazy<bool?>(() => HasRates ? _Rates.Select(r => r.PriceAvg).ToArray().Regress(1)[1] < 0 : (bool?)null, true);
+            _getUp = new Lazy<bool?>(() => HasRates ? _Rates.Select(r => r.PriceAvg).ToArray().LinearSlope() < 0 : (bool?)null, true);
             if (IsUpChangedEvent == null)
               return;
             else {

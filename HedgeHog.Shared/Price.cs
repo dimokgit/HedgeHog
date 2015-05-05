@@ -27,20 +27,20 @@ namespace HedgeHog.Shared {
     public double Ask { get; set; }
     public double Average { get { return (Ask + Bid) / 2; } }
     public double Spread { get { return Ask - Bid; } }
-    public DateTime Time { get; set; }
+    private DateTimeOffset _time2;
+    public DateTimeOffset Time2 {
+      get { return _time2; }
+      set { 
+        _time2 = value.ToUniversalTime();
+      }
+    }
+    public DateTime Time { get { return _time2.LocalDateTime; } }
     public string Pair { get; set; }
     public int BidChangeDirection { get; set; }
     public int AskChangeDirection { get; set; }
     public bool IsReal { get { return Time != DateTime.MinValue; } }
     public bool IsPlayback { get; set; }
     public Price() {    }
-    public Price (string pair, double ask, double bid, int asChangeDirection, int bidChangeDirection, DateTime serverTimeLocal) {
-        Ask = ask; Bid = bid;
-        AskChangeDirection = asChangeDirection;
-        BidChangeDirection = bidChangeDirection;
-        Time = serverTimeLocal;
-        Pair = pair;
-    }
 
     public Price(string pair, Rate rate ) {
       if (rate == null) {
@@ -49,7 +49,7 @@ namespace HedgeHog.Shared {
         Ask = rate.AskClose;
         Bid = rate.BidClose;
       }
-      Time = rate.StartDate;
+      Time2 = rate.StartDate2;
       Pair = pair;
       AskChangeDirection = 0;
       BidChangeDirection = 0;

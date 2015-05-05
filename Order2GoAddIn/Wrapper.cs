@@ -1112,8 +1112,8 @@ namespace Order2GoAddIn {
         trade.Lots = (Int32)t.CellValue("Lot");
         trade.Open = (double)t.CellValue("Open");
         trade.Close = (double)t.CellValue("Close");
-        trade.Time = ConvertDateToLocal((DateTime)t.CellValue("OpenTime"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
-        trade.TimeClose = ConvertDateToLocal((DateTime)t.CellValue("CloseTime"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.Time2 = (DateTime)t.CellValue("OpenTime");// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.Time2Close = (DateTime)t.CellValue("CloseTime");// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
         trade.OpenOrderID = t.CellValue("OpenOrderID") + "";
         trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
         trade.Remark = new TradeRemark(t.CellValue("OQTXT") + "");
@@ -1144,7 +1144,7 @@ namespace Order2GoAddIn {
         trade.Lots = (Int32)t.CellValue("Lot");
         trade.Open = (double)t.CellValue("Open");
         trade.Close = (double)t.CellValue("Close");
-        trade.Time = ConvertDateToLocal((DateTime)t.CellValue("Time"));// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.Time2 = (DateTime)t.CellValue("Time");// ((DateTime)t.CellValue("Time")).AddHours(coreFX.ServerTimeOffset);
         trade.OpenOrderID = t.CellValue("OpenOrderID") + "";
         trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
         //StopOrderID = t.CellValue("StopOrderID") + "";
@@ -1182,7 +1182,7 @@ namespace Order2GoAddIn {
         trade.Lots = (Int32)t.GetValue("Lot");
         trade.Open = (double)t.GetValue("Open");
         trade.Close = (double)t.GetValue("Close");
-        trade.Time = ConvertDateToLocal((DateTime)t.GetValue("Time"));// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.Time2 = (DateTime)t.GetValue("Time");// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
         trade.OpenOrderID = t.GetValue("OpenOrderID") + "";
         trade.OpenOrderReqID = t.GetValue("OpenOrderReqID") + "";
         trade.Remark = new TradeRemark(t.GetValue("QTXT") + "");
@@ -1210,7 +1210,7 @@ namespace Order2GoAddIn {
         trade.Lots = t.GetInt("Lot");
         trade.Open = t.GetDouble("Open");
         trade.Close = t.GetDouble("Close");
-        trade.Time = ConvertDateToLocal(t.GetDateTime("Time"));// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
+        trade.Time2 = t.GetDateTime("Time");// ((DateTime)t.GetValue("Time")).AddHours(coreFX.ServerTimeOffset);
         trade.OpenOrderID = t.Get("OpenOrderID");
         trade.OpenOrderReqID = t.Get("OpenOrderReqID");
         trade.Remark = new TradeRemark(t.Get("QTXT"));
@@ -1554,22 +1554,12 @@ namespace Order2GoAddIn {
       }
       return price;
     }
-    public Price PriceFactory(string pair, double ask, double bid, DateTime timeLocal, int asChangeDirection = 0, int bidChangeDirection = 0) {
-      return new Price() {
-        Ask = ask, Bid = bid,
-        AskChangeDirection = asChangeDirection,
-        BidChangeDirection = bidChangeDirection,
-        Time = timeLocal,
-        Pair = pair
-      };
-
-    }
     private Price GetPrice(FXCore.RowAut Row) {
       return Row == null ? null : new Price() {
         Ask = (double)Row.CellValue(FIELD_ASK), Bid = (double)Row.CellValue(FIELD_BID),
         AskChangeDirection = (int)Row.CellValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.CellValue(FIELD_BIDCHANGEDIRECTION),
-        Time = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Row.CellValue(FIELD_TIME), TimeZoneInfo.Local),
+        Time2 =ConvertDateToLocal((DateTime)Row.CellValue(FIELD_TIME)),
         Pair = Row.CellValue(FIELD_INSTRUMENT) + ""
       };
     }
@@ -1578,7 +1568,7 @@ namespace Order2GoAddIn {
         Ask = (double)Row.GetValue(FIELD_ASK), Bid = (double)Row.GetValue(FIELD_BID),
         AskChangeDirection = (int)Row.GetValue(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = (int)Row.GetValue(FIELD_BIDCHANGEDIRECTION),
-        Time = TimeZoneInfo.ConvertTimeFromUtc((DateTime)Row.GetValue(FIELD_TIME), TimeZoneInfo.Local),
+        Time2 = ConvertDateToLocal((DateTime)Row.GetValue(FIELD_TIME)),
         Pair = Row.GetValue(FIELD_INSTRUMENT) + ""
       };
     }
@@ -1587,7 +1577,7 @@ namespace Order2GoAddIn {
         Ask = Row.GetDouble(FIELD_ASK), Bid = Row.GetDouble(FIELD_BID),
         AskChangeDirection = Row.GetInt(FIELD_ASKCHANGEDIRECTION),
         BidChangeDirection = Row.GetInt(FIELD_BIDCHANGEDIRECTION),
-        Time = TimeZoneInfo.ConvertTimeFromUtc(Row.GetDateTime(FIELD_TIME), TimeZoneInfo.Local),
+        Time2 = ConvertDateToLocal(Row.GetDateTime(FIELD_TIME)),
         Pair = Row.Get(FIELD_INSTRUMENT)
       };
     }
@@ -2687,7 +2677,7 @@ namespace Order2GoAddIn {
         var rollover = double.Parse(getData(8).Value);
         var trade = TradeFactory(pair);
         {
-          trade.Buy = isBuy; trade.Open = priceOpen; trade.Close = priceClose; trade.Commission = commission + rollover; trade.GrossPL = grossPL; trade.PL = pl; trade.Id = ticket.Value; trade.IsBuy = isBuy; trade.Lots = volume; trade.Time = timeOpen; trade.TimeClose = timeClose; trade.OpenOrderID = ""; trade.OpenOrderReqID = "";
+          trade.Buy = isBuy; trade.Open = priceOpen; trade.Close = priceClose; trade.Commission = commission + rollover; trade.GrossPL = grossPL; trade.PL = pl; trade.Id = ticket.Value; trade.IsBuy = isBuy; trade.Lots = volume; trade.Time2 = TimeZoneInfo.ConvertTimeToUtc(timeOpen); trade.Time2Close = TimeZoneInfo.ConvertTimeToUtc(timeClose); trade.OpenOrderID = ""; trade.OpenOrderReqID = "";
         }
         trades.Add(trade);
         row = row.NextNode as XElement;

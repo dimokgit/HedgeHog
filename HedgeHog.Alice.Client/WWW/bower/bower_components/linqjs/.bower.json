@@ -1,0 +1,24 @@
+{
+  "name": "linqjs",
+  "version": "3.0.4-beta",
+  "main": "linq.js",
+  "ignore": [
+    "**/.*",
+    "extensions",
+    "test",
+    "*.md",
+    "CHANGELOG",
+    "package.json"
+  ],
+  "homepage": "https://github.com/mihaifm/linq",
+  "_release": "3.0.4-beta",
+  "_resolution": {
+    "type": "version",
+    "tag": "3.0.4-beta",
+    "commit": "9c337383e60be3a5560959616bbca51b3eb0d27d"
+  },
+  "_source": "git://github.com/mihaifm/linq.git",
+  "_target": "~3.0.4-beta",
+  "_originalSource": "linqjs",
+  "_direct": true
+}
