@@ -25,6 +25,7 @@
   <!--#endregion-->
   <!--#region CSS-->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+  <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet">
   <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css" />
   <link href="Styles/BS-dropdown-submenu.css" rel="stylesheet" />
   <link rel='stylesheet prefetch' href='https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.css' />
@@ -38,12 +39,14 @@
 
   <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.0/js/bootstrap-toggle.min.js"></script>
   <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
   <script src="Scripts/linq.js"></script>
   <script src="Scripts/json.date-extensions.min.js"></script>
+  <script src="Scripts/traverse.js"></script>
   <script src="Scripts/jquery.signalR-2.1.2.min.js"></script>
   <!--<script src="Scripts/bootstrap-notify.min.js"></script>-->
   <script src="Scripts/pnotify.custom.min.js"></script>
@@ -335,14 +338,17 @@
                 <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,1)">Active 2</button>
               </li>
               <li><input type="button" value="Manual" id="manualToggle" /></li>
-              <li><button id="setDefaultTradeLevels">Default</button></li>
+              <li><button data-bind="click:refreshOrders">Refresh Orders</button></li>
               <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
               <li><button data-bind="click:wrapCurrentPriceInCorridor">Wrap Price</button></li>
               <li>
                 <input type="button" value=" Buy " id="buy" />
                 <input type="button" value=" Sell " id="sell" />
               </li>
-              <li><button data-bind="click:readClosedTrades">Closed Trades</button></li>
+              <li>
+                <button data-bind="click:toggleClosedTrades">Trades</button>
+                <button data-bind="click:toggleClosedTrades2,text:showClosedTrades2Text"></button>
+              </li>
             </ul>
           </li>
           <!--#endregion-->

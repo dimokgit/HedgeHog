@@ -1566,7 +1566,7 @@ namespace HedgeHog.Alice.Store {
                     turnItOff(TradeConditions.Any() || _buySellLevels.Any(bs => -bs.TradesCount >= CorridorCrossesMaximum) && canTradeOff, null);
                 }
                 #endregion
-                var isDirectional = TradeConditionsAllInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count() > 0;
+                var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
                 Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
                 var tci = TradeConditionsInfo((d, n) => new { n, v = d() }).ToArray();
                 var tciOk = tci.Select(x => x.v).DefaultIfEmpty(false).All(b => b);

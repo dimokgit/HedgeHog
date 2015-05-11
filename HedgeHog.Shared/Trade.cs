@@ -39,7 +39,7 @@ namespace HedgeHog.Shared {
       return trades == null ? 0 : trades.Select(t => t.GrossPL).DefaultIfEmpty(0).Sum(t => t);
     }
     public static Trade[] ByPair(this ICollection<Trade> trades, string pair) {
-      return (string.IsNullOrWhiteSpace(pair) ? trades : trades.Where(t => t.Pair == pair)).ToArray();
+      return (string.IsNullOrWhiteSpace(pair) ? trades : trades.Where(t => t.Pair.ToLower() == pair.ToLower())).ToArray();
     }
     public static bool HaveBuy(this ICollection<Trade> trades) {
       return trades.Any(t => t.Buy);

@@ -1207,6 +1207,22 @@ namespace HedgeHog.Alice.Client {
         OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.PriceChanged));
       }
     }
+    private IObservable<EventPattern<TradeEventArgs>> _tradeAdded;
+    public IObservable<EventPattern<TradeEventArgs>> TradeAdded {
+      get { return _tradeAdded; }
+      set {
+        _tradeAdded = value;
+        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.TradeAdded));
+      }
+    }
+    private IObservable<EventPattern<MasterTradeEventArgs>> _tradeRemoved;
+    public IObservable<EventPattern<MasterTradeEventArgs>> TradeRemoved {
+      get { return _tradeRemoved; }
+      set {
+        _tradeRemoved = value;
+        OnPropertyChanged(Lib.GetLambda<TraderModel>(tm => tm.TradeRemoved));
+      }
+    }
 
     TimeSpan _throttleInterval = TimeSpan.FromSeconds(1);
     TraderModel() {
@@ -1222,12 +1238,14 @@ namespace HedgeHog.Alice.Client {
         this.CoreFX.SubscribeToPropertyChanged(cfx => cfx.SessionStatus, cfx => SessionStatus = cfx.SessionStatus);
         //_coreFXObserver = new MvvmFoundation.Wpf.PropertyObserver<O2G.CoreFX>(this.CoreFX)
         //.RegisterHandler(c=>c.SessionStatus,c=>SessionStatus = c.SessionStatus);
+        PriceChanged = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h);
+        TradeAdded = Observable.FromEventPattern<EventHandler<TradeEventArgs>, TradeEventArgs>(h => h, h => TradesManager.TradeAdded += h, h => TradesManager.TradeAdded -= h);
+        TradeRemoved = Observable.FromEventPattern<EventHandler<MasterTradeEventArgs>, MasterTradeEventArgs>(h => h, h => MasterTradeRemoved += h, h => MasterTradeRemoved -= h);
         CoreFX.LoggedIn += (s, e) => {
           IsInLogin = false;
           TradesManager.Error += fwMaster_Error;
           TradesManager.TradeAdded += fwMaster_TradeAdded;
           TradesManager.TradeRemoved += fwMaster_TradeRemoved;
-          PriceChanged = Observable.FromEventPattern<EventHandler<PriceChangedEventArgs>, PriceChangedEventArgs>(h => h, h => TradesManager.PriceChanged += h, h => TradesManager.PriceChanged -= h);
           if (IsInVirtualTrading)
             TradesManager.PriceChanged += fwMaster_PriceChanged;
           else
@@ -1252,7 +1270,8 @@ namespace HedgeHog.Alice.Client {
             .Subscribe(ie => ClosedTrades.Add(ie.EventArgs.Trade), exc => Log = exc);
           GalaSoft.MvvmLight.Threading.DispatcherHelper.CheckBeginInvokeOnUI(() => {
             ClosedTrades.Clear();
-            fwMaster.GetClosedTrades("").ToList().ForEach(ct => ClosedTrades.Add(ct));
+            fwMaster.GetClosedTrades("")
+              .ForEach(ct => ClosedTrades.Add(ct));
           });
 
           if(!(TradesManager is VirtualTradesManager)) {

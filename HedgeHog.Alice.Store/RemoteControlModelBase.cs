@@ -43,15 +43,15 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    protected ITradesManager tradesManager { get { return MasterModel.TradesManager; } }
-    public Trade[] GetClosedTrades(string pair) { return tradesManager.GetClosedTrades(pair); }
+    public ITradesManager TradesManager { get { return MasterModel.TradesManager; } }
+    public Trade[] GetClosedTrades(string pair) { return TradesManager.GetClosedTrades(pair); }
     public string VirtualPair { get; set; }
     public DateTime VirtualStartDate { get; set; }
     Task backTestThread;
     CancellationTokenSource cancellationForBackTesting;
 
     void OrderToNoLossHandler(object sender, OrderEventArgs e) {
-      tradesManager.DeleteEntryOrderLimit(e.Order.OrderID);
+      TradesManager.DeleteEntryOrderLimit(e.Order.OrderID);
     }
     public bool IsLoggedIn { get { return MasterModel.CoreFX.IsLoggedIn; } }
 
@@ -191,7 +191,7 @@ namespace HedgeHog.Alice.Store {
       var isLong = dateStart == DateTime.MinValue;
       var rs = tradingMacro.RatesArraySafe.Where(r=>r.StartDate>=dateStart).GroupTicksToRates();
       var ratesForDensity = (reversePower ? rs.OrderBarsDescending() : rs.OrderBars()).ToArray();
-      SetPriceBars(tradingMacro,isLong, ratesForDensity.GetPriceBars(tradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
+      SetPriceBars(tradingMacro,isLong, ratesForDensity.GetPriceBars(TradesManager.GetPipSize(tradingMacro.Pair), rowOffset));
       return GetPriceBars(tradingMacro,isLong);
     }
     protected PriceBar[] GetPriceBars(TradingMacro tradingMacro, bool isLong) {

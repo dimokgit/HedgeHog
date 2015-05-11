@@ -260,6 +260,7 @@ namespace HedgeHog.Shared {
         case NotifyCollectionChangedAction.Remove:
           trade.UpdateByPrice(this, GetPrice(trade.Pair));
           trade.TradesManager = null;
+          trade.Kind = PositionBase.PositionKind.Closed;
           tradesClosed.Add(trade);
           OnTradeClosed(trade);
           TradeRemoved(trade);
@@ -270,11 +271,14 @@ namespace HedgeHog.Shared {
     #region ITradesManager Members
 
     public Trade[] GetTrades(string pair) {
-      return tradesOpened.Where(t => t.Pair == pair).ToArray();
+      return tradesOpened.Where(t => t.Pair.ToLower() == pair.ToLower()).ToArray();
     }
 
     public Trade[] GetTrades() {
       return tradesOpened.ToArray();
+    }
+    public void ResetClosedTrades(string Pair) {
+      tradesClosed.Clear();
     }
     public Trade[] GetClosedTrades(string Pair) {
       return tradesClosed.Where(t => t.Pair.ToLower() == Pair.ToLower()).ToArray();
@@ -498,6 +502,11 @@ namespace HedgeHog.Shared {
 
     #endregion
 
+
+
+    public void RefreshOrders() {
+      throw new NotImplementedException();
+    }
   }
 
 }

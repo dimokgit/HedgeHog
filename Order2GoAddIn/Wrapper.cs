@@ -1034,7 +1034,9 @@ namespace Order2GoAddIn {
     private FXCore.RowAut[] GetRows(string tableName, string pair) {
       return GetRows(tableName).Where(r => r.CellValue(FIELD_INSTRUMENT) + "" == pair).ToArray();
     }
-    static object lockGetRows = new object();
+    public void RefreshOrders() {
+      GetTable(TABLE_ORDERS).Refresh();
+    }
     private FXCore.RowAut[] GetRows(string tableName, bool updateTable = false) {
       if (!IsLoggedIn) return new FXCore.RowAut[0];
       //lock (lockGetRows) {
@@ -1118,6 +1120,7 @@ namespace Order2GoAddIn {
         trade.OpenOrderReqID = t.CellValue("OpenOrderReqID") + "";
         trade.Remark = new TradeRemark(t.CellValue("OQTXT") + "");
         trade.CommissionByTrade = CommissionByTrade;
+        trade.Kind = PositionBase.PositionKind.Closed;
       };
       trade.StopAmount = StopAmount(trade);
       trade.LimitAmount = LimitAmount(trade);
@@ -2838,6 +2841,11 @@ namespace Order2GoAddIn {
 
     #region ITradesManager Members
     #endregion
+
+
+    public void ResetClosedTrades(string pair) {
+      throw new NotImplementedException();
+    }
   }
 
   #region Data Classes

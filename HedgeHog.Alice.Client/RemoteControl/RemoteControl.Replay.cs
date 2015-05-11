@@ -154,7 +154,7 @@ namespace HedgeHog.Alice.Client {
         }
         _replayTasks.Clear();
         MasterModel.AccountModel.Balance = MasterModel.AccountModel.Equity = 50000;
-        tradesManager.GetAccount().Balance = tradesManager.GetAccount().Equity = 50000;
+        TradesManager.GetAccount().Balance = TradesManager.GetAccount().Equity = 50000;
       }
         SaveTradingSettings(tmOriginal);
       var tms = GetTradingMacros().Where(t => t.Strategy != Strategies.None).ToList();
@@ -162,7 +162,7 @@ namespace HedgeHog.Alice.Client {
       ReplayArguments.GetOriginalBalance = new Func<double>(() => MasterModel.AccountModel.OriginalBalance);
       foreach (var tm in tms) {
         if (IsInVirtualTrading) {
-          tradesManager.ClosePair(tm.Pair);
+          TradesManager.ClosePair(tm.Pair);
           tm.ResetSessionId(ReplayArguments.SuperSessionId);
           if (testParameter != null)
             testParameter.ForEach(tp => {

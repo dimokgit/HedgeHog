@@ -1429,6 +1429,7 @@ namespace HedgeHog.Alice.Store {
         LastTradeLossInPips = 0;
         LoadRatesStartDate2 = DateTimeOffset.MinValue;
         BarsCountLastDate = DateTime.MinValue;
+        TradesManager.ResetClosedTrades(Pair);
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -3318,16 +3319,18 @@ namespace HedgeHog.Alice.Store {
             {
               var ratesLocal = UseRatesInternal(ri => ri.Reverse().TakeWhile(isNotHistory).Reverse().ToArray());
               var ratesLocalCount = RatesInternal.Reverse().TakeWhile(isNotHistory).Count();
-              UseRatesInternal(rl => {
-                LoadRatesStartDate2 = ratesList[0].StartDate2;
-                var sd1 = ratesList.Last().StartDate;
-                rl.RemoveRange(rl.Count - ratesLocalCount, ratesLocalCount);
-                rl.RemoveAll(r => r.StartDate2 >= LoadRatesStartDate2);
-                rl.AddRange(ratesList);
-                var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
-                rl.AddRange(rateTail);
-                return;
-              });
+              if (ratesList.Count > 0)
+                UseRatesInternal(rl => {
+                  LoadRatesStartDate2 = ratesList[0].StartDate2;
+                  var sd1 = ratesList.Last().StartDate;
+                  rl.RemoveRange(rl.Count - ratesLocalCount, ratesLocalCount);
+                  rl.RemoveAll(r => r.StartDate2 >= LoadRatesStartDate2);
+                  rl.AddRange(ratesList);
+                  var rateTail = ratesLocal.SkipWhile(r => r.StartDate <= sd1).ToArray();
+                  rl.AddRange(rateTail);
+                  return;
+                });
+              else Log = new Exception("No rates were loaded from server for " + new { Pair, BarPeriod });
             }
             //if (BarPeriod == BarsPeriodType.t1)
             //  UseRatesInternal(ri => { ri.Sort(LambdaComparisson.Factory<Rate>((r1, r2) => r1.StartDate > r2.StartDate)); });

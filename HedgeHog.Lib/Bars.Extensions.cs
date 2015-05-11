@@ -40,6 +40,7 @@ namespace HedgeHog.Bars {
       return ticks.CalcTicksPerSecond(0.5);
     }
     public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks, double treshold)where TBar:BarBaseDate {
+      if (ticks.Count == 0) return 0;
       var tps = ticks.Count / (ticks.Last().StartDate - ticks[0].StartDate).Duration().TotalSeconds;
       return tps >= treshold
         ? tps
@@ -48,6 +49,7 @@ namespace HedgeHog.Bars {
         .Where(b => b.Count == 2)
         .Select(b => (b[1].StartDate - b[0].StartDate).Duration().TotalSeconds)
         .Where(s => s < 60 * 5)
+        .IfEmpty(() => 0.0)
         .Average();
     }
 

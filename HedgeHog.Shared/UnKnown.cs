@@ -10,7 +10,11 @@ namespace HedgeHog.Shared {
   [Serializable]
   [DataContract]
   public abstract class PositionBase : INotifyPropertyChanged {
-
+    public enum PositionKind { Unknown, Open, Closed };
+    [DataMember]
+    public PositionKind Kind { get; set; }
+    [DataMember]
+    public string KindString { get { return Kind + ""; } }
     double _PipSize;
     [UpdateOnUpdate]
     protected double PipSize {

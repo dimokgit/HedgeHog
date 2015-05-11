@@ -1,4 +1,5 @@
 // jscs:disable
+/// <reference path="../scripts/traverse.js" />
 /// <reference path="../Scripts/pnotify.custom.min.js" />
 /// http://sciactive.github.io/pnotify/#demos-simple
 /// <reference path="http://knockoutjs.com/downloads/knockout-3.3.0.js" />
@@ -10,12 +11,16 @@
 /*global ko,_,PNotify*/
 
 //var D3KD = this.D3KD || {};
-
+/**
+ * Read - read data from server
+ * Ask - ask data from server and forget. Server will fire "sendXXX" method related to askXXX
+ * Send - method fired from server to sen info to clien
+ */
 (function () {
   // #region Globals
   "use strict";
   // enable global JSON date parsing
-  JSON.useDateParser();
+  //JSON.useDateParser();
   var chat;
   var pair = "usdjpy";
   var NOTE_ERROR = "error";
@@ -44,7 +49,8 @@
     ratesInFlight = new Date();
     chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair)
       .done(function (response) {
-        dataViewModel.updateChart(response);
+        if (response)
+          dataViewModel.updateChart(response);
       })
       .always(function () { ratesInFlight = false; });
   }
@@ -203,6 +209,7 @@
 
     // #region Public
     // #region Server enums
+    this.refreshOrders = function () { serverCall("refreshOrders", []); };
     this.tradeLevelBys = ko.observableArray([]);
     this.setTradeLevelBuy = setTradeLevel.bind(null,true);
     this.setTradeLevelSell = setTradeLevel.bind(null, false);
@@ -213,24 +220,35 @@
     this.moveCorridorWavesCount = moveCorridorWavesCount;
     this.tradeConditions = ko.observableArray([]);
     var closedTrades = [];
-    this.readClosedTrades = function () {
+    var mustShowClosedTrades2 = ko.observable(false);
+    this.showClosedTrades2Text = ko.pureComputed(function () { return mustShowClosedTrades2() ? "ON" : "OFF"; });
+    this.toggleClosedTrades2 = function () {
+      mustShowClosedTrades2(!mustShowClosedTrades2());
+      askRates2();
+    };
+    this.toggleClosedTrades = function () {
       if (closedTrades.length) {
         closedTrades = [];
         resetPlotter();
-      } else
-        serverCall("readClosedTrades", [pair], function (trades) {
-          closedTrades = trades.map(function (t) {
-            return {
-              timeOpen: t.Time,
-              timeClose: t.TimeClose,
-              isBuy: t.IsBuy,
-              open: t.Open,
-              close: t.Close,
-              grossPL: t.GrossPL
-            };
-          });
+      } else readClosedTrades();
+    }
+    this.readClosedTrades = readClosedTrades;
+    function readClosedTrades(d, e, force) {
+      serverCall("readClosedTrades", [pair], function (trades) {
+        closedTrades = prepDates(trades).map(function (t) {
+          return {
+            timeOpen: t.Time,
+            timeClose: t.TimeClose,
+            isBuy: t.IsBuy,
+            open: t.Open,
+            close: t.Close,
+            grossPL: t.GrossPL,
+            kind: t.KindString,
+            isClosed: t.KindString === "Closed"
+          };
         });
-    };
+      });
+    }
     // #endregion
     // #region Trade Settings
     this.saveTradeSettings = saveTradeSettings;
@@ -267,7 +285,7 @@
     // #region News
     this.readNews = function () {
       serverCall("readNews", [], function (news) {
-        self.news(news);
+        self.news(prepDates(news));
       });
     };
     this.news = ko.observableArray([]);
@@ -310,19 +328,20 @@
     this.updateChart = updateChart;
     this.updateChart2 = updateChart2;
     var commonChartParts = {};
+    var prepResponse = prepDates.bind(null, ["rates", "rates2"]);
     function updateChart(response) {
+      prepResponse(response);
       if (response.rates.length === 0) return;
-      //setTrendDates(response.trendLines, response.trendLines2);
       var rates = response.rates;
       rates.forEach(function (d) {
-        d.d = new Date(Date.parse(d.d));
+        d.d = new Date(d.d);
       });
       var rates2 = response.rates2;
       rates2.forEach(function (d) {
-        d.d = new Date(Date.parse(d.d));
+        d.d = new Date(d.d);
       });
       var endDate = rates[0].d;
-      var startDate = new Date(Date.parse(response.dateStart));
+      var startDate = new Date(response.dateStart);
       lineChartData.remove(function (d) {
         return d.d >= endDate || d.d < startDate;
       });
@@ -331,18 +350,21 @@
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
 
       commonChartParts = { tradeLevels: response.tradeLevels, askBid: response.askBid, trades: response.trades };
-      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod,closedTrades));
+      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross));
     }
     function updateChart2(response) {
+      prepResponse(response);
       if (!commonChartParts.tradeLevels) return;
       if (!response.rates) {
-        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTrades));
+        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross));
         return;
       }
       if (response.rates.length === 0) return;
-      //setTrendDates(response.trendLines, response.trendLines2);
       var rates = response.rates;
-      //rates = continuoseDates(rates, response.trendLines.dates);
+      rates.forEach(function (d) {
+        d.d = new Date(d.d);
+      });
+      rates = continuoseDates(rates, [response.trendLines.dates,response.trendLines1.dates,response.trendLines2.dates]);
       var x1 = _.last(lineChartData2());
       var x2 = _.last(rates);
       var shouldUpdateData = x1.d.valueOf() !== x2.d.valueOf() && x1.c !== x2.c;
@@ -354,7 +376,7 @@
         return d.d >= endDate || d.d < startDate;
       });
       lineChartData2.push.apply(lineChartData2, rates);
-      self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod));
+      self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross));
     }
     // #endregion
     // #region LastDate
@@ -388,8 +410,21 @@
     // #endregion
 
     // #region Helpers
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod,closedTrades) {
-      setTrendDates(trendLines, trendLines2, trendLines1);
+    function prepDates(blocked, root) {
+      if (arguments.length == 1) {
+        root = blocked;
+        blocked = [];
+      }
+      var reISO = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}(?:\.{0,1}\d*))(?:Z|(\+|-)([\d|:]*))?$/;
+      traverse(root).forEach(function (x) {
+        if (blocked.indexOf(this.key) >= 0) {
+          this.block();
+        } else if (reISO.exec(x))
+          this.update(new Date(x));
+      });
+      return root;
+    }
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross) {
       return {
         data: data ? data() : [],
         trendLines: trendLines,
@@ -410,26 +445,31 @@
         chartNum: chartNum,
         hasStartDate: hasStartDate,
         cmaPeriod: cmaPeriod,
-        closedTrades: closedTrades
+        closedTrades: closedTrades,
+        openTradeGross: openTradeGross
       };
     }
     function continuoseDates(data, dates) {// jshint ignore:line
-      var dates2 = [];
+      var ds = dates.map(function (ds) { return { dates2: [], dates: ds.reverse() }; });
       data.reverse().reduce(function (prevValue, current) {
         var cd = current.d;
         if (prevValue) {
           current.d = prevValue = dateAdd(prevValue, "minute", -1);
         } else prevValue = current.d;
-        if (dates.length > 0)
-          dates.forEach(function (d) {
-            if (d.valueOf() >= cd.valueOf()) {
-              removeItem(dates, d);
-              dates2.push(prevValue);
-            }
-          });
+        ds.forEach(function (d0) {
+          if (d0.dates.length > 0)
+            d0.dates.forEach(function (d) {
+              if (d.valueOf() >= cd.valueOf()) {
+                removeItem(d0.dates, d);
+                d0.dates2.push(prevValue);
+              }
+            });
+        });
         return prevValue;
       }, 0);
-      Array.prototype.push.apply(dates, dates2);
+      ds.forEach(function (d0) {
+        Array.prototype.push.apply(d0.dates, d0.dates2.reverse());
+      });
       return data.reverse();
     }
     function removeItem(array, item) {
@@ -451,6 +491,7 @@
     //Set the hubs URL for the connection
     $.connection.hub.url = "http://" + host + "/signalr";
 
+    // #region Disconnect/Reconnect
     var errorNotes = [];
     function closeDisconnectNote() { closeErrorNote("TimeoutException"); }
     function closeReconnectNote() { closeErrorNote("reconnect"); }
@@ -479,6 +520,7 @@
         $.connection.hub.start();
       }, 5000); // Restart connection after 5 seconds.
     });
+    // #endregion
     // Declare a proxy to reference the hub.
     chat = $.connection.myHub;
     // #region Create functions that the hub can call to broadcast messages.
@@ -518,6 +560,12 @@
     chat.client.addRates2 = addRates2;
     chat.client.addMessage = addMessage;
     chat.client.priceChanged = priceChanged;
+    chat.client.tradesChanged = dataViewModel.readClosedTrades;
+    var sendChartHandlers = [dataViewModel.updateChart.bind(dataViewModel), dataViewModel.updateChart2.bind(dataViewModel)];
+    chat.client.sendChart = function (chartPair, chartNum, chartData) {
+      if (chartPair.toLowerCase() === pair.toLowerCase())
+        sendChartHandlers[chartNum](chartData);
+    }
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
@@ -525,7 +573,8 @@
       try{
         showInfo(JSON.parse(a.data)[0].name + " started");
       } catch (e) {
-        showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data));
+        showErrorPerm("Unexpected start data:\n" + JSON.stringify(a.data) + "\nNeed refresh");
+        return;
       }
       //#region Load static data
       var defTL = serverCall("readTradeLevelBys", [], function (levels) {

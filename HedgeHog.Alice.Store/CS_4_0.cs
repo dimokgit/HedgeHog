@@ -8174,7 +8174,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.MasterModel"/></summary>
         public const string MasterModel = "MasterModel";
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.tradesManager"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.TradesManager"/></summary>
         public const string tradesManager = "tradesManager";
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.VirtualPair"/></summary>
@@ -8304,7 +8304,7 @@ namespace HedgeHog.Alice.Store.Metadata
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.MasterModel"/></summary>
         public static PropertyPath MasterModelPath { get { return new PropertyPath("MasterModel"); } }
 
-        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.tradesManager"/></summary>
+        /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.TradesManager"/></summary>
         public static PropertyPath tradesManagerPath { get { return new PropertyPath("tradesManager"); } }
 
         /// <summary>Refers to property <see cref="HedgeHog.Alice.Store.RemoteControlModelBase.VirtualPair"/></summary>

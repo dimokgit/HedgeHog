@@ -333,6 +333,9 @@ namespace HedgeHog {
               ).DistinctUntilChanged(propertyDelegate);
     }
 
+    public static string[] GetLambdas<TPropertySource>(params Expression<Func<TPropertySource, object>>[] expressions) {
+      return expressions.Select(expression => GetLambda<TPropertySource>(expression)).ToArray();
+    }
     public static string GetLambda<TPropertySource>(Expression<Func<TPropertySource, object>> expression) {
       var lambda = expression as LambdaExpression;
       MemberExpression memberExpression;

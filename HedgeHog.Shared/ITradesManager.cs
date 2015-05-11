@@ -49,6 +49,7 @@ namespace HedgeHog.Shared {
     Trade[] GetTrades();
     Trade GetLastTrade(string pair);
     Trade[] GetClosedTrades(string pair);
+    void ResetClosedTrades(string pair);
 
 
     PendingOrder OpenTrade(string pair, bool buy, int lots, double takeProfit, double stopLoss, string remark, Price price);
@@ -92,6 +93,7 @@ namespace HedgeHog.Shared {
     void ChangeOrderRate(Order order, double rate);
     void ChangeOrderAmount(string orderId, int lot);
     void ChangeEntryOrderPeggedLimit(string orderId, double rate);
+    void RefreshOrders();
     #endregion
 
     #region Account

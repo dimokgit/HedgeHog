@@ -2,7 +2,7 @@
 /// <reference path="../../Scripts/linq.js" />
 /// <reference path="../../bower/bower_components/underscore/underscore.js" />
 // jscs:disable
-/*global ko, d3, _*/
+/*global ko, d3, Enumerable*/
 /*ignore jscs*/
 (function () {
   function tradeLevelUIFactory(x, y, on, manual, tradeCount) { return { x: x, y: y, on: on ? true : false, manual: manual ? true : false, tradeCount: tradeCount }; }
@@ -55,6 +55,9 @@
       "use strict";
 
       var chartData = ko.unwrap(valueAccessor());
+      var chartNum = chartData.chartNum;
+      var hasTps = chartNum === 0;
+
       var chartArea = calcChartArea(element);
 
       // #region Chart/svg
@@ -84,13 +87,14 @@
       //.style("text-anchor", "end")
       //.text("Price ($)");
       ;
-      svg.append("g")
-          .attr("transform", "translate(" + (width) + ",0)")
-          .attr("class", "y2 axis")
-          .append("text")
-          .attr("transform", "rotate(-90)")
-          .attr("y", 6)
-          .attr("dy", ".71em");
+      if (hasTps)
+        svg.append("g")
+            .attr("transform", "translate(" + (width) + ",0)")
+            .attr("class", "y2 axis")
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em");
       // #endregion
 
       svg.append("path").attr("class", "line data");
@@ -170,6 +174,20 @@
         $(element).hide();
         return;
       }
+      // #region parse data from the data-view-model
+      var tradeLevels = chartData.tradeLevels || {};
+      var trendLines = chartData.trendLines;
+      var trendLines2 = chartData.trendLines2;
+      var trendLines1 = chartData.trendLines1;
+      var openTrades = chartData.trades;
+      var openBuy = openTrades.buy, openSell = openTrades.sell;
+      var closedTrades = chartData.closedTrades;
+      var isTradingActive = chartData.isTradingActive;
+      var shouldUpdateData = chartData.shouldUpdateData || svgChanged;
+      var openTradeGross = ko.unwrap(chartData.openTradeGross);
+      var chartNum = chartData.chartNum;
+      var hasTps = chartNum === 0;
+      // #endregion
       // #region adjust svg and axis'
       $(element).show();
       var chartArea = calcChartArea(element);
@@ -181,7 +199,7 @@
           y2 = chartArea.y2,
           xAxis = d3.svg.axis().scale(x).orient("bottom"),
           yAxis = d3.svg.axis().scale(y).orient("left"),
-          yAxis2 = d3.svg.axis().scale(y2).orient("right");
+          yAxis2 = hasTps ? d3.svg.axis().scale(y2).orient("right") : null;
           // define the graph line
       var line = d3.svg.line()
           .x(function (d) { return x(d.d); })
@@ -193,9 +211,10 @@
       //      return y(d.ma);
       //      //return y(_ma = Cma(_ma, 150, d.c));
       //    });
-      var line2 = d3.svg.line()
-          .x(function (d) { return x(d.d); })
-          .y(function (d) { return y2(d.v); });
+      if (hasTps)
+        var line2 = d3.svg.line()
+            .x(function (d) { return x(d.d); })
+            .y(function (d) { return y2(d.v); });
       var svgW = width + margin.left + margin.right;
       var svgH = height + margin.top + margin.bottom;
       var svg0 = d3.select(element)
@@ -209,24 +228,13 @@
       // #endregion
       var svg = svg0.select("g");
 
-      // #region parse data from the data-view-model
-      var tradeLevels = chartData.tradeLevels || {};
-      var trendLines = chartData.trendLines;
-      var trendLines2 = chartData.trendLines2;
-      var trendLines1 = chartData.trendLines1;
-      var trades = chartData.trades;
-      var isTradingActive = chartData.isTradingActive;
-      var shouldUpdateData = chartData.shouldUpdateData || svgChanged;
-      var chartNum = chartData.chartNum;
-      // #endregion
-
       // #region Set chart range
       var yDomain = d3.extent(data.map(function (d) { return d.c; }));
       function sbchnum(value) {
         return chartNum ? value : yDomain[1];
       }
       yDomain = d3.extent([yDomain[0], yDomain[1], tradeLevels.buy, tradeLevels.sell
-            , sbchnum(trades.buy ? tradeLevels.buyClose : trades.sell ? tradeLevels.sellClose : yDomain[1])]);
+            , sbchnum(openBuy ? tradeLevels.buyClose : openSell ? tradeLevels.sellClose : yDomain[1])]);
         var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
         x.domain(xDomain);
         var vOffset = (yDomain[1] - yDomain[0]) / 20;
@@ -243,14 +251,15 @@
       svg.select("g.y.axis")
         .attr("transform", "translate(" + (width) + ",0)")
         .call(yAxis);
-      svg.select("g.y2.axis")
-        .attr("transform", "translate(" + (0) + ",0)")
-        .call(yAxis2);
+      if (yAxis2)
+        svg.select("g.y2.axis")
+          .attr("transform", "translate(" + (0) + ",0)")
+          .call(yAxis2);
       // #endregion
 
       // #region add the price line to the canvas
       var dataLine = svg.select("path.line.data");
-      dataLine.style("stroke", trades.buy ? "darkgreen" : trades.sell ? "darkred" : "steelblue");
+      dataLine.style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue");
       if (shouldUpdateData) {
         dataLine
           .datum(data)
@@ -258,9 +267,10 @@
         //svg.select("path.line.dataMA")
         //  .datum(data)
         //  .attr("d", line1);
-        svg.select("path.line.dataTps")
-          .datum(data)
-          .attr("d", line2);
+        if (hasTps)
+          svg.select("path.line.dataTps")
+            .datum(data)
+            .attr("d", line2);
 
         // #region add trend corridor
         setTrendLine(trendLines, 1, "lightgrey");
@@ -294,13 +304,13 @@
       // #endregion
       // #endregion
 
-      setHLine((trades.buy || {}).o || (trades.sell || {}).o, "trade", trades.buy ? "darkgreen" : "red", 1, "2,2,5,2");
+      setHLine((openBuy || {}).o || (openSell || {}).o, "trade", openBuy ? "darkgreen" : "red", 1, "2,2,5,2");
 
       // #region trade levels
       setTradeLevel(tradeLevels.buy, "buyEnter", "darkred",1);
-      setTradeLevel(tradeLevels.buyClose, "buyClose", "darkblue", trades.buy ? 1 : 0, 3);
+      setTradeLevel(tradeLevels.buyClose, "buyClose", "darkblue", openBuy ? 1 : 0, 3);
       setTradeLevel(tradeLevels.sell, "sellEnter", "darkblue",1);
-      setTradeLevel(tradeLevels.sellClose, "sellClose", "darkred", trades.sell ? 1 : 0, 3);
+      setTradeLevel(tradeLevels.sellClose, "sellClose", "darkred", openSell ? 1 : 0, 3);
 
       var chkBoxData = [
         tradeLevelUIFactory(x(data[0].d), y(tradeLevels.buy) - 16, tradeLevels.canBuy, tradeLevels.manualBuy, tradeLevels.buyCount),
@@ -328,30 +338,47 @@
 
       // #region CLosed Trades
       var closedTradesPath = "closedTrades";
-      var closedTrades = chartData.closedTrades;
-      function getClosedTradesDelta(data) { return svg.selectAll("path." + closedTradesPath).data(data); }
+      function getClosedTradesDelta(data) {
+        return svg.selectAll("path." + closedTradesPath).data(data, function (d) {
+          return d.x;
+        });
+      }
+      function altitudeByArea(area) { return Math.sqrt(Math.sqrt(3) * area); }
       if (closedTrades && closedTrades.length)
         (function () {
-          var ud = ["up", "down"];
+          var ud = ["up", "down"],
+            openSize = 100,
+            closedSize = 60;
+
           function ctf(ct, time, level, u, d) {
             var isOpen = time.match(/open$/i),
-              paint = ct.grossPL > 0 ? "green" : "red";
+              isKindOpen = !ct.isClosed,
+              paint = (isKindOpen ? openTradeGross : ct.grossPL) >= 0 ? "green" : "red";
+            if (!isOpen && isKindOpen) return null;
+            var upDown = (ct.isBuy ? ud[u] : ud[d]);
             return {
               x: ct[time], y: ct[level],
-              shape: "triangle-" + (ct.isBuy ? ud[u] : ud[d]),
+              shape: "triangle-" + upDown,
               fill: !isOpen ? "white" : "white",
               stroke: paint,
               strokeWidth: !isOpen ? 3 : 2,
               size: isOpen ? 100 : 60,
-              dateMin: data[0].d
+              dateMin: data[0].d,
+              offsetSign: upDown === "up" ? 1 : -1
             };
           }
-          function map(ct) { return [ctf(ct, "timeOpen", "open", 0, 1), ctf(ct, "timeClose", "close", 1, 0)]; }
+          function map(ct) {
+            return [ctf(ct, "timeOpen", "open", 0, 1), ctf(ct, "timeClose", "close", 1, 0)];
+          }
           var cts = Enumerable.from(closedTrades)
+            //.where("ct => !ct.isClosed")
             .selectMany(map)
-            .where("ct => ct.x > ct.dateMin")
+            .where("ct => ct != null && ct.x > ct.dateMin")
             .toArray();
           var closedTradesDelta = getClosedTradesDelta(cts);
+          closedTradesDelta
+            .exit()
+            .remove();
           closedTradesDelta
             .enter()
             .append("path")
@@ -363,14 +390,17 @@
             .style("stroke", function (ct) { return ct.stroke; })
             .style("stroke-width", function (ct) { return ct.strokeWidth; })
           ;
+          var openAltitude = altitudeByArea(openSize);
           closedTradesDelta
+            .style("stroke", function (ct) {
+              return ct.stroke;
+            })
             .attr("transform", function (d) {
-              return "translate(" + x(d.x) + "," + y(d.y) + ")";
+              return "translate(" + x(d.x) + "," + (y(d.y) + d.offsetSign * (openAltitude / 2 + d.strokeWidth)) + ")";
             });
 
         })();
-      else
-        getClosedTradesDelta([]).exit().remove();
+      else getClosedTradesDelta([]).exit().remove();
       // #endregion
       d3.select(element).select("svg")
         .style('background-color', isTradingActive ? "whitesmoke" : "peachpuff");
@@ -457,6 +487,7 @@
     }
   };
   /// #region Global locals
+  /*jshint unused:false*/
   function setCma(data, valueName, maName, period) {
     var _ma;
     data.forEach(map(valueName, "ma"));
