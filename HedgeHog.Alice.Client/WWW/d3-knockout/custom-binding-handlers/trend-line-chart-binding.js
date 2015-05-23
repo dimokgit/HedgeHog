@@ -50,6 +50,9 @@
       }
     }
   };
+  function LineChart() {
+    this.data = Enumerable.from([]);
+  }
   ko.bindingHandlers.lineChart = {
     init: function (element,valueAccessor) {
       "use strict";
@@ -98,7 +101,6 @@
       // #endregion
 
       svg.append("path").attr("class", "line data");
-      svg.append("path").attr("class", "line dataMA").style("stroke", "black");
       svg.append("path").attr("class", "line dataTps").style("stroke", "black").style("opacity", 0.25);
 
       // #region create chart elements
@@ -168,12 +170,40 @@
     update: function (element, valueAccessor,allBindings,viewModel,bindingContext) {
       "use strict";
       viewModel = bindingContext.$root;
+      var lineChart = viewModel.lineChart || (viewModel.lineChart = new LineChart());
       var chartData = ko.unwrap(valueAccessor());
-      var data = chartData.data;
-      if (data.length === 0) {
-        $(element).hide();
-        return;
+      function avgerage(a, key) {
+        return _.reduce(a, function (sum, e) {
+          return sum + e[key]
+        }, 0) / a.length;
       }
+      var data = ko.unwrap(chartData.data);
+      //function roundDate(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()); }
+      //var bufferCount = Math.floor(chartData.data.length / $(element).width());
+      //var startDate = roundDate(chartData.data[0].d);
+      //var leftTail = Enumerable
+      //  .from(lineChart.data.toArray())
+      //  .skipWhile(function (x) { return x.d < startDate; })
+      //  .takeWhile(function (x) { return x.d < chartData.data[0].d; });
+      //var dataBuffer = lineChart.data = leftTail
+      //  .concat(chartData.data)
+      //  .buffer(bufferCount);
+      //var __data__ = dataBuffer
+      //  .select(function (a) {
+      //    //var max = _.max(a, 'c'),
+      //    //  min = _.min(a, 'c'),
+      //    //  avg = avgerage(a, "m");
+      //    //var f = { c: max.c - avg > avg - min.c ? max.c : min.c, d: a[a.length - 1].d, v: _.max(a, 'v').v };
+      //    var max = _.max(a, function (e) { return Math.abs(e.c - e.m); });
+      //    var f = { c: max.c, m: max.m, d: max.d, v: _.max(a, 'v').v };
+      //    return f;
+      //  })
+      //  .toArray();
+      //var data = leftTail.toArray().concat(chartData.data);
+      //if (data.length === 0) {
+      //  $(element).hide();
+      //  return;
+      //}
       // #region parse data from the data-view-model
       var tradeLevels = chartData.tradeLevels || {};
       var trendLines = chartData.trendLines;
@@ -203,7 +233,9 @@
           // define the graph line
       var line = d3.svg.line()
           .x(function (d) { return x(d.d); })
-          .y(function (d) { return y(d.c); });
+          .y(function (d) {
+            return y(d.c);
+          });
       //setCma(data, "c", "ma", cmaPeriod);
       //var _ma, line1 = d3.svg.line()
       //    .x(function (d) { return x(d.d); })
@@ -258,8 +290,8 @@
       // #endregion
 
       // #region add the price line to the canvas
-      var dataLine = svg.select("path.line.data");
-      dataLine.style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue");
+      var dataLine = svg.select("path.line.data")
+        .style("stroke", openBuy ? "darkgreen" : openSell ? "darkred" : "steelblue");
       if (shouldUpdateData) {
         dataLine
           .datum(data)
@@ -296,7 +328,7 @@
           .attr("transform", "translate(" + x(corridorStartTime) + "," + (height - 7) + ")");
         svg.selectAll("path.nextWave")
           .data([-18, 18])
-          .attr("transform", function (d) {
+          .attr("transform", function (d) {298
             return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
           })
         ;

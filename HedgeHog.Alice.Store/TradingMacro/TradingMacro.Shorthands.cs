@@ -9,12 +9,6 @@ using HedgeHog;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    void _setAlwaysOnDefault() { Log = new Exception("SetAlwaysOn is not implemented"); }
-    Action _setAlwaysOn;
-    public Action SetAlwaysOn {
-      get { return _setAlwaysOn ?? _setAlwaysOnDefault; }
-      set { _setAlwaysOn = value; }
-    }
     public void ResetSuppResesInManual() {
       ResetSuppResesInManual(!_suppResesForBulk().Any(sr => sr.InManual));
     }

@@ -92,7 +92,6 @@ namespace HedgeHog.Alice.Client {
         charterNew.ShowChart += new EventHandler(charterNew_ShowChart);
         charterNew.RoundTo = tradingMacro.Digits();
         charterNew.SetDefaultTradeLevels += charterNew_CenterTradeLevels;
-        charterNew.SetAlwaysOn += charterNew_SetAlwaysOn;
         //charter.Show();
 
         /*
@@ -116,10 +115,6 @@ namespace HedgeHog.Alice.Client {
       if (charterOld.Parent == null)
         RequestAddCharterToUI(charterOld);
       return charterOld;
-    }
-
-    void charterNew_SetAlwaysOn(object sender, EventArgs e) {
-      GetTradingMacro((CharterControl)sender).SetAlwaysOn();
     }
 
     void charterNew_CenterTradeLevels(object sender, EventArgs e) {
@@ -1066,7 +1061,7 @@ namespace HedgeHog.Alice.Client {
         ratesForChart2 = ratesForChart2.GroupTicksToRates(mapTickToRate).ToArray();
       }
       var getRates = MonoidsCore.ToFunc((IList<Rate>)null, rates3 => {
-        if (tm.BarPeriod == BarsPeriodType.m1) {
+        if (tm.BarPeriod == BarsPeriodType.m10) {
           return tm.UseRates(rates => {
             var ds = rates.Last().StartDate2;
             return rates.Reverse<Rate>()
@@ -1228,7 +1223,7 @@ namespace HedgeHog.Alice.Client {
             string.Format(":{0}×[{1}]{2}°{3:n0}‡{4:n0}∆[{5}/{6}][{7}/{8}][{10}]"///↨↔
             /*0*/, tm.BarPeriod
             /*1*/, tm.RatesArray.Count + "," + tm.TicksPerSecondAverage.Round(1)
-            /*2*/, tm.CorridorAngle.Round(2)+"/"+tm.TrendLines1.Value[1].Trends.Angle.Round(2)
+            /*2*/, tm.TrendLines2.Value[1].Trends.Angle.Round(2)+"/"+tm.CorridorAngle.Round(2)+"/"+tm.TrendLines1.Value[1].Trends.Angle.Round(2)
             /*3*/, tm.RatesHeightInPips
             /*4*/, tm.CorridorStats.HeightByRegressionInPips
             /*5*/, IntOrDouble(tm.StDevByHeightInPips, 5)

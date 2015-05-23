@@ -14,55 +14,12 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ReactiveUI;
+using System.Reactive.Disposables;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
-    #region TradeConditions
-    public delegate bool TradeConditionDelegate();
-    public TradeConditionDelegate WideOk { get { return () => TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
-    public TradeConditionDelegate TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
-    public TradeConditionDelegate AngleOk {
-      get {
-        return () => IsTresholdAbsOk(TrendLinesTrends.Angle, TradingAngleRange);
-      }
-    }
-    public TradeConditionDelegate Angle0Ok {
-      get {
-        return () => {
-          var a = TrendLines1Trends.Angle.Abs();
-          return a < 1;
-        };
-      }
-    }
-
-    public TradeConditionDelegate[] _TradeConditions = new TradeConditionDelegate[0];
-    public TradeConditionDelegate[] TradeConditions {
-      get { return _TradeConditions; }
-      set {
-        _TradeConditions = value;
-        OnPropertyChanged("TradeConditions");
-      }
-    }
-    void TradeConditionsReset() { TradeConditions = new TradeConditionDelegate[0]; }
-    public TradeConditionDelegate[] GetTradeConditions() { return new[] { WideOk, TpsOk, AngleOk, Angle0Ok }; }
-    public static string ParseTradeConditionName(MethodInfo method) {
-      return Regex.Match(method.Name, "<(.+)>").Groups[1].Value.Substring(4);
-
-    }
-    public TradeConditionDelegate[] TradeConditionsSet(IList<string> names) {
-      return TradeConditions = GetTradeConditions().Where(tc => names.Contains(ParseTradeConditionName(tc.Method))).ToArray();
-    }
-    public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, string, T> map) {
-      return TradeConditionsInfo(TradeConditions, map);
-    }
-    public IEnumerable<T> TradeConditionsAllInfo<T>(Func<TradeConditionDelegate, string, T> map) {
-      return TradeConditionsInfo(GetTradeConditions(), map);
-    }
-    public IEnumerable<T> TradeConditionsInfo<T>(IList<TradeConditionDelegate> tradeConditions, Func<TradeConditionDelegate, string, T> map) {
-      return tradeConditions.Select(tc => map(tc, ParseTradeConditionName(tc.Method)));
-    }
-
-    #endregion
+    private CompositeDisposable _strategyTradesCountHandler;
     private void StrategyEnterUniversal() {
       if (!RatesArray.Any()) return;
 
@@ -373,6 +330,11 @@ namespace HedgeHog.Alice.Store {
         #region SuppRes Event Handlers
         Func<bool> isCrossActive = () => BuyLevel.Rate.Abs(SellLevel.Rate) > InPoints(1);
         Func<bool> isCrossDisabled = () => !isCrossActive() || !IsTradingActive || !IsPrimaryMacro;
+        Action<double> onTradesCount = tc => { };
+        if (_strategyTradesCountHandler == null)
+          _strategyTradesCountHandler = (CompositeDisposable)BuyLevel.WhenAnyValue(x => x.TradesCount).Merge(SellLevel.WhenAnyValue(x => x.TradesCount))
+            .Throttle(TimeSpan.FromSeconds(.5))
+            .Subscribe(tc => onTradesCount(tc));
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
           if (CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled()) return false;
@@ -554,7 +516,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustEnterLevels
-        Func<Trade, bool> minPLOk = t => (IsAutoStrategy ? CurrentGrossInPips : t.PL) > -PriceSpreadAverage;
+        Func<Trade, bool> minPLOk = t => IsAutoStrategy ? CurrentGrossInPips == 0 : t.NetPL2 > 0;
         Action<Action> firstTimeAction = a => {
           if (firstTime) {
             Log = new Exception(new { CorrelationMinimum, CorridorDistance } + "");
@@ -1524,11 +1486,10 @@ namespace HedgeHog.Alice.Store {
 
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove: {
-                var conditions = MonoidsCore.ToFunc(() => new { TpsMin });
+                var conditions = MonoidsCore.ToFunc(() => new { isDirectional = new { AngleOk = true, TradingAngleRange } });
                 #region FirstTime
                 if (firstTime) {
                   WorkflowStep = "";
-                  SetAlwaysOn = () => { TradingAngleRange = 0; CorridorLengthRatio = 0.01; };
                   Log = new Exception(conditions() + "");
                   LineTimeMinFunc = rates0 => rates0[rates0.Count - CorridorDistanceByLengthRatio.Abs()].StartDateContinuous;
                   workFlowObservableDynamic.Subscribe();
@@ -1540,8 +1501,9 @@ namespace HedgeHog.Alice.Store {
                   Action<bool, Action> turnItOff = (should, a) => _buySellLevels
                     .Where(_ => should)
                     .Do(sr => {
+                      sr.InManual = false;
                       sr.CanTrade = false;
-                      sr.TradesCount = 0;
+                      sr.TradesCount = TradeCountStart;
                     })
                     .ToArray()
                     .Take(1)
@@ -1549,10 +1511,9 @@ namespace HedgeHog.Alice.Store {
                     .ForEach(_ => a());
                   #endregion
                   onCloseTradeLocal += t => {
-                    if (TradeConditions.Any()) FreezeCorridorStartDate(true);
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
-                      turnItOff(canTradeOff, TradeConditionsReset);
+                      turnItOff(canTradeOff, () => FreezeCorridorStartDate(unFreeze: true));
                     }
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
@@ -1562,8 +1523,10 @@ namespace HedgeHog.Alice.Store {
                     CorridorStartDate = null;
                   };
                   #endregion
-                  onOpenTradeLocal += t =>
-                    turnItOff(TradeConditions.Any() || _buySellLevels.Any(bs => -bs.TradesCount >= CorridorCrossesMaximum) && canTradeOff, null);
+                  onTradesCount += tc => {
+                    turnItOff(tc <= -CorridorCrossesMaximum, () => FreezeCorridorStartDate(unFreeze: true));
+                  };
+                  onOpenTradeLocal += t => { };
                 }
                 #endregion
                 var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
@@ -1594,7 +1557,8 @@ namespace HedgeHog.Alice.Store {
                   },_=>{WorkflowStep = "3.Start Trading";
                   _buySellLevelsForEach(sr => {
                     sr.CanTradeEx = canEnter(sr.IsBuy); 
-                    sr.TradesCountEx = 0;
+                    sr.TradesCountEx = TradeCountStart;
+                    sr.InManual = true;
                   });
                     FreezeCorridorStartDate();
                     return WFD.tupleBreakEmpty();

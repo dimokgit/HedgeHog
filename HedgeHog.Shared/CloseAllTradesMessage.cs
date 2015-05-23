@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace HedgeHog.Shared.Messages {
+  public class AppExitMessage { }
   public class CloseAllTradesMessage<T> {
     public T Sender { get; private set; }
     public Action<T> OnClose { get; private set; }

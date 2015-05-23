@@ -191,21 +191,21 @@ namespace HedgeHog.Alice.Client {
     }
     public void CloseTrades(string pair) {
       try {
-        GetTradingMacro(pair).CloseTrades("SignalR");
+        GetTradingMacro(pair).ForEach(tm => tm.CloseTrades("SignalR"));
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     public void MoveTradeLevel(string pair, bool isBuy, double pips) {
       try {
-        GetTradingMacro(pair).MoveBuySellLeve(isBuy, pips);
+        GetTradingMacro(pair).ForEach(tm => tm.MoveBuySellLeve(isBuy, pips));
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     public void ManualToggle(string pair) {
       try {
-        GetTradingMacro(pair).ResetSuppResesInManual();
+        GetTradingMacro(pair).ForEach(tm => tm.ResetSuppResesInManual());
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
@@ -225,9 +225,6 @@ namespace HedgeHog.Alice.Client {
     public void WrapCurrentPriceInCorridor(string pair) {
       UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor());
     }
-    public void SetAlwaysOn(string pair) {
-      UseTradingMacro(pair, tm => tm.SetAlwaysOn());
-    }
     public void Buy(string pair) {
       UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"));
     }
@@ -237,21 +234,31 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int pips) {
       UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
-    public ExpandoObject AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
-      return UseTradingMacro(pair, 0, tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
+    public ExpandoObject[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
+      return UseTradingMacro2(pair, chartNum, tm => tm.IsActive
+        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
     }
+
+    static int _sendChartBufferCounter = 0;
+    static SendChartBuffer _sendChartBuffer = SendChartBuffer.Create();
+    public void AskRates_(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+      UseTradingMacro2(pair, 0, tm => {
+        if (tm.IsActive)
+          _sendChartBuffer.Push(() => {
+            if (_sendChartBufferCounter > 1) {
+              throw new Exception(new { _sendChartBufferCounter } + "");
+            }
+            _sendChartBufferCounter++;
+            Clients.Caller.sendChart(pair, 0, remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
+            _sendChartBufferCounter--;
+          });
+      });
+    }
+
     static SendChartBuffer _sendChart2Buffer = SendChartBuffer.Create();
-    static ConcurrentDictionary<string, ExpandoObject> _charts2 = new ConcurrentDictionary<string, ExpandoObject>();
-    public ExpandoObject AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
-      try {
-        var tm = GetTradingMacro(pair, 1);
-        return tm != null && tm.IsActive
-          ? remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm)
-          : new ExpandoObject();
-      } catch (Exception exc) {
-        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
-        throw;
-      }
+    public ExpandoObject[] AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+      return UseTradingMacro2(pair, 1, tm => tm.IsActive
+        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
     }
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
       bool? b = isBuy == null ? null : (bool?)isBuy;
@@ -330,38 +337,25 @@ namespace HedgeHog.Alice.Client {
     public void RefreshOrders() {
       remoteControl.Value.TradesManager.RefreshOrders();
     }
-    public void ResetPlotter(string pair) {
-      var tm = GetTradingMacro(pair);
-      var trader = App.container.GetExport<TraderModel>();
-      if (tm != null)
-        Clients.All.resetPlotter(new {
-          time = tm.ServerTime.ToString("HH:mm:ss"),
-          duration = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
-          count = tm.BarsCountCalc,
-          stDev = IntOrDouble(tm.StDevByHeightInPips) + "/" + IntOrDouble(tm.StDevByPriceAvgInPips),
-          height = tm.RatesHeightInPips.ToInt(),
-          profit = IntOrDouble(tm.CurrentGrossInPipTotal),
-          closed = trader.Value.ClosedTrades.Select(t => new { })
-        });
-    }
     public void SetTradeCount(string pair, int tradeCount) {
       GetTradingMacro(pair, tm => tm.SetTradeCount(tradeCount));
     }
     public void StopTrades(string pair) { SetCanTrade(pair, false, null); }
     public void StartTrades(string pair, bool isBuy) { SetCanTrade(pair, true, isBuy); }
     void SetCanTrade(string pair, bool canTrade, bool? isBuy) {
-      var tm = GetTradingMacro(pair);
-      if (tm != null)
-        tm.SetCanTrade(canTrade, isBuy);
+      GetTradingMacro(pair).ForEach(tm => tm.SetCanTrade(canTrade, isBuy));
     }
     private void GetTradingMacro(string pair, Action<TradingMacro> action) {
-      var tm = GetTradingMacro(pair);
-      if (tm != null) action(tm);
+      GetTradingMacro(pair)
+        .ForEach(action);
     }
-    private TradingMacro GetTradingMacro(string pair, int chartNum = 0) {
+    private IEnumerable<TradingMacro> GetTradingMacro(string pair, int chartNum = 0) {
       var rc = remoteControl.Value;
-      var tm = rc.TradingMacrosCopy.Skip(chartNum).FirstOrDefault(t => t.PairPlain == pair);
-      return tm;
+      return rc.TradingMacrosCopy
+        .Skip(chartNum)
+        .Take(1)
+        .Where(tm2 => tm2.IsActive)
+        .Where(t => t.PairPlain == pair);
     }
     T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func) {
       return UseTradingMacro(pair, 0, func);
@@ -371,14 +365,30 @@ namespace HedgeHog.Alice.Client {
     }
     void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action) {
       try {
-        action(GetTradingMacro(pair, chartNum));
+        GetTradingMacro(pair, chartNum).ForEach(action);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
       }
     }
     T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
       try {
-        return func(GetTradingMacro(pair, chartNum));
+        return GetTradingMacro(pair, chartNum).Select(func).DefaultIfEmpty(default(T)).First();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
+      }
+    }
+    T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
+      try {
+        return GetTradingMacro(pair, chartNum).Where(where).Select(func).ToArray();
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
+      }
+    }
+    void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func) {
+      try {
+        GetTradingMacro(pair, chartNum).ForEach(func);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;

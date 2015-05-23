@@ -1,3 +1,4 @@
+/// <reference path="../Scripts/linq.js" />
 // jscs:disable
 /// <reference path="../scripts/traverse.js" />
 /// <reference path="../Scripts/pnotify.custom.min.js" />
@@ -8,7 +9,7 @@
 /// <reference path="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js" />
 /// <reference path="../Scripts/bootstrap-notify.min.js" />
 /// <reference path="https://cdn.rawgit.com/ValYouW/jqPropertyGrid/9218bbd5df05bf7efe58591f434ea27ece11a045/jqPropertyGrid.js" />
-/*global ko,_,PNotify*/
+/*global ko,_,PNotify,Enumerable,traverse*/
 
 //var D3KD = this.D3KD || {};
 /**
@@ -33,36 +34,51 @@
   // #endregion
 
   // #region Reset plotter
-  var resetPlotter = _.throttle(resetPlotterImpl, 250);
-  var ratesInFlight = false;
-  var ratesInFlight2 = false;
+  var resetPlotterThrottleTime = 0.5 * 1000;
+  var resetPlotter = _.throttle(resetPlotterImpl, resetPlotterThrottleTime);
+  var dateMin = new Date("1/1/9999");
+  var ratesInFlight = dateMin;
+  var ratesInFlight2 = dateMin;
   function resetPlotterImpl() {
     askRates();
     askRates2();
   }
-  function isInFlight(date) {
-    return date && getSecondsBetween(new Date(), date) < 1;
+  function isInFlight(date, index) {
+    var secsInFlight = getSecondsBetween(new Date(), date);
+    if (secsInFlight > 30) openErrorNote("InFlightDelay", showErrorPerm("In flight(" + index + ") > " + secsInFlight));
+    if (secsInFlight > 60) return false;
+    return date && secsInFlight > 0;
   }
   function askRates() {
-    if (isInFlight(ratesInFlight))
+    if (isInFlight(ratesInFlight,0))
       return;
     ratesInFlight = new Date();
-    chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair)
+    chat.server.askRates(1200, dataViewModel.firstDate().toISOString(), dataViewModel.lastDate().toISOString(), pair, 0)
       .done(function (response) {
-        if (response)
-          dataViewModel.updateChart(response);
+        Enumerable.from(response)
+        .forEach(function (r) {
+          dataViewModel.updateChart(r);
+        });
       })
-      .always(function () { ratesInFlight = false; });
+      .fail(function (e) {
+        ratesInFlight = dateMin;
+        showErrorPerm(e);
+      });
   }
   function askRates2() {
-    if (isInFlight(ratesInFlight2))
+    if (isInFlight(ratesInFlight2,2))
       return;
     ratesInFlight2 = new Date();
-    chat.server.askRates2(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair)
+    chat.server.askRates(1200, dataViewModel.firstDate2().toISOString(), dataViewModel.lastDate2().toISOString(), pair, 1)
       .done(function (response) {
-        dataViewModel.updateChart2(response);
-      })
-      .always(function () { ratesInFlight2 = false; });
+        Enumerable.from(response)
+        .forEach(function (r) {
+          dataViewModel.updateChart2(r);
+        });
+      }).fail(function (e) {
+        ratesInFlight2 = dateMin;
+        showErrorPerm(e);
+      });
   }
   // #region pending request messages
   var pendingMessages = {};
@@ -231,9 +247,9 @@
         closedTrades = [];
         resetPlotter();
       } else readClosedTrades();
-    }
+    };
     this.readClosedTrades = readClosedTrades;
-    function readClosedTrades(d, e, force) {
+    function readClosedTrades() {
       serverCall("readClosedTrades", [pair], function (trades) {
         closedTrades = prepDates(trades).map(function (t) {
           return {
@@ -329,7 +345,13 @@
     this.updateChart2 = updateChart2;
     var commonChartParts = {};
     var prepResponse = prepDates.bind(null, ["rates", "rates2"]);
+    var updateChartIntervalAverages = [ko.observable(), ko.observable()];
+    var updateChartCmas = [ko.observable(), ko.observable()];
+    this.stats = { ucia: updateChartIntervalAverages, ucCmas: updateChartCmas };
     function updateChart(response) {
+      var d = new Date();
+      updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
+      ratesInFlight = dateMin;
       prepResponse(response);
       if (response.rates.length === 0) return;
       var rates = response.rates;
@@ -351,8 +373,38 @@
 
       commonChartParts = { tradeLevels: response.tradeLevels, askBid: response.askBid, trades: response.trades };
       self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross));
+      updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
     }
     function updateChart2(response) {
+      var d = new Date();
+      updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
+      ratesInFlight2 = dateMin;
+      prepResponse(response);
+      if (response.rates.length === 0) return;
+      var rates = response.rates;
+      var rates2 = response.rates2;
+      if (rates.length + rates2.length === 0) return;
+      rates.forEach(function (d) {
+        d.d = new Date(d.d);
+      });
+      rates2.forEach(function (d) {
+        d.d = new Date(d.d);
+      });
+      var endDate = rates[0].d;
+      var startDate = new Date(response.dateStart);
+      lineChartData2.remove(function (d) {
+        return d.d >= endDate || d.d < startDate;
+      });
+      lineChartData2.push.apply(lineChartData2, rates);
+      lineChartData2.unshift.apply(lineChartData2, rates2);
+      var ratesAll = continuoseDates(lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
+      var shouldUpdateData = true;
+      self.chartData2(chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross));
+      updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
+    }
+    function updateChart2_(response) {// jshint ignore:line
+      updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
+      ratesInFlight2 = dateMin;
       prepResponse(response);
       if (!commonChartParts.tradeLevels) return;
       if (!response.rates) {
@@ -360,23 +412,24 @@
         return;
       }
       if (response.rates.length === 0) return;
+      var d = new Date();
       var rates = response.rates;
       rates.forEach(function (d) {
-        d.d = new Date(d.d);
+        d.d = d.do = new Date(d.d);
       });
       rates = continuoseDates(rates, [response.trendLines.dates,response.trendLines1.dates,response.trendLines2.dates]);
       var x1 = _.last(lineChartData2());
       var x2 = _.last(rates);
-      var shouldUpdateData = x1.d.valueOf() !== x2.d.valueOf() && x1.c !== x2.c;
+      var shouldUpdateData = x1.d0.valueOf() !== x2.d0.valueOf() && x1.c !== x2.c;
 
-      //if (shouldUpdateData)
-      var endDate = rates[0].d;
+      var endDate = rates[0].do;
       var startDate = response.dateStart;
       lineChartData2.remove(function (d) {
-        return d.d >= endDate || d.d < startDate;
+        return d.do >= endDate || d.do < startDate;
       });
       lineChartData2.push.apply(lineChartData2, rates);
       self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross));
+      updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
     }
     // #endregion
     // #region LastDate
@@ -411,7 +464,7 @@
 
     // #region Helpers
     function prepDates(blocked, root) {
-      if (arguments.length == 1) {
+      if (arguments.length === 1) {
         root = blocked;
         blocked = [];
       }
@@ -426,7 +479,7 @@
     }
     function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross) {
       return {
-        data: data ? data() : [],
+        data: data ? ko.unwrap(data) : [],
         trendLines: trendLines,
         trendLines2: trendLines2,
         trendLines1: trendLines1,
@@ -453,9 +506,7 @@
       var ds = dates.map(function (ds) { return { dates2: [], dates: ds.reverse() }; });
       data.reverse().reduce(function (prevValue, current) {
         var cd = current.d;
-        if (prevValue) {
-          current.d = prevValue = dateAdd(prevValue, "minute", -1);
-        } else prevValue = current.d;
+        current.d = prevValue = (prevValue ? dateAdd(prevValue, "minute", -1) : current.d);
         ds.forEach(function (d0) {
           if (d0.dates.length > 0)
             d0.dates.forEach(function (d) {
@@ -492,20 +543,6 @@
     $.connection.hub.url = "http://" + host + "/signalr";
 
     // #region Disconnect/Reconnect
-    var errorNotes = [];
-    function closeDisconnectNote() { closeErrorNote("TimeoutException"); }
-    function closeReconnectNote() { closeErrorNote("reconnect"); }
-    function openReconnectNote(note) { openErrorNote("reconnect", note); }
-    function openErrorNote(key,note) {
-      closeErrorNote(key);
-      errorNotes.push([key, note]);
-    }
-    function closeErrorNote(key) {
-      errorNotes.filter(function (a) { return a[0] === key; }).forEach(function (note) {
-        notifyClose(note[1]);
-        errorNotes.splice($.inArray(note, errorNotes), 1);
-      });
-    }
     $.connection.hub.error(function (error) {
       var key = typeof error.source === 'string' ? error.source : error.message;
       openErrorNote(key, showErrorPerm(error));
@@ -546,26 +583,13 @@
 
       resetPlotter();
     }
-    function addRates(response) {
-      dataViewModel.updateChart(response);
-    }
-    function addRates2(response) {
-      dataViewModel.updateChart2(response);
-    }
     function priceChanged(pairChanged) {
       if (pair === pairChanged)
         chat.server.askChangedPrice(pair);
     }
-    chat.client.addRates = addRates;
-    chat.client.addRates2 = addRates2;
     chat.client.addMessage = addMessage;
     chat.client.priceChanged = priceChanged;
     chat.client.tradesChanged = dataViewModel.readClosedTrades;
-    var sendChartHandlers = [dataViewModel.updateChart.bind(dataViewModel), dataViewModel.updateChart2.bind(dataViewModel)];
-    chat.client.sendChart = function (chartPair, chartNum, chartData) {
-      if (chartPair.toLowerCase() === pair.toLowerCase())
-        sendChartHandlers[chartNum](chartData);
-    }
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
@@ -636,6 +660,22 @@
   // #endregion
 
   // #region Helpers
+  // #region Note Reopener
+  var errorNotes = [];
+  function closeDisconnectNote() { closeErrorNote("TimeoutException"); }
+  function closeReconnectNote() { closeErrorNote("reconnect"); }
+  function openReconnectNote(note) { openErrorNote("reconnect", note); }
+  function openErrorNote(key, note) {
+    closeErrorNote(key);
+    errorNotes.push([key, note]);
+  }
+  function closeErrorNote(key) {
+    errorNotes.filter(function (a) { return a[0] === key; }).forEach(function (note) {
+      notifyClose(note[1]);
+      errorNotes.splice($.inArray(note, errorNotes), 1);
+    });
+  }
+  // #endregion
   function toKoDictionary(o) {
     return toDictionary(o, toKo, toKo);
     function toKo(k) { return ko.observable(k); }
@@ -643,8 +683,8 @@
   function toDictionary(o, keyMap, valueMap) {
     return $.map(o, function (v, n) { return { key: keyMap ? keyMap(n) : n, value: valueMap ? valueMap(v) : v }; });
   }
-  function getSecondsBetween(startDate, endDate) {
-    return (startDate - endDate) / 1000;
+  function getSecondsBetween(nowDate, thenDate) {
+    return (nowDate - thenDate) / 1000;
   }
   /* #region keep it for future
   function notify_growl(message, settings) {
@@ -696,15 +736,6 @@
   function showErrorPerm(message,settings) {
     return showError(message, $.extend({ delay: 0,hide:false }, settings));
   }
-  /** 
-    * @param {TrendLines[]} tls - TrendLines object
-    */
-  function setTrendDates() {
-    $.makeArray(arguments)
-    .forEach(function (tls) {
-      if (tls) tls.dates = (tls.dates || []).map(function (d) { return new Date(d); });
-    });
-  }
   function dateAdd(date, interval, units) {
     var ret = new Date(date); //don't change original date
     switch (interval.toLowerCase()) {
@@ -720,6 +751,13 @@
     }
     return ret;
   }
+  function cma(MA, Periods, NewValue) {
+    if (MA === null || MA === undefined) {
+      return NewValue;
+    }
+    return MA + (NewValue - MA) / (Periods + 1);
+  }
+
   // #region isHidden
   var isDocHidden = (function () {
     var hidden, visibilityChange;

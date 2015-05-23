@@ -59,11 +59,6 @@ namespace HedgeHog {
     private void AlwaysOn_Click(object sender, RoutedEventArgs e) {
       OnSetDefaultTradeLevels();
     }
-    public event EventHandler<EventArgs> SetAlwaysOn;
-    private void OnAlwaysOn() {
-      if (SetAlwaysOn != null)
-        SetAlwaysOn(this, EventArgs.Empty);
-    }
     public event EventHandler<EventArgs> SetDefaultTradeLevels;
     private void OnSetDefaultTradeLevels() {
       if (SetDefaultTradeLevels != null)

@@ -23,6 +23,7 @@ using HedgeHog.Shared;
 using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.StaticFiles;
 using ReactiveUI;
+using HedgeHog.Shared.Messages;
 
 namespace HedgeHog.Alice.Client {
   /// <summary>
@@ -37,6 +38,7 @@ namespace HedgeHog.Alice.Client {
       this.DispatcherUnhandledException += App_DispatcherUnhandledException;
       AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
       TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
       GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher.BeginInvoke(new Action(() => {
         try {
           var trader = App.container.GetExportedValue<TraderModel>();
@@ -50,6 +52,7 @@ namespace HedgeHog.Alice.Client {
         }
       }), System.Windows.Threading.DispatcherPriority.Background);
     }
+
 
     void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e) {
       try {
@@ -147,8 +150,8 @@ namespace HedgeHog.Alice.Client {
     IDisposable _webApp;
 
     protected override void OnExit(ExitEventArgs e) {
+      MessageBus.Current.SendMessage(new AppExitMessage());
       container.Dispose();
-
       base.OnExit(e);
     }
     #region SignalRSubject Subject

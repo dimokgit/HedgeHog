@@ -300,6 +300,7 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
+      MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
     ~TradingMacro() {
