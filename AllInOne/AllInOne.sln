@@ -113,8 +113,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotifyCollectionChangedWrap
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Googlette", "..\Googlette\Googlette.csproj", "{98C99147-30D3-4C22-9D7E-1C81F764D8C1}"
 EndProject
-Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "ForexDB", "..\ForexDB\ForexDB.sqlproj", "{9E8AC411-EC42-4D25-AE7A-34A011E871A3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Manheim.Web", "..\Manheim.Web\Manheim.Web.csproj", "{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}"
 EndProject
 Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Mamheim.WebSite", "http://localhost:57982", "{F3F6E2FB-B6BB-44DF-AD35-38F2014E235A}"
@@ -1137,42 +1135,6 @@ Global
 		{98C99147-30D3-4C22-9D7E-1C81F764D8C1}.Release|Win32.ActiveCfg = Release|x86
 		{98C99147-30D3-4C22-9D7E-1C81F764D8C1}.Release|x86.ActiveCfg = Release|x86
 		{98C99147-30D3-4C22-9D7E-1C81F764D8C1}.Release|x86.Build.0 = Release|x86
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Any CPU.Build.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Any CPU.Deploy.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Mixed Platforms.Build.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Mixed Platforms.Deploy.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|Win32.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug SubArray|x86.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|Win32.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Any CPU.Build.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Any CPU.Deploy.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Mixed Platforms.Build.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Mixed Platforms.Deploy.0 = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|Win32.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Part1|x86.ActiveCfg = Debug|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Any CPU.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Any CPU.Build.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Any CPU.Deploy.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Mixed Platforms.Build.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Mixed Platforms.Deploy.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|Win32.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release SubArray|x86.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|Win32.ActiveCfg = Release|Any CPU
-		{9E8AC411-EC42-4D25-AE7A-34A011E871A3}.Release|x86.ActiveCfg = Release|Any CPU
 		{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}.Debug SubArray|Any CPU.ActiveCfg = Debug|Any CPU
 		{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}.Debug SubArray|Any CPU.Build.0 = Debug|Any CPU
 		{5F4F24D9-AFF7-43CB-982F-3543A2A52CD9}.Debug SubArray|Mixed Platforms.ActiveCfg = Debug|Any CPU

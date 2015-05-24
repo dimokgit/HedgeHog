@@ -1537,9 +1537,11 @@ namespace HedgeHog.Alice.Store {
                 SetTradeLevelsToLevelBy(getTradeLevel)();
                 var canTradeOk = tciOk && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual) && !CorridorStartDate.HasValue;
                 var canTradeTime = WFD.Make("canTradeTime", DateTime.MaxValue);
-                var graceSeconds = 30;
+                var graceSeconds = 0;
                 Func<ExpandoObject, int> canTradeTimeOk = eo => graceSeconds - (ServerTime - canTradeTime(eo)).TotalSeconds.ToInt();
                 if (tci.IsEmpty()) WorkflowStep = "";
+                else if (tci.All(t => t.n.StartsWith("Outside")))
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = tci.Any(t => t.v));
                 else {
                   var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
@@ -1555,11 +1557,10 @@ namespace HedgeHog.Alice.Store {
                     }
                     return WFD.tupleStay(eo);
                   },_=>{WorkflowStep = "3.Start Trading";
-                  _buySellLevelsForEach(sr => {
-                    sr.CanTradeEx = canEnter(sr.IsBuy); 
-                    sr.TradesCountEx = TradeCountStart;
-                    sr.InManual = true;
-                  });
+                    _buySellLevelsForEach(sr => {
+                      sr.CanTradeEx = canEnter(sr.IsBuy); 
+                      sr.TradesCountEx = TradeCountStart;
+                    });
                     FreezeCorridorStartDate();
                     return WFD.tupleBreakEmpty();
                   }

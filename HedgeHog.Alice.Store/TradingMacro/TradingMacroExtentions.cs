@@ -300,6 +300,7 @@ namespace HedgeHog.Alice.Store {
           Scheduler.Default.Schedule(10.FromSeconds(), () => SnapshotArguments.IsTarget = true);
         }
       });
+      IsTradingActive = IsInVitualTrading;
       MessageBus.Current.Listen<AppExitMessage>().Subscribe(_ => SaveActiveSettings());
     }
 
@@ -764,7 +765,7 @@ namespace HedgeHog.Alice.Store {
         }
 
 
-        if (value != null && RatesArray.Count>0) {
+        if (value != null && RatesArray.Count > 0) {
           CorridorAngle = TrendLinesTrends.Angle;
           var tp = CalculateTakeProfit();
           TakeProfitPips = InPips(tp);
@@ -1142,11 +1143,13 @@ namespace HedgeHog.Alice.Store {
       return _inPips == null ? double.NaN : _inPips(Pair, d);
     }
 
-    public int Digits() { return TradesManager.GetDigits(Pair); }
+    public int Digits() { return TradesManager == null ? 0 : TradesManager.GetDigits(Pair); }
     private const int RatesHeightMinimumOff = 0;
+    IEnumerable<TradingMacro> _tradingMacros = new TradingMacro[0];
     Func<ITradesManager> _TradesManager = () => null;
     public ITradesManager TradesManager { get { return _TradesManager(); } }
-    public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager) {
+    public void SubscribeToTradeClosedEVent(Func<ITradesManager> getTradesManager,IEnumerable<TradingMacro> tradingMacros) {
+      _tradingMacros = tradingMacros;
       _inPips = null;
       this._TradesManager = getTradesManager;
       this.TradesManager.TradeClosed += TradeCloseHandler;
@@ -1442,7 +1445,7 @@ namespace HedgeHog.Alice.Store {
           while (!args.IsMyTurn(this)) {
             //Task.Factory.StartNew(() => {
             //  while (!args.IsMyTurn(this) && !args.MustStop)
-            Thread.Sleep(10);
+            Thread.Sleep(1);
             if (args.MustStop) return;
             //}).Wait();
           }
@@ -1470,11 +1473,12 @@ namespace HedgeHog.Alice.Store {
               });
             } else {
               if (RateLast != null && tms().Count > 1) {
-                var a = tms().Select(tm => tm.UseRatesInternal(ri => ri.LastOrDefault().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First())).ToArray();
+                var a = tms().Select(tm =>
+                    tm.RatesInternal.LastBC().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First()).ToArray();
                 var dateMin = a.Min();
-                if (tms().Distinct(tm => tm.BarPeriod).Count() == 1 && (dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt.Min(1) * 60) {
-                  Log = new Exception("MaxTime-MinTime>30mins");
-                }
+                //if (tms().Distinct(tm => tm.BarPeriod).Count() == 1 && (dateMin - a.Max()).Duration().TotalMinutes > BarPeriodInt.Min(1) * 60) {
+                //  Log = new Exception("MaxTime-MinTime>30mins");
+                //}
                 if (RateLast.StartDate > dateMin)
                   continue;
               }
@@ -1589,7 +1593,7 @@ namespace HedgeHog.Alice.Store {
           args.StepBack = args.StepBack = args.InPause = false;
           if (!IsInVitualTrading) {
             UseRatesInternal(ri => ri.Clear());
-            SubscribeToTradeClosedEVent(_TradesManager);
+            SubscribeToTradeClosedEVent(_TradesManager, _tradingMacros);
             LoadRates();
           }
           if (_t != null) { _t.Dispose(); _t = null; }
@@ -2417,10 +2421,10 @@ namespace HedgeHog.Alice.Store {
     }
 
 
-    double RoundPrice(Rate rate) {
+    public double RoundPrice(Rate rate) {
       return RoundPrice(rate.PriceAvg, 0);
     }
-    double RoundPrice(double price, int digitOffset = 0) {
+    public double RoundPrice(double price, int digitOffset = 0) {
       return TradesManager == null ? double.NaN : TradesManager.Round(Pair, price, digitOffset);
     }
 
@@ -2789,7 +2793,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    
+
     #endregion
 
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;

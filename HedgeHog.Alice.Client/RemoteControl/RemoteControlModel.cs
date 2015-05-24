@@ -1028,8 +1028,8 @@ namespace HedgeHog.Alice.Client {
         GetTradingMacros().ForEach(tm => AddShowChart(tm));
     }
     int _lastServedRatesCount = 0;
-    public ExpandoObject ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
-      var digits = tm.Digits() + 1;
+    public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
+      var digits = tm.Digits();
       if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
       else dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));
       string pair = tm.Pair;
@@ -1043,7 +1043,7 @@ namespace HedgeHog.Alice.Client {
         );
       #endregion
 
-      if (tm.RatesArray.Count == 0 || tm.BuyLevel == null) return new { rates = new int[0] }.ToExpando();
+      if (tm.RatesArray.Count == 0 || tm.BuyLevel == null) return new { rates = new int[0] };
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
       var tps = tm.TicksPerSecondAverage;
@@ -1083,12 +1083,12 @@ namespace HedgeHog.Alice.Client {
           ? rates.Last().StartDate2.AddMinutes(-(tm.CorridorStats.Rates.Count - 1))
           : trends[0].StartDate2,
           rates.Last().StartDate2},
-        close1 = trends.ToArray(t => t.Trends.PriceAvg1),
-        close2 = trends.ToArray(t => t.Trends.PriceAvg2),
-        close3 = trends.ToArray(t => t.Trends.PriceAvg3),
-        close21 = trends.ToArray(t => t.Trends.PriceAvg21),
-        close31 = trends.ToArray(t => t.Trends.PriceAvg31)
-      }.ToExpando());
+        close1 = trends.ToArray(t => t.Trends.PriceAvg1.Round(digits)),
+        close2 = trends.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
+        close3 = trends.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+        close21 = trends.ToArray(t => t.Trends.PriceAvg21.Round(digits)),
+        close31 = trends.ToArray(t => t.Trends.PriceAvg31.Round(digits))
+      });
       var ratesLastStartDate2 = tm.RatesArray.Last().StartDate2;
       var trends2 = tm.TrendLines2.Value.ToList();
       var trendLines2 = new {
@@ -1099,9 +1099,9 @@ namespace HedgeHog.Alice.Client {
           ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength2-1))
           : trends2[0].StartDate2,
           ratesLastStartDate2},
-        close2 = trends2.ToArray(t => t.Trends.PriceAvg2),
-        close3 = trends2.ToArray(t => t.Trends.PriceAvg3),
-      }.ToExpando();
+        close2 = trends2.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
+        close3 = trends2.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
+      };
       var trends1 = tm.TrendLines1.Value.ToList();
       var trendLines1 = new {
         dates = trends1.Count == 0
@@ -1111,20 +1111,20 @@ namespace HedgeHog.Alice.Client {
           ? ratesLastStartDate2.AddMinutes(-(tm.CorridorLength1-1))
           : trends1[0].StartDate2,
           ratesLastStartDate2},
-        close2 = trends1.ToArray(t => t.Trends.PriceAvg2),
-        close3 = trends1.ToArray(t => t.Trends.PriceAvg3),
+        close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
+        close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
       var tradeLevels = new {
-        buy = tm.BuyLevel.Rate,
+        buy = tm.BuyLevel.Rate.Round(digits),
+        buyClose = tm.BuyCloseLevel.Rate.Round(digits),
         canBuy = tm.BuyLevel.CanTrade,
         manualBuy = tm.BuyLevel.InManual,
         buyCount = tm.BuyLevel.TradesCount,
-        sell = tm.SellLevel.Rate,
+        sell = tm.SellLevel.Rate.Round(digits),
+        sellClose = tm.SellCloseLevel.Rate.Round(digits),
         canSell = tm.SellLevel.CanTrade,
         manualSell = tm.SellLevel.InManual,
         sellCount = tm.SellLevel.TradesCount,
-        buyClose = tm.BuyCloseLevel.Rate,
-        sellClose = tm.SellCloseLevel.Rate
       };
       var tmg = TradesManager;
       var trades0 = tmg.GetTrades(pair);
@@ -1134,7 +1134,7 @@ namespace HedgeHog.Alice.Client {
       getTrades(true).Take(1).ForEach(_ => trades.Add(new { buy = tradeFoo(true) }));
       getTrades(false).Take(1).ForEach(_ => trades.Add(new { sell = tradeFoo(false) }));
       var price = tmg.GetPrice(pair);
-      var askBid = new { ask = price.Ask, bid = price.Bid }.ToExpando();
+      var askBid = new { ask = price.Ask.Round(digits), bid = price.Bid.Round(digits) };
       return new {
         rates = getRates(ratesForChart),
         rates2 = getRates(ratesForChart2),
@@ -1148,8 +1148,8 @@ namespace HedgeHog.Alice.Client {
         trades,
         askBid,
         hasStartDate = tm.CorridorStartDate.HasValue,
-        cmaPeriod
-      }.ToExpando();
+        cmp = cmaPeriod
+      };
     }
     bool? _isParentHidden;
     void ShowChart(TradingMacro tm) {
@@ -1614,7 +1614,7 @@ namespace HedgeHog.Alice.Client {
         tm.TradingStatistics = _tradingStatistics;
         tm.IpPort = MasterModel.IpPort;
         try {
-          tm.SubscribeToTradeClosedEVent(() => TradesManager);
+          tm.SubscribeToTradeClosedEVent(() => TradesManager, GetTradingMacros());
           _syncDisposables.Add(tm, tm.SyncObservable.Subscribe(_ => {
             UpdateTradingStatistics();
           }));

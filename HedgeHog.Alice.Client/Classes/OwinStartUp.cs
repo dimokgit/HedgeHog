@@ -1,6 +1,7 @@
 ﻿using HedgeHog.Alice.Store;
 using HedgeHog.Shared;
 using Microsoft.AspNet.SignalR;
+using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.StaticFiles;
@@ -10,12 +11,15 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Dynamic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HedgeHog.Alice.Client {
@@ -109,6 +113,9 @@ namespace HedgeHog.Alice.Client {
         }
         return next();
       });
+      //app.Use((context, next) => {
+      //  return new GZipMiddleware(d => next()).Invoke(context.Environment);
+      //});
       // SignalR
       try {
         var hubConfiguration = new HubConfiguration();
@@ -117,6 +124,105 @@ namespace HedgeHog.Alice.Client {
       } catch (InvalidOperationException exc) {
         if (!exc.Message.StartsWith("Counter"))
           throw;
+      }
+    }
+  }
+  public sealed class GZipMiddleware {
+    private readonly Func<IDictionary<string, object>, Task> next;
+
+    public GZipMiddleware(Func<IDictionary<string, object>, Task> next) {
+      this.next = next;
+    }
+
+    public async Task Invoke(IDictionary<string, object> environment) {
+      var context = new OwinContext(environment);
+
+      // Verifies that the calling client supports gzip encoding.
+      if (!(from encoding in context.Request.Headers.GetValues("Accept-Encoding") ?? Enumerable.Empty<string>()
+            from enc in encoding.Split(',').Select(s=>s.Trim())
+            where String.Equals(enc, "gzip", StringComparison.OrdinalIgnoreCase)
+            select encoding).Any()) {
+        await next(environment);
+        return;
+      }
+      context.Response.Headers.Add("Content-Encoding", new[] { "gzip" });
+
+      // Replaces the response stream by a delegating memory
+      // stream and keeps track of the real response stream.
+      var body = context.Response.Body;
+      context.Response.Body = new BufferingStream(context, body);
+
+      try {
+        await next(environment);
+
+        if (context.Response.Body is BufferingStream) {
+          await context.Response.Body.FlushAsync();
+        }
+      } finally {
+        // Restores the real stream in the environment dictionary.
+        context.Response.Body = body;
+      }
+    }
+
+    private sealed class BufferingStream : MemoryStream {
+      private readonly IOwinContext context;
+      private Stream stream;
+
+      internal BufferingStream(IOwinContext context, Stream stream) {
+        this.context = context;
+        this.stream = stream;
+      }
+
+      public override async Task FlushAsync(CancellationToken cancellationToken) {
+        // Determines if the memory stream should
+        // be copied in the response stream.
+        if (!(stream is GZipStream)) {
+          Seek(0, SeekOrigin.Begin);
+          await CopyToAsync(stream, 8192, cancellationToken);
+          SetLength(0);
+
+          return;
+        }
+
+        // Disposes the GZip stream to allow
+        // the footer to be correctly written.
+        stream.Dispose();
+      }
+
+      public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
+        // Determines if the stream has already been replaced by a GZip stream.
+        if (stream is GZipStream) {
+          // The delegated stream is already a GZip stream, continue streaming.
+          await stream.WriteAsync(buffer, offset, count, context.Request.CallCancelled);
+          return;
+        }
+
+        // Determines if the memory stream should continue buffering.
+        if ((count + Length) < 4096) {
+          // Continues buffering.
+          await base.WriteAsync(buffer, offset, count, cancellationToken);
+          return;
+        }
+
+        // Determines if chunking can be safely used.
+        if (!String.Equals(context.Request.Protocol, "HTTP/1.1", StringComparison.Ordinal)) {
+          throw new InvalidOperationException("The Transfer-Encoding: chunked mode can only be used with HTTP/1.1");
+        }
+
+        // Sets the appropriate headers before changing the response stream.
+        context.Response.Headers["Content-Encoding"] = "gzip";
+        context.Response.Headers["Transfer-Encoding"] = "chunked";
+
+        // Writes the buffer in the memory stream.
+        await base.WriteAsync(buffer, offset, count, cancellationToken);
+
+        // Opens a new GZip stream pointing directly to the real response stream.
+        stream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true);
+
+        // Rewinds the delegating memory stream
+        // and copies it to the GZip stream.
+        Seek(0, SeekOrigin.Begin);
+        await CopyToAsync(stream, 8192, context.Request.CallCancelled);
       }
     }
   }
@@ -234,7 +340,7 @@ namespace HedgeHog.Alice.Client {
     public void SetRsdTreshold(string pair, int pips) {
       UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
     }
-    public ExpandoObject[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
+    public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
       return UseTradingMacro2(pair, chartNum, tm => tm.IsActive
         , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
     }
@@ -256,7 +362,7 @@ namespace HedgeHog.Alice.Client {
     }
 
     static SendChartBuffer _sendChart2Buffer = SendChartBuffer.Create();
-    public ExpandoObject[] AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
+    public object[] AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
       return UseTradingMacro2(pair, 1, tm => tm.IsActive
         , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
     }

@@ -132,7 +132,7 @@
 
     // #region Locals
     function lineChartDataEmpty() {
-      return [{ d: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
+      return [{ d: new Date("1/1/1900"),do: new Date("1/1/1900"), c: 0, v: 0, m: 0 }];// jshint ignore:line
     }
     var lineChartData = ko.observableArray(lineChartDataEmpty());
     var lineChartData2 = ko.observableArray(lineChartDataEmpty());
@@ -385,10 +385,10 @@
       var rates2 = response.rates2;
       if (rates.length + rates2.length === 0) return;
       rates.forEach(function (d) {
-        d.d = new Date(d.d);
+        d.d = d.do = new Date(d.d);
       });
       rates2.forEach(function (d) {
-        d.d = new Date(d.d);
+        d.d = d.do = new Date(d.d);
       });
       var endDate = rates[0].d;
       var startDate = new Date(response.dateStart);
@@ -400,35 +400,6 @@
       var ratesAll = continuoseDates(lineChartData2(), [response.trendLines.dates, response.trendLines1.dates, response.trendLines2.dates]);
       var shouldUpdateData = true;
       self.chartData2(chartDataFactory(ratesAll, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross));
-      updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
-    }
-    function updateChart2_(response) {// jshint ignore:line
-      updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
-      ratesInFlight2 = dateMin;
-      prepResponse(response);
-      if (!commonChartParts.tradeLevels) return;
-      if (!response.rates) {
-        self.chartData2(chartDataFactory(null, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross));
-        return;
-      }
-      if (response.rates.length === 0) return;
-      var d = new Date();
-      var rates = response.rates;
-      rates.forEach(function (d) {
-        d.d = d.do = new Date(d.d);
-      });
-      rates = continuoseDates(rates, [response.trendLines.dates,response.trendLines1.dates,response.trendLines2.dates]);
-      var x1 = _.last(lineChartData2());
-      var x2 = _.last(rates);
-      var shouldUpdateData = x1.d0.valueOf() !== x2.d0.valueOf() && x1.c !== x2.c;
-
-      var endDate = rates[0].do;
-      var startDate = response.dateStart;
-      lineChartData2.remove(function (d) {
-        return d.do >= endDate || d.do < startDate;
-      });
-      lineChartData2.push.apply(lineChartData2, rates);
-      self.chartData2(chartDataFactory(lineChartData2, response.trendLines, response.trendLines2, response.trendLines1, commonChartParts.tradeLevels, commonChartParts.askBid, commonChartParts.trades, response.isTradingActive, shouldUpdateData, 1, response.hasStartDate, response.cmaPeriod, mustShowClosedTrades2() ? closedTrades : [], self.openTradeGross));
       updateChartCmas[1](cma(updateChartCmas[1](), 10, getSecondsBetween(new Date(), d)));
     }
     // #endregion
@@ -449,20 +420,23 @@
     // #region FirstDate
     this.firstDate = firstDate;
     this.firstDate2 = firstDate2;
-    function firstDateImpl(lineChartData) {
-      return (lineChartData()[0] || {}).d;
+    function firstDateImpl(lineChartData,key) {
+      return (lineChartData()[0] || {})[key];
     }
     function firstDate() {
-      return firstDateImpl(lineChartData);
+      return firstDateImpl(lineChartData,'d');
     }
     function firstDate2() {
-      return firstDateImpl(lineChartData2);
+      return firstDateImpl(lineChartData2, 'do');
     }
     // #endregion
     // #endregion
     // #endregion
 
     // #region Helpers
+    var signalRMap = {
+      cmp: "cmaPeriod",
+    };
     function prepDates(blocked, root) {
       if (arguments.length === 1) {
         root = blocked;
@@ -472,8 +446,16 @@
       traverse(root).forEach(function (x) {
         if (blocked.indexOf(this.key) >= 0) {
           this.block();
-        } else if (reISO.exec(x))
+          return;
+        }
+        if (reISO.exec(x))
           this.update(new Date(x));
+        var mappedKey = signalRMap[this.key];
+        if (mappedKey) {
+          var n = this.node;
+          this.delete();
+          this.parent.node[mappedKey] = n;
+        }
       });
       return root;
     }

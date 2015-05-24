@@ -282,6 +282,11 @@ namespace HedgeHog.Alice.Store {
       get { return _TradingMacros; }
       set { _TradingMacros = value; }
     }
+    IList<TradingMacro> _TradingMacrosActive = new TradingMacro[0];
+    public IList<TradingMacro> TradingMacrosActive {
+      get { return _TradingMacrosActive; }
+      set { _TradingMacrosActive = value; }
+    }
 
     public double CurrentLoss { get; set; }
     public double OriginalProfit { get; set; }

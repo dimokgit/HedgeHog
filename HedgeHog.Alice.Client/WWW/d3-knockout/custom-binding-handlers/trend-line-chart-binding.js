@@ -2,7 +2,7 @@
 /// <reference path="../../Scripts/linq.js" />
 /// <reference path="../../bower/bower_components/underscore/underscore.js" />
 // jscs:disable
-/*global ko, d3, Enumerable*/
+/*global ko, d3, Enumerable,_*/
 /*ignore jscs*/
 (function () {
   function tradeLevelUIFactory(x, y, on, manual, tradeCount) { return { x: x, y: y, on: on ? true : false, manual: manual ? true : false, tradeCount: tradeCount }; }
@@ -172,9 +172,9 @@
       viewModel = bindingContext.$root;
       var lineChart = viewModel.lineChart || (viewModel.lineChart = new LineChart());
       var chartData = ko.unwrap(valueAccessor());
-      function avgerage(a, key) {
+      function avgerage(a, key) {// jshint ignore: line
         return _.reduce(a, function (sum, e) {
-          return sum + e[key]
+          return sum + e[key];
         }, 0) / a.length;
       }
       var data = ko.unwrap(chartData.data);
@@ -328,7 +328,7 @@
           .attr("transform", "translate(" + x(corridorStartTime) + "," + (height - 7) + ")");
         svg.selectAll("path.nextWave")
           .data([-18, 18])
-          .attr("transform", function (d) {298
+          .attr("transform", function (d) {
             return "translate(" + (x(corridorStartTime) + d) + ",7) rotate(-90)";
           })
         ;
