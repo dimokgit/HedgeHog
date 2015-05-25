@@ -1487,6 +1487,7 @@ namespace HedgeHog.Alice.Store {
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove: {
                 var conditions = MonoidsCore.ToFunc(() => new { isDirectional = new { AngleOk = true, TradingAngleRange } });
+                var tci = TradeConditionsInfo((d, n) => new { n, v = d(),d }).ToArray();
                 #region FirstTime
                 if (firstTime) {
                   WorkflowStep = "";
@@ -1513,7 +1514,7 @@ namespace HedgeHog.Alice.Store {
                   onCloseTradeLocal += t => {
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
-                      turnItOff(canTradeOff, () => FreezeCorridorStartDate(unFreeze: true));
+                      turnItOff(canTradeOff, () => UnFreezeCorridorStartDate());
                     }
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
@@ -1524,14 +1525,15 @@ namespace HedgeHog.Alice.Store {
                   };
                   #endregion
                   onTradesCount += tc => {
-                    turnItOff(tc <= -CorridorCrossesMaximum, () => FreezeCorridorStartDate(unFreeze: true));
+                    turnItOff(tci.IsEmpty() && tc <= -CorridorCrossesMaximum, () => UnFreezeCorridorStartDate());
                   };
-                  onOpenTradeLocal += t => { };
+                  onOpenTradeLocal += t => {
+
+                  };
                 }
                 #endregion
                 var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
                 Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
-                var tci = TradeConditionsInfo((d, n) => new { n, v = d() }).ToArray();
                 var tciOk = tci.Select(x => x.v).DefaultIfEmpty(false).All(b => b);
                 var workflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
                 SetTradeLevelsToLevelBy(getTradeLevel)();
@@ -1542,6 +1544,8 @@ namespace HedgeHog.Alice.Store {
                 if (tci.IsEmpty()) WorkflowStep = "";
                 else if (tci.All(t => t.n.StartsWith("Outside")))
                   _buySellLevelsForEach(sr => sr.CanTradeEx = tci.Any(t => t.v));
+                else if ( tci.Any(t => t.d == GreenOk))
+                  _buySellLevelsForEach(sr => sr.CanTradeEx = canTradeOk);
                 else {
                   var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
                   eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
@@ -2240,6 +2244,7 @@ namespace HedgeHog.Alice.Store {
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           if (onOpenTradeLocal != null) onOpenTradeLocal(trade);
+          if (FreezeCorridorOnTradeOpen) FreezeCorridorStartDate();
         };
         #endregion
 

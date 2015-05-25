@@ -35,14 +35,12 @@
 
   // #region Reset plotter
   var resetPlotterThrottleTime = 0.5 * 1000;
-  var resetPlotter = _.throttle(resetPlotterImpl, resetPlotterThrottleTime);
+  var resetPlotterThrottleTime2 = 2 * 1000;
+  var resetPlotter = _.throttle(askRates, resetPlotterThrottleTime);
+  var resetPlotter2 = _.throttle(askRates2, resetPlotterThrottleTime2);
   var dateMin = new Date("1/1/9999");
   var ratesInFlight = dateMin;
   var ratesInFlight2 = dateMin;
-  function resetPlotterImpl() {
-    askRates();
-    askRates2();
-  }
   function isInFlight(date, index) {
     var secsInFlight = getSecondsBetween(new Date(), date);
     if (secsInFlight > 30) openErrorNote("InFlightDelay", showErrorPerm("In flight(" + index + ") > " + secsInFlight));
@@ -59,10 +57,12 @@
         .forEach(function (r) {
           dataViewModel.updateChart(r);
         });
+        resetPlotter2();
       })
       .fail(function (e) {
-        ratesInFlight = dateMin;
         showErrorPerm(e);
+      }).always(function () {
+        ratesInFlight = dateMin;
       });
   }
   function askRates2() {
@@ -76,8 +76,9 @@
           dataViewModel.updateChart2(r);
         });
       }).fail(function (e) {
-        ratesInFlight2 = dateMin;
         showErrorPerm(e);
+      }).always(function () {
+        ratesInFlight2 = dateMin;
       });
   }
   // #region pending request messages
@@ -220,11 +221,18 @@
         }));
       });
     }
+    function setRsdMin(chartNum, rsd) {
+      serverCall("setRsdTreshold", [pair, chartNum, rsd]);
+    }
     // #endregion
     // #endregion
 
     // #region Public
     // #region Server enums
+    this.rsdMin = ko.observable();
+    this.rsdMin.subscribe(function (rsd) { setRsdMin(0, rsd); });
+    this.rsdMin2 = ko.observable();
+    this.rsdMin2.subscribe(function (rsd) { setRsdMin(1, rsd); });
     this.refreshOrders = function () { serverCall("refreshOrders", []); };
     this.tradeLevelBys = ko.observableArray([]);
     this.setTradeLevelBuy = setTradeLevel.bind(null,true);
@@ -351,7 +359,6 @@
     function updateChart(response) {
       var d = new Date();
       updateChartIntervalAverages[0](cma(updateChartIntervalAverages[0](), 10, getSecondsBetween(new Date(), ratesInFlight)));
-      ratesInFlight = dateMin;
       prepResponse(response);
       if (response.rates.length === 0) return;
       var rates = response.rates;
@@ -378,7 +385,6 @@
     function updateChart2(response) {
       var d = new Date();
       updateChartIntervalAverages[1](cma(updateChartIntervalAverages[1](), 10, getSecondsBetween(new Date(), ratesInFlight2)));
-      ratesInFlight2 = dateMin;
       prepResponse(response);
       if (response.rates.length === 0) return;
       var rates = response.rates;
@@ -546,8 +552,11 @@
     function addMessage(response) {
       if (isDocHidden()) return;
 
-      if (!$('#rsdMin').is(":focus")) $('#rsdMin').val(response.rsdMin);
+      dataViewModel.rsdMin(response.rsdMin);
       delete response.rsdMin;
+
+      dataViewModel.rsdMin2(response.rsdMin2);
+      delete response.rsdMin2;
 
       dataViewModel.profit(response.prf);
       delete response.prf;
@@ -565,10 +574,35 @@
 
       resetPlotter();
     }
-    function priceChanged(pairChanged) {
-      if (pair === pairChanged)
-        chat.server.askChangedPrice(pair);
-    }
+    var priceChanged = (function () {
+      var _inFlightPriceChanged = dateMin;
+      return _priceChanged;
+
+      function _isPriceChangeInFlight() {
+        var secsInFlight = getSecondsBetween(new Date(), _inFlightPriceChanged);
+        if (secsInFlight > 3) openErrorNote("InFlightPriceChaneDelay", showErrorPerm("PriceChange In flight > " + secsInFlight));
+        if (secsInFlight > 6) return false;
+        return _inFlightPriceChanged && secsInFlight > 0;
+      }
+
+      function _priceChanged(pairChanged) {
+        if (pair === pairChanged) {
+          if (_isPriceChangeInFlight())
+            return;
+          _inFlightPriceChanged = new Date();
+          chat.server.askChangedPrice(pair)
+            .done(function (response) {
+              addMessage(response);
+            })
+            .fail(function (e) {
+              showErrorPerm(e);
+            })
+            .always(function () {
+              _inFlightPriceChanged = dateMin;
+            });
+        }
+      }
+    })();
     chat.client.addMessage = addMessage;
     chat.client.priceChanged = priceChanged;
     chat.client.tradesChanged = dataViewModel.readClosedTrades;
@@ -630,10 +664,6 @@
       $('#sell').click(function () { serverCall("sell", [pair]); });
       $('#buy').click(function () { serverCall("buy", [pair]); });
       $('#flipTradeLevels').click(function () { serverCall("flipTradeLevels",[pair]); });
-      $('#rsdMin').change(function () {
-        chat.server.setRsdTreshold(pair, $('#rsdMin').val());
-        resetPlotter();
-      });
       // #endregion
     });
     // #endregion

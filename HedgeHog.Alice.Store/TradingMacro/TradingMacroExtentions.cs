@@ -1439,10 +1439,11 @@ namespace HedgeHog.Alice.Store {
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
         Rate ratePrev = null;
         bool noMoreDbRates = false;
+        var isReplaying = false;
         while (!args.MustStop && indexCurrent < _replayRates.Count && Strategy != Strategies.None) {
           var swDict = new Dictionary<string, double>();
           Stopwatch sw = Stopwatch.StartNew();
-          while (!args.IsMyTurn(this)) {
+          while (isReplaying && !args.IsMyTurn(this)) {
             //Task.Factory.StartNew(() => {
             //  while (!args.IsMyTurn(this) && !args.MustStop)
             Thread.Sleep(1);
@@ -1495,26 +1496,26 @@ namespace HedgeHog.Alice.Store {
                 }
               }
               rate = _replayRates[indexCurrent++];
-              UseRatesInternal(ri => {
-                if (CloseTradesBeforeNews) {
-                  var mi = _replayRates.Count - 1;
-                  var ratesNext = Enumerable.Range(indexCurrent, 3).Where(i => i <= mi).Select(i => _replayRates[i]);
-                  if (InPips(ratesNext.Select(r => r.AskHigh - r.BidLow).DefaultIfEmpty(0).Max()) > 40) {
-                    if (Trades.Any()) BroadcastCloseAllTrades();
-                    SuppRes.ForEach(sr => sr.CanTrade = false);
-                    CloseTrades("Blackout");
+                UseRatesInternal(ri => {
+                  if (isReplaying && CloseTradesBeforeNews) {
+                    var mi = _replayRates.Count - 1;
+                    var ratesNext = Enumerable.Range(indexCurrent, 3).Where(i => i <= mi).Select(i => _replayRates[i]);
+                    if (InPips(ratesNext.Select(r => r.AskHigh - r.BidLow).DefaultIfEmpty(0).Max()) > 40) {
+                      if (Trades.Any()) BroadcastCloseAllTrades();
+                      SuppRes.ForEach(sr => sr.CanTrade = false);
+                      CloseTrades("Blackout");
+                    }
                   }
-                }
-                if (rate != null)
-                  if (ri.Count == 0 || rate > ri.LastBC())
-                    ri.Add(rate);
-                  else if (args.StepBack) {
-                    Debugger.Break();
-                  }
-                while (ri.Count > BarsCountCount()
-                    && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
-                  ri.RemoveAt(0);
-              });
+                  if (rate != null)
+                    if (ri.Count == 0 || rate > ri.LastBC())
+                      ri.Add(rate);
+                    else if (args.StepBack) {
+                      Debugger.Break();
+                    }
+                  while (ri.Count > BarsCountCount()
+                      && (!DoStreatchRates || (CorridorStats.Rates.Count == 0 || ri[0] < CorridorStats.Rates.LastBC())))
+                    ri.RemoveAt(0);
+                });
             }
             if (rate.StartDate > dateStop) {
               //if (CurrentGross > 0) {
@@ -1527,6 +1528,7 @@ namespace HedgeHog.Alice.Store {
               //} else if (RatesArraySafe.LastBC().StartDate < args.DateStart.Value) {
               //  continue;
             } else {
+              isReplaying = true;
               swDict.Add("Prepare", sw.ElapsedMilliseconds); sw.Restart();
               var rateLast = UseRatesInternal(ri => ri.Last());
               LastRatePullTime = rateLast.StartDate;

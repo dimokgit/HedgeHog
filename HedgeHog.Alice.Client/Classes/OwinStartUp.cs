@@ -254,8 +254,8 @@ namespace HedgeHog.Alice.Client {
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
     }
-    public void AskChangedPrice(string pair) {
-      var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, tm => new {
+    public object AskChangedPrice(string pair) {
+      var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, (TradingMacro)null, (tm,tm1) => new {
         time = tm.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
         otg = IntOrDouble(tm.OpenTradesGross2InPips, 1),
@@ -263,13 +263,14 @@ namespace HedgeHog.Alice.Client {
         dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
         hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
         rsdMin = tm.RatesStDevMinInPips,
+        rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
         price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid },
         tci = GetTradeConditionsInfo(tm),
         wfs = tm.WorkflowStep
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
       });
-      UseTradingMacro(pair, tm => Clients.Caller.addMessage(makeClienInfo(tm)));
+      return makeClienInfo(UseTradingMacro(pair, tm => tm), UseTradingMacro(pair,1, tm => tm));
     }
     public string[] ReadTradingConditions(string pair) {
       return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray());
@@ -337,8 +338,8 @@ namespace HedgeHog.Alice.Client {
     public void Sell(string pair) {
       UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"));
     }
-    public void SetRsdTreshold(string pair, int pips) {
-      UseTradingMacro(pair, tm => tm.RatesStDevMinInPips = pips);
+    public void SetRsdTreshold(string pair,int chartNum, int pips) {
+      UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips);
     }
     public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
       return UseTradingMacro2(pair, chartNum, tm => tm.IsActive

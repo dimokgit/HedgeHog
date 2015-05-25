@@ -148,8 +148,8 @@
       height: 5px;
     }
 
-    #settingsGrid input[type=text] {
-      width: 100%;
+    #settingsGrid .ui-spinner input[type=text] {
+      width: 60% !important;
     }
 
     #settingsGrid .pgGroupRow {
@@ -158,6 +158,9 @@
 
       #settingsGrid .pgGroupRow :hover {
         text-decoration: underline;
+      }
+      #settingsGrid .pgTable .pgCell {
+      white-space: nowrap;
       }
   </style>
   <script>
@@ -176,7 +179,7 @@
 <body>
   <!--#region Nav bar-->
   <div class="navbar navbar-default" role="navigation">
-    <div class="container">
+    <div class="container" style="padding-left:2.5em">
       <!--#region Header-->
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -415,7 +418,10 @@
     <span data-bind="text:Math.round(ucCmas[0]()*100,2)/100"></span>/
     <span data-bind="text:Math.round(ucCmas[1]()*100,2)/100,visible:ucCmas[1]()"></span>
     <!-- /ko -->
-    <input value="" id="rsdMin" style="width:1.5em;height:1.5em;position:absolute;left:0;top:0" />
+    <div style="width:4em;height:1.5em;position:absolute;left:0;top:0">
+      <input data-bind="value:rsdMin" style="width:1.5em;"  />
+      <input data-bind="value:rsdMin2" style="width:1.5em;" />
+    </div>
   </div>
   <!--#endregion-->
   <!--#region Charts-->

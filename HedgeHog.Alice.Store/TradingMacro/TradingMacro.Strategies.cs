@@ -277,16 +277,16 @@ namespace HedgeHog.Alice.Store {
     }
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
-    private Rate.TrendLevels TrendLines2Trends { get { return TrendLines2.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLines1Trends { get { return TrendLines1.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLinesTrends { get { return TrendLines.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLines2Trends { get { return TrendLines2 == null ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLines1Trends { get { return TrendLines1 == null ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLinesTrends { get { return TrendLines == null ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
     private double TrendLinesTrendsPriceMax {
       get { return TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2, TrendLines1Trends.PriceAvg2); }
     }
     private double TrendLinesTrendsPriceMin {
       get { return TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3, TrendLines1Trends.PriceAvg3); }
     }
-    double GetTradeCloseLevel( bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
+    double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
     void SendSms(string header, object message, bool sendScreenshot) {
       if (sendScreenshot) RaiseNeedChartSnaphot();
@@ -311,6 +311,9 @@ namespace HedgeHog.Alice.Store {
     }
     public void ToggleCorridorStartDate() {
       FreezeCorridorStartDate(CorridorStartDate.HasValue);
+    }
+    public void UnFreezeCorridorStartDate() {
+      FreezeCorridorStartDate(true);
     }
     public void FreezeCorridorStartDate(bool unFreeze = false) {
       if (unFreeze) CorridorStartDate = null;
@@ -401,8 +404,8 @@ namespace HedgeHog.Alice.Store {
       rates[0].Trends.PriceAvg3 = pa1 - l;
       rates[0].Trends.PriceAvg21 = pa1 + h1;
       rates[0].Trends.PriceAvg31 = pa1 - l1;
-      rates[0].Trends.PriceAvg22 = pa1 + h*2;
-      rates[0].Trends.PriceAvg32 = pa1 - l*2;
+      rates[0].Trends.PriceAvg22 = pa1 + h * 2;
+      rates[0].Trends.PriceAvg32 = pa1 - l * 2;
 
       pa1 = rates[1].Trends.PriceAvg1;
       rates[1].Trends.PriceAvg02 = pa1 + hl;

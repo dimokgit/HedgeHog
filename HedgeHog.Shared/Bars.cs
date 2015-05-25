@@ -599,6 +599,10 @@ namespace HedgeHog.Bars {
   [DataContract]
   public class Rate : BarBase {
     public class TrendLevels {
+      public static TrendLevels Empty;
+      static TrendLevels() {
+        Empty = new TrendLevels(double.NaN, double.NaN);
+      }
       public double PriceAvg1 { get; set; }
 
       public double PriceAvg2 { get; set; }

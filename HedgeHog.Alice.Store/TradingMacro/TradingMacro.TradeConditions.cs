@@ -27,18 +27,44 @@ namespace HedgeHog.Alice.Store {
         };
       }
     }
-    bool IsCurrentPriceOutsideCorridor(Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+    [Description("'Green' corridor is outside the 'Red' and 'Blue' ones")]
+    public TradeConditionDelegate GreenOk {
+      get {
+        return () =>
+          TrendLines1Trends.PriceAvg2 >= TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2) ||
+          TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3);
+      }
+    }
+    public TradeConditionDelegate OutsideAllOk {
+      [TradeCondition(TradeConditionAttribute.Types.Or)]
+      get { return () => Outside1Ok() && OutsideOk() && Outside2Ok(); }
+    }
+    public TradeConditionDelegate OutsideExtOk {
+      get {
+        return () =>
+          IsCurrentPriceOutsideCorridor(tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21) &&
+          Outside1Ok() && Outside2Ok();
+      }
+    }
+    bool IsCurrentPriceOutsideCorridor(Func<TradingMacro, Rate.TrendLevels> trendLevels, Func<Rate.TrendLevels, double> min, Func<Rate.TrendLevels, double> max) {
       return _tradingMacros
         .Where(tm => tm.Pair == Pair && tm.BarPeriod != BarsPeriodType.t1)
-          .Any(tm => !CurrentPrice.Average.Between(trendLevels(tm).PriceAvg3, trendLevels(tm).PriceAvg2));
+        .Select(tm => trendLevels(tm))
+          .Any(tls => !CurrentPrice.Average.Between(min(tls), max(tls)));
     }
+    bool IsCurrentPriceOutsideCorridor(Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      return IsCurrentPriceOutsideCorridor(trendLevels, tl => tl.PriceAvg3, tl => tl.PriceAvg2);
+    }
+    [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate OutsideOk {
-      get { return () => IsCurrentPriceOutsideCorridor(tm=> tm.TrendLinesTrends); }
+      get { return () => IsCurrentPriceOutsideCorridor(tm => tm.TrendLinesTrends); }
     }
+    [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside1Ok {
       get { return () => IsCurrentPriceOutsideCorridor(tm => tm.TrendLines1Trends); }
     }
     public TradeConditionDelegate Outside2Ok {
+      [TradeCondition(TradeConditionAttribute.Types.Or)]
       get { return () => IsCurrentPriceOutsideCorridor(tm => tm.TrendLines2Trends); }
     }
 
@@ -54,7 +80,7 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate[] GetTradeConditions() {
       return GetType().GetProperties()
         .Where(p => p.PropertyType == typeof(TradeConditionDelegate))
-        .Select(p=>p.GetValue(this))
+        .Select(p => p.GetValue(this))
         .Cast<TradeConditionDelegate>()
         .ToArray();
 

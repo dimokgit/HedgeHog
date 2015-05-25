@@ -1587,8 +1587,11 @@ namespace HedgeHog.Alice.Store {
 
       var interWaveStep = 2;
       var xx = extreams3
-        .TakeWhile(c => c < index);
-      _corridorLength1 = xx.TakeLast(interWaveStep)
+        .TakeWhile(c => c < index)
+        .ToArray();
+      _corridorLength1 = xx.Length <= 2
+        ? extreams3[1]
+        : xx.TakeLast(interWaveStep)
         .DefaultIfEmpty(index)
         .First();
       _corridorStartDate1 = rates[_corridorLength1].StartDate;

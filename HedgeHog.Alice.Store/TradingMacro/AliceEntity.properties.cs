@@ -846,6 +846,23 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
+    #region FreezeCorridorOnTradeOpen
+    private bool _FreezeCorridorOnTradeOpen;
+    [WwwSetting(Group=wwwSettingsTrading)]
+    [Category(categoryActiveYesNo)]
+    [DisplayName("FreezeCorrOnTrade")]
+    [Description("Freeze Corridor On Trade Open")]
+    public bool FreezeCorridorOnTradeOpen {
+      get { return _FreezeCorridorOnTradeOpen; }
+      set {
+        if (_FreezeCorridorOnTradeOpen != value) {
+          _FreezeCorridorOnTradeOpen = value;
+          OnPropertyChanged("FreezeCorridorOnTradeOpen");
+        }
+      }
+    }
+    
+    #endregion
     [DisplayName("CorridorHeight Max")]
     [Category(categoryXXX)]
     public double CorridorHeightMax {
