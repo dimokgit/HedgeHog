@@ -14,6 +14,7 @@ using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
@@ -33,6 +34,10 @@ namespace HedgeHog.Alice.Client {
       GlobalHost.Configuration.DefaultMessageBufferSize = 1;
       //GlobalHost.HubPipeline.AddModule(new MyHubPipelineModule());
       // Static content
+
+        //HttpListener listener = (HttpListener)app.Properties["System.Net.HttpListener"];
+        //listener.AuthenticationSchemes = AuthenticationSchemes.Ntlm | AuthenticationSchemes.Basic;
+
       var fileSystem = new PhysicalFileSystem("./www");
       var fsOptions = new FileServerOptions {
         EnableDirectoryBrowsing = true,
@@ -242,7 +247,15 @@ namespace HedgeHog.Alice.Client {
     static ISubject<Action> AskRates2Subject {
       get { return _AskRates2Subject; }
     }
-
+    //http://forex.timezoneconverter.com/?timezone=GMT&refresh=5
+    static Dictionary<string, DateTimeOffset> _marketHours = new Dictionary<string, DateTimeOffset> {
+    { "Frankfurt", DateTimeOffset.Parse("6:00 +0:00") } ,
+    { "London", DateTimeOffset.Parse("07:00 +0:00") } ,
+    { "New York", DateTimeOffset.Parse("12:00 +0:00") } ,
+    { "Sydney", DateTimeOffset.Parse("22:00 +0:00") } ,
+    { "Tokyo", DateTimeOffset.Parse("23:00 +0:00") } 
+    };
+    static List<string> _marketHoursSet = new List<string>();
     static MyHub() {
       _AskRatesSubject = new Subject<Action>();
       _AskRatesSubject.InitBufferedObservable<Action>(exc => Log = exc);
@@ -254,40 +267,101 @@ namespace HedgeHog.Alice.Client {
     public MyHub() {
       remoteControl = App.container.GetExport<RemoteControlModel>();
     }
+    bool IsLocalRequest {
+      get {
+        return (Context.Request.Environment["server.LocalIpAddress"] + "") == (Context.Request.Environment["server.RemoteIpAddress"] + "");
+      }
+    }
+    bool IsUserTrader() {
+      return true;
+      return IsLocalRequest ||
+        Context.User.Identity.Name.Split('\\').DefaultIfEmpty("").Last().ToLower() == "dimon";
+    }
+    void TestUserAsTrader() {
+      if (!IsUserTrader())
+        throw new UnauthorizedAccessException("This feature is for traders only.");
+    }
     public object AskChangedPrice(string pair) {
-      var makeClienInfo = MonoidsCore.ToFunc((TradingMacro)null, (TradingMacro)null, (tm,tm1) => new {
-        time = tm.ServerTime.ToString("HH:mm:ss"),
-        prf = IntOrDouble(tm.CurrentGrossInPipTotal, 1),
-        otg = IntOrDouble(tm.OpenTradesGross2InPips, 1),
-        tps = tm.TicksPerSecondAverage.Round(1),
-        dur = TimeSpan.FromMinutes(tm.RatesDuration).ToString(@"hh\:mm"),
-        hgt = tm.RatesHeightInPips.ToInt() + "/" + tm.BuySellHeightInPips.ToInt(),
-        rsdMin = tm.RatesStDevMinInPips,
+      var tm0 = UseTradingMacro(pair, tm => tm,false);
+      var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
+      var tmTrader = UseTradingMacro(pair, tm => tm.IsTrader, false).DefaultIfEmpty(tm0).Single();
+
+      #region marketHours
+      _marketHours
+        .Where(mh => !_marketHoursSet.Contains(mh.Key))
+        .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes.Between(-15, 0))
+        .Do(mh => Clients.All.marketIsOpening(new { mh.Key, mh.Value }))
+        .ForEach(mh => _marketHoursSet.Add(mh.Key));
+      _marketHours
+        .Where(mh => (tmTrader.ServerTime.ToUniversalTime().TimeOfDay - mh.Value.TimeOfDay).TotalMinutes > 1)
+        .ForEach(mh => _marketHoursSet.Remove(mh.Key));
+      #endregion
+
+      return new {
+        time = tm0.ServerTime.ToString("HH:mm:ss"),
+        prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
+        otg = IntOrDouble(tmTrader.OpenTradesGross2InPips, 1),
+        tps = tm0.TicksPerSecondAverage.Round(1),
+        dur = TimeSpan.FromMinutes(tm0.RatesDuration).ToString(@"hh\:mm"),
+        hgt = tmTrader.RatesHeightInPips.ToInt() + "/" + tmTrader.BuySellHeightInPips.ToInt() + "/" + tmTrader.InPips(tmTrader.WaveHeightAverage).Round(0),
+        rsdMin = tm0.RatesStDevMinInPips,
         rsdMin2 = tm1 == null ? 0 : tm1.RatesStDevMinInPips,
         equity = remoteControl.Value.MasterModel.AccountModel.Equity.Round(0),
-        price = new { ask = tm.CurrentPrice.Ask, bid = tm.CurrentPrice.Bid },
-        tci = GetTradeConditionsInfo(tm),
-        wfs = tm.WorkflowStep
+        price = new { ask = tm0.CurrentPrice.Ask, bid = tm0.CurrentPrice.Bid },
+        tci = GetTradeConditionsInfo(tmTrader),
+        wfs = tmTrader.WorkflowStep,
+        w12 = tmTrader.WaveFirstSecondRatio.Round(1)
         //closed = trader.Value.ClosedTrades.OrderByDescending(t=>t.TimeClose).Take(3).Select(t => new { })
-      });
-      return makeClienInfo(UseTradingMacro(pair, tm => tm), UseTradingMacro(pair,1, tm => tm));
-    }
-    public string[] ReadTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray());
-    }
-    public string[] GetTradingConditions(string pair) {
-      return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, name) => name).ToArray());
-    }
-    public void SetTradingConditions(string pair, string[] names) {
-      UseTradingMacro(pair, tm => tm.TradeConditionsSet(names));
-    }
-    public Dictionary<string, bool> GetTradingConditionsInfo(string pair) {
-      return UseTradingMacro(pair, tm => GetTradeConditionsInfo(tm));
+      };
     }
 
-    private static Dictionary<string, bool> GetTradeConditionsInfo(TradingMacro tm) {
-      return tm.TradeConditionsInfo((d, c) => new { c, d = d() }).ToDictionary(x => x.c, x => x.d);
+    #region TradeDirectionTriggers
+    public string[] ReadTradeDirectionTriggers(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeDirectionTriggersAllInfo((tc, name) => name).ToArray(), false);
     }
+    public string[] GetTradeDirectionTriggers(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeDirectionTriggersInfo((tc, name) => name).ToArray(), false);
+    }
+    public void SetTradeDirectionTriggers(string pair, string[] names) {
+      UseTradingMacro(pair, tm => tm.TradeDirectionTriggersSet(names), true);
+    }
+    #endregion
+
+    #region TradeConditions
+    public string[] ReadTradingConditions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeConditionsAllInfo((tc, name) => name).ToArray(),false);
+    }
+    public string[] GetTradingConditions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeConditionsInfo((tc, name) => name).ToArray(), false);
+    }
+    public void SetTradingConditions(string pair, string[] names) {
+      UseTradingMacro(pair, tm => tm.TradeConditionsSet(names), true);
+    }
+    public Dictionary<string, Dictionary<string, bool>> GetTradingConditionsInfo(string pair) {
+      return UseTradingMacro(pair, tm => GetTradeConditionsInfo(tm), false);
+    }
+
+    private static Dictionary<string, Dictionary<string, bool>> GetTradeConditionsInfo(TradingMacro tm) {
+      return tm.TradeConditionsInfo((d, t, c) => new { c, t, d = d() })
+        .GroupBy(x => x.t)
+        .Select(g => new { g.Key, d = g.ToDictionary(x => x.c, x => x.d) })
+        .ToDictionary(x => x.Key+"", x => x.d);
+    }
+    #endregion
+
+    #region TradeOpenActions
+    public string[] ReadTradeOpenActions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeOpenActionsAllInfo((tc, name) => name).ToArray(), false);
+    }
+    public string[] GetTradeOpenActions(string pair) {
+      return UseTradingMacro(pair, tm => tm.TradeOpenActionsInfo((tc, name) => name).ToArray(), false);
+    }
+    public void SetTradeOpenActions(string pair, string[] names) {
+      UseTradingMacro(pair, tm => tm.TradeOpenActionsSet(names), true);
+    }
+    #endregion
+
+
     public void Send(string pair, string newInyterval) {
       try {
         App.SignalRInterval = int.Parse(newInyterval);
@@ -318,32 +392,32 @@ namespace HedgeHog.Alice.Client {
       }
     }
     public void ToggleStartDate(string pair, int chartNumber) {
-      UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate());
+      UseTradingMacro(pair, chartNumber, tm => tm.ToggleCorridorStartDate(), true);
     }
     public void ToggleIsActive(string pair, int chartNumber) {
-      UseTradingMacro(pair, chartNumber, tm => tm.ToggleIsActive());
+      UseTradingMacro(pair, chartNumber, tm => tm.ToggleIsActive(), true);
     }
     public void FlipTradeLevels(string pair) {
-      UseTradingMacro(pair, tm => tm.FlipTradeLevels());
+      UseTradingMacro(pair, tm => tm.FlipTradeLevels(), true);
     }
     public void WrapTradeInCorridor(string pair) {
-      UseTradingMacro(pair, tm => tm.WrapTradeInCorridor());
+      UseTradingMacro(pair, tm => tm.WrapTradeInCorridor(), true);
     }
     public void WrapCurrentPriceInCorridor(string pair) {
-      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor());
+      UseTradingMacro(pair, tm => tm.WrapCurrentPriceInCorridor(), true);
     }
     public void Buy(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"));
+      UseTradingMacro(pair, tm => tm.OpenTrade(true, tm.LotSizeByLossBuy, "web"), true);
     }
     public void Sell(string pair) {
-      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"));
+      UseTradingMacro(pair, tm => tm.OpenTrade(false, tm.LotSizeByLossBuy, "web"), true);
     }
     public void SetRsdTreshold(string pair,int chartNum, int pips) {
-      UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips);
+      UseTradingMacro(pair, chartNum, tm => tm.RatesStDevMinInPips = pips, true);
     }
     public object[] AskRates(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair,int chartNum) {
       return UseTradingMacro2(pair, chartNum, tm => tm.IsActive
-        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
+        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm), false);
     }
 
     static int _sendChartBufferCounter = 0;
@@ -359,26 +433,27 @@ namespace HedgeHog.Alice.Client {
             Clients.Caller.sendChart(pair, 0, remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
             _sendChartBufferCounter--;
           });
-      });
+      }, false);
     }
 
     static SendChartBuffer _sendChart2Buffer = SendChartBuffer.Create();
     public object[] AskRates2(int charterWidth, DateTimeOffset startDate, DateTimeOffset endDate, string pair) {
       return UseTradingMacro2(pair, 1, tm => tm.IsActive
-        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm));
+        , tm => remoteControl.Value.ServeChart(charterWidth, startDate, endDate, tm), false);
     }
     public void SetPresetTradeLevels(string pair, TradeLevelsPreset presetLevels, object isBuy) {
       bool? b = isBuy == null ? null : (bool?)isBuy;
-      UseTradingMacro(pair, tm => tm.SetTradeLevelsPreset(presetLevels, b));
+      UseTradingMacro(pair, tm => tm.SetTradeLevelsPreset(presetLevels, b), true);
     }
     public void SetTradeLevel(string pair, bool isBuy, int level) {
+      //var l = level.GetType() == typeof(string) ? (TradeLevelBy)Enum.Parse(typeof(TradeLevelBy), level+"", false) : (TradeLevelBy)level;
       UseTradingMacro(pair, tm => {
         if (isBuy) {
           tm.LevelBuyBy = (TradeLevelBy)level;
         } else {
           tm.LevelSellBy = (TradeLevelBy)level;
         }
-      });
+      }, true);
     }
     public void SetTradeCloseLevel(string pair, bool isBuy, int level) {
       UseTradingMacro(pair, tm => {
@@ -387,14 +462,20 @@ namespace HedgeHog.Alice.Client {
         } else {
           tm.LevelSellCloseBy = (TradeLevelBy)level;
         }
-      });
+      }, true);
     }
     public object[] ReadNews() {
       var date = DateTimeOffset.UtcNow.AddMinutes(-60);
-      var countries = new[] { "USD", "GBP", "EUR", "JPY" };
+      var countries = new[] { "USD","US", "GBP","GB", "EUR","EMU", "JPY","JP" };
       var events = GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
       var events2 = events.ToArray(en => new { en.Time, en.Name, en.Level, en.Country });
       return events2;
+    }
+    public Dictionary<string, int> ReadEnum(string enumName) {
+      return typeof(TradingMacro).Assembly.GetTypes()
+        .Where(t => t.Name.ToLower() == enumName)
+        .SelectMany(et => Enum.GetNames(et), (et, e) => new { name = e, value = (int)Enum.Parse(et, e, true) })
+        .ToDictionary(t => t.name, t => t.value);
     }
     public Dictionary<string, int> ReadTradeLevelBys() {
       return Enum.GetValues(typeof(TradeLevelBy)).Cast<TradeLevelBy>().ToDictionary(t => t.ToString(), t => (int)t);
@@ -406,7 +487,7 @@ namespace HedgeHog.Alice.Client {
         props.ForEach(kv => {
           tm.SetProperty(kv.Key, kv.Value);
         });
-      });
+      }, true);
     }
     public ExpandoObject ReadTradeSettings(string pair) {
       return UseTradingMacro(pair, tm => {
@@ -417,7 +498,7 @@ namespace HedgeHog.Alice.Client {
           .OrderBy(x => x.Group)
           .ForEach(x => e.Add(x.p.Name, new { v = x.p.GetValue(tm), g = x.Group }));
         return e as ExpandoObject;
-      });
+      }, false);
     }
     static string MakePair(string pair) { return pair.Substring(0, 3) + "/" + pair.Substring(3, 3); }
     public Trade[] ReadClosedTrades(string pair) {
@@ -435,7 +516,7 @@ namespace HedgeHog.Alice.Client {
         tm.IsTradingActive = false;
         return tm.CorridorWaveCount = tm.CorridorWaveCount + step;
         //return tm.PriceCmaLevels_ = (tm.PriceCmaLevels_ + step).Max(1).Min(2).Round(1);
-      });
+      }, true);
     }
     #endregion
     double IntOrDouble(double d, double max = 10) {
@@ -464,37 +545,51 @@ namespace HedgeHog.Alice.Client {
         .Where(tm2 => tm2.IsActive)
         .Where(t => t.PairPlain == pair);
     }
-    T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func) {
-      return UseTradingMacro(pair, 0, func);
-    }
-    void UseTradingMacro(string pair, Action<TradingMacro> action) {
-      UseTradingMacro(pair, 0, action);
-    }
-    void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action) {
+    IEnumerable<TradingMacro> UseTradingMacro(string pair, Func<TradingMacro, bool> predicate, bool testTraderAccess) {
       try {
+        if (testTraderAccess) TestUserAsTrader();
+        return GetTradingMacro(pair, 0).Where(predicate).Take(1);
+      } catch (Exception exc) {
+        GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
+      }
+    }
+    T UseTradingMacro<T>(string pair, Func<TradingMacro, T> func, bool testTraderAccess) {
+      return UseTradingMacro(pair, 0, func, testTraderAccess);
+    }
+    void UseTradingMacro(string pair, Action<TradingMacro> action, bool testTraderAccess) {
+      UseTradingMacro(pair, 0, action, testTraderAccess);
+    }
+    void UseTradingMacro(string pair, int chartNum, Action<TradingMacro> action, bool testTraderAccess) {
+      try {
+        if (testTraderAccess) TestUserAsTrader();
         GetTradingMacro(pair, chartNum).ForEach(action);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
+        throw;
       }
     }
-    T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func) {
+    T UseTradingMacro<T>(string pair, int chartNum, Func<TradingMacro, T> func, bool testTraderAccess) {
       try {
+        if (testTraderAccess) TestUserAsTrader();
         return GetTradingMacro(pair, chartNum).Select(func).DefaultIfEmpty(default(T)).First();
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
     }
-    T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func) {
+    T[] UseTradingMacro2<T>(string pair, int chartNum, Func<TradingMacro, bool> where, Func<TradingMacro, T> func, bool testTraderAccess) {
       try {
+        if (testTraderAccess) TestUserAsTrader();
         return GetTradingMacro(pair, chartNum).Where(where).Select(func).ToArray();
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));
         throw;
       }
     }
-    void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func) {
+    void UseTradingMacro2(string pair, int chartNum, Action<TradingMacro> func, bool testTraderAccess) {
       try {
+        if (testTraderAccess) TestUserAsTrader();
         GetTradingMacro(pair, chartNum).ForEach(func);
       } catch (Exception exc) {
         GalaSoft.MvvmLight.Messaging.Messenger.Default.Send<LogMessage>(new LogMessage(exc));

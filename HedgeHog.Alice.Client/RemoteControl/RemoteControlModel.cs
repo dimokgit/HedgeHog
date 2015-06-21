@@ -1029,6 +1029,7 @@ namespace HedgeHog.Alice.Client {
     }
     int _lastServedRatesCount = 0;
     public object ServeChart(int chartWidth, DateTimeOffset dateStart, DateTimeOffset dateEnd, TradingMacro tm) {
+      var tpsAvg = tm.TicksPerSecondAverageAverage;
       var digits = tm.Digits();
       if (dateEnd > tm.LoadRatesStartDate2) dateEnd = tm.LoadRatesStartDate2;
       else dateEnd = dateEnd.AddMinutes(-tm.BarPeriodInt.Min(2));
@@ -1038,20 +1039,23 @@ namespace HedgeHog.Alice.Client {
       Func<Rate, ExpandoObject> map = rate => EnumsExtensions.CreateExpando(
         "d", rate.StartDate2,
         "c", rateHL(rate),
-        "v", rate.VoltageLocal3,
+        "v", rate.TpsAverage.IfNaN(tpsAvg),
         "m", rate.PriceCMALast.Round(digits)
         );
       #endregion
 
       if (tm.RatesArray.Count == 0 || tm.BuyLevel == null) return new { rates = new int[0] };
+
+      var tmTrader = GetTradingMacros(tm.Pair).First(tm1 => tm1.IsTrader);
+
       var ratesForChart = tm.UseRates(rates => rates.Where(r => r.StartDate2 >= dateEnd).ToArray());
       var ratesForChart2 = tm.UseRates(rates => rates.Where(r => r.StartDate2 < dateStart).ToArray());
+      tm.SetTpsAverages();
       var tps = tm.TicksPerSecondAverage;
-      ratesForChart.Concat(ratesForChart2).Where(r => r.VoltageLocal3.IsNaN()).ForEach(r => r.VoltageLocal3 = tps);
 
       Func<IGrouping<DateTimeOffset, Rate>, Rate> mapTickToRate = g => {
         var r = g.GroupToRate();
-        r.VoltageLocal3 = g.Average(r2 => r2.VoltageLocal3).Round(2);
+        r.TpsAverage = g.Average(r2 => r2.TpsAverage.IfNaN(tpsAvg)).Round(2);
         return r;
       };
       double cmaPeriod = tm.CmaPeriodByRatesCount();
@@ -1068,7 +1072,7 @@ namespace HedgeHog.Alice.Client {
               .Select((r, i) => EnumsExtensions.CreateExpando(
                 "d", ds.AddMinutes(-i),
                 "c", rateHL(r),
-                "v", r.VoltageLocal3,
+                "v", r.TpsAverage.IfNaN(tpsAvg),
                 "m", r.PriceCMALast.Round(digits)))
               .Reverse()
               //.Take(rates3.Count)
@@ -1115,16 +1119,16 @@ namespace HedgeHog.Alice.Client {
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
       var tradeLevels = new {
-        buy = tm.BuyLevel.Rate.Round(digits),
-        buyClose = tm.BuyCloseLevel.Rate.Round(digits),
-        canBuy = tm.BuyLevel.CanTrade,
-        manualBuy = tm.BuyLevel.InManual,
-        buyCount = tm.BuyLevel.TradesCount,
-        sell = tm.SellLevel.Rate.Round(digits),
-        sellClose = tm.SellCloseLevel.Rate.Round(digits),
-        canSell = tm.SellLevel.CanTrade,
-        manualSell = tm.SellLevel.InManual,
-        sellCount = tm.SellLevel.TradesCount,
+        buy = tmTrader.BuyLevel.Rate.Round(digits),
+        buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
+        canBuy = tmTrader.BuyLevel.CanTrade,
+        manualBuy = tmTrader.BuyLevel.InManual,
+        buyCount = tmTrader.BuyLevel.TradesCount,
+        sell = tmTrader.SellLevel.Rate.Round(digits),
+        sellClose = tmTrader.SellCloseLevel.Rate.Round(digits),
+        canSell = tmTrader.SellLevel.CanTrade,
+        manualSell = tmTrader.SellLevel.InManual,
+        sellCount = tmTrader.SellLevel.TradesCount,
       };
       var tmg = TradesManager;
       var trades0 = tmg.GetTrades(pair);
@@ -1148,7 +1152,12 @@ namespace HedgeHog.Alice.Client {
         trades,
         askBid,
         hasStartDate = tm.CorridorStartDate.HasValue,
-        cmp = cmaPeriod
+        cmp = cmaPeriod,
+        tpsAvg,
+        isTrader = tm.IsTrader,
+        canBuy = tmTrader.CanOpenTradeByDirection(true),
+        canSell = tmTrader.CanOpenTradeByDirection(false),
+        firstWave = tm.WaveRanges.Select(wr => wr.StartDate).FirstOrDefault()
       };
     }
     bool? _isParentHidden;
@@ -1322,21 +1331,6 @@ namespace HedgeHog.Alice.Client {
 
     void fw_Error(object sender, HedgeHog.Shared.ErrorEventArgs e) {
       Log = e.Error;
-    }
-
-
-
-    void AdjustCurrentLosses_(TradingMacro tradingMacro) {
-      var tmGroup = GetTradingMacrosByGroup(tradingMacro);
-      double profit = tmGroup.Where(tm => tm.CurrentLoss > 0).Sum(tm => tm.CurrentLoss);
-      foreach (var tm in tmGroup.Where(t => t.CurrentLoss < 0).OrderBy(t => t.CurrentLoss)) {
-        if (profit <= 0) break;
-        tm.CurrentLoss = tm.CurrentLoss + profit;
-        profit = tm.CurrentLoss;
-      }
-      GetTradingMacrosByGroup(tradingMacro).Where(tm => tm.CurrentLoss > 0).ToList()
-      .ForEach(tm => tm.CurrentLoss = 0);
-      MasterModel.CurrentLoss = Math.Min(0, CurrentLoss);
     }
 
     #region ZeroPositiveLoss Subject

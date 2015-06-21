@@ -58,12 +58,12 @@ namespace HedgeHog.UI {
     private void FetchNews(DateTime? date = null) {
       if (newsObserver != null) return;
       try {
-        ProcessNews(NewsHound.MyFxBook.Fetch());
+        //ProcessNews(NewsHound.MyFxBook.Fetch());
         var dateStart = DateTime.Now.AddDays(-7).Round(MathExtensions.RoundTo.Week).AddDays(1);// DateTime.Parse("1/2/2012");
         var dates = Enumerable.Range(0, 10000).Select(i => dateStart.AddDays(i * 7))
           .TakeWhile(d => d <= DateTime.Now.Date.AddDays(1)).ToArray();
         newsObserver = HedgeHog.NewsCaster.NewsHound.EconoDay.Fetch(dates)
-        .ObserveOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
+        //.ObserveOn(GalaSoft.MvvmLight.Threading.DispatcherHelper.UIDispatcher)
         .Subscribe(ProcessNews,
         exc => {
           newsObserver = null;
@@ -96,11 +96,13 @@ namespace HedgeHog.UI {
             c.SaveConcurrent();
           });
       }, (c, exc) => Log = exc);
-      newNews.ForEach(evt => News.Add(evt));
-      NewsView.GroupDescriptions.Clear();
-      NewsView.GroupDescriptions.Add(new PropertyGroupDescription("Date"));
-      NewsView.Refresh();
-      UpdateNewsColor();
+      ReactiveUI.RxApp.MainThreadScheduler.Schedule(() => {
+        newNews.ForEach(evt => News.Add(evt));
+        NewsView.GroupDescriptions.Clear();
+        NewsView.GroupDescriptions.Add(new PropertyGroupDescription("Date"));
+        NewsView.Refresh();
+        UpdateNewsColor();
+      });
     }
     #endregion
 
@@ -236,7 +238,7 @@ namespace HedgeHog.UI {
       _news.CollectionChanged += _news_CollectionChanged;
       NewsView.Filter = _hideNewsFilter;
       //Observable.Interval(1.FromMinutes(), DispatcherScheduler.Current).StartWith(0).Subscribe(l => UpdateNewsColor());
-      System.Reactive.Concurrency.DispatcherScheduler.Current.Schedule(0.FromMinutes(), a => {
+      System.Reactive.Concurrency.TaskPoolScheduler.Default.Schedule(0.FromMinutes(), a => {
         if (News.Count == 0)
           FetchNews();
         else {
@@ -247,7 +249,7 @@ namespace HedgeHog.UI {
         }
         a(10.FromMinutes());
       });
-      ProcessNews(NewsHound.MyFxBook.Fetch());
+      //ProcessNews(NewsHound.MyFxBook.Fetch());
     }
     static NewsCasterModel() {
       SavedNews = ForexStorage.UseForexContext(c => c.Event__News.ToArray()

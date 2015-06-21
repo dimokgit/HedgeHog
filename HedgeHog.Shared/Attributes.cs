@@ -11,5 +11,11 @@ namespace HedgeHog {
   [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
   public sealed class WwwSettingAttribute : Attribute {
     public string Group { get; set; }
+    public WwwSettingAttribute(string group) {
+      this.Group = group;
+    }
+    public WwwSettingAttribute() {
+
+    }
   }
 }

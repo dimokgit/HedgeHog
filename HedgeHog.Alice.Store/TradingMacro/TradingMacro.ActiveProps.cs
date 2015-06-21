@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HedgeHog.Shared;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -39,7 +40,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TradeCountStart
     private int _TradeCountStart;
-    [WwwSetting(Group=wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActive)]
     [DisplayName("TradeCountStart")]
     [Description("Starting TradeCount for Buy/Sell Trade Lines")]
@@ -124,7 +125,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TpsMin
     private double _TpsMin;
-    [WwwSetting(Group=wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
     [Category(categoryActive)]
     [DisplayName("TicksPerSec Min")]
     public double TpsMin {
@@ -138,5 +139,22 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+    TradeDirections _TradeDirection = TradeDirections.Both;
+    [WwwSetting(Group = wwwSettingsTrading)]
+    [Category(categoryActive)]
+    [DisplayName("Trade Direction")]
+    [Dnr]
+    public TradeDirections TradeDirection {
+      get { return _TradeDirection; }
+      set {
+        if (_TradeDirection != value) {
+          _TradeDirection = value;
+          if (BuyLevel != null && !value.HasUp()) BuyLevel.CanTradeEx = false;
+          if (SellLevel != null && !value.HasDown()) SellLevel.CanTradeEx = false;
+          if (TradeDirection == TradeDirections.None) TradeConditionTriggerCancel();
+          OnPropertyChanged("TradeDirection");
+        }
+      }
+    }
   }
 }

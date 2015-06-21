@@ -39,17 +39,19 @@ namespace HedgeHog.Bars {
     public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks)where TBar:BarBaseDate {
       return ticks.CalcTicksPerSecond(0.5);
     }
-    public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks, double treshold)where TBar:BarBaseDate {
+    public static double CalcTicksPerSecond<TBar>(this IList<TBar> ticks, double treshold) where TBar : BarBaseDate {
       if (ticks.Count == 0) return 0;
       var tps = ticks.Count / (ticks.Last().StartDate - ticks[0].StartDate).Duration().TotalSeconds;
-      return tps >= treshold
-        ? tps
-        : 1 / ticks
+      return tps;
+      var count = 60;
+      var ticks0 = ticks
         .Buffer(2, 1)
-        .Where(b => b.Count == 2)
-        .Select(b => (b[1].StartDate - b[0].StartDate).Duration().TotalSeconds)
-        .Where(s => s < 60 * 5)
-        .IfEmpty(() => 0.0)
+        .TakeWhile(b => b.Count == 2)
+        .TakeWhile(b => (ticks[0].StartDate - b[1].StartDate).Duration().TotalSeconds < 5 || count-- > 0);
+      var ticks1 = ticks0.Select(b => (b[1].StartDate - b[0].StartDate).Duration().TotalSeconds);
+      if (tps >= treshold) return tps;
+      return 1 / ticks1
+        .IfEmpty(() => double.MaxValue)
         .Average();
     }
 
@@ -813,7 +815,7 @@ namespace HedgeHog.Bars {
     }
     static TBar[] AverageByIterations<TBar>(this IList<TBar> values, Func<TBar, double> getPrice, Func<double, double, bool> compare, double iterations, out double average) where TBar : BarBaseDate {
       var avg = values.Count() == 0 ? 0 : values.Average(getPrice);
-      for (int i = 1; i < iterations && values.Count() > 0; i++) {
+      for (int i = 1; i < iterations.Abs() && values.Count() > 0; i++) {
         values = values.Where(r => compare(getPrice(r), avg)).ToArray();
         if (values.Count == 0) break;
         avg = values.Average(getPrice);

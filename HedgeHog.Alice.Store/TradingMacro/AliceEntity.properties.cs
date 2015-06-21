@@ -14,7 +14,12 @@ using ReactiveUI;
 
 namespace HedgeHog.Alice.Store {
   public partial class TradingMacro {
-    bool IsPrimaryMacro { get {return TradingStatistics != null && TradingStatistics.TradingMacros.Take(1).Any(tm => tm == this); } }
+    bool IsPrimaryMacro {
+      get {
+        return IsTrader;
+        //TradingStatistics != null && TradingStatistics.TradingMacros.Take(1).Any(tm => tm == this); 
+      }
+    }
 
     TradingStatistics _tradingStatistics = new TradingStatistics();
     public TradingStatistics TradingStatistics {
@@ -260,7 +265,7 @@ namespace HedgeHog.Alice.Store {
 
     #region PriceCmaLevels
     [DisplayName("Price CMA Levels")]
-    [WwwSetting(Group=wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
     [Category(categoryActive)]
     public double PriceCmaLevels_ {
       get { return PriceCmaLevels; }
@@ -512,6 +517,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Distance")]
     [Category(categoryActiveFuncs)]
     [Description("TradingDistanceFunction")]
+    [WwwSetting(Group = wwwSettingsTrading)]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
       set {
@@ -523,6 +529,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Take Profit")]
     [Category(categoryActiveFuncs)]
     [Description("TakeProfitFunction")]
+    [WwwSetting(Group = wwwSettingsTrading)]
     public TradingMacroTakeProfitFunction TakeProfitFunction {
       get { return (TradingMacroTakeProfitFunction)TakeProfitFunctionInt; }
       set {
@@ -710,7 +717,7 @@ namespace HedgeHog.Alice.Store {
 
     #region IsTakeBack
     private bool _IsTakeBack;
-    [WwwSetting(Group=wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTrading)]
     [Category(categoryActiveYesNo)]
     [Description("Set exit level to no-loss.")]
     public bool IsTakeBack {
@@ -834,7 +841,7 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
-    [WwwSetting(Group=wwwSettingsCorridor)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
     [Category(categoryActive)]
     [DisplayName("CorridorCrossesMaximum")]
     [Description("_buyLevel.TradesCount = _sellLevel.TradesCount = CorridorCrossesMaximum")]
@@ -846,23 +853,6 @@ namespace HedgeHog.Alice.Store {
       }
     }
 
-    #region FreezeCorridorOnTradeOpen
-    private bool _FreezeCorridorOnTradeOpen;
-    [WwwSetting(Group=wwwSettingsTrading)]
-    [Category(categoryActiveYesNo)]
-    [DisplayName("FreezeCorrOnTrade")]
-    [Description("Freeze Corridor On Trade Open")]
-    public bool FreezeCorridorOnTradeOpen {
-      get { return _FreezeCorridorOnTradeOpen; }
-      set {
-        if (_FreezeCorridorOnTradeOpen != value) {
-          _FreezeCorridorOnTradeOpen = value;
-          OnPropertyChanged("FreezeCorridorOnTradeOpen");
-        }
-      }
-    }
-    
-    #endregion
     [DisplayName("CorridorHeight Max")]
     [Category(categoryXXX)]
     public double CorridorHeightMax {
@@ -907,6 +897,7 @@ namespace HedgeHog.Alice.Store {
 
     [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
+    [WwwSetting(wwwSettingsTrading)]
     public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }
@@ -1010,7 +1001,7 @@ namespace HedgeHog.Alice.Store {
           ? r => r.PriceChartAsk.Avg(r.PriceChartBid)
           : isBuy.Value
           ? r => r.PriceChartAsk
-          : new Func<Rate,double>(r => r.PriceChartBid);
+          : new Func<Rate, double>(r => r.PriceChartBid);
         case TradeCrossMethod.PriceCurr:
           if (!isBuy.HasValue) return _ => CurrentPrice.Average;
           if (isBuy.Value) return _ => CurrentPrice.Ask; else return _ => CurrentPrice.Bid;
@@ -1122,6 +1113,7 @@ namespace HedgeHog.Alice.Store {
     public int BarPeriodInt { get { return (int)BarPeriod; } }
     [DisplayName("Bars Period")]
     [Category(categoryActiveFuncs)]
+    [WwwSetting]
     public BarsPeriodType BarPeriod {
       get { return (BarsPeriodType)LimitBar; }
       set {
@@ -1179,7 +1171,7 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-    
+
     #endregion
 
     [DisplayName("Current Loss")]
@@ -1567,13 +1559,13 @@ namespace HedgeHog.Alice.Store {
       LevelBuyBy = LevelBuyCloseBy = LevelSellBy = LevelSellCloseBy = TradeLevelBy.None;
     }
 
-    public string PairPlain { get { return Pair.ToLower().Replace("/",""); } }
+    public string PairPlain { get { return Pair.ToLower().Replace("/", ""); } }
 
     bool _FitRatesToPlotter;
     [Category(categoryCorridor)]
     public bool FitRatesToPlotter {
       get { return _FitRatesToPlotter; }
-      set { 
+      set {
         _FitRatesToPlotter = value;
         OnPropertyChanged(() => FitRatesToPlotter);
       }

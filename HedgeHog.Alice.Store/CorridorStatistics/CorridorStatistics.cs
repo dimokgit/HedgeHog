@@ -352,8 +352,6 @@ namespace HedgeHog.Alice.Store {
     }
     public double CorridorFibCmaPeriod { get; set; }
 
-    Func<double, double> _InPips = null;
-
     private double _FibMinimum = 1;
     public double FibMinimum {
       get { return _FibMinimum; }
@@ -392,8 +390,6 @@ namespace HedgeHog.Alice.Store {
 
     Func<Rate, Rate, Rate> peak = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceHigh).Last();
     Func<Rate, Rate, Rate> valley = (ra, rn) => new[] { ra, rn }.OrderBy(r => r.PriceLow).First();
-    private bool? lastSignal;
-
 
     public double[] Coeffs { get; set; }
 

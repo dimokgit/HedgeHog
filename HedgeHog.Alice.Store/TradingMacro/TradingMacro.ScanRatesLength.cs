@@ -94,7 +94,7 @@ namespace HedgeHog.Alice.Store {
       var prices = UseRatesInternal(ri => ri.Reverse().Select(r => new { r.StartDate, r.PriceAvg }).ToList());
       var isTicks = BarPeriod == BarsPeriodType.t1;
       if (isTicks) {
-        var startIndexDate = prices[startIndex].StartDate;
+        var startIndexDate = prices[startIndex.Min(prices.Count - 1)].StartDate;
         prices = prices.GroupAdjacentTicks(TimeSpan.FromMinutes(1), a => a.StartDate, g => new { StartDate = g.Key, PriceAvg = g.Average(r => r.PriceAvg) }).ToList();
         startIndex = prices.FuzzyFind(startIndexDate, isBetween);
       }
@@ -114,12 +114,27 @@ namespace HedgeHog.Alice.Store {
       });
       Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
       Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
+      Func<DateTime, int> dateToIndexInternal = date => UseRatesInternal(ri => ri.Count - ri.FuzzyIndex(date, isBetweenRates).DefaultIfEmpty(-1).Single());
       var corrDate = BarsCountLastDate;
       try {
-        Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
-          a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
-        BarsCountLastDate = corrDate.Max(BarsCountLastDate);
-        BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
+        var bcByM1 = BarPeriod == BarsPeriodType.t1 && UseM1Corridor > 0
+          ? TradingMacroOther()
+          .SelectMany(tm => tm.WaveRanges.Take(UseM1Corridor).Reverse(), (tm, wr) => dateToIndexInternal(wr.StartDate.ToLocalTime()))
+          .SkipWhile(i => i >= UseRatesInternal(ri => ri.Count))
+          .DefaultIfEmpty()
+          .First()
+          : 0;
+        if (bcByM1 > 0) {
+          BarsCountCalc = bcByM1;
+          BarsCountLastDate = DateTime.MinValue;
+        } else {
+          Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
+            a => dateToIndex(corrDate = a.IfEmpty(defaultDate).Single()));
+          BarsCountLastDate = corrDate.Max(BarsCountLastDate);
+          BarsCountCalc = UseRatesInternal(rl => rl.Count - rl.TakeWhile(r => r.StartDate < BarsCountLastDate).Count());
+        }
+        SetTpsAverages();
+        SetTicksPerSecondAverage(RatesArray.Last().TpsAverage);
       } catch (Exception exc) {
         Log = exc;
       }
@@ -129,6 +144,21 @@ namespace HedgeHog.Alice.Store {
       get { return __barsCountLastDate; }
       set { __barsCountLastDate = value; }
     }
+    #region UseM1Corridor
+    private int _UseM1Corridor;
+    [Category(categoryActive)]
+    [WwwSetting(Group = wwwSettingsCorridor)]
+    public int UseM1Corridor {
+      get { return _UseM1Corridor; }
+      set {
+        if (_UseM1Corridor != value) {
+          _UseM1Corridor = value;
+          OnPropertyChanged("UseM1Corridor");
+        }
+      }
+    }
+
+    #endregion
     static IList<T> IteratorLopper<T>(int start, int end, Func<int, int, int> nextStep, IterationLooperDelegate<T> corridor, Func<T, int> getCount) {
       var corridors = corridor(start, end, 0).Yield().ToList();
       for (var loop = 0; true; ) {
@@ -174,7 +204,7 @@ namespace HedgeHog.Alice.Store {
         .Select(i => {
           var rates = ratesInternal.GetRange(0, i.Min(countMax));
           var ratesStDev = rates.StandardDeviation() * _stDevUniformRatio / 2;
-          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0,10,DoFineTuneCorridor);
+          var corrLength = CalcCorridorLengthByHeightByRegressionMin(rates, ratesStDev, 0, 10, DoFineTuneCorridor);
           return new { corrLength = rates.Count, corrRatio = corrLength.Div(rates.Count) };
         })
         .Where(x => x.corrRatio > 0)

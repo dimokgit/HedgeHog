@@ -120,6 +120,14 @@ namespace HedgeHog.Alice.Store {
             var priceAvgMax = ratesShort.Max(GetTradeExitBy(true)).Max(cpBuy - PointSize / 10);
             var priceAvgMin = ratesShort.Min(GetTradeExitBy(false)).Min(cpSell + PointSize / 10);
             var takeProfitLocal = (TakeProfitPips + (UseLastLoss ? LastTradeLossInPips.Abs() : 0)).Max(takeBackInPips).Min(ratesHeightInPips);
+            Func<bool, double> levelByNetOpenAndTakeProfit = isBuy => isBuy
+              ? Trades.IsBuy(isBuy).NetOpen() + InPoints(takeProfitLocal) - ellasic
+              : Trades.IsBuy(isBuy).NetOpen() - InPoints(takeProfitLocal) + ellasic;
+            Func<bool, double> getTradeCloseLevel = isBuy => !IsTakeBack
+              ? GetTradeCloseLevel(isBuy)
+              : isBuy
+              ? levelByNetOpenAndTakeProfit(isBuy).Max(GetTradeCloseLevel(isBuy))
+              : levelByNetOpenAndTakeProfit(isBuy).Min(GetTradeCloseLevel(isBuy));
             if (buyCloseLevel.IsGhost)
               setExitLevel(buyCloseLevel);
             else if (buyCloseLevel.InManual) {
@@ -129,7 +137,7 @@ namespace HedgeHog.Alice.Store {
               var signB = (_buyLevelNetOpen() - buyCloseLevel.Rate).Sign();
               var levelBy = LevelBuyCloseBy == TradeLevelBy.None ? double.NaN : BuyCloseLevel.Rate;
               buyCloseLevel.RateEx = new[]{
-                GetTradeCloseLevel(true).Min(Trades.IsBuy(true).NetOpen()+InPoints(takeProfitLocal)- ellasic)
+                getTradeCloseLevel(true).Min(levelByNetOpenAndTakeProfit(true))
                 ,priceAvgMax
               }.MaxBy(l => l)/*.Select(l => setBuyExit(l))*/.First()
               ;
@@ -146,7 +154,7 @@ namespace HedgeHog.Alice.Store {
               var sign = (_sellLevelNetOpen() - sellCloseLevel.Rate).Sign();
               var levelBy = LevelSellCloseBy == TradeLevelBy.None ? double.NaN : SellCloseLevel.Rate;
               sellCloseLevel.RateEx = new[] { 
-                GetTradeCloseLevel(false).Max(Trades.IsBuy(false  ).NetOpen()-InPoints(takeProfitLocal)+ ellasic)
+                getTradeCloseLevel(false).Max(levelByNetOpenAndTakeProfit(false))
                 , priceAvgMin
               }.MinBy(l => l)/*.Select(l => setSellExit(l))*/.First()
               ;

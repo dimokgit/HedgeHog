@@ -89,6 +89,10 @@
       color: brown;
     }
 
+      .trade-condition.or {
+        font-style: italic;
+      }
+
       .trade-condition.on {
         color: forestgreen;
         font-weight: bold;
@@ -159,9 +163,10 @@
       #settingsGrid .pgGroupRow :hover {
         text-decoration: underline;
       }
-      #settingsGrid .pgTable .pgCell {
+
+    #settingsGrid .pgTable .pgCell {
       white-space: nowrap;
-      }
+    }
   </style>
   <script>
     $(function () {
@@ -216,11 +221,30 @@
             </button>
           </li>
           <li>
-            <button data-toggle="modal"
-                    data-target="#cheatSheetDialog">
-              <span class="glyphicon glyphicon-book"></span>
+            <button data-bind="click:getTradeDirectionTriggers"
+                    data-toggle="modal"
+                    data-target="#tradeDirectionTriggersDialog">
+              <span class="glyphicon glyphicon-retweet"></span>
             </button>
           </li>
+          <li>
+            <button data-bind="click:getTradeOpenActions"
+                    data-toggle="modal"
+                    data-target="#tradeOpenActionsDialog">
+              <span class="glyphicon glyphicon-check"></span>
+            </button>
+          </li>
+          <li>
+            <button>
+              <a href="https://shrib.com/hedgehog?v=md" target="_blank" class="glyphicon glyphicon-book"></a>
+            </button>
+          </li>
+          <li>
+            <button>
+              <a href="http://1drv.ms/1BatfGq" target="_blank" class="glyphicon glyphicon-paperclip"></a>
+            </button>
+          </li>
+
         </ul>
         <!--#endregion-->
         <!--#region Left bar-->
@@ -249,7 +273,9 @@
                 <!--                <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,1,null)" />-->
                 <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,2,null)" />
                 <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,3,null)" />
-                <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,4,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,13,null)">
+                  <span class="glyphicon glyphicon-fullscreen"></span>
+                </button>
                 <button data-bind="click:setTradeLevels.bind($data,9,null)">
                   <span class="glyphicon glyphicon-resize-full"></span>
                 </button>
@@ -258,14 +284,18 @@
                 </button>
               </li>
               <li>
-                <input type="button" value="Flip" data-bind="click:flipTradeLevels" />
-                <input type="button" value="XCloseX" data-bind="click:resetCloseLevels" />
+                <input type="button" value="X" data-bind="click:resetTradeLevels" title="Clear trade levels" />
+                <input type="button" value="Flip" data-bind="click:flipTradeLevels" title="Flip Trade Levels" />
+                <input type="button" value="X" data-bind="click:resetCloseLevels" title="Clear Close Levels" />
+                <input type="button" value="G" data-bind="click:setCloseLevelsToGreen" title="Set Close Levels to Green Corridor(Range)" />
               </li>
               <li>
                 <!--            <input type="button" value="1" data-bind="click:setTradeLevels.bind($data,5,null)" />-->
                 <input type="button" value="2" data-bind="click:setTradeLevels.bind($data,6,null)" />
                 <input type="button" value="3" data-bind="click:setTradeLevels.bind($data,7,null)" />
-                <input type="button" value="4" data-bind="click:setTradeLevels.bind($data,8,null)" />
+                <button data-bind="click:setTradeLevels.bind($data,14,null)">
+                  <span class="glyphicon glyphicon-fullscreen"></span>
+                </button>
                 <button data-bind="click:setTradeLevels.bind($data,10,null)">
                   <span class="glyphicon glyphicon-resize-full"></span>
                 </button>
@@ -340,7 +370,10 @@
                 <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0)">Active 1</button>
                 <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,1)">Active 2</button>
               </li>
-              <li><input type="button" value="Manual" id="manualToggle" /></li>
+              <li>
+                <input type="button" value="Manual" id="manualToggle" />
+                <button data-bind="click:toggleStartDate">Start Date</button>
+              </li>
               <li><button data-bind="click:refreshOrders">Refresh Orders</button></li>
               <li><button data-bind="click:wrapTradeInCorridor">Wrap Trade</button></li>
               <li><button data-bind="click:wrapCurrentPriceInCorridor">Wrap Price</button></li>
@@ -355,6 +388,11 @@
             </ul>
           </li>
           <!--#endregion-->
+          <li>
+            <button id="toggleIsActive" data-bind="click:toggleIsActive.bind($data,0)">
+              <span class="glyphicon glyphicon-off"></span>
+            </button>
+          </li>
           <!--#region Sample-->
           <li style="display:none">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 2 <b class="caret"></b></a>
@@ -408,9 +446,13 @@
     <span id="profit" data-bind="text:profit,css:{profit:profit()>0,loss:profit()<0}"></span>
     <span id="openTradeGross" data-bind="text:openTradeGross,css:{profit:openTradeGross()>0,loss:openTradeGross()<0},visible:openTradeGross()!=0"></span>
     <span id="discussion"></span>
-    <span data-bind="visible:tradeConditionInfos().length">&#x262D</span>
-    <!-- ko foreach: tradeConditionInfos -->
-    <span class="trade-condition" data-bind="text:key,css:{on:value()}"></span>
+    <span data-bind="visible:tradeConditionInfosAnd().length">&#x262D</span>
+    <!-- ko foreach: tradeConditionInfosAnd -->
+    <span class="trade-condition" data-bind="text:key().slice(0,-2),css:{on:value()}"></span>
+    <!-- /ko -->
+    <span data-bind="visible:tradeConditionInfosOr().length">&#x262D</span>
+    <!-- ko foreach: tradeConditionInfosOr -->
+    <span class="trade-condition or" data-bind="text:key().slice(0,-2),css:{on:value()}"></span>
     <!-- /ko -->
     <!-- ko with: stats-->
     <span data-bind="text:Math.round(ucia[0]()*100,2)/100"></span>/
@@ -419,7 +461,7 @@
     <span data-bind="text:Math.round(ucCmas[1]()*100,2)/100,visible:ucCmas[1]()"></span>
     <!-- /ko -->
     <div style="width:4em;height:1.5em;position:absolute;left:0;top:0">
-      <input data-bind="value:rsdMin" style="width:1.5em;"  />
+      <input data-bind="value:rsdMin" style="width:1.5em;" />
       <input data-bind="value:rsdMin2" style="width:1.5em;" />
     </div>
   </div>
@@ -476,6 +518,59 @@
     </div>
   </div>
   <!--#endregion-->
+
+  <!--#region TradeDIrectionTriggers dialog-->
+  <div class="modal" id="tradeDirectionTriggersDialog" tabindex="-1" role="dialog" aria-labelledby="tradeDirectionTriggersDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Trade Direction Triggers</span>
+        </div>
+        <div class="modal-body" data-bind="visible:tradeDirectionTriggersReady">
+          <table>
+            <tbody data-bind="foreach:tradeDirectionTriggers">
+              <tr>
+                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
+                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeDirectionTriggers" data-dismiss="modal">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+
+  <!--#region TradeOpenActions dialog-->
+  <div class="modal" id="tradeOpenActionsDialog" tabindex="-1" role="dialog" aria-labelledby="tradeOpenActionsDialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <span class="modal-title" id="myModalLabel">Trade Conditions</span>
+        </div>
+        <div class="modal-body" data-bind="visible:tradeOpenActionsReady">
+          <table>
+            <tbody data-bind="foreach:tradeOpenActions">
+              <tr>
+                <td><input type="checkbox" data-bind="checked:checked,attr:{id:'chk'+name}" /></td>
+                <td><label data-bind="text:name,attr:{for:'chk'+name}"></label></td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="btn btn-primary btn-xs btn-block" data-bind="click:saveTradeOpenActions" data-dismiss="modal">Save</button>
+        </div>
+        <div class="modal-footer" style="display:none">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--#endregion-->
+
   <!--#region CheatSheet-->
   <div class="modal" id="cheatSheetDialog" tabindex="-1" role="dialog" aria-labelledby="cheatSheetDialog" aria-hidden="true">
     <div class="modal-dialog modal-sm">
@@ -505,6 +600,7 @@
     </div>
   </div>
   <!--#endregion-->
+
   <!--#region News-->
   <div class="modal" id="newsDialog" tabindex="-1" role="dialog" aria-labelledby="newsDialog" aria-hidden="true">
     <div class="modal-dialog">
@@ -536,6 +632,7 @@
     </div>
   </div>
   <!--#endregion-->
+
   <!--#region Settings grid-->
   <!--#endregion-->
   <!--#endregion-->

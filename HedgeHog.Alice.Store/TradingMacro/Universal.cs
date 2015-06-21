@@ -329,7 +329,11 @@ namespace HedgeHog.Alice.Store {
 
         #region SuppRes Event Handlers
         Func<bool> isCrossActive = () => BuyLevel.Rate.Abs(SellLevel.Rate) > InPoints(1);
-        Func<bool> isCrossDisabled = () => !isCrossActive() || !IsTradingActive || !IsPrimaryMacro;
+        Func<SuppRes, bool> isCrossDisabled = sr =>
+          !isCrossActive() ||
+          !IsTradingActive ||
+          !IsPrimaryMacro ||
+          (!sr.InManual && !CanOpenTradeByDirection(sr.IsBuy));
         Action<double> onTradesCount = tc => { };
         if (_strategyTradesCountHandler == null)
           _strategyTradesCountHandler = (CompositeDisposable)BuyLevel.WhenAnyValue(x => x.TradesCount).Merge(SellLevel.WhenAnyValue(x => x.TradesCount))
@@ -337,7 +341,7 @@ namespace HedgeHog.Alice.Store {
             .Subscribe(tc => onTradesCount(tc));
         #region enterCrossHandler
         Func<SuppRes, bool> enterCrossHandler = (suppRes) => {
-          if (CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled()) return false;
+          if (CanDoEntryOrders || CanDoNetStopOrders || (reverseStrategy.Value && !suppRes.CanTrade) || isCrossDisabled(suppRes)) return false;
           var isBuy = isBuyR(suppRes);
           var lot = Trades.IsBuy(!isBuy).Lots();
           var canTrade = suppResCanTrade(suppRes);
@@ -357,7 +361,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
         #region exitCrossHandler
         Action<SuppRes> exitCrossHandler = (sr) => {
-          if (CanDoNetLimitOrders || isCrossDisabled()) return;
+          if (CanDoNetLimitOrders || isCrossDisabled(sr)) return;
           exitCrossed = true;
           var lot = Trades.Lots() - (_trimToLotSize ? LotSize.Max(Trades.Lots() / 2) : _trimAtZero ? AllowedLotSizeCore() : 0);
           resetCloseAndTrim();
@@ -425,7 +429,6 @@ namespace HedgeHog.Alice.Store {
         var firstTime = true;
         #region Watchers
         var watcherCanTrade = new ObservableValue<bool>(true, true);
-        Func<bool> isReverseStrategy = () => _buyLevel.Rate < _sellLevel.Rate;
         IList<MathExtensions.Extream<Rate>> extreamsSaved = null;
 
         var corridorMovedTrigger = new ValueTrigger<ValueTrigger<bool>>(false) { Value = new ValueTrigger<bool>(false) };
@@ -1487,7 +1490,9 @@ namespace HedgeHog.Alice.Store {
             #region SimpleMove
             case TrailingWaveMethod.SimpleMove: {
                 var conditions = MonoidsCore.ToFunc(() => new { isDirectional = new { AngleOk = true, TradingAngleRange } });
-                var tci = TradeConditionsInfo((d, n) => new { n, v = d(),d }).ToArray();
+                var tci_ = MonoidsCore.ToFunc(() => TradeConditionsInfo((d, n) => new { n, v = d(), d }).ToArray());
+
+                var toai = MonoidsCore.ToFunc(() => TradeOpenActionsInfo((d, n) => new { n, d }).ToArray());
                 #region FirstTime
                 if (firstTime) {
                   WorkflowStep = "";
@@ -1508,68 +1513,83 @@ namespace HedgeHog.Alice.Store {
                     })
                     .ToArray()
                     .Take(1)
+                    .Do(_ => {
+                      UnFreezeCorridorStartDate();
+                      TradeDirection = TradeDirections.None;
+                    })
                     .Where(_ => a != null)
                     .ForEach(_ => a());
                   #endregion
                   onCloseTradeLocal += t => {
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
-                      turnItOff(canTradeOff, () => UnFreezeCorridorStartDate());
+                      turnItOff(canTradeOff, () => {
+                        IsTradingActive = false;
+                      });
                     }
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
                     BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                    if (!isReverseStrategy())
+                    if (!IsReverseStrategy)
                       LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
                     CorridorStartDate = null;
                   };
                   #endregion
                   onTradesCount += tc => {
-                    turnItOff(tci.IsEmpty() && tc <= -CorridorCrossesMaximum, () => UnFreezeCorridorStartDate());
+                    turnItOff(_buySellLevels.Any(sr => sr.InManual) && tc <= -CorridorCrossesMaximum, null);
                   };
                   onOpenTradeLocal += t => {
-
+                    toai().ForEach(x => {
+                      Log = new Exception("TradeOpenAction:" + x.n);
+                      x.d(t);
+                    });
                   };
                 }
                 #endregion
-                var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
-                Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
-                var tciOk = tci.Select(x => x.v).DefaultIfEmpty(false).All(b => b);
-                var workflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
+
+                TradeDirectionTriggersRun();
+                TradeConditionsTrigger();
                 SetTradeLevelsToLevelBy(getTradeLevel)();
-                var canTradeOk = tciOk && _buySellLevels.All(sr => !sr.CanTrade && !sr.InManual) && !CorridorStartDate.HasValue;
-                var canTradeTime = WFD.Make("canTradeTime", DateTime.MaxValue);
-                var graceSeconds = 0;
-                Func<ExpandoObject, int> canTradeTimeOk = eo => graceSeconds - (ServerTime - canTradeTime(eo)).TotalSeconds.ToInt();
-                if (tci.IsEmpty()) WorkflowStep = "";
-                else if (tci.All(t => t.n.StartsWith("Outside")))
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = tci.Any(t => t.v));
-                else if ( tci.Any(t => t.d == GreenOk))
-                  _buySellLevelsForEach(sr => sr.CanTradeEx = canTradeOk);
-                else {
-                  var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                  eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
-                    if( canTradeOk){
-                      canTradeTime(eo, () => ServerTime);
-                      return WFD.tupleNext(eo) ;
+
+                if (false) {
+                  var tciOk = TradeConditionsEval();
+                  var tci = tci_();
+                  var canTradeOk = tciOk && _buySellLevels.All(sr => !sr.InManual);
+                  if (tci.Any(x => x.d == UseWFOk)) {
+                    var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
+                    Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
+                    var workflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
+                    var canTradeTime = WFD.Make("canTradeTime", DateTime.MaxValue);
+                    var graceSeconds = 0;
+                    Func<ExpandoObject, int> canTradeTimeOk = eo => graceSeconds - (ServerTime - canTradeTime(eo)).TotalSeconds.ToInt();
+                    var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
+                    eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
+                      if( canTradeOk){
+                        canTradeTime(eo, () => ServerTime);
+                        return WFD.tupleNext(eo) ;
+                      }
+                      return WFD.tupleStay(eo);
+                    },eo=>{WorkflowStep = "2.Wait "+canTradeTimeOk(eo)+"sec" ;
+                      if (canTradeTimeOk(eo) < 0 || !canTradeOk) {
+                        canTradeTime(eo,() => DateTime.MinValue);
+                        return canTradeOk ? WFD.tupleNext(eo) : WFD.tupleBreakEmpty();
+                      }
+                      return WFD.tupleStay(eo);
+                    },_=>{WorkflowStep = "3.Start Trading";
+                      _buySellLevelsForEach(sr => {
+                        sr.CanTradeEx = canEnter(sr.IsBuy); 
+                        sr.TradesCountEx = TradeCountStart;
+                      });
+                      FreezeCorridorStartDate();
+                      return WFD.tupleBreakEmpty();
                     }
-                    return WFD.tupleStay(eo);
-                  },eo=>{WorkflowStep = "2.Wait "+canTradeTimeOk(eo)+"sec" ;
-                    if (canTradeTimeOk(eo) < 0 || !canTradeOk) {
-                      canTradeTime(eo,() => DateTime.MinValue);
-                      return canTradeOk ? WFD.tupleNext(eo) : WFD.tupleBreakEmpty();
-                    }
-                    return WFD.tupleStay(eo);
-                  },_=>{WorkflowStep = "3.Start Trading";
-                    _buySellLevelsForEach(sr => {
-                      sr.CanTradeEx = canEnter(sr.IsBuy); 
-                      sr.TradesCountEx = TradeCountStart;
-                    });
-                    FreezeCorridorStartDate();
-                    return WFD.tupleBreakEmpty();
+                  };
+                    workflowSubjectDynamic.OnNext(wfManual);
+                  } else if (tci.Any()) {
+                    Func<SuppRes, bool, bool> canTradeWithDir = (sr, ct) => ct && CanOpenTradeByDirection(sr.IsBuy);
+                    WorkflowStep = "";
+                    _buySellLevelsForEach(sr => sr.CanTradeEx = canTradeWithDir(sr, canTradeOk));
                   }
-                };
-                  workflowSubjectDynamic.OnNext(wfManual);
                 }
               }
               adjustExitLevels0();
@@ -2244,7 +2264,6 @@ namespace HedgeHog.Alice.Store {
         _strategyExecuteOnTradeOpen = trade => {
           SuppRes.ForEach(sr => sr.ResetPricePosition());
           if (onOpenTradeLocal != null) onOpenTradeLocal(trade);
-          if (FreezeCorridorOnTradeOpen) FreezeCorridorStartDate();
         };
         #endregion
 

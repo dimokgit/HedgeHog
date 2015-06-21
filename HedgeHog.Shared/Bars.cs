@@ -601,7 +601,7 @@ namespace HedgeHog.Bars {
     public class TrendLevels {
       public static TrendLevels Empty;
       static TrendLevels() {
-        Empty = new TrendLevels(double.NaN, double.NaN);
+        Empty = new TrendLevels(0,double.NaN, double.NaN);
       }
       public double PriceAvg1 { get; set; }
 
@@ -617,8 +617,10 @@ namespace HedgeHog.Bars {
       
       public double Slope { get; set; }
       public double StDev { get; set; }
+      public int Count { get; set; }
       public double Angle { get; set; }
-      public TrendLevels(double slope,double stDev) {
+      public TrendLevels(int count, double slope,double stDev) {
+        this.Count = count;
         this.Slope = slope;
         this.StDev = stDev;
       }
@@ -662,12 +664,19 @@ namespace HedgeHog.Bars {
       get { return _CrossesDensity; }
       set { _CrossesDensity = value; }
     }
-    double _CrossesDensityAverage = double.NaN;
 
-    public double CrossesDensityAverage {
-      get { return _CrossesDensityAverage; }
-      set { _CrossesDensityAverage = value; }
+    #region TpsAverage
+    private double _TpsAverage= double.NaN;
+    public double TpsAverage {
+      get { return _TpsAverage; }
+      set {
+        if (_TpsAverage != value) {
+          _TpsAverage = value;
+        }
+      }
     }
+
+    #endregion
     #region VoltageLocal
     private double _VoltageLocal = double.NaN;
     public double VoltageLocal {

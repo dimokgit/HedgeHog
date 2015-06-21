@@ -50,12 +50,12 @@ namespace HedgeHog {
     static double GetSlope(IList<double> yArray, out double averageY) {
       double n = yArray.Count;
       double sumxy = 0, sumx = 0, sumy = 0;
-      long sumx2 = 0;
+      double sumx2 = 0;
       for (int i = 0; i < n; i++) {
         sumxy += i * yArray[i];
         sumx += i;
         sumy += yArray[i];
-        sumx2 += i * i;
+        sumx2 += (long)i * i;
       }
       return ((sumxy - sumx * (averageY = sumy / n)) / (sumx2 - sumx * sumx / n));
     }

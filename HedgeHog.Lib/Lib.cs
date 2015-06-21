@@ -425,12 +425,20 @@ namespace HedgeHog {
       }
       throw new NotImplementedException("Property/Field " + methodName + " is not implemented in " + o.GetType().Name + ".");
     }
+    public static IEnumerable<MethodInfo> GetMethodsByAttibute<A>(this object that) where A : Attribute {
+      return that.GetType().GetMethods().Where(mi => mi.GetCustomAttributes<A>().Any());
+    }
 
     public static IEnumerable<Tuple<A, PropertyInfo>> GetPropertiesByAttibute<A>(this object that, Func<A, bool> predicate) where A : Attribute {
       foreach (var p in that.GetType().GetProperties()) {
         if (p.GetCustomAttributes(typeof(A), false).Cast<A>().Where(predicate).Any())
           yield return new Tuple<A, PropertyInfo>(p.GetCustomAttributes(false).OfType<A>().First(), p);
       }
+    }
+    public static IEnumerable<U> GetPropertiesByType<T,U>(this object that,Func<T> sample, Func<T,PropertyInfo,U> map) {
+      return from p in that.GetType().GetProperties()
+             where p.PropertyType == typeof(T)
+             select map((T)p.GetValue(that), p);
     }
 
     public static T GetProperty<T>(this object o, string p) {

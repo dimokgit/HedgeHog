@@ -12,6 +12,9 @@ namespace HedgeHog.Alice.Store {
     public void ResetSuppResesInManual() {
       ResetSuppResesInManual(!_suppResesForBulk().Any(sr => sr.InManual));
     }
+    public void ResetSuppResesPricePosition() {
+      SuppRes.ForEach(sr => sr.ResetPricePosition());
+    }
     public void ResetSuppResesInManual(bool isManual) {
       if (!isManual)
         IsTradingActive = false;
@@ -50,22 +53,25 @@ namespace HedgeHog.Alice.Store {
     }
 
     public void WrapTradeInCorridor() {
-      if (Trades.Any()) {
+      if (Trades.Any() && SuppRes.All(sr => !sr.InManual)) {
         BuyLevel.InManual = SellLevel.InManual = true;
-        LevelBuyBy = LevelSellBy = LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+        BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
+        //LevelBuyBy = LevelSellBy = 
+        LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+        var offset = WaveHeightAverage;
         if (Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();
-          SellLevel.Rate = BuyLevel.Rate - CorridorStats.HeightByRegression;
+          SellLevel.Rate = BuyLevel.Rate - offset;
         } else {
           SellLevel.Rate = Trades.NetOpen();
-          BuyLevel.Rate = SellLevel.Rate + CorridorStats.HeightByRegression;
+          BuyLevel.Rate = SellLevel.Rate + offset;
         }
       }
       RaiseShowChart();
     }
     public void WrapCurrentPriceInCorridor() {
-      LevelBuyBy = LevelSellBy = LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
-      var offset = StDevByHeight / 2;
+      LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+      var offset = WaveHeightAverage / 2;
       BuyLevel.Rate = CurrentPrice.Average + offset;
       SellLevel.Rate = CurrentPrice.Average - offset;
       BuyLevel.InManual = SellLevel.InManual = true;
@@ -123,19 +129,21 @@ namespace HedgeHog.Alice.Store {
     }
     public void SetTradeLevelsPreset(TradeLevelsPreset preset, bool? isBuy) {
       Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>> tlbs = new Dictionary<TradeLevelsPreset, Tuple<TradeLevelBy,TradeLevelBy>>(){
+        {TradeLevelsPreset.None,Tuple.Create( TradeLevelBy.None, TradeLevelBy.None)},
         {TradeLevelsPreset.SuperNarrow,Tuple.Create( TradeLevelBy.PriceAvg02, TradeLevelBy.PriceAvg03)},
         {TradeLevelsPreset.Narrow,Tuple.Create( TradeLevelBy.PriceAvg2, TradeLevelBy.PriceAvg3)},
         {TradeLevelsPreset.Wide,Tuple.Create( TradeLevelBy.PriceAvg21, TradeLevelBy.PriceAvg31)},
         {TradeLevelsPreset.SuperWide,Tuple.Create( TradeLevelBy.PriceAvg22, TradeLevelBy.PriceAvg32)},
         {TradeLevelsPreset.Corridor2,Tuple.Create( TradeLevelBy.PriceHigh, TradeLevelBy.PriceLow)},
-        {TradeLevelsPreset.Corridor1,Tuple.Create( TradeLevelBy.PriceHigh0, TradeLevelBy.PriceLow0)},
+        {TradeLevelsPreset.MinMax,Tuple.Create( TradeLevelBy.PriceMax, TradeLevelBy.PriceMin)},
 
         {TradeLevelsPreset.SuperNarrowR,Tuple.Create( TradeLevelBy.PriceAvg03, TradeLevelBy.PriceAvg02)},
         {TradeLevelsPreset.NarrowR,Tuple.Create( TradeLevelBy.PriceAvg3, TradeLevelBy.PriceAvg2)},
         {TradeLevelsPreset.WideR,Tuple.Create( TradeLevelBy.PriceAvg31, TradeLevelBy.PriceAvg21)},
         {TradeLevelsPreset.SuperWideR,Tuple.Create( TradeLevelBy.PriceAvg32, TradeLevelBy.PriceAvg22)},
         {TradeLevelsPreset.Corridor2R,Tuple.Create( TradeLevelBy.PriceLow, TradeLevelBy.PriceHigh)},
-        {TradeLevelsPreset.Corridor1R,Tuple.Create( TradeLevelBy.PriceLow0, TradeLevelBy.PriceHigh0)}
+        {TradeLevelsPreset.Corridor1R,Tuple.Create( TradeLevelBy.PriceLow0, TradeLevelBy.PriceHigh0)},
+        {TradeLevelsPreset.MinMaxR,Tuple.Create( TradeLevelBy.PriceMin, TradeLevelBy.PriceMax)}
 
       };
       IsTradingActive = false;
@@ -147,11 +155,11 @@ namespace HedgeHog.Alice.Store {
           BuyLevel.InManual = SellLevel.InManual = false;
           RaiseShowChart();
         });
-      Action<Func<TradeLevelBy>, Action<TradeLevelBy>, TradeLevelBy, TradeLevelBy> setTL = (g, s, v, rv) => s(v);
+      Action<Action<TradeLevelBy>, TradeLevelBy> setTL = ( s, v) => s(v);
       if (isBuy.GetValueOrDefault(true)) 
-        setTL(() => LevelBuyBy, v => LevelBuyBy = v, tlbs[preset].Item1, tlbs[preset].Item2);
+        setTL( v => LevelBuyBy = v, tlbs[preset].Item1);
       if (isBuy.GetValueOrDefault(false) == false)
-        setTL(() => LevelSellBy, v => LevelSellBy = v, tlbs[preset].Item2, tlbs[preset].Item1);
+        setTL( v => LevelSellBy = v, tlbs[preset].Item2);
       setLevels();
     }
     public void MoveBuySellLeve(bool isBuy, double pips) {

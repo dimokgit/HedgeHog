@@ -85,8 +85,9 @@ namespace HedgeHog.Alice.Store {
     Recorder = 1000
   }
   public enum TradingMacroTakeProfitFunction {
-    BuySellLevels,
-    RatesHeight,
+    BuySellLevels = 1,
+    RatesHeight = 2,
+    Pips = 3
   }
   public enum TradeLevelBy {
     None = 0,
@@ -170,10 +171,12 @@ namespace HedgeHog.Alice.Store {
   public enum MovingAverageType { Cma = 0, FFT = 4, FFT2 = 5 }
 
   public enum TradeLevelsPreset {
+    None = 0,
     SuperNarrow = 1, Narrow = 2, Wide = 3, SuperWide = 4,
     SuperNarrowR = 5, NarrowR = 6, WideR = 7, SuperWideR = 8,
-    Corridor2 = 9,Corridor2R=10,
-    Corridor1 = 11,Corridor1R=12
+    Corridor2 = 9, Corridor2R = 10,
+    Corridor1 = 11, Corridor1R = 12,
+    MinMax = 13, MinMaxR = 14
   }
   public enum CorridorByStDevRatio {
     HPAverage = 0,

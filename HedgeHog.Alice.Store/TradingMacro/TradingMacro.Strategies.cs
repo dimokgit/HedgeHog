@@ -277,14 +277,17 @@ namespace HedgeHog.Alice.Store {
     }
     double CurrentEnterPrice(bool? isBuy) { return CalculateLastPrice(GetTradeEnterBy(isBuy)); }
     double CurrentExitPrice(bool? isBuy) { return CalculateLastPrice(GetTradeExitBy(isBuy)); }
-    private Rate.TrendLevels TrendLines2Trends { get { return TrendLines2 == null ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLines1Trends { get { return TrendLines1 == null ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
-    private Rate.TrendLevels TrendLinesTrends { get { return TrendLines == null ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
+    bool IsTrendsEmpty(Lazy<IList<Rate>> trends) {
+      return trends == null || trends.Value.IsEmpty();
+    }
+    private Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
+    private Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
     private double TrendLinesTrendsPriceMax {
-      get { return TrendLinesTrends.PriceAvg21.Max(TrendLines2Trends.PriceAvg2, TrendLines1Trends.PriceAvg2); }
+      get { return TrendLinesTrends.PriceAvg2.Max(TrendLines2Trends.PriceAvg2, TrendLines1Trends.PriceAvg2); }
     }
     private double TrendLinesTrendsPriceMin {
-      get { return TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3, TrendLines1Trends.PriceAvg3); }
+      get { return TrendLinesTrends.PriceAvg3.Min(TrendLines2Trends.PriceAvg3, TrendLines1Trends.PriceAvg3); }
     }
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
@@ -358,7 +361,9 @@ namespace HedgeHog.Alice.Store {
     public IList<Rate> SetTrendLines1231() {
       return UseRates(rates => {
         var c = CorridorStats.Rates.Count.Min(rates.Count);
-        return CalcTrendLines(rates.GetRange(rates.Count - c, c));
+        return CalcTrendLines(CorridorStats.Rates.Count > 0 
+          ? CorridorStats.Rates.Reverse<Rate>().ToList() 
+          : rates.GetRange(rates.Count - c, c));
       });
     }
     public IList<Rate> CalcTrendLines(int count) {
@@ -388,9 +393,10 @@ namespace HedgeHog.Alice.Store {
       l = hl * 2;
       h1 = hl * 3;
       l1 = hl * 3;
-      var rates = new[] { (Rate)corridorValues[0].Clone(), (Rate)corridorValues.Last().Clone() };
-      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(doubles.Count - 1) };
-      rates.ForEach(r => r.Trends = new Rate.TrendLevels(coeffs.LineSlope(), hl) {
+      var rates = new[] { (Rate)corridorValues[0].Clone(), (Rate)RatesArray.Last().Clone() };
+      var count = (RatesArray.Count - RatesArray.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt();
+      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
+      rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs.LineSlope(), hl) {
         Angle = coeffs.LineSlope().Angle(BarPeriodInt.Max(1), PointSize)
       });
 

@@ -135,7 +135,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Limit Orders")]
     public bool CanDoNetLimitOrders {
-      get { return _CanDoNetLimitOrders; }
+      get { return _CanDoNetLimitOrders && IsTrader; }
       set {
         if (_CanDoNetLimitOrders != value) {
           _CanDoNetLimitOrders = value;
@@ -150,7 +150,7 @@ namespace HedgeHog.Alice.Store {
     [Category(categoryActiveYesNo)]
     [DisplayName("Can Do Stop Orders")]
     public bool CanDoNetStopOrders {
-      get { return _CanDoNetStopOrders; }
+      get { return _CanDoNetStopOrders && IsTrader; }
       set {
         if (_CanDoNetStopOrders != value) {
           _CanDoNetStopOrders = value;
@@ -167,7 +167,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Can Do Entry Orders")]
     [Dnr]
     public bool CanDoEntryOrders {
-      get { return _CanDoEntryOrders; }
+      get { return _CanDoEntryOrders && IsTrader; }
       set {
         if (_CanDoEntryOrders == value) return;
         _CanDoEntryOrders = value;
@@ -368,6 +368,7 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
           .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
+          .Merge(this.WhenAny(tm => tm.IsTrader, tm => "IsTrader"))
           .Subscribe(_ => {
             if (CanDoNetLimitOrders) updateTradeLimitOrders();
             else CloseAllNetLimits();
@@ -387,6 +388,7 @@ namespace HedgeHog.Alice.Store {
           .Merge(this.WhenAny(tm => tm.CurrentPrice, tm => "CurrentPrice").Sample(cpThrottleTimeSpan))
           .Merge(this.WhenAny(tm => tm.CanDoEntryOrders, tm => "CanDoEntryOrders"))
           .Merge(this.WhenAny(tm => tm.CanDoNetStopOrders, tm => "CanDoNetStopOrders"))
+          .Merge(this.WhenAny(tm => tm.IsTrader, tm => "IsTrader"))
           .Subscribe(_ => {
             if (CanDoNetStopOrders) updateTradeStopOrders();
             else CloseAllNetStops();

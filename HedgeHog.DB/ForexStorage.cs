@@ -38,7 +38,7 @@ namespace HedgeHog.DB {
         context.SaveChanges();
       } catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException) { }
     }
-    public static T UseForexContext<T>(Func<ForexEntities, T> action, Action<ForexEntities, Exception> error = null, Action<ForexEntities> exit = null) {
+    public static T UseForexContext<T>(Func<ForexEntities, T> action, Action<ForexEntities, Exception> error = null) {
       try {
         using (var context = ForexEntitiesFactory()) {
           try {
