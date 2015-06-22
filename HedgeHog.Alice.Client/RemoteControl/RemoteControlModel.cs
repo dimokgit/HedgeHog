@@ -1157,7 +1157,8 @@ namespace HedgeHog.Alice.Client {
         isTrader = tm.IsTrader,
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
-        firstWave = tm.WaveRanges.Select(wr => wr.StartDate).FirstOrDefault()
+        firstWave = tm.WaveRanges.Select(wr => wr.StartDate).FirstOrDefault(),
+        wrStats = tm.IsTrader ? tm.WaveRangesStats() : new { }
       };
     }
     bool? _isParentHidden;

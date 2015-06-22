@@ -289,8 +289,15 @@
       function sbchnum(value) {
         return chartNum ? value : yDomain[1];
       }
-      yDomain = d3.extent([yDomain[0], yDomain[1], tradeLevels? tradeLevels.buy:yDomain[1],tradeLevels? tradeLevels.sell:yDomain[1]
-            , sbchnum(openBuy && tradeLevels ? tradeLevels.buyClose : openSell && tradeLevels ? tradeLevels.sellClose : yDomain[1])]);
+      yDomain = d3.extent([yDomain[0], yDomain[1]
+        , tradeLevels && canBuy ? tradeLevels.buy : yDomain[1]
+        , tradeLevels && canSell ? tradeLevels.sell : yDomain[1]
+        , sbchnum(
+          openBuy && tradeLevels
+          ? tradeLevels.buyClose
+          : openSell && tradeLevels
+          ? tradeLevels.sellClose
+          : yDomain[1])]);
         var xDomain = viewModel.chartArea[chartNum].xDomain = d3.extent(data, function (d) { return d.d; });
         x.domain(xDomain);
         var vOffset = (yDomain[1] - yDomain[0]) / 20;

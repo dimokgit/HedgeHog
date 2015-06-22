@@ -114,18 +114,20 @@ namespace HedgeHog.Alice.Store {
       });
       Func<IEnumerable<DateTime>> defaultDate = () => new[] { RatesArray[0].StartDate };
       Func<DateTime, int> dateToIndex = date => prices.FuzzyFind(date, isBetween);
-      Func<DateTime, int> dateToIndexInternal = date => UseRatesInternal(ri => ri.Count - ri.FuzzyIndex(date, isBetweenRates).DefaultIfEmpty(-1).Single());
+      Func<DateTime, int> dateToCountInternal = date => UseRatesInternal(ri => 
+        ri.Count - ri.FuzzyIndex(date, isBetweenRates).DefaultIfEmpty(-1).Single());
       var corrDate = BarsCountLastDate;
       try {
+        var maxCount = Lazy.Create(() => UseRatesInternal(ri => ri.Count));
         var bcByM1 = BarPeriod == BarsPeriodType.t1 && UseM1Corridor > 0
           ? TradingMacroOther()
-          .SelectMany(tm => tm.WaveRanges.Take(UseM1Corridor).Reverse(), (tm, wr) => dateToIndexInternal(wr.StartDate.ToLocalTime()))
-          .SkipWhile(i => i >= UseRatesInternal(ri => ri.Count))
-          .DefaultIfEmpty()
-          .First()
+          .SelectMany(tm => tm.WaveRanges.Take(UseM1Corridor), (tm, wr) => dateToCountInternal(wr.StartDate.ToLocalTime()))
+          .TakeWhile(i => i <= maxCount.Value * 1.1)
+          .DefaultIfEmpty(maxCount.Value)
+          .Last()
           : 0;
         if (bcByM1 > 0) {
-          BarsCountCalc = bcByM1;
+          BarsCountCalc = bcByM1.Min(maxCount.Value);
           BarsCountLastDate = DateTime.MinValue;
         } else {
           Lib.IteratorLoopPow(prices.Count, IteratorLastRatioForCorridor, startIndex, prices.Count, getCount,
@@ -234,5 +236,6 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
   }
 }

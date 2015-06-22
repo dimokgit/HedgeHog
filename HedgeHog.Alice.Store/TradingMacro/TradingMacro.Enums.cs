@@ -87,7 +87,8 @@ namespace HedgeHog.Alice.Store {
   public enum TradingMacroTakeProfitFunction {
     BuySellLevels = 1,
     RatesHeight = 2,
-    Pips = 3
+    Pips = 3,
+    Wave = 4
   }
   public enum TradeLevelBy {
     None = 0,

@@ -517,7 +517,7 @@ namespace HedgeHog.Alice.Store {
     [DisplayName("Trading Distance")]
     [Category(categoryActiveFuncs)]
     [Description("TradingDistanceFunction")]
-    [WwwSetting(Group = wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTradingOther)]
     public TradingMacroTakeProfitFunction TradingDistanceFunction {
       get { return (TradingMacroTakeProfitFunction)PowerRowOffset; }
       set {
@@ -825,6 +825,7 @@ namespace HedgeHog.Alice.Store {
     public const string wwwSettingsLiveOrders = "3. Live Orders";
     public const string wwwSettingsCorridor = "2. Corridor";
     public const string wwwSettingsTrading = "1. Trading";
+    public const string wwwSettingsTradingOther = "1.1 Trading Other";
 
     #region CloseAfterTradingHours
     private bool _CloseAfterTradingHours;
@@ -897,7 +898,7 @@ namespace HedgeHog.Alice.Store {
 
     [Category(categoryActiveYesNo)]
     [DisplayName("Trading Ratio By PMC")]
-    [WwwSetting(wwwSettingsTrading)]
+    [WwwSetting(wwwSettingsTradingOther)]
     public bool TradingRatioByPMC {
       get { return TradeByAngle; }
       set { TradeByAngle = value; }

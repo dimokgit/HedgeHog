@@ -333,7 +333,7 @@ namespace HedgeHog.Alice.Store {
           !isCrossActive() ||
           !IsTradingActive ||
           !IsPrimaryMacro ||
-          (!sr.InManual && !CanOpenTradeByDirection(sr.IsBuy));
+          (!sr.IsExitOnly && !sr.InManual && !CanOpenTradeByDirection(sr.IsBuy));
         Action<double> onTradesCount = tc => { };
         if (_strategyTradesCountHandler == null)
           _strategyTradesCountHandler = (CompositeDisposable)BuyLevel.WhenAnyValue(x => x.TradesCount).Merge(SellLevel.WhenAnyValue(x => x.TradesCount))
@@ -1550,47 +1550,6 @@ namespace HedgeHog.Alice.Store {
                 TradeDirectionTriggersRun();
                 TradeConditionsTrigger();
                 SetTradeLevelsToLevelBy(getTradeLevel)();
-
-                if (false) {
-                  var tciOk = TradeConditionsEval();
-                  var tci = tci_();
-                  var canTradeOk = tciOk && _buySellLevels.All(sr => !sr.InManual);
-                  if (tci.Any(x => x.d == UseWFOk)) {
-                    var isDirectional = TradeConditionsInfo((d, s) => d == AngleOk && TradingAngleRange >= 0).Count(b => b) > 0;
-                    Func<bool, bool> canEnter = isBuy => !isDirectional || (isBuy ? CorridorAngle > 0 : CorridorAngle < 0);
-                    var workflowStep = string.Join(",", tci.Select(x => x.n + ":" + x.v));
-                    var canTradeTime = WFD.Make("canTradeTime", DateTime.MaxValue);
-                    var graceSeconds = 0;
-                    Func<ExpandoObject, int> canTradeTimeOk = eo => graceSeconds - (ServerTime - canTradeTime(eo)).TotalSeconds.ToInt();
-                    var wfManual = new Func<ExpandoObject, Tuple<int, ExpandoObject>>[] {
-                    eo =>{ WorkflowStep = "1.Wait CanTrade"+(!isDirectional?"":CorridorAngle>0?" Up": " Down");
-                      if( canTradeOk){
-                        canTradeTime(eo, () => ServerTime);
-                        return WFD.tupleNext(eo) ;
-                      }
-                      return WFD.tupleStay(eo);
-                    },eo=>{WorkflowStep = "2.Wait "+canTradeTimeOk(eo)+"sec" ;
-                      if (canTradeTimeOk(eo) < 0 || !canTradeOk) {
-                        canTradeTime(eo,() => DateTime.MinValue);
-                        return canTradeOk ? WFD.tupleNext(eo) : WFD.tupleBreakEmpty();
-                      }
-                      return WFD.tupleStay(eo);
-                    },_=>{WorkflowStep = "3.Start Trading";
-                      _buySellLevelsForEach(sr => {
-                        sr.CanTradeEx = canEnter(sr.IsBuy); 
-                        sr.TradesCountEx = TradeCountStart;
-                      });
-                      FreezeCorridorStartDate();
-                      return WFD.tupleBreakEmpty();
-                    }
-                  };
-                    workflowSubjectDynamic.OnNext(wfManual);
-                  } else if (tci.Any()) {
-                    Func<SuppRes, bool, bool> canTradeWithDir = (sr, ct) => ct && CanOpenTradeByDirection(sr.IsBuy);
-                    WorkflowStep = "";
-                    _buySellLevelsForEach(sr => sr.CanTradeEx = canTradeWithDir(sr, canTradeOk));
-                  }
-                }
               }
               adjustExitLevels0();
               break;

@@ -40,7 +40,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
     #region TradeCountStart
     private int _TradeCountStart;
-    [WwwSetting(Group = wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTradingOther)]
     [Category(categoryActive)]
     [DisplayName("TradeCountStart")]
     [Description("Starting TradeCount for Buy/Sell Trade Lines")]
@@ -151,7 +151,7 @@ namespace HedgeHog.Alice.Store {
           _TradeDirection = value;
           if (BuyLevel != null && !value.HasUp()) BuyLevel.CanTradeEx = false;
           if (SellLevel != null && !value.HasDown()) SellLevel.CanTradeEx = false;
-          if (TradeDirection == TradeDirections.None) TradeConditionTriggerCancel();
+          if (TradeDirection == TradeDirections.None) TradeConditionTriggerCheckCancel();
           OnPropertyChanged("TradeDirection");
         }
       }

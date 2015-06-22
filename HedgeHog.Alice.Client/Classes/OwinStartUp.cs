@@ -492,11 +492,12 @@ namespace HedgeHog.Alice.Client {
     public ExpandoObject ReadTradeSettings(string pair) {
       return UseTradingMacro(pair, tm => {
         var e = (IDictionary<string, object>)new ExpandoObject();
+        Func<object, object> convert = o => o.GetType().IsEnum ? o + "" : o;
         tm.GetPropertiesByAttibute<WwwSettingAttribute>(_ => true)
           .Select(x => new { x.Item1.Group, p = x.Item2 })
           .OrderBy(x => x.p.Name)
           .OrderBy(x => x.Group)
-          .ForEach(x => e.Add(x.p.Name, new { v = x.p.GetValue(tm), g = x.Group }));
+          .ForEach(x => e.Add(x.p.Name, new { v = convert(x.p.GetValue(tm)), g = x.Group }));
         return e as ExpandoObject;
       }, false);
     }

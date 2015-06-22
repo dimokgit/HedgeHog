@@ -20,23 +20,24 @@ namespace HedgeHog.Alice.Store {
         }
       }
     }
-
+    bool MySelf(TradingMacro tm) { return tm == this; }
+    bool MySelfNext(TradingMacro tm) { return tm.BarPeriodInt > this.BarPeriodInt; }
     #region Triggers
     [TradeDirectionTrigger]
     public void OnOutsideRed() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridor, tm => tm.TrendLinesTrends);
+      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLinesTrends);
     }
     [TradeDirectionTrigger]
     public void OnOutsideRed2() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridor2, tm => tm.TrendLinesTrends);
+      TriggerOnOutside(IsCurrentPriceOutsideCorridor2Self, tm => tm.TrendLinesTrends);
     }
     [TradeDirectionTrigger]
     public void OnOutsideGreen() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridor, tm => tm.TrendLines1Trends);
+      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines1Trends);
     }
     [TradeDirectionTrigger]
     public void OnOutsideBlue() {
-      TriggerOnOutside(IsCurrentPriceOutsideCorridor, tm => tm.TrendLines2Trends);
+      TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines2Trends);
     }
     #endregion
 

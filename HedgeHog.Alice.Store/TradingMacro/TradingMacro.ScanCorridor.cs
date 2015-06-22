@@ -1589,15 +1589,18 @@ namespace HedgeHog.Alice.Store {
       var wr = new[] { 0 }.Concat(extreams3)
         .Zip(extreams3, (p, n) => rates.GetRange(p, n - p))
         .ToList(range => new WaveRange {
+          Count = range.Count,
           StartDate = range.Last().StartDate,
-          Height = range.Max(_priceAvg) - range.Min(_priceAvg),
+          EndDate = range[0].StartDate,
+          Max = range.Max(_priceAvg),
+          Min = range.Min(_priceAvg),
           Distance = range.Distance2(_priceAvg),
           Slope = -range.LinearSlope(_priceAvg),
           TotalSeconds = range[0].StartDate.Subtract(range.Last().StartDate).TotalSeconds
         });
       //SetCorridorStopDate(rates[extreams3[0]]);
       WaveRanges = wr;
-      WaveFirstSecondRatio = wr[0].Work.Abs() / wr.Skip(1).Take(2).Average(x => x.Work.Abs());
+      WaveFirstSecondRatio = wr[0].WorkByHeight.Abs() / wr.Skip(1).Take(2).Sum(x => x.WorkByHeight.Abs());
       var waveHeights = wr.ToArray(r => r.Height);
       WaveHeightAverage = extreams3.Count <= 4 ? waveHeights.Average() : waveHeights.AverageInRange(1, -1).Average();
       #endregion
@@ -1621,26 +1624,36 @@ namespace HedgeHog.Alice.Store {
       }
       return index + 1;
     }
+    public object WaveRangesStats() {
+      var workTimeSdR = WaveRanges.Select(wr => wr.WorkByTime).ToArray().StDevRatio();
+      var workDistSdR = WaveRanges.Select(wr => wr.WorkByDistance).ToArray().StDevRatio();
+      var workCountSdR = WaveRanges.Select(wr => wr.WorkByCount).ToArray().StDevRatio();
+      var workHeightSdR = WaveRanges.Select(wr => wr.WorkByCount).ToArray().StDevRatio();
+      return new { wt = workTimeSdR, wd = workDistSdR, wc = workCountSdR, wh = workHeightSdR };
+    }
     object _waveRangesLocker = new object();
     List<WaveRange> _waveRanges = new List<WaveRange>();
     public List<WaveRange> WaveRanges {
-      get {
-        lock (_waveRangesLocker)
-          return _waveRanges;
-      }
-      set {
-        lock (_waveRangesLocker) {
-          _waveRanges = value;
-        }
-      }
+      get { lock (_waveRangesLocker) return _waveRanges; }
+      set { lock (_waveRangesLocker) { _waveRanges = value; } }
     }
     public class WaveRange {
       public DateTime StartDate { get; set; }
-      public double Height { get; set; }
+      public double Height { get { return Max - Min; } }
       public double Distance { get; set; }
       public double Slope { get; set; }
       public double TotalSeconds { get; set; }
-      public double Work { get { return Distance * Slope; } }
+      public double WorkByTime { get { return TotalSeconds * Slope; } }
+      public double WorkByDistance { get { return Distance * Slope; } }
+      public double WorkByCount { get { return Count * Slope; } }
+      public double WorkByHeight { get { return Height * Slope; } }
+
+      public DateTime EndDate { get; set; }
+
+      public int Count { get; set; }
+
+      public double Max { get; set; }
+      public double Min { get; set; }
     }
     Lazy<IList<Rate>> _trendLines = null;
     public Lazy<IList<Rate>> TrendLines {

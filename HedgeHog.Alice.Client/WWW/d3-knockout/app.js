@@ -234,9 +234,23 @@
           TakeProfitXRatio: { name:"Take ProfitX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TradingDistanceX: { name: "Trading DistanceX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.1, numberFormat: "n" } },
-          TradeDirection: { type: "options", options: [{ text: "None", value: 0 }, { text: "Up", value: 1 }, { text: "Down", value: 2 }, { text: "Both", value: 3 }, { text: "Auto", value: 4 }] },
+          TradeDirection: {
+            type: "options", options: [
+              { text: "None", value: "None" },
+              { text: "Up", value: "Up" },
+              { text: "Down", value: "Down" },
+              { text: "Both", value: "Both" },
+              { text: "Auto", value: "Auto" }]
+          },
           TradingDistanceFunction: { name: "Trading Distance", type: "options", options: [{ text: "BuySellLevels", value: 1 }, { text: "RatesHeight", value: 2 }, { text: "Pips", value: 3 }] },
-          TakeProfitFunction: { name: "Take Profit", type: "options", options: [{ text: "BuySellLevels", value: 1 }, { text: "RatesHeight", value: 2 }, { text: "Pips", value: 3 }] },
+          TakeProfitFunction: {
+            name: "Take Profit", type: "options", options: [
+              { text: "BuySellLevels", value: "BuySellLevels" },
+              { text: "RatesHeight", value: "RatesHeight" },
+              { text: "Pips", value: "Pips" },
+              { text: "Wave", value: "Wave" }
+            ]
+          },
           WaveFirstSecondRatioMin: { name: "Wave 1/2 Ratio" }
         };
         var properties = {}, meta = {};

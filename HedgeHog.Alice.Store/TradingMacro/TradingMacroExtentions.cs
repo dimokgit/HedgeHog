@@ -2814,7 +2814,7 @@ namespace HedgeHog.Alice.Store {
 
     #region RatesHeightXRatio
     private double _TradingDistanceX = 1;
-    [WwwSetting(Group = wwwSettingsTrading)]
+    [WwwSetting(Group = wwwSettingsTradingOther)]
     [Description("TradingDistance = RetasHeight * X")]
     [Category(categoryActiveFuncs)]
     public double TradingDistanceX {
@@ -2847,34 +2847,57 @@ namespace HedgeHog.Alice.Store {
     }
 
     #endregion
+
+    #region IsTrender
+    private bool _IsTrender;
+    [Category(categoryCorridor)]
+    [WwwSetting(wwwSettingsCorridor)]
+    public bool IsTrender {
+      get { return _IsTrender; }
+      set {
+        if (_IsTrender != value) {
+          _IsTrender = value;
+          OnPropertyChanged("IsTrender");
+          var tmo = TradingMacroOther();
+          if (!value) tmo.Take(1).ForEach(tm => tm.IsTrender = true);
+          else tmo.ForEach(tm => tm.IsTrender = false);
+        }
+      }
+    }
+
+    #endregion
+
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
+        var tmt = TradingMacroOther(tm => tm.IsTrender).DefaultIfEmpty(this);
+        Func<Func<TradingMacro, double>, double> level = f => f(tmt.First());
         if (_TradeLevelFuncs == null)
           _TradeLevelFuncs = new Dictionary<TradeLevelBy, Func<double>>
-        { {TradeLevelBy.PriceAvg1,()=>TrendLines.Value[1].Trends.PriceAvg1},
-          
-          {TradeLevelBy.PriceAvg02,()=>TrendLines.Value[1].Trends.PriceAvg02},
-          {TradeLevelBy.PriceAvg2,()=>TrendLines.Value[1].Trends.PriceAvg2},
-          {TradeLevelBy.PriceAvg21,()=>TrendLines.Value[1].Trends.PriceAvg21},
-          {TradeLevelBy.PriceAvg22,()=>TrendLines.Value[1].Trends.PriceAvg22},
+          { 
+          {TradeLevelBy.PriceAvg1,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg1)},
+          {TradeLevelBy.PriceAvg02,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg02)},
+          {TradeLevelBy.PriceAvg2,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg2)},
+          {TradeLevelBy.PriceAvg21,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg21)},
+          {TradeLevelBy.PriceAvg22,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg22)},
 
-          {TradeLevelBy.PriceAvg03,()=>TrendLines.Value[1].Trends.PriceAvg03},
-          {TradeLevelBy.PriceAvg3,()=>TrendLines.Value[1].Trends.PriceAvg3},
-          {TradeLevelBy.PriceAvg31,()=>TrendLines.Value[1].Trends.PriceAvg31},
-          {TradeLevelBy.PriceAvg32,()=>TrendLines.Value[1].Trends.PriceAvg32},
+          {TradeLevelBy.PriceAvg03,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg03)},
+          {TradeLevelBy.PriceAvg3,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg3)},
+          {TradeLevelBy.PriceAvg31,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg31)},
+          {TradeLevelBy.PriceAvg32,()=>level(tm=>tm.TrendLines.Value[1].Trends.PriceAvg32)},
 
-          {TradeLevelBy.PriceHigh,()=> TrendLines2Trends.PriceAvg2},
-          {TradeLevelBy.PriceLow,()=> TrendLines2Trends.PriceAvg3},
+          {TradeLevelBy.PriceHigh,()=> level(tm=>tm.TrendLines2Trends.PriceAvg2)},
+          {TradeLevelBy.PriceLow,()=> level(tm=>tm.TrendLines2Trends.PriceAvg3)},
         
-          {TradeLevelBy.PriceHigh0,()=> TrendLines1Trends.PriceAvg2},
-          {TradeLevelBy.PriceLow0,()=> TrendLines1Trends.PriceAvg3},
+          {TradeLevelBy.PriceHigh0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg2)},
+          {TradeLevelBy.PriceLow0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg3)},
 
-          {TradeLevelBy.PriceMax,()=> TrendLinesTrendsPriceMax},
-          {TradeLevelBy.PriceMin,()=> TrendLinesTrendsPriceMin},
+          {TradeLevelBy.PriceMax,()=> level(TrendLinesTrendsPriceMax)},
+          {TradeLevelBy.PriceMin,()=> level(TrendLinesTrendsPriceMin)},
 
-          {TradeLevelBy.None,()=>double.NaN}
-        }; return _TradeLevelFuncs;
+          {TradeLevelBy.None,()=>level(tm=>double.NaN)}
+          }; 
+        return _TradeLevelFuncs;
       }
     }
     private double GetValueByTakeProfitFunction(TradingMacroTakeProfitFunction function, double xRatio) {
@@ -2882,6 +2905,8 @@ namespace HedgeHog.Alice.Store {
       switch (function) {
         case TradingMacroTakeProfitFunction.Pips:
           return InPoints(xRatio);
+        case TradingMacroTakeProfitFunction.Wave:
+          return WaveHeightAverage * xRatio;
         #region RatesHeight
         case TradingMacroTakeProfitFunction.RatesHeight: tp = RatesHeight * TradingDistanceX; break;
         #endregion

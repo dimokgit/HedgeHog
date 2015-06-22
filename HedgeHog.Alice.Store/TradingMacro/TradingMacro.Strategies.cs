@@ -283,11 +283,11 @@ namespace HedgeHog.Alice.Store {
     private Rate.TrendLevels TrendLines2Trends { get { return IsTrendsEmpty(TrendLines2) ? Rate.TrendLevels.Empty : TrendLines2.Value[1].Trends; } }
     private Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
     private Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
-    private double TrendLinesTrendsPriceMax {
-      get { return TrendLinesTrends.PriceAvg2.Max(TrendLines2Trends.PriceAvg2, TrendLines1Trends.PriceAvg2); }
+    private double TrendLinesTrendsPriceMax(TradingMacro tm) {
+      return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2); 
     }
-    private double TrendLinesTrendsPriceMin {
-      get { return TrendLinesTrends.PriceAvg3.Min(TrendLines2Trends.PriceAvg3, TrendLines1Trends.PriceAvg3); }
+    private double TrendLinesTrendsPriceMin(TradingMacro tm) {
+      return tm.TrendLinesTrends.PriceAvg3.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
     }
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 

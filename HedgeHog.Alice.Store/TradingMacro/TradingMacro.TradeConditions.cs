@@ -86,24 +86,19 @@ namespace HedgeHog.Alice.Store {
 
     #region TradeConditions
     public delegate bool TradeConditionDelegate();
-    public TradeConditionDelegate UseWFOk { get { return () => true; } }
-    public TradeConditionDelegate WidthOk { get { return () => WaveRanges.Count >=4 && TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
+    public TradeConditionDelegate WidthOk { get { return () => WaveRanges.Count >= 4 && TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
     public TradeConditionDelegate TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public TradeConditionDelegate TpsAvgMinOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign()); } }
-    public TradeConditionDelegate WaveLastOk { get { return () => WaveFirstSecondRatio > WaveFirstSecondRatioMin; } }
-    public TradeConditionDelegate AngleOk {
+    public TradeConditionDelegate WaveHeightOk {
       get {
-        return () => IsTresholdAbsOk(TrendLinesTrends.Angle, TradingAngleRange);
+        return () => new[] { WaveRanges[1].Min, WaveRanges[1].Max }.All(m => m.Between(WaveRanges[0].Min, WaveRanges[0].Max));
       }
     }
-    public TradeConditionDelegate Angle0Ok {
-      get {
-        return () => {
-          var a = TrendLines1Trends.Angle.Abs();
-          return a < 1;
-        };
-      }
-    }
+    public TradeConditionDelegate WaveRatiOk { get { return () => WaveFirstSecondRatio > WaveFirstSecondRatioMin; } }
+    public TradeConditionDelegate WaveCount5Ok { get { return () => WaveRanges.Count > 4; } }
+    public TradeConditionDelegate WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
+    public TradeConditionDelegate WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }
+
     [Description("'Green' corridor is outside the 'Red' and 'Blue' ones")]
     public TradeConditionDelegate GreenOk {
       get {
@@ -112,7 +107,7 @@ namespace HedgeHog.Alice.Store {
           TrendLines1Trends.PriceAvg3 <= TrendLinesTrends.PriceAvg31.Min(TrendLines2Trends.PriceAvg3);
       }
     }
-    public Func<bool> OutsideAnyOk {
+    public TradeConditionDelegate OutsideAnyOk {
       get { return () => Outside1Ok() || OutsideOk() || Outside2Ok(); }
     }
     public TradeConditionDelegate OutsideAllOk {
@@ -123,15 +118,18 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate OutsideExtOk {
       get {
         return () =>
-          IsOuside(IsCurrentPriceOutsideCorridor(tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21)) &&
+          IsOuside(IsCurrentPriceOutsideCorridor(tm => tm == this, tm => tm.TrendLinesTrends, tl => tl.PriceAvg31, tl => tl.PriceAvg21)) &&
           Outside1Ok() &&
           Outside2Ok();
       }
     }
-    TradeDirections IsCurrentPriceOutsideCorridor(Func<TradingMacro, Rate.TrendLevels> trendLevels, Func<Rate.TrendLevels, double> min, Func<Rate.TrendLevels, double> max) {
+    TradeDirections IsCurrentPriceOutsideCorridorSelf( Func<TradingMacro, Rate.TrendLevels> trendLevels, Func<Rate.TrendLevels, double> min, Func<Rate.TrendLevels, double> max) {
+      return IsCurrentPriceOutsideCorridor(MySelf, trendLevels, min, max);
+    }
+    TradeDirections IsCurrentPriceOutsideCorridor(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, Rate.TrendLevels> trendLevels, Func<Rate.TrendLevels, double> min, Func<Rate.TrendLevels, double> max) {
       Func<TradeDirections> onBelow = () => ReverseStrategy ? TradeDirections.Up : TradeDirections.Down;
       Func<TradeDirections> onAbove = () => ReverseStrategy ? TradeDirections.Down : TradeDirections.Up;
-      return TradingMacroOther()
+      return TradingMacroOther(tmPredicate)
         .Select(tm => trendLevels(tm))
         .Select(tls =>
           CurrentPrice.Average < min(tls) ? onBelow()
@@ -150,14 +148,20 @@ namespace HedgeHog.Alice.Store {
     private IEnumerable<TradingMacro> TradingMacrosByPair() {
       return _tradingMacros.Where(tm => tm.Pair == Pair);
     }
-    TradeDirections IsCurrentPriceOutsideCorridor(Func<TradingMacro, Rate.TrendLevels> trendLevels) {
-      return IsCurrentPriceOutsideCorridor(trendLevels, tl => tl.PriceAvg3, tl => tl.PriceAvg2);
+    TradeDirections IsCurrentPriceOutsideCorridorSelf( Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      return IsCurrentPriceOutsideCorridor(MySelf, trendLevels);
     }
-    TradeDirections IsCurrentPriceOutsideCorridor2(Func<TradingMacro, Rate.TrendLevels> trendLevels) {
-      return IsCurrentPriceOutsideCorridor(trendLevels, tl => tl.PriceAvg32, tl => tl.PriceAvg22);
+    TradeDirections IsCurrentPriceOutsideCorridor(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      return IsCurrentPriceOutsideCorridor(tmPredicate, trendLevels, tl => tl.PriceAvg3, tl => tl.PriceAvg2);
     }
-    private bool IsOutsideOk(string canTradeKey, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
-      var td = IsCurrentPriceOutsideCorridor(trendLevels);
+    TradeDirections IsCurrentPriceOutsideCorridor2Self(Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      return IsCurrentPriceOutsideCorridor2(MySelf, trendLevels);
+    }
+    TradeDirections IsCurrentPriceOutsideCorridor2(Func<TradingMacro, bool> tmPredicate, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      return IsCurrentPriceOutsideCorridor(tmPredicate, trendLevels, tl => tl.PriceAvg32, tl => tl.PriceAvg22);
+    }
+    private bool IsOutsideOk(Func<TradingMacro, bool> tmPredicate, string canTradeKey, Func<TradingMacro, Rate.TrendLevels> trendLevels) {
+      var td = IsCurrentPriceOutsideCorridor(tmPredicate, trendLevels);
       var ok = IsOuside(td);
       if (ok && !_canOpenTradeAutoConditions.ContainsKey(canTradeKey))
         _canOpenTradeAutoConditions.TryAdd(canTradeKey, () => td);
@@ -169,15 +173,15 @@ namespace HedgeHog.Alice.Store {
     }
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate OutsideOk {
-      get { return () => IsOutsideOk("OusideOk", tm => tm.TrendLinesTrends); }
+      get { return () => IsOutsideOk(MySelfNext, "OusideOk", tm => tm.TrendLinesTrends); }
     }
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside1Ok {
-      get { return () => IsOutsideOk("Ouside1Ok", tm => tm.TrendLines1Trends); }
+      get { return () => IsOutsideOk(MySelfNext, "Ouside1Ok", tm => tm.TrendLines1Trends); }
     }
     [TradeCondition(TradeConditionAttribute.Types.Or)]
     public TradeConditionDelegate Outside2Ok {
-      get { return () => IsOutsideOk("Outside2Ok", tm => tm.TrendLines2Trends); }
+      get { return () => IsOutsideOk(MySelfNext, "Outside2Ok", tm => tm.TrendLines2Trends); }
     }
 
     public TradeConditionDelegate[] _TradeConditions = new TradeConditionDelegate[0];
@@ -220,7 +224,7 @@ namespace HedgeHog.Alice.Store {
     }
     DateTime _tradeConditionTriggerCancelDate = DateTime.MaxValue;
     void ResetTradeConditionTriggerCancel() { _tradeConditionTriggerCancelDate = DateTime.MaxValue; }
-    void TradeConditionTriggerCancel() {
+    void TradeConditionTriggerCheckCancel() {
       WaveRanges.Take(1)
         .Select(wr => wr.StartDate)
         .Where(sd => sd > _tradeConditionTriggerCancelDate)
@@ -231,8 +235,8 @@ namespace HedgeHog.Alice.Store {
     }
     public void TradeConditionsTrigger() {
       if (IsTrader) {
-        TradeConditionTriggerCancel();
-        if (TradeDirection.IsAny() && TradeConditionsEval()) {
+        TradeConditionTriggerCheckCancel();
+        if (HasTradeConditions && TradeDirection.IsAny() && TradeConditionsEval()) {
           if (TradeDirection.HasUp()) BuyLevel.CanTradeEx = true;
           if (TradeDirection.HasDown()) SellLevel.CanTradeEx = true;
           _tradeConditionTriggerCancelDate = ServerTime;
