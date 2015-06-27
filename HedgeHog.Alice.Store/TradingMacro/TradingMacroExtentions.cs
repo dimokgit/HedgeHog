@@ -1495,7 +1495,7 @@ namespace HedgeHog.Alice.Store {
               });
             } else {
               if (isReplaying && tms().Count > 1) {
-                var rateLast = UseRatesInternal(ri => ri.Last());
+                var rateLast = UseRatesInternal(ri => ri.Last(), 15 * 1000);
                 var a = tms().Select(tm =>
                     tm.RatesInternal.LastBC().YieldNotNull().Select(r => r.StartDate).DefaultIfEmpty().First()).ToArray();
                 var dateMin = a.Min();

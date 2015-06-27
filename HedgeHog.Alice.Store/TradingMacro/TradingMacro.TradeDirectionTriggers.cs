@@ -42,6 +42,7 @@ namespace HedgeHog.Alice.Store {
     #endregion
 
     public Action[] _tradeDirectionTriggers = new Action[0];
+    bool HasTradeDirectionTriggers { get { return _tradeDirectionTriggers.Length > 0; } }
     public Action[] GetTradeDirectionTriggers() {
       return this.GetMethodsByAttibute<TradeDirectionTriggerAttribute>()
         .Select(me => (Action)me.CreateDelegate(typeof(Action), this))

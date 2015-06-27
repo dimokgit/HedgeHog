@@ -379,14 +379,14 @@ namespace HedgeHog.Alice.Store {
     }
     public IList<Rate> CalcTrendLines(IList<Rate> corridorValues) {
       if (corridorValues.Count == 0) return new Rate[0];
-      var isTicks = (corridorValues.LastBC(1).StartDate - corridorValues.LastBC(2).StartDate).Duration() < 1.FromMinutes();
+      var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
+      var isTicks = minutes > 20 && BarPeriod == BarsPeriodType.t1;
+      var angleBM = isTicks || BarPeriod != BarsPeriodType.t1 ? 1 : minutes / corridorValues.Count;
       var groupped = corridorValues.GroupAdjacentTicks(1.FromMinutes()
         , rate => rate.StartDate
         , g => g.Average(rate => rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow));
       double h, l, h1, l1;
       var doubles = isTicks ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
-      if (isTicks && doubles.Count < 10)
-        doubles = corridorValues.ToList(r => r.PriceAvg);
       var coeffs = doubles.Linear();
       var hl = doubles.StDevByRegressoin(coeffs);
       h = hl * 2;
@@ -397,7 +397,7 @@ namespace HedgeHog.Alice.Store {
       var count = (RatesArray.Count - RatesArray.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt();
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
       rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs.LineSlope(), hl) {
-        Angle = coeffs.LineSlope().Angle(BarPeriodInt.Max(1), PointSize)
+        Angle = coeffs.LineSlope().Angle(angleBM, PointSize)
       });
 
       rates[0].Trends.PriceAvg1 = regRates[0];

@@ -1515,12 +1515,15 @@ namespace HedgeHog.Alice.Store {
                     .Take(1)
                     .Do(_ => {
                       UnFreezeCorridorStartDate();
-                      TradeDirection = TradeDirections.None;
+                      if(HasTradeDirectionTriggers)
+                        TradeDirection = TradeDirections.None;
                     })
                     .Where(_ => a != null)
                     .ForEach(_ => a());
                   #endregion
                   onCloseTradeLocal += t => {
+                    if (_buySellLevels.All(sr => sr.InManual && !sr.CanTrade))
+                      _buySellLevelsForEach(sr => sr.InManual = false);
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
                       turnItOff(canTradeOff, () => {
@@ -1536,7 +1539,11 @@ namespace HedgeHog.Alice.Store {
                   };
                   #endregion
                   onTradesCount += tc => {
-                    turnItOff(_buySellLevels.Any(sr => sr.InManual) && tc <= -CorridorCrossesMaximum, null);
+                    if (tc <= -CorridorCrossesMaximum)
+                      _buySellLevels.Where(sr => sr.InManual).ForEach(sr => {
+                        sr.CanTrade = false;
+                        sr.TradesCount = TradeCountStart;
+                      });
                   };
                   onOpenTradeLocal += t => {
                     toai().ForEach(x => {

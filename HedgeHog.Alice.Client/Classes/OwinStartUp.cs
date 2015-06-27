@@ -520,6 +520,12 @@ namespace HedgeHog.Alice.Client {
       }, true);
     }
     #endregion
+
+    public object GetWaveRangesStDev(string pair) {
+      return UseTradingMacro(pair, tm => tm.IsTrader, false)
+        .Select(tm => tm.WaveRangesStats())
+        .FirstOrDefault();
+    }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
     }

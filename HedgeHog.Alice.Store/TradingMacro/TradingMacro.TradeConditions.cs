@@ -91,10 +91,13 @@ namespace HedgeHog.Alice.Store {
     public TradeConditionDelegate TpsAvgMinOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign()); } }
     public TradeConditionDelegate WaveHeightOk {
       get {
-        return () => new[] { WaveRanges[1].Min, WaveRanges[1].Max }.All(m => m.Between(WaveRanges[0].Min, WaveRanges[0].Max));
+        return () => WaveRanges.Skip(2).Take(1)
+          .SelectMany(wr=>new []{wr.Min, wr.Max })
+          .DefaultIfEmpty(0)
+          .All(m => m.Between(WaveRanges[0].Min, WaveRanges[0].Max));
       }
     }
-    public TradeConditionDelegate WaveRatiOk { get { return () => WaveFirstSecondRatio > WaveFirstSecondRatioMin; } }
+    public TradeConditionDelegate WaveRatioOk { get { return () => WaveFirstSecondRatio > WaveFirstSecondRatioMin; } }
     public TradeConditionDelegate WaveCount5Ok { get { return () => WaveRanges.Count > 4; } }
     public TradeConditionDelegate WaveSteepOk { get { return () => WaveRanges[0].Slope.Abs() > WaveRanges[1].Slope.Abs(); } }
     public TradeConditionDelegate WaveEasyOk { get { return () => WaveRanges[0].Slope.Abs() < WaveRanges[1].Slope.Abs(); } }

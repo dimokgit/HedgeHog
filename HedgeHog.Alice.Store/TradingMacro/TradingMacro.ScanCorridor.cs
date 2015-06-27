@@ -1600,7 +1600,7 @@ namespace HedgeHog.Alice.Store {
         });
       //SetCorridorStopDate(rates[extreams3[0]]);
       WaveRanges = wr;
-      WaveFirstSecondRatio = wr[0].WorkByHeight.Abs() / wr.Skip(1).Take(2).Sum(x => x.WorkByHeight.Abs());
+      WaveFirstSecondRatio = wr[0].WorkByCount.Abs() / wr.Skip(1).Take(2).Sum(x => x.WorkByCount.Abs());
       var waveHeights = wr.ToArray(r => r.Height);
       WaveHeightAverage = extreams3.Count <= 4 ? waveHeights.Average() : waveHeights.AverageInRange(1, -1).Average();
       #endregion
@@ -1628,7 +1628,7 @@ namespace HedgeHog.Alice.Store {
       var workTimeSdR = WaveRanges.Select(wr => wr.WorkByTime).ToArray().StDevRatio();
       var workDistSdR = WaveRanges.Select(wr => wr.WorkByDistance).ToArray().StDevRatio();
       var workCountSdR = WaveRanges.Select(wr => wr.WorkByCount).ToArray().StDevRatio();
-      var workHeightSdR = WaveRanges.Select(wr => wr.WorkByCount).ToArray().StDevRatio();
+      var workHeightSdR = WaveRanges.Select(wr => wr.WorkByHeight).ToArray().StDevRatio();
       return new { wt = workTimeSdR, wd = workDistSdR, wc = workCountSdR, wh = workHeightSdR };
     }
     object _waveRangesLocker = new object();

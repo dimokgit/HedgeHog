@@ -54,6 +54,7 @@ namespace HedgeHog.Alice.Store {
 
     public void WrapTradeInCorridor() {
       if (Trades.Any() && SuppRes.All(sr => !sr.InManual)) {
+        SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
         BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
         //LevelBuyBy = LevelSellBy = 
