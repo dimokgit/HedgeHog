@@ -281,6 +281,8 @@ namespace HedgeHog.Alice.Client {
       if (!IsUserTrader())
         throw new UnauthorizedAccessException("This feature is for traders only.");
     }
+    static DateTime _newsReadLastDate = DateTime.MinValue;
+    static List<DateTimeOffset> _newsDates = new List<DateTimeOffset>();
     public object AskChangedPrice(string pair) {
       var tm0 = UseTradingMacro(pair, tm => tm,false);
       var tm1 = UseTradingMacro(pair, 1, tm => tm, false);
@@ -297,6 +299,21 @@ namespace HedgeHog.Alice.Client {
         .ForEach(mh => _marketHoursSet.Remove(mh.Key));
       #endregion
 
+      #region News
+      if (DateTime.Now.Subtract(_newsReadLastDate).TotalMinutes > 1) {
+        _newsReadLastDate = DateTime.Now;
+        var now = DateTimeOffset.UtcNow;
+        var then = now.AddMinutes(60);
+        var news = ReadNewsFromDb()
+          .Where(n => !_newsDates.Contains(n.Time))
+          .Where(n => n.Time > now && n.Time < then)
+          .ToArray();
+        if (news.Any()) {
+          _newsDates.AddRange(news.Select(n => n.Time));
+          Clients.All.newsIsComming(news.Select(n => new { n.Time, n.Name }).ToArray());
+        }
+      }
+      #endregion
       return new {
         time = tm0.ServerTime.ToString("HH:mm:ss"),
         prf = IntOrDouble(tmTrader.CurrentGrossInPipTotal, 1),
@@ -465,11 +482,13 @@ namespace HedgeHog.Alice.Client {
       }, true);
     }
     public object[] ReadNews() {
+      return ReadNewsFromDb().ToArray(en => new { en.Time, en.Name, en.Level, en.Country });
+    }
+
+    private static DB.Event__News[] ReadNewsFromDb() {
       var date = DateTimeOffset.UtcNow.AddMinutes(-60);
-      var countries = new[] { "USD","US", "GBP","GB", "EUR","EMU", "JPY","JP" };
-      var events = GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
-      var events2 = events.ToArray(en => new { en.Time, en.Name, en.Level, en.Country });
-      return events2;
+      var countries = new[] { "USD", "US", "GBP", "GB", "EUR", "EMU", "JPY", "JP" };
+      return GlobalStorage.UseForexContext(c => c.Event__News.Where(en => en.Time > date && countries.Contains(en.Country)).ToArray());
     }
     public Dictionary<string, int> ReadEnum(string enumName) {
       return typeof(TradingMacro).Assembly.GetTypes()
@@ -481,12 +500,13 @@ namespace HedgeHog.Alice.Client {
       return Enum.GetValues(typeof(TradeLevelBy)).Cast<TradeLevelBy>().ToDictionary(t => t.ToString(), t => (int)t);
     }
     #region TradeSettings
-    public void SaveTradeSettings(string pair, ExpandoObject ts) {
-      UseTradingMacro(pair, tm => {
+    public ExpandoObject SaveTradeSettings(string pair, ExpandoObject ts) {
+      return UseTradingMacro(pair, tm => {
         var props = (IDictionary<string, object>)ts;
         props.ForEach(kv => {
           tm.SetProperty(kv.Key, kv.Value);
         });
+        return ReadTradeSettings(pair);
       }, true);
     }
     public ExpandoObject ReadTradeSettings(string pair) {
@@ -520,11 +540,53 @@ namespace HedgeHog.Alice.Client {
       }, true);
     }
     #endregion
-
-    public object GetWaveRangesStDev(string pair) {
-      return UseTradingMacro(pair, tm => tm.IsTrader, false)
-        .Select(tm => tm.WaveRangesStats())
-        .FirstOrDefault();
+    public object GetWaveRanges(string pair) {
+      var value = MonoidsCore.ToFunc(0.0, false, (v, mx) => new { v, mx });
+      Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange> max = (rs, get) =>
+        rs.Select((w, i) => new { w, v = get(w).Abs(), i })
+        .OrderByDescending(x => x.v)
+        .First().w;
+      Func<IList<TradingMacro.WaveRange>, Func<TradingMacro.WaveRange, double>, TradingMacro.WaveRange, bool> isMax = (rs, get1, wr) => max(rs, get1) == wr;
+      var getValue = MonoidsCore.ToFunc(0.0, (IList<TradingMacro.WaveRange>)null, (Func<TradingMacro.WaveRange, double>)null, (TradingMacro.WaveRange)null,
+        (v, rs, get2, wr) => value(v, isMax(rs, get2, wr)));
+      var wrs = UseTradingMacro(pair, tm => tm.IsTrader, false)
+        .SelectMany(tm => tm.WaveRanges, (tm, wr) => new { inPips = new Func<double, double>(d => tm.InPips(d)), wr, rs = tm.WaveRanges })
+        .Select(x => new {
+          ElliotIndex = value((double)x.wr.ElliotIndex,false),
+          Angle = getValue(x.wr.Angle, x.rs, wr => wr.Angle, x.wr),//.ToString("###0.0"),
+          StDev = getValue(x.inPips(x.wr.StDev).Round(1), x.rs, wr => wr.StDev, x.wr),//.ToString("#0.00"),
+          WorkByCount = getValue(x.inPips(x.wr.WorkByCount.Abs()).Round(0), x.rs, wr => wr.WorkByCount, x.wr),
+          WorkByDistance = getValue(x.inPips(x.inPips(x.wr.WorkByDistance.Abs())), x.rs, wr => wr.WorkByDistance, x.wr),
+          DistanceByRegression = getValue(x.inPips(x.wr.DistanceByRegression.Abs()), x.rs, wr => wr.DistanceByRegression, x.wr),
+          WorkByTime = getValue(x.inPips(x.wr.WorkByTime.Abs()).Round(0), x.rs, wr => wr.WorkByTime, x.wr)
+        })
+        .ToList();
+      Func<object, double> getProp = (o) =>
+        o.GetType()
+        .GetProperties()
+        .Where(p => p.Name == "v")
+        .Select(p => new Func<double>(() => (double)p.GetValue(o)))
+        .DefaultIfEmpty(() => (double)o)
+        .First()();
+      var wra = wrs.Take(1).Select(wr0 => wr0.GetType()
+        .GetProperties()
+        .ToDictionary(p => p.Name, p => value(
+          wrs
+          .Select(wr => getProp(p.GetValue(wr)).Abs())
+          .OrderBy(d => d)
+          .Skip(1)
+          .SkipLast(1)
+          .DefaultIfEmpty(0)
+          .Average(),
+          false
+          )));
+      var wrStd = wrs.Take(1).Select(wr0 => wr0.GetType()
+        .GetProperties()
+        .ToDictionary(p => p.Name, p => {
+          var dbls = wrs.Select(wr => getProp(p.GetValue(wr)).Abs()).ToArray();
+          return value(dbls.StandardDeviation() / dbls.Height(), false);
+        }));
+      return wrs.Cast<object>().Concat(wra.Cast<object>()).Concat(wrStd.Cast<object>()).ToArray();
     }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);

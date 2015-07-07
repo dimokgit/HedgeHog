@@ -610,6 +610,10 @@ namespace HedgeHog {
       }
       return Math.Sqrt(S / (k - 2));
     }
+    public static double StandardDeviation<T>(this IEnumerable<T> valueList, Func<T, double> get) {
+      double max, min;
+      return valueList.StandardDeviation(get, out max, out min);
+    }
     public static double StandardDeviation<T>(this IEnumerable<T> valueList, Func<T, double> get, out double max, out double min) {
       double M = 0.0;
       double S = 0.0;
@@ -646,7 +650,6 @@ namespace HedgeHog {
     public static double Offset(double slope, double pointSize) {
       return Math.Sin(Math.PI / 2 - slope / pointSize);
     }
-    private static double Abs(this double d) { return Math.Abs(d); }
     private static bool IsNaN(this double d) { return double.IsNaN(d); }
     public class Extream<T> {
       public T Element { get; set; }

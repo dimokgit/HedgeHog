@@ -1588,19 +1588,40 @@ namespace HedgeHog.Alice.Store {
       #region Average Wave Height Calc
       var wr = new[] { 0 }.Concat(extreams3)
         .Zip(extreams3, (p, n) => rates.GetRange(p, n - p))
-        .ToList(range => new WaveRange {
-          Count = range.Count,
-          StartDate = range.Last().StartDate,
-          EndDate = range[0].StartDate,
-          Max = range.Max(_priceAvg),
-          Min = range.Min(_priceAvg),
-          Distance = range.Distance2(_priceAvg),
-          Slope = -range.LinearSlope(_priceAvg),
-          TotalSeconds = range[0].StartDate.Subtract(range.Last().StartDate).TotalSeconds
-        });
+        .Do(range => range.Reverse())
+        .ToList(range => new WaveRange(range, PointSize, LogSmooth, SmoothieDoubles));
       //SetCorridorStopDate(rates[extreams3[0]]);
       WaveRanges = wr;
-      WaveFirstSecondRatio = wr[0].WorkByCount.Abs() / wr.Skip(1).Take(2).Sum(x => x.WorkByCount.Abs());
+      var elliotCount = 2;
+      if (wr.Count > 0)
+        WaveRanges
+          .Select(wr2 => new { wr = wr2, i = WaveRanges.Index(wr2, w => w.WorkByTime.Abs()) })
+          .Buffer(elliotCount, 1)
+          .Where(b => b.Count == elliotCount)
+          .Where(b => b.Min(x => x.i <= 1))
+          .Take(1)
+          .SelectMany(b => b)
+          //.IfEmpty(() => {
+          //  return
+          //  WaveRanges
+          //  .OrderByDescending(w => w.WorkByTime.Abs())
+          //  .Take(1)
+          //  .Where(w => w.WorkByTime.Abs() > WaveRanges.Select(w1 => w1.WorkByTime.Abs()).OrderByDescending(d => d).Skip(1).SkipLast(1).Average()*2)
+          //  .Select(w => new { wr = w, i = 0 });
+          //})
+          .ForEach((x, i) => x.wr.ElliotIndex = i + 1);
+      else WaveRanges
+        .Select(w => new { w, s = w.StDev * w.Height })
+        .Buffer(3, 1)
+        .Where(b => b.Count == 3)
+        .Select((b, i) => new { score = b.Average(w => w.s) * Math.Sqrt(b.StandardDeviation(w => w.s)), i })
+        .OrderBy(x => x.score)
+        .Take(1)
+        .Select(x => x.i)
+        .SelectMany(i => new[] { i, i + 1, i + 2 })
+        .ForEach((i, j) => wr[i].ElliotIndex = j + 1);
+
+      WaveFirstSecondRatio = wr[0].WorkByTime.Abs() / wr.Skip(1).Take(2).Sum(x => x.WorkByTime.Abs());
       var waveHeights = wr.ToArray(r => r.Height);
       WaveHeightAverage = extreams3.Count <= 4 ? waveHeights.Average() : waveHeights.AverageInRange(1, -1).Average();
       #endregion
@@ -1611,7 +1632,7 @@ namespace HedgeHog.Alice.Store {
           .TakeWhile(c => c < index)
           .ToArray();
         _corridorLength1 = xx.Length <= 2
-          ? extreams3[1]
+          ? extreams3[0]
           : xx.TakeLast(interWaveStep)
           .DefaultIfEmpty(index)
           .First();
@@ -1619,18 +1640,12 @@ namespace HedgeHog.Alice.Store {
         _corridorLength2 = extreams3.SkipWhile(c => c <= index).Take(interWaveStep).DefaultIfEmpty(index).Last();
         _corridorStartDate2 = rates[_corridorLength2].StartDate;
 
-        if (index.Ratio(CorridorStats.Rates.Count) >= 1.01)
+        if (new[] { BuyLevel, SellLevel }.All(sr => sr!=null && !sr.InManual) && index.Ratio(CorridorStats.Rates.Count) >= 1.01)
           ResetSuppResesPricePosition();
       }
       return index + 1;
     }
-    public object WaveRangesStats() {
-      var workTimeSdR = WaveRanges.Select(wr => wr.WorkByTime).ToArray().StDevRatio();
-      var workDistSdR = WaveRanges.Select(wr => wr.WorkByDistance).ToArray().StDevRatio();
-      var workCountSdR = WaveRanges.Select(wr => wr.WorkByCount).ToArray().StDevRatio();
-      var workHeightSdR = WaveRanges.Select(wr => wr.WorkByHeight).ToArray().StDevRatio();
-      return new { wt = workTimeSdR, wd = workDistSdR, wc = workCountSdR, wh = workHeightSdR };
-    }
+
     object _waveRangesLocker = new object();
     List<WaveRange> _waveRanges = new List<WaveRange>();
     public List<WaveRange> WaveRanges {
@@ -1638,6 +1653,7 @@ namespace HedgeHog.Alice.Store {
       set { lock (_waveRangesLocker) { _waveRanges = value; } }
     }
     public class WaveRange {
+      #region Properties
       public DateTime StartDate { get; set; }
       public double Height { get { return Max - Min; } }
       public double Distance { get; set; }
@@ -1647,13 +1663,59 @@ namespace HedgeHog.Alice.Store {
       public double WorkByDistance { get { return Distance * Slope; } }
       public double WorkByCount { get { return Count * Slope; } }
       public double WorkByHeight { get { return Height * Slope; } }
-
+      public double DistanceByRegression { get; set; }
       public DateTime EndDate { get; set; }
-
       public int Count { get; set; }
-
       public double Max { get; set; }
       public double Min { get; set; }
+      public double Angle { get; set; }
+      public double InterseptStart { get; set; }
+      public double InterseptEnd { get; set; }
+      public double StDev { get; set; }
+      /// <summary>
+      /// Number from 1 to 5 from Elliot sequence
+      /// </summary>
+      public int ElliotIndex { get; set; }
+      #endregion
+      static double DistanceByHeightAndAngle(double heigth, double angle) {
+        return heigth / Math.Sin((angle.Abs().Min(90) * angle.Sign()).Radians());
+      }
+      static double DistanceByHeightAndSlope(double heigth, double slope) {
+        return heigth / Math.Sin(Math.Atan(slope));
+      }
+      static double DistanceByLengthAndSlope(double length, double slope) {
+        return length / Math.Cos(Math.Atan(slope));
+      }
+      public WaveRange(IList<Rate> range, double pointSize, double angleSmooth, double[] angleSmoothies) {
+        Count = range.Count;
+        StartDate = range[0].StartDate;
+        EndDate = range.Last().StartDate;
+        Max = range.Max(r => r.PriceAvg);
+        Min = range.Min(r => r.PriceAvg);
+        Distance = range.Distance2(r => r.PriceAvg);
+        TotalSeconds = StartDate.Subtract(EndDate).TotalSeconds;
+        CalcTrendLine(range, pointSize, angleSmooth, angleSmoothies);
+      }
+      double Smooth(double angle, double[] smoothies) {
+        return Math.Pow(Math.Abs(angle), smoothies[0]) * smoothies[1] * Math.Sign(angle);
+      }
+      void CalcTrendLine(IList<Rate> range, double pointSize, double angleSmooth, double[] angleSmoothies) {
+        if (range.Count == 0) return;
+        var minutes = (range.Last().StartDate - range[0].StartDate).Duration().TotalMinutes;
+        var groupped = range.GroupAdjacentTicks(1.FromSeconds()
+          , rate => rate.StartDate
+          , g => g.Average(rate => rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow));
+        var doubles = groupped.ToList();
+        var coeffs = doubles.Linear();
+        this.Slope = coeffs.LineSlope();
+        this.Angle = Smooth(Slope.Angle(1 / angleSmooth, pointSize), angleSmoothies);
+        this.StDev = doubles.StDevByRegressoin(coeffs);
+        this.InterseptStart = coeffs.RegressionValue(0);
+        this.InterseptEnd = coeffs.RegressionValue(doubles.Count - 1);
+        this.DistanceByRegression = DistanceByHeightAndAngle(InterseptStart.Abs(InterseptEnd), Angle);
+      }
+
+
     }
     Lazy<IList<Rate>> _trendLines = null;
     public Lazy<IList<Rate>> TrendLines {
@@ -1857,6 +1919,30 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    #region Smoothies
+    private string _Smoothies = "0.33,7";
+    [Category(categoryCorridor)]
+    [WwwSetting()]
+    public string Smoothies {
+      get { return _Smoothies; }
+      set {
+        if (_Smoothies != value) {
+          _Smoothies = value;
+          OnPropertyChanged("Smoothies");
+        }
+      }
+    }
+
+    double[] SmoothieDoubles {
+      get {
+        return Smoothies
+          .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+          .Select(s => double.Parse(s))
+          .ToArray();
+      }
+    }
+    #endregion
+
     void ResetBarsCountCalc() {
       _BarsCountCalc = null;
       OnPropertyChanged("BarsCountCalc");
@@ -1890,7 +1976,7 @@ namespace HedgeHog.Alice.Store {
 
     public double WaveFirstSecondRatio {
       get { return _waveFirstSecondRatio; }
-      set { 
+      set {
         _waveFirstSecondRatio = value;
         OnPropertyChanged("WaveFirstSecondRatio");
       }
@@ -1906,6 +1992,22 @@ namespace HedgeHog.Alice.Store {
         if (_WaveFirstSecondRatioMin != value) {
           _WaveFirstSecondRatioMin = value;
           OnPropertyChanged("WaveFirstSecondRatioMin");
+        }
+      }
+    }
+
+    #endregion
+
+    #region LogSmooth
+    private int _LogSmooth = 60;
+    [Category(categoryActive)]
+    [WwwSetting(wwwSettingsCorridor)]
+    public int LogSmooth {
+      get { return _LogSmooth; }
+      set {
+        if (_LogSmooth != value) {
+          _LogSmooth = value;
+          OnPropertyChanged("LogSmooth");
         }
       }
     }

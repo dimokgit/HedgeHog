@@ -66,12 +66,12 @@ namespace HedgeHog.Alice.Store {
             .Select(_priceAvg))
             .Memoize(2);
 
-          Func<SuppRes, double> getLevel = sr =>
-            EnumerableEx.If(() => !ExitByBuySellLevel, Trades.Select(trade => trade.Open)).DefaultIfEmpty(sr.Rate).Last();
+          Func<SuppRes, IEnumerable<double>> getLevel = sr =>
+            EnumerableEx.If(() => !ExitByBuySellLevel, Trades.NetOpen().Yield()).DefaultIfEmpty(sr.Rate);
           Func<double, SuppRes, IEnumerable<double>> getLevels = (level, sr) =>
            rateSinceTrade
             .Concat(level.Yield()
-              .Expand(l => EnumerableEx.If(l.IsNaN().ToFunc(), getLevel(sr).Yield()))
+              .Expand(l => EnumerableEx.If(l.IsNaN().ToFunc(), getLevel(sr)))
               .Where(Lib.IsNotNaN)
               .Take(1)
             );

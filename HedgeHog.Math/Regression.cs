@@ -172,6 +172,11 @@ namespace HedgeHog {
       return values;
     }
 
+    /// <summary>
+    /// Returns Slope from regression coeffisients array of two values
+    /// </summary>
+    /// <param name="coeffs"></param>
+    /// <returns></returns>
     public static double LineSlope(this double[] coeffs) {
       if (coeffs.Length != 2) throw new IndexOutOfRangeException();
       return coeffs[1];

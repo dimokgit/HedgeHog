@@ -1118,6 +1118,12 @@ namespace HedgeHog.Alice.Client {
         close2 = trends1.ToArray(t => t.Trends.PriceAvg2.Round(digits)),
         close3 = trends1.ToArray(t => t.Trends.PriceAvg3.Round(digits)),
       };
+      var waveLines = tm.WaveRanges
+        .ToArray(wr => new {
+          dates = new[] { wr.StartDate, wr.EndDate },
+          isept = new[] { wr.InterseptStart, wr.InterseptEnd },
+          bold = wr.ElliotIndex > 0
+        });
       var tradeLevels = new {
         buy = tmTrader.BuyLevel.Rate.Round(digits),
         buyClose = tmTrader.BuyCloseLevel.Rate.Round(digits),
@@ -1157,7 +1163,7 @@ namespace HedgeHog.Alice.Client {
         isTrader = tm.IsTrader,
         canBuy = tmTrader.CanOpenTradeByDirection(true),
         canSell = tmTrader.CanOpenTradeByDirection(false),
-        firstWave = tm.WaveRanges.Select(wr => wr.StartDate).FirstOrDefault()
+        waveLines
       };
     }
     bool? _isParentHidden;

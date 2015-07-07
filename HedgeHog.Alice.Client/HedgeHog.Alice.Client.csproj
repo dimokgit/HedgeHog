@@ -56,7 +56,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_04\</OutputPath>
+    <OutputPath>..\..\..\..\..\OneDrive\Public\Forex\Builds\Debug_RealMicro\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -74,13 +74,19 @@
     <ManifestKeyFile>HedgeHog.Alice.Client_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <RunPostBuildEvent>Always</RunPostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DigitalIdeaSolutions.Collections">
@@ -520,6 +526,7 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\DataSources\HedgeHog.Alice.Client.Models.AliceEntities.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Bars.Rate.datasource" />
     <None Include="Properties\DataSources\HedgeHog.Shared.Account.datasource" />

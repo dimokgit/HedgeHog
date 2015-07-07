@@ -284,10 +284,16 @@ namespace HedgeHog.Alice.Store {
     private Rate.TrendLevels TrendLines1Trends { get { return IsTrendsEmpty(TrendLines1) ? Rate.TrendLevels.Empty : TrendLines1.Value[1].Trends; } }
     private Rate.TrendLevels TrendLinesTrends { get { return IsTrendsEmpty(TrendLines) ? Rate.TrendLevels.Empty : TrendLines.Value[1].Trends; } }
     private double TrendLinesTrendsPriceMax(TradingMacro tm) {
-      return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2); 
+      return tm.TrendLinesTrends.PriceAvg2.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
+    }
+    private double TrendLinesTrendsPriceMax1(TradingMacro tm) {
+      return tm.TrendLinesTrends.PriceAvg21.Max(tm.TrendLines2Trends.PriceAvg2, tm.TrendLines1Trends.PriceAvg2);
     }
     private double TrendLinesTrendsPriceMin(TradingMacro tm) {
       return tm.TrendLinesTrends.PriceAvg3.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
+    }
+    private double TrendLinesTrendsPriceMin1(TradingMacro tm) {
+      return tm.TrendLinesTrends.PriceAvg31.Min(tm.TrendLines2Trends.PriceAvg3, tm.TrendLines1Trends.PriceAvg3);
     }
     double GetTradeCloseLevel(bool buy, double def = double.NaN) { return TradeLevelFuncs[buy ? LevelBuyCloseBy : LevelSellCloseBy]().IfNaN(def); }
 
@@ -422,39 +428,6 @@ namespace HedgeHog.Alice.Store {
       rates[1].Trends.PriceAvg31 = pa1 - l1;
       rates[1].Trends.PriceAvg22 = pa1 + h * 2;
       rates[1].Trends.PriceAvg32 = pa1 - l * 2;
-      return rates;
-    }
-    public static Rate.TrendLevels[] SetTrendLines2(IList<double> doubles) {
-      if (doubles.Count == 0) return new Rate.TrendLevels[0];
-      double h, l, h1, l1;
-      var coeffs = doubles.Linear();
-      var hl = doubles.StDevByRegressoin(coeffs);
-      h = hl * 2;
-      l = hl * 2;
-      h1 = hl * 3;
-      l1 = hl * 3;
-      var rates = new Rate.TrendLevels[2];
-      var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(doubles.Count - 1) };
-
-      rates[0].PriceAvg1 = regRates[0];
-      rates[1].PriceAvg1 = regRates[1];
-
-      var pa1 = rates[0].PriceAvg1;
-      rates[0].PriceAvg02 = pa1 + hl;
-      rates[0].PriceAvg03 = pa1 - hl;
-      rates[0].PriceAvg2 = pa1 + h;
-      rates[0].PriceAvg3 = pa1 - l;
-      rates[0].PriceAvg21 = pa1 + h1;
-      rates[0].PriceAvg31 = pa1 - l1;
-
-      pa1 = rates[1].PriceAvg1;
-      rates[1].PriceAvg02 = pa1 + hl;
-      rates[1].PriceAvg03 = pa1 - hl;
-      rates[1].PriceAvg2 = pa1 + h;
-      rates[1].PriceAvg3 = pa1 - l;
-      rates[1].PriceAvg21 = pa1 + h1;
-      rates[1].PriceAvg31 = pa1 - l1;
-
       return rates;
     }
 

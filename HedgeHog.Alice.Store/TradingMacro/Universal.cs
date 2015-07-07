@@ -475,7 +475,6 @@ namespace HedgeHog.Alice.Store {
         #region Funcs
         Func<Func<Rate, double>, double> getRateLast = (f) => f(RateLast) > 0 ? f(RateLast) : f(RatePrev);
         Func<bool> runOnce = null;
-        Func<bool, double, double> getTradeLevel = (buy, def) => TradeLevelFuncs[buy ? LevelBuyBy : LevelSellBy]().IfNaN(def);
         #region SetTrendlines
         Func<double, double, Func<Rate[]>> setTrendLinesByParams = (h, l) => {
           if (CorridorStats == null || !CorridorStats.Rates.Any()) return () => new[] { new Rate(), new Rate() };
@@ -519,7 +518,7 @@ namespace HedgeHog.Alice.Store {
         #endregion
 
         #region adjustEnterLevels
-        Func<Trade, bool> minPLOk = t => IsAutoStrategy ? CurrentGrossInPips == 0 : t.NetPL2 > 0;
+        Func<Trade, bool> minPLOk = t => IsAutoStrategy && false ? CurrentGrossInPips == 0 : t.NetPL2 > 0;
         Action<Action> firstTimeAction = a => {
           if (firstTime) {
             Log = new Exception(new { CorrelationMinimum, CorridorDistance } + "");
@@ -1515,8 +1514,6 @@ namespace HedgeHog.Alice.Store {
                     .Take(1)
                     .Do(_ => {
                       UnFreezeCorridorStartDate();
-                      if(HasTradeDirectionTriggers)
-                        TradeDirection = TradeDirections.None;
                     })
                     .Where(_ => a != null)
                     .ForEach(_ => a());
@@ -1526,15 +1523,14 @@ namespace HedgeHog.Alice.Store {
                       _buySellLevelsForEach(sr => sr.InManual = false);
                     if (minPLOk(t)) {
                       BuyLevel.InManual = SellLevel.InManual = false;
-                      turnItOff(canTradeOff, () => {
-                        IsTradingActive = false;
+                      turnItOff(true, () => {
+                        if(canTradeOff)
+                          IsTradingActive = false;
                       });
                     }
                     if (CurrentGrossInPipTotal > 0)
                       BroadcastCloseAllTrades();
                     BuyCloseLevel.InManual = SellCloseLevel.InManual = false;
-                    if (!IsReverseStrategy)
-                      LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
                     CorridorStartDate = null;
                   };
                   #endregion
@@ -1556,7 +1552,7 @@ namespace HedgeHog.Alice.Store {
 
                 TradeDirectionTriggersRun();
                 TradeConditionsTrigger();
-                SetTradeLevelsToLevelBy(getTradeLevel)();
+                SetTradeLevelsToLevelBy(GetTradeLevel)();
               }
               adjustExitLevels0();
               break;
@@ -1594,7 +1590,7 @@ namespace HedgeHog.Alice.Store {
                 #endregion
                 #region Locals
                 Func<bool> isTpsOk = () => IsTresholdOk(TicksPerSecondAverage, TpsMin);
-                var tradeLevels = MonoidsCore.ToLazy(() => new[] { new { up = getTradeLevel(true, double.NaN), down = getTradeLevel(false, double.NaN) } });
+                var tradeLevels = MonoidsCore.ToLazy(() => new[] { new { up = GetTradeLevel(true, double.NaN), down = GetTradeLevel(false, double.NaN) } });
                 Func<bool> isInside = () => (from tl in tradeLevels.Value
                                              from cp in new[] { CurrentEnterPrice(true), CurrentEnterPrice(false) }
                                              select cp.Between(tl.down, tl.up)).All(t => t);
@@ -1608,7 +1604,7 @@ namespace HedgeHog.Alice.Store {
                 Func<bool> canTradeOk = () => canTradeOkA.Value.corridor && canTradeOkA.Value.angle && canTradeOkA.Value.tps && canTradeOkA.Value.inside;
                 IEnumerable<Action> setTradeLevels = new[] {
                   ()=> _buySellLevelsForEach(sr => sr.ResetPricePosition()),
-                  SetTradeLevelsToLevelBy(getTradeLevel) 
+                  SetTradeLevelsToLevelBy(GetTradeLevel) 
                 }
                 .Concat(new Action[]{()=>{
                   BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
@@ -1674,7 +1670,7 @@ namespace HedgeHog.Alice.Store {
                 #endregion
 
                 #region Locals
-                Action setTradeLevels = SetTradeLevelsToLevelBy(getTradeLevel);
+                Action setTradeLevels = SetTradeLevelsToLevelBy(GetTradeLevel);
                 Func<bool> isCorridorOk = () => TrendLines1Trends.StDev > TrendLinesTrends.StDev;
                 var canTradeOk = MonoidsCore.ToLazy(() => new { corrOk = isCorridorOk(), tpsOk = IsTresholdOk(TicksPerSecondAverage, TpsMin) });
                 Func<bool> isCanTradeOk = () => canTradeOk.Value.corrOk && canTradeOk.Value.tpsOk;

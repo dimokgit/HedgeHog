@@ -739,6 +739,12 @@ namespace HedgeHog {
     public static double PositionByMiddle(this double d, double up, double down) { return (d - down) / (up - down); }
     public static double Round(this double v, int decimals) { return Math.Round(v, decimals); }
     public static double? Round(this double? v, int decimals) { return v.HasValue ? v.Value.Round(decimals) : (double?)null; }
+    public static double AutoRound(this double d, int digits) {
+      var whole = d.Abs().Floor();
+      var part = d.Abs() - whole;
+      var ret = (double)(whole + Math.Round((decimal)part, Math.Log10(part).Abs().Ceiling() + digits));
+      return ret;
+    }
 
     public static double Error(this double experimantal, double original) {
       return ((experimantal - original).Abs() / original).Abs();

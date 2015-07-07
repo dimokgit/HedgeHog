@@ -98,5 +98,11 @@ namespace HedgeHog.Tests {
       Assert.IsTrue(rl.Skip(0).SequenceEqual(rl.CopyLast(30)));
       Assert.IsTrue(rl.CopyLast(0).IsEmpty());
     }
+
+    [TestMethod()]
+    public void AutoRoundTest() {
+      var d = 1.1435765205628123;
+      Assert.AreEqual(1.14, d.AutoRound(1));
+    }
   }
 }

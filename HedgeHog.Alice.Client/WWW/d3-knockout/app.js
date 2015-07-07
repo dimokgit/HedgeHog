@@ -18,6 +18,13 @@
  * Send - method fired from server to sen info to clien
  */
 (function () {
+  //#region ko binding
+  ko.bindingHandlers.elementer = {
+    init: function (element, valueAccessor/*, allBindings, viewModel, bindingContext*/) {
+      valueAccessor()(element);
+    }
+  };
+  //#endregion
   // #region Globals
   "use strict";
   // enable global JSON date parsing
@@ -101,7 +108,7 @@
     return note;
   }
   // #endregion
-  function serverCall(name, args, done) {
+  function serverCall(name, args, done,fail) {
     var method = chat.server[name];
     if (!method) {
       showErrorPerm("Server method " + name + " not found.");
@@ -109,13 +116,15 @@
       p.rejectWith("Server method " + name + " not found.");
       return p;
     }
-    var note = addPendingMessage(name, name + " is in progress ...");
+    var noNote = args.noNote;
+    var note = noNote ? { update: $.noop } : addPendingMessage(name, name + " is in progress ...");
     var r = chat.server[name].apply(chat.server, args)
       .always(function () {
         //clearPendingMessages(name);
       }).fail(function (error) {
         notifyClose(note);
-        addPendingError(name, error + "", { title: name, icon: true });
+        if (fail) fail(error);
+        else addPendingError(name, error + "", { title: name, icon: true });
       }).done(function () {
         var isCustom = typeof done === 'string';
         var msg = isCustom ? "\n" + done : "";
@@ -197,7 +206,24 @@
       return l;
     }
     // #endregion
-    function moveCorridorWavesCount(chartIndex,step) {
+    function moveCorridorWavesCount(chartIndex, step) {
+      if (chartIndex !== 0) return alert("chartIndex:" + chartIndex + " is not supported");
+      var name = "PriceCmaLevels_";
+      readTradeSettings(function (ts) {
+        var value = Math.round((ts[name].v + step / 10) * 10) / 10;
+        saveTradeSetting(name, value, function (ts,note) {
+          var pcl = (ts||{})[name].v;
+          note.update({
+            type: "success",
+            text: "Set " + name + " to " + pcl,
+            icon: 'picon picon-task-complete',
+            hide: true,
+            delay: 1000
+          });
+        });
+      });
+    }
+    function moveCorridorWavesCount_(chartIndex, step) {
       serverCall("moveCorridorWavesCount", [pair, chartIndex, step], function (priceCma, note) {
         note.update({
           type: "success",
@@ -213,25 +239,33 @@
     /**
      * @param {Object} ts
      */
+    function saveTradeSetting(name, value,done) {
+      var ts = {};
+      ts[name] = value;
+      serverCall("saveTradeSettings", [pair, ts], done);
+    }
     function saveTradeSettings() {
       var ts = settingsGrid().jqPropertyGrid('get');
       settingsGrid().empty();
-      serverCall("saveTradeSettings", [pair, ts], resetPlotter);
+      serverCall("saveTradeSettings", [pair, ts]);
     }
-    function readTradeSettings() {
+    function readTradeSettings(done) {
+      serverCall("readTradeSettings", [pair], done);
+    }
+    function loadTradeSettings() {
       settingsGrid().empty();
-      serverCall("readTradeSettings", [pair], function (ts) {
+      readTradeSettings(function (ts) {
         var tsMeta = {
           CorridorCrossesMaximum: {
             name: "Corridor Cross Max",
             type: 'number',
             options: { step: 1, numberFormat: "n" }
           },
-          TradingRatioByPMC:{name:"Lot By PMC"},
+          TradingRatioByPMC: { name: "Lot By PMC" },
           LimitProfitByRatesHeight: { name: "Limit Profit By Height" },
           FreezeCorridorOnTradeOpen: { name: "Freeze On TradeOpen" },
-          TradingAngleRange_: {name:"Trading Angle", type: 'number', options: { step: 0.1, numberFormat: "n" } },
-          TakeProfitXRatio: { name:"Take ProfitX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
+          TradingAngleRange_: { name: "Trading Angle", type: 'number', options: { step: 0.1, numberFormat: "n" } },
+          TakeProfitXRatio: { name: "Take ProfitX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TradingDistanceX: { name: "Trading DistanceX", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           PriceCmaLevels_: { name: "PriceCmaLevels", type: 'number', options: { step: 0.1, numberFormat: "n" } },
           TradeDirection: {
@@ -242,7 +276,14 @@
               { text: "Both", value: "Both" },
               { text: "Auto", value: "Auto" }]
           },
-          TradingDistanceFunction: { name: "Trading Distance", type: "options", options: [{ text: "BuySellLevels", value: 1 }, { text: "RatesHeight", value: 2 }, { text: "Pips", value: 3 }] },
+          TradingDistanceFunction: {
+            name: "Trading Distance", type: "options", options: [
+              { text: "BuySellLevels", value: "BuySellLevels" },
+              { text: "RatesHeight", value: "RatesHeight" },
+              { text: "Pips", value: "Pips" },
+              { text: "Wave", value: "Wave" }
+            ]
+          },
           TakeProfitFunction: {
             name: "Take Profit", type: "options", options: [
               { text: "BuySellLevels", value: "BuySellLevels" },
@@ -341,7 +382,7 @@
     };
     this.setTradeCount = setTradeCount;
     this.toggleIsActive = toggleIsActive;
-    this.readTradeSettings = readTradeSettings;
+    this.loadTradeSettings = loadTradeSettings;
 
     this.tradeOpenActionsReady = ko.observable(false);
 
@@ -492,7 +533,7 @@
       lineChartData.unshift.apply(lineChartData, rates2);
       //lineChartData.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
 
-      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross,response.tpsAvg,response.canBuy,response.canSell));
+      self.chartData(chartDataFactory(lineChartData, response.trendLines, response.trendLines2, response.trendLines1, response.tradeLevels, response.askBid, response.trades, response.isTradingActive, true, 0, response.hasStartDate, response.cmaPeriod, closedTrades, self.openTradeGross,response.tpsAvg,response.canBuy,response.canSell,response.waveLines));
       updateChartCmas[0](cma(updateChartCmas[0](), 10, getSecondsBetween(new Date(), d)));
     }
     function updateChart2(response) {
@@ -556,6 +597,50 @@
     // #endregion
     // #region Read Enums
     // #endregion
+    //#region WaveRanges
+    function getWaveRanges() {
+      var args = [pair];
+      args.noNote = true;
+      serverCall("getWaveRanges", args,
+        function (wrs) {
+          wrs.forEach(function (wr) {
+          });
+          waveRanges(wrs);
+          if (stopWaveRanges)
+            showInfo("getWaveRanges stopped");
+          else
+            setTimeout(getWaveRanges, 1000);
+        },
+        function (error) {
+          showErrorPerm("getWaveRanges: " + error);
+        });
+    }
+    var waveRangesDialog;
+    this.waveRangesDialog = function (element) {
+      waveRangesDialog = $(element).find("table")[0];
+    };
+    var waveRanges = ko.observable();
+
+    this.waveRanges = waveRanges;
+    this.startWaveRanges = function () {
+      stopWaveRanges = false;
+      $(waveRangesDialog).dialog({
+        title: "Wave Ranges",
+        width: "auto",
+        dialogClass:"dialog-compact",
+        close: function () {
+          self.stopWaveRanges();
+          $(this).dialog("destroy");
+        }
+      });
+      getWaveRanges();
+    };
+    var stopWaveRanges = false;
+    this.stopWaveRanges = function () {
+      stopWaveRanges = false;
+    };
+
+    //#endregion
     // #endregion
 
     // #region Helpers
@@ -584,12 +669,13 @@
       });
       return root;
     }
-    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross,tpsAvg,canBuy,canSell) {
+    function chartDataFactory(data, trendLines, trendLines2, trendLines1, tradeLevels, askBid, trades, isTradingActive, shouldUpdateData, chartNum, hasStartDate, cmaPeriod, closedTrades, openTradeGross, tpsAvg, canBuy, canSell, waveLines) {
       return {
         data: data ? ko.unwrap(data) : [],
         trendLines: trendLines,
         trendLines2: trendLines2,
         trendLines1: trendLines1,
+        waveLines:waveLines,
         tradeLevels: tradeLevels,
         askBid: askBid || {},
         trades: trades || [],
@@ -732,6 +818,9 @@
     chat.client.marketIsOpening = function (market) {
       showInfoPerm(JSON.stringify(market));
     };
+    chat.client.newsIsComming = function (news) {
+      showWarningPerm(JSON.stringify(news));
+    };
     // #endregion
     // #region Start the connection.
     //$.connection.hub.logging = true;
@@ -865,7 +954,13 @@
     return showInfo(message, $.extend({ delay: 0, hide: false }, settings));
   }
   function showInfo(message, settings) {
-    return notify(message,"info", settings);
+    return notify(message, "info", settings);
+  }
+  function showWarningPerm(message, settings) {
+    return showWarning(message, $.extend({ delay: 0, hide: false }, settings));
+  }
+  function showWarning(message, settings) {
+    return notify(message,"warning", settings);
   }
   function showSuccess(message, settings) {// jshint ignore:line
     return notify(message, "success", $.extend({ type: "success" }, settings));

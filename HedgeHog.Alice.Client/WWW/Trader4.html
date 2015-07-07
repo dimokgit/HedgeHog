@@ -24,6 +24,7 @@
   <meta name="theme-color" content="#ffffff">
   <!--#endregion-->
   <!--#region CSS-->
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" />
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
   <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet">
   <link rel="stylesheet" href="d3-knockout/style/bar-chart-demo.css" />
@@ -167,6 +168,22 @@
     #settingsGrid .pgTable .pgCell {
       white-space: nowrap;
     }
+    .dialog-compact  {
+      font-size:1em;
+    }
+    .dialog-compact.ui-dialog .ui-dialog-titlebar{
+      padding-top:0;
+      padding-bottom:0;
+    }
+    #waveRangesDialog tr.selected{
+      background-color:lightblue;
+    }
+    #waveRangesDialog th{
+      text-align:center;
+    }
+    #waveRangesDialog td{
+      text-align:right;
+    }
   </style>
   <script>
     $(function () {
@@ -207,7 +224,7 @@
             </button>
           </li>
           <li>
-            <button data-bind="click:readTradeSettings"
+            <button data-bind="click:loadTradeSettings"
                     data-toggle="modal"
                     data-target="#settingsDialog">
               <span class="glyphicon glyphicon-cog"></span>
@@ -232,6 +249,13 @@
                     data-toggle="modal"
                     data-target="#tradeOpenActionsDialog">
               <span class="glyphicon glyphicon-check"></span>
+            </button>
+          </li>
+          <li>
+            <button data-bind="click:startWaveRanges"
+                    data-toggle1="modal"
+                    data-target1="#waveRangesDialog">
+              <span class="glyphicon glyphicon-stats"></span>
             </button>
           </li>
           <li>
@@ -516,6 +540,37 @@
         </div>
       </div>
     </div>
+  </div>
+  <!--#endregion-->
+
+
+  <!--#region WaveRanges dialog-->
+  <div data-bind="elementer:waveRangesDialog" style="display:none" >
+    <table border="1" id="waveRangesDialog">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Ang</th>
+          <th>SD</th>
+          <th>WC</th>
+          <th>WD</th>
+          <th>WT</th>
+          <th>DR</th>
+        </tr>
+      </thead>
+      <tbody data-bind="foreach:waveRanges">
+        <tr data-bind="css:{selected:ElliotIndex.v > 0}">
+          <td><span data-bind="text:$index()+1"></span></td>
+          <td><span data-bind="text:Math.round(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(WorkByCount.v),style:{fontWeight:WorkByCount.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(WorkByDistance.v),style:{fontWeight:WorkByDistance.mx?'bold':''}"></span></td>
+          <td style="background-color:lightblue"><span data-bind="text:d3.format('.2f')(WorkByTime.v),style:{fontWeight:WorkByTime.mx?'bold':''}"></span></td>
+          <td><span data-bind="text:d3.format('.2f')(DistanceByRegression.v),style:{fontWeight:DistanceByRegression.mx?'bold':''}"></span></td>
+
+        </tr>
+      </tbody>
+    </table>
   </div>
   <!--#endregion-->
 

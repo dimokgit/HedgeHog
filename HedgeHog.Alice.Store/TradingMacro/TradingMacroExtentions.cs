@@ -1455,6 +1455,7 @@ namespace HedgeHog.Alice.Store {
         LoadRatesStartDate2 = DateTimeOffset.MinValue;
         BarsCountLastDate = DateTime.MinValue;
         TradesManager.ResetClosedTrades(Pair);
+        _onElliotTradeCorridorDate = DateTime.MinValue;
         #endregion
         var vm = (VirtualTradesManager)TradesManager;
         if (!_replayRates.Any()) throw new Exception("No rates were dowloaded fot Pair:{0}, Bars:{1}".Formater(Pair, BarPeriod));
@@ -2867,6 +2868,13 @@ namespace HedgeHog.Alice.Store {
 
     #endregion
 
+    double GetTradeLevel(bool buy, double def) {
+      return GetTradeLevel(buy, () => def);
+    }
+    double GetTradeLevel(bool buy, Func<double> def) {
+      return TradeLevelFuncs[buy ? LevelBuyBy : LevelSellBy]().IfNaN(def());
+    }
+
     Dictionary<TradeLevelBy, Func<double>> _TradeLevelFuncs;
     Dictionary<TradeLevelBy, Func<double>> TradeLevelFuncs {
       get {
@@ -2894,6 +2902,8 @@ namespace HedgeHog.Alice.Store {
 
           {TradeLevelBy.PriceMax,()=> level(TrendLinesTrendsPriceMax)},
           {TradeLevelBy.PriceMin,()=> level(TrendLinesTrendsPriceMin)},
+          {TradeLevelBy.PriceMax1,()=> level(TrendLinesTrendsPriceMax1)},
+          {TradeLevelBy.PriceMin1,()=> level(TrendLinesTrendsPriceMin1)},
 
           {TradeLevelBy.None,()=>level(tm=>double.NaN)}
           }; 
@@ -4343,6 +4353,13 @@ namespace HedgeHog.Alice.Store {
     public int RatesDuration { get; set; }
   }
   public static class WaveInfoExtentions {
+    public static int Index(this IList<TradingMacro.WaveRange> wrs,TradingMacro.WaveRange wr, Func<TradingMacro.WaveRange, double> value) {
+      return wrs.OrderByDescending(value).ToList().IndexOf(wr);
+    }
+    public static IList<Tuple<TradingMacro.WaveRange, int>> WaveRangesOrder(IList<TradingMacro.WaveRange> wrs, Func<TradingMacro.WaveRange, double> value) {
+      return wrs.OrderByDescending(value).Select((wr, i) => Tuple.Create(wr, i)).ToArray();
+    }
+
     public static Dictionary<CorridorCalculationMethod, double> ScanWaveWithAngle<T>(this IList<T> rates, Func<T, double> price, double pointSize, CorridorCalculationMethod corridorMethod) {
       return rates.ScanWaveWithAngle(price, price, price, pointSize, corridorMethod);
     }

@@ -246,6 +246,7 @@
       var canBuy = chartData.canBuy;
       var canSell = chartData.canSell;
       // #endregion
+
       // #region adjust svg and axis'
       $(element).show();
       var chartArea = calcChartArea(element);
@@ -282,6 +283,7 @@
         .attr("width", svgW)
         .attr("height", svgH);
       // #endregion
+
       var svg = svg0.select("g");
 
       // #region Set chart range
@@ -477,6 +479,37 @@
         })();
       else getClosedTradesDelta([]).exit().remove();
       // #endregion
+
+      //#region waveLines
+      var waveLines = chartData.waveLines || [];
+      var waveLineColor = "gray";
+      var waveLineWidth = 1;
+      var wlDelta = svg.selectAll("line.waveLine").data(waveLines);
+      function waveLineDate(i) {
+        return function (d) {
+          return x(d.dates[i]);
+        };
+      }
+      function waveLineISept(i) {
+        return function (d) {
+          return y(d.isept[i]);
+        };
+      }
+      wlDelta.enter()
+        .append("line")
+        .attr("class", "waveLine")
+        .style("stroke", waveLineColor);
+      wlDelta
+        .style("stroke-width", function (d) {
+          return d.bold ? 2 : 1;
+        })
+        .attr("x1", waveLineDate(0))
+        .attr("y1", waveLineISept(0))
+        .attr("x2", waveLineDate(1))
+        .attr("y2", waveLineISept(1));
+      wlDelta.exit().remove();
+      //#endregion
+
       d3.select(element).select("svg")
         .style('background-color', isTradingActive ? "whitesmoke" : "peachpuff");
 

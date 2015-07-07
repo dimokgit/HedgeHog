@@ -87,8 +87,29 @@ namespace HedgeHog.Alice.Store {
     #region TradeConditions
     public delegate bool TradeConditionDelegate();
     public TradeConditionDelegate WidthOk { get { return () => WaveRanges.Count >= 4 && TrendLines1Trends.StDev > TrendLinesTrends.StDev; } }
+    public TradeConditionDelegate ElliotOk {
+      get {
+        return () => WaveRanges.Select((wr, i) => new { wr, i })
+          .Where(x => x.wr.ElliotIndex == 1)
+          .Any(x => x.i.Between(1, 1));
+      }
+    }
     public TradeConditionDelegate TpsOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TpsMin); } }
     public TradeConditionDelegate TpsAvgMinOk { get { return () => IsTresholdAbsOk(TicksPerSecondAverage, TicksPerSecondAverageAverage * TpsMin.Sign()); } }
+    public TradeConditionDelegate WaveLowOk {
+      get {
+        return () => WaveRanges
+          .Select(wr => wr.Slope.Abs())
+          .Buffer(3, 1)
+          .Where(b => b.Count == 3)
+          .Select((b, i) => new { slope = b.StandardDeviation(), i })
+          .MinBy(x => x.slope)
+          .Select(x => x.i)
+          .DefaultIfEmpty(-1)
+          .Take(1)
+          .Any(i => i == 0);
+      }
+    }
     public TradeConditionDelegate WaveHeightOk {
       get {
         return () => WaveRanges.Skip(2).Take(1)
@@ -225,36 +246,35 @@ namespace HedgeHog.Alice.Store {
              join tc in TradeConditionsInfo((d, s) => new { d, s }) on tcsAll.d equals tc.d
              select map(tc.d, tcsAll.t, tc.s);
     }
-    DateTime _tradeConditionTriggerCancelDate = DateTime.MaxValue;
-    void ResetTradeConditionTriggerCancel() { _tradeConditionTriggerCancelDate = DateTime.MaxValue; }
-    void TradeConditionTriggerCheckCancel() {
-      WaveRanges.Take(1)
-        .Select(wr => wr.StartDate)
-        .Where(sd => sd > _tradeConditionTriggerCancelDate)
-        .ForEach(_ => {
-          BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
-          ResetTradeConditionTriggerCancel();
-        });
-    }
     public void TradeConditionsTrigger() {
       if (IsTrader) {
-        TradeConditionTriggerCheckCancel();
-        if (HasTradeConditions && TradeDirection.IsAny() && TradeConditionsEval()) {
-          if (TradeDirection.HasUp()) BuyLevel.CanTradeEx = true;
-          if (TradeDirection.HasDown()) SellLevel.CanTradeEx = true;
-          _tradeConditionTriggerCancelDate = ServerTime;
-        }
+        var evals = TradeConditionsEval();
+        var direction = TradeDirection;
+          //TradeConditions.Any(tc => tc == ElliotOk)
+          //? WaveRanges[0].Slope > 0
+          //? TradeDirections.Up
+          //: TradeDirections.Down
+          //: TradeDirections.Both;
+        evals.ForEach(eval => {
+          if (eval) {
+            if (TradeDirection.HasUp() && direction.HasUp()) BuyLevel.CanTradeEx = true;
+            if (TradeDirection.HasDown() && direction.HasDown()) SellLevel.CanTradeEx = true;
+          } else BuyLevel.CanTradeEx = SellLevel.CanTradeEx = false;
+        });
       }
     }
-    public bool TradeConditionsEval() {
-      if (!IsTrader) return false;
+    public IEnumerable<bool> TradeConditionsEval() {
+      if (!IsTrader) return new bool[0];
       return (from tc in TradeConditionsInfo((d, t, s) => new { d, t, s })
               group tc by tc.t into gtci
               let or = gtci.Select(x => x.d).DefaultIfEmpty(() => true).Select(d => d())
               let and = gtci.Select(g => g.d())
-              select gtci.Key == TradeConditionAttribute.Types.And ? and.All(b => b) : or.Any(b => b)
+              let c = gtci.Key == TradeConditionAttribute.Types.And ? and.All(b => b) : or.Any(b => b)
+              group c by c into gc
+              select gc.Key
               )
-             .All(b => b);
+              .OrderBy(b => b)
+              .Take(1);
     }
     public IEnumerable<T> TradeConditionsInfo<T>(Func<TradeConditionDelegate, string, T> map) {
       return TradeConditionsInfo(TradeConditions, map);

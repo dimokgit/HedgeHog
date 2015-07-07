@@ -39,6 +39,24 @@ namespace HedgeHog.Alice.Store {
     public void OnOutsideBlue() {
       TriggerOnOutside(IsCurrentPriceOutsideCorridorSelf, tm => tm.TrendLines2Trends);
     }
+    DateTime _onElliotTradeCorridorDate = DateTime.MinValue;
+    [TradeDirectionTrigger]
+    public void OnElliotWave() {
+      var ews = WaveRanges.Where(wr => wr.ElliotIndex > 0).ToArray();
+      if (ews.Length > 0 && WaveRanges.IndexOf(ews[0]) > 0) {
+        var max = ews.Max(wr => wr.Max);
+        var min = ews.Min(wr => wr.Min);
+        var mid = max.Avg(min);
+        var offset = (max - min) * 1.6 / 2;
+        if (new[] { false, true }.All(b => CurrentEnterPrice(b).Between(min, max))) {
+          BuyLevel.Rate = mid - offset;
+          SellLevel.Rate = mid + offset;
+          BuyLevel.InManual = SellLevel.InManual = true;
+          BuyLevel.CanTrade = TradeDirection.HasUp() && true;
+          SellLevel.CanTrade = TradeDirection.HasDown() && true;
+        }
+      }
+    }
     #endregion
 
     public Action[] _tradeDirectionTriggers = new Action[0];
