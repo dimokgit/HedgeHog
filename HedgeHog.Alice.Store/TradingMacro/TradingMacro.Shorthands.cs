@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using HedgeHog.Shared;
 using HedgeHog.Bars;
 using HedgeHog;
+using System.ComponentModel;
 
 namespace HedgeHog.Alice.Store {
   partial class TradingMacro {
@@ -52,13 +53,28 @@ namespace HedgeHog.Alice.Store {
       RaiseShowChart();
     }
 
+    #region MoveWrapTradeWithNewTrade
+    private bool _MoveWrapTradeWithNewTrade = false ;
+    [Category(categoryTrading)]
+    [WwwSetting(wwwSettingsTradingOther)]
+    public bool MoveWrapTradeWithNewTrade {
+      get { return _MoveWrapTradeWithNewTrade; }
+      set {
+        if (_MoveWrapTradeWithNewTrade != value) {
+          _MoveWrapTradeWithNewTrade = value;
+          OnPropertyChanged("MoveWrapTradeWithNewTrade");
+        }
+      }
+    }
+    
+    #endregion
     public void WrapTradeInCorridor() {
-      if (Trades.Any() && SuppRes.All(sr => !sr.InManual)) {
+      if (Trades.Any() && (SuppRes.All(sr => !sr.InManual) || MoveWrapTradeWithNewTrade)) {
         SuppRes.ForEach(sr => sr.ResetPricePosition());
         BuyLevel.InManual = SellLevel.InManual = true;
-        BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
+        //BuyLevel.TradesCount = SellLevel.TradesCount = TradeCountStart;
         //LevelBuyBy = LevelSellBy = 
-        LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
+        //LevelBuyCloseBy = LevelSellCloseBy = TradeLevelBy.None;
         var offset = WaveHeightAverage;
         if (Trades.HaveBuy()) {
           BuyLevel.Rate = Trades.NetOpen();

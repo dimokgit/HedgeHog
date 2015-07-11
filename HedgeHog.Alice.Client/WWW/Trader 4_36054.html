@@ -551,7 +551,6 @@
         <tr>
           <th></th>
           <th>Ang</th>
-          <th>H</th>
           <th>SD</th>
           <th>WC</th>
           <th>WD</th>
@@ -563,7 +562,6 @@
         <tr data-bind="css:{selected:ElliotIndex.v > 0}">
           <td><span data-bind="text:$index()+1"></span></td>
           <td><span data-bind="text:d3.format('.1f')(Angle.v),style:{fontWeight:Angle.mx?'bold':''}"></span></td>
-          <td><span data-bind="text:d3.format('.0f')(Height.v),style:{fontWeight:Height.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.1f')(StDev.v),style:{fontWeight:StDev.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(WorkByCount.v),style:{fontWeight:WorkByCount.mx?'bold':''}"></span></td>
           <td><span data-bind="text:d3.format('.0f')(WorkByDistance.v),style:{fontWeight:WorkByDistance.mx?'bold':''}"></span></td>

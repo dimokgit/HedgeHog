@@ -2069,7 +2069,7 @@ namespace HedgeHog.Alice.Store {
                 var cs = CorridorStats.Rates[0].StartDate.AddMinutes(-10);
                 var rl = CorridorStats.Rates.TakeWhile(r => r.StartDate > cs).ToArray();
                 if (BarPeriod == BarsPeriodType.t1) {
-                  var tpsAvg = RatesArray.TakeLast(60 * 5).Select(r => r.TpsAverage).ToArray().AverageByIterations(TpsAverageLevel).Average();
+                  var tpsAvg = UseRates(ras => ras.GetRange((ras.Count - 60 * 5).Max(0), ras.Count.Min(60 * 5)).AverageByIterations(r => r.TpsAverage, TpsAverageLevel).Average(r => r.TpsAverage));
                   TicksPerSecondAverageAverage = tpsAvg;
                 }
 
@@ -2703,6 +2703,20 @@ namespace HedgeHog.Alice.Store {
     public double CmaPeriodByRatesCount() {
       return RatesArray.Count * PriceCmaLevels / 100.0;
     }
+    #region SmaPasses
+    private int _SmaPasses = 1;
+    [Category(categoryCorridor)]
+    public int SmaPasses {
+      get { return _SmaPasses; }
+      set {
+        if (_SmaPasses != value) {
+          _SmaPasses = value;
+          OnPropertyChanged("SmaPasses");
+        }
+      }
+    }
+
+    #endregion
     private void SetMA() {
       switch (MovingAverageType) {
         case Store.MovingAverageType.FFT:
@@ -2714,6 +2728,7 @@ namespace HedgeHog.Alice.Store {
         case Store.MovingAverageType.Cma:
           if (PriceCmaLevels > 0) {
             RatesArray.Cma(_priceAvg, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma);
+            Enumerable.Range(1, SmaPasses).ForEach(_ => RatesArray.Cma(r => r.PriceCMALast, CmaPeriodByRatesCount(), (r, ma) => r.PriceCMALast = ma));
             //UseRates(rates => {
             //  rates.Aggregate(double.NaN, (ma, r) => r.PriceCMALast = ma.Cma(PriceCmaLevels, r.PriceAvg));
             //  rates.Reverse();
@@ -2899,6 +2914,9 @@ namespace HedgeHog.Alice.Store {
         
           {TradeLevelBy.PriceHigh0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg2)},
           {TradeLevelBy.PriceLow0,()=> level(tm=>tm.TrendLines1Trends.PriceAvg3)},
+
+          {TradeLevelBy.MaxRG,()=> level(tm=>tm.TrendLines1Trends.PriceAvg2.Max(tm.TrendLinesTrends.PriceAvg2))},
+          {TradeLevelBy.MinRG,()=> level(tm=>tm.TrendLines1Trends.PriceAvg3.Min(tm.TrendLinesTrends.PriceAvg3))},
 
           {TradeLevelBy.PriceMax,()=> level(TrendLinesTrendsPriceMax)},
           {TradeLevelBy.PriceMin,()=> level(TrendLinesTrendsPriceMin)},

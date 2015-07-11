@@ -386,11 +386,11 @@ namespace HedgeHog.Alice.Store {
     public IList<Rate> CalcTrendLines(IList<Rate> corridorValues) {
       if (corridorValues.Count == 0) return new Rate[0];
       var minutes = (corridorValues.Last().StartDate - corridorValues[0].StartDate).Duration().TotalMinutes;
-      var isTicks = minutes > 20 && BarPeriod == BarsPeriodType.t1;
+      var isTicks = minutes > 3 && BarPeriod == BarsPeriodType.t1;
       var angleBM = isTicks || BarPeriod != BarsPeriodType.t1 ? 1 : minutes / corridorValues.Count;
       var groupped = corridorValues.GroupAdjacentTicks(1.FromMinutes()
         , rate => rate.StartDate
-        , g => g.Average(rate => rate.PriceAvg >= rate.PriceCMALast ? rate.PriceHigh : rate.PriceLow));
+        , g => g.Average(rate => rate.PriceAvg));
       double h, l, h1, l1;
       var doubles = isTicks ? groupped.ToList() : corridorValues.ToList(r => r.PriceAvg);
       var coeffs = doubles.Linear();
@@ -399,8 +399,8 @@ namespace HedgeHog.Alice.Store {
       l = hl * 2;
       h1 = hl * 3;
       l1 = hl * 3;
-      var rates = new[] { (Rate)corridorValues[0].Clone(), (Rate)RatesArray.Last().Clone() };
-      var count = (RatesArray.Count - RatesArray.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt();
+      var rates = new[] { (Rate)corridorValues[0].Clone(), (Rate)UseRates(rs => rs.Last().Clone()) };
+      var count = UseRates(rs => (rs.Count - rs.IndexOf(corridorValues[0])).Div(corridorValues.Count.Div(doubles.Count)).ToInt());
       var regRates = new[] { coeffs.RegressionValue(0), coeffs.RegressionValue(count - 1) };
       rates.ForEach(r => r.Trends = new Rate.TrendLevels(corridorValues.Count, coeffs.LineSlope(), hl) {
         Angle = coeffs.LineSlope().Angle(angleBM, PointSize)

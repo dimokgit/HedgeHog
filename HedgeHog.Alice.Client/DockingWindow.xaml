@@ -41,26 +41,26 @@
 					<TextBlock Text="{Binding Header}"
 										 Foreground="{Binding IsActive,ConverterParameter=Black|DarkRed|DarkGreen,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
 										 FontWeight="{Binding IsSelected,ConverterParameter=Normal|Normal|Black,Converter={x:Static hh:BoolToSrtingConverter.Default}}"
-                     ToolTipService.ShowDuration="120000"
+										 ToolTipService.ShowDuration="120000"
 										 >
-            <TextBlock.ToolTip>
-              <TextBlock FontFamily="Courier New">
-                <Run>0,1 - Corridor Cross Count</Run><LineBreak/>
-                <Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
-                <Run>C   - Clear Custom Corridor</Run><LineBreak/>
-                <Run>F   - Flip Trade Levels</Run><LineBreak/>
-                <Run>H   - Fit chart to view</Run><LineBreak/>
-                <Run>L   - Set LevelsBy Corridor</Run><LineBreak/>
-                <Run>M   - Manual Mode (On/Off)</Run><LineBreak/>
-                <Run>R   - Refresh Order Table</Run><LineBreak/>
-                <Run>S   - Freeze CorridorStart Date</Run><LineBreak/>
-                <Run>T   - Buy/Sell (On/Off)</Run><LineBreak/>
-                <Run>W   - Wrap Trade IN Corridor</Run><LineBreak/>
-                <Run>/?p - Pause Virtual Trading(On/Off)</Run><LineBreak/>
-                <Run>> - Advance on bar</Run>
-              </TextBlock>
-            </TextBlock.ToolTip>
-          </TextBlock>
+						<TextBlock.ToolTip>
+							<TextBlock FontFamily="Courier New">
+								<Run>0,1 - Corridor Cross Count</Run><LineBreak/>
+								<Run>A   - Deactivate Strategy (On/Off)</Run><LineBreak/>
+								<Run>C   - Clear Custom Corridor</Run><LineBreak/>
+								<Run>F   - Flip Trade Levels</Run><LineBreak/>
+								<Run>H   - Fit chart to view</Run><LineBreak/>
+								<Run>L   - Set LevelsBy Corridor</Run><LineBreak/>
+								<Run>M   - Manual Mode (On/Off)</Run><LineBreak/>
+								<Run>R   - Refresh Order Table</Run><LineBreak/>
+								<Run>S   - Freeze CorridorStart Date</Run><LineBreak/>
+								<Run>T   - Buy/Sell (On/Off)</Run><LineBreak/>
+								<Run>W   - Wrap Trade IN Corridor</Run><LineBreak/>
+								<Run>/?p - Pause Virtual Trading(On/Off)</Run><LineBreak/>
+								<Run>> - Advance on bar</Run>
+							</TextBlock>
+						</TextBlock.ToolTip>
+					</TextBlock>
 				</TextBlock>
 			</DataTemplate>
 			<DataTemplate x:Key="RadPaneContextMenu">
@@ -185,8 +185,8 @@
 					<DataGrid AutoGenerateColumns="False" ItemsSource="{Binding ClosedTradesList}" Style="{StaticResource ReadOnlyDataGridStyle}" FontWeight="Black" Background="#FFF7F3F7" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
 						<DataGrid.Columns>
 							<DataGridTextColumn Header="Pair" Binding="{Binding Pair}"/>
-              <DataGridTextColumn Header="Open" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
-              <DataGridTextColumn Header="Close" Binding="{Binding TimeClose,StringFormat='dd HH:mm:ss'}"/>
+							<DataGridTextColumn Header="Open" Binding="{Binding Time,StringFormat='dd HH:mm:ss'}"/>
+							<DataGridTextColumn Header="Close" Binding="{Binding TimeClose,StringFormat='dd HH:mm:ss'}"/>
 							<DataGridTextColumn Header="Lots" Binding="{Binding Lots}"/>
 							<DataGridTextColumn Header="B/S"  Binding="{Binding Buy,Converter={StaticResource BoolToSrtingConverter},ConverterParameter=|S|B}">
 								<DataGridTextColumn.ElementStyle>
@@ -195,9 +195,9 @@
 									</Style>
 								</DataGridTextColumn.ElementStyle>
 							</DataGridTextColumn>
-              <DataGridTextColumn Header="Open$" Binding="{Binding Open}"/>
-              <DataGridTextColumn Header="Close$" Binding="{Binding Close}"/>
-              <DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
+							<DataGridTextColumn Header="Open$" Binding="{Binding Open}"/>
+							<DataGridTextColumn Header="Close$" Binding="{Binding Close}"/>
+							<DataGridTextColumn Header="Pips" Binding="{Binding PL,StringFormat=n1}">
 								<DataGridTextColumn.CellStyle>
 									<Style TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
 										<Setter Property="Background" Value="{Binding PL,Converter={StaticResource ProfitToColorConverter}}"/>
@@ -258,18 +258,18 @@
 					</Button>
 				</Grid>
 			</DataTemplate>
-      <DataTemplate x:Key="OpenOrdersTitleTemplate">
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="Auto" />
-          </Grid.ColumnDefinitions>
-          <ContentPresenter Content="{Binding}" Margin="0,0,5,0" />
-          <TextBlock Text="{Binding DataContext.OrdersList.Count,StringFormat=[{0:n0}],RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
+			<DataTemplate x:Key="OpenOrdersTitleTemplate">
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+					<ContentPresenter Content="{Binding}" Margin="0,0,5,0" />
+					<TextBlock Text="{Binding DataContext.OrdersList.Count,StringFormat=[{0:n0}],RelativeSource={RelativeSource Mode=FindAncestor,AncestorType=telerik:RadPane}}"
 										 Grid.Column="1"/>
-        </Grid>
-      </DataTemplate>
-      <!--OrdersOnServer-->
+				</Grid>
+			</DataTemplate>
+			<!--OrdersOnServer-->
 			<DataTemplate x:Key="OrdersOnServer">
 				<!--Server Orders-->
 				<Grid Background="#FFF7F3F7">
@@ -596,12 +596,12 @@
 													 ContentTemplate="{StaticResource TradesOnServer}" Content="{Binding}" />
 						<telerik:RadPane Header="Closed Trades" ContentTemplate="{StaticResource ClosedTradesTemplate}" Content="{Binding}" telerik:RadDocking.SerializationTag="ClosedTrades" CanUserClose="False"/>
 						<telerik:RadPane IsSelected="{state:UserSettings}" 
-                             Header="Open Orders" Title="Open Orders" 
-                             HeaderTemplate="{StaticResource OpenOrdersTitleTemplate}"
-                             telerik:RadDocking.SerializationTag="OpenedOrders" 
-                             Name="OpenedOrders" 
-                             ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" 
-                             CanUserClose="False"/>
+														 Header="Open Orders" Title="Open Orders" 
+														 HeaderTemplate="{StaticResource OpenOrdersTitleTemplate}"
+														 telerik:RadDocking.SerializationTag="OpenedOrders" 
+														 Name="OpenedOrders" 
+														 ContentTemplate="{StaticResource OrdersOnServer}" Content="{Binding}" 
+														 CanUserClose="False"/>
 					</telerik:RadPaneGroup>
 					<telerik:RadSplitContainer Name="ChartsSplitter" Orientation="Horizontal" telerik:RadDocking.SerializationTag="ChartsSplitter">
 						<telerik:RadPaneGroup telerik:RadDocking.SerializationTag="ChartsPaneGroup"/>
@@ -626,18 +626,18 @@
 						<DataTemplate>
 								<telerik:RadGridView CanUserSelect="False" IsSynchronizedWithCurrentItem="False" CanUserSortColumns="True" ShowGroupPanel="False" IsFilteringAllowed="False" RowIndicatorVisibility="Collapsed" RowHeight="16"
 										ItemsSource="{Binding GenericList,Source={x:Static store:GlobalStorage.Instance}}" AutoGenerateColumns="True">
-                  <telerik:RadGridView.Resources>
-                    <Style TargetType="{x:Type telerik:GridViewCell}">
-                      <Setter Property="HorizontalAlignment" Value="Right"/>
-                    </Style>
-                  </telerik:RadGridView.Resources>
-                  <telerik:RadGridView.RowStyle>
-                    <Style TargetType="telerik:GridViewRow">
-                      <Setter Property="FontWeight" Value="{Binding FontWeight}" />
-                      <Setter Property="Background" Value="{Binding Color}" />
-                    </Style>
-                  </telerik:RadGridView.RowStyle>
-                </telerik:RadGridView>
+									<telerik:RadGridView.Resources>
+										<Style TargetType="{x:Type telerik:GridViewCell}">
+											<Setter Property="HorizontalAlignment" Value="Right"/>
+										</Style>
+									</telerik:RadGridView.Resources>
+									<telerik:RadGridView.RowStyle>
+										<Style TargetType="telerik:GridViewRow">
+											<Setter Property="FontWeight" Value="{Binding FontWeight}" />
+											<Setter Property="Background" Value="{Binding Color}" />
+										</Style>
+									</telerik:RadGridView.RowStyle>
+								</telerik:RadGridView>
 							</DataTemplate>
 						</telerik:RadPane.ContentTemplate>
 					</telerik:RadPane>

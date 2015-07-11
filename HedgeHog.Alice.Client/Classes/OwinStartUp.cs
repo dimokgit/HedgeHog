@@ -554,6 +554,7 @@ namespace HedgeHog.Alice.Client {
         .Select(x => new {
           ElliotIndex = value((double)x.wr.ElliotIndex,false),
           Angle = getValue(x.wr.Angle, x.rs, wr => wr.Angle, x.wr),//.ToString("###0.0"),
+          Height = getValue(x.inPips(x.wr.Height), x.rs, wr => wr.Height, x.wr),//.ToString("###0.0"),
           StDev = getValue(x.inPips(x.wr.StDev).Round(1), x.rs, wr => wr.StDev, x.wr),//.ToString("#0.00"),
           WorkByCount = getValue(x.inPips(x.wr.WorkByCount.Abs()).Round(0), x.rs, wr => wr.WorkByCount, x.wr),
           WorkByDistance = getValue(x.inPips(x.inPips(x.wr.WorkByDistance.Abs())), x.rs, wr => wr.WorkByDistance, x.wr),
@@ -580,13 +581,13 @@ namespace HedgeHog.Alice.Client {
           .Average(),
           false
           )));
-      var wrStd = wrs.Take(1).Select(wr0 => wr0.GetType()
-        .GetProperties()
-        .ToDictionary(p => p.Name, p => {
-          var dbls = wrs.Select(wr => getProp(p.GetValue(wr)).Abs()).ToArray();
-          return value(dbls.StandardDeviation() / dbls.Height(), false);
-        }));
-      return wrs.Cast<object>().Concat(wra.Cast<object>()).Concat(wrStd.Cast<object>()).ToArray();
+      //var wrStd = wrs.Take(1).Select(wr0 => wr0.GetType()
+      //  .GetProperties()
+      //  .ToDictionary(p => p.Name, p => {
+      //    var dbls = wrs.Select(wr => getProp(p.GetValue(wr)).Abs()).ToArray();
+      //    return value(dbls.StandardDeviation() / dbls.Height(), false);
+      //  }));
+      return wrs.Cast<object>().Concat(wra.Cast<object>())/*.Concat(wrStd.Cast<object>())*/.ToArray();
     }
     double IntOrDouble(double d, double max = 10) {
       return d.Abs() > max ? d.ToInt() : d.Round(1);
